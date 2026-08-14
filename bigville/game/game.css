@@ -44,6 +44,12 @@ button:hover { background: #594137; }
 .speech-row button { text-align: center; }
 .log { max-height: 170px; overflow: auto; color: var(--muted); font-size: 13px; }
 .log div { padding: 4px 0; border-bottom: 1px solid #3b3032; }
+.inventory { display: grid; gap: 5px; }
+.inventory-item { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.item-icon { width: 24px; height: 24px; flex: 0 0 24px; image-rendering: pixelated; background-image: url('assets/items.png'); background-repeat: no-repeat; background-size: 384px 312px; border: 1px solid #4b3c36; background-color: #30272a; }
+.inventory-empty { color: var(--muted); }
+.inventory-worn { margin-top: 6px; color: var(--accent-2); font-size: 12px; }
+.inspect-resident { width: 100%; margin-top: 8px; }
 .reset { margin-top: 18px; color: #f1bf94; }
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }

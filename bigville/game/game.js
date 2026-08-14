@@ -27,6 +27,7 @@ const ROLE_VARIANTS = {
 let state = null;
 let scene = null;
 let busy = false;
+let selectedResidentId = null;
 
 const $ = (id) => document.getElementById(id);
 const pretty = (value) => String(value || '').replaceAll('_', ' ');
@@ -64,6 +65,63 @@ function player() {
   return state?.world?.residents?.find((r) => r.id === state.player);
 }
 
+function selectedResident() {
+  const residents = state?.world?.residents || [];
+  if (!selectedResidentId || !residents.some((r) => r.id === selectedResidentId)) {
+    selectedResidentId = state?.player || residents[0]?.id || null;
+  }
+  return residents.find((r) => r.id === selectedResidentId) || null;
+}
+
+function itemIcon(kind) {
+  const icons = scene?.assetManifest?.items?.icons || {};
+  return icons[kind] || null;
+}
+
+function appendItemIcon(parent, kind) {
+  const icon = document.createElement('span');
+  icon.className = 'item-icon';
+  const frame = itemIcon(kind);
+  if (frame) icon.style.backgroundPosition = `-${frame.x * 24}px -${frame.y * 24}px`;
+  icon.title = pretty(kind);
+  parent.append(icon);
+}
+
+function renderInventory(resident) {
+  const target = $('inventory');
+  target.replaceChildren();
+  if (!resident) {
+    target.textContent = 'No resident selected.';
+    target.className = 'inventory-empty';
+    return;
+  }
+  target.className = 'inventory';
+  const bulk = Object.entries(resident.inventory || {});
+  const held = resident.held_items || [];
+  if (!bulk.length && !held.length && !(resident.worn || []).length) {
+    target.textContent = 'Empty hands and carrier.';
+    target.className = 'inventory-empty';
+    return;
+  }
+  for (const [kind, quantity] of bulk) {
+    const row = document.createElement('div'); row.className = 'inventory-item';
+    appendItemIcon(row, kind);
+    row.append(`${pretty(kind)} × ${quantity}`);
+    target.append(row);
+  }
+  for (const item of held) {
+    const row = document.createElement('div'); row.className = 'inventory-item';
+    appendItemIcon(row, item.kind);
+    row.append(`${pretty(item.kind)} · ${item.location}`);
+    target.append(row);
+  }
+  if ((resident.worn || []).length) {
+    const worn = document.createElement('div'); worn.className = 'inventory-worn';
+    worn.textContent = `Wearing: ${resident.worn.map(pretty).join(', ')}`;
+    target.append(worn);
+  }
+}
+
 function actionLabel(option) {
   const bits = [pretty(option.action)];
   for (const key of ['kind', 'recipe', 'trade', 'target']) {
@@ -74,11 +132,23 @@ function actionLabel(option) {
 
 function renderSidebar() {
   const actor = player();
+  const inspected = selectedResident();
   const context = state.player_context || {};
   const clock = state.world.clock || {};
   $('status').textContent = `Turn ${clock.clock ?? 0} · day ${clock.day ?? 0}, ${clock.hour ?? 0}:00 · ${clock.season || ''}\n` +
     `${state.world.residents.filter((r) => r.alive).length} alive · ${state.world.animals.length} animals`;
-  $('resident').textContent = actor ? `${actor.name} · ${pretty(actor.role)} · ${actor.coin} coins · energy ${Math.round(actor.energy)}` : 'No player';
+  $('resident').textContent = inspected ? `${inspected.name} · ${pretty(inspected.role)} · ${inspected.coin} coins · energy ${Math.round(inspected.energy)}` : 'No resident';
+  renderInventory(inspected);
+  const inspector = $('inspect-resident');
+  const previousInspection = inspector.value;
+  inspector.replaceChildren();
+  for (const resident of state.world.residents.filter((r) => r.alive)) {
+    const option = document.createElement('option');
+    option.value = resident.id; option.textContent = `Inspect ${resident.name}`;
+    inspector.append(option);
+  }
+  inspector.value = selectedResidentId || previousInspection;
+  inspector.onchange = () => { selectedResidentId = inspector.value; renderSidebar(); };
   const actions = $('actions');
   actions.replaceChildren();
   for (const option of (context.affordances || [])) {
@@ -123,15 +193,20 @@ class BigvilleScene extends Phaser.Scene {
   constructor() { super('bigville'); this.objects = []; this.hasCentered = false; this.dragging = false; }
 
   preload() {
-    this.load.image('open_room', 'assets/open_room.png');
+    this.load.json('asset_manifest', 'assets/manifest.json');
     this.load.spritesheet('tileset', 'assets/tileset.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
+    this.load.spritesheet('building_interiors', 'assets/building_interiors.png', {frameWidth: 48, frameHeight: 48});
+    this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
+    this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
+    this.load.spritesheet('items', 'assets/items.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('characters', 'assets/character_variants.png', {frameWidth: 16, frameHeight: 16});
     this.load.spritesheet('actions', 'assets/actions.png', {frameWidth: 16, frameHeight: 16});
   }
 
   create() {
     scene = this;
+    this.assetManifest = this.cache.json.get('asset_manifest') || {};
     this.cameras.main.setBackgroundColor('#172126');
     this.input.keyboard.on('keydown', (event) => {
       const amount = 80;
@@ -167,11 +242,10 @@ class BigvilleScene extends Phaser.Scene {
     const width = map.width * TILE;
     const height = map.height * TILE;
     this.drawCanonicalMap(map);
-    this.drawBuildings(map.buildings || []);
     const allResidents = snapshot.world.residents || [];
     this.playerId = snapshot.player;
     const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
-    const occupiedResidents = this.drawOccupiedInteriors(map.buildings || [], allResidents);
+    const occupiedResidents = this.drawBuildings(map.buildings || [], allResidents);
     const outsideResidents = allResidents.filter((resident) => {
       if (occupiedResidents.has(resident.id)) return false;
       if (resident.id === snapshot.player || !playerResident) return true;
@@ -190,8 +264,11 @@ class BigvilleScene extends Phaser.Scene {
       const pos = resident.position || [0, 0];
       const frame = this.residentFrame(resident);
       const sprite = this.add.sprite(pos[0] * TILE + 8, pos[1] * TILE + 8, 'characters', frame).setDepth(3);
+      sprite.setInteractive({useHandCursor: true});
+      sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
       if (resident.id === snapshot.player) sprite.setScale(1.45).setTint(0xffe1a8);
       this.objects.push(sprite);
+      this.drawResidentItems(resident, pos);
       if (resident.id === snapshot.player && !this.hasCentered) {
         this.cameras.main.centerOn(pos[0] * TILE, pos[1] * TILE);
         this.hasCentered = true;
@@ -226,17 +303,8 @@ class BigvilleScene extends Phaser.Scene {
     }
   }
 
-  drawBuildings(buildings) {
-    for (const building of buildings) {
-      const [x, y] = building.position || [building.x || 0, building.y || 0];
-      const frame = BUILDING_FRAMES[building.type] ?? BUILDING_FRAMES.house;
-      const sprite = this.add.sprite(x * TILE + 24, y * TILE + 24, 'buildings', frame)
-        .setDepth(2);
-      this.objects.push(sprite);
-    }
-  }
-
-  drawOccupiedInteriors(buildings, residents) {
+  drawBuildings(buildings, residents) {
+    const manifestFrames = this.assetManifest?.buildings?.sprites || {};
     const spots = new Map();
     const priority = {
       townhall: 20, bakery: 19, kitchen: 18, granary: 17, inn: 16,
@@ -254,37 +322,123 @@ class BigvilleScene extends Phaser.Scene {
     const inside = new Set();
     for (const building of spots.values()) {
       const [x, y] = building.position;
+      const width = Math.max(1, Number(building.w || 3));
+      const height = Math.max(1, Number(building.h || 3));
       const occupants = residents.filter((resident) => {
         if (inside.has(resident.id)) return false;
         const rx = Number(resident.x ?? resident.position?.[0] ?? -999);
         const ry = Number(resident.y ?? resident.position?.[1] ?? -999);
-        return rx >= x && rx < x + (building.w || 3) &&
-          ry >= y && ry < y + (building.h || 3);
+        return rx >= x && rx < x + width && ry >= y && ry < y + height;
       });
-      if (!occupants.length) continue;
       for (const resident of occupants) inside.add(resident.id);
-      const px = x * TILE;
-      const py = y * TILE;
-      // The roofless room asset replaces the opaque roof sprite. Occupants
-      // are added below at their actual world coordinates.
-      const room = this.add.image(px + 24, py + 24, 'open_room')
-        .setDisplaySize(48, 48).setDepth(2);
-      this.objects.push(room);
-      occupants.forEach((resident, index) => {
-        const localX = px + 15 + (index % 2) * 18;
-        const localY = py + 21 + Math.floor(index / 2) * 12;
-        const sprite = this.add.sprite(localX, localY, 'characters', this.residentFrame(resident))
-          .setScale(1.15).setDepth(3);
-        if (resident.id === this.playerId) sprite.setTint(0xffe1a8);
-        this.objects.push(sprite);
-      });
+      this.drawBuilding(building, occupants.length > 0);
+      occupants.forEach((resident, index) => this.drawInteriorResident(building, resident, index));
     }
     return inside;
+  }
+
+  drawBuilding(building, roofOn) {
+    const [x, y] = building.position || [building.x || 0, building.y || 0];
+    const width = Math.max(1, Number(building.w || 3));
+    const height = Math.max(1, Number(building.h || 3));
+    const px = x * TILE;
+    const py = y * TILE;
+    const manifest = this.assetManifest?.buildings || {};
+    const frame = (manifest.sprites || {})[building.type]
+      ?? BUILDING_FRAMES[building.type] ?? BUILDING_FRAMES.house;
+
+    // Preserve the authored 3x3 institution art while allowing arbitrary
+    // footprints to fall back to the composable part vocabulary.
+    if (width === 3 && height === 3) {
+      const sprite = this.add.sprite(px + 24, py + 24,
+        roofOn ? 'buildings' : 'building_interiors', frame).setDepth(2);
+      this.objects.push(sprite);
+      return;
+    }
+
+    const parts = manifest.parts || {};
+    const addPart = (name, cellX, cellY, depth = 2, tint = null) => {
+      if (parts[name] === undefined) return;
+      const sprite = this.add.sprite(px + cellX * TILE + 8, py + cellY * TILE + 8,
+        'building_parts', parts[name]).setDepth(depth);
+      if (tint !== null) sprite.setTint(tint);
+      this.objects.push(sprite);
+    };
+    const roofTint = {
+      bakery: 0xd26b4e, granary: 0xd3a33d, forge: 0x766d68,
+      school: 0x6ca35f, records_office: 0x6388a7, watchhouse: 0x6388a7,
+    }[building.type] || 0xb1543e;
+    for (let cy = 0; cy < height; cy++) {
+      for (let cx = 0; cx < width; cx++) {
+        if (roofOn) {
+          addPart((cx === 0 || cy === 0 || cx === width - 1 || cy === height - 1)
+            ? 'roof_edge' : 'roof', cx, cy, 2, roofTint);
+        } else {
+          addPart('floor', cx, cy, 1.5);
+          if (cx === 0 || cy === 0 || cx === width - 1 || cy === height - 1) {
+            addPart('wall', cx, cy, 2);
+          }
+        }
+      }
+    }
+    if (!roofOn) {
+      addPart('door', Math.floor(width / 2), height - 1, 2.2);
+      if (width > 2) {
+        addPart('window', 0, Math.min(1, height - 1), 2.2);
+        addPart('window', width - 1, Math.min(1, height - 1), 2.2);
+      }
+      const fixture = /forge|smith/.test(building.type) ? 'workbench'
+        : /granary|storage|cellar/.test(building.type) ? 'crate'
+        : /inn|house|school/.test(building.type) ? 'bed' : 'counter';
+      addPart(fixture, Math.min(1, width - 1), Math.min(1, height - 1), 2.1);
+    } else {
+      const badges = manifest.badges || {};
+      if (badges[building.type] !== undefined) {
+        const badge = this.add.sprite(px + Math.floor(width / 2) * TILE + 8,
+          py + height * TILE - 8, 'building_badges', badges[building.type]).setDepth(2.4);
+        this.objects.push(badge);
+      }
+    }
+  }
+
+  drawInteriorResident(building, resident, index) {
+    const [x, y] = building.position || [building.x || 0, building.y || 0];
+    const width = Math.max(1, Number(building.w || 3));
+    const height = Math.max(1, Number(building.h || 3));
+    const cellX = Math.min(width - 1, 1 + (index % Math.max(1, width - 1)));
+    const cellY = Math.min(height - 1, 1 + Math.floor(index / Math.max(1, width - 1)));
+    const sprite = this.add.sprite(x * TILE + cellX * TILE + 8,
+      y * TILE + cellY * TILE + 8, 'characters', this.residentFrame(resident))
+      .setScale(1.15).setDepth(3);
+    sprite.setInteractive({useHandCursor: true});
+    sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
+    if (resident.id === this.playerId) sprite.setTint(0xffe1a8);
+    this.objects.push(sprite);
+    this.drawResidentItems(resident, [x + cellX, y + cellY]);
   }
 
   residentFrame(resident) {
     const role = String(resident.role || '').toLowerCase();
     return (ROLE_VARIANTS[role] ?? 0) * 12;
+  }
+
+  drawResidentItems(resident, pos) {
+    const hand = (resident.held_items || []).find((item) => item.location === 'hand')
+      || (resident.held_items || [])[0];
+    const worn = resident.worn || [];
+    const drawItem = (item, x, y, scale = 0.85) => {
+      const frame = itemIcon(item.kind);
+      if (!frame) return;
+      const sprite = this.add.sprite(x, y, 'items', frame.frame).setScale(scale).setDepth(4);
+      this.objects.push(sprite);
+    };
+    if (hand) drawItem(hand, pos[0] * TILE + 14, pos[1] * TILE + 7);
+    // Keep clothing readable without replacing the role/age body variant.
+    worn.slice(0, 2).forEach((kind, index) => {
+      const hat = /hat|bonnet|hood|cap/.test(kind);
+      drawItem({kind}, pos[0] * TILE + (hat ? 8 : 2 + index * 12),
+               pos[1] * TILE + (hat ? 1 : 12), 0.55);
+    });
   }
 
   distanceTo(a, b) {

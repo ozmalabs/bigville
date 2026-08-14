@@ -368,6 +368,24 @@ def item_icon(kind, spec):
     if seed:
         im.rect(4, 2, 8, 12, accent); im.rect(5, 3, 6, 10, light)
         im.rect(7, 5, 2, 2, PAL["leaf_a"]); im.rect(9, 8, 2, 2, PAL["leaf_a"])
+    elif tool and kind == "pick":
+        # A pick must read as a pick at 1x, not as the generic tool silhouette.
+        for i in range(9):
+            im.rect(6 + i // 3, 7 + i, 2, 2, PAL["trunk"])
+        im.rect(2, 4, 11, 2, PAL["stone_a"]); im.rect(3, 3, 2, 4, PAL["stone_b"])
+        im.rect(11, 3, 2, 4, PAL["stone_b"])
+    elif tool and kind == "axe":
+        for i in range(9): im.rect(4 + i, 5 + i, 2, 2, PAL["trunk"])
+        im.rect(9, 2, 5, 6, PAL["stone_a"]); im.rect(11, 3, 3, 4, PAL["stone_b"])
+    elif tool and kind == "spade":
+        im.rect(7, 2, 2, 10, PAL["trunk"]); im.rect(5, 11, 6, 3, PAL["stone_a"])
+        im.rect(6, 13, 4, 2, PAL["stone_b"])
+    elif tool and kind == "rake":
+        im.rect(7, 3, 2, 11, PAL["trunk"]); im.rect(3, 3, 10, 2, PAL["stone_a"])
+        for x in (3, 6, 9, 12): im.rect(x, 4, 1, 4, PAL["stone_b"])
+    elif tool and kind == "scythe":
+        for i in range(9): im.rect(4 + i, 12 - i // 2, 2, 2, PAL["trunk"])
+        im.rect(9, 2, 2, 8, PAL["stone_a"]); im.rect(10, 2, 4, 2, PAL["stone_b"])
     elif tool:
         im.rect(2, 10, 11, 2, PAL["trunk"]); im.rect(10, 3, 4, 6, PAL["stone_a"])
         im.rect(11, 3, 2, 2, PAL["stone_b"]); im.set(3, 10, ink)
@@ -570,6 +588,66 @@ def build_animation_sheets():
 B = 48
 
 
+# Modular building vocabulary.  These parts are intentionally one terrain
+# cell each, so a house can grow from 2x2 to 6x4 without a new baked sprite.
+BUILDING_PART_NAMES = [
+    "floor", "wall", "roof", "roof_edge", "door", "window", "rug",
+    "counter", "bed", "workbench", "crate", "sign",
+]
+
+
+def building_part(name):
+    im = Img(T, T)
+    if name == "floor":
+        im.rect(0, 0, T, T, PAL["floor_a"])
+        for y in (3, 11): im.rect(0, y, T, 1, PAL["floor_b"])
+    elif name == "wall":
+        im.rect(0, 0, T, T, PAL["brick_a"])
+        im.rect(0, 0, T, 2, PAL["trim"]); im.rect(0, 14, T, 2, PAL["brick_b"])
+    elif name == "roof":
+        im.rect(0, 0, T, T, PAL["roof_red"])
+        for y in (3, 8, 13): im.rect(0, y, T, 1, PAL["roof_brown"])
+        for x in (3, 10): im.rect(x, 1, 1, 13, PAL["roof_brown"])
+    elif name == "roof_edge":
+        im.rect(0, 0, T, T, PAL["roof_red"])
+        im.rect(0, 13, T, 3, PAL["trim"]); im.rect(0, 0, 2, T, PAL["roof_brown"])
+    elif name == "door":
+        im.rect(0, 0, T, T, PAL["floor_a"])
+        im.rect(4, 1, 8, 15, PAL["door"]); im.rect(6, 4, 1, 1, PAL["trim"])
+    elif name == "window":
+        im.rect(0, 0, T, T, PAL["brick_a"])
+        im.rect(2, 2, 12, 10, PAL["win"]); im.rect(7, 2, 1, 10, PAL["trim"])
+        im.rect(2, 6, 12, 1, PAL["trim"])
+    elif name == "rug":
+        im.rect(2, 3, 12, 10, PAL["roof_green"]); im.rect(4, 5, 8, 6, PAL["square_a"])
+    elif name == "counter":
+        im.rect(1, 5, 14, 8, PAL["trunk"]); im.rect(2, 4, 12, 2, PAL["trim"])
+    elif name == "bed":
+        im.rect(2, 2, 12, 12, PAL["trunk"]); im.rect(3, 3, 10, 7, PAL["roof_green"])
+        im.rect(4, 4, 8, 2, PAL["trim"])
+    elif name == "workbench":
+        im.rect(1, 7, 14, 4, PAL["trunk"]); im.rect(3, 11, 2, 4, PAL["door"]); im.rect(11, 11, 2, 4, PAL["door"])
+    elif name == "crate":
+        im.rect(2, 3, 12, 11, PAL["floor_b"]); im.rect(3, 4, 10, 1, PAL["trim"])
+        im.rect(7, 3, 1, 11, PAL["door"])
+    elif name == "sign":
+        im.rect(2, 4, 12, 8, PAL["door"]); im.rect(4, 6, 8, 4, PAL["roof_gold"])
+    return im
+
+
+def building_badge(name):
+    """A tiny type marker layered onto a modular building front."""
+    im = Img(T, T)
+    accent = _name_color(name, [PAL["roof_red"], PAL["roof_blue"], PAL["roof_green"],
+                                PAL["roof_gold"], PAL["roof_purple"], PAL["roof_teal"]])
+    im.rect(2, 3, 12, 10, PAL["door"])
+    im.rect(4, 5, 8, 6, accent)
+    value = sum(ord(c) for c in name)
+    for i in range(3):
+        im.set(5 + (value + i * 3) % 6, 6 + (value + i) % 4, PAL["trim"])
+    return im
+
+
 def _house_base(roof_col):
     im = Img(B, B)
     im.rect(3, B - 3, B - 6, 3, PAL["shadow"])         # ground shadow
@@ -587,6 +665,44 @@ def _house_base(roof_col):
     # windows
     im.rect(11, 25, 6, 6, PAL["win"]); im.rect(31, 25, 6, 6, PAL["win"])
     im.rect(11, 25, 6, 1, PAL["trim"]); im.rect(31, 25, 6, 1, PAL["trim"])
+    return im
+
+
+def _house_interior(name):
+    """Roof-off companion for a 3x3 building sprite.
+
+    The footprint and anchor intentionally match ``_house_base`` exactly.  A
+    scenario can therefore switch roof state without moving the occupants or
+    changing the map geometry.
+    """
+    im = Img(B, B)
+    im.rect(3, B - 3, B - 6, 3, PAL["shadow"])
+    im.rect(4, 4, B - 8, B - 8, PAL["wall_b"])
+    im.rect(7, 7, B - 14, B - 14, PAL["floor_a"])
+    for y in range(8, 40, 4):
+        im.rect(8, y, 32, 1, PAL["floor_b"])
+    # Wall beam and threshold make the open roof read as the same structure.
+    im.rect(4, 5, 40, 3, PAL["trunk"])
+    im.rect(4, 40, 40, 4, PAL["stone_b"])
+    im.rect(22, 36, 4, 8, PAL["door"])
+    # A small, deterministic furniture language differentiates interiors.
+    furniture = {
+        "granary": (PAL["roof_gold"], (9, 11, 12, 7)),
+        "forge": (PAL["stone_b"], (27, 11, 11, 9)),
+        "bakery": (PAL["roof_red"], (8, 27, 14, 6)),
+        "kitchen": (PAL["roof_red"], (27, 27, 12, 6)),
+        "school": (PAL["roof_green"], (9, 12, 30, 4)),
+        "records_office": (PAL["roof_blue"], (9, 11, 8, 18)),
+        "watchhouse": (PAL["roof_blue"], (30, 11, 8, 18)),
+        "dairy": (PAL["trim"], (8, 27, 14, 6)),
+        "mill": (PAL["roof_gold"], (27, 10, 10, 10)),
+    }
+    col, (x, y, w, h) = furniture.get(name, (PAL["floor_b"], (9, 27, 12, 6)))
+    im.rect(x, y, w, h, col)
+    im.rect(x + 2, y + 2, max(1, w - 4), 2, PAL["trim"])
+    if name in {"inn", "house", "townhall", "church"}:
+        im.rect(28, 10, 9, 6, PAL["roof_green"] if name == "house" else PAL["roof_brown"])
+        im.rect(30, 11, 5, 3, PAL["trim"])
     return im
 
 
@@ -704,6 +820,27 @@ def main():
         bindex[name] = i
     write_png(bsheet, os.path.join(HERE, "buildings.png"))
 
+    parts_sheet = Img(T * len(BUILDING_PART_NAMES), T)
+    part_index = {}
+    for i, name in enumerate(BUILDING_PART_NAMES):
+        parts_sheet.blit(building_part(name), i * T, 0)
+        part_index[name] = i
+    write_png(parts_sheet, os.path.join(HERE, "building_parts.png"))
+
+    badges_sheet = Img(T * len(blds), T)
+    badge_index = {}
+    for i, (name, _im) in enumerate(blds):
+        badges_sheet.blit(building_badge(name), i * T, 0)
+        badge_index[name] = i
+    write_png(badges_sheet, os.path.join(HERE, "building_badges.png"))
+
+    # Roof-off interiors use the same ordered frame list and the same 48px
+    # footprint as the roof-on sheet.
+    isheet_buildings = Img(B * len(blds), B)
+    for i, (name, _im) in enumerate(blds):
+        isheet_buildings.blit(_house_interior(name), i * B, 0)
+    write_png(isheet_buildings, os.path.join(HERE, "building_interiors.png"))
+
     # Every canonical item gets a stable icon coordinate.  The atlas is a grid
     # so clients can request icons by name without requiring one file per item.
     isheet, iindex, icols, irows = build_item_sheet()
@@ -716,9 +853,17 @@ def main():
     write_png(asheet, os.path.join(HERE, "actions.png"))
 
     manifest = {
-        "version": "2.0.0",
+        "version": "3.0.0",
+        "design": {
+            "logical_tile": 16,
+            "standard_building_footprint": [3, 3],
+            "viewport_cells": [52, 40],
+            "zoom_range": [0.75, 3.0],
+            "anchor": "cell_center_feet_or_building_center",
+            "nearest_neighbour": True,
+        },
         "palette": "warm cozy (Stardew-esque): greens/browns/soft blues",
-        "style_reference": "pixel_style_reference.png",
+        "style_reference": "pixel_art_art_direction.png",
         "tint_note": "characters.png bodies are drawn LIGHT; recolour at runtime "
                      "by MULTIPLY-compositing the resident's class/role colour.",
         "tileset": {
@@ -735,8 +880,14 @@ def main():
         },
         "buildings": {
             "file": "buildings.png", "frame": B, "count": len(blds),
+            "interior_file": "building_interiors.png",
+            "roof_states": {"on": "buildings.png", "off": "building_interiors.png"},
             "layout": "horizontal strip; frame index = column",
             "sprites": bindex,
+            "parts_file": "building_parts.png", "parts_frame": T,
+            "parts": part_index,
+            "badges_file": "building_badges.png", "badges_frame": T,
+            "badges": badge_index,
         },
         "items": {
             "file": "items.png", "frame": T, "cols": icols, "rows": irows,

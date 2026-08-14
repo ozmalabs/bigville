@@ -1,7 +1,24 @@
 {
-  "version": "2.0.0",
+  "version": "3.0.0",
+  "design": {
+    "logical_tile": 16,
+    "standard_building_footprint": [
+      3,
+      3
+    ],
+    "viewport_cells": [
+      52,
+      40
+    ],
+    "zoom_range": [
+      0.75,
+      3.0
+    ],
+    "anchor": "cell_center_feet_or_building_center",
+    "nearest_neighbour": true
+  },
   "palette": "warm cozy (Stardew-esque): greens/browns/soft blues",
-  "style_reference": "pixel_style_reference.png",
+  "style_reference": "pixel_art_art_direction.png",
   "tint_note": "characters.png bodies are drawn LIGHT; recolour at runtime by MULTIPLY-compositing the resident's class/role colour.",
   "tileset": {
     "file": "tileset.png",
@@ -66,8 +83,69 @@
     "file": "buildings.png",
     "frame": 48,
     "count": 36,
+    "interior_file": "building_interiors.png",
+    "roof_states": {
+      "on": "buildings.png",
+      "off": "building_interiors.png"
+    },
     "layout": "horizontal strip; frame index = column",
     "sprites": {
+      "house": 0,
+      "townhall": 1,
+      "church": 2,
+      "bank": 3,
+      "market": 4,
+      "press": 5,
+      "noticeboard": 6,
+      "school": 7,
+      "surgery": 8,
+      "inn": 9,
+      "granary": 10,
+      "root_cellar": 11,
+      "wellhouse": 12,
+      "latrine": 13,
+      "compost_yard": 14,
+      "smokehouse": 15,
+      "records_office": 16,
+      "watchhouse": 17,
+      "kitchen": 18,
+      "dairy": 19,
+      "wharf": 20,
+      "shambles": 21,
+      "dyehouse": 22,
+      "cooperage": 23,
+      "woodshop": 24,
+      "sawpit": 25,
+      "tannery": 26,
+      "cobbler": 27,
+      "tailorshop": 28,
+      "weavery": 29,
+      "forge": 30,
+      "bakery": 31,
+      "fishmonger": 32,
+      "mill": 33,
+      "printshop": 34,
+      "scriptorium": 35
+    },
+    "parts_file": "building_parts.png",
+    "parts_frame": 16,
+    "parts": {
+      "floor": 0,
+      "wall": 1,
+      "roof": 2,
+      "roof_edge": 3,
+      "door": 4,
+      "window": 5,
+      "rug": 6,
+      "counter": 7,
+      "bed": 8,
+      "workbench": 9,
+      "crate": 10,
+      "sign": 11
+    },
+    "badges_file": "building_badges.png",
+    "badges_frame": 16,
+    "badges": {
       "house": 0,
       "townhall": 1,
       "church": 2,

@@ -793,6 +793,23 @@ def test_extreme_overweight_acceptance_enters_the_hand_then_falls_out():
     assert not w.actor_turn_state("Bearer")["major_action_used"], "acceptance is still free"
 
 
+def test_picked_up_tool_is_a_visible_carried_item_instance():
+    w = World()
+    w.add_actor("Miner", role="quarrier", home_cell=(1, 1))
+    pick = w.eng.add_node("ToolItem", {
+        "kind": "pick", "weight": 2.0, "quality": 1.0,
+        "condition": 1.0, "broken": 0.0,
+    })
+    w.eng.add_edge_unchecked(w._town, "has_tool_item", pick)
+    assert w.pick_up("Miner", pick)
+    assert w.held_items("Miner") == [{
+        "id": int(pick.value), "kind": "pick", "quantity": 1.0,
+        "location": "hand", "condition": 1.0,
+    }]
+    resident = next(r for r in w.export_state()["residents"] if r["id"] == "Miner")
+    assert resident["held_items"][0]["kind"] == "pick"
+
+
 def test_soup_consumption_requires_held_serving_equipment():
     w = World(); w.add_actor("Tom", role="hand", home_cell=(1, 1)); w.add_actor("Cook", role="cook", home_cell=(1, 1)); w.set_stock("gruel", 1)
     w.add_shop("kitchen", (1, 1), input_kind="grain", output_kind="gruel", price=1)

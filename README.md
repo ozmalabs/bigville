@@ -60,6 +60,12 @@ a Chromium-compatible browser.
 Occupied buildings are rendered as open-roof rooms, so residents and their
 interiors remain visible while the village continues to run.
 
+The art scale and asset contract is documented in
+[`docs/GAME_ART_DESIGN.md`](docs/GAME_ART_DESIGN.md). The item atlas is
+generated from every entry in `domains/bigville_entities.ITEMS`; the inspector
+shows bulk stock, discrete carried objects, and worn clothing. A held tool is
+rendered on the resident, so a resident carrying a pick visibly has a pick.
+
 ## Cognition backends
 
 `DeterministicBackend` is the cheap, repeatable NPC backend. It maintains

@@ -20,5 +20,18 @@ def test_game_assets_are_present():
     for filename in ("index.html", "game.js", "game.css", "assets/tileset.png",
                          "assets/buildings.png", "assets/character_variants.png",
                          "assets/items.png", "assets/actions.png", "assets/manifest.json",
-                         "assets/open_room.png"):
-        assert (GAME_ROOT / filename).is_file(), filename
+                         "assets/building_interiors.png", "assets/building_parts.png",
+                         "assets/building_badges.png"):
+            assert (GAME_ROOT / filename).is_file(), filename
+
+
+def test_asset_manifest_covers_entity_items_and_modular_buildings():
+    import json
+    from domains import bigville_entities as entities
+    from bigville.server import GAME_ROOT
+
+    manifest = json.loads((GAME_ROOT / "assets/manifest.json").read_text())
+    assert set(entities.ITEMS) <= set(manifest["items"]["icons"])
+    assert set(entities.BUILDINGS) <= set(manifest["buildings"]["sprites"])
+    assert {"floor", "wall", "roof", "door"} <= set(manifest["buildings"]["parts"])
+    assert manifest["design"]["logical_tile"] == 16

@@ -210,6 +210,8 @@ class BigvilleGame:
             "hunger": attrs.get("hunger", 0.0),
             "energy": self.world.energy(actor),
             "inventory": self.world.inventory(actor),
+            "held_items": self.world.held_items(actor),
+            "worn": self.world.worn(actor),
             "known_references": sorted(self.world.known_references(actor)),
             "turn_state": self.world.actor_turn_state(actor),
             "nearby_residents": nearby_residents,

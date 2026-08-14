@@ -1097,9 +1097,15 @@ class BigvilleWorld:
 
     def _held_discrete_weight(self, actor):
         node = self._actor(actor)
-        return sum(self._node_item_weight(item)
-                   for edge in ("holds_in_hand", "holds_tableware")
-                   for item in self.eng.neighbours(node, edge))
+        seen = set()
+        total = 0.0
+        for edge in ("holds_in_hand", "holds_tableware"):
+            for item in self.eng.neighbours(node, edge):
+                if item in seen:
+                    continue
+                seen.add(item)
+                total += self._node_item_weight(item)
+        return total
 
     def carried_weight(self, actor):
         """The physical weight currently borne by a resident."""
@@ -2062,6 +2068,34 @@ class BigvilleWorld:
         _, inners = self._inventory_container(actor)
         return {kind: self.inventory_qty(actor, kind) for kind in inners
                 if self.inventory_qty(actor, kind) > 0.0}
+
+    def held_items(self, actor):
+        """Return discrete physical items currently carried by an actor.
+
+        Bulk stock remains exposed by :meth:`inventory`; this read-off covers
+        tools, tableware, and other individual objects held in a hand or on a
+        carrier.  It deliberately returns instance data so a renderer can
+        show the actual pick, not merely the abstract fact that picks exist.
+        """
+        node = self._actor(actor)
+        result = []
+        seen = set()
+        for edge, location in (("holds_in_hand", "hand"),
+                               ("holds_tableware", "tableware"),
+                               ("holds", "carried")):
+            for item in self.eng.neighbours(node, edge):
+                if item in seen:
+                    continue
+                seen.add(item)
+                attrs = dict(self.eng.node(item)["attrs"])
+                result.append({
+                    "id": int(item.value),
+                    "kind": str(attrs.get("kind", "item")),
+                    "quantity": 1.0,
+                    "location": location,
+                    "condition": attrs.get("condition", 1.0),
+                })
+        return result
 
     def _move_stock_to_inventory(self, actor, kind, amount):
         amount = float(amount)
@@ -4642,6 +4676,8 @@ class BigvilleWorld:
                            "home": position, "x": position[0] if position else 0, "y": position[1] if position else 0,
                            "household": a.get("household", ""),
                            "inventory": self.inventory(name),
+                           "held_items": self.held_items(name),
+                           "worn": self.worn(name),
                            "references": sorted(self.known_references(name)),
                            "journal": (dict(self.eng.node(self._journals[name][-1])["attrs"])
                                        if self._journals.get(name) else None)})
@@ -4649,8 +4685,14 @@ class BigvilleWorld:
         for kind in sorted(self._places):
             position = self.building_position(kind)
             x, y = position if position else (0, 0)
+            spec = E.BUILDINGS.get(kind, {})
+            footprint = spec.get("footprint", spec.get("size", (3, 3)))
+            if isinstance(footprint, (int, float)):
+                footprint = (int(footprint), int(footprint))
+            footprint = tuple(footprint) if len(footprint) == 2 else (3, 3)
             buildings.append({"id": kind, "type": kind, "position": position,
-                              "x": x, "y": y, "w": 3, "h": 3, "name": kind.title()})
+                              "x": x, "y": y, "w": int(footprint[0]), "h": int(footprint[1]),
+                              "name": kind.title()})
         events = []
         for key, node in list(self._events.items())[-event_tail if event_tail else None:]:
             events.append({"id": key, **dict(self.eng.node(node)["attrs"])})

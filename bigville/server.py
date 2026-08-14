@@ -42,6 +42,8 @@ class GameService:
                 "turn_state": self.game.world.actor_turn_state(actor),
                 "position": self.game.world.actor_position(actor),
                 "inventory": self.game.world.inventory(actor),
+                "held_items": self.game.world.held_items(actor),
+                "worn": self.game.world.worn(actor),
             }
         return snapshot
 
