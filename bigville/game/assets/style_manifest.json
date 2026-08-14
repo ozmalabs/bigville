@@ -3,6 +3,7 @@
   "terrain_source": "style_terrain_atlas_source.png",
   "building_source": "style_building_atlas_source.png",
   "cutaway_source": "style_cutaway_atlas_source.png",
+  "character_source": "style_character_walk_atlas_source.png",
   "tiles": {
     "file": "style_tiles.png",
     "frame": 16,
@@ -258,6 +259,158 @@
       "mill": 33,
       "printshop": 34,
       "scriptorium": 35
+    }
+  },
+  "characters": {
+    "file": "style_characters.png",
+    "frame": 32,
+    "cols": 3,
+    "rows_per_variant": 4,
+    "variants": {
+      "adult": {
+        "index": 0,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "child": {
+        "index": 1,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "elder": {
+        "index": 2,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "farmer": {
+        "index": 3,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "smith": {
+        "index": 4,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "cook": {
+        "index": 5,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "clerk": {
+        "index": 6,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "constable": {
+        "index": 7,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "councillor": {
+        "index": 8,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "merchant": {
+        "index": 9,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "teacher": {
+        "index": 10,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "doctor": {
+        "index": 11,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "shepherd": {
+        "index": 12,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "builder": {
+        "index": 13,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "fisher": {
+        "index": 14,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "craftsperson": {
+        "index": 15,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      }
     }
   }
 }

@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "bigville" / "game" / "assets"
 TILE = 16
 BUILDING = 96
+CHARACTER = 32
 
 MAGENTA = (255, 0, 255)
 
@@ -267,22 +268,67 @@ def build_cutaways(manifest: dict, cutaway_sheet: Image.Image) -> dict:
     return sprites
 
 
+CHARACTER_COLORS = [
+    (116, 145, 73), (205, 151, 55), (119, 101, 157), (104, 151, 75),
+    (105, 113, 124), (183, 91, 70), (85, 119, 168), (61, 91, 145),
+    (180, 139, 54), (47, 139, 131), (126, 149, 76), (120, 125, 139),
+    (145, 111, 77), (177, 91, 69), (62, 121, 145), (137, 99, 152),
+]
+
+
+def tint_clothes(image: Image.Image, color: tuple[int, int, int]) -> Image.Image:
+    """Recolour the vest area while leaving face, hair, hands and boots intact."""
+    image = image.copy().convert("RGBA")
+    pixels = image.load()
+    for y in range(10, 24):
+        for x in range(image.width):
+            r, g, b, a = pixels[x, y]
+            if not a or not (g >= r * 0.82 and g >= b * 1.03):
+                continue
+            luminance = max(45, (r + g + b) // 3)
+            scale = luminance / max(1, sum(color) // 3)
+            target = tuple(max(0, min(255, round(channel * scale))) for channel in color)
+            pixels[x, y] = tuple(round(original * 0.25 + replacement * 0.75)
+                                 for original, replacement in zip((r, g, b), target)) + (a,)
+    return image
+
+
+def build_characters(manifest: dict, character_sheet: Image.Image) -> None:
+    """Build readable 32px walk cycles for every existing role/age variant."""
+    cells = [grid_cell(character_sheet, 3, 4, i) for i in range(12)]
+    base_frames = [fit_sprite(cell, (CHARACTER, CHARACTER), pad=1, bottom=True)
+                   for cell in cells]
+    names = list(manifest["character_variants"]["variants"])
+    sheet = Image.new("RGBA", (CHARACTER * 3,
+                                CHARACTER * 4 * len(names)), (0, 0, 0, 0))
+    for variant_index, _name in enumerate(names):
+        for i, frame in enumerate(base_frames):
+            frame = tint_clothes(frame, CHARACTER_COLORS[variant_index % len(CHARACTER_COLORS)])
+            x = (i % 3) * CHARACTER
+            y = (variant_index * 4 + i // 3) * CHARACTER
+            sheet.alpha_composite(frame, (x, y))
+    sheet.save(ASSETS / "style_characters.png")
+
+
 def main() -> None:
     manifest = json.loads((ASSETS / "manifest.json").read_text())
     terrain = Image.open(ASSETS / "style_terrain_atlas_source.png")
     buildings = Image.open(ASSETS / "style_building_atlas_source.png")
     cutaways = Image.open(ASSETS / "style_cutaway_atlas_source.png")
+    characters = Image.open(ASSETS / "style_character_walk_atlas_source.png")
     old_tiles = Image.open(ASSETS / "tileset.png")
     reference = Image.open(ASSETS / "style_source_village.png").convert("RGB")
     path_variants = build_tiles(manifest, terrain, reference, old_tiles)
     prop_sprites = build_props(terrain)
     sprites = build_buildings(manifest, buildings)
     cutaway_sprites = build_cutaways(manifest, cutaways)
+    build_characters(manifest, characters)
     out_manifest = {
         "source": "style_source_village.png",
         "terrain_source": "style_terrain_atlas_source.png",
         "building_source": "style_building_atlas_source.png",
         "cutaway_source": "style_cutaway_atlas_source.png",
+        "character_source": "style_character_walk_atlas_source.png",
         "tiles": {"file": "style_tiles.png", "frame": TILE,
                   "tiles": manifest["tileset"]["tiles"]},
         "path_variants": path_variants,
@@ -293,6 +339,9 @@ def main() -> None:
                       "sprites": sprites},
         "cutaways": {"file": "style_cutaways.png", "frame": BUILDING,
                      "sprites": cutaway_sprites},
+        "characters": {"file": "style_characters.png", "frame": CHARACTER,
+                       "cols": 3, "rows_per_variant": 4,
+                       "variants": manifest["character_variants"]["variants"]},
     }
     (ASSETS / "style_manifest.json").write_text(json.dumps(out_manifest, indent=2) + "\n")
     print("wrote style_tiles.png style_props.png style_large_props.png style_buildings.png style_manifest.json")

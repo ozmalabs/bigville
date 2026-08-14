@@ -77,7 +77,9 @@ but it is not drawn as a backdrop. `tools/build_style_assets.py` turns the
 reference language into assembled terrain, transitions, props, and building
 facades. It also includes matching roof-off cutaway facades with furnished
 interiors, so scenarios can use different maps with the same cosy visual style
-without falling back to a separate interior art language.
+without falling back to a separate interior art language. Residents use a
+32px directional walk-cycle atlas with idle, step-A, and step-B frames, so
+movement is rendered as a short physical walk between simulation cells.
 
 ## Cognition backends
 

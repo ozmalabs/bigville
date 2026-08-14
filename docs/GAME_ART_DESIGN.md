@@ -87,4 +87,7 @@ door, and exterior trim while exposing the furnished room. This keeps the
 original visual language while allowing every scenario to provide a different
 map and building arrangement. `stardew_like_art_direction.png`,
 `pixel_art_art_direction.png`, and `terrain_art_direction.png` remain useful
-art-direction studies.
+art-direction studies. Resident sprites use the same rule: the generated
+`style_characters.png` atlas contains 32px full-body directional idle and walk
+frames, while role/age variants retain their existing manifest indices and
+clothing palette cues.

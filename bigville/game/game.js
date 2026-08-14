@@ -212,7 +212,7 @@ class BigvilleScene extends Phaser.Scene {
     this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('items', 'assets/items.png', {frameWidth: TILE, frameHeight: TILE});
-    this.load.spritesheet('characters', 'assets/character_variants.png', {frameWidth: 16, frameHeight: 16});
+    this.load.spritesheet('characters', 'assets/style_characters.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('actions', 'assets/actions.png', {frameWidth: 16, frameHeight: 16});
   }
 
@@ -278,20 +278,29 @@ class BigvilleScene extends Phaser.Scene {
     ];
     for (const resident of visibleResidents) {
       const pos = resident.position || [0, 0];
-      const frame = this.residentFrame(resident);
-      const sprite = this.add.sprite(this.cellX(pos[0]), this.cellY(pos[1]), 'characters', frame)
-        .setScale(DISPLAY_SCALE).setDepth(this.depthAt(pos[0], pos[1], 30));
+      const previous = this.previousResidents?.[resident.id];
+      const previousPosition = previous?.position || pos;
+      const direction = this.residentDirection(previousPosition, pos);
+      const frame = this.residentFrame(resident, 0, direction);
+      const moving = Number(previousPosition[0]) !== Number(pos[0]) ||
+        Number(previousPosition[1]) !== Number(pos[1]);
+      const sprite = this.add.sprite(this.cellX(previousPosition[0]), this.cellY(previousPosition[1]), 'characters', frame)
+        .setScale(1).setDepth(this.depthAt(pos[0], pos[1], 30));
       sprite.setInteractive({useHandCursor: true});
       sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
       if (resident.id === snapshot.player) sprite.setScale(DISPLAY_SCALE * 1.45).setTint(0xffe1a8);
       this.objects.push(sprite);
       this.drawResidentItems(resident, pos);
+      if (moving) this.animateWalking(sprite, resident, direction, pos);
       if (resident.id === snapshot.player && !this.hasCentered) {
         this.cameras.main.centerOn(this.cellX(pos[0]), this.cellY(pos[1]));
         this.hasCentered = true;
       }
     }
     this.cameras.main.setBounds(0, 0, width, height);
+    this.previousResidents = Object.fromEntries(allResidents.map((resident) => [
+      resident.id, {position: resident.position || [resident.x || 0, resident.y || 0]},
+    ]));
   }
 
   cellX(x) { return Number(x) * TILE * DISPLAY_SCALE + (TILE * DISPLAY_SCALE) / 2; }
@@ -309,6 +318,36 @@ class BigvilleScene extends Phaser.Scene {
     $('zoom-reset').textContent = `${Math.round(DEFAULT_ZOOM * 100)}%`;
     this.hasCentered = false;
     this.drawState(state);
+  }
+
+  residentDirection(from, to) {
+    const dx = Number(to[0]) - Number(from[0]);
+    const dy = Number(to[1]) - Number(from[1]);
+    if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) return dx < 0 ? 2 : 3;
+    if (dy !== 0) return dy < 0 ? 1 : 0;
+    return 0;
+  }
+
+  animateWalking(sprite, resident, direction, position) {
+    const start = sprite.getData('walkTween') || 0;
+    const base = this.residentFrame(resident, 0, direction) -
+      (this.residentFrame(resident, 0, direction) % 3);
+    const frames = [base, base + 1, base, base + 2];
+    const targetX = this.cellX(position[0]);
+    const targetY = this.cellY(position[1]);
+    const distance = Math.max(1, Math.abs(targetX - sprite.x) + Math.abs(targetY - sprite.y));
+    const duration = Math.max(220, Math.min(620, 180 + distance * 2));
+    const tween = this.tweens.add({
+      targets: sprite, x: targetX, y: targetY, duration, ease: 'Linear',
+      onUpdate: (t) => {
+        const phase = Math.min(frames.length - 1,
+          Math.floor(t.progress * frames.length));
+        sprite.setFrame(frames[phase]);
+      },
+      onComplete: () => sprite.setFrame(base),
+    });
+    sprite.setData('walkTween', start + 1);
+    return tween;
   }
 
   terrainFrame(tile, x, y, grid) {
@@ -547,7 +586,7 @@ class BigvilleScene extends Phaser.Scene {
     const cellY = Math.min(height - 1, 1 + Math.floor(index / Math.max(1, width - 1)));
     const sprite = this.add.sprite(this.cellX(x + cellX), this.cellY(y + cellY) - 8 * DISPLAY_SCALE,
       'characters', this.residentFrame(resident))
-      .setScale(DISPLAY_SCALE * 1.15).setDepth(this.depthAt(x + cellX, y + cellY, 30));
+      .setScale(1.15).setDepth(this.depthAt(x + cellX, y + cellY, 30));
     sprite.setInteractive({useHandCursor: true});
     sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
     if (resident.id === this.playerId) sprite.setTint(0xffe1a8);
@@ -555,9 +594,9 @@ class BigvilleScene extends Phaser.Scene {
     this.drawResidentItems(resident, [x + cellX, y + cellY]);
   }
 
-  residentFrame(resident) {
+  residentFrame(resident, frame = 0, direction = 0) {
     const role = String(resident.role || '').toLowerCase();
-    return (ROLE_VARIANTS[role] ?? 0) * 12;
+    return (ROLE_VARIANTS[role] ?? 0) * 12 + direction * 3 + frame;
   }
 
   drawResidentItems(resident, pos) {
