@@ -195,6 +195,7 @@ class BigvilleScene extends Phaser.Scene {
   preload() {
     this.load.json('asset_manifest', 'assets/manifest.json');
     this.load.spritesheet('tileset', 'assets/tileset.png', {frameWidth: TILE, frameHeight: TILE});
+    this.load.spritesheet('props', 'assets/props.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('building_interiors', 'assets/building_interiors.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
@@ -242,6 +243,7 @@ class BigvilleScene extends Phaser.Scene {
     const width = map.width * TILE;
     const height = map.height * TILE;
     this.drawCanonicalMap(map);
+    this.drawTerrainProps(map);
     const allResidents = snapshot.world.residents || [];
     this.playerId = snapshot.player;
     const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
@@ -290,15 +292,86 @@ class BigvilleScene extends Phaser.Scene {
     this.drawState(state);
   }
 
+  terrainFrame(tile, x, y, grid) {
+    const named = {0: 'grass', 1: 'path', 2: 'wall', 3: 'floor', 4: 'square',
+      5: 'tree', 6: 'water', 7: 'grass'};
+    const transitions = this.assetManifest?.terrain?.transition_masks || {};
+    const same = (nx, ny, value) => grid[ny]?.[nx] === value;
+    const mask = (value) => (same(x, y - 1, value) ? 1 : 0) |
+      (same(x + 1, y, value) ? 2 : 0) |
+      (same(x, y + 1, value) ? 4 : 0) |
+      (same(x - 1, y, value) ? 8 : 0);
+    if (tile === 1) {
+      const frame = transitions.path?.[String(mask(1))];
+      if (frame !== undefined) return frame;
+    } else if (tile === 6) {
+      const frame = transitions.water?.[String(mask(6))];
+      if (frame !== undefined) return frame;
+    }
+    const tileNames = this.assetManifest?.tileset?.tiles || {};
+    return tileNames[named[tile]] ?? TILE_FRAMES[tile] ?? TILE_FRAMES[0];
+  }
+
   drawCanonicalMap(map) {
     const grid = map.grid || [];
     for (let y = 0; y < grid.length; y++) {
       for (let x = 0; x < (grid[y] || []).length; x++) {
         const tile = grid[y][x];
-        const frame = TILE_FRAMES[tile] ?? TILE_FRAMES[0];
+        const frame = this.terrainFrame(tile, x, y, grid);
         const sprite = this.add.sprite(x * TILE + 8, y * TILE + 8, 'tileset', frame)
           .setDepth(0);
         this.objects.push(sprite);
+      }
+    }
+  }
+
+  drawTerrainProps(map) {
+    const grid = map.grid || [];
+    const props = this.assetManifest?.terrain?.props || {};
+    const buildings = map.buildings || [];
+    const occupied = new Set();
+    for (const building of buildings) {
+      const [bx, by] = building.position || [building.x || 0, building.y || 0];
+      const width = Math.max(1, Number(building.w || 3));
+      const height = Math.max(1, Number(building.h || 3));
+      for (let y = by; y < by + height; y++) {
+        for (let x = bx; x < bx + width; x++) occupied.add(`${x},${y}`);
+      }
+    }
+    // A stable hash makes the village feel lived-in while keeping screenshots,
+    // replays, and alternate clients deterministic. Props are overlays, never
+    // geography: the exported grid remains the sole source of collision data.
+    const hash = (x, y) => Math.abs((x * 92837111 + y * 689287499 +
+      (map.seed || 0) * 31) % 1000003);
+    const addProp = (name, x, y, depth = 1.1) => {
+      const frame = props[name];
+      if (frame === undefined) return;
+      const sprite = this.add.sprite(x * TILE + 8, y * TILE + 8, 'props', frame).setDepth(depth);
+      this.objects.push(sprite);
+    };
+    for (let y = 0; y < grid.length; y++) {
+      for (let x = 0; x < (grid[y] || []).length; x++) {
+        const tile = grid[y][x];
+        if (occupied.has(`${x},${y}`)) continue;
+        const roll = hash(x, y) % 1000;
+        if (tile === 0) {
+          if (roll < 20) addProp('bush', x, y);
+          else if (roll < 50) addProp('flower_clump', x, y);
+          else if (roll < 80) addProp('grass_tuft', x, y);
+          else if (roll < 92) addProp('stone', x, y);
+          else if (roll < 98) addProp('mushroom', x, y);
+          else if (roll === 227) addProp('log', x, y);
+          else if (roll === 311) addProp('stump', x, y);
+        } else if (tile === 6 && roll % 5 === 0) {
+          const shoreline = [
+            grid[y - 1]?.[x], grid[y]?.[x + 1], grid[y + 1]?.[x], grid[y]?.[x - 1]
+          ].some(value => value !== 6);
+          if (shoreline) addProp('reed', x, y);
+        } else if (tile === 1 && roll === 19) {
+          // An occasional roadside barrel/bench breaks up the long lattice
+          // without making the walkable route ambiguous.
+          addProp(roll % 2 ? 'barrel' : 'bench', x, y, 1.15);
+        }
       }
     }
   }

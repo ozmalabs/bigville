@@ -4701,9 +4701,11 @@ class BigvilleWorld:
                       for node in self._utterances.values()]
         map_width = len(self._map_grid[0]) if self._map_grid else 0
         map_height = len(self._map_grid or [])
+        map_seed = self.eng.node(self._map_node)["attrs"].get("seed", 0.0) if self._map_node else 0.0
         return {"schema": "townview/1", "clock": dict(self.calendar()),
                 "weather": {k: town.get(k) for k in ("rain", "temperature", "firewood_demand")},
                 "map": {"width": map_width, "height": map_height, "w": map_width, "h": map_height,
+                        "seed": map_seed,
                         "grid": self._map_grid, "tiles": self._map_grid,
                         "buildings": buildings},
                 "residents": actors,

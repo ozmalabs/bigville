@@ -135,10 +135,17 @@ def _speckle(img, base, spA, spB, seed):
         for x in range(T):
             r = (r * 1103515245 + 12345) & 0x7fffffff
             v = r % 100
-            if v < 10:
+            if v < 8:
                 img.set(x, y, PAL[spA])
-            elif v < 16:
+            elif v < 14:
                 img.set(x, y, PAL[spB])
+    # A few little clustered blades make a meadow tile feel hand-placed rather
+    # than dithered. The fixed seed keeps every generated map reproducible.
+    for i in range(4):
+        x = (seed * 5 + i * 7) % (T - 2) + 1
+        y = (seed * 3 + i * 5) % (T - 3) + 2
+        img.set(x, y, PAL[spA])
+        img.set(x + 1, y - 1, PAL[spA])
 
 
 def tile_grass(v=0):
@@ -150,6 +157,8 @@ def tile_grass(v=0):
 def tile_path():
     im = Img(T, T)
     _speckle(im, "path_a", "path_b", "dirt_a", 31)
+    for x, y in ((2, 3), (12, 6), (6, 12), (14, 13)):
+        im.set(x, y, PAL["dirt_b"])
     return im
 
 
@@ -343,6 +352,86 @@ EXTRA_TILES = [
     ("cabbage", tile_variant(tile_crop, "leaf_b", 17)),
 ]
 TILES.extend(EXTRA_TILES)
+
+
+def _path_transition(mask):
+    """A path tile with organic grass edges selected by cardinal neighbours."""
+    im = tile_grass(mask % 3)
+    im.rect(5, 5, 6, 6, PAL["path_a"])
+    if mask & 1: im.rect(5, 0, 6, 7, PAL["path_a"])
+    if mask & 2: im.rect(9, 5, 7, 6, PAL["path_a"])
+    if mask & 4: im.rect(5, 9, 6, 7, PAL["path_a"])
+    if mask & 8: im.rect(0, 5, 7, 6, PAL["path_a"])
+    # Soft, irregular verge pixels break the geometric edge while retaining a
+    # clear walkable centre and a readable corner/branch silhouette.
+    for i in range(7):
+        x = (mask * 5 + i * 3) % 16
+        y = (mask * 7 + i * 5) % 16
+        if im.px[(y * T + x) * 4 + 1] > 100:
+            im.set(x, y, PAL["dirt_b"])
+            if x + 1 < T and y % 2 == 0:
+                im.set(x + 1, y, PAL["path_b"])
+    return im
+
+
+def _water_transition(mask):
+    """A water cell whose shoreline follows the surrounding water cells."""
+    im = tile_grass((mask + 1) % 3)
+    im.rect(5, 5, 6, 6, PAL["water_a"])
+    if mask & 1: im.rect(5, 0, 6, 7, PAL["water_a"])
+    if mask & 2: im.rect(9, 5, 7, 6, PAL["water_a"])
+    if mask & 4: im.rect(5, 9, 6, 7, PAL["water_a"])
+    if mask & 8: im.rect(0, 5, 7, 6, PAL["water_a"])
+    # A pale shoreline highlight makes the water/grass boundary legible at
+    # overview scale and gives reeds a natural edge to sit against.
+    for x in range(2, 15, 6):
+        im.set(x, 5 + (mask % 3), PAL["water_b"])
+    return im
+
+
+for _mask in range(16):
+    TILES.append((f"path_transition_{_mask:02d}", _path_transition(_mask)))
+for _mask in range(16):
+    TILES.append((f"water_transition_{_mask:02d}", _water_transition(_mask)))
+
+
+PROP_NAMES = ["flower_clump", "bush", "grass_tuft", "stone", "mushroom", "reed", "log", "barrel", "bench", "stump"]
+
+
+def prop_sprite(name):
+    im = Img(T, T)
+    if name == "flower_clump":
+        for x, y, col in ((4, 7, "flower_y"), (8, 4, "flower_r"), (12, 7, "petal")):
+            im.rect(x, y + 2, 2, 7, PAL["leaf_a"])
+            im.set(x, y, PAL[col]); im.rect(x - 1, y + 1, 4, 2, PAL[col])
+            im.set(x + 1, y + 2, PAL["petal"])
+    elif name == "bush":
+        for cx, cy, rr, col in ((5, 9, 4, "leaf_a"), (10, 8, 5, "leaf_b"), (13, 10, 3, "leaf_a")):
+            for yy in range(cy - rr, cy + rr + 1):
+                for xx in range(cx - rr, cx + rr + 1):
+                    if (xx - cx) ** 2 + (yy - cy) ** 2 <= rr * rr:
+                        im.set(xx, yy, PAL[col])
+        im.rect(4, 12, 10, 2, PAL["leaf_a"])
+    elif name == "grass_tuft":
+        for x in (4, 7, 10, 13):
+            im.rect(x, 7 - (x % 3), 1, 8, PAL["leaf_a"]); im.set(x + 1, 6, PAL["leaf_b"])
+    elif name == "stone":
+        im.rect(2, 10, 12, 4, PAL["stone_b"]); im.rect(4, 7, 8, 4, PAL["stone_a"])
+        im.rect(6, 7, 4, 1, PAL["trim"])
+    elif name == "mushroom":
+        im.rect(7, 8, 2, 6, PAL["trim"]); im.rect(4, 6, 8, 3, PAL["flower_r"]); im.set(6, 6, PAL["petal"]); im.set(10, 7, PAL["petal"])
+    elif name == "reed":
+        for x in (4, 7, 10, 13):
+            im.rect(x, 3 + x % 3, 1, 12, PAL["leaf_a"]); im.set(x + 1, 3 + x % 3, PAL["leaf_b"])
+    elif name == "log":
+        im.rect(2, 9, 12, 4, PAL["trunk"]); im.rect(3, 8, 10, 1, PAL["floor_b"]); im.set(3, 10, PAL["trim"])
+    elif name == "barrel":
+        im.rect(5, 4, 7, 10, PAL["floor_b"]); im.rect(4, 5, 9, 2, PAL["trunk"]); im.rect(4, 11, 9, 2, PAL["trunk"])
+    elif name == "bench":
+        im.rect(2, 7, 12, 3, PAL["floor_b"]); im.rect(3, 10, 2, 5, PAL["trunk"]); im.rect(11, 10, 2, 5, PAL["trunk"])
+    elif name == "stump":
+        im.rect(5, 7, 7, 8, PAL["trunk"]); im.rect(4, 5, 9, 4, PAL["floor_b"]); im.rect(7, 6, 3, 1, PAL["door"])
+    return im
 
 
 # ---------------------------------------------------------------------------
@@ -804,6 +893,16 @@ def main():
         tindex[name] = i
     write_png(tsheet, os.path.join(HERE, "tileset.png"))
 
+    # Transparent life props are kept in their own atlas so terrain remains
+    # data-driven: a scenario can place or omit them without repainting the
+    # underlying map tiles.
+    psheet = Img(T * len(PROP_NAMES), T)
+    pindex = {}
+    for i, name in enumerate(PROP_NAMES):
+        psheet.blit(prop_sprite(name), i * T, 0)
+        pindex[name] = i
+    write_png(psheet, os.path.join(HERE, "props.png"))
+
     # character sheet: cols=frames(3) rows=dirs(4)
     csheet = Img(T * 3, T * 4)
     for d, direction in enumerate(DIRS):
@@ -871,6 +970,18 @@ def main():
             "layout": "horizontal strip; frame index = column",
             "tiles": tindex,
         },
+        "terrain": {
+            "transition_masks": {
+                "cardinal_bits": "north=1 east=2 south=4 west=8",
+                "path": {str(mask): tindex[f"path_transition_{mask:02d}"]
+                         for mask in range(16)},
+                "water": {str(mask): tindex[f"water_transition_{mask:02d}"]
+                          for mask in range(16)},
+            },
+            "props_file": "props.png",
+            "props_frame": T,
+            "props": pindex,
+        },
         "characters": {
             "file": "characters.png", "frame": T,
             "cols": 3, "rows": 4,
@@ -928,7 +1039,7 @@ def main():
     }
     with open(os.path.join(HERE, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
-    print("wrote tileset.png characters.png character_variants.png actions.png items.png buildings.png manifest.json")
+    print("wrote tileset.png props.png characters.png character_variants.png actions.png items.png buildings.png manifest.json")
     print("tiles:", list(tindex), "\nbuildings:", list(bindex), "\nitems:", len(iindex),
           "\nactions:", ACTION_NAMES, "\ncharacter variants:", CHAR_VARIANTS)
 

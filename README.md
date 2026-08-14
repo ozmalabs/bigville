@@ -65,6 +65,10 @@ The art scale and asset contract is documented in
 generated from every entry in `domains/bigville_entities.ITEMS`; the inspector
 shows bulk stock, discrete carried objects, and worn clothing. A held tool is
 rendered on the resident, so a resident carrying a pick visibly has a pick.
+The terrain direction board is included at
+[`bigville/game/assets/terrain_art_direction.png`](bigville/game/assets/terrain_art_direction.png);
+the shipped runtime atlas is generated deterministically from the same palette
+and layering contract.
 
 ## Cognition backends
 

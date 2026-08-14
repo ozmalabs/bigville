@@ -21,7 +21,8 @@ def test_game_assets_are_present():
                          "assets/buildings.png", "assets/character_variants.png",
                          "assets/items.png", "assets/actions.png", "assets/manifest.json",
                          "assets/building_interiors.png", "assets/building_parts.png",
-                         "assets/building_badges.png"):
+                         "assets/building_badges.png", "assets/props.png",
+                         "assets/terrain_art_direction.png"):
             assert (GAME_ROOT / filename).is_file(), filename
 
 
@@ -35,3 +36,6 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert set(entities.BUILDINGS) <= set(manifest["buildings"]["sprites"])
     assert {"floor", "wall", "roof", "door"} <= set(manifest["buildings"]["parts"])
     assert manifest["design"]["logical_tile"] == 16
+    assert len(manifest["terrain"]["transition_masks"]["path"]) == 16
+    assert len(manifest["terrain"]["transition_masks"]["water"]) == 16
+    assert {"flower_clump", "bush", "reed", "bench"} <= set(manifest["terrain"]["props"])
