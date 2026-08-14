@@ -21,6 +21,30 @@ protocol, persistence model, and tests are all in this repository. Cognition
 providers may be embedded, remote, deterministic, human-driven, or backed by
 another project; none is required to run the simulation.
 
+## Play the village
+
+The repository includes a playable Phaser 3 browser client. It uses the
+canonical Python world over a small standard-library HTTP API.
+
+```bash
+python -m pip install -e .
+python -m bigville.server
+# open http://127.0.0.1:8765/
+```
+
+The pixel art in `bigville/game/assets/` is included in the package. Use the
+action buttons to submit a major action, or speak to another resident;
+autonomous deterministic residents take their own backend decisions on the
+same turn.
+
+## Cognition backends
+
+`DeterministicBackend` is the cheap, repeatable game backend. `LLMBackend` is a
+provider-neutral adapter: pass an object with `complete(prompt)` and it will
+receive a versioned JSON prompt containing the character state, public
+observations, world frames, legal affordances, and recipient capabilities.
+The provider returns a JSON `ActorResponse`.
+
 ## Development
 
 ```bash

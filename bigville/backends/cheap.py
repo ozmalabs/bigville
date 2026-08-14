@@ -5,7 +5,7 @@ from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorResponse, ProposedAction
 
 
-class CheapBackend:
+class DeterministicBackend:
     kind = "cheap"
     communication_mode = "templated"
     supports_free_text = False
@@ -41,3 +41,7 @@ class CheapBackend:
                 "requires_conversational_interface": self.requires_conversational_interface,
             }},
         )
+
+
+# Compatibility name used by the first standalone API release.
+CheapBackend = DeterministicBackend

@@ -22,6 +22,20 @@ class ActorResponse:
     backend_state: dict[str, Any] = field(default_factory=dict)
     waiting: bool = False
 
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> "ActorResponse":
+        action = value.get("major_action")
+        proposal = None
+        if isinstance(action, dict) and action.get("action"):
+            proposal = ProposedAction(str(action["action"]),
+                                      dict(action.get("params", {})),
+                                      str(action.get("reason", "")))
+        return cls(major_action=proposal,
+                   utterances=list(value.get("utterances", [])),
+                   memory_updates=list(value.get("memory_updates", [])),
+                   backend_state=dict(value.get("backend_state", {})),
+                   waiting=bool(value.get("waiting", False)))
+
 
 @dataclass
 class ActorContext:

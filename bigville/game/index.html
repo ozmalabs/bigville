@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bigville</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="game-panel">
+      <div id="game"></div>
+      <p class="hint">Pan with WASD or the arrow keys. Select an action on the right; every submitted turn advances the village.</p>
+    </section>
+    <aside class="sidebar">
+      <h1>Bigville</h1>
+      <p class="subtitle">A living village, one turn at a time.</p>
+      <div id="status" class="status">Loading world…</div>
+      <section>
+        <h2>Resident</h2>
+        <div id="resident"></div>
+      </section>
+      <section>
+        <h2>Major action</h2>
+        <div id="actions" class="actions"></div>
+      </section>
+      <section>
+        <h2>Speak to someone</h2>
+        <div class="speech-row">
+          <select id="recipient"></select>
+          <input id="speech" type="text" maxlength="240" placeholder="Say something…">
+          <button id="speak">Speak</button>
+        </div>
+      </section>
+      <section>
+        <h2>Recent words</h2>
+        <div id="log" class="log"></div>
+      </section>
+      <button id="reset" class="reset">Reset village</button>
+    </aside>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

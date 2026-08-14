@@ -1,0 +1,1550 @@
+{
+  "version": "2.0.0",
+  "palette": "warm cozy (Stardew-esque): greens/browns/soft blues",
+  "style_reference": "pixel_style_reference.png",
+  "tint_note": "characters.png bodies are drawn LIGHT; recolour at runtime by MULTIPLY-compositing the resident's class/role colour.",
+  "tileset": {
+    "file": "tileset.png",
+    "tile": 16,
+    "count": 28,
+    "layout": "horizontal strip; frame index = column",
+    "tiles": {
+      "grass": 0,
+      "grass_alt": 1,
+      "path": 2,
+      "dirt": 3,
+      "square": 4,
+      "floor": 5,
+      "wall": 6,
+      "water": 7,
+      "sand": 8,
+      "tree": 9,
+      "bush": 10,
+      "flower": 11,
+      "rocks": 12,
+      "well": 13,
+      "crop": 14,
+      "mud": 15,
+      "tilled": 16,
+      "tilled_wet": 17,
+      "fence": 18,
+      "bridge": 19,
+      "roof": 20,
+      "snow": 21,
+      "grass_wet": 22,
+      "grass_autumn": 23,
+      "wheat_young": 24,
+      "wheat_mature": 25,
+      "barley_mature": 26,
+      "cabbage": 27
+    }
+  },
+  "characters": {
+    "file": "characters.png",
+    "frame": 16,
+    "cols": 3,
+    "rows": 4,
+    "frames": {
+      "idle": 0,
+      "stepA": 1,
+      "stepB": 2
+    },
+    "directions": {
+      "down": 0,
+      "up": 1,
+      "left": 2,
+      "right": 3
+    },
+    "walk_cycle": [
+      0,
+      1,
+      0,
+      2
+    ]
+  },
+  "buildings": {
+    "file": "buildings.png",
+    "frame": 48,
+    "count": 36,
+    "layout": "horizontal strip; frame index = column",
+    "sprites": {
+      "house": 0,
+      "townhall": 1,
+      "church": 2,
+      "bank": 3,
+      "market": 4,
+      "press": 5,
+      "noticeboard": 6,
+      "school": 7,
+      "surgery": 8,
+      "inn": 9,
+      "granary": 10,
+      "root_cellar": 11,
+      "wellhouse": 12,
+      "latrine": 13,
+      "compost_yard": 14,
+      "smokehouse": 15,
+      "records_office": 16,
+      "watchhouse": 17,
+      "kitchen": 18,
+      "dairy": 19,
+      "wharf": 20,
+      "shambles": 21,
+      "dyehouse": 22,
+      "cooperage": 23,
+      "woodshop": 24,
+      "sawpit": 25,
+      "tannery": 26,
+      "cobbler": 27,
+      "tailorshop": 28,
+      "weavery": 29,
+      "forge": 30,
+      "bakery": 31,
+      "fishmonger": 32,
+      "mill": 33,
+      "printshop": 34,
+      "scriptorium": 35
+    }
+  },
+  "items": {
+    "file": "items.png",
+    "frame": 16,
+    "cols": 16,
+    "rows": 13,
+    "layout": "16x16 grid; coordinates and frame index are keyed by item name",
+    "icons": {
+      "ale": {
+        "x": 0,
+        "y": 0,
+        "frame": 0
+      },
+      "apple": {
+        "x": 1,
+        "y": 0,
+        "frame": 1
+      },
+      "apron": {
+        "x": 2,
+        "y": 0,
+        "frame": 2
+      },
+      "axe": {
+        "x": 3,
+        "y": 0,
+        "frame": 3
+      },
+      "bacon": {
+        "x": 4,
+        "y": 0,
+        "frame": 4
+      },
+      "bacon_eggs": {
+        "x": 5,
+        "y": 0,
+        "frame": 5
+      },
+      "barley": {
+        "x": 6,
+        "y": 0,
+        "frame": 6
+      },
+      "barley_seed": {
+        "x": 7,
+        "y": 0,
+        "frame": 7
+      },
+      "barrel": {
+        "x": 8,
+        "y": 0,
+        "frame": 8
+      },
+      "bean": {
+        "x": 9,
+        "y": 0,
+        "frame": 9
+      },
+      "bean_seed": {
+        "x": 10,
+        "y": 0,
+        "frame": 10
+      },
+      "bean_stew": {
+        "x": 11,
+        "y": 0,
+        "frame": 11
+      },
+      "bed": {
+        "x": 12,
+        "y": 0,
+        "frame": 12
+      },
+      "beef": {
+        "x": 13,
+        "y": 0,
+        "frame": 13
+      },
+      "beet": {
+        "x": 14,
+        "y": 0,
+        "frame": 14
+      },
+      "beet_seed": {
+        "x": 15,
+        "y": 0,
+        "frame": 15
+      },
+      "berry": {
+        "x": 0,
+        "y": 1,
+        "frame": 16
+      },
+      "book": {
+        "x": 1,
+        "y": 1,
+        "frame": 17
+      },
+      "boots": {
+        "x": 2,
+        "y": 1,
+        "frame": 18
+      },
+      "bread": {
+        "x": 3,
+        "y": 1,
+        "frame": 19
+      },
+      "breeches": {
+        "x": 4,
+        "y": 1,
+        "frame": 20
+      },
+      "bucket": {
+        "x": 5,
+        "y": 1,
+        "frame": 21
+      },
+      "butter": {
+        "x": 6,
+        "y": 1,
+        "frame": 22
+      },
+      "buttered_bread": {
+        "x": 7,
+        "y": 1,
+        "frame": 23
+      },
+      "cabbage": {
+        "x": 8,
+        "y": 1,
+        "frame": 24
+      },
+      "cabbage_seed": {
+        "x": 9,
+        "y": 1,
+        "frame": 25
+      },
+      "cake": {
+        "x": 10,
+        "y": 1,
+        "frame": 26
+      },
+      "cap": {
+        "x": 11,
+        "y": 1,
+        "frame": 27
+      },
+      "carrot": {
+        "x": 12,
+        "y": 1,
+        "frame": 28
+      },
+      "carrot_seed": {
+        "x": 13,
+        "y": 1,
+        "frame": 29
+      },
+      "cart": {
+        "x": 14,
+        "y": 1,
+        "frame": 30
+      },
+      "chair": {
+        "x": 15,
+        "y": 1,
+        "frame": 31
+      },
+      "charcoal": {
+        "x": 0,
+        "y": 2,
+        "frame": 32
+      },
+      "cheese": {
+        "x": 1,
+        "y": 2,
+        "frame": 33
+      },
+      "cheese_pie": {
+        "x": 2,
+        "y": 2,
+        "frame": 34
+      },
+      "chest": {
+        "x": 3,
+        "y": 2,
+        "frame": 35
+      },
+      "cider": {
+        "x": 4,
+        "y": 2,
+        "frame": 36
+      },
+      "cinnamon": {
+        "x": 5,
+        "y": 2,
+        "frame": 37
+      },
+      "cloak": {
+        "x": 6,
+        "y": 2,
+        "frame": 38
+      },
+      "clogs": {
+        "x": 7,
+        "y": 2,
+        "frame": 39
+      },
+      "cloth": {
+        "x": 8,
+        "y": 2,
+        "frame": 40
+      },
+      "coat": {
+        "x": 9,
+        "y": 2,
+        "frame": 41
+      },
+      "coin": {
+        "x": 10,
+        "y": 2,
+        "frame": 42
+      },
+      "coloured_cloth": {
+        "x": 11,
+        "y": 2,
+        "frame": 43
+      },
+      "compost": {
+        "x": 12,
+        "y": 2,
+        "frame": 44
+      },
+      "crackers": {
+        "x": 13,
+        "y": 2,
+        "frame": 45
+      },
+      "cream": {
+        "x": 14,
+        "y": 2,
+        "frame": 46
+      },
+      "cream_curd": {
+        "x": 15,
+        "y": 2,
+        "frame": 47
+      },
+      "cucumber": {
+        "x": 0,
+        "y": 3,
+        "frame": 48
+      },
+      "cucumber_seed": {
+        "x": 1,
+        "y": 3,
+        "frame": 49
+      },
+      "doublet": {
+        "x": 2,
+        "y": 3,
+        "frame": 50
+      },
+      "dress": {
+        "x": 3,
+        "y": 3,
+        "frame": 51
+      },
+      "dried_fruit": {
+        "x": 4,
+        "y": 3,
+        "frame": 52
+      },
+      "dumpling": {
+        "x": 5,
+        "y": 3,
+        "frame": 53
+      },
+      "dung": {
+        "x": 6,
+        "y": 3,
+        "frame": 54
+      },
+      "dye": {
+        "x": 7,
+        "y": 3,
+        "frame": 55
+      },
+      "eggs": {
+        "x": 8,
+        "y": 3,
+        "frame": 56
+      },
+      "fine_hat": {
+        "x": 9,
+        "y": 3,
+        "frame": 57
+      },
+      "fish": {
+        "x": 10,
+        "y": 3,
+        "frame": 58
+      },
+      "fish_pie": {
+        "x": 11,
+        "y": 3,
+        "frame": 59
+      },
+      "fish_stew": {
+        "x": 12,
+        "y": 3,
+        "frame": 60
+      },
+      "flatbread": {
+        "x": 13,
+        "y": 3,
+        "frame": 61
+      },
+      "flour": {
+        "x": 14,
+        "y": 3,
+        "frame": 62
+      },
+      "fruit_jam": {
+        "x": 15,
+        "y": 3,
+        "frame": 63
+      },
+      "fruit_pie": {
+        "x": 0,
+        "y": 4,
+        "frame": 64
+      },
+      "fur": {
+        "x": 1,
+        "y": 4,
+        "frame": 65
+      },
+      "fur_cloak": {
+        "x": 2,
+        "y": 4,
+        "frame": 66
+      },
+      "garlic": {
+        "x": 3,
+        "y": 4,
+        "frame": 67
+      },
+      "garlic_seed": {
+        "x": 4,
+        "y": 4,
+        "frame": 68
+      },
+      "ginger": {
+        "x": 5,
+        "y": 4,
+        "frame": 69
+      },
+      "gown": {
+        "x": 6,
+        "y": 4,
+        "frame": 70
+      },
+      "grain": {
+        "x": 7,
+        "y": 4,
+        "frame": 71
+      },
+      "grass": {
+        "x": 8,
+        "y": 4,
+        "frame": 72
+      },
+      "gruel": {
+        "x": 9,
+        "y": 4,
+        "frame": 73
+      },
+      "ham": {
+        "x": 10,
+        "y": 4,
+        "frame": 74
+      },
+      "hat": {
+        "x": 11,
+        "y": 4,
+        "frame": 75
+      },
+      "hay": {
+        "x": 12,
+        "y": 4,
+        "frame": 76
+      },
+      "hide": {
+        "x": 13,
+        "y": 4,
+        "frame": 77
+      },
+      "hinge": {
+        "x": 14,
+        "y": 4,
+        "frame": 78
+      },
+      "honey": {
+        "x": 15,
+        "y": 4,
+        "frame": 79
+      },
+      "honey_cake": {
+        "x": 0,
+        "y": 5,
+        "frame": 80
+      },
+      "hops": {
+        "x": 1,
+        "y": 5,
+        "frame": 81
+      },
+      "ink": {
+        "x": 2,
+        "y": 5,
+        "frame": 82
+      },
+      "iron": {
+        "x": 3,
+        "y": 5,
+        "frame": 83
+      },
+      "knife": {
+        "x": 4,
+        "y": 5,
+        "frame": 84
+      },
+      "lard": {
+        "x": 5,
+        "y": 5,
+        "frame": 85
+      },
+      "leather": {
+        "x": 6,
+        "y": 5,
+        "frame": 86
+      },
+      "leek": {
+        "x": 7,
+        "y": 5,
+        "frame": 87
+      },
+      "leek_seed": {
+        "x": 8,
+        "y": 5,
+        "frame": 88
+      },
+      "lentil": {
+        "x": 9,
+        "y": 5,
+        "frame": 89
+      },
+      "lentil_seed": {
+        "x": 10,
+        "y": 5,
+        "frame": 90
+      },
+      "lentil_stew": {
+        "x": 11,
+        "y": 5,
+        "frame": 91
+      },
+      "lettuce": {
+        "x": 12,
+        "y": 5,
+        "frame": 92
+      },
+      "lettuce_seed": {
+        "x": 13,
+        "y": 5,
+        "frame": 93
+      },
+      "linen": {
+        "x": 14,
+        "y": 5,
+        "frame": 94
+      },
+      "log": {
+        "x": 15,
+        "y": 5,
+        "frame": 95
+      },
+      "loom": {
+        "x": 0,
+        "y": 6,
+        "frame": 96
+      },
+      "madder": {
+        "x": 1,
+        "y": 6,
+        "frame": 97
+      },
+      "manure": {
+        "x": 2,
+        "y": 6,
+        "frame": 98
+      },
+      "mead": {
+        "x": 3,
+        "y": 6,
+        "frame": 99
+      },
+      "meat_pie": {
+        "x": 4,
+        "y": 6,
+        "frame": 100
+      },
+      "medicine": {
+        "x": 5,
+        "y": 6,
+        "frame": 101
+      },
+      "metal_bowl": {
+        "x": 6,
+        "y": 6,
+        "frame": 102
+      },
+      "metal_ladle": {
+        "x": 7,
+        "y": 6,
+        "frame": 103
+      },
+      "metal_mug": {
+        "x": 8,
+        "y": 6,
+        "frame": 104
+      },
+      "metal_serving_spoon": {
+        "x": 9,
+        "y": 6,
+        "frame": 105
+      },
+      "milk": {
+        "x": 10,
+        "y": 6,
+        "frame": 106
+      },
+      "mushroom": {
+        "x": 11,
+        "y": 6,
+        "frame": 107
+      },
+      "mustard": {
+        "x": 12,
+        "y": 6,
+        "frame": 108
+      },
+      "mutton": {
+        "x": 13,
+        "y": 6,
+        "frame": 109
+      },
+      "nails": {
+        "x": 14,
+        "y": 6,
+        "frame": 110
+      },
+      "nectar": {
+        "x": 15,
+        "y": 6,
+        "frame": 111
+      },
+      "newspaper": {
+        "x": 0,
+        "y": 7,
+        "frame": 112
+      },
+      "noodles": {
+        "x": 1,
+        "y": 7,
+        "frame": 113
+      },
+      "nutmeg": {
+        "x": 2,
+        "y": 7,
+        "frame": 114
+      },
+      "oatcake": {
+        "x": 3,
+        "y": 7,
+        "frame": 115
+      },
+      "oats": {
+        "x": 4,
+        "y": 7,
+        "frame": 116
+      },
+      "oats_seed": {
+        "x": 5,
+        "y": 7,
+        "frame": 117
+      },
+      "oil": {
+        "x": 6,
+        "y": 7,
+        "frame": 118
+      },
+      "omelette": {
+        "x": 7,
+        "y": 7,
+        "frame": 119
+      },
+      "onion": {
+        "x": 8,
+        "y": 7,
+        "frame": 120
+      },
+      "onion_seed": {
+        "x": 9,
+        "y": 7,
+        "frame": 121
+      },
+      "ore": {
+        "x": 10,
+        "y": 7,
+        "frame": 122
+      },
+      "pancake": {
+        "x": 11,
+        "y": 7,
+        "frame": 123
+      },
+      "paper": {
+        "x": 12,
+        "y": 7,
+        "frame": 124
+      },
+      "parsley": {
+        "x": 13,
+        "y": 7,
+        "frame": 125
+      },
+      "parsnip": {
+        "x": 14,
+        "y": 7,
+        "frame": 126
+      },
+      "parsnip_seed": {
+        "x": 15,
+        "y": 7,
+        "frame": 127
+      },
+      "pea": {
+        "x": 0,
+        "y": 8,
+        "frame": 128
+      },
+      "pea_seed": {
+        "x": 1,
+        "y": 8,
+        "frame": 129
+      },
+      "pear": {
+        "x": 2,
+        "y": 8,
+        "frame": 130
+      },
+      "peat": {
+        "x": 3,
+        "y": 8,
+        "frame": 131
+      },
+      "pepper": {
+        "x": 4,
+        "y": 8,
+        "frame": 132
+      },
+      "pick": {
+        "x": 5,
+        "y": 8,
+        "frame": 133
+      },
+      "pick_handle": {
+        "x": 6,
+        "y": 8,
+        "frame": 134
+      },
+      "pick_head": {
+        "x": 7,
+        "y": 8,
+        "frame": 135
+      },
+      "pickles": {
+        "x": 8,
+        "y": 8,
+        "frame": 136
+      },
+      "pie": {
+        "x": 9,
+        "y": 8,
+        "frame": 137
+      },
+      "plough": {
+        "x": 10,
+        "y": 8,
+        "frame": 138
+      },
+      "plum": {
+        "x": 11,
+        "y": 8,
+        "frame": 139
+      },
+      "pork": {
+        "x": 12,
+        "y": 8,
+        "frame": 140
+      },
+      "porridge": {
+        "x": 13,
+        "y": 8,
+        "frame": 141
+      },
+      "potato": {
+        "x": 14,
+        "y": 8,
+        "frame": 142
+      },
+      "potato_seed": {
+        "x": 15,
+        "y": 8,
+        "frame": 143
+      },
+      "pottage": {
+        "x": 0,
+        "y": 9,
+        "frame": 144
+      },
+      "poultry": {
+        "x": 1,
+        "y": 9,
+        "frame": 145
+      },
+      "printing_press": {
+        "x": 2,
+        "y": 9,
+        "frame": 146
+      },
+      "pudding": {
+        "x": 3,
+        "y": 9,
+        "frame": 147
+      },
+      "rag": {
+        "x": 4,
+        "y": 9,
+        "frame": 148
+      },
+      "rake": {
+        "x": 5,
+        "y": 9,
+        "frame": 149
+      },
+      "roast": {
+        "x": 6,
+        "y": 9,
+        "frame": 150
+      },
+      "roast_fish": {
+        "x": 7,
+        "y": 9,
+        "frame": 151
+      },
+      "roast_poultry": {
+        "x": 8,
+        "y": 9,
+        "frame": 152
+      },
+      "root_soup": {
+        "x": 9,
+        "y": 9,
+        "frame": 153
+      },
+      "rye": {
+        "x": 10,
+        "y": 9,
+        "frame": 154
+      },
+      "rye_seed": {
+        "x": 11,
+        "y": 9,
+        "frame": 155
+      },
+      "sage": {
+        "x": 12,
+        "y": 9,
+        "frame": 156
+      },
+      "salt": {
+        "x": 13,
+        "y": 9,
+        "frame": 157
+      },
+      "salt_fish": {
+        "x": 14,
+        "y": 9,
+        "frame": 158
+      },
+      "sandwich": {
+        "x": 15,
+        "y": 9,
+        "frame": 159
+      },
+      "sauerkraut": {
+        "x": 0,
+        "y": 10,
+        "frame": 160
+      },
+      "sausage": {
+        "x": 1,
+        "y": 10,
+        "frame": 161
+      },
+      "sausage_stew": {
+        "x": 2,
+        "y": 10,
+        "frame": 162
+      },
+      "scraps": {
+        "x": 3,
+        "y": 10,
+        "frame": 163
+      },
+      "scythe": {
+        "x": 4,
+        "y": 10,
+        "frame": 164
+      },
+      "shepherds_pie": {
+        "x": 5,
+        "y": 10,
+        "frame": 165
+      },
+      "shirt": {
+        "x": 6,
+        "y": 10,
+        "frame": 166
+      },
+      "shoes": {
+        "x": 7,
+        "y": 10,
+        "frame": 167
+      },
+      "silk": {
+        "x": 8,
+        "y": 10,
+        "frame": 168
+      },
+      "silk_shirt": {
+        "x": 9,
+        "y": 10,
+        "frame": 169
+      },
+      "smock": {
+        "x": 10,
+        "y": 10,
+        "frame": 170
+      },
+      "smoke": {
+        "x": 11,
+        "y": 10,
+        "frame": 171
+      },
+      "smoked_fish": {
+        "x": 12,
+        "y": 10,
+        "frame": 172
+      },
+      "soot": {
+        "x": 13,
+        "y": 10,
+        "frame": 173
+      },
+      "spade": {
+        "x": 14,
+        "y": 10,
+        "frame": 174
+      },
+      "stave": {
+        "x": 15,
+        "y": 10,
+        "frame": 175
+      },
+      "stew": {
+        "x": 0,
+        "y": 11,
+        "frame": 176
+      },
+      "stool": {
+        "x": 1,
+        "y": 11,
+        "frame": 177
+      },
+      "straw": {
+        "x": 2,
+        "y": 11,
+        "frame": 178
+      },
+      "stuffed_cabbage": {
+        "x": 3,
+        "y": 11,
+        "frame": 179
+      },
+      "sugar": {
+        "x": 4,
+        "y": 11,
+        "frame": 180
+      },
+      "table": {
+        "x": 5,
+        "y": 11,
+        "frame": 181
+      },
+      "thatch": {
+        "x": 6,
+        "y": 11,
+        "frame": 182
+      },
+      "thread": {
+        "x": 7,
+        "y": 11,
+        "frame": 183
+      },
+      "thyme": {
+        "x": 8,
+        "y": 11,
+        "frame": 184
+      },
+      "timber": {
+        "x": 9,
+        "y": 11,
+        "frame": 185
+      },
+      "tunic": {
+        "x": 10,
+        "y": 11,
+        "frame": 186
+      },
+      "turnip": {
+        "x": 11,
+        "y": 11,
+        "frame": 187
+      },
+      "turnip_seed": {
+        "x": 12,
+        "y": 11,
+        "frame": 188
+      },
+      "vegetable_soup": {
+        "x": 13,
+        "y": 11,
+        "frame": 189
+      },
+      "velvet": {
+        "x": 14,
+        "y": 11,
+        "frame": 190
+      },
+      "vinegar": {
+        "x": 15,
+        "y": 11,
+        "frame": 191
+      },
+      "wagon": {
+        "x": 0,
+        "y": 12,
+        "frame": 192
+      },
+      "water": {
+        "x": 1,
+        "y": 12,
+        "frame": 193
+      },
+      "wax": {
+        "x": 2,
+        "y": 12,
+        "frame": 194
+      },
+      "weld": {
+        "x": 3,
+        "y": 12,
+        "frame": 195
+      },
+      "wheat_seed": {
+        "x": 4,
+        "y": 12,
+        "frame": 196
+      },
+      "wheel": {
+        "x": 5,
+        "y": 12,
+        "frame": 197
+      },
+      "woad": {
+        "x": 6,
+        "y": 12,
+        "frame": 198
+      },
+      "wood": {
+        "x": 7,
+        "y": 12,
+        "frame": 199
+      },
+      "wooden_bowl": {
+        "x": 8,
+        "y": 12,
+        "frame": 200
+      },
+      "wooden_dipper": {
+        "x": 9,
+        "y": 12,
+        "frame": 201
+      },
+      "wooden_ladle": {
+        "x": 10,
+        "y": 12,
+        "frame": 202
+      },
+      "wooden_mug": {
+        "x": 11,
+        "y": 12,
+        "frame": 203
+      },
+      "wooden_serving_spoon": {
+        "x": 12,
+        "y": 12,
+        "frame": 204
+      },
+      "wool": {
+        "x": 13,
+        "y": 12,
+        "frame": 205
+      },
+      "yeast": {
+        "x": 14,
+        "y": 12,
+        "frame": 206
+      },
+      "yogurt": {
+        "x": 15,
+        "y": 12,
+        "frame": 207
+      }
+    }
+  },
+  "character_variants": {
+    "file": "character_variants.png",
+    "frame": 16,
+    "cols": 3,
+    "rows_per_variant": 4,
+    "variants": {
+      "adult": {
+        "index": 0,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "child": {
+        "index": 1,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "elder": {
+        "index": 2,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "farmer": {
+        "index": 3,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "smith": {
+        "index": 4,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "cook": {
+        "index": 5,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "clerk": {
+        "index": 6,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "constable": {
+        "index": 7,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "councillor": {
+        "index": 8,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "merchant": {
+        "index": 9,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "teacher": {
+        "index": 10,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "doctor": {
+        "index": 11,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "shepherd": {
+        "index": 12,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "builder": {
+        "index": 13,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "fisher": {
+        "index": 14,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      },
+      "craftsperson": {
+        "index": 15,
+        "directions": {
+          "down": 0,
+          "up": 1,
+          "left": 2,
+          "right": 3
+        }
+      }
+    },
+    "frames": {
+      "idle": 0,
+      "stepA": 1,
+      "stepB": 2
+    }
+  },
+  "actions": {
+    "file": "actions.png",
+    "frame": 16,
+    "frames": 4,
+    "layout": "four keyframes per action row",
+    "actions": {
+      "idle": {
+        "row": 0,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "walk": {
+        "row": 1,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "sow": {
+        "row": 2,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "water": {
+        "row": 3,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "harvest": {
+        "row": 4,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "chop": {
+        "row": 5,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "mine": {
+        "row": 6,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "fish": {
+        "row": 7,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "cook": {
+        "row": 8,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "bake": {
+        "row": 9,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "build": {
+        "row": 10,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "repair": {
+        "row": 11,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "write": {
+        "row": 12,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "speak": {
+        "row": 13,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "carry": {
+        "row": 14,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "milk": {
+        "row": 15,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "shear": {
+        "row": 16,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "eat": {
+        "row": 17,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "rest": {
+        "row": 18,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "accept": {
+        "row": 19,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "decline": {
+        "row": 20,
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    }
+  },
+  "tile_map": {
+    "grass": "grass",
+    "path": "path",
+    "square": "square",
+    "floor": "floor",
+    "wall": "wall",
+    "tree": "tree",
+    "water": "water",
+    "dirt": "dirt"
+  },
+  "building_map": {
+    "townhall": "townhall",
+    "church": "church",
+    "bank": "bank",
+    "noticeboard": "noticeboard",
+    "press": "press",
+    "school": "school",
+    "surgery": "surgery",
+    "inn": "inn",
+    "market": "market",
+    "house": "house",
+    "bakery": "bakery",
+    "fishmonger": "fishmonger",
+    "granary": "granary",
+    "root_cellar": "root_cellar",
+    "records_office": "records_office",
+    "watchhouse": "watchhouse",
+    "forge": "forge",
+    "kitchen": "kitchen"
+  },
+  "feature_map": {
+    "crop": "crop",
+    "forest": "tree",
+    "rocks": "rocks",
+    "orchard": "tree",
+    "water": "water",
+    "well": "well"
+  }
+}

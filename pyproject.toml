@@ -16,4 +16,4 @@ dependencies = [
 include = ["bigville*", "domains*", "worlds*"]
 
 [tool.setuptools.package-data]
-bigville = ["seeds/*.json"]
+bigville = ["seeds/*.json", "game/*.html", "game/*.js", "game/*.css", "game/assets/*"]
