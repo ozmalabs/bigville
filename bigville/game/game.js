@@ -199,10 +199,14 @@ class BigvilleScene extends Phaser.Scene {
 
   preload() {
     this.load.json('asset_manifest', 'assets/manifest.json');
-    this.load.spritesheet('tileset', 'assets/tileset.png', {frameWidth: TILE, frameHeight: TILE});
-    this.load.spritesheet('props', 'assets/props.png', {frameWidth: TILE, frameHeight: TILE});
-    this.load.spritesheet('large_props', 'assets/large_props.png', {frameWidth: 32, frameHeight: 32});
+    this.load.json('style_manifest', 'assets/style_manifest.json');
+    // These are style-matched frames extracted from the original village art;
+    // the map still chooses and assembles them from its own grid.
+    this.load.spritesheet('tileset', 'assets/style_tiles.png', {frameWidth: TILE, frameHeight: TILE});
+    this.load.spritesheet('props', 'assets/style_props.png', {frameWidth: TILE, frameHeight: TILE});
+    this.load.spritesheet('large_props', 'assets/style_large_props.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
+    this.load.spritesheet('style_buildings', 'assets/style_buildings.png', {frameWidth: 96, frameHeight: 96});
     this.load.spritesheet('building_interiors', 'assets/building_interiors.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
@@ -214,6 +218,7 @@ class BigvilleScene extends Phaser.Scene {
   create() {
     scene = this;
     this.assetManifest = this.cache.json.get('asset_manifest') || {};
+    this.styleManifest = this.cache.json.get('style_manifest') || {};
     this.cameras.main.setZoom(DEFAULT_ZOOM);
     $('zoom-reset').textContent = `${Math.round(DEFAULT_ZOOM * 100)}%`;
     this.cameras.main.setBackgroundColor('#172126');
@@ -340,8 +345,8 @@ class BigvilleScene extends Phaser.Scene {
 
   drawTerrainProps(map) {
     const grid = map.grid || [];
-    const props = this.assetManifest?.terrain?.props || {};
-    const largeProps = this.assetManifest?.terrain?.large_props || {};
+    const props = this.styleManifest?.props?.sprites || this.assetManifest?.terrain?.props || {};
+    const largeProps = this.styleManifest?.large_props?.sprites || this.assetManifest?.terrain?.large_props || {};
     const buildings = map.buildings || [];
     const occupied = new Set();
     for (const building of buildings) {
@@ -433,7 +438,9 @@ class BigvilleScene extends Phaser.Scene {
         return rx >= x && rx < x + width && ry >= y && ry < y + height;
       });
       for (const resident of occupants) inside.add(resident.id);
-      this.drawBuilding(building, occupants.length > 0);
+      // An empty building shows its authored facade; occupied buildings open
+      // into the existing roof-off interior representation.
+      this.drawBuilding(building, occupants.length === 0);
       occupants.forEach((resident, index) => this.drawInteriorResident(building, resident, index));
     }
     return inside;
@@ -453,6 +460,14 @@ class BigvilleScene extends Phaser.Scene {
     // Preserve the authored 3x3 institution art while allowing arbitrary
     // footprints to fall back to the composable part vocabulary.
     if (width === 3 && height === 3) {
+      const styleFrame = this.styleManifest?.buildings?.sprites?.[building.type];
+      if (roofOn && styleFrame !== undefined) {
+        const sprite = this.add.sprite(px + width * cellWidth / 2,
+          py + height * cellWidth / 2, 'style_buildings', styleFrame)
+          .setDepth(this.depthAt(x + width / 2, y + height, 20));
+        this.objects.push(sprite);
+        return;
+      }
       const sprite = this.add.sprite(px + width * cellWidth / 2,
         py + height * cellWidth / 2 - 8 * DISPLAY_SCALE,
         roofOn ? 'buildings' : 'building_interiors', frame)

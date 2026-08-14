@@ -1018,6 +1018,14 @@ def main():
         },
         "palette": "warm cozy (Stardew-esque): greens/browns/soft blues",
         "style_reference": "stardew_like_art_direction.png",
+        "style_assets": {
+            "source_reference": "style_source_village.png",
+            "terrain_source": "style_terrain_atlas_source.png",
+            "building_source": "style_building_atlas_source.png",
+            "manifest": "style_manifest.json",
+            "builder": "tools/build_style_assets.py",
+            "runtime_note": "the original village scene is reference-only; clients assemble transparent props, facades, and opaque terrain frames",
+        },
         "rendering": {
             "projection": "square_cells_3q_top_down",
             "display_scale": 2,

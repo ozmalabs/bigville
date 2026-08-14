@@ -71,8 +71,11 @@ shows bulk stock, discrete carried objects, and worn clothing. A held tool is
 rendered on the resident, so a resident carrying a pick visibly has a pick.
 The current art direction board is included at
 [`bigville/game/assets/stardew_like_art_direction.png`](bigville/game/assets/stardew_like_art_direction.png);
-the shipped runtime atlas is generated deterministically from the same palette
-and layering contract.
+the original village rendering is preserved as a reference at
+[`bigville/game/assets/style_source_village.png`](bigville/game/assets/style_source_village.png),
+but it is not drawn as a backdrop. `tools/build_style_assets.py` turns the
+reference language into assembled terrain, transitions, props, and building
+facades, so scenarios can use different maps with the same cosy visual style.
 
 ## Cognition backends
 

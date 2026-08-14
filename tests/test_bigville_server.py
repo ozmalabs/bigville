@@ -23,7 +23,13 @@ def test_game_assets_are_present():
                          "assets/building_interiors.png", "assets/building_parts.png",
                          "assets/building_badges.png", "assets/props.png",
                          "assets/large_props.png", "assets/terrain_art_direction.png",
-                         "assets/stardew_like_art_direction.png"):
+                         "assets/stardew_like_art_direction.png",
+                         "assets/style_source_village.png",
+                         "assets/style_terrain_atlas_source.png",
+                         "assets/style_building_atlas_source.png",
+                         "assets/style_tiles.png", "assets/style_props.png",
+                         "assets/style_large_props.png", "assets/style_buildings.png",
+                         "assets/style_manifest.json"):
             assert (GAME_ROOT / filename).is_file(), filename
 
 
@@ -40,6 +46,11 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert manifest["rendering"]["projection"] == "square_cells_3q_top_down"
     assert manifest["rendering"]["display_scale"] == 2
     assert manifest["style_reference"] == "stardew_like_art_direction.png"
+    assert manifest["style_assets"]["source_reference"] == "style_source_village.png"
+    style = json.loads((GAME_ROOT / "assets/style_manifest.json").read_text())
+    assert style["tiles"]["file"] == "style_tiles.png"
+    assert {"tree", "bush"} <= set(style["large_props"]["sprites"])
+    assert style["buildings"]["file"] == "style_buildings.png"
     assert len(manifest["terrain"]["transition_masks"]["path"]) == 16
     assert len(manifest["terrain"]["transition_masks"]["water"]) == 16
     assert {"tree", "flower_clump", "bush", "reed", "bench"} <= set(manifest["terrain"]["props"])
