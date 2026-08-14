@@ -32,9 +32,11 @@ python -m bigville.server
 # open http://127.0.0.1:8765/
 ```
 
-The hand-pixeled village scene in `bigville/game/assets/village_scene.png` and
-the supporting sprite/icon sheets are included in the package. Use the action
-buttons to submit a major action, or speak to another resident;
+The cosy pixel-art terrain tiles, reusable building sprites, and supporting
+sprite/icon sheets are included in the package. The client assembles the map
+from the scenario's exported grid and building placements, so changing the
+world seed or scenario changes the geography without requiring a new backdrop.
+Use the action buttons to submit a major action, or speak to another resident;
 autonomous deterministic residents take their own backend decisions on the
 same turn.
 

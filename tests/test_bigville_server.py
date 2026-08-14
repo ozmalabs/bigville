@@ -18,7 +18,7 @@ def test_game_assets_are_present():
     from bigville.server import GAME_ROOT
 
     for filename in ("index.html", "game.js", "game.css", "assets/tileset.png",
-                     "assets/buildings.png", "assets/character_variants.png",
-                     "assets/items.png", "assets/actions.png", "assets/manifest.json",
-                     "assets/village_scene.png", "assets/open_room.png"):
+                         "assets/buildings.png", "assets/character_variants.png",
+                         "assets/items.png", "assets/actions.png", "assets/manifest.json",
+                         "assets/open_room.png"):
         assert (GAME_ROOT / filename).is_file(), filename

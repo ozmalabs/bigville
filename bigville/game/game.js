@@ -1,8 +1,23 @@
 /* Bigville's browser client. Phaser renders the world; Python remains the authority. */
 const TILE = 16;
-const MAP_WIDTH = 52;
-const MAP_HEIGHT = 40;
-const TILE_FRAMES = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7};
+// These are the initial viewport dimensions, not the world dimensions.  The
+// world is drawn from whatever map grid the selected scenario exports.
+const VIEWPORT_WIDTH = 52;
+const VIEWPORT_HEIGHT = 40;
+// Canonical Bigville map codes are deliberately separate from art-sheet frame
+// numbers.  A different scenario can supply another grid without changing the
+// renderer or pretending that the art is the geography.
+const TILE_FRAMES = {0: 0, 1: 2, 2: 6, 3: 5, 4: 4, 5: 9, 6: 7, 7: 0};
+const BUILDING_FRAMES = {
+  house: 0, townhall: 1, church: 2, bank: 3, market: 4, press: 5,
+  noticeboard: 6, school: 7, surgery: 8, inn: 9, granary: 10,
+  root_cellar: 11, wellhouse: 12, latrine: 13, compost_yard: 14,
+  smokehouse: 15, records_office: 16, watchhouse: 17, kitchen: 18,
+  dairy: 19, wharf: 20, shambles: 21, dyehouse: 22, cooperage: 23,
+  woodshop: 24, sawpit: 25, tannery: 26, cobbler: 27, tailorshop: 28,
+  weavery: 29, forge: 30, bakery: 31, fishmonger: 32, mill: 33,
+  printshop: 34, scriptorium: 35,
+};
 const ROLE_VARIANTS = {
   farmer: 3, smith: 4, cook: 5, clerk: 6, constable: 7, councillor: 8,
   merchant: 9, teacher: 10, doctor: 11, shepherd: 12, builder: 13,
@@ -72,7 +87,8 @@ function renderSidebar() {
     button.innerHTML = `<span>${actionLabel(option)}</span><span class="score">${Math.round(option.score || 0)}</span>`;
     button.disabled = busy;
     button.onclick = () => submitTurn({major_action: {action: option.action, params: {
-      kind: option.kind, recipe: option.recipe, trade: option.trade, target: option.target
+      kind: option.kind, recipe: option.recipe, trade: option.trade,
+      target: option.target, destination: option.destination
     }}});
     row.append(button); actions.append(row);
   }
@@ -107,7 +123,6 @@ class BigvilleScene extends Phaser.Scene {
   constructor() { super('bigville'); this.objects = []; this.hasCentered = false; this.dragging = false; }
 
   preload() {
-    this.load.image('village_scene', 'assets/village_scene.png');
     this.load.image('open_room', 'assets/open_room.png');
     this.load.spritesheet('tileset', 'assets/tileset.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
@@ -151,10 +166,8 @@ class BigvilleScene extends Phaser.Scene {
     const map = snapshot.world.map;
     const width = map.width * TILE;
     const height = map.height * TILE;
-    const backdrop = this.add.image(width / 2, height / 2, 'village_scene')
-      .setDisplaySize(width, height).setDepth(0);
-    this.objects.push(backdrop);
     this.drawCanonicalMap(map);
+    this.drawBuildings(map.buildings || []);
     const allResidents = snapshot.world.residents || [];
     this.playerId = snapshot.player;
     const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
@@ -202,38 +215,25 @@ class BigvilleScene extends Phaser.Scene {
 
   drawCanonicalMap(map) {
     const grid = map.grid || [];
-    const routes = this.add.graphics().setDepth(1);
-    const tileColours = {
-      path: 0xd4ad6d,
-      square: 0xc7b887,
-      floor: 0xa47b59,
-      wall: 0x625b63,
-      water: 0x4e9da5,
-      tree: 0x4f804c,
-    };
     for (let y = 0; y < grid.length; y++) {
       for (let x = 0; x < (grid[y] || []).length; x++) {
         const tile = grid[y][x];
-        const px = x * TILE;
-        const py = y * TILE;
-        // These overlays are deliberately translucent: the generated village
-        // art supplies warmth and texture, while this layer makes the
-        // simulation's real navigation lattice visible and authoritative.
-        if (tile === 1) {
-          // A small stitched marker keeps the real road lattice visible
-          // without turning the cosy artwork into a debugging grid.
-          routes.fillStyle(tileColours.path, 0.55).fillRect(px + 5, py + 5, 6, 6);
-        } else if (tile === 4) {
-          routes.fillStyle(tileColours.square, 0.28).fillRect(px, py, TILE, TILE);
-        } else if (tile === 2 || tile === 6) {
-          routes.fillStyle(tile === 6 ? tileColours.water : tileColours.wall, 0.42)
-            .fillRect(px, py, TILE, TILE);
-        } else if (tile === 5) {
-          routes.fillStyle(tileColours.tree, 0.16).fillRect(px, py, TILE, TILE);
-        }
+        const frame = TILE_FRAMES[tile] ?? TILE_FRAMES[0];
+        const sprite = this.add.sprite(x * TILE + 8, y * TILE + 8, 'tileset', frame)
+          .setDepth(0);
+        this.objects.push(sprite);
       }
     }
-    this.objects.push(routes);
+  }
+
+  drawBuildings(buildings) {
+    for (const building of buildings) {
+      const [x, y] = building.position || [building.x || 0, building.y || 0];
+      const frame = BUILDING_FRAMES[building.type] ?? BUILDING_FRAMES.house;
+      const sprite = this.add.sprite(x * TILE + 24, y * TILE + 24, 'buildings', frame)
+        .setDepth(2);
+      this.objects.push(sprite);
+    }
   }
 
   drawOccupiedInteriors(buildings, residents) {
@@ -295,7 +295,7 @@ class BigvilleScene extends Phaser.Scene {
 }
 
 const config = {
-  type: Phaser.AUTO, parent: 'game', width: MAP_WIDTH * TILE, height: MAP_HEIGHT * TILE,
+  type: Phaser.AUTO, parent: 'game', width: VIEWPORT_WIDTH * TILE, height: VIEWPORT_HEIGHT * TILE,
   pixelArt: true, backgroundColor: '#172126', scene: [BigvilleScene],
   scale: {mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH}
 };
