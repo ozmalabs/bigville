@@ -51,3 +51,33 @@ def test_deterministic_backend_chooses_actions_but_does_not_fake_idle_rest():
 
     idle = ActorContext(character, 1, {"energy": 100}, [{"action": "rest", "score": 0}])
     assert backend.decide(idle).major_action is None
+
+
+def test_deterministic_backend_holds_goals_and_can_speak_structured_meanings():
+    character = CharacterDefinition(
+        character_id="Ada", name="Ada", identity={"role": "farmer"})
+    backend = DeterministicBackend(character)
+    context = ActorContext(
+        character, 0,
+        {"energy": 80, "hunger": 0, "calendar": {"hour": 10, "weather": "clear"},
+         "nearby_residents": [{"id": "Ben", "name": "Ben", "distance": 1}]},
+        [{"action": "work", "recipe": "bake_bread", "score": 20}],
+    )
+    response = backend.decide(context)
+    assert backend.current_goal.kind == "work"
+    assert backend.time_band == "workday"
+    assert response.major_action.action == "work"
+    # The cadence is deterministic, but the backend still exposes a structured
+    # speech envelope when its social opportunity is selected.
+    for turn in range(1, 12):
+        context.turn = turn
+        response = backend.decide(context)
+        if response.utterances:
+            assert response.utterances[0]["target"] == "Ben"
+            assert response.utterances[0]["act"] in {"greeting", "share", "question", "inform"}
+            break
+    else:
+        raise AssertionError("NPC did not select a social utterance")
+    held = backend.dump_held_state().to_dict()
+    assert held["goals"]
+    assert held["backend_state"]["time_band"] == "workday"

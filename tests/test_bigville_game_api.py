@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from bigville.backends import ActorResponse, HumanBackend, OcelotBackend
+from bigville.backends import (ActorContinuation, ActorResponse, DeterministicBackend,
+                               HumanBackend, OcelotBackend, ProposedAction)
 from bigville.character import FrameSeed
 from bigville.backends.conversation import ConversationMessage, TemplateConversationInterface
 from bigville.game import BigvilleGame
@@ -95,3 +96,81 @@ def test_character_identity_personality_memory_and_frames_are_serializable(tmp_p
     game.save_characters(path)
     assert "the north road" in path.read_text()
     assert "Ben was kind." in path.read_text()
+
+
+def test_backend_continuation_walks_without_redeciding_until_arrival():
+    world, game = _game()
+
+    class WalkingBackend(DeterministicBackend):
+        def __init__(self, character):
+            super().__init__(character)
+            self.calls = 0
+
+        def decide(self, context):
+            self.calls += 1
+            return ActorResponse(
+                major_action=ProposedAction("move", {"destination": (3, 1)}),
+                continuation=ActorContinuation(destination=(3, 1)),
+            )
+
+    walker = WalkingBackend(game.characters["Ben"])
+    game.set_backend("Ben", walker)
+    game.submit_player_response(ActorResponse())
+    assert game.step()["status"] == "advanced"
+    game.submit_player_response(ActorResponse())
+    assert game.step()["status"] == "advanced"
+    assert walker.calls == 1
+    assert world.actor_position("Ben") == (3, 1)
+
+    # Arrival is a completion boundary, so the next turn asks cognition for
+    # the next task instead of carrying the old route forever.
+    game.submit_player_response(ActorResponse())
+    assert game.step()["status"] == "advanced"
+    assert walker.calls == 2
+
+
+def test_continuations_can_be_disabled_for_reactive_backends():
+    world, game = _game()
+
+    class CountingBackend(DeterministicBackend):
+        def __init__(self, character):
+            super().__init__(character)
+            self.calls = 0
+
+        def decide(self, context):
+            self.calls += 1
+            return ActorResponse()
+
+    backend = CountingBackend(game.characters["Ben"])
+    game.set_backend("Ben", backend)
+    game.continuations_enabled = False
+    for _ in range(2):
+        game.submit_player_response(ActorResponse())
+        assert game.step()["status"] == "advanced"
+    assert backend.calls == 2
+
+
+def test_continuation_replans_when_a_need_crosses_its_threshold():
+    world, game = _game()
+
+    class NeedsBackend(DeterministicBackend):
+        def __init__(self, character):
+            super().__init__(character)
+            self.calls = 0
+
+        def decide(self, context):
+            self.calls += 1
+            return ActorResponse(
+                major_action=ProposedAction("move", {"destination": (3, 1)}),
+                continuation=ActorContinuation(destination=(3, 1)),
+            )
+
+    backend = NeedsBackend(game.characters["Ben"])
+    game.set_backend("Ben", backend)
+    game.submit_player_response(ActorResponse())
+    game.step()
+    world.eng.set_attr(world._actor("Ben"), "hunger", 2.0)
+    game.submit_player_response(ActorResponse())
+    game.step()
+    assert backend.calls == 2
+    assert game.last_responses["Ben"].backend_state["continuation_interrupted"] == "hunger_threshold"

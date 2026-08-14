@@ -60,11 +60,22 @@ interiors remain visible while the village continues to run.
 
 ## Cognition backends
 
-`DeterministicBackend` is the cheap, repeatable game backend. `LLMBackend` is a
-provider-neutral adapter: pass an object with `complete(prompt)` and it will
-receive a versioned JSON prompt containing the character state, public
-observations, world frames, legal affordances, and recipient capabilities.
-The provider returns a JSON `ActorResponse`.
+`DeterministicBackend` is the cheap, repeatable NPC backend. It maintains
+needs-driven goals, changes priorities across morning/workday/evening/night,
+chooses from the world's current legal affordances, and occasionally speaks in
+structured social acts to nearby people. `LLMBackend` is a provider-neutral
+adapter: pass an object with `complete(prompt)` and it will receive a versioned
+JSON prompt containing the character state, public observations, world frames,
+legal affordances, and recipient capabilities. The provider returns a JSON
+`ActorResponse`.
+
+Backends may return an optional `continuation` containing a physical
+`destination` or repeatable `task`. Bigville reuses that plan without querying
+cognition again until arrival or an unexpected encounter, hunger/energy
+threshold, world event, or task failure. Set `poll_each_turn: true`, or
+construct `BigvilleGame(..., continuations=False)`, for reactive
+decide-every-turn behavior. Replayed actions still pass through the world's
+admissibility and one-major-action rules.
 
 ## Development
 

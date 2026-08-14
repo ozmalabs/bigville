@@ -4392,6 +4392,15 @@ class BigvilleWorld:
                                 "recipe": recipe["name"],
                                 "score": 12.0 if out_kind in {"bread", "gruel"} else 10.0})
         options.append({"action": "rest", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
+        # Target keys are intentionally opaque and may be rebuilt on every
+        # observation.  Expose the physical destination alongside a movement
+        # affordance so a cognition backend can safely retain a route across
+        # turns without retaining the world's temporary target map.
+        for option in options:
+            if option.get("action") == "move":
+                destination = targets.get(option.get("target"))
+                if isinstance(destination, tuple):
+                    option["destination"] = destination
         self._actor_targets[actor] = targets
         return options
 
@@ -4469,7 +4478,8 @@ class BigvilleWorld:
         if plan["action"] == "work":
             return self.major_action(actor, "start", action_name=plan["recipe"])
         if plan["action"] == "move":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+            target = self._actor_targets[actor].get(plan.get("target", ""),
+                                                    plan.get("destination"))
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] == "put":

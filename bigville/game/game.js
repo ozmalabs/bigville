@@ -1,5 +1,7 @@
 /* Bigville's browser client. Phaser renders the world; Python remains the authority. */
 const TILE = 16;
+const MAP_WIDTH = 52;
+const MAP_HEIGHT = 40;
 const TILE_FRAMES = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7};
 const ROLE_VARIANTS = {
   farmer: 3, smith: 4, cook: 5, clerk: 6, constable: 7, councillor: 8,
@@ -102,7 +104,7 @@ function renderWorld() {
 function renderAll() { renderSidebar(); renderWorld(); }
 
 class BigvilleScene extends Phaser.Scene {
-  constructor() { super('bigville'); this.objects = []; }
+  constructor() { super('bigville'); this.objects = []; this.hasCentered = false; this.dragging = false; }
 
   preload() {
     this.load.image('village_scene', 'assets/village_scene.png');
@@ -124,6 +126,21 @@ class BigvilleScene extends Phaser.Scene {
       if (key === 'a' || key === 'arrowleft') this.cameras.main.scrollX -= amount;
       if (key === 'd' || key === 'arrowright') this.cameras.main.scrollX += amount;
     });
+    this.input.on('wheel', (_pointer, _gameObjects, _deltaX, deltaY) => {
+      this.adjustZoom(deltaY > 0 ? -0.1 : 0.1);
+    });
+    this.input.on('pointerdown', (pointer) => {
+      this.dragging = true;
+      this.lastPointer = {x: pointer.x, y: pointer.y};
+    });
+    this.input.on('pointerup', () => { this.dragging = false; });
+    this.input.on('pointermove', (pointer) => {
+      if (!this.dragging || !this.lastPointer) return;
+      const zoom = this.cameras.main.zoom || 1;
+      this.cameras.main.scrollX -= (pointer.x - this.lastPointer.x) / zoom;
+      this.cameras.main.scrollY -= (pointer.y - this.lastPointer.y) / zoom;
+      this.lastPointer = {x: pointer.x, y: pointer.y};
+    });
     this.drawState(state);
   }
 
@@ -137,6 +154,7 @@ class BigvilleScene extends Phaser.Scene {
     const backdrop = this.add.image(width / 2, height / 2, 'village_scene')
       .setDisplaySize(width, height).setDepth(0);
     this.objects.push(backdrop);
+    this.drawCanonicalMap(map);
     const allResidents = snapshot.world.residents || [];
     this.playerId = snapshot.player;
     const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
@@ -161,11 +179,61 @@ class BigvilleScene extends Phaser.Scene {
       const sprite = this.add.sprite(pos[0] * TILE + 8, pos[1] * TILE + 8, 'characters', frame).setDepth(3);
       if (resident.id === snapshot.player) sprite.setScale(1.45).setTint(0xffe1a8);
       this.objects.push(sprite);
-      if (resident.id === snapshot.player) {
+      if (resident.id === snapshot.player && !this.hasCentered) {
         this.cameras.main.centerOn(pos[0] * TILE, pos[1] * TILE);
+        this.hasCentered = true;
       }
     }
     this.cameras.main.setBounds(0, 0, width, height);
+  }
+
+  adjustZoom(delta) {
+    const camera = this.cameras.main;
+    camera.setZoom(Math.max(0.75, Math.min(3, Number((camera.zoom + delta).toFixed(2)))));
+    $('zoom-reset').textContent = `${Math.round(camera.zoom * 100)}%`;
+  }
+
+  resetView() {
+    this.cameras.main.setZoom(1);
+    $('zoom-reset').textContent = '100%';
+    this.hasCentered = false;
+    this.drawState(state);
+  }
+
+  drawCanonicalMap(map) {
+    const grid = map.grid || [];
+    const routes = this.add.graphics().setDepth(1);
+    const tileColours = {
+      path: 0xd4ad6d,
+      square: 0xc7b887,
+      floor: 0xa47b59,
+      wall: 0x625b63,
+      water: 0x4e9da5,
+      tree: 0x4f804c,
+    };
+    for (let y = 0; y < grid.length; y++) {
+      for (let x = 0; x < (grid[y] || []).length; x++) {
+        const tile = grid[y][x];
+        const px = x * TILE;
+        const py = y * TILE;
+        // These overlays are deliberately translucent: the generated village
+        // art supplies warmth and texture, while this layer makes the
+        // simulation's real navigation lattice visible and authoritative.
+        if (tile === 1) {
+          // A small stitched marker keeps the real road lattice visible
+          // without turning the cosy artwork into a debugging grid.
+          routes.fillStyle(tileColours.path, 0.55).fillRect(px + 5, py + 5, 6, 6);
+        } else if (tile === 4) {
+          routes.fillStyle(tileColours.square, 0.28).fillRect(px, py, TILE, TILE);
+        } else if (tile === 2 || tile === 6) {
+          routes.fillStyle(tile === 6 ? tileColours.water : tileColours.wall, 0.42)
+            .fillRect(px, py, TILE, TILE);
+        } else if (tile === 5) {
+          routes.fillStyle(tileColours.tree, 0.16).fillRect(px, py, TILE, TILE);
+        }
+      }
+    }
+    this.objects.push(routes);
   }
 
   drawOccupiedInteriors(buildings, residents) {
@@ -227,7 +295,7 @@ class BigvilleScene extends Phaser.Scene {
 }
 
 const config = {
-  type: Phaser.AUTO, parent: 'game', width: 960, height: 640,
+  type: Phaser.AUTO, parent: 'game', width: MAP_WIDTH * TILE, height: MAP_HEIGHT * TILE,
   pixelArt: true, backgroundColor: '#172126', scene: [BigvilleScene],
   scale: {mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH}
 };
@@ -241,7 +309,12 @@ $('speak').onclick = () => {
 };
 $('reset').onclick = async () => {
   const response = await fetch('/api/reset', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
-  state = await response.json(); renderAll();
+  state = await response.json();
+  if (scene) scene.resetView();
+  renderSidebar();
 };
+$('zoom-in').onclick = () => scene?.adjustZoom(0.25);
+$('zoom-out').onclick = () => scene?.adjustZoom(-0.25);
+$('zoom-reset').onclick = () => scene?.resetView();
 
 getState().then((loaded) => { state = loaded; renderAll(); }).catch((error) => { $('status').textContent = error.message; });

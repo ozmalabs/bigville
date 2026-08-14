@@ -1,17 +1,19 @@
-from .cheap import CheapBackend, DeterministicBackend
+from .cheap import CheapBackend, DeterministicBackend, NPCGoal
 from .conversation import ConversationMessage, TemplateConversationInterface
 from .human import HumanBackend
 from .llm import LLMBackend, LLMProvider
 from .prompts import PromptBuilder, PromptRecord, build_prompt
 from .ocelot import OcelotBackend
-from .protocol import (ActorContext, ActorResponse, CognitionBackend,
+from .protocol import (ActorContext, ActorContinuation, ActorResponse, CognitionBackend,
                        ProposedAction, communication_capabilities)
 
 __all__ = [
     "ActorContext",
+    "ActorContinuation",
     "ActorResponse",
     "CheapBackend",
     "DeterministicBackend",
+    "NPCGoal",
     "ConversationMessage",
     "CognitionBackend",
     "HumanBackend",

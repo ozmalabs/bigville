@@ -31,6 +31,8 @@ h1 { margin: 0; color: var(--accent); font-size: 29px; }
 h2 { margin: 18px 0 8px; color: var(--accent-2); font-size: 15px; text-transform: uppercase; letter-spacing: .08em; }
 .subtitle, .hint { color: var(--muted); }
 .hint { margin: 8px 2px; }
+.view-controls { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 8px; color: var(--muted); }
+.view-controls button { flex: 0 0 auto; min-width: 34px; text-align: center; padding: 4px 8px; }
 .status { background: var(--panel-2); padding: 10px; border-left: 3px solid var(--accent); white-space: pre-wrap; }
 .action { display: flex; gap: 8px; margin: 6px 0; }
 button, select, input { border: 1px solid #6c5548; border-radius: 3px; background: #3b3032; color: var(--ink); padding: 8px; }
