@@ -1,11 +1,10 @@
 /* Bigville's browser client. Phaser renders the world; Python remains the authority. */
 const TILE = 16;
-const ISO_HALF_W = 12;
-const ISO_HALF_H = 6;
-const ISO_TILE_W = ISO_HALF_W * 2;
-const ISO_TILE_H = ISO_HALF_H * 2;
-const ISO_BUILDING_W = 72;
-const ISO_BUILDING_H = 36;
+// Square simulation cells are presented at a readable 2x pixel-art scale.
+// The style is 3/4 top-down: upright facades and sprites add depth, while the
+// terrain itself remains square and walkable rather than becoming diamonds.
+const DISPLAY_SCALE = 2;
+const DEFAULT_ZOOM = 1.25;
 // These are the initial viewport dimensions, not the world dimensions.  The
 // world is drawn from whatever map grid the selected scenario exports.
 const VIEWPORT_WIDTH = 52;
@@ -200,11 +199,12 @@ class BigvilleScene extends Phaser.Scene {
 
   preload() {
     this.load.json('asset_manifest', 'assets/manifest.json');
-    this.load.spritesheet('tileset', 'assets/tileset_iso.png', {frameWidth: ISO_TILE_W, frameHeight: ISO_TILE_H});
+    this.load.spritesheet('tileset', 'assets/tileset.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('props', 'assets/props.png', {frameWidth: TILE, frameHeight: TILE});
-    this.load.spritesheet('buildings', 'assets/buildings_iso.png', {frameWidth: ISO_BUILDING_W, frameHeight: ISO_BUILDING_H});
-    this.load.spritesheet('building_interiors', 'assets/building_interiors_iso.png', {frameWidth: ISO_BUILDING_W, frameHeight: ISO_BUILDING_H});
-    this.load.spritesheet('building_parts', 'assets/building_parts_iso.png', {frameWidth: ISO_TILE_W, frameHeight: ISO_TILE_H});
+    this.load.spritesheet('large_props', 'assets/large_props.png', {frameWidth: 32, frameHeight: 32});
+    this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
+    this.load.spritesheet('building_interiors', 'assets/building_interiors.png', {frameWidth: 48, frameHeight: 48});
+    this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('items', 'assets/items.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('characters', 'assets/character_variants.png', {frameWidth: 16, frameHeight: 16});
@@ -214,6 +214,8 @@ class BigvilleScene extends Phaser.Scene {
   create() {
     scene = this;
     this.assetManifest = this.cache.json.get('asset_manifest') || {};
+    this.cameras.main.setZoom(DEFAULT_ZOOM);
+    $('zoom-reset').textContent = `${Math.round(DEFAULT_ZOOM * 100)}%`;
     this.cameras.main.setBackgroundColor('#172126');
     this.input.keyboard.on('keydown', (event) => {
       const amount = 80;
@@ -246,7 +248,8 @@ class BigvilleScene extends Phaser.Scene {
     for (const object of this.objects) object.destroy();
     this.objects = [];
     const map = snapshot.world.map;
-    this.setProjection(map);
+    const width = map.width * TILE * DISPLAY_SCALE;
+    const height = map.height * TILE * DISPLAY_SCALE;
     this.drawCanonicalMap(map);
     this.drawTerrainProps(map);
     const allResidents = snapshot.world.residents || [];
@@ -270,43 +273,24 @@ class BigvilleScene extends Phaser.Scene {
     for (const resident of visibleResidents) {
       const pos = resident.position || [0, 0];
       const frame = this.residentFrame(resident);
-      const screen = this.cellPoint(pos[0], pos[1]);
-      const sprite = this.add.sprite(screen.x, screen.y - 8, 'characters', frame)
-        .setDepth(this.depthAt(pos[0], pos[1], 30));
+      const sprite = this.add.sprite(this.cellX(pos[0]), this.cellY(pos[1]), 'characters', frame)
+        .setScale(DISPLAY_SCALE).setDepth(this.depthAt(pos[0], pos[1], 30));
       sprite.setInteractive({useHandCursor: true});
       sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
-      if (resident.id === snapshot.player) sprite.setScale(1.45).setTint(0xffe1a8);
+      if (resident.id === snapshot.player) sprite.setScale(DISPLAY_SCALE * 1.45).setTint(0xffe1a8);
       this.objects.push(sprite);
       this.drawResidentItems(resident, pos);
       if (resident.id === snapshot.player && !this.hasCentered) {
-        this.cameras.main.centerOn(screen.x, screen.y - 8);
+        this.cameras.main.centerOn(this.cellX(pos[0]), this.cellY(pos[1]));
         this.hasCentered = true;
       }
     }
-    this.cameras.main.setBounds(0, 0, this.mapPixelWidth, this.mapPixelHeight);
+    this.cameras.main.setBounds(0, 0, width, height);
   }
 
-  setProjection(map) {
-    const margin = 88;
-    this.mapOrigin = {x: Number(map.height || 0) * ISO_HALF_W + margin, y: margin};
-    this.mapPixelWidth = (Number(map.width || 0) + Number(map.height || 0)) * ISO_HALF_W + margin * 2;
-    this.mapPixelHeight = (Number(map.width || 0) + Number(map.height || 0)) * ISO_HALF_H + margin * 2 + 64;
-  }
-
-  isoPoint(x, y) {
-    return {
-      x: this.mapOrigin.x + (x - y) * ISO_HALF_W,
-      y: this.mapOrigin.y + (x + y) * ISO_HALF_H,
-    };
-  }
-
-  cellPoint(x, y) {
-    return this.isoPoint(Number(x) + 0.5, Number(y) + 0.5);
-  }
-
-  depthAt(x, y, layer = 0) {
-    return (Number(x) + Number(y)) * 100 + Number(x) + layer;
-  }
+  cellX(x) { return Number(x) * TILE * DISPLAY_SCALE + (TILE * DISPLAY_SCALE) / 2; }
+  cellY(y) { return Number(y) * TILE * DISPLAY_SCALE + (TILE * DISPLAY_SCALE) / 2; }
+  depthAt(x, y, layer = 0) { return Number(y) * 1000 + Number(x) + layer; }
 
   adjustZoom(delta) {
     const camera = this.cameras.main;
@@ -315,8 +299,8 @@ class BigvilleScene extends Phaser.Scene {
   }
 
   resetView() {
-    this.cameras.main.setZoom(1);
-    $('zoom-reset').textContent = '100%';
+    this.cameras.main.setZoom(DEFAULT_ZOOM);
+    $('zoom-reset').textContent = `${Math.round(DEFAULT_ZOOM * 100)}%`;
     this.hasCentered = false;
     this.drawState(state);
   }
@@ -347,9 +331,8 @@ class BigvilleScene extends Phaser.Scene {
       for (let x = 0; x < (grid[y] || []).length; x++) {
         const tile = grid[y][x];
         const frame = this.terrainFrame(tile, x, y, grid);
-        const point = this.cellPoint(x, y);
-        const sprite = this.add.sprite(point.x, point.y, 'tileset', frame)
-          .setDepth(this.depthAt(x, y, 0));
+        const sprite = this.add.sprite(this.cellX(x), this.cellY(y), 'tileset', frame)
+          .setScale(DISPLAY_SCALE).setDepth(this.depthAt(x, y, 0));
         this.objects.push(sprite);
       }
     }
@@ -358,6 +341,7 @@ class BigvilleScene extends Phaser.Scene {
   drawTerrainProps(map) {
     const grid = map.grid || [];
     const props = this.assetManifest?.terrain?.props || {};
+    const largeProps = this.assetManifest?.terrain?.large_props || {};
     const buildings = map.buildings || [];
     const occupied = new Set();
     for (const building of buildings) {
@@ -376,8 +360,15 @@ class BigvilleScene extends Phaser.Scene {
     const addProp = (name, x, y, depth = 1.1) => {
       const frame = props[name];
       if (frame === undefined) return;
-      const point = this.cellPoint(x, y);
-      const sprite = this.add.sprite(point.x, point.y - 6, 'props', frame)
+      const sprite = this.add.sprite(this.cellX(x), this.cellY(y) - 6 * DISPLAY_SCALE,
+        'props', frame).setScale(DISPLAY_SCALE).setDepth(this.depthAt(x, y, depth));
+      this.objects.push(sprite);
+    };
+    const addLargeProp = (name, x, y, depth = 1.5) => {
+      const frame = largeProps[name];
+      if (frame === undefined) return;
+      const sprite = this.add.sprite(this.cellX(x), this.cellY(y) - 16 * DISPLAY_SCALE,
+        'large_props', frame).setScale(DISPLAY_SCALE)
         .setDepth(this.depthAt(x, y, depth));
       this.objects.push(sprite);
     };
@@ -387,11 +378,17 @@ class BigvilleScene extends Phaser.Scene {
         if (occupied.has(`${x},${y}`)) continue;
         const roll = hash(x, y) % 1000;
         if (tile === 0) {
-          if (roll < 20) addProp('bush', x, y);
-          else if (roll < 50) addProp('flower_clump', x, y);
-          else if (roll < 80) addProp('grass_tuft', x, y);
-          else if (roll < 92) addProp('stone', x, y);
-          else if (roll < 98) addProp('mushroom', x, y);
+          const nearPath = [
+            grid[y - 1]?.[x], grid[y]?.[x + 1], grid[y + 1]?.[x], grid[y]?.[x - 1]
+          ].some(value => value === 1 || value === 4);
+          if (nearPath && roll < 95) addProp('flower_clump', x, y);
+          else if (nearPath && roll < 145) addProp('grass_tuft', x, y);
+          else if (roll < 45) addLargeProp('tree', x, y);
+          else if (roll < 115) addLargeProp('bush', x, y);
+          else if (roll < 76) addProp('flower_clump', x, y);
+          else if (roll < 90) addProp('grass_tuft', x, y);
+          else if (roll < 97) addProp('stone', x, y);
+          else if (roll < 99) addProp('mushroom', x, y);
           else if (roll === 227) addProp('log', x, y);
           else if (roll === 311) addProp('stump', x, y);
         } else if (tile === 6 && roll % 5 === 0) {
@@ -446,8 +443,9 @@ class BigvilleScene extends Phaser.Scene {
     const [x, y] = building.position || [building.x || 0, building.y || 0];
     const width = Math.max(1, Number(building.w || 3));
     const height = Math.max(1, Number(building.h || 3));
-    const anchor = this.cellPoint(x + width / 2, y + height / 2);
-    const buildingDepth = this.depthAt(x + width - 1, y + height - 1, 20);
+    const px = x * TILE * DISPLAY_SCALE;
+    const py = y * TILE * DISPLAY_SCALE;
+    const cellWidth = TILE * DISPLAY_SCALE;
     const manifest = this.assetManifest?.buildings || {};
     const frame = (manifest.sprites || {})[building.type]
       ?? BUILDING_FRAMES[building.type] ?? BUILDING_FRAMES.house;
@@ -455,9 +453,10 @@ class BigvilleScene extends Phaser.Scene {
     // Preserve the authored 3x3 institution art while allowing arbitrary
     // footprints to fall back to the composable part vocabulary.
     if (width === 3 && height === 3) {
-      const sprite = this.add.sprite(anchor.x, anchor.y - ISO_BUILDING_H * 0.7,
+      const sprite = this.add.sprite(px + width * cellWidth / 2,
+        py + height * cellWidth / 2 - 8 * DISPLAY_SCALE,
         roofOn ? 'buildings' : 'building_interiors', frame)
-        .setScale(1, 1.4).setDepth(buildingDepth);
+        .setScale(DISPLAY_SCALE).setDepth(this.depthAt(x + width / 2, y + height, 20));
       this.objects.push(sprite);
       return;
     }
@@ -465,9 +464,9 @@ class BigvilleScene extends Phaser.Scene {
     const parts = manifest.parts || {};
     const addPart = (name, cellX, cellY, depth = 2, tint = null) => {
       if (parts[name] === undefined) return;
-      const point = this.cellPoint(x + cellX, y + cellY);
-      const sprite = this.add.sprite(point.x, point.y - 2,
-        'building_parts', parts[name]).setScale(1, 1.25)
+      const sprite = this.add.sprite(px + cellX * cellWidth + cellWidth / 2,
+        py + cellY * cellWidth + cellWidth / 2 - 4 * DISPLAY_SCALE,
+        'building_parts', parts[name]).setScale(DISPLAY_SCALE)
         .setDepth(this.depthAt(x + cellX, y + cellY, depth));
       if (tint !== null) sprite.setTint(tint);
       this.objects.push(sprite);
@@ -502,9 +501,9 @@ class BigvilleScene extends Phaser.Scene {
     } else {
       const badges = manifest.badges || {};
       if (badges[building.type] !== undefined) {
-        const front = this.cellPoint(x + width / 2, y + height - 0.15);
-        const badge = this.add.sprite(front.x, front.y - 8, 'building_badges', badges[building.type])
-          .setDepth(buildingDepth + 2);
+        const badge = this.add.sprite(px + Math.floor(width / 2) * cellWidth + cellWidth / 2,
+          py + height * cellWidth - 8 * DISPLAY_SCALE, 'building_badges', badges[building.type])
+          .setScale(DISPLAY_SCALE).setDepth(this.depthAt(x + width / 2, y + height, 22));
         this.objects.push(badge);
       }
     }
@@ -516,9 +515,9 @@ class BigvilleScene extends Phaser.Scene {
     const height = Math.max(1, Number(building.h || 3));
     const cellX = Math.min(width - 1, 1 + (index % Math.max(1, width - 1)));
     const cellY = Math.min(height - 1, 1 + Math.floor(index / Math.max(1, width - 1)));
-    const point = this.cellPoint(x + cellX, y + cellY);
-    const sprite = this.add.sprite(point.x, point.y - 8, 'characters', this.residentFrame(resident))
-      .setScale(1.15).setDepth(this.depthAt(x + cellX, y + cellY, 30));
+    const sprite = this.add.sprite(this.cellX(x + cellX), this.cellY(y + cellY) - 8 * DISPLAY_SCALE,
+      'characters', this.residentFrame(resident))
+      .setScale(DISPLAY_SCALE * 1.15).setDepth(this.depthAt(x + cellX, y + cellY, 30));
     sprite.setInteractive({useHandCursor: true});
     sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
     if (resident.id === this.playerId) sprite.setTint(0xffe1a8);
@@ -538,17 +537,17 @@ class BigvilleScene extends Phaser.Scene {
     const drawItem = (item, x, y, scale = 0.85) => {
       const frame = itemIcon(item.kind);
       if (!frame) return;
-      const sprite = this.add.sprite(x, y, 'items', frame.frame).setScale(scale)
+      const sprite = this.add.sprite(x, y, 'items', frame.frame).setScale(scale * DISPLAY_SCALE)
         .setDepth(this.depthAt(pos[0], pos[1], 35));
       this.objects.push(sprite);
     };
-    const point = this.cellPoint(pos[0], pos[1]);
-    if (hand) drawItem(hand, point.x + 7, point.y - 14);
+    if (hand) drawItem(hand, this.cellX(pos[0]) + 7 * DISPLAY_SCALE,
+      this.cellY(pos[1]) - 9 * DISPLAY_SCALE);
     // Keep clothing readable without replacing the role/age body variant.
     worn.slice(0, 2).forEach((kind, index) => {
       const hat = /hat|bonnet|hood|cap/.test(kind);
-      drawItem({kind}, point.x + (hat ? 0 : -5 + index * 10),
-               point.y - (hat ? 17 : 1), 0.55);
+      drawItem({kind}, this.cellX(pos[0]) + (hat ? 0 : -5 + index * 10) * DISPLAY_SCALE,
+               this.cellY(pos[1]) - (hat ? 9 : -1) * DISPLAY_SCALE, 0.55);
     });
   }
 

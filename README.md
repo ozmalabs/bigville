@@ -33,10 +33,11 @@ python -m bigville.server
 ```
 
 The cosy pixel-art terrain tiles, reusable building sprites, and supporting
-sprite/icon sheets are included in the package. The client presents the
-square simulation grid in a 3/4 dimetric view, while assembling the map from
-the scenario's exported grid and building placements. Changing the world seed
-or scenario changes the geography without requiring a new backdrop.
+sprite/icon sheets are included in the package. The client uses a square-cell
+3/4 top-down presentation with a close 2x pixel-art scale, upright facades,
+and row-based depth. It assembles the map from the scenario's exported grid
+and building placements, so changing the world seed or scenario changes the
+geography without requiring a new backdrop.
 Use the action buttons to submit a major action, or speak to another resident;
 autonomous deterministic residents take their own backend decisions on the
 same turn.
@@ -66,8 +67,8 @@ The art scale and asset contract is documented in
 generated from every entry in `domains/bigville_entities.ITEMS`; the inspector
 shows bulk stock, discrete carried objects, and worn clothing. A held tool is
 rendered on the resident, so a resident carrying a pick visibly has a pick.
-The terrain direction board is included at
-[`bigville/game/assets/terrain_art_direction.png`](bigville/game/assets/terrain_art_direction.png);
+The current art direction board is included at
+[`bigville/game/assets/stardew_like_art_direction.png`](bigville/game/assets/stardew_like_art_direction.png);
 the shipped runtime atlas is generated deterministically from the same palette
 and layering contract.
 

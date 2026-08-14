@@ -122,35 +122,6 @@ PAL = {
 }
 
 T = 16  # tile size
-ISO_W, ISO_H = 24, 12  # 2:1 dimetric ground diamond for one map cell
-
-
-def project_diamond(src):
-    """Project a square source frame onto a 2:1 dimetric diamond.
-
-    The simulation still speaks in square cells. These parallel art frames
-    only change the screen projection: source pixels are sampled through the
-    inverse diamond transform, keeping the asset generator deterministic and
-    avoiding a second set of hand-authored world coordinates.
-    """
-    out_w = max(1, src.w * ISO_W // T)
-    out_h = max(1, src.h * ISO_H // T)
-    out = Img(out_w, out_h)
-    half_w, half_h = out_w / 2.0, out_h / 2.0
-    for y in range(out_h):
-        for x in range(out_w):
-            nx = (x + 0.5 - half_w) / half_w
-            ny = (y + 0.5 - half_h) / half_h
-            if abs(nx) + abs(ny) > 1.0:
-                continue
-            u = (nx + ny) * 0.5 + 0.5
-            v = (ny - nx) * 0.5 + 0.5
-            sx = min(src.w - 1, max(0, int(u * src.w)))
-            sy = min(src.h - 1, max(0, int(v * src.h)))
-            i = (sy * src.w + sx) * 4
-            if src.px[i + 3]:
-                out.set(x, y, src.px[i:i + 4])
-    return out
 
 # ----------------------------------------------------------------------------
 # terrain tiles
@@ -424,12 +395,43 @@ for _mask in range(16):
     TILES.append((f"water_transition_{_mask:02d}", _water_transition(_mask)))
 
 
-PROP_NAMES = ["flower_clump", "bush", "grass_tuft", "stone", "mushroom", "reed", "log", "barrel", "bench", "stump"]
+PROP_NAMES = ["tree", "flower_clump", "bush", "grass_tuft", "stone", "mushroom", "reed", "log", "barrel", "bench", "stump"]
+
+
+def large_prop_sprite(name):
+    """32px foliage silhouettes for the close 2x village view."""
+    size = 32
+    im = Img(size, size)
+    if name == "tree":
+        im.rect(14, 18, 5, 14, PAL["trunk"])
+        for cx, cy, rr, col in ((13, 12, 10, "leaf_a"), (21, 13, 9, "leaf_b"), (8, 18, 7, "leaf_b"), (18, 8, 7, "leaf_a")):
+            for yy in range(cy - rr, cy + rr + 1):
+                for xx in range(cx - rr, cx + rr + 1):
+                    if (xx - cx) ** 2 + (yy - cy) ** 2 <= rr * rr:
+                        im.set(xx, yy, PAL[col])
+        for x, y in ((9, 7), (17, 5), (22, 10), (5, 17)):
+            im.rect(x, y, 3, 2, PAL["grass_c"])
+    elif name == "bush":
+        for cx, cy, rr, col in ((9, 19, 8, "leaf_a"), (17, 15, 10, "leaf_b"), (25, 20, 8, "leaf_a")):
+            for yy in range(cy - rr, cy + rr + 1):
+                for xx in range(cx - rr, cx + rr + 1):
+                    if (xx - cx) ** 2 + (yy - cy) ** 2 <= rr * rr:
+                        im.set(xx, yy, PAL[col])
+        im.rect(5, 25, 23, 5, PAL["leaf_a"])
+    return im
 
 
 def prop_sprite(name):
     im = Img(T, T)
-    if name == "flower_clump":
+    if name == "tree":
+        im.rect(7, 10, 3, 6, PAL["trunk"])
+        for cx, cy, rr, col in ((7, 6, 5, "leaf_a"), (11, 7, 4, "leaf_b"), (4, 9, 3, "leaf_b")):
+            for yy in range(cy - rr, cy + rr + 1):
+                for xx in range(cx - rr, cx + rr + 1):
+                    if (xx - cx) ** 2 + (yy - cy) ** 2 <= rr * rr:
+                        im.set(xx, yy, PAL[col])
+        im.set(6, 4, PAL["grass_c"]); im.set(10, 5, PAL["grass_c"])
+    elif name == "flower_clump":
         for x, y, col in ((4, 7, "flower_y"), (8, 4, "flower_r"), (12, 7, "petal")):
             im.rect(x, y + 2, 2, 7, PAL["leaf_a"])
             im.set(x, y, PAL[col]); im.rect(x - 1, y + 1, 4, 2, PAL[col])
@@ -772,14 +774,23 @@ def _house_base(roof_col):
     im.rect(6, 20, B - 12, 24, PAL["brick_a"])          # walls
     for y in range(20, 44, 3):
         im.rect(6, y, B - 12, 1, PAL["brick_b"])
+    # Timber-frame facade and warm lower shadow give the house a readable
+    # upright front when the camera is close, instead of a flat icon.
+    im.rect(6, 20, B - 12, 2, PAL["trim"])
+    im.rect(8, 23, 2, 20, PAL["brick_b"])
+    im.rect(38, 23, 2, 20, PAL["brick_b"])
+    im.rect(6, 42, B - 12, 2, PAL["wall_b"])
     # roof (triangleish)
     for i, y in enumerate(range(6, 20)):
         inset = int((y - 6) * (B - 12) / 28)
         im.rect(6 + inset - 4, y, (B - 12) - 2 * inset + 8, 1, PAL[roof_col])
+        if y % 3 == 0:
+            im.rect(7 + inset - 4, y, max(1, (B - 12) - 2 * inset + 5), 1, PAL["roof_brown"])
     im.rect(4, 19, B - 8, 2, PAL["trim"])               # eave
     # door
     im.rect(B // 2 - 3, 33, 6, 11, PAL["door"])
     im.set(B // 2 + 1, 39, PAL["trim"])
+    im.rect(B // 2 - 5, 43, 10, 2, PAL["stone_b"])
     # windows
     im.rect(11, 25, 6, 6, PAL["win"]); im.rect(31, 25, 6, 6, PAL["win"])
     im.rect(11, 25, 6, 1, PAL["trim"]); im.rect(31, 25, 6, 1, PAL["trim"])
@@ -803,7 +814,14 @@ def _house_interior(name):
     im.rect(4, 5, 40, 3, PAL["trunk"])
     im.rect(4, 40, 40, 4, PAL["stone_b"])
     im.rect(22, 36, 4, 8, PAL["door"])
-    # A small, deterministic furniture language differentiates interiors.
+    # A small, deterministic furniture language differentiates interiors and
+    # makes roof-off rooms read as playable spaces rather than blank squares.
+    im.rect(18, 16, 12, 8, PAL["roof_green"])
+    im.rect(20, 18, 8, 4, PAL["square_a"])
+    im.rect(9, 11, 9, 5, PAL["door"])
+    im.rect(10, 12, 7, 2, PAL["trim"])
+    im.rect(31, 25, 7, 5, PAL["floor_b"])
+    im.rect(32, 26, 5, 2, PAL["trim"])
     furniture = {
         "granary": (PAL["roof_gold"], (9, 11, 12, 7)),
         "forge": (PAL["stone_b"], (27, 11, 11, 9)),
@@ -922,13 +940,6 @@ def main():
         tindex[name] = i
     write_png(tsheet, os.path.join(HERE, "tileset.png"))
 
-    # Parallel dimetric terrain sheet. Frame indices intentionally match the
-    # square atlas, so clients can switch projection without changing map data.
-    iso_tsheet = Img(ISO_W * len(TILES), ISO_H)
-    for i, (_name, im) in enumerate(TILES):
-        iso_tsheet.blit(project_diamond(im), i * ISO_W, 0)
-    write_png(iso_tsheet, os.path.join(HERE, "tileset_iso.png"))
-
     # Transparent life props are kept in their own atlas so terrain remains
     # data-driven: a scenario can place or omit them without repainting the
     # underlying map tiles.
@@ -938,6 +949,14 @@ def main():
         psheet.blit(prop_sprite(name), i * T, 0)
         pindex[name] = i
     write_png(psheet, os.path.join(HERE, "props.png"))
+
+    large_prop_names = ["tree", "bush"]
+    lpsheet = Img(32 * len(large_prop_names), 32)
+    lpindex = {}
+    for i, name in enumerate(large_prop_names):
+        lpsheet.blit(large_prop_sprite(name), i * 32, 0)
+        lpindex[name] = i
+    write_png(lpsheet, os.path.join(HERE, "large_props.png"))
 
     # character sheet: cols=frames(3) rows=dirs(4)
     csheet = Img(T * 3, T * 4)
@@ -955,22 +974,12 @@ def main():
         bindex[name] = i
     write_png(bsheet, os.path.join(HERE, "buildings.png"))
 
-    iso_bsheet = Img(B * ISO_W // T * len(blds), B * ISO_H // T)
-    for i, (_name, im) in enumerate(blds):
-        iso_bsheet.blit(project_diamond(im), i * (B * ISO_W // T), 0)
-    write_png(iso_bsheet, os.path.join(HERE, "buildings_iso.png"))
-
     parts_sheet = Img(T * len(BUILDING_PART_NAMES), T)
     part_index = {}
     for i, name in enumerate(BUILDING_PART_NAMES):
         parts_sheet.blit(building_part(name), i * T, 0)
         part_index[name] = i
     write_png(parts_sheet, os.path.join(HERE, "building_parts.png"))
-
-    iso_parts_sheet = Img(ISO_W * len(BUILDING_PART_NAMES), ISO_H)
-    for i, name in enumerate(BUILDING_PART_NAMES):
-        iso_parts_sheet.blit(project_diamond(building_part(name)), i * ISO_W, 0)
-    write_png(iso_parts_sheet, os.path.join(HERE, "building_parts_iso.png"))
 
     badges_sheet = Img(T * len(blds), T)
     badge_index = {}
@@ -985,12 +994,6 @@ def main():
     for i, (name, _im) in enumerate(blds):
         isheet_buildings.blit(_house_interior(name), i * B, 0)
     write_png(isheet_buildings, os.path.join(HERE, "building_interiors.png"))
-
-    iso_isheet_buildings = Img(B * ISO_W // T * len(blds), B * ISO_H // T)
-    for i, (name, _im) in enumerate(blds):
-        iso_isheet_buildings.blit(project_diamond(_house_interior(name)),
-                                  i * (B * ISO_W // T), 0)
-    write_png(iso_isheet_buildings, os.path.join(HERE, "building_interiors_iso.png"))
 
     # Every canonical item gets a stable icon coordinate.  The atlas is a grid
     # so clients can request icons by name without requiring one file per item.
@@ -1012,18 +1015,19 @@ def main():
             "zoom_range": [0.75, 3.0],
             "anchor": "cell_center_feet_or_building_center",
             "nearest_neighbour": True,
-            "projection": "dimetric_2_to_1",
-            "dimetric_ground_frame": [ISO_W, ISO_H],
-            "screen_axes": {"east": [ISO_W // 2, ISO_H // 2],
-                            "south": [-ISO_W // 2, ISO_H // 2]},
         },
         "palette": "warm cozy (Stardew-esque): greens/browns/soft blues",
-        "style_reference": "pixel_art_art_direction.png",
+        "style_reference": "stardew_like_art_direction.png",
+        "rendering": {
+            "projection": "square_cells_3q_top_down",
+            "display_scale": 2,
+            "depth_order": "map_row_then_cell_x",
+            "facades": "upright_front_facing_buildings",
+        },
         "tint_note": "characters.png bodies are drawn LIGHT; recolour at runtime "
                      "by MULTIPLY-compositing the resident's class/role colour.",
         "tileset": {
-            "file": "tileset.png", "tile": T, "iso_file": "tileset_iso.png",
-            "iso_tile": [ISO_W, ISO_H], "count": len(TILES),
+            "file": "tileset.png", "tile": T, "count": len(TILES),
             "layout": "horizontal strip; frame index = column",
             "tiles": tindex,
         },
@@ -1038,6 +1042,9 @@ def main():
             "props_file": "props.png",
             "props_frame": T,
             "props": pindex,
+            "large_props_file": "large_props.png",
+            "large_props_frame": 32,
+            "large_props": lpindex,
         },
         "characters": {
             "file": "characters.png", "frame": T,
@@ -1049,14 +1056,10 @@ def main():
         "buildings": {
             "file": "buildings.png", "frame": B, "count": len(blds),
             "interior_file": "building_interiors.png",
-            "iso_file": "buildings_iso.png", "iso_frame": [B * ISO_W // T, B * ISO_H // T],
-            "iso_interior_file": "building_interiors_iso.png",
-            "roof_states": {"on": "buildings.png", "off": "building_interiors.png",
-                             "iso_on": "buildings_iso.png", "iso_off": "building_interiors_iso.png"},
+            "roof_states": {"on": "buildings.png", "off": "building_interiors.png"},
             "layout": "horizontal strip; frame index = column",
             "sprites": bindex,
             "parts_file": "building_parts.png", "parts_frame": T,
-            "iso_parts_file": "building_parts_iso.png", "iso_parts_frame": [ISO_W, ISO_H],
             "parts": part_index,
             "badges_file": "building_badges.png", "badges_frame": T,
             "badges": badge_index,
@@ -1100,7 +1103,7 @@ def main():
     }
     with open(os.path.join(HERE, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
-    print("wrote tileset.png tileset_iso.png props.png characters.png character_variants.png actions.png items.png buildings.png buildings_iso.png building_parts_iso.png manifest.json")
+    print("wrote tileset.png props.png characters.png character_variants.png actions.png items.png buildings.png manifest.json")
     print("tiles:", list(tindex), "\nbuildings:", list(bindex), "\nitems:", len(iindex),
           "\nactions:", ACTION_NAMES, "\ncharacter variants:", CHAR_VARIANTS)
 
