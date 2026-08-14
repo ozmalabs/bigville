@@ -325,6 +325,22 @@ _WORK_ANCHORS = {
     "manor":      (41, 30), "market": (23, 18),
 }
 
+# Physical facades are larger than their service anchor cells. Keep the
+# town's fixed institutions and workshops on separate clear sites so the
+# renderer can show the village as a village rather than a stack of services.
+_BUILDING_SITES = {
+    "forge": (45, 14), "woodshop": (34, 8), "mill": (13, 12),
+    "sawpit": (39, 6), "cooperage": (38, 9), "tannery": (10, 15),
+    "cobbler": (12, 20), "school": (16, 22), "printshop": (25, 10),
+    "weavery": (35, 28), "tailorshop": (13, 26), "inn": (30, 20),
+    "dyehouse": (28, 12), "bakery": (28, 24), "kitchen": (32, 30),
+    "dairy": (38, 25), "wharf": (1, 6), "granary": (36, 26),
+    "root_cellar": (42, 22), "wellhouse": (16, 14), "latrine": (9, 18),
+    "compost_yard": (34, 32), "smokehouse": (42, 28), "townhall": (21, 12),
+    "church": (25, 12), "watchhouse": (18, 28), "records_office": (25, 7),
+    "scriptorium": (30, 8), "shambles": (16, 8),
+}
+
 
 def build_town_100(seed=SEED_DEFAULT):
     """Return (grid, affordances, layout). Deterministic in `seed`. build_town()
@@ -376,6 +392,7 @@ def build_town_100(seed=SEED_DEFAULT):
 
     # --- deposits: a walkable comp cell adjacent to each body -------------------
     layout = {"w": W, "h": H, "deposits": {}, "work": {}, "farms": [], "homes": [],
+              "building_sites": dict(_BUILDING_SITES),
               "square": {"x": 18, "y": 15, "w": 11, "h": 7, "center": (23, 18)}}
     ordered = sorted(comp)
     for kind, tile in _BODY_TILE.items():

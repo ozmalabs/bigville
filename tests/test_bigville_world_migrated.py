@@ -1158,6 +1158,18 @@ def test_civic_buildings_and_town_square_fixtures_are_seeded_into_the_map():
     assert {"market_stall", "noticeboard", "well", "bench"} <= kinds
 
 
+def test_physical_building_footprints_do_not_overlap():
+    w = World.from_town100()
+    sites = w._building_sites
+    assert len(sites) == len(w.buildings())
+    for name, (x, y, width, height) in sites.items():
+        for other, (ox, oy, owidth, oheight) in sites.items():
+            if name >= other:
+                continue
+            assert not (x < ox + owidth and ox < x + width and
+                        y < oy + oheight and oy < y + height)
+
+
 def test_map_entities_have_home_work_land_and_building_anchors():
     w = World.from_town100()
     # The expanded road network is intentionally gently winding, so the deterministic home
@@ -1165,7 +1177,8 @@ def test_map_entities_have_home_work_land_and_building_anchors():
     assert w.map_position("John") in w._map_cells
     assert w.terrain_state(w.map_position("John"))["terrain"] in {"grass", "floor", "square", "path"}
     assert w.map_position("farm_plot_00") in w._map_cells
-    assert w.building_position("records_office") == tuple(w._map_layout["work"]["townhall"])
+    assert w.building_position("records_office") in w._map_cells
+    assert w.building_position("records_office") != w.building_position("townhall")
     old = w.actor_position("John")
     new = w.move_actor("John", w.building_position("records_office"))
     assert new != old and w.distance(new, w.building_position("records_office")) < w.distance(old, w.building_position("records_office"))

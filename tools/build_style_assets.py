@@ -470,9 +470,25 @@ def build_buildings(manifest: dict, buildings_sheet: Image.Image) -> dict:
     sprites = {}
     # Families are intentionally repeated across institutions: the important
     # distinction is the building's semantic type and footprint, while the
-    # village remains visually coherent rather than becoming a collage.
+    # village remains visually coherent rather than becoming a collage. Civic
+    # buildings get deliberate source families so the church reads as a church.
+    source_family = {
+        "church": 1, "townhall": 0, "school": 5, "records_office": 5,
+        "watchhouse": 5, "bank": 0, "press": 5, "store": 2,
+    }
     for i, name in enumerate(names):
-        frame = fit_sprite(cells[i % len(cells)], (BUILDING, BUILDING), pad=2, bottom=True)
+        source_index = source_family.get(name, i % len(cells))
+        frame = fit_sprite(cells[source_index], (BUILDING, BUILDING), pad=2, bottom=True)
+        if name == "church":
+            # The source chapel facade has the right proportions and stained
+            # glass, but needs one unmistakable landmark detail at this scale.
+            draw = ImageDraw.Draw(frame)
+            dark = (47, 38, 34, 255)
+            stone = (220, 198, 151, 255)
+            draw.rectangle((47, 1, 50, 18), fill=dark)
+            draw.rectangle((48, 2, 49, 17), fill=stone)
+            draw.rectangle((42, 7, 55, 11), fill=dark)
+            draw.rectangle((44, 8, 53, 9), fill=stone)
         sheet.alpha_composite(frame, (i * BUILDING, 0))
         sprites[name] = i
     sheet.save(ASSETS / "style_buildings.png")

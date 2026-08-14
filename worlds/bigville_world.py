@@ -436,6 +436,9 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._town, "has_tool", t)
             self._tools[tk] = t
         self._places = {}; self._containers = {}
+        # Building anchors are physical sites, not just labels. Keep each
+        # authored footprint clear so adjacent facades cannot overlap.
+        self._building_sites = {}
         for kind, spec in E.BUILDINGS.items():           # install the town's buildings from the data
             self._install_building(kind, spec)
 
@@ -949,6 +952,7 @@ class BigvilleWorld:
 
     def _anchor_for_building(self, kind):
         work = self._map_layout.get("work", {}) if self._map_layout else {}
+        fixed_sites = self._map_layout.get("building_sites", {}) if self._map_layout else {}
         aliases = {"records_office": "townhall", "watchhouse": "watch", "wellhouse": "market",
                    "latrine": "market", "compost_yard": "farm", "root_cellar": "farm",
                    "granary": "farm", "smokehouse": "bakery", "scriptorium": "press",
@@ -956,7 +960,7 @@ class BigvilleWorld:
                    "woodshop": "carpenter", "sawpit": "carpenter", "tannery": "market",
                    "cobbler": "market", "tailorshop": "market", "weavery": "market",
                    "forge": "mason", "kitchen": "bakery", "dairy": "farm", "wharf": "fish"}
-        target = work.get(kind) or work.get(aliases.get(kind, "")) or work.get("market")
+        target = fixed_sites.get(kind) or work.get(kind) or work.get(aliases.get(kind, "")) or work.get("market")
         if isinstance(target, list):
             target = tuple(target)
         if target in self._map_cells:
@@ -965,6 +969,47 @@ class BigvilleWorld:
             if tuple(pt) in self._map_cells:
                 return tuple(pt)
         return next(iter(self._map_cells), None)
+
+    def _allocate_building_site(self, kind, spec, requested):
+        """Choose the nearest clear walkable site for a building footprint.
+
+        Several services historically shared one anchor cell. That was valid
+        graph data, but it made their physical facades render on top of one
+        another. Each place remains distinct; only its map site is resolved
+        here so buildings have room to stand.
+        """
+        footprint = spec.get("footprint", spec.get("size", (3, 3)))
+        if isinstance(footprint, (int, float)):
+            footprint = (int(footprint), int(footprint))
+        if not isinstance(footprint, (list, tuple)) or len(footprint) != 2:
+            footprint = (3, 3)
+        width, height = max(1, int(footprint[0])), max(1, int(footprint[1]))
+        target = tuple(requested) if requested is not None else (0, 0)
+        map_width = len(self._map_grid[0]) if self._map_grid else 0
+        map_height = len(self._map_grid or [])
+
+        def clear(site):
+            x, y = site
+            if x < 0 or y < 0 or x + width > map_width or y + height > map_height:
+                return False
+            if any((x + dx, y + dy) not in self._map_cells
+                   for dy in range(height) for dx in range(width)):
+                return False
+            for ox, oy, ow, oh in self._building_sites.values():
+                if x < ox + ow and ox < x + width and y < oy + oh and oy < y + height:
+                    return False
+            return True
+
+        candidates = [(x, y) for y in range(max(0, map_height - height + 1))
+                      for x in range(max(0, map_width - width + 1))]
+        candidates.sort(key=lambda site: (abs(site[0] - target[0]) + abs(site[1] - target[1]),
+                                          site[1], site[0]))
+        for site in candidates:
+            if clear(site):
+                return (site[0], site[1], width, height)
+        # Custom scenarios may deliberately pack buildings tightly. Preserve
+        # the requested anchor rather than making world construction fail.
+        return (target[0], target[1], width, height)
 
     def _attach_at_cell(self, node, cell, edge="at_cell"):
         if cell in self._map_cells:
@@ -2953,7 +2998,10 @@ class BigvilleWorld:
             r = self.eng.add_node("Room", {"kind": room})
             self.eng.add_edge_unchecked(p, "has_room", r)
         self._places[place_key] = p
-        self._attach_at_cell(p, cell if cell is not None else self._anchor_for_building(kind))
+        requested = cell if cell is not None else self._anchor_for_building(kind)
+        site = self._allocate_building_site(place_key, spec, requested)
+        self._building_sites[place_key] = site
+        self._attach_at_cell(p, site[:2])
         return p
 
     def building(self, kind): return self._places.get(kind)
