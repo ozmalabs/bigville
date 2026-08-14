@@ -101,6 +101,7 @@ class BigvilleScene extends Phaser.Scene {
   constructor() { super('bigville'); this.objects = []; }
 
   preload() {
+    this.load.image('village_scene', 'assets/village_scene.png');
     this.load.spritesheet('tileset', 'assets/tileset.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('characters', 'assets/character_variants.png', {frameWidth: 16, frameHeight: 16});
@@ -126,39 +127,31 @@ class BigvilleScene extends Phaser.Scene {
     for (const object of this.objects) object.destroy();
     this.objects = [];
     const map = snapshot.world.map;
-    const grid = map.grid || [];
-    for (let y = 0; y < grid.length; y++) {
-      for (let x = 0; x < (grid[y] || []).length; x++) {
-        const frame = TILE_FRAMES[grid[y][x]] ?? 0;
-        this.objects.push(this.add.image(x * TILE + TILE / 2, y * TILE + TILE / 2, 'tileset', frame).setOrigin(.5));
-      }
-    }
-    for (const building of (map.buildings || [])) {
-      const pos = building.position || [building.x || 0, building.y || 0];
-      const kind = String(building.type || '').toLowerCase();
-      const frame = {house: 0, townhall: 1, market: 4, granary: 10, root_cellar: 11,
-        records_office: 16, watchhouse: 17, kitchen: 18, dairy: 19, bakery: 31,
-        mill: 33, printshop: 34}[kind] ?? 0;
-      this.objects.push(this.add.image(pos[0] * TILE + 24, pos[1] * TILE + 24, 'buildings', frame).setOrigin(.5));
-    }
-    for (const animal of (snapshot.world.animals || [])) {
-      const pos = animal.position || [0, 0];
-      const marker = this.add.rectangle(pos[0] * TILE + 8, pos[1] * TILE + 8, 8, 8, 0xd8c37d);
-      this.objects.push(marker);
-    }
-    for (const resident of (snapshot.world.residents || [])) {
+    const width = map.width * TILE;
+    const height = map.height * TILE;
+    const backdrop = this.add.image(width / 2, height / 2, 'village_scene')
+      .setDisplaySize(width, height).setDepth(0);
+    this.objects.push(backdrop);
+    const allResidents = snapshot.world.residents || [];
+    const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
+    const visibleResidents = allResidents.filter((resident) => {
+      if (resident.id === snapshot.player || !playerResident) return true;
+      return Math.abs((resident.x || 0) - (playerResident.x || 0)) <= 5 &&
+        Math.abs((resident.y || 0) - (playerResident.y || 0)) <= 5;
+    });
+    for (const resident of visibleResidents) {
       const pos = resident.position || [0, 0];
       const role = String(resident.role || '').toLowerCase();
       const variant = ROLE_VARIANTS[role] ?? 0;
       const frame = variant * 12; // first (down/idle) frame for the role variant
-      const sprite = this.add.sprite(pos[0] * TILE + 8, pos[1] * TILE + 8, 'characters', frame);
-      if (resident.id === snapshot.player) sprite.setScale(1.3).setTint(0xffe1a8);
+      const sprite = this.add.sprite(pos[0] * TILE + 8, pos[1] * TILE + 8, 'characters', frame).setDepth(3);
+      if (resident.id === snapshot.player) sprite.setScale(1.45).setTint(0xffe1a8);
       this.objects.push(sprite);
       if (resident.id === snapshot.player) {
         this.cameras.main.centerOn(pos[0] * TILE, pos[1] * TILE);
       }
     }
-    this.cameras.main.setBounds(0, 0, map.width * TILE, map.height * TILE);
+    this.cameras.main.setBounds(0, 0, width, height);
   }
 }
 

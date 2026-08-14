@@ -32,8 +32,9 @@ python -m bigville.server
 # open http://127.0.0.1:8765/
 ```
 
-The pixel art in `bigville/game/assets/` is included in the package. Use the
-action buttons to submit a major action, or speak to another resident;
+The hand-pixeled village scene in `bigville/game/assets/village_scene.png` and
+the supporting sprite/icon sheets are included in the package. Use the action
+buttons to submit a major action, or speak to another resident;
 autonomous deterministic residents take their own backend decisions on the
 same turn.
 

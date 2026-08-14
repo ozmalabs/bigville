@@ -19,5 +19,6 @@ def test_game_assets_are_present():
 
     for filename in ("index.html", "game.js", "game.css", "assets/tileset.png",
                      "assets/buildings.png", "assets/character_variants.png",
-                     "assets/items.png", "assets/actions.png", "assets/manifest.json"):
+                     "assets/items.png", "assets/actions.png", "assets/manifest.json",
+                     "assets/village_scene.png"):
         assert (GAME_ROOT / filename).is_file(), filename
