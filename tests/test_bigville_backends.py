@@ -1,4 +1,4 @@
-from bigville.backends import ActorContext, LLMBackend, PromptBuilder
+from bigville.backends import ActorContext, DeterministicBackend, LLMBackend, PromptBuilder
 from bigville.character import CharacterDefinition, FrameSeed, MemoryRecord
 
 
@@ -36,3 +36,18 @@ def test_llm_backend_accepts_provider_json_and_exposes_backend_state():
     assert held["backend"] == "llm"
     assert held["backend_state"]["prompt_schema"] == "bigville/prompt/1"
     assert held["backend_state"]["prompt_hash"]
+
+
+def test_deterministic_backend_chooses_actions_but_does_not_fake_idle_rest():
+    character = CharacterDefinition(character_id="Ada", name="Ada")
+    backend = DeterministicBackend(character)
+    context = ActorContext(
+        character, 0, {"energy": 100},
+        [{"action": "move", "target": "target:north", "score": 10},
+         {"action": "rest", "score": 0}],
+    )
+    response = backend.decide(context)
+    assert response.major_action.action == "move"
+
+    idle = ActorContext(character, 1, {"energy": 100}, [{"action": "rest", "score": 0}])
+    assert backend.decide(idle).major_action is None

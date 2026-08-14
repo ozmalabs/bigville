@@ -6,6 +6,13 @@ from .protocol import ActorContext, ActorResponse, ProposedAction
 
 
 class DeterministicBackend:
+    """A small NPC policy over the world's already-derived affordances.
+
+    The world still owns all of the detailed rules.  This backend only does the
+    inexpensive game-AI part: prefer the highest-scoring actionable option,
+    rest when the body actually needs it, and otherwise spend the turn
+    observing.  It never schedules work behind the world's action boundary.
+    """
     kind = "cheap"
     communication_mode = "templated"
     supports_free_text = False
@@ -14,17 +21,39 @@ class DeterministicBackend:
     def __init__(self, character: CharacterDefinition):
         self.character = character
         self.last_choice: dict = {}
+        self.rest_energy_threshold = 35.0
 
     def decide(self, context: ActorContext) -> ActorResponse:
-        options = [o for o in context.affordances if o.get("action") not in {"rest", ""}]
-        choice = max(options, key=lambda o: float(o.get("score", 0.0)), default=None)
+        options = [o for o in context.affordances
+                   if o.get("action") not in {"rest", ""}]
+        choice = max(options, key=self._choice_key, default=None)
         if choice is None:
-            choice = next((o for o in context.affordances if o.get("action") == "rest"), None)
+            rest = next((o for o in context.affordances
+                         if o.get("action") == "rest"), None)
+            energy = float(context.observations.get("energy", 100.0))
+            if rest is not None and energy < self.rest_energy_threshold:
+                choice = rest
         if choice is None:
+            # A blank response is a valid NPC observation turn.  In particular,
+            # do not submit a rest plan that the world will correctly reject
+            # for a healthy resident with no other legal work.
+            self.last_choice = {}
             return ActorResponse()
         self.last_choice = dict(choice)
         params = {k: choice[k] for k in ("kind", "trade", "recipe", "target") if k in choice}
         return ActorResponse(ProposedAction(str(choice["action"]), params, "cheap_policy"))
+
+    @staticmethod
+    def _choice_key(option):
+        """Keep choices deterministic while preferring meaningful actions."""
+        priority = {
+            "eat": 6, "tend_animals": 5, "harvest": 5, "sow": 4,
+            "work": 3, "give": 2, "move": 1,
+        }
+        return (float(option.get("score", 0.0)),
+                priority.get(str(option.get("action", "")), 0),
+                str(option.get("target", "")),
+                str(option.get("kind", "")))
 
     def dump_held_state(self) -> HeldState:
         return HeldState(
