@@ -265,21 +265,38 @@ def path_transition(path: Image.Image, mask: int, variant: int = 0) -> Image.Ima
     out = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
     shape = Image.new("L", (TILE, TILE), 0)
     draw = ImageDraw.Draw(shape)
+    # The centreline moves by a couple of logical pixels between variants;
+    # adjacent cells still connect at their shared edge, but long runs no
+    # longer read as a ruler-straight grid road.
+    lateral = (-2, 2, 0)[variant % 3]
+    has_horizontal = bool(mask & (2 | 8))
+    has_vertical = bool(mask & (1 | 4))
+    dx = lateral if has_vertical and not has_horizontal else 0
+    dy = lateral if has_horizontal and not has_vertical else 0
+    if has_horizontal and has_vertical and mask in (3, 6, 9, 12):
+        dx = lateral if mask in (3, 12) else 0
+        dy = lateral if mask in (6, 9) else 0
+    left, right = max(1, 2 + dx), min(14, 13 + dx)
+    top, bottom = max(1, 2 + dy), min(14, 13 + dy)
     # A road occupies most of its cell, but keeps a small irregular grass
     # shoulder wherever it does not continue into a neighbour.
-    draw.rectangle((2, 2, 13, 13), fill=255)
+    draw.rectangle((left, top, right, bottom), fill=255)
     offset = ((mask * 3 + variant * 5) % 3) - 1
     if mask & 1:
-        draw.polygon(((3 + offset, 0), (12 + offset, 0), (13, 7), (2, 7)), fill=255)
+        draw.polygon(((left + 1 + offset, 0), (right - 1 + offset, 0),
+                      (right, top), (left, top)), fill=255)
         draw.rectangle((0, 0, 15, 3), fill=255)
     if mask & 2:
-        draw.polygon(((9, 2), (15, 3 + offset), (15, 12 + offset), (9, 13)), fill=255)
+        draw.polygon(((right, top), (15, top + 1 + offset),
+                      (15, bottom - 1 + offset), (right, bottom)), fill=255)
         draw.rectangle((12, 0, 15, 15), fill=255)
     if mask & 4:
-        draw.polygon(((2, 9), (13, 9), (12 + offset, 15), (3 + offset, 15)), fill=255)
+        draw.polygon(((left, bottom), (right, bottom),
+                      (right - 1 + offset, 15), (left + 1 + offset, 15)), fill=255)
         draw.rectangle((0, 12, 15, 15), fill=255)
     if mask & 8:
-        draw.polygon(((0, 3 + offset), (7, 2), (7, 13), (0, 12 + offset)), fill=255)
+        draw.polygon(((0, top + 1 + offset), (left, top),
+                      (left, bottom), (0, bottom - 1 + offset)), fill=255)
         draw.rectangle((0, 0, 3, 15), fill=255)
     out.paste(path.convert("RGBA"), (0, 0), shape)
     return out

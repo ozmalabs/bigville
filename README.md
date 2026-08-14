@@ -42,11 +42,15 @@ Use the action buttons to submit a major action, or speak to another resident;
 autonomous deterministic residents take their own backend decisions on the
 same turn.
 
+Terrain movement is seeded data: paths have a faster, lower-effort travel
+profile, while each map cell publishes its own speed and stamina multiplier.
+The simple NPC backend uses that path preference when choosing comparable moves.
+
 ### Screenshots
 
-![Bigville village overview](docs/screenshots/bigville-overview.png)
+![Bigville town-square overview](docs/screenshots/bigville-overview.png)
 
-![Bigville close-up at 200% zoom](docs/screenshots/bigville-detail.png)
+![Bigville town-square close-up at 200% zoom](docs/screenshots/bigville-detail.png)
 
 ![Bigville after a turn, with resident speech in the event log](docs/screenshots/bigville-after-turn.png)
 

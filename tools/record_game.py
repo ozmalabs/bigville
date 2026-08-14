@@ -42,7 +42,8 @@ def wait_for_server(port: int, timeout: float = 20.0):
 
 
 def record(*, output: Path, turns: int, frame_delay: int, scenario: str,
-           seed: int, player: str | None):
+           seed: int, player: str | None, focus: tuple[int, int] | None = None,
+           screenshot_dir: Path | None = None):
     root = Path(__file__).resolve().parents[1]
     port = free_port()
     command = [sys.executable, "-m", "bigville.server", "--port", str(port),
@@ -67,6 +68,9 @@ def record(*, output: Path, turns: int, frame_delay: int, scenario: str,
             page.wait_for_selector("#game canvas", timeout=60000)
             page.click("#reset")
             page.wait_for_timeout(900)
+            if focus is not None:
+                page.evaluate("([x, y]) => window.bigvilleScene?.focusOnCell(x, y)", list(focus))
+                page.wait_for_timeout(250)
 
             def capture():
                 image = Image.open(io.BytesIO(page.screenshot(full_page=True))).convert("RGB")
@@ -75,6 +79,14 @@ def record(*, output: Path, turns: int, frame_delay: int, scenario: str,
                 frames.append(image.copy())
 
             capture()
+            if screenshot_dir is not None:
+                screenshot_dir.mkdir(parents=True, exist_ok=True)
+                page.screenshot(path=str(screenshot_dir / "bigville-overview.png"), full_page=True)
+                page.evaluate("() => window.bigvilleScene?.adjustZoom(0.75)")
+                page.wait_for_timeout(250)
+                page.screenshot(path=str(screenshot_dir / "bigville-detail.png"), full_page=True)
+                page.evaluate("() => window.bigvilleScene?.adjustZoom(-0.75)")
+                page.wait_for_timeout(250)
             for _ in range(max(0, turns)):
                 buttons = page.locator("#actions button:not([disabled])")
                 if buttons.count() == 0:
@@ -88,6 +100,8 @@ def record(*, output: Path, turns: int, frame_delay: int, scenario: str,
                 )
                 page.wait_for_timeout(frame_delay)
                 capture()
+                if screenshot_dir is not None and len(frames) == 2:
+                    page.screenshot(path=str(screenshot_dir / "bigville-after-turn.png"), full_page=True)
             browser.close()
         if not frames:
             raise RuntimeError("no frames captured")
@@ -115,9 +129,15 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--scenario", default="town100")
     parser.add_argument("--seed", type=int, default=305000)
     parser.add_argument("--player", default=None)
+    parser.add_argument("--focus", default="23,18",
+                        help="map cell to center (x,y); pass 'none' to keep the player-centered view")
+    parser.add_argument("--screenshots-dir", type=Path, default=None,
+                        help="also write overview, detail, and after-turn PNGs")
     args = parser.parse_args(argv)
+    focus = None if args.focus.lower() == "none" else tuple(int(part) for part in args.focus.split(",", 1))
     record(output=args.output, turns=args.turns, frame_delay=args.frame_delay,
-           scenario=args.scenario, seed=args.seed, player=args.player)
+           scenario=args.scenario, seed=args.seed, player=args.player, focus=focus,
+           screenshot_dir=args.screenshots_dir)
 
 
 if __name__ == "__main__":

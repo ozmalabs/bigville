@@ -138,7 +138,11 @@ class DeterministicBackend:
             "travel": {"move"}, "rest": {"rest"}, "socialize": {"move"}, "observe": set(),
         }
         goal_bonus = 30 if self.current_goal and action in goal_actions.get(self.current_goal.kind, set()) else 0
-        return (float(option.get("score", 0.0)),
+        # Path preference is a seeded resident concept surfaced by the world as an affordance
+        # read-off.  It only nudges movement choices; it cannot outrank urgent eating, care, or
+        # work goals, but it wins between otherwise comparable routes.
+        path_bonus = 3.0 if action == "move" and bool(option.get("path_preferred")) else 0.0
+        return (float(option.get("score", 0.0)) + path_bonus,
                 goal_bonus,
                 priority.get(str(option.get("action", "")), 0),
                 str(option.get("target", "")),

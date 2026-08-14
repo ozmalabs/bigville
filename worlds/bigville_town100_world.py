@@ -227,6 +227,59 @@ def _adj_body(grid, x, y, tile):
     return False
 
 
+def _carve_path(grid, x, y):
+    """Put one road cell down without erasing a solid resource body."""
+    if 0 <= y < len(grid) and 0 <= x < len(grid[0]) and grid[y][x] not in SOLID:
+        grid[y][x] = PATH
+
+
+def _windy_horizontal(grid, target_y, phase):
+    """Carve a gently meandering east/west route and return x->y positions."""
+    offsets = (-1, 0, 1, 2, 1, 0, -1, -2)
+    route, y = {}, target_y
+    for x in range(1, len(grid[0]) - 1):
+        desired = target_y + offsets[((x // 3) + phase) % len(offsets)]
+        if desired > y:
+            y += 1
+        elif desired < y:
+            y -= 1
+        y = max(1, min(len(grid) - 2, y))
+        _carve_path(grid, x, y)
+        route[x] = y
+    return route
+
+
+def _windy_vertical(grid, target_x, phase):
+    """Carve a gently meandering north/south route and return y->x positions."""
+    offsets = (1, 0, -1, -2, -1, 0, 1, 2)
+    route, x = {}, target_x
+    for y in range(1, len(grid) - 1):
+        desired = target_x + offsets[((y // 3) + phase) % len(offsets)]
+        if desired > x:
+            x += 1
+        elif desired < x:
+            x -= 1
+        x = max(1, min(len(grid[0]) - 2, x))
+        _carve_path(grid, x, y)
+        route[y] = x
+    return route
+
+
+def _link_path_cells(grid, start, end):
+    """Join two nearby route cells with a short orthogonal dogleg."""
+    x, y = start
+    target_x, target_y = end
+    step = 1 if target_x >= x else -1
+    while x != target_x:
+        _carve_path(grid, x, y)
+        x += step
+    step = 1 if target_y >= y else -1
+    while y != target_y:
+        _carve_path(grid, x, y)
+        y += step
+    _carve_path(grid, x, y)
+
+
 def _nearest(cells, target):
     tx, ty = target
     return min(cells, key=lambda c: (c[0] - tx) ** 2 + (c[1] - ty) ** 2)
@@ -249,13 +302,25 @@ def build_town_100(seed=SEED_DEFAULT):
     W, H = W100, H100
     grid = [[GRASS for _ in range(W)] for _ in range(H)]
 
-    # --- connected road lattice (guarantees one big walkable component) --------
+    # --- connected winding road network ---------------------------------------
+    # The routes retain the same broad coverage as the old lattice, but each
+    # run drifts by a few cells and is linked at near-intersections. This keeps
+    # navigation and road-adjacent plot selection intact without presenting a
+    # town made from perfectly straight graph-paper lines.
     hrows = [6, 10, 14, 18, 22, 26, 30, 34]
     vcols = [5, 11, 17, 23, 29, 35, 41, 47]
-    for y in hrows:
-        _rect(grid, 1, y, W - 2, y, PATH)
-    for x in vcols:
-        _rect(grid, x, 1, x, H - 2, PATH)
+    horizontal_routes = [
+        _windy_horizontal(grid, y, index % 5) for index, y in enumerate(hrows)
+    ]
+    vertical_routes = [
+        _windy_vertical(grid, x, (index + 2) % 5) for index, x in enumerate(vcols)
+    ]
+    # Link the nearest points around each nominal junction. The junctions are
+    # deliberately short doglegs rather than a second rigid lattice.
+    for hroute, hrow in zip(horizontal_routes, hrows):
+        for vroute, vcol in zip(vertical_routes, vcols):
+            _link_path_cells(grid, (vcol, hroute[vcol]),
+                             (vroute[hrow], hrow))
 
     # --- central market square (walkable) --------------------------------------
     _rect(grid, 18, 15, 28, 21, SQUARE)

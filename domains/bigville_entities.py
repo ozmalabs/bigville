@@ -626,6 +626,22 @@ LAND_DISPUTES = {
 }
 
 
+# ---------------------------------------------------------------- TERRAIN MOVEMENT
+# Movement is scenario data, not a hard-coded preference in a cognition backend.  The world maps
+# tile names onto these records and publishes the read-off with each movement affordance.  A speed
+# of 1.0 is the ordinary grass baseline; ``move_time`` is the relative time for one step and
+# ``stamina_multiplier`` scales the body's existing exertion event.
+TERRAIN_MOVEMENT = {
+    "grass":  {"speed": 1.00, "move_time": 1.00, "stamina_multiplier": 1.00},
+    "path":   {"speed": 1.35, "move_time": 0.75, "stamina_multiplier": 0.65},
+    "floor":  {"speed": 1.05, "move_time": 0.95, "stamina_multiplier": 0.90},
+    "square": {"speed": 1.15, "move_time": 0.85, "stamina_multiplier": 0.80},
+    "tree":   {"speed": 0.45, "move_time": 2.20, "stamina_multiplier": 2.00},
+    "water":  {"speed": 0.00, "move_time": 999.0, "stamina_multiplier": 4.00},
+    "wall":   {"speed": 0.00, "move_time": 999.0, "stamina_multiplier": 4.00},
+}
+
+
 # ---------------------------------------------------------------- SHARED REFERENCES
 # A reference is a subject/predicate/object TEMPLATE in the domain data. It is not itself a town fact:
 # when seeded, the world creates a resident-owned fact/reference node. `seed_roles` is an initial
@@ -701,6 +717,12 @@ SHARED_CONCEPTS = [
     {"name": "land_dispute_goes_to_council",
      "reference": {"subject": "land_dispute", "predicate": "goes_to", "object": "council_hearing"},
      "seed_roles": ["clerk", "mayor", "councillor", "constable", "farmer"]},
+    {"name": "paths_are_preferred_travel_surface",
+     "reference": {"subject": "path", "predicate": "preferred_for", "object": "travel"},
+     "seed_roles": ["*"]},
+    {"name": "terrain_changes_travel_cost",
+     "reference": {"subject": "terrain", "predicate": "changes", "object": "travel_speed_and_stamina"},
+     "seed_roles": ["*"]},
 ]
 
 

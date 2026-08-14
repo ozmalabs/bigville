@@ -1148,12 +1148,37 @@ def test_canonical_world_imports_the_map_cast_and_resource_sites():
 
 def test_map_entities_have_home_work_land_and_building_anchors():
     w = World.from_town100()
-    assert w.map_position("John") == (6, 25)
-    assert w.map_position("farm_plot_00") == (36, 25)
+    # The expanded road network is intentionally gently winding, so the deterministic home
+    # coordinate is a map-builder result rather than a public fixed lattice coordinate.
+    assert w.map_position("John") in w._map_cells
+    assert w.terrain_state(w.map_position("John"))["terrain"] in {"grass", "floor", "square", "path"}
+    assert w.map_position("farm_plot_00") in w._map_cells
     assert w.building_position("records_office") == tuple(w._map_layout["work"]["townhall"])
     old = w.actor_position("John")
     new = w.move_actor("John", w.building_position("records_office"))
     assert new != old and w.distance(new, w.building_position("records_office")) < w.distance(old, w.building_position("records_office"))
+
+
+def test_terrain_movement_is_seeded_and_exposed_to_affordances():
+    w = World.from_town100()
+    assert "bigville_terrain_movement" in w.eng.seed_manifests
+    assert w.knows_reference("John", "paths_are_preferred_travel_surface")
+    assert w.knows_reference("John", "terrain_changes_travel_cost")
+    assert w.terrain_movement_rules()["path"]["speed"] > w.terrain_movement_rules()["grass"]["speed"]
+    assert w.terrain_movement_rules()["path"]["stamina_multiplier"] < w.terrain_movement_rules()["grass"]["stamina_multiplier"]
+    cell = next(c for c in w._map_cells if w.terrain_state(c)["terrain"] == "path")
+    attrs = w.eng.node(w._map_cells[cell])["attrs"]
+    assert attrs["terrain"] == "path"
+    assert attrs["speed"] == w.terrain_movement_rules()["path"]["speed"]
+
+
+def test_weighted_travel_prefers_the_seeded_fast_surface_when_available():
+    w = World.from_town100()
+    start = w.map_position("John")
+    destination = w.building_position("records_office")
+    assert w.travel_time(start, destination) <= w.distance(start, destination)
+    move_options = [option for option in w.actor_affordances("John") if option["action"] == "move"]
+    assert move_options and all("terrain_speed" in option for option in move_options)
 
 
 def test_building_projects_consume_physical_materials_and_mint_a_place():

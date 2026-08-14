@@ -228,6 +228,9 @@ class BigvilleScene extends Phaser.Scene {
 
   create() {
     scene = this;
+    // Expose the active renderer to recorder/native-shell integrations without making the
+    // renderer responsible for choosing a scenario camera position.
+    window.bigvilleScene = this;
     this.assetManifest = this.cache.json.get('asset_manifest') || {};
     this.styleManifest = this.cache.json.get('style_manifest') || {};
     this.cameras.main.setZoom(DEFAULT_ZOOM);
@@ -329,6 +332,11 @@ class BigvilleScene extends Phaser.Scene {
     $('zoom-reset').textContent = `${Math.round(DEFAULT_ZOOM * 100)}%`;
     this.hasCentered = false;
     this.drawState(state);
+  }
+
+  focusOnCell(x, y) {
+    this.hasCentered = true;
+    this.cameras.main.centerOn(this.cellX(x), this.cellY(y));
   }
 
   residentDirection(from, to) {

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import math
 import random
+import heapq
 from collections import deque
 
 from bigville.runtime import (BigvilleGraph, WorldAdapter, boot_core,
@@ -308,6 +309,7 @@ class BigvilleWorld:
         self.eng.load_seed_manifest(manifest_for("bigville_action_decay"), None)     # wear over time + spoilage
         self.eng.load_seed_manifest(manifest_for("bigville_action_clothing"), None)  # clothes: dyed, worn, protective
         self.eng.load_seed_manifest(manifest_for("bigville_action_skill"), None)     # apprenticeship: skill grows under a master
+        self.eng.load_seed_manifest(manifest_for("bigville_terrain_movement"), None) # terrain speed, effort, and path preference
         # Physical exertion belongs to the resident's Body layer.  Movement
         # and carrying must feed Effort into bd_exert_cost rather than invent
         # a second Agent-level energy ledger.
@@ -341,6 +343,7 @@ class BigvilleWorld:
         self._observation_schemas = {}
         self._map_cells = {}
         self._distance_fields = {}
+        self._travel_time_fields = {}
         self._map_grid = None
         self._map_layout = None
         self._map_affordances = {}
@@ -890,16 +893,23 @@ class BigvilleWorld:
     def _install_map(self, seed):
         """Install the 100-world geography as canonical Map/Cell graph data."""
         from worlds.bigville_town100_world import build_town_100
+        from worlds.bigville_sim_world import SOLID as SOLID_TILES, TILE_NAME
         grid, affordances, layout = build_town_100(seed)
         self._map_grid, self._map_layout = grid, layout
         self._map_node = self.eng.add_node("Map", {"name": "Bigville map", "seed": float(seed),
                                                      "width": float(layout["w"]), "height": float(layout["h"])})
         self.eng.add_edge_unchecked(self._town, "has_map", self._map_node)
-        solid = {2, 6}  # the 100-world builder's WALL and WATER tile codes
+        solid = set(SOLID_TILES)
         for y, row in enumerate(grid):
             for x, tile in enumerate(row):
+                terrain = TILE_NAME.get(tile, "grass")
+                movement = E.TERRAIN_MOVEMENT.get(terrain, E.TERRAIN_MOVEMENT["grass"])
                 walkable = tile not in solid
                 cell = self.eng.add_node("MapCell", {"x": float(x), "y": float(y), "tile": float(tile),
+                                                      "terrain": terrain,
+                                                      "speed": float(movement["speed"]),
+                                                      "move_time": float(movement["move_time"]),
+                                                      "stamina_multiplier": float(movement["stamina_multiplier"]),
                                                       "walkable": 1.0 if walkable else 0.0})
                 self.eng.add_edge_unchecked(self._map_node, "has_cell", cell)
                 if walkable:
@@ -1087,6 +1097,62 @@ class BigvilleWorld:
             self._distance_fields[b] = field
         return field.get(a)
 
+    def terrain_movement_rules(self):
+        """Return the seeded movement records used by map cells and actions."""
+        return {name: dict(values) for name, values in E.TERRAIN_MOVEMENT.items()}
+
+    def terrain_state(self, cell):
+        """Return the movement read-off for a map cell, including its terrain name."""
+        if not isinstance(cell, tuple) or cell not in self._map_cells:
+            return {"terrain": "unknown", **dict(E.TERRAIN_MOVEMENT["grass"])}
+        attrs = self.eng.node(self._map_cells[cell])["attrs"]
+        terrain = str(attrs.get("terrain", "grass"))
+        return {"terrain": terrain,
+                "speed": float(attrs.get("speed", 1.0)),
+                "move_time": float(attrs.get("move_time", 1.0)),
+                "stamina_multiplier": float(attrs.get("stamina_multiplier", 1.0))}
+
+    def travel_time(self, a, b):
+        """Terrain-weighted travel time used for route choice.
+
+        ``distance`` remains the unweighted map fact.  This separate read-off lets an actor or
+        backend prefer a longer path when the seeded terrain makes it faster and less tiring.
+        """
+        if a not in self._map_cells or b not in self._map_cells:
+            return None
+        field = self._travel_time_fields.get(b)
+        if field is None:
+            field = {b: 0.0}
+            frontier = [(0.0, b)]
+            while frontier:
+                cost, point = heapq.heappop(frontier)
+                if cost > field.get(point, float("inf")):
+                    continue
+                for nx, ny in ((point[0] + 1, point[1]), (point[0] - 1, point[1]),
+                               (point[0], point[1] + 1), (point[0], point[1] - 1)):
+                    neighbour = (nx, ny)
+                    if neighbour not in self._map_cells:
+                        continue
+                    step = float(self.terrain_state(neighbour).get("move_time", 1.0))
+                    candidate = cost + step
+                    if candidate < field.get(neighbour, float("inf")):
+                        field[neighbour] = candidate
+                        heapq.heappush(frontier, (candidate, neighbour))
+            self._travel_time_fields[b] = field
+        return field.get(a)
+
+    def _movement_step(self, current, destination):
+        """Choose the next admissible step using the seeded terrain travel costs."""
+        if current not in self._map_cells or destination not in self._map_cells:
+            return None
+        candidates = [(current[0] + 1, current[1]), (current[0] - 1, current[1]),
+                      (current[0], current[1] + 1), (current[0], current[1] - 1)]
+        travel = {point: self.travel_time(point, destination)
+                  for point in candidates if point in self._map_cells}
+        viable = [point for point, value in travel.items() if value is not None]
+        return min(viable, key=lambda point: (travel[point], self.distance(point, destination))) \
+            if viable else None
+
     def actor_position(self, actor): return self._actor_positions.get(actor)
 
     def _node_item_weight(self, item):
@@ -1158,7 +1224,13 @@ class BigvilleWorld:
             return None
         state = self._refresh_carry_state(actor)
         attrs = self.eng.node(self._actor(actor))["attrs"]
-        effort = state["move_energy"]
+        nxt = self._movement_step(current, destination)
+        terrain = self.terrain_state(nxt or current)
+        effort = state["move_energy"] * float(terrain.get("stamina_multiplier", 1.0))
+        self.eng.set_attr(self._actor(actor), "terrain", terrain["terrain"])
+        self.eng.set_attr(self._actor(actor), "terrain_speed", float(terrain["speed"]))
+        self.eng.set_attr(self._actor(actor), "terrain_stamina_multiplier",
+                          float(terrain["stamina_multiplier"]))
         # The body's seeded exertion rule owns depletion, hunger, and recovery.
         # This adapter only mints the physical event and supplies its cost.
         body = self._bodies.get(actor)
@@ -1166,6 +1238,7 @@ class BigvilleWorld:
             exertion = self.eng.add_node("Effort", {
                 "uses_strength": 0.0, "uses_stamina": 1.0,
                 "intensity": min(1.0, effort), "stamina_cost": effort * 0.1,
+                "terrain": terrain["terrain"], "terrain_speed": float(terrain["speed"]),
                 "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
             self.eng.add_edge_unchecked(self._actor(actor), "exerted", exertion)
             if not self._actor_tick_in_progress:
@@ -1174,15 +1247,11 @@ class BigvilleWorld:
         if cooldown > 0:
             self.eng.set_attr(self._actor(actor), "carry_move_cooldown", float(cooldown - 1))
             return current
-        if state["move_interval"] > 1:
+        terrain_interval = max(1, int(math.ceil(state["move_interval"] * terrain["move_time"])))
+        if terrain_interval > 1:
             self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
-                              float(state["move_interval"] - 1))
-        candidates = [(current[0] + 1, current[1]), (current[0] - 1, current[1]),
-                      (current[0], current[1] + 1), (current[0], current[1] - 1)]
-        distances = {p: self.distance(p, destination) for p in candidates if p in self._map_cells}
-        viable = [p for p, d in distances.items() if d is not None]
-        if viable:
-            nxt = min(viable, key=lambda p: distances[p])
+                              float(terrain_interval - 1))
+        if nxt is not None:
             self._move_actor_to(actor, nxt)
         return self._actor_positions.get(actor)
 
@@ -4435,6 +4504,18 @@ class BigvilleWorld:
                 destination = targets.get(option.get("target"))
                 if isinstance(destination, tuple):
                     option["destination"] = destination
+                    movement = self.terrain_state(destination)
+                    step = self._movement_step(self.actor_position(actor), destination)
+                    step_movement = self.terrain_state(step) if step is not None else movement
+                    option.update({
+                        "terrain": movement["terrain"],
+                        "terrain_speed": float(movement["speed"]),
+                        "terrain_move_time": float(movement["move_time"]),
+                        "terrain_stamina_multiplier": float(movement["stamina_multiplier"]),
+                        "route_terrain": step_movement["terrain"],
+                        "path_preferred": (movement["terrain"] == "path"
+                                           or step_movement["terrain"] == "path"),
+                    })
         self._actor_targets[actor] = targets
         return options
 
@@ -4671,6 +4752,9 @@ class BigvilleWorld:
                            "carried_weight": a.get("carried_weight", 0.0),
                            "carry_ratio": a.get("carry_ratio", 0.0),
                            "carry_speed": a.get("carry_speed", 1.0),
+                           "terrain": a.get("terrain", "grass"),
+                           "terrain_speed": a.get("terrain_speed", 1.0),
+                           "terrain_stamina_multiplier": a.get("terrain_stamina_multiplier", 1.0),
                            "literacy": a.get("literacy", 0.0), "coin": a.get("coin", 0.0),
                            "reputation": a.get("reputation", 0.5), "position": position,
                            "home": position, "x": position[0] if position else 0, "y": position[1] if position else 0,
@@ -4706,6 +4790,7 @@ class BigvilleWorld:
                 "weather": {k: town.get(k) for k in ("rain", "temperature", "firewood_demand")},
                 "map": {"width": map_width, "height": map_height, "w": map_width, "h": map_height,
                         "seed": map_seed,
+                        "terrain_movement": self.terrain_movement_rules(),
                         "grid": self._map_grid, "tiles": self._map_grid,
                         "buildings": buildings},
                 "residents": actors,

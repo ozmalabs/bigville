@@ -206,6 +206,8 @@ class BigvilleGame:
             "turn": int(self.world._turn),
             "calendar": self.world.calendar(),
             "position": position,
+            "terrain": self.world.terrain_state(position),
+            "terrain_movement": self.world.terrain_movement_rules(),
             "health": attrs.get("health", "healthy"),
             "hunger": attrs.get("hunger", 0.0),
             "energy": self.world.energy(actor),

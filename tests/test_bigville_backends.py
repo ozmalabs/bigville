@@ -53,6 +53,21 @@ def test_deterministic_backend_chooses_actions_but_does_not_fake_idle_rest():
     assert backend.decide(idle).major_action is None
 
 
+def test_deterministic_backend_prefers_a_path_route_between_equal_moves():
+    character = CharacterDefinition(character_id="Ada", name="Ada")
+    backend = DeterministicBackend(character)
+    context = ActorContext(
+        character, 0, {"energy": 100, "hunger": 0},
+        [{"action": "move", "target": "grass", "destination": (2, 1), "score": 10,
+          "path_preferred": False},
+         {"action": "move", "target": "path", "destination": (3, 1), "score": 10,
+          "path_preferred": True},
+         {"action": "rest", "score": 0}],
+    )
+    response = backend.decide(context)
+    assert response.continuation.destination == (3, 1)
+
+
 def test_deterministic_backend_holds_goals_and_can_speak_structured_meanings():
     character = CharacterDefinition(
         character_id="Ada", name="Ada", identity={"role": "farmer"})
