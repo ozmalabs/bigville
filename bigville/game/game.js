@@ -36,6 +36,10 @@ async function submitTurn(payload) {
     $('status').textContent = error.message;
   } finally {
     busy = false;
+    // Re-enable the action controls after the canonical turn response arrives.
+    // The world and canvas were already refreshed above; only the controls
+    // need to be rendered again here.
+    renderSidebar();
   }
 }
 
@@ -102,6 +106,7 @@ class BigvilleScene extends Phaser.Scene {
 
   preload() {
     this.load.image('village_scene', 'assets/village_scene.png');
+    this.load.image('open_room', 'assets/open_room.png');
     this.load.spritesheet('tileset', 'assets/tileset.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('characters', 'assets/character_variants.png', {frameWidth: 16, frameHeight: 16});
@@ -134,7 +139,9 @@ class BigvilleScene extends Phaser.Scene {
     this.objects.push(backdrop);
     const allResidents = snapshot.world.residents || [];
     const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
+    const occupiedResidents = this.drawOccupiedInteriors(map.buildings || [], allResidents);
     const visibleResidents = allResidents.filter((resident) => {
+      if (occupiedResidents.has(resident.id)) return false;
       if (resident.id === snapshot.player || !playerResident) return true;
       return Math.abs((resident.x || 0) - (playerResident.x || 0)) <= 5 &&
         Math.abs((resident.y || 0) - (playerResident.y || 0)) <= 5;
@@ -153,6 +160,44 @@ class BigvilleScene extends Phaser.Scene {
     }
     this.cameras.main.setBounds(0, 0, width, height);
   }
+
+  drawOccupiedInteriors(buildings, residents) {
+    const spots = new Map();
+    const priority = {
+      townhall: 20, bakery: 19, kitchen: 18, granary: 17, inn: 16,
+      school: 15, records_office: 14, watchhouse: 13, dairy: 12,
+      forge: 11, mill: 10, house: 9,
+    };
+    for (const building of buildings) {
+      const pos = building.position || [building.x || 0, building.y || 0];
+      const key = `${pos[0]},${pos[1]}`;
+      const current = spots.get(key);
+      if (!current || (priority[building.type] || 0) > (priority[current.type] || 0)) {
+        spots.set(key, {...building, position: pos});
+      }
+    }
+    const inside = new Set();
+    for (const building of spots.values()) {
+      const [x, y] = building.position;
+      const occupants = residents.filter((resident) => {
+        const rx = Number(resident.x ?? resident.position?.[0] ?? -999);
+        const ry = Number(resident.y ?? resident.position?.[1] ?? -999);
+        return rx >= x && rx < x + (building.w || 3) &&
+          ry >= y && ry < y + (building.h || 3);
+      });
+      if (!occupants.length) continue;
+      for (const resident of occupants) inside.add(resident.id);
+      const px = x * TILE;
+      const py = y * TILE;
+      // The roofless room asset replaces the opaque roof sprite. Occupants
+      // are added below at their actual world coordinates.
+      const room = this.add.image(px + 24, py + 24, 'open_room')
+        .setDisplaySize(48, 48).setDepth(2);
+      this.objects.push(room);
+    }
+    return inside;
+  }
+
 }
 
 const config = {

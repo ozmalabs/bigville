@@ -44,6 +44,20 @@ same turn.
 
 ![Bigville after a turn, with resident speech in the event log](docs/screenshots/bigville-after-turn.png)
 
+![Animated Bigville simulation](docs/screenshots/bigville-simulation.gif)
+
+The animation is produced from a live run of the client and backend:
+
+```bash
+python tools/record_game.py --turns 24
+```
+
+The recorder requires the optional local tools `playwright` and `Pillow`, plus
+a Chromium-compatible browser.
+
+Occupied buildings are rendered as open-roof rooms, so residents and their
+interiors remain visible while the village continues to run.
+
 ## Cognition backends
 
 `DeterministicBackend` is the cheap, repeatable game backend. `LLMBackend` is a
