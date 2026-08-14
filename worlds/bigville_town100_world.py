@@ -333,12 +333,11 @@ def build_town_100(seed=SEED_DEFAULT):
     grid = [[GRASS for _ in range(W)] for _ in range(H)]
 
     # --- connected winding road network ---------------------------------------
-    # The routes retain the same broad coverage as the old lattice, but each
-    # run drifts by a few cells and is linked at near-intersections. This keeps
-    # navigation and road-adjacent plot selection intact without presenting a
-    # town made from perfectly straight graph-paper lines.
-    hrows = [6, 10, 14, 18, 22, 26, 30, 34]
-    vcols = [5, 11, 17, 23, 29, 35, 41, 47]
+    # Keep the roads as a small set of useful village routes rather than a
+    # near-grid of surfaced cells. Each run drifts by a few cells and is linked
+    # at near-intersections, leaving the surrounding plots and commons legible.
+    hrows = [9, 20, 31]
+    vcols = [11, 28, 45]
     horizontal_routes = [
         _windy_horizontal(grid, y, index % 5) for index, y in enumerate(hrows)
     ]

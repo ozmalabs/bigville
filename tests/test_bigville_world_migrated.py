@@ -1208,6 +1208,10 @@ def test_winding_paths_are_orthogonally_continuous_through_corners():
                 seen.add(neighbour)
                 frontier.append(neighbour)
     assert seen == path_cells
+    # Routes should support the village without becoming its dominant visual
+    # surface; the square is intentionally counted separately from trails.
+    trail_cells = sum(row.count(1) for row in w._map_grid)
+    assert trail_cells < len(w._map_cells) * 0.30
 
 
 def test_building_projects_consume_physical_materials_and_mint_a_place():
