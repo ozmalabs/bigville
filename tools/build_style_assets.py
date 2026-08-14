@@ -276,7 +276,7 @@ def path_transition(path: Image.Image, mask: int, variant: int = 0,
     # The centreline moves by a couple of logical pixels between variants;
     # adjacent cells still connect at their shared edge, but long runs no
     # longer read as a ruler-straight grid road.
-    lateral = (-2, 2, 0)[variant % 3]
+    lateral = (-1, 1, 0)[variant % 3]
     has_horizontal = bool(mask & (2 | 8))
     has_vertical = bool(mask & (1 | 4))
     dx = lateral if has_vertical and not has_horizontal else 0
@@ -284,28 +284,28 @@ def path_transition(path: Image.Image, mask: int, variant: int = 0,
     if has_horizontal and has_vertical and mask in (3, 6, 9, 12):
         dx = lateral if mask in (3, 12) else 0
         dy = lateral if mask in (6, 9) else 0
-    left, right = max(1, 2 + dx), min(14, 13 + dx)
-    top, bottom = max(1, 2 + dy), min(14, 13 + dy)
-    # A road occupies most of its cell, but keeps a small irregular grass
-    # shoulder wherever it does not continue into a neighbour.
+    # Keep a generous grass shoulder inside each map cell. The old footprint
+    # occupied nearly the whole cell, so a one-cell trail read as a road;
+    # this is a six-pixel logical footpath at the normal 2x display scale.
+    left, right = max(4, 5 + dx), min(11, 10 + dx)
+    top, bottom = max(4, 5 + dy), min(11, 10 + dy)
     rect((left, top, right, bottom))
-    offset = ((mask * 3 + variant * 5) % 3) - 1
+    # Keep each connected edge centred so the narrow trail remains visibly
+    # continuous at the shared boundary; the lateral variant already gives
+    # the route enough organic movement.
+    offset = 0
     if mask & 1:
         polygon(((left + 1 + offset, 0), (right - 1 + offset, 0),
                  (right, top), (left, top)))
-        rect((0, 0, 15, 3))
     if mask & 2:
         polygon(((right, top), (15, top + 1 + offset),
                  (15, bottom - 1 + offset), (right, bottom)))
-        rect((12, 0, 15, 15))
     if mask & 4:
         polygon(((left, bottom), (right, bottom),
                  (right - 1 + offset, 15), (left + 1 + offset, 15)))
-        rect((0, 12, 15, 15))
     if mask & 8:
         polygon(((0, top + 1 + offset), (left, top),
                  (left, bottom), (0, bottom - 1 + offset)))
-        rect((0, 0, 3, 15))
     out.paste(path.convert("RGBA"), (0, 0), shape)
     return out
 
