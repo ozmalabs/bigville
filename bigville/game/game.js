@@ -210,6 +210,8 @@ class BigvilleScene extends Phaser.Scene {
     this.load.image('material_water', 'assets/style_water_ground.png');
     this.load.image('material_soil', 'assets/style_soil_ground.png');
     this.load.image('material_stone', 'assets/style_stone_ground.png');
+    this.load.spritesheet('material_edges', 'assets/style_material_edges.png',
+      {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('props', 'assets/style_props.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('large_props', 'assets/style_large_props.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
@@ -375,7 +377,10 @@ class BigvilleScene extends Phaser.Scene {
       (same(x, y + 1, value) ? 4 : 0) |
       (same(x - 1, y, value) ? 8 : 0);
     if (tile === 1) {
-      const pathMask = mask(1);
+      // A path interface must meet any substantial neighbouring surface. If
+      // this only considered another path cell, the transparent shoulder
+      // would reveal grass between a path and stone/soil/water.
+      const pathMask = this.pathInterfaceMask(grid, x, y);
       const variants = this.styleManifest?.path_variants?.[String(pathMask)];
       if (variants?.length) {
         const variant = Math.abs((Number(x) * 92837111 + Number(y) * 689287499) % variants.length);
@@ -391,9 +396,19 @@ class BigvilleScene extends Phaser.Scene {
     return tileNames[named[tile]] ?? TILE_FRAMES[tile] ?? TILE_FRAMES[0];
   }
 
+  pathInterfaceMask(grid, x, y) {
+    const neighbour = (nx, ny) => grid[ny]?.[nx];
+    const connects = (value) => value !== undefined && value !== 0 && value !== 7;
+    return (connects(neighbour(x, y - 1)) ? 1 : 0) |
+      (connects(neighbour(x + 1, y)) ? 2 : 0) |
+      (connects(neighbour(x, y + 1)) ? 4 : 0) |
+      (connects(neighbour(x - 1, y)) ? 8 : 0);
+  }
+
   drawCanonicalMap(map) {
     const grid = map.grid || [];
     this.drawMaterialFields(map);
+    this.drawMaterialInterfaces(map);
     for (let y = 0; y < grid.length; y++) {
       for (let x = 0; x < (grid[y] || []).length; x++) {
         const tile = grid[y][x];
@@ -452,6 +467,45 @@ class BigvilleScene extends Phaser.Scene {
       field.setMask(maskShape.createGeometryMask());
       maskShape.setVisible(false);
       this.objects.push(field, maskShape);
+    }
+  }
+
+  materialClass(tile) {
+    if (tile === 0 || tile === 7) return 'grass';
+    if (tile === 2 || tile === 3 || tile === 4) return 'stone';
+    if (tile === 5) return 'soil';
+    if (tile === 6) return 'water';
+    // Paths are topology-aware overlays, not a broad material field.
+    return null;
+  }
+
+  drawMaterialInterfaces(map) {
+    const grid = map.grid || [];
+    const targets = this.styleManifest?.material_edges?.targets || {};
+    const edgeDirections = [
+      [1, 0, 'e', 'w'],
+      [0, 1, 's', 'n'],
+    ];
+    const addEdge = (target, x, y, direction) => {
+      const frames = targets[target]?.[direction];
+      if (!frames?.length) return;
+      const variant = Math.abs((Number(x) * 92837111 + Number(y) * 689287499) % frames.length);
+      const sprite = this.add.sprite(this.cellX(x), this.cellY(y), 'material_edges', frames[variant])
+        .setScale(DISPLAY_SCALE).setDepth(-40);
+      this.objects.push(sprite);
+    };
+    for (let y = 0; y < grid.length; y++) {
+      for (let x = 0; x < (grid[y] || []).length; x++) {
+        const current = this.materialClass(grid[y][x]);
+        if (!current) continue;
+        for (const [dx, dy, direction, opposite] of edgeDirections) {
+          const nx = x + dx; const ny = y + dy;
+          const neighbour = this.materialClass(grid[ny]?.[nx]);
+          if (!neighbour || neighbour === current) continue;
+          addEdge(neighbour, x, y, direction);
+          addEdge(current, nx, ny, opposite);
+        }
+      }
     }
   }
 

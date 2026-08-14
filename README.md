@@ -79,7 +79,9 @@ and building facades. Broad surfaces are masked to the canonical map cells,
 while paths are transparent topology-aware interfaces: their dirt footprint
 connects to neighbouring path cells and leaves a grass shoulder at endpoints,
 corners, and turns. This keeps grass, paths, water, soil, and stone from reading
-as a checkerboard of independently stamped squares. It also includes matching roof-off cutaway facades with furnished
+as a checkerboard of independently stamped squares. Material boundaries also
+get sparse pixel-art edge overlays on both sides, so grass does not meet stone,
+soil, or water as a ruler-straight seam. It also includes matching roof-off cutaway facades with furnished
 interiors, so scenarios can use different maps with the same cosy visual style
 without falling back to a separate interior art language. Residents use a
 32px directional walk-cycle atlas with idle, step-A, and step-B frames, so

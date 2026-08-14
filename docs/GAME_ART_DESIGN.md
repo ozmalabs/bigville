@@ -85,7 +85,10 @@ authoritative cells, while `style_tiles.png` supplies topology-dependent
 transitions and overlays. Paths are transparent interfaces over the grass
 field: connected edges reach their neighbours and disconnected edges retain a
 grass shoulder. Grass, water, soil, and stone therefore keep their material
-continuity without making the map grid disappear. Props,
+continuity without making the map grid disappear. The generated
+`style_material_edges.png` atlas adds restrained pixel-art lips on both sides
+of broad-material boundaries, preventing grass/stone, grass/soil, and
+grass/water from becoming straight seams. Props,
 `style_large_props.png`, and `style_buildings.png`, plus the matching roof-off
 `style_cutaways.png`, are described by `style_manifest.json`. Cutaways retain the facade, foundation,
 door, and exterior trim while exposing the furnished room. This keeps the

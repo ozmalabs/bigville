@@ -30,7 +30,7 @@ def test_game_assets_are_present():
                          "assets/style_tiles.png", "assets/style_props.png",
                          "assets/style_ground.png", "assets/style_path_ground.png",
                          "assets/style_water_ground.png", "assets/style_soil_ground.png",
-                         "assets/style_stone_ground.png",
+                         "assets/style_stone_ground.png", "assets/style_material_edges.png",
                          "assets/style_large_props.png", "assets/style_buildings.png",
                          "assets/style_cutaway_atlas_source.png", "assets/style_cutaways.png",
                          "assets/style_character_walk_atlas_source.png", "assets/style_characters.png",
@@ -57,14 +57,23 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert manifest["style_assets"]["character_source"] == "style_character_walk_atlas_source.png"
     assert manifest["style_assets"]["held_item_source"] == "style_held_items_atlas_source.png"
     style = json.loads((GAME_ROOT / "assets/style_manifest.json").read_text())
+    from PIL import Image
     assert style["tiles"]["file"] == "style_tiles.png"
     assert style["materials"]["texture_scale"] == 2
     assert set(style["materials"]["fields"]) == {"ground", "path", "water", "soil", "stone"}
     assert all((GAME_ROOT / "assets" / filename).is_file()
                for filename in style["materials"]["fields"].values())
+    assert style["material_edges"]["file"] == "style_material_edges.png"
+    assert set(style["material_edges"]["targets"]) == {"grass", "stone", "soil", "water"}
+    assert all(set(directions) == {"n", "e", "s", "w"}
+               for directions in style["material_edges"]["targets"].values())
+    edge_sheet = Image.open(GAME_ROOT / "assets/style_material_edges.png").convert("RGBA")
+    assert all(len(frames) == 3 and all(edge_sheet.crop((frame * 16, 0, frame * 16 + 16, 16)).getbbox()
+                                         for frame in frames)
+               for directions in style["material_edges"]["targets"].values()
+               for frames in directions.values())
     assert len(style["path_variants"]) == 16
     assert all(len(frames) == 3 for frames in style["path_variants"].values())
-    from PIL import Image
     tiles = Image.open(GAME_ROOT / "assets/style_tiles.png").convert("RGBA")
     assert all(tiles.crop((frame * 16, 0, frame * 16 + 16, 16)).getbbox()
                for frames in style["path_variants"].values() for frame in frames)
