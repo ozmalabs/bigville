@@ -1,0 +1,2304 @@
+{
+  "id": "bigville_cognition",
+  "version": "1.0.0",
+  "depends_on": [
+    "bigville_memory"
+  ],
+  "self_load_only": true,
+  "description": "bigville R40 / INTEGRATION (block 331000): the cognitive agent LOOP -- C1-C6 wired live on one agent. cg_metabolize: per tick energy drains + competence goes stale + load recovers (cost of living). cg_state: sustenance_level=energy/max; urges (C1) = weight*(1-level); arousal=max urge; focus=Yerkes-Dodson(arousal) (C2); pursues = the dominant drive. Then ONE costed/impactful action per tick (C6), chosen by pursues: cg_eat (sustenance + food -> consume a unit, restore energy) / cg_work (competence + resource + energy -> spend energy, produce output=min(yield*FOCUS,stock) into the store, raise competence) -- each lays a POSITIVE Event (-> C3 memory -> mood). If the needed action can't happen: cg_hunger_frustrated / cg_work_frustrated lay a NEGATIVE Event and add allostatic load (C4). cg_break: load>window -> broken; cg_recover: load falls back -> recovered. The loop closes: a resourced agent self-maintains (works when it can, eats when hungry); a starved one declines and breaks.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cg_metabolize",
+      "batch": false,
+      "comment": "Cost of living: per tick energy drains, competence goes stale, load recovers a little.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "ticked_epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "town"
+              },
+              "key": "tick_epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "energy",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "energy"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "metab_cost"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "competence_level",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "competence_level"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "comp_decay"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "load",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "load"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "load_recovery"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "ticked_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cg_state",
+      "batch": false,
+      "comment": "Derived cognitive state: sustenance from energy; urges (C1); arousal; focus (C2); pursued drive.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "sustenance_level",
+          {
+            "__term__": {
+              "type": "Div",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "energy"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "max_energy"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "arousal",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "w_sus"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "a"
+                                },
+                                "key": "sustenance_level"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "w_comp"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "a"
+                                },
+                                "key": "competence_level"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "focus",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Lit",
+                    "value": 1.0
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "key": "overload_gain"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Minus",
+                            "a": {
+                              "type": "Max",
+                              "items": [
+                                {
+                                  "type": "Times",
+                                  "items": [
+                                    {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "a"
+                                          },
+                                          "key": "w_sus"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "Max",
+                                      "items": [
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        },
+                                        {
+                                          "type": "Minus",
+                                          "a": {
+                                            "type": "Lit",
+                                            "value": 1.0
+                                          },
+                                          "b": {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "a"
+                                                },
+                                                "key": "sustenance_level"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "Times",
+                                  "items": [
+                                    {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "a"
+                                          },
+                                          "key": "w_comp"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "Max",
+                                      "items": [
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        },
+                                        {
+                                          "type": "Minus",
+                                          "a": {
+                                            "type": "Lit",
+                                            "value": 1.0
+                                          },
+                                          "b": {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "a"
+                                                },
+                                                "key": "competence_level"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "a"
+                                  },
+                                  "key": "arousal_opt"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "type": "Minus",
+                            "a": {
+                              "type": "Max",
+                              "items": [
+                                {
+                                  "type": "Times",
+                                  "items": [
+                                    {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "a"
+                                          },
+                                          "key": "w_sus"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "Max",
+                                      "items": [
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        },
+                                        {
+                                          "type": "Minus",
+                                          "a": {
+                                            "type": "Lit",
+                                            "value": 1.0
+                                          },
+                                          "b": {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "a"
+                                                },
+                                                "key": "sustenance_level"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "Times",
+                                  "items": [
+                                    {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "a"
+                                          },
+                                          "key": "w_comp"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "Max",
+                                      "items": [
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        },
+                                        {
+                                          "type": "Minus",
+                                          "a": {
+                                            "type": "Lit",
+                                            "value": 1.0
+                                          },
+                                          "b": {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "a"
+                                                },
+                                                "key": "competence_level"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "a"
+                                  },
+                                  "key": "arousal_opt"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "pursues",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Gte",
+                "a": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "w_sus"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "a"
+                                },
+                                "key": "sustenance_level"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "w_comp"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "a"
+                                },
+                                "key": "competence_level"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": "sustenance"
+              },
+              "other": {
+                "type": "Lit",
+                "value": "competence"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cg_eat",
+      "batch": false,
+      "comment": "Pursued sustenance + food available: consume one unit, restore energy (a positive memory).",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "acted_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "pursues"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "sustenance"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "stock"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "store",
+          "stock",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "stock"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "energy",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "max_energy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "energy"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "food_energy"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "ev",
+          "Event",
+          {
+            "topic": "life",
+            "valence": 1.0,
+            "appraised": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "a",
+          "perceives",
+          "ev"
+        ],
+        [
+          "set_attr",
+          "a",
+          "acted_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cg_hunger_frustrated",
+      "batch": false,
+      "comment": "Pursued sustenance but NO food: a negative memory + allostatic load (chronic frustration).",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "acted_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "pursues"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "sustenance"
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "stock"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "load",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "load"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "frust_load"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "ev",
+          "Event",
+          {
+            "topic": "life",
+            "valence": -1.0,
+            "appraised": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "a",
+          "perceives",
+          "ev"
+        ],
+        [
+          "set_attr",
+          "a",
+          "acted_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cg_work",
+      "batch": false,
+      "comment": "Pursued competence + resource + energy: spend energy, produce output=min(yield*focus,stock), raise competence (positive memory). Deposit write LAST.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ],
+        [
+          "town",
+          "has_deposit",
+          "dep"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "acted_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "pursues"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "competence"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dep"
+                  },
+                  "key": "stock"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "energy"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "work_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "energy",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "energy"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "work_cost"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "store",
+          "stock",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "store"
+                      },
+                      "key": "stock"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "a"
+                              },
+                              "key": "work_yield"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "a"
+                              },
+                              "key": "focus"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "dep"
+                          },
+                          "key": "stock"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "competence_level",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "competence_level"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Min",
+                          "items": [
+                            {
+                              "type": "Times",
+                              "items": [
+                                {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "a"
+                                      },
+                                      "key": "work_yield"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "a"
+                                      },
+                                      "key": "focus"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "dep"
+                                  },
+                                  "key": "stock"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "a"
+                              },
+                              "key": "comp_gain"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "last_output",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "work_yield"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "focus"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "dep"
+                      },
+                      "key": "stock"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "ev",
+          "Event",
+          {
+            "topic": "life",
+            "valence": 1.0,
+            "appraised": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "a",
+          "perceives",
+          "ev"
+        ],
+        [
+          "set_attr",
+          "dep",
+          "stock",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "dep"
+                    },
+                    "key": "stock"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Min",
+                "items": [
+                  {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "key": "work_yield"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "key": "focus"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "dep"
+                        },
+                        "key": "stock"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "acted_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cg_work_frustrated",
+      "batch": false,
+      "comment": "Pursued competence but no resource or no energy: negative memory + load.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ],
+        [
+          "town",
+          "has_deposit",
+          "dep"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "acted_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "pursues"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "competence"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "And",
+              "items": [
+                {
+                  "type": "Gt",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "dep"
+                        },
+                        "key": "stock"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                },
+                {
+                  "type": "Gte",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "energy"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "work_cost"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "load",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "load"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "frust_load"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "ev",
+          "Event",
+          {
+            "topic": "life",
+            "valence": -1.0,
+            "appraised": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "a",
+          "perceives",
+          "ev"
+        ],
+        [
+          "set_attr",
+          "a",
+          "acted_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "tick_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cg_break",
+      "batch": false,
+      "comment": "Allostatic load over the window -> breakdown (C4).",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "load"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "window"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "broken"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "broken",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "cg_recover",
+      "batch": false,
+      "comment": "Load falls back within the window -> recovered.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "broken"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Gt",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "load"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "window"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "broken",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

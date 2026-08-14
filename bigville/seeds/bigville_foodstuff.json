@@ -1,0 +1,1555 @@
+{
+  "id": "bigville_foodstuff",
+  "version": "1.3.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R42 (block 333000): the FOOD LIFECYCLE -- storage, spoilage, preparation, QUANTIZATION. A FoodItem{kind,state(raw/prepared/spoiled),freshness,portions(INTEGER)} in a Larder{cold}, prepared by a COOK (an agent) USING a Kitchen{fuel}, with QUALITY = the cook's skill. fs_spoil: per epoch freshness -= spoil_rate*(cold? cold_factor:1) (kind-specific: fish fast, grain slow, salt-fish slowest; cold preserves). fs_rot: freshness~0 -> spoiled (inedible). fs_prepare: raw + kitchen fuel -> prepared (taste+freshness up, fuel spent); some foods inedible until prepared. fs_eat: consume ONE portion iff edible (not spoiled, prepared if needs_prep); meal value = energy*freshness. fs_reject: spoiled / raw-needing-prep / empty -> refused (no free nutrition from rotten or raw food). Portions are integer -- in-frame quantities are quantized. QUANTIZATION is AGENT-CHOSEN (not fixed units -- the item count is just stock): a Household{members,shares,food} DIVIDES a food quantum among its members -- hq_ration sets per_member = food / shares (the household's chosen split). The household can RE-QUANTIZE (change shares) -- a poor family splits ONE serving of bread among four; a guest arrives and it re-splits finer. Scarcity -> finer quanta (smaller servings). The split is the agent's decision, dynamic and re-quantizable -- the substrate's dynamic quantization, at the table. Spoiled food does NOT disappear -- it persists and is EATABLE (a desperate agent may eat it): fs_eat grades the meal by an EATER -- nutrition = energy*freshness*(raw_penalty if uncooked-needs-prep) (LESS NUTRITIOUS as it spoils), pleasantness = taste*freshness - disgust (MORE UNPLEASANT), illness = accrues with (1-freshness)*rot_illness (+ raw_illness) (CHANCE OF ILLNESS). Only an EMPTY stock yields no food; nothing is hard-rejected -- food is food, just graded from a feast to a sickening scrap. PREPARATION REQUIRES AN AGENT, NOT A KITCHEN (fs_prepare): an agent -preparing-> item -using-> a STATION prepares food ANYWHERE. prep_kind 'season' (add spices) needs NO heat -- done on bare hands / the ground / a bench; prep_kind 'cook' needs a heat source (station.heat>=1: a fire or stove). Quality = cook_skill*(1+station.prep_power) (a better surface helps); cooking spends the station's fuel and lifts freshness + makes needs-prep food edible; both kinds improve taste. A kitchen is NOT required -- only an agent (and heat only IF cooking).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "fs_spoil",
+      "batch": false,
+      "comment": "Per epoch, freshness decays at the food's kind-specific spoil rate; cold storage slows it.",
+      "match": [
+        [
+          "town",
+          "has_larder",
+          "larder"
+        ],
+        [
+          "larder",
+          "has_item",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "seen_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "item"
+                },
+                "key": "state"
+              },
+              "b": {
+                "type": "Lit",
+                "value": "spoiled"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "item",
+          "freshness",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "item"
+                        },
+                        "key": "freshness"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "item"
+                            },
+                            "key": "spoil_rate"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "IfThenElse",
+                        "cond": {
+                          "type": "Eq",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "larder"
+                                },
+                                "key": "cold"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Lit",
+                            "value": 1.0
+                          }
+                        },
+                        "then": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "larder"
+                              },
+                              "key": "cold_factor"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "other": {
+                          "type": "Lit",
+                          "value": 1.0
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "seen_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "fs_rot",
+      "batch": false,
+      "comment": "When freshness reaches ~0 the item spoils (becomes inedible).",
+      "match": [
+        [
+          "larder",
+          "has_item",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "freshness"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.05
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "item"
+                },
+                "key": "state"
+              },
+              "b": {
+                "type": "Lit",
+                "value": "spoiled"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "item",
+          "state",
+          "spoiled"
+        ]
+      ]
+    },
+    {
+      "name": "fs_prepare",
+      "batch": false,
+      "comment": "An AGENT prepares food (NOT a kitchen). agent -preparing-> item, agent -using-> station (bare hands/ground/bench/fire/stove). 'season' (spices) needs no heat -- anywhere; 'cook' needs station.heat>=1. Quality = cook_skill*(1+prep_power); cooking burns station fuel, lifts freshness, makes needs-prep food edible; both lift taste. Agent spends energy and learns by doing. Effects ordered reads-before-writes: quality (taste/freshness) reads OLD cook_skill; the skill increment is applied last.",
+      "match": [
+        [
+          "larder",
+          "has_item",
+          "item"
+        ],
+        [
+          "agent",
+          "preparing",
+          "item"
+        ],
+        [
+          "agent",
+          "using",
+          "station"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "prep_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "energy"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "cook_effort"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "prep_kind"
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": "season"
+                }
+              },
+              {
+                "type": "Gte",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "station"
+                      },
+                      "key": "heat"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "item",
+          "state",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "prep_kind"
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": "cook"
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": "prepared"
+              },
+              "other": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "item"
+                },
+                "key": "state"
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "taste",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "item"
+                      },
+                      "key": "taste"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "item"
+                          },
+                          "key": "prep_bonus"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "agent"
+                              },
+                              "key": "cook_skill"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Lit",
+                              "value": 1.0
+                            },
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "station"
+                                  },
+                                  "key": "prep_power"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "freshness",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "prep_kind"
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": "cook"
+                }
+              },
+              "then": {
+                "type": "Min",
+                "items": [
+                  {
+                    "type": "Lit",
+                    "value": 1.0
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "item"
+                            },
+                            "key": "freshness"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Lit",
+                            "value": 0.25
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "key": "cook_skill"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "other": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "item"
+                    },
+                    "key": "freshness"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "quality",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "cook_skill"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 1.0
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "station"
+                          },
+                          "key": "prep_power"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "prepared_by",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "agent"
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "prep_style",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "item"
+              },
+              "key": "prep_kind"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "station",
+          "fuel",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "station"
+                    },
+                    "key": "fuel"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "IfThenElse",
+                "cond": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "item"
+                    },
+                    "key": "prep_kind"
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": "cook"
+                  }
+                },
+                "then": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "station"
+                      },
+                      "key": "fuel_cost"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "other": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "cook_skill",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "cook_skill"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "learn_rate"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "energy",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "energy"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "cook_effort"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "prep_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "fs_eat",
+      "batch": false,
+      "comment": "An EATER consumes one portion. The meal is GRADED, never rejected (except an empty stock): nutrition = energy*freshness*(raw_penalty if uncooked) -- LESS as it spoils; pleasantness = taste*freshness - disgust(if spoiled) -- MORE UNPLEASANT; illness accrues with (1-freshness) -- CHANCE OF ILLNESS. Spoiled food is eaten, not vanished.",
+      "match": [
+        [
+          "larder",
+          "has_item",
+          "item"
+        ],
+        [
+          "item",
+          "eaten_by",
+          "eater"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "eat_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "portions"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "item",
+          "portions",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "item"
+                    },
+                    "key": "portions"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "eater",
+          "last_nutrition",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "item"
+                      },
+                      "key": "energy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "item"
+                      },
+                      "key": "freshness"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "And",
+                    "items": [
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "item"
+                              },
+                              "key": "needs_prep"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Lit",
+                          "value": 1.0
+                        }
+                      },
+                      {
+                        "type": "Not",
+                        "arg": {
+                          "type": "Eq",
+                          "a": {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "item"
+                            },
+                            "key": "state"
+                          },
+                          "b": {
+                            "type": "Lit",
+                            "value": "prepared"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "then": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "eater"
+                        },
+                        "key": "raw_penalty"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "eater",
+          "last_pleasantness",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Times",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "item"
+                        },
+                        "key": "taste"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "item"
+                        },
+                        "key": "freshness"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              },
+              "b": {
+                "type": "IfThenElse",
+                "cond": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "item"
+                    },
+                    "key": "state"
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": "spoiled"
+                  }
+                },
+                "then": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "eater"
+                      },
+                      "key": "spoiled_disgust"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "other": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "eater",
+          "illness",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "eater"
+                          },
+                          "key": "illness"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Minus",
+                              "a": {
+                                "type": "Lit",
+                                "value": 1.0
+                              },
+                              "b": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "item"
+                                    },
+                                    "key": "freshness"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "eater"
+                                  },
+                                  "key": "rot_illness"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "And",
+                            "items": [
+                              {
+                                "type": "Eq",
+                                "a": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "item"
+                                      },
+                                      "key": "needs_prep"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                },
+                                "b": {
+                                  "type": "Lit",
+                                  "value": 1.0
+                                }
+                              },
+                              {
+                                "type": "Not",
+                                "arg": {
+                                  "type": "Eq",
+                                  "a": {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "item"
+                                    },
+                                    "key": "state"
+                                  },
+                                  "b": {
+                                    "type": "Lit",
+                                    "value": "prepared"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "then": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "eater"
+                                },
+                                "key": "raw_illness"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "other": {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "eater",
+          "last_ate",
+          1.0
+        ],
+        [
+          "set_attr",
+          "item",
+          "eat_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "fs_nofood",
+      "batch": false,
+      "comment": "Only an EMPTY stock yields nothing (you cannot eat what isn't there). No hard reject of bad food.",
+      "match": [
+        [
+          "larder",
+          "has_item",
+          "item"
+        ],
+        [
+          "item",
+          "eaten_by",
+          "eater"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "eat_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "portions"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "eater",
+          "last_nutrition",
+          0.0
+        ],
+        [
+          "set_attr",
+          "eater",
+          "last_ate",
+          0.0
+        ],
+        [
+          "set_attr",
+          "item",
+          "eat_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "hq_ration",
+      "batch": false,
+      "comment": "AGENT quantization: a household DIVIDES its food quantum among its members. per_member = food / shares -- shares is the household's CHOSEN split (default = members; re-quantizable). One loaf, four sharers -> a quarter each. Scarcity -> finer quanta (smaller servings).",
+      "match": [
+        [
+          "town",
+          "has_household",
+          "hh"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "hh",
+          "per_member",
+          {
+            "__term__": {
+              "type": "Div",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "hh"
+                    },
+                    "key": "food"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Max",
+                "items": [
+                  {
+                    "type": "Lit",
+                    "value": 1.0
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "hh"
+                        },
+                        "key": "shares"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

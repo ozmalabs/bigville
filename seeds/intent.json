@@ -1,0 +1,2068 @@
+{
+  "id": "intent",
+  "version": "1.0.0",
+  "depends_on": [
+    "conversation",
+    "psychology",
+    "relations"
+  ],
+  "description": "Intent / Unknown / Mention types + the rewrite Rules that build an Intent for each Message.",
+  "nodes": [
+    {
+      "local_id": 981,
+      "type": "Microtheory",
+      "attrs": {
+        "description": "speaker intent — semiotic content beyond surface form",
+        "name": "intent"
+      }
+    },
+    {
+      "local_id": 982,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_node",
+                "intent",
+                "Intent",
+                {
+                  "text": {
+                    "__term__": {
+                      "key": "text",
+                      "node": {
+                        "name": "m",
+                        "type": "Var"
+                      },
+                      "type": "Attr"
+                    }
+                  },
+                  "tick": {
+                    "__term__": {
+                      "key": "tick",
+                      "node": {
+                        "name": "m",
+                        "type": "Var"
+                      },
+                      "type": "Attr"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_edge",
+                "m",
+                "has_intent",
+                "intent"
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "speech_act",
+                "sa"
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "claimed_speaker",
+                "spk"
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "speaker",
+                "spk"
+              ]
+            }
+          ]
+        },
+        "id": "rule_intent_from_claim",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "m",
+                "has_speech_act",
+                "sa"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m",
+                "sent_by",
+                "spk"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "arg": {
+            "predicate": {
+              "type": "Lit",
+              "value": true
+            },
+            "source": {
+              "edge_type": "has_intent",
+              "node": {
+                "name": "m",
+                "type": "Var"
+              },
+              "type": "Neighbours"
+            },
+            "type": "Exists",
+            "var_name": "_ign"
+          },
+          "type": "Not"
+        }
+      }
+    },
+    {
+      "local_id": 983,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_node",
+                "unknown",
+                "Unknown",
+                {
+                  "name": {
+                    "__term__": {
+                      "type": "Lit",
+                      "value": "speaker_of_message"
+                    }
+                  },
+                  "unknown_kind": {
+                    "__term__": {
+                      "type": "Lit",
+                      "value": "speaker"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_node",
+                "intent",
+                "Intent",
+                {
+                  "text": {
+                    "__term__": {
+                      "key": "text",
+                      "node": {
+                        "name": "m",
+                        "type": "Var"
+                      },
+                      "type": "Attr"
+                    }
+                  },
+                  "tick": {
+                    "__term__": {
+                      "key": "tick",
+                      "node": {
+                        "name": "m",
+                        "type": "Var"
+                      },
+                      "type": "Attr"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_edge",
+                "m",
+                "has_intent",
+                "intent"
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "speech_act",
+                "sa"
+              ]
+            },
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "speaker",
+                "unknown"
+              ]
+            }
+          ]
+        },
+        "id": "rule_intent_from_no_claim",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "m",
+                "has_speech_act",
+                "sa"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "items": {
+            "__tuple__": [
+              {
+                "arg": {
+                  "predicate": {
+                    "type": "Lit",
+                    "value": true
+                  },
+                  "source": {
+                    "edge_type": "has_intent",
+                    "node": {
+                      "name": "m",
+                      "type": "Var"
+                    },
+                    "type": "Neighbours"
+                  },
+                  "type": "Exists",
+                  "var_name": "_ign"
+                },
+                "type": "Not"
+              },
+              {
+                "arg": {
+                  "predicate": {
+                    "type": "Lit",
+                    "value": true
+                  },
+                  "source": {
+                    "edge_type": "sent_by",
+                    "node": {
+                      "name": "m",
+                      "type": "Var"
+                    },
+                    "type": "Neighbours"
+                  },
+                  "type": "Exists",
+                  "var_name": "_ign"
+                },
+                "type": "Not"
+              }
+            ]
+          },
+          "type": "And"
+        }
+      }
+    },
+    {
+      "local_id": 984,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "expects_response",
+                "r"
+              ]
+            }
+          ]
+        },
+        "id": "rule_intent_inherit_expects_response",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "intent",
+                "speech_act",
+                "sa"
+              ]
+            },
+            {
+              "__tuple__": [
+                "sa",
+                "expects_response",
+                "r"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "arg": {
+            "predicate": {
+              "type": "Lit",
+              "value": true
+            },
+            "source": {
+              "edge_type": "expects_response",
+              "node": {
+                "name": "intent",
+                "type": "Var"
+              },
+              "type": "Neighbours"
+            },
+            "type": "Exists",
+            "var_name": "_ign"
+          },
+          "type": "Not"
+        }
+      }
+    },
+    {
+      "local_id": 985,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "expects_response",
+                "sa"
+              ]
+            }
+          ]
+        },
+        "id": "rule_intent_inherit_expects_response_mirrored",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "intent",
+                "speech_act",
+                "sa"
+              ]
+            },
+            {
+              "__tuple__": [
+                "sa",
+                "expects_response",
+                "sa"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "arg": {
+            "predicate": {
+              "type": "Lit",
+              "value": true
+            },
+            "source": {
+              "edge_type": "expects_response",
+              "node": {
+                "name": "intent",
+                "type": "Var"
+              },
+              "type": "Neighbours"
+            },
+            "type": "Exists",
+            "var_name": "_ign"
+          },
+          "type": "Not"
+        }
+      }
+    },
+    {
+      "local_id": 986,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "mention",
+                "refers_to",
+                "spk"
+              ]
+            }
+          ]
+        },
+        "id": "rule_first_person_resolves_to_speaker",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "m",
+                "has_intent",
+                "intent"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m",
+                "has_mention",
+                "mention"
+              ]
+            },
+            {
+              "__tuple__": [
+                "intent",
+                "speaker",
+                "spk"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "items": {
+            "__tuple__": [
+              {
+                "items": {
+                  "__tuple__": [
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "i"
+                      },
+                      "type": "Eq"
+                    },
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "me"
+                      },
+                      "type": "Eq"
+                    },
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "my"
+                      },
+                      "type": "Eq"
+                    },
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "mine"
+                      },
+                      "type": "Eq"
+                    }
+                  ]
+                },
+                "type": "Or"
+              },
+              {
+                "arg": {
+                  "predicate": {
+                    "type": "Lit",
+                    "value": true
+                  },
+                  "source": {
+                    "edge_type": "refers_to",
+                    "node": {
+                      "name": "mention",
+                      "type": "Var"
+                    },
+                    "type": "Neighbours"
+                  },
+                  "type": "Exists",
+                  "var_name": "_ign"
+                },
+                "type": "Not"
+              }
+            ]
+          },
+          "type": "And"
+        }
+      }
+    },
+    {
+      "local_id": 987,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "mention",
+                "refers_to",
+                "addressee"
+              ]
+            }
+          ]
+        },
+        "id": "rule_second_person_resolves_to_addressee",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "m",
+                "in_channel",
+                "ch"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m",
+                "has_intent",
+                "intent"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m",
+                "has_mention",
+                "mention"
+              ]
+            },
+            {
+              "__tuple__": [
+                "intent",
+                "speaker",
+                "spk"
+              ]
+            },
+            {
+              "__tuple__": [
+                "addressee",
+                "participates_in",
+                "ch"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "items": {
+            "__tuple__": [
+              {
+                "items": {
+                  "__tuple__": [
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "you"
+                      },
+                      "type": "Eq"
+                    },
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "your"
+                      },
+                      "type": "Eq"
+                    },
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "yours"
+                      },
+                      "type": "Eq"
+                    }
+                  ]
+                },
+                "type": "Or"
+              },
+              {
+                "arg": {
+                  "predicate": {
+                    "type": "Lit",
+                    "value": true
+                  },
+                  "source": {
+                    "edge_type": "refers_to",
+                    "node": {
+                      "name": "mention",
+                      "type": "Var"
+                    },
+                    "type": "Neighbours"
+                  },
+                  "type": "Exists",
+                  "var_name": "_ign"
+                },
+                "type": "Not"
+              }
+            ]
+          },
+          "type": "And"
+        }
+      }
+    },
+    {
+      "local_id": 988,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "mention",
+                "refers_to",
+                "c"
+              ]
+            }
+          ]
+        },
+        "id": "rule_anaphoric_it_resolves_to_prior_about_concept",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "m",
+                "has_mention",
+                "mention"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m",
+                "responds_to",
+                "m_prev"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m_prev",
+                "has_intent",
+                "intent_prev"
+              ]
+            },
+            {
+              "__tuple__": [
+                "intent_prev",
+                "about_concept",
+                "c"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "items": {
+            "__tuple__": [
+              {
+                "items": {
+                  "__tuple__": [
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "it"
+                      },
+                      "type": "Eq"
+                    },
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "this"
+                      },
+                      "type": "Eq"
+                    },
+                    {
+                      "a": {
+                        "key": "text",
+                        "node": {
+                          "name": "mention",
+                          "type": "Var"
+                        },
+                        "type": "Attr"
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": "that"
+                      },
+                      "type": "Eq"
+                    }
+                  ]
+                },
+                "type": "Or"
+              },
+              {
+                "arg": {
+                  "predicate": {
+                    "type": "Lit",
+                    "value": true
+                  },
+                  "source": {
+                    "edge_type": "refers_to",
+                    "node": {
+                      "name": "mention",
+                      "type": "Var"
+                    },
+                    "type": "Neighbours"
+                  },
+                  "type": "Exists",
+                  "var_name": "_ign"
+                },
+                "type": "Not"
+              }
+            ]
+          },
+          "type": "And"
+        }
+      }
+    },
+    {
+      "local_id": 989,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "sign",
+                "refers_to",
+                "c"
+              ]
+            }
+          ]
+        },
+        "id": "rule_acoustic_sign_refers_to_denoted_concept",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "m",
+                "has_mention",
+                "sign"
+              ]
+            },
+            {
+              "__tuple__": [
+                "sign",
+                "denotes",
+                "c"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "arg": {
+            "container": {
+              "edge_type": "refers_to",
+              "node": {
+                "name": "sign",
+                "type": "Var"
+              },
+              "type": "Neighbours"
+            },
+            "member": {
+              "name": "c",
+              "type": "Var"
+            },
+            "type": "In"
+          },
+          "type": "Not"
+        }
+      }
+    },
+    {
+      "local_id": 990,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "mention",
+                "refers_to",
+                "c"
+              ]
+            }
+          ]
+        },
+        "id": "rule_mention_resolves_to_concept",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "agent",
+                "knows_concept",
+                "c"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m",
+                "has_mention",
+                "mention"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "items": {
+            "__tuple__": [
+              {
+                "a": {
+                  "key": "text",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  },
+                  "type": "Attr"
+                },
+                "b": {
+                  "key": "name",
+                  "node": {
+                    "name": "c",
+                    "type": "Var"
+                  },
+                  "type": "Attr"
+                },
+                "type": "Eq"
+              },
+              {
+                "arg": {
+                  "predicate": {
+                    "type": "Lit",
+                    "value": true
+                  },
+                  "source": {
+                    "edge_type": "refers_to",
+                    "node": {
+                      "name": "mention",
+                      "type": "Var"
+                    },
+                    "type": "Neighbours"
+                  },
+                  "type": "Exists",
+                  "var_name": "_ign"
+                },
+                "type": "Not"
+              }
+            ]
+          },
+          "type": "And"
+        }
+      }
+    },
+    {
+      "local_id": 991,
+      "type": "Rule",
+      "attrs": {
+        "effect": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "add_edge",
+                "intent",
+                "about_concept",
+                "c"
+              ]
+            }
+          ]
+        },
+        "id": "rule_intent_about_mentioned_concept",
+        "match": {
+          "__tuple__": [
+            {
+              "__tuple__": [
+                "m",
+                "has_intent",
+                "intent"
+              ]
+            },
+            {
+              "__tuple__": [
+                "m",
+                "has_mention",
+                "mention"
+              ]
+            },
+            {
+              "__tuple__": [
+                "mention",
+                "refers_to",
+                "c"
+              ]
+            }
+          ]
+        },
+        "where": {
+          "items": {
+            "__tuple__": [
+              {
+                "a": {
+                  "node": {
+                    "name": "c",
+                    "type": "Var"
+                  },
+                  "type": "TypeOf"
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": "Concept"
+                },
+                "type": "Eq"
+              },
+              {
+                "arg": {
+                  "container": {
+                    "edge_type": "about_concept",
+                    "node": {
+                      "name": "intent",
+                      "type": "Var"
+                    },
+                    "type": "Neighbours"
+                  },
+                  "member": {
+                    "name": "c",
+                    "type": "Var"
+                  },
+                  "type": "In"
+                },
+                "type": "Not"
+              }
+            ]
+          },
+          "type": "And"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "type": "operates_in",
+      "tgt": {
+        "local": 981
+      },
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "src": {
+        "type": "AcousticSign",
+        "var": "src"
+      },
+      "edge_type": "denotes",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:AcousticSign-denotes-Concept"
+    },
+    {
+      "src": {
+        "type": "AcousticSign",
+        "var": "src"
+      },
+      "edge_type": "refers_to",
+      "tgt": {
+        "type": "Agent",
+        "var": "tgt"
+      },
+      "provenance": "meta:AcousticSign-refers_to-Agent"
+    },
+    {
+      "src": {
+        "type": "AcousticSign",
+        "var": "src"
+      },
+      "edge_type": "refers_to",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:AcousticSign-refers_to-Concept"
+    },
+    {
+      "src": {
+        "type": "AcousticSign",
+        "var": "src"
+      },
+      "edge_type": "refers_to",
+      "tgt": {
+        "type": "Interlocutor",
+        "var": "tgt"
+      },
+      "provenance": "meta:AcousticSign-refers_to-Interlocutor"
+    },
+    {
+      "src": {
+        "type": "AcousticSign",
+        "var": "src"
+      },
+      "edge_type": "refers_to",
+      "tgt": {
+        "type": "Unknown",
+        "var": "tgt"
+      },
+      "provenance": "meta:AcousticSign-refers_to-Unknown"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "about_concept",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-about_concept-Concept"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "claimed_speaker",
+      "tgt": {
+        "type": "Agent",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-claimed_speaker-Agent"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "claimed_speaker",
+      "tgt": {
+        "type": "Interlocutor",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-claimed_speaker-Interlocutor"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "expects_response",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-expects_response-Concept"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "presupposes",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-presupposes-Concept"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "speaker",
+      "tgt": {
+        "type": "Agent",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-speaker-Agent"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "speaker",
+      "tgt": {
+        "type": "Interlocutor",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-speaker-Interlocutor"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "speaker",
+      "tgt": {
+        "type": "Unknown",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-speaker-Unknown"
+    },
+    {
+      "src": {
+        "type": "Intent",
+        "var": "src"
+      },
+      "edge_type": "speech_act",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Intent-speech_act-Concept"
+    },
+    {
+      "src": {
+        "type": "Mention",
+        "var": "src"
+      },
+      "edge_type": "refers_to",
+      "tgt": {
+        "type": "Agent",
+        "var": "tgt"
+      },
+      "provenance": "meta:Mention-refers_to-Agent"
+    },
+    {
+      "src": {
+        "type": "Mention",
+        "var": "src"
+      },
+      "edge_type": "refers_to",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Mention-refers_to-Concept"
+    },
+    {
+      "src": {
+        "type": "Mention",
+        "var": "src"
+      },
+      "edge_type": "refers_to",
+      "tgt": {
+        "type": "Interlocutor",
+        "var": "tgt"
+      },
+      "provenance": "meta:Mention-refers_to-Interlocutor"
+    },
+    {
+      "src": {
+        "type": "Message",
+        "var": "src"
+      },
+      "edge_type": "has_intent",
+      "tgt": {
+        "type": "Intent",
+        "var": "tgt"
+      },
+      "provenance": "meta:Message-has_intent-Intent"
+    },
+    {
+      "src": {
+        "type": "Message",
+        "var": "src"
+      },
+      "edge_type": "has_mention",
+      "tgt": {
+        "type": "AcousticSign",
+        "var": "tgt"
+      },
+      "provenance": "meta:Message-has_mention-AcousticSign"
+    },
+    {
+      "src": {
+        "type": "Message",
+        "var": "src"
+      },
+      "edge_type": "has_mention",
+      "tgt": {
+        "type": "Mention",
+        "var": "tgt"
+      },
+      "provenance": "meta:Message-has_mention-Mention"
+    }
+  ],
+  "rules": [
+    {
+      "name": "rule_intent_from_claim",
+      "match": [
+        [
+          "m",
+          "has_speech_act",
+          "sa"
+        ],
+        [
+          "m",
+          "sent_by",
+          "spk"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "var_name": "_ign",
+          "predicate": {
+            "value": true,
+            "type": "Lit"
+          },
+          "source": {
+            "type": "Neighbours",
+            "edge_type": "has_intent",
+            "node": {
+              "name": "m",
+              "type": "Var"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_node",
+          "intent",
+          "Intent",
+          {
+            "tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            },
+            "text": {
+              "__term__": {
+                "key": "text",
+                "type": "Attr",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "m",
+          "has_intent",
+          "intent"
+        ],
+        [
+          "add_edge",
+          "intent",
+          "speech_act",
+          "sa"
+        ],
+        [
+          "add_edge",
+          "intent",
+          "claimed_speaker",
+          "spk"
+        ],
+        [
+          "add_edge",
+          "intent",
+          "speaker",
+          "spk"
+        ]
+      ]
+    },
+    {
+      "name": "rule_intent_from_no_claim",
+      "match": [
+        [
+          "m",
+          "has_speech_act",
+          "sa"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "var_name": "_ign",
+              "predicate": {
+                "value": true,
+                "type": "Lit"
+              },
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "has_intent",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "var_name": "_ign",
+              "predicate": {
+                "value": true,
+                "type": "Lit"
+              },
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "sent_by",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "unknown",
+          "Unknown",
+          {
+            "name": {
+              "__term__": {
+                "value": "speaker_of_message",
+                "type": "Lit"
+              }
+            },
+            "unknown_kind": {
+              "__term__": {
+                "value": "speaker",
+                "type": "Lit"
+              }
+            }
+          }
+        ],
+        [
+          "add_node",
+          "intent",
+          "Intent",
+          {
+            "tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            },
+            "text": {
+              "__term__": {
+                "key": "text",
+                "type": "Attr",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "m",
+          "has_intent",
+          "intent"
+        ],
+        [
+          "add_edge",
+          "intent",
+          "speech_act",
+          "sa"
+        ],
+        [
+          "add_edge",
+          "intent",
+          "speaker",
+          "unknown"
+        ]
+      ]
+    },
+    {
+      "name": "rule_intent_inherit_expects_response",
+      "match": [
+        [
+          "intent",
+          "speech_act",
+          "sa"
+        ],
+        [
+          "sa",
+          "expects_response",
+          "r"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "var_name": "_ign",
+          "predicate": {
+            "value": true,
+            "type": "Lit"
+          },
+          "source": {
+            "type": "Neighbours",
+            "edge_type": "expects_response",
+            "node": {
+              "name": "intent",
+              "type": "Var"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "intent",
+          "expects_response",
+          "r"
+        ]
+      ]
+    },
+    {
+      "name": "rule_intent_inherit_expects_response_mirrored",
+      "match": [
+        [
+          "intent",
+          "speech_act",
+          "sa"
+        ],
+        [
+          "sa",
+          "expects_response",
+          "sa"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "var_name": "_ign",
+          "predicate": {
+            "value": true,
+            "type": "Lit"
+          },
+          "source": {
+            "type": "Neighbours",
+            "edge_type": "expects_response",
+            "node": {
+              "name": "intent",
+              "type": "Var"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "intent",
+          "expects_response",
+          "sa"
+        ]
+      ]
+    },
+    {
+      "name": "rule_first_person_resolves_to_speaker",
+      "match": [
+        [
+          "m",
+          "has_intent",
+          "intent"
+        ],
+        [
+          "m",
+          "has_mention",
+          "mention"
+        ],
+        [
+          "intent",
+          "speaker",
+          "spk"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "i",
+                  "type": "Lit"
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "me",
+                  "type": "Lit"
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "my",
+                  "type": "Lit"
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "mine",
+                  "type": "Lit"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "var_name": "_ign",
+              "predicate": {
+                "value": true,
+                "type": "Lit"
+              },
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "refers_to",
+                "node": {
+                  "name": "mention",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "mention",
+          "refers_to",
+          "spk"
+        ]
+      ]
+    },
+    {
+      "name": "rule_second_person_resolves_to_addressee",
+      "match": [
+        [
+          "m",
+          "in_channel",
+          "ch"
+        ],
+        [
+          "m",
+          "has_intent",
+          "intent"
+        ],
+        [
+          "m",
+          "has_mention",
+          "mention"
+        ],
+        [
+          "intent",
+          "speaker",
+          "spk"
+        ],
+        [
+          "addressee",
+          "participates_in",
+          "ch"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "you",
+                  "type": "Lit"
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "your",
+                  "type": "Lit"
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "yours",
+                  "type": "Lit"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "var_name": "_ign",
+              "predicate": {
+                "value": true,
+                "type": "Lit"
+              },
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "refers_to",
+                "node": {
+                  "name": "mention",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "mention",
+          "refers_to",
+          "addressee"
+        ]
+      ]
+    },
+    {
+      "name": "rule_anaphoric_it_resolves_to_prior_about_concept",
+      "match": [
+        [
+          "m",
+          "has_mention",
+          "mention"
+        ],
+        [
+          "m",
+          "responds_to",
+          "m_prev"
+        ],
+        [
+          "m_prev",
+          "has_intent",
+          "intent_prev"
+        ],
+        [
+          "intent_prev",
+          "about_concept",
+          "c"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "it",
+                  "type": "Lit"
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "this",
+                  "type": "Lit"
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "key": "text",
+                  "type": "Attr",
+                  "node": {
+                    "name": "mention",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "value": "that",
+                  "type": "Lit"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "var_name": "_ign",
+              "predicate": {
+                "value": true,
+                "type": "Lit"
+              },
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "refers_to",
+                "node": {
+                  "name": "mention",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "mention",
+          "refers_to",
+          "c"
+        ]
+      ]
+    },
+    {
+      "name": "rule_acoustic_sign_refers_to_denoted_concept",
+      "match": [
+        [
+          "m",
+          "has_mention",
+          "sign"
+        ],
+        [
+          "sign",
+          "denotes",
+          "c"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "In",
+          "member": {
+            "name": "c",
+            "type": "Var"
+          },
+          "container": {
+            "type": "Neighbours",
+            "edge_type": "refers_to",
+            "node": {
+              "name": "sign",
+              "type": "Var"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "sign",
+          "refers_to",
+          "c"
+        ]
+      ]
+    },
+    {
+      "name": "rule_mention_resolves_to_concept",
+      "match": [
+        [
+          "agent",
+          "knows_concept",
+          "c"
+        ],
+        [
+          "m",
+          "has_mention",
+          "mention"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "text",
+              "type": "Attr",
+              "node": {
+                "name": "mention",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "name",
+              "type": "Attr",
+              "node": {
+                "name": "c",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "var_name": "_ign",
+              "predicate": {
+                "value": true,
+                "type": "Lit"
+              },
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "refers_to",
+                "node": {
+                  "name": "mention",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "mention",
+          "refers_to",
+          "c"
+        ]
+      ],
+      "index_hints": [
+        {
+          "for_var": "c",
+          "via_var": "mention",
+          "via_key": "text",
+          "node_type": "Concept",
+          "this_key": "name",
+          "_comment": "R10 join-index (docs/comprehension_decision_ledger.md Wave 3): c and mention share no match variable -- only the where-clause Eq(mention.text, c.name) connects them, so the matcher would otherwise enumerate the full held-Concepts x accumulated-Mentions cross product every pass. This hint lets the matcher probe a live attr index (Concept.name) once `mention` is bound, instead of scanning every knows_concept edge. Same match/where/effects as before -- resolution behaviour is byte-identical, only the matcher's traversal cost changes (index-then-verify: see runners/dsl/src/rewrite.rs::hinted_candidates)."
+        }
+      ]
+    },
+    {
+      "name": "rule_intent_about_mentioned_concept",
+      "match": [
+        [
+          "m",
+          "has_intent",
+          "intent"
+        ],
+        [
+          "m",
+          "has_mention",
+          "mention"
+        ],
+        [
+          "mention",
+          "refers_to",
+          "c"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "TypeOf",
+              "node": {
+                "name": "c",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "Concept",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "In",
+              "member": {
+                "name": "c",
+                "type": "Var"
+              },
+              "container": {
+                "type": "Neighbours",
+                "edge_type": "about_concept",
+                "node": {
+                  "name": "intent",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "intent",
+          "about_concept",
+          "c"
+        ]
+      ]
+    }
+  ]
+}

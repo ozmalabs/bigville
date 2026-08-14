@@ -1,0 +1,170 @@
+{
+ "id": "bigville_school_life",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R18 (266000) -- the GENERATIONAL HINGE. sc_come_of_age maps what a child LEARNED at school (Skill.level, accumulated via sc_acquire) onto its adult capability = clamp01(base_capability + gain*level) + adult=1 -- SCHOOL-DERIVED, grounding R14's deferred rearing-proxy. A defunded-school cohort comes of age under-capable (structural, generational). Composes existing DSL Terms; ZERO new Rust; self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "sc_come_of_age",
+   "batch": false,
+   "match": [
+    [
+     "child",
+     "has_skill",
+     "s"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "child"
+         },
+         "key": "coa_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "child"
+         },
+         "key": "matured"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "child",
+     "capability",
+     {
+      "__term__": {
+       "type": "Max",
+       "items": [
+        {
+         "type": "Lit",
+         "value": 0.0
+        },
+        {
+         "type": "Min",
+         "items": [
+          {
+           "type": "Lit",
+           "value": 1.0
+          },
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Plus",
+             "items": [
+              {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "child"
+               },
+               "key": "base_capability"
+              },
+              {
+               "type": "Lit",
+               "value": 0.0
+              }
+             ]
+            },
+            {
+             "type": "Times",
+             "items": [
+              {
+               "type": "Lit",
+               "value": 0.1
+              },
+              {
+               "type": "Plus",
+               "items": [
+                {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "s"
+                 },
+                 "key": "level"
+                },
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "child",
+     "adult",
+     1.0
+    ],
+    [
+     "set_attr",
+     "child",
+     "matured",
+     1.0
+    ],
+    [
+     "set_attr",
+     "child",
+     "coa_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

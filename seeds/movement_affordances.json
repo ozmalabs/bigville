@@ -1,0 +1,38 @@
+{
+  "id": "movement_affordances",
+  "version": "1.0.0",
+  "depends_on": ["self_processes"],
+  "description": "Held capability accounts the agent consults when answering polar 'can you <verb>?' questions. Spatial navigation is graph-native (quanta flood, spatial routing, attached maze/doom worlds) and does not require a physical body. Embodied movement affordances the agent lacks are recorded here too — the graph decides, never the adapter.",
+  "microtheory": {
+    "name": "movement_affordances",
+    "description": "held movement/spatial capability accounts"
+  },
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "HeldCapability",
+      "attrs": {
+        "name": "spatial_navigation",
+        "verb": "navigate",
+        "aliases": "navigate navigates navigating navigation traverse traverses traversing explore explores exploring",
+        "account": "Yes — I can navigate modeled spaces in my graph: grids, mazes, quanta maps, and attached spatial worlds. I route through graph-resident spatial faculties — quanta flood, portal hops, passability-aware routing — without needing a physical body."
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "HeldCapability",
+      "attrs": {
+        "name": "embodied_dance",
+        "verb": "dance",
+        "aliases": "dance dances dancing",
+        "account": "No — I can't dance. I have no embodiment for rhythmic physical movement."
+      }
+    }
+  ],
+  "edges": [
+    {"src": {"role": "agent_root"}, "type": "holds_capability", "tgt": {"local": 0}},
+    {"src": {"role": "agent_root"}, "type": "holds_capability", "tgt": {"local": 1}}
+  ],
+  "productions": [],
+  "rules": []
+}

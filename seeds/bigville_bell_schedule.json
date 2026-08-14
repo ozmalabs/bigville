@@ -1,0 +1,228 @@
+{
+  "id": "bigville_bell_schedule",
+  "version": "1.0.0",
+  "depends_on": [
+    "bigville_bells"
+  ],
+  "self_load_only": true,
+  "description": "bigville R32b (block 323000): a LEAN, reusable bell-time scheduling primitive -- a beadle counts curfew bells and rings the assembly bell when a held Bylaw says an event is due, reading the interval from the graph (NOT now_day % cadence). Same as bigville_council_bylaw's beadle, but the interval is a Bylaw the town holds directly (town -has_bylaw-> Bylaw{name:council_meeting_interval, value:N}), so it needs no LawBook -- for wiring into integ3 without the full legislature. cb2_beadle_counts / cb2_ring_assembly. The convening itself is left to the host (integ3 keeps its rich _run_council, triggered by reading the assembly peal) so this primitive only schedules.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cb2_beadle_counts",
+      "batch": false,
+      "comment": "On each curfew bell the beadle marks a day passing, once per peal.",
+      "match": [
+        [
+          "town",
+          "has_beadle",
+          "beadle"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "peal"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "curfew"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "beadle"
+                },
+                "edge_type": "counted"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "peal"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "beadle",
+          "days_since_meeting",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "beadle"
+                      },
+                      "key": "days_since_meeting"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "beadle",
+          "counted",
+          "peal"
+        ]
+      ]
+    },
+    {
+      "name": "cb2_ring_assembly",
+      "batch": false,
+      "comment": "When the beadle's tally reaches the held Bylaw interval, ring the ASSEMBLY bell and reset the tally. Threshold read from the town's Bylaw, not hardcoded.",
+      "match": [
+        [
+          "town",
+          "has_beadle",
+          "beadle"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "has_bell",
+          "bell"
+        ],
+        [
+          "town",
+          "has_bylaw",
+          "bylaw"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "bylaw"
+              },
+              "key": "name"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "council_meeting_interval"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "beadle"
+                  },
+                  "key": "days_since_meeting"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "bylaw"
+                  },
+                  "key": "value"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "bell",
+          "toll_kind",
+          "assembly"
+        ],
+        [
+          "set_attr",
+          "bell",
+          "ring_armed",
+          1.0
+        ],
+        [
+          "set_attr",
+          "beadle",
+          "days_since_meeting",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+ "id": "bigville_viol_kill",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R15 (block 263000) -- THE FIFTH ROUTE TO DEATH. R14 bl_death is reused UNCHANGED (health<=0 -> dead, death_cause = last_cause); violence tags last_cause=5, so a death BY violence arrives as death_cause=5. bv_death_tag only READS that back into a glass-box death_by_violence flag -- no death decision lives here (murder / manslaughter is the acute health arm at magnitude). ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bv_death_tag",
+   "batch": false,
+   "match": [
+    [
+     "p",
+     "has_life",
+     "life"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "p"
+         },
+         "key": "just_died"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "p"
+         },
+         "key": "death_cause"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 5.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "p"
+         },
+         "key": "death_by_violence"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "p",
+     "death_by_violence",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

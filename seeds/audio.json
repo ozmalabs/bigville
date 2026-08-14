@@ -1,0 +1,82 @@
+{
+  "id": "audio",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "Cochlea / gammatone / STFT / A1 productions.",
+  "nodes": [],
+  "edges": [],
+  "productions": [
+    {
+      "src": {
+        "type": "AudioBuffer",
+        "var": "src"
+      },
+      "edge_type": "from_input",
+      "tgt": {
+        "type": "AudioBuffer",
+        "var": "tgt"
+      },
+      "provenance": "audio:buffer_from_input"
+    },
+    {
+      "src": {
+        "type": "AudioBuffer",
+        "var": "src"
+      },
+      "edge_type": "produced_by",
+      "tgt": {
+        "type": "Filter",
+        "var": "tgt"
+      },
+      "provenance": "audio:buffer_produced_by_filter"
+    },
+    {
+      "src": {
+        "type": "AudioContainer",
+        "var": "src"
+      },
+      "edge_type": "has_stream",
+      "tgt": {
+        "type": "AudioStream",
+        "var": "tgt"
+      },
+      "provenance": "audio:container_has_stream"
+    },
+    {
+      "src": {
+        "type": "AudioFrame",
+        "var": "src"
+      },
+      "edge_type": "follows",
+      "tgt": {
+        "type": "AudioFrame",
+        "var": "tgt"
+      },
+      "provenance": "audio:frame_follows_frame"
+    },
+    {
+      "src": {
+        "type": "AudioStream",
+        "var": "src"
+      },
+      "edge_type": "has_frame",
+      "tgt": {
+        "type": "AudioFrame",
+        "var": "tgt"
+      },
+      "provenance": "audio:stream_has_frame"
+    },
+    {
+      "src": {
+        "type": "Image",
+        "var": "src"
+      },
+      "edge_type": "from_input",
+      "tgt": {
+        "type": "AudioBuffer",
+        "var": "tgt"
+      },
+      "provenance": "audio:spectrogram_from_buffer"
+    }
+  ]
+}

@@ -1,0 +1,264 @@
+{
+  "id": "reflex_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "Affect + reference reflexes as graph data: emotion EMA update, pointer-from-grounded-concept. Auto-captured from the agent's graph-native Rules.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "rules": [
+    {
+      "name": "rule_emotion_ema_update",
+      "match": [
+        [
+          "agent",
+          "has_emotion",
+          "emo"
+        ]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {
+          "key": "last_updated_tick",
+          "type": "Attr",
+          "node": {
+            "name": "emo",
+            "type": "Var"
+          }
+        },
+        "b": {
+          "key": "tick",
+          "type": "Attr",
+          "node": {
+            "name": "agent",
+            "type": "Var"
+          }
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "emo",
+          "current_value",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "value": 0.0,
+                  "type": "Lit"
+                },
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "value": 1.0,
+                      "type": "Lit"
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "key": "alpha",
+                              "type": "Attr",
+                              "node": {
+                                "name": "emo",
+                                "type": "Var"
+                              }
+                            },
+                            {
+                              "type": "EvalSubgraph",
+                              "node": {
+                                "type": "Pick",
+                                "source": {
+                                  "type": "Neighbours",
+                                  "edge_type": "sample_term",
+                                  "node": {
+                                    "name": "emo",
+                                    "type": "Var"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Minus",
+                              "a": {
+                                "value": 1.0,
+                                "type": "Lit"
+                              },
+                              "b": {
+                                "key": "alpha",
+                                "type": "Attr",
+                                "node": {
+                                  "name": "emo",
+                                  "type": "Var"
+                                }
+                              }
+                            },
+                            {
+                              "key": "current_value",
+                              "type": "Attr",
+                              "node": {
+                                "name": "emo",
+                                "type": "Var"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "emo",
+          "last_updated_tick",
+          {
+            "__term__": {
+              "key": "tick",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rule_pointer_from_grounded_concept",
+      "match": [
+        [
+          "agent",
+          "knows_concept",
+          "c"
+        ],
+        [
+          "agent",
+          "has_store",
+          "es"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "source",
+              "type": "Attr",
+              "node": {
+                "name": "c",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "name",
+              "type": "Attr",
+              "node": {
+                "name": "es",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "placeholder",
+                "type": "Attr",
+                "node": {
+                  "name": "c",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": true,
+                "type": "Lit"
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "key": "pointer_recorded",
+              "type": "Attr",
+              "node": {
+                "name": "c",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "p",
+          "Pointer",
+          {
+            "created_tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            },
+            "expected_kind": {
+              "__term__": {
+                "key": "domain",
+                "type": "Attr",
+                "node": {
+                  "name": "c",
+                  "type": "Var"
+                }
+              }
+            },
+            "known_unknown": false
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "knows_pointer",
+          "p"
+        ],
+        [
+          "add_edge",
+          "p",
+          "addresses",
+          "c"
+        ],
+        [
+          "add_edge",
+          "p",
+          "looks_up_via",
+          "es"
+        ],
+        [
+          "set_attr",
+          "c",
+          "pointer_recorded",
+          true
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+{
+ "id": "bigville_school_fund",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R18 (266000) -- FUNDING sets whether the school is OPEN. The schoolmaster is a Treasury-paid public servant (R9 fs_pay_salary, reused unchanged, the THIRD public-payroll name); sc_school_open (paid -> open) and sc_school_close (unpaid -> closed) read the payment outcome and set the school's open state. Ablate revenue / a tax-cutting council -> unpaid -> the school CLOSES. Composes existing DSL Terms; ZERO new Rust; self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "sc_school_open",
+   "batch": false,
+   "match": [
+    [
+     "school",
+     "staffed_by",
+     "master"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "school"
+         },
+         "key": "open_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "master"
+         },
+         "key": "unpaid"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "master"
+         },
+         "key": "paid_count"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "school",
+     "open",
+     1.0
+    ],
+    [
+     "set_attr",
+     "school",
+     "closed",
+     0.0
+    ],
+    [
+     "set_attr",
+     "school",
+     "open_armed",
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "sc_school_close",
+   "batch": false,
+   "match": [
+    [
+     "school",
+     "staffed_by",
+     "master"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "school"
+         },
+         "key": "open_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "master"
+         },
+         "key": "unpaid"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "school",
+     "open",
+     0.0
+    ],
+    [
+     "set_attr",
+     "school",
+     "closed",
+     1.0
+    ],
+    [
+     "set_attr",
+     "school",
+     "open_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

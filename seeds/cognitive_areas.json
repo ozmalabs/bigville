@@ -1,0 +1,76 @@
+{
+ "id": "cognitive_areas",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "description": "Core graph vocabulary for asynchronous cognition. Rules decide which CognitiveTasks exist and reach requested status; the Rust scheduler executes native pure kernels and serially folds epoch-validated TaskResults. CognitiveArea is semantic graph data; dependency-derived execution components, not names, govern physical parallelism.",
+ "microtheory": {
+  "name": "cognitive_areas",
+  "description": "area-local asynchronous order-N tasks with deterministic serial result fold"
+ },
+ "nodes": [
+  {
+   "local_id": 1,
+   "type": "CognitiveArea",
+   "attrs": {
+    "name": "global",
+    "logical_tick": 0,
+    "desired_workers": 1,
+    "effort": 1,
+    "status": "active"
+   }
+  }
+ ],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:cognitive_areas:agent-area",
+   "src": {"type": "Agent", "var": "a"},
+   "edge_type": "has_cognitive_area",
+   "tgt": {"type": "CognitiveArea", "var": "area"}
+  },
+  {
+   "provenance": "seed:cognitive_areas:area-projection",
+   "src": {"type": "CognitiveArea", "var": "src"},
+   "edge_type": "projects_to",
+   "tgt": {"type": "CognitiveArea", "var": "dst"}
+  },
+  {
+   "provenance": "seed:cognitive_areas:area-load",
+   "src": {"type": "CognitiveArea", "var": "area"},
+   "edge_type": "has_area_load",
+   "tgt": {"type": "AreaLoad", "var": "load"}
+  },
+  {
+   "provenance": "seed:cognitive_areas:area-task",
+   "src": {"type": "CognitiveArea", "var": "area"},
+   "edge_type": "has_task",
+   "tgt": {"type": "CognitiveTask", "var": "task"}
+  },
+  {
+   "provenance": "seed:cognitive_areas:task-dependency",
+   "src": {"type": "CognitiveTask", "var": "task"},
+   "edge_type": "depends_on",
+   "tgt": {"type": "CognitiveTask", "var": "dependency"}
+  },
+  {
+   "provenance": "seed:cognitive_areas:task-result",
+   "src": {"type": "CognitiveTask", "var": "task"},
+   "edge_type": "has_result",
+   "tgt": {"type": "TaskResult", "var": "result"}
+  },
+  {
+   "provenance": "seed:cognitive_areas:task-supersession",
+   "src": {"type": "CognitiveTask", "var": "newer"},
+   "edge_type": "supersedes",
+   "tgt": {"type": "CognitiveTask", "var": "older"}
+  },
+  {
+   "provenance": "seed:cognitive_areas:task-region",
+   "src": {"type": "CognitiveTask", "var": "task"},
+   "edge_type": "for_region",
+   "tgt": {"type": "Region", "var": "region"}
+  }
+ ],
+ "rules": []
+}

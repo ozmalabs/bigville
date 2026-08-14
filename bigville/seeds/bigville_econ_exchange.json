@@ -1,0 +1,937 @@
+{
+  "id": "bigville_econ_exchange",
+  "version": "1.4.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "BIGVILLE R4 (block 252000) -- LOCAL exchange + credit. `be_exchange` is THE buy decision: a buyer CO-LOCATED with a seller at an OPEN shop (`at_cell`+`is_at` share ONE cell var), the buyer wanting what the shop sells and holding coin>=price, transfers coin<->good and DROPS hunger (clamped at 0). It is LOCAL BY CONSTRUCTION -- the co-location join means a buyer only ever transacts with a shop AT ITS CELL, never a global market-clear (the O(N^2) all-pairs trap the scale gate falsifies). `be_credit` fires when the buyer is SHORT of coin and the seller EXTENDS credit -- a decision_value TRUST = credit_trust - risk_weight*buyer.default_count > 0 (the SAME Argmax/decision family as ss_choose_burn / the R2 preference choice): the good is handed over and an `Owe{amount,due_epoch}` obligation minted (buyer -owes-> Owe -creditor-> keeper). A prior DEFAULT drops the creditor's credit_trust below 0 so TRUST<=0 -> neither rule fires -> NO sale (the 'refuse credit / demand cash' behaviour). Composes existing Terms; zero new Rust.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "be_exchange",
+      "match": [
+        [
+          "shop",
+          "at_cell",
+          "cell"
+        ],
+        [
+          "buyer",
+          "is_at",
+          "cell"
+        ],
+        [
+          "keeper",
+          "is_at",
+          "cell"
+        ],
+        [
+          "shop",
+          "stocks",
+          "stock"
+        ],
+        [
+          "shop",
+          "kept_by",
+          "keeper"
+        ],
+        [
+          "buyer",
+          "has_good",
+          "ig"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "buyer"
+                  },
+                  "key": "buy_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "collapsed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "asleep"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "ig"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stock"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stock"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "buyer"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "price"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "buyer",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "buyer"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "shop"
+                    },
+                    "key": "price"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "keeper",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "shop"
+                      },
+                      "key": "price"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "stock",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "stock"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "ig",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "ig"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "buyer",
+          "bought",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "buyer"
+                      },
+                      "key": "bought"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "buyer",
+          "buy_armed",
+          0.0
+        ]
+      ],
+      "comment": "PRICE is marked down by freshness: a stale perishable stock sells for price*condition (fresh/durable = full price; coin still conserved -- buyer pays and keeper receives the SAME discounted amount). A SALE IS BETWEEN TWO PEOPLE, not a stall open by the clock: it needs the buyer and the SELLER (keeper) co-located, the seller CONSCIOUS (not asleep/collapsed -- a world fact), goods, and coin. Business HOURS are a construct (a held expectation, be_shop_open + the expectation rule), NOT a world-fact gate on the physical exchange -- two present, conscious people can trade whenever. THE PRICE IS THE SELLER'S: the engine transfers shop.price exactly (a person set it), it does not compute price from freshness -- a seller marking down stale goods is the SELLER's pricing decision, not an engine multiply. Integer prices in, integer coin out (fixed precision). (A purchase moves coin<->good into the bag only; it does NOT feed -- EATING relieves hunger, bd_meal_feeds. Buying and eating are different acts.)"
+    },
+    {
+      "name": "be_credit",
+      "match": [
+        [
+          "shop",
+          "at_cell",
+          "cell"
+        ],
+        [
+          "buyer",
+          "is_at",
+          "cell"
+        ],
+        [
+          "keeper",
+          "is_at",
+          "cell"
+        ],
+        [
+          "shop",
+          "stocks",
+          "stock"
+        ],
+        [
+          "shop",
+          "kept_by",
+          "keeper"
+        ],
+        [
+          "buyer",
+          "has_good",
+          "ig"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "buyer"
+                  },
+                  "key": "buy_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "open"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "collapsed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "asleep"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "ig"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stock"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stock"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "buyer"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "price"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "keeper"
+                    },
+                    "key": "credit_trust"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Times",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "buyer"
+                        },
+                        "key": "default_count"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "keeper"
+                        },
+                        "key": "risk_weight"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "stock",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "stock"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "ig",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "ig"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "owe",
+          "Owe",
+          {
+            "amount": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "shop"
+                    },
+                    "key": "price"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "due_epoch": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "buyer"
+                    },
+                    "key": "credit_term"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "now_epoch": 0.0,
+            "paid": 0.0,
+            "defaulted": 0.0,
+            "affect_done": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "buyer",
+          "owes",
+          "owe"
+        ],
+        [
+          "add_edge",
+          "owe",
+          "creditor",
+          "keeper"
+        ],
+        [
+          "set_attr",
+          "buyer",
+          "buy_armed",
+          0.0
+        ]
+      ],
+      "comment": " (A purchase moves coin<->good into the bag only; it does NOT feed -- EATING relieves hunger, bd_meal_feeds. Buying and eating are different acts.)"
+    }
+  ]
+}

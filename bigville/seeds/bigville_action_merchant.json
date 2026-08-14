@@ -1,0 +1,142 @@
+{
+  "id": "bigville_action_merchant",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R81 (block 403000): a MERCHANT DELIVERS GOODS. mc_deliver moves the goods a visiting merchant carries into the town's store -- so imported goods (ink/paper/dye/spices) arrive by being carried in, not by fiat. The merchant is a first-class agent with a load.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "mc_deliver",
+      "batch": false,
+      "comment": "A visiting MERCHANT delivers the goods he carries into the town's store: for each good he carries (a Stock) matching a store Stock of that kind, the quantity moves into the store and his load empties. This is how imported goods (ink/paper/dye/spices) reach bigville -- carried in by a merchant, not conjured. (Payment is the trade layer.)",
+      "match": [
+        [
+          "town",
+          "has_merchant",
+          "m"
+        ],
+        [
+          "m",
+          "carries",
+          "g"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ],
+        [
+          "store",
+          "stock",
+          "s"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "s"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "g"
+              },
+              "key": "kind"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "g"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "s",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "s"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "g"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "g",
+          "qty",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

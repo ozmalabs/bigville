@@ -1,0 +1,875 @@
+{
+  "id": "bigville_action",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R39 / cognitive C6 (block 330000): the COST & IMPACT of action -- the thermodynamics of agency. ac_work: a working agent with enough energy extracts from a Deposit (output=min(work_yield,stock), partial-take, no over-extraction) -> spends work_cost energy AND deposits output into the food Store. Work COSTS (energy down) and has IMPACT (store up); output CONSERVED from the deposit; empty deposit -> nothing; energy<work_cost -> can't work. ac_eat: a hungry agent with food consumes one unit (store.stock-1), reducing hunger + restoring energy -- recovering the drive COSTS a real resource that must exist (no free recovery, food conserved). ac_rest: restores energy (capped). ac_metabolize: per epoch energy drains + hunger rises (cost of living) -> forces the work->eat loop; idle agents run down. Nothing is free.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ac_work",
+      "batch": false,
+      "comment": "Work: spend energy, extract output (min(yield,stock)) from the deposit into the store. Cost + impact, conserved. (deposit decrement LAST so the store/last_output reads read the original stock)",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ],
+        [
+          "town",
+          "has_deposit",
+          "dep"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "work_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "energy"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "work_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dep"
+                  },
+                  "key": "stock"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "energy",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "energy"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "work_cost"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "store",
+          "stock",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "store"
+                      },
+                      "key": "stock"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "work_yield"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "dep"
+                          },
+                          "key": "stock"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "last_output",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "work_yield"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "dep"
+                      },
+                      "key": "stock"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "dep",
+          "stock",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "dep"
+                    },
+                    "key": "stock"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Min",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "work_yield"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "dep"
+                        },
+                        "key": "stock"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "work_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "ac_eat",
+      "batch": false,
+      "comment": "Eat: consume ONE food unit from the store (must exist) -> hunger down, energy up. Recovery costs a real resource.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "eat_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "stock"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "hunger"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "store",
+          "stock",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "stock"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "hunger",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "hunger"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "satiation"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "energy",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "energy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "food_energy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "eat_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "ac_rest",
+      "batch": false,
+      "comment": "Rest: restore energy (capped at max_energy).",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "rest_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "energy",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "max_energy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "energy"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "rest_gain"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "rest_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "ac_metabolize",
+      "batch": false,
+      "comment": "Cost of living: per metabolic epoch, energy drains and hunger rises -- forces the work->eat loop.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "metab_epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "town"
+              },
+              "key": "metab_epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "energy",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "energy"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "metabolic_cost"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "hunger",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "hunger"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "metabolic_hunger"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "metab_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "metab_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

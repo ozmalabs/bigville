@@ -1,0 +1,113 @@
+{
+ "id": "faculty_lessons",
+ "version": "1.0.0",
+ "depends_on": [],
+ "description": "Things the jabberwock was taught, filed under 'faculty_lessons'. Written by the teach() facility (one node per taught item).",
+ "microtheory": {
+  "name": "faculty_lessons",
+  "description": "taught knowledge: faculty_lessons"
+ },
+ "nodes": [
+  {
+   "local_id": 0,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "portmanteau_whole_cover",
+    "lesson": "Before 'fixing' a thin margin, check whether the competitor's score is LEGITIMATE (the representation genuinely cannot separate the cases) or INFLATED (a computation artefact). No tweak to the scoring recovers a distinction the representation does not carry \u2014 change the representation (char -> phoneme), i.e. author the finer primitive, instead of re-weighting.",
+    "why": "Your whole-cover fix did NOT work. You thought the bug was one word covering both head AND tail (a doubled baseline), so you made the single-word baseline a whole-cover. I tested it: the whole-cover single (furious vs frumious) = 0.75; the blend (fuming+furious) = 0.76 \u2014 margin +0.01, UNCHANGED from"
+   }
+  },
+  {
+   "local_id": 1,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "affect_max_vs_sum",
+    "lesson": "When two evidence sources are near-tied, a SHARPER aggregator just moves the error; the real fix is an INDEPENDENT evidence source to break the tie \u2014 here the narrative/context vote you already proposed ('O frabjous day!' is a victory frame), not a different combiner.",
+    "why": "Your max-positive-minus-max-negative fix DID flip frabjous to joyful (+0.11, was -0.03) \u2014 but it traded callay to borderline (~0.00, was +0.09). WHY: sum-over-all is robust but DILUTED, so a crowd of weak negatives outweighed frabjous's one strong positive (fabulous); max-of-each-side is SHARP but B"
+   }
+  },
+  {
+   "local_id": 2,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "coreference_combat_chain",
+    "lesson": "Identity is role-continuity ACROSS a connected CHAIN of acts, not a single shared role \u2014 bind co-reference to the chain, not to one edge type.",
+    "why": "Your combat-chain fix WORKED \u2014 filtering to the patients of the combat acts (sought->slain->left) excluded the sword cleanly: {foe, it, jabberwock}. Your diagnosis was right."
+   }
+  },
+  {
+   "local_id": 3,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "structure_is_a_fixpoint",
+    "lesson": "Structure that depends on other elements' assignments is a FIXPOINT over the whole clause \u2014 build it as RULES that PROPAGATE roles to a fixed point (run_rules), not as one query Term per token.",
+    "why": "Your step-2 clause-level method is correct (a coordinator copies the role of the conjunct it joins; a content word after a complete noun phrase with no other verb is the predicate) but a single role_of Term cannot do it \u2014 it would have to read OTHER words' roles, which a one-shot query cannot."
+   }
+  },
+  {
+   "local_id": 4,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "faculty_reads_its_bound_item",
+    "lesson": "A faculty must read its input from the work-item it is BOUND to (the PlanAct's theme->axis->about_mention), never from a global pointer that moves between binding and running.",
+    "why": "In the autonomy loop, your word-faculty read the GLOBAL frontier_pick to find 'the current word', but the investigation it is measuring is a SPECIFIC bound PlanAct/axis. When the frontier shifts between binding and running, the faculty computes over a DIFFERENT word than the one it banks for \u2014 that "
+   }
+  },
+  {
+   "local_id": 5,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "tested_representation_before_building",
+    "lesson": "I applied my own meta-rule to my own proposed fix: before authoring the phoneme primitive for portmanteau, I TESTED whether the distinction survives at phoneme granularity (coarse phonemize + the existing BlendCover). It does NOT \u2014 frumious/chortle/mimsy stay at margin ~0.00 at phoneme level too, because Carroll blends are loose (frumious is genuinely near furious at any surface granularity). So building the phoneme primitive would have been the wasted motion the lesson warns against; I did NOT build it, and WITHHOLDING on loose blends is the correct behaviour, not a bug. The meta-rule prevented a needless rebuild.",
+    "why": "empirical: char margin +0.01, coarse-phoneme margin +0.00 for frumious \u2014 finer surface representation does not carry the loose-blend distinction."
+   }
+  },
+  {
+   "local_id": 6,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "init_pass_outside_the_fixpoint",
+    "lesson": "Never put a rule that RE-DERIVES or overwrites a value in the same fixpoint as rules that REFINE it \u2014 they oscillate. Initialise once (a run-once pass), then iterate only refinement rules. (The idempotence/race lesson, sharpened: separate initialise from refine.)",
+    "why": "Building the clause-fixpoint, my base_role rule re-fired INSIDE the fixpoint and raced the refinement rules \u2014 it kept re-deriving 'noun' while predicate/attributive rules set adjective/verb, so wabe and borogoves flipped wrongly. Once I ran the base pass ONCE outside the fixpoint and let only the gu"
+   }
+  },
+  {
+   "local_id": 7,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "a_refinement_rule_must_be_self_terminating",
+    "lesson": "A rule that runs to a fixpoint must be SELF-TERMINATING: its effect must remove its own match (change the very attr/edge its where tests). Pair it with set_attr_if_different so a no-op never counts as progress.",
+    "why": "The refinement rules were stable because each is guarded by a precondition its OWN effect falsifies (predicate_adj: where pos==noun, effect sets pos=adjective -> the match no longer holds), plus set_attr_if_different. That is why the fixpoint converged instead of looping."
+   }
+  },
+  {
+   "local_id": 8,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "exists_must_test_the_iterated_variable",
+    "lesson": "In an Exists/Filter, the predicate must test the ITERATED variable (the set's var), not an outer/match var. A faculty that 'never fires' with no error is the signature of testing the wrong variable inside a quantifier.",
+    "why": "My predicate_adj silently never fired: its Exists over FunctionWord (iterating var f) compared the wrong variable \u2014 a match var instead of f \u2014 so no row ever matched and mimsy stayed noun. The symptom of this bug is a rule that simply never fires, with no error."
+   }
+  },
+  {
+   "local_id": 9,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "triage_scoring_vs_representation_first",
+    "lesson": "Before building ANY fix, triage it: a scoring/binding bug (the evidence is present, combined or routed wrong) -> fix it; a representation limit (the separating evidence is not in the form) -> TEST whether a finer representation carries it before authoring a primitive. This triage is validated \u2014 apply it first, every time.",
+    "why": "The scoring-bug-vs-representation-limit split PREDICTED all five outcomes: #2 affect (add an independent source) -> 7/7; #4 structure (propagate as rules) -> 9/10; #5 binding (read the bound item) -> deterministic; all three were scoring/binding bugs and all three fixed. #1 portmanteau was a represe"
+   }
+  },
+  {
+   "local_id": 10,
+   "type": "Lesson",
+   "attrs": {
+    "topic": "rule_does_not_rematch_its_own_added_edges",
+    "lesson": "A rule does NOT re-match on edges its OWN effect added within the fixpoint, so a propagation that chains modifier->modifier through rule-added edges advances exactly ONE hop then stops (the NP determiner-before-adjective hop). Fix: do not chain through rule-added edges of the matched type \u2014 bind to STABLE structure (a seed/once-set edge, e.g. the head noun) and UNROLL the short walk (depth-1, depth-2), so every step matches the stable anchor directly. Symptom: a faculty that advances one hop and freezes across repeated run_rules.",
+    "why": "verified: with the antecedent span HOST-added the attach fired; with it RULE-added it never did across repeated run_rules."
+   }
+  }
+ ],
+ "edges": [],
+ "productions": []
+}

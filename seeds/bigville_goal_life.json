@@ -1,0 +1,251 @@
+{
+ "id": "bigville_goal_life",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R8 (block 256000) -- the LIFE-GOAL layer (identity / soul). gg_lifegoal_grounded affirms a life-goal is GROUNDED (carries a real `path_to` in the map-belief -- the grounded side of the boundary), one-shot via a grounded_flag done-guard. gg_orient_choice is G-life-goal-orients: the sub-goal SELECTION is the substrate's decision_value Argmax (the SAME family as R2 nd_choose_good / the drama's ss_choose_burn) over the soul's `considers` options of base_appeal + Sum_{has_life_goal}[serves_aim==aim ? orient_weight : 0]. A become-wealthy life-goal (high orient_weight on the SAVE aim) tips a lower-base-appeal SAVE above a higher-base-appeal LEISURE; ABLATE the life-goal (drop the has_life_goal edge) -> the Sum is empty -> base appeal decides -> LEISURE wins -> no long-horizon bias (load-bearing). Composes existing Terms; zero new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "gg_lifegoal_grounded",
+   "match": [
+    [
+     "m",
+     "has_life_goal",
+     "lg"
+    ],
+    [
+     "lg",
+     "path_to",
+     "dest"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "audit_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "lg"
+         },
+         "key": "grounded_flag"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "lg",
+     "grounded_flag",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "gg_orient_choice",
+   "match": [
+    [
+     "m",
+     "weighs",
+     "cp"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "orient_armed"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "chosen_subgoal",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "edge_type": "considers",
+         "any_type": false
+        },
+        "var_name": "opt",
+        "value": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "opt"
+             },
+             "key": "base_appeal"
+            },
+            {
+             "type": "Lit",
+             "value": 0.0
+            }
+           ]
+          },
+          {
+           "type": "Sum",
+           "source": {
+            "type": "Neighbours",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "edge_type": "has_life_goal",
+            "any_type": false
+           },
+           "var_name": "lg",
+           "value": {
+            "type": "IfThenElse",
+            "cond": {
+             "type": "Eq",
+             "a": {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "opt"
+                },
+                "key": "serves_aim"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             "b": {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "lg"
+                },
+                "key": "aim"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             }
+            },
+            "then": {
+             "type": "Plus",
+             "items": [
+              {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "lg"
+               },
+               "key": "orient_weight"
+              },
+              {
+               "type": "Lit",
+               "value": 0.0
+              }
+             ]
+            },
+            "other": {
+             "type": "Lit",
+             "value": 0.0
+            }
+           }
+          }
+         ]
+        }
+       },
+       "key": "code"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "orient_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

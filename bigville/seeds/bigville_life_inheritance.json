@@ -1,0 +1,689 @@
+{
+ "id": "bigville_life_inheritance",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R14 (block 262000) -- DEATH -> INHERITANCE. On death (dead==1) the estate passes: bl_inherit_land (each owned Plot's owns edge moves dead->heir, sequential -- LAND CONSERVED, R13) + bl_inherit_house (owns_house, R7) + bl_inherit_coin (lump coin, once via coin_bequeathed). With NO heir (has_heir==0, a structural fact set at ingest) the estate REVERTS to the COUNCIL / commons (bl_inherit_commons_land/_house/_coin) -- ties R13 conservation: the estate is TRANSFERRED, never destroyed. NO rule mints or destroys a Plot/House node (no add_node/del_node); every transfer MOVES an edge. Composes existing DSL Terms; ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bl_inherit_land",
+   "batch": false,
+   "match": [
+    [
+     "dead",
+     "owns",
+     "plot"
+    ],
+    [
+     "dead",
+     "heir",
+     "h"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "dead"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "has_heir"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "del_edge",
+     "dead",
+     "owns",
+     "plot"
+    ],
+    [
+     "add_edge",
+     "h",
+     "owns",
+     "plot"
+    ]
+   ]
+  },
+  {
+   "name": "bl_inherit_house",
+   "batch": false,
+   "match": [
+    [
+     "dead",
+     "owns_house",
+     "house"
+    ],
+    [
+     "dead",
+     "heir",
+     "h"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "dead"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "has_heir"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "del_edge",
+     "dead",
+     "owns_house",
+     "house"
+    ],
+    [
+     "add_edge",
+     "h",
+     "owns_house",
+     "house"
+    ]
+   ]
+  },
+  {
+   "name": "bl_inherit_coin",
+   "batch": false,
+   "match": [
+    [
+     "dead",
+     "heir",
+     "h"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "dead"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "has_heir"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "coin_bequeathed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "coin"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "h",
+     "coin",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "h"
+           },
+           "key": "coin"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "dead"
+           },
+           "key": "coin"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "dead",
+     "coin",
+     0.0
+    ],
+    [
+     "set_attr",
+     "dead",
+     "coin_bequeathed",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bl_inherit_commons_land",
+   "batch": false,
+   "match": [
+    [
+     "dead",
+     "owns",
+     "plot"
+    ],
+    [
+     "dead",
+     "has_council",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "dead"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "has_heir"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "del_edge",
+     "dead",
+     "owns",
+     "plot"
+    ],
+    [
+     "add_edge",
+     "council",
+     "owns",
+     "plot"
+    ]
+   ]
+  },
+  {
+   "name": "bl_inherit_commons_house",
+   "batch": false,
+   "match": [
+    [
+     "dead",
+     "owns_house",
+     "house"
+    ],
+    [
+     "dead",
+     "has_council",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "dead"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "has_heir"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "del_edge",
+     "dead",
+     "owns_house",
+     "house"
+    ],
+    [
+     "add_edge",
+     "council",
+     "owns_house",
+     "house"
+    ]
+   ]
+  },
+  {
+   "name": "bl_inherit_commons_coin",
+   "batch": false,
+   "match": [
+    [
+     "dead",
+     "has_council",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "dead"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "has_heir"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "coin_bequeathed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dead"
+         },
+         "key": "coin"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "council",
+     "coin",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "council"
+           },
+           "key": "coin"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "dead"
+           },
+           "key": "coin"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "dead",
+     "coin",
+     0.0
+    ],
+    [
+     "set_attr",
+     "dead",
+     "coin_bequeathed",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

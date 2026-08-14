@@ -1,0 +1,928 @@
+{
+  "id": "dual_process_core",
+  "version": "2.0.0",
+  "depends_on": ["affective_state_core"],
+  "description": "Domain-neutral graph-native arbitration between fast defaults and scoped active cognition. Candidate evidence and confidence accumulate across epochs; relative controller reliability, expected utility, latency, effort, novelty, uncertainty, and prediction error yield a continuous System-2 weight. Exact ties are refused and near-conflict or low confidence recruit a graph-held task set. Verified outcomes update eligibility, prediction error, experience, and consolidation strength incrementally, including devaluation, extinction, and reversal, while retaining the native small-net teaching seam.",
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "DualProcessPolicy",
+      "attrs": {
+        "name": "core_dual_process_policy",
+        "enabled": 1,
+        "basin_threshold": 1.0,
+        "min_reliability": 0.0,
+        "prediction_error_threshold": 1.0,
+        "novelty_threshold": 1.0,
+        "uncertainty_threshold": 1.0,
+        "arousal_uncertainty_gain": 0.25,
+        "arousal_gain": 1.0,
+        "valence_gain": 1.0,
+        "consolidation_bonus": 0.5,
+        "evidence_decay": 0.75,
+        "evidence_gain": 0.25,
+        "conflict_margin": 0.2,
+        "confidence_scale": 1.0,
+        "minimum_confidence": 0.2,
+        "arbitration_gain": 0.25,
+        "system_two_weight_threshold": 0.55,
+        "selection_threshold_gain": 0.0,
+        "latency_cost_gain": 1.0,
+        "effort_cost_gain": 1.0,
+        "novelty_value_gain": 1.0,
+        "uncertainty_value_gain": 1.0,
+        "prediction_error_value_gain": 1.0,
+        "consolidation_rate": 0.2,
+        "extinction_rate": 0.25,
+        "eligibility_decay": 0.8,
+        "habit_threshold": 0.6,
+        "legacy_threshold_recruitment": 0,
+        "legacy_static_commit": 0,
+        "motor_reserve_steps": 64
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "SystemOneRefusalMark",
+      "attrs": {
+        "name": "system_one_conflict",
+        "is_refusal_marker": 1
+      }
+    },
+    {
+      "local_id": 4,
+      "type": "SystemTwoTaskSet",
+      "attrs": {
+        "name": "default_deliberation_task_set",
+        "area": "deliberation",
+        "enabled": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_dual_process_policy",
+      "tgt": {"local": 1},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_system_one_refusal_mark",
+      "tgt": {"local": 3},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_default_system_two_task_set",
+      "tgt": {"local": 4},
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "provenance": "dual_process_core:agent_context",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_dual_process_context",
+      "tgt": {"type": "DualProcessContext", "var": "context"}
+    },
+    {
+      "provenance": "dual_process_core:agent_policy",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_dual_process_policy",
+      "tgt": {"type": "DualProcessPolicy", "var": "policy"}
+    },
+    {
+      "provenance": "dual_process_core:agent_affect",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_affective_state",
+      "tgt": {"type": "AffectiveState", "var": "affect"}
+    },
+    {
+      "provenance": "dual_process_core:agent_refusal",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_system_one_refusal_mark",
+      "tgt": {"type": "SystemOneRefusalMark", "var": "mark"}
+    },
+    {
+      "provenance": "dual_process_core:context_policy",
+      "src": {"type": "DualProcessContext", "var": "context"},
+      "edge_type": "uses_dual_process_policy",
+      "tgt": {"type": "DualProcessPolicy", "var": "policy"}
+    },
+    {
+      "provenance": "dual_process_core:context_affect",
+      "src": {"type": "DualProcessContext", "var": "context"},
+      "edge_type": "uses_affective_state",
+      "tgt": {"type": "AffectiveState", "var": "affect"}
+    },
+    {
+      "provenance": "dual_process_core:agent_default_task_set",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_default_system_two_task_set",
+      "tgt": {"type": "SystemTwoTaskSet", "var": "task_set"}
+    },
+    {
+      "provenance": "dual_process_core:context_task_set",
+      "src": {"type": "DualProcessContext", "var": "context"},
+      "edge_type": "recruits_system_two_task_set",
+      "tgt": {"type": "SystemTwoTaskSet", "var": "task_set"}
+    },
+    {
+      "provenance": "dual_process_core:escalation_task_set",
+      "src": {"type": "SystemTwoEscalation", "var": "escalation"},
+      "edge_type": "recruits_task_set",
+      "tgt": {"type": "SystemTwoTaskSet", "var": "task_set"}
+    },
+    {
+      "provenance": "dual_process_core:context_candidate",
+      "src": {"type": "DualProcessContext", "var": "context"},
+      "edge_type": "has_system_one_candidate",
+      "tgt": {"type": "SystemOneCandidate", "var": "candidate"}
+    },
+    {
+      "provenance": "dual_process_core:context_commit",
+      "src": {"type": "DualProcessContext", "var": "context"},
+      "edge_type": "has_system_one_commit",
+      "tgt": {"type": "SystemOneCommit", "var": "commit"}
+    },
+    {
+      "provenance": "dual_process_core:commit_candidate",
+      "src": {"type": "SystemOneCommit", "var": "commit"},
+      "edge_type": "selects_candidate",
+      "tgt": {"type": "SystemOneCandidate", "var": "candidate"}
+    },
+    {
+      "provenance": "dual_process_core:context_escalation",
+      "src": {"type": "DualProcessContext", "var": "context"},
+      "edge_type": "has_system_two_escalation",
+      "tgt": {"type": "SystemTwoEscalation", "var": "escalation"}
+    },
+    {
+      "provenance": "dual_process_core:escalation_context",
+      "src": {"type": "SystemTwoEscalation", "var": "escalation"},
+      "edge_type": "about_context",
+      "tgt": {"type": "DualProcessContext", "var": "context"}
+    },
+    {
+      "provenance": "dual_process_core:escalation_outcome",
+      "src": {"type": "SystemTwoEscalation", "var": "escalation"},
+      "edge_type": "has_system_two_outcome",
+      "tgt": {"type": "SystemTwoOutcome", "var": "outcome"}
+    },
+    {
+      "provenance": "dual_process_core:outcome_candidate",
+      "src": {"type": "SystemTwoOutcome", "var": "outcome"},
+      "edge_type": "consolidates_candidate",
+      "tgt": {"type": "SystemOneCandidate", "var": "candidate"}
+    },
+    {
+      "provenance": "dual_process_core:outcome_net",
+      "src": {"type": "SystemTwoOutcome", "var": "outcome"},
+      "edge_type": "trains_reflex_net",
+      "tgt": {"type": "ReflexNet", "var": "net"}
+    }
+  ],
+  "rules": [
+    {
+      "name": "dual_process_attach_default_policy",
+      "area": "arbitration",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "A context with no explicit policy inherits the agent's unique held default. This is wiring, not a host-selected parameter.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["agent", "has_dual_process_policy", "policy"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "uses_dual_process_policy"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "context", "uses_dual_process_policy", "policy"]
+      ]
+    },
+    {
+      "name": "dual_process_attach_affective_state",
+      "area": "arbitration",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "Use the canonical agent-held affective state; the affective-state core supplies the neutral baseline and PSI projects into the same node.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["agent", "has_affective_state", "affect"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "uses_affective_state"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "context", "uses_affective_state", "affect"]
+      ]
+    },
+    {
+      "name": "dual_process_attach_default_task_set",
+      "area": "arbitration",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "A context without a domain-specific deliberative scope inherits the graph-held default deliberation area.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["agent", "has_default_system_two_task_set", "task_set"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "task_set"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "recruits_system_two_task_set"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "context", "recruits_system_two_task_set", "task_set"]
+      ]
+    },
+    {
+      "name": "dual_process_accumulate_candidate_evidence",
+      "area": "arbitration",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "Leaky evidence accumulation is epoch-guarded so fixed-point settlement cannot consume time repeatedly.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["context", "has_system_one_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "evidence_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "candidate", "accumulated_evidence", {"__term__": {
+          "type": "Plus",
+          "items": [
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "accumulated_evidence"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "evidence_decay"}
+            ]},
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "evidence_increment"}
+          ]
+        }}],
+        ["set_attr", "candidate", "evidence_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "dual_process_score_grounded_default",
+      "area": "arbitration",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "System 1 competition. Only fresh, grounded, reliable candidates inside an external predictive basin receive a current score. Affect adds urgency and valence-congruence terms; prior System 2 consolidation adds a learned-default bias.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["context", "uses_affective_state", "affect"],
+        ["context", "has_system_one_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "ready"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "grounded"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "residual"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "basin_threshold"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "reliability"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "min_reliability"}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "candidate", "system_one_score", {"__term__": {
+          "type": "Plus",
+          "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "default_value"},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "affect"}, "key": "arousal"},
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "urgency"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "arousal_gain"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "affect"}, "key": "valence"},
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "valence"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "valence_gain"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "consolidation_strength"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "consolidation_bonus"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "accumulated_evidence"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "evidence_gain"}
+            ]}
+          ]
+        }}],
+        ["set_attr", "candidate", "score_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_prediction_error",
+      "area": "arbitration",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "legacy_threshold_recruitment"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "prediction_error"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "prediction_error_threshold"}}
+        ]
+      },
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "prediction_error", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_novelty",
+      "area": "arbitration",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "legacy_threshold_recruitment"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "novelty"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "novelty_threshold"}}
+        ]
+      },
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "novelty", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_uncertainty",
+      "area": "arbitration",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "comment": "Arousal narrows tolerated uncertainty: the same ambiguous state recruits active cognition sooner when the affective system marks it urgent.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["context", "uses_affective_state", "affect"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "legacy_threshold_recruitment"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Gt",
+           "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "uncertainty"},
+           "b": {"type": "Minus",
+                 "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "uncertainty_threshold"},
+                 "b": {"type": "Times", "items": [
+                   {"type": "Attr", "node": {"type": "Var", "name": "affect"}, "key": "arousal"},
+                   {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "arousal_uncertainty_gain"}
+                 ]}}}
+        ]
+      },
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "uncertainty", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_instinct_conflict",
+      "area": "arbitration",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "comment": "ArgminRefusal makes an exact top-score tie a first-class incompatible-instinct signal rather than silently selecting insertion order.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["agent", "has_system_one_refusal_mark", "mark"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq",
+           "a": {
+             "type": "ArgminRefusal",
+             "source": {
+               "type": "Filter",
+               "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"},
+               "var_name": "eligible",
+               "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}
+             },
+             "var_name": "eligible",
+             "value": {"type": "Minus", "a": {"type": "Lit", "value": 0.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "system_one_score"}},
+             "refused": {"type": "Var", "name": "mark"}
+           },
+           "b": {"type": "Var", "name": "mark"}}
+        ]
+      },
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "instinct_conflict", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_no_grounded_default",
+      "area": "arbitration",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "comment": "An empty eligible set means every available response was stale, ungrounded, unreliable, or outside its basin. System 1 may not guess.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq",
+           "a": {"type": "Count", "source": {
+             "type": "Filter",
+             "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"},
+             "var_name": "eligible",
+             "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}
+           }},
+           "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "no_grounded_default", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_commit_unique_default",
+      "area": "arbitration",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "comment": "The ordinary path: one uniquely strongest grounded candidate becomes an explicit commitment without admitting slower cognition.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["agent", "has_system_one_refusal_mark", "mark"],
+        ["context", "has_system_one_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "legacy_static_commit"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Var", "name": "candidate"}, "b": {
+            "type": "ArgminRefusal",
+            "source": {
+              "type": "Filter",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"},
+              "var_name": "eligible",
+              "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}
+            },
+            "var_name": "eligible",
+            "value": {"type": "Minus", "a": {"type": "Lit", "value": 0.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "system_one_score"}},
+            "refused": {"type": "Var", "name": "mark"}
+          }}
+        ]
+      },
+      "effects": [
+        ["add_node", "commit", "SystemOneCommit", {
+          "status": "committed",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "score": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "system_one_score"}},
+          "source": "system_one"
+        }],
+        ["add_edge", "context", "has_system_one_commit", "commit"],
+        ["add_edge", "commit", "selects_candidate", "candidate"],
+        ["set_attr", "candidate", "selected_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}],
+        ["set_attr", "context", "status", "committed"],
+        ["set_attr", "context", "route", "system_one"]
+      ]
+    },
+    {
+      "name": "dual_process_train_verified_outcome",
+      "area": "learning",
+      "order": 100,
+      "latency_class": "soft_realtime",
+      "comment": "A verified active-cognition result supplies the teaching signal for an attached small net. The collapse is queued and drained inside the native rule loop.",
+      "match": [
+        ["escalation", "has_system_two_outcome", "outcome"],
+        ["outcome", "consolidates_candidate", "candidate"],
+        ["outcome", "trains_reflex_net", "net"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "successful"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "verified"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "net_training_queued"}, "b": {"type": "Lit", "value": 1}}}
+        ]
+      },
+      "effects": [
+        ["net_collapse", "net",
+          {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "input_vec"}},
+          {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "target"}},
+          {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "net"}, "key": "eta"}}],
+        ["set_attr", "outcome", "net_training_queued", 1]
+      ]
+    },
+    {
+      "name": "dual_process_derive_controller_arbitration",
+      "area": "arbitration",
+      "order": 2,
+      "latency_class": "hard_realtime",
+      "comment": "The unique leading default and graph-held System-2 forecast yield relative net values, a continuous controller weight, and margin-derived confidence.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["agent", "has_system_one_refusal_mark", "mark"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["context", "has_system_one_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Var", "name": "candidate"}, "b": {
+            "type": "ArgminRefusal",
+            "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"}, "var_name": "eligible",
+              "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}},
+            "var_name": "eligible",
+            "value": {"type": "Minus", "a": {"type": "Lit", "value": 0.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "system_one_score"}},
+            "refused": {"type": "Var", "name": "mark"}
+          }},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "arbitration_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "context", "system_one_net_value", {"__term__": {"type": "Times", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "system_one_score"},
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "reliability"}
+        ]}}],
+        ["set_attr", "context", "system_two_net_value", {"__term__": {"type": "Minus",
+          "a": {"type": "Plus", "items": [
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_expected_utility"},
+              {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_reliability"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "novelty"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "novelty_value_gain"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "uncertainty"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "uncertainty_value_gain"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "prediction_error"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "prediction_error_value_gain"}
+            ]}
+          ]},
+          "b": {"type": "Plus", "items": [
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_latency"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "latency_cost_gain"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_effort"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "effort_cost_gain"}
+            ]}
+          ]}
+        }}],
+        ["set_attr", "context", "system_two_weight", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Plus", "items": [
+              {"type": "Lit", "value": 0.5},
+              {"type": "Times", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "arbitration_gain"},
+                {"type": "Minus",
+                  "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_net_value"},
+                  "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_one_net_value"}
+                }
+              ]}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "context", "decision_confidence", {"__term__": {"type": "Times", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "reliability"},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Div",
+              "a": {"type": "MinOver",
+                "source": {"type": "Filter",
+                  "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"},
+                  "var_name": "rival",
+                  "predicate": {"type": "And", "items": [
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "rival"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+                    {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Var", "name": "rival"}, "b": {"type": "Var", "name": "candidate"}}}
+                  ]}},
+                "var_name": "rival",
+                "value": {"type": "Abs", "arg": {"type": "Minus",
+                  "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "system_one_score"},
+                  "b": {"type": "Attr", "node": {"type": "Var", "name": "rival"}, "key": "system_one_score"}
+                }},
+                "default": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "confidence_scale"}
+              },
+              "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "confidence_scale"}
+            }
+          ]}
+        ]}}],
+        ["set_attr", "context", "arbitration_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_near_conflict",
+      "area": "arbitration",
+      "order": 3,
+      "latency_class": "hard_realtime",
+      "comment": "Graded conflict recruits control when more than one candidate lies within the graph-held margin of the winner.",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"]
+      ],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "arbitration_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+        {"type": "Gt", "a": {"type": "Count", "source": {"type": "Filter",
+          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"},
+          "var_name": "near",
+          "predicate": {"type": "And", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "near"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+            {"type": "Lte", "a": {"type": "Abs", "arg": {"type": "Minus",
+              "a": {"type": "Attr", "node": {"type": "Var", "name": "near"}, "key": "system_one_score"},
+              "b": {"type": "MaxOver",
+                "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"}, "var_name": "eligible",
+                  "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}},
+                "var_name": "eligible",
+                "value": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "system_one_score"},
+                "default": null
+              }
+            }}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "conflict_margin"}}
+          ]}
+        }}, "b": {"type": "Lit", "value": 1}}
+      ]},
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "near_conflict", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_low_confidence",
+      "area": "arbitration",
+      "order": 4,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"]
+      ],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "arbitration_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+        {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "decision_confidence"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "minimum_confidence"}}
+      ]},
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "low_confidence", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_escalate_relative_controller_value",
+      "area": "arbitration",
+      "order": 5,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["context", "uses_affective_state", "affect"]
+      ],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "arbitration_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+        {"type": "Gte",
+          "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_weight"},
+          "b": {"type": "Plus", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "system_two_weight_threshold"},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "affect"}, "key": "selection_threshold"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "selection_threshold_gain"}
+            ]}
+          ]}
+        }
+      ]},
+      "effects": [
+        ["add_node", "escalation", "SystemTwoEscalation", {"status": "requested", "reason": "controller_arbitration", "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}}],
+        ["add_edge", "context", "has_system_two_escalation", "escalation"],
+        ["add_edge", "escalation", "about_context", "context"],
+        ["set_attr", "context", "status", "escalated"],
+        ["set_attr", "context", "route", "system_two"]
+      ]
+    },
+    {
+      "name": "dual_process_commit_arbitrated_default",
+      "area": "arbitration",
+      "order": 6,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_dual_process_context", "context"],
+        ["agent", "has_system_one_refusal_mark", "mark"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["context", "uses_affective_state", "affect"],
+        ["context", "has_system_one_candidate", "candidate"]
+      ],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "arbitration_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+        {"type": "Lt",
+          "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_weight"},
+          "b": {"type": "Plus", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "system_two_weight_threshold"},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "affect"}, "key": "selection_threshold"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "selection_threshold_gain"}
+            ]}
+          ]}
+        },
+        {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "decision_confidence"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "minimum_confidence"}},
+        {"type": "Eq", "a": {"type": "Var", "name": "candidate"}, "b": {
+          "type": "ArgminRefusal",
+          "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_system_one_candidate"}, "var_name": "eligible",
+            "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "score_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}},
+          "var_name": "eligible",
+          "value": {"type": "Minus", "a": {"type": "Lit", "value": 0.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "eligible"}, "key": "system_one_score"}},
+          "refused": {"type": "Var", "name": "mark"}
+        }}
+      ]},
+      "effects": [
+        ["add_node", "commit", "SystemOneCommit", {
+          "status": "committed",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "score": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "system_one_score"}},
+          "confidence": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "decision_confidence"}},
+          "system_two_weight": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "system_two_weight"}},
+          "source": "system_one"
+        }],
+        ["add_edge", "context", "has_system_one_commit", "commit"],
+        ["add_edge", "commit", "selects_candidate", "candidate"],
+        ["set_attr", "candidate", "selected_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}}],
+        ["set_attr", "candidate", "eligibility_trace", 1.0],
+        ["set_attr", "context", "status", "committed"],
+        ["set_attr", "context", "route", "system_one"]
+      ]
+    },
+    {
+      "name": "dual_process_scope_requested_escalation",
+      "area": "arbitration",
+      "order": 7,
+      "latency_class": "hard_realtime",
+      "comment": "Copy graph-selected task-set scopes onto the request before native admission.",
+      "match": [
+        ["context", "has_system_two_escalation", "escalation"],
+        ["context", "recruits_system_two_task_set", "task_set"]
+      ],
+      "where": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "escalation"}, "key": "status"}, "b": {"type": "Lit", "value": "requested"}},
+      "effects": [
+        ["add_edge", "escalation", "recruits_task_set", "task_set"]
+      ]
+    },
+    {
+      "name": "dual_process_incremental_positive_consolidation",
+      "area": "learning",
+      "order": 102,
+      "latency_class": "soft_realtime",
+      "comment": "Verified reward updates prediction error, experience, eligibility and bounded habit strength; one success cannot create a full habit.",
+      "match": [
+        ["escalation", "has_system_two_outcome", "outcome"],
+        ["escalation", "about_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["outcome", "consolidates_candidate", "candidate"]
+      ],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "successful"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "verified"}, "b": {"type": "Lit", "value": 1}}
+      ]},
+      "effects": [
+        ["set_attr", "outcome", "prediction_error", {"__term__": {"type": "Minus",
+          "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "actual_value"},
+          "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "predicted_value"}
+        }}],
+        ["set_attr", "candidate", "consolidation_strength", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "consolidation_strength"},
+              {"type": "Times", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "consolidation_rate"},
+                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "eligibility_trace"},
+                {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "prediction_error"}
+              ]}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "candidate", "predicted_value", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "predicted_value"},
+          {"type": "Times", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "consolidation_rate"},
+            {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "prediction_error"}
+          ]}
+        ]}}],
+        ["set_attr", "candidate", "experience_count", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "experience_count"},
+          {"type": "Lit", "value": 1}
+        ]}}],
+        ["set_attr", "candidate", "eligibility_trace", {"__term__": {"type": "Times", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "eligibility_trace"},
+          {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "eligibility_decay"}
+        ]}}],
+        ["set_attr", "candidate", "source", "incremental_system_two_consolidation"],
+        ["set_attr", "candidate", "status", "ready"],
+        ["set_attr", "outcome", "status", "consolidated"]
+      ]
+    },
+    {
+      "name": "dual_process_devalue_or_extinguish_default",
+      "area": "learning",
+      "order": 103,
+      "latency_class": "soft_realtime",
+      "comment": "Negative, devalued, extinguished, or reversed outcomes weaken rather than erase the habit, preserving relearning history.",
+      "match": [
+        ["escalation", "has_system_two_outcome", "outcome"],
+        ["escalation", "about_context", "context"],
+        ["context", "uses_dual_process_policy", "policy"],
+        ["outcome", "consolidates_candidate", "candidate"]
+      ],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "verified"}, "b": {"type": "Lit", "value": 1}},
+        {"type": "Or", "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "failed"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "devalued"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "extinguished"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "reversed"}}
+        ]}
+      ]},
+      "effects": [
+        ["set_attr", "outcome", "prediction_error", {"__term__": {"type": "Minus",
+          "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "actual_value"},
+          "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "predicted_value"}
+        }}],
+        ["set_attr", "candidate", "consolidation_strength", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Plus", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "consolidation_strength"},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "extinction_rate"},
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "eligibility_trace"},
+              {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "prediction_error"}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "candidate", "experience_count", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "experience_count"},
+          {"type": "Lit", "value": 1}
+        ]}}],
+        ["set_attr", "candidate", "source", "devalued_or_extinguished_default"],
+        ["set_attr", "outcome", "status", "revalued"]
+      ]
+    }
+  ]
+}

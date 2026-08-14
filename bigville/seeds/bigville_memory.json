@@ -1,0 +1,531 @@
+{
+  "id": "bigville_memory",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R35 / cognitive C3 (block 326000): EPISODIC MEMORY with appraisal, decay, reconsolidation (Tulving + OCC appraisal + ACT-R activation). mem_appraise: an agent perceiving an Event{topic,valence} mints an EpisodicTrace{appraisal,activation:1}; the appraisal is GOAL-RELATIVE (valence*relevance, relevance high iff the event's topic is what the agent cares_about). mem_decay: each metabolic epoch a trace's activation decays geometrically (activation*retention), once per epoch (ACT-R base-level proxy). mem_recall: recall boosts activation and RE-APPRAISES the trace toward the recall context (reconsolidation: appraisal <- appraisal*(1-r)+context_target*r). mem_mood: mood = the appraisal of the most-active trace (Argmax), else neutral -- mood tracks what is SALIENT, not the latest event. No decay -> ancient traces dominate mood forever (falsifier).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "mem_appraise",
+      "batch": false,
+      "comment": "Perceiving an event mints an episodic trace; appraisal = valence * goal-relevance (OCC).",
+      "match": [
+        [
+          "a",
+          "perceives",
+          "ev"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Eq",
+          "a": {
+            "type": "Plus",
+            "items": [
+              {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "ev"
+                },
+                "key": "appraised"
+              },
+              {
+                "type": "Lit",
+                "value": 0.0
+              }
+            ]
+          },
+          "b": {
+            "type": "Lit",
+            "value": 1.0
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_node",
+          "tr",
+          "EpisodicTrace",
+          {
+            "appraisal": {
+              "__term__": {
+                "type": "Times",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "ev"
+                        },
+                        "key": "valence"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "IfThenElse",
+                    "cond": {
+                      "type": "Eq",
+                      "a": {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "ev"
+                        },
+                        "key": "topic"
+                      },
+                      "b": {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "cares_about"
+                      }
+                    },
+                    "then": {
+                      "type": "Lit",
+                      "value": 1.0
+                    },
+                    "other": {
+                      "type": "Lit",
+                      "value": 0.3
+                    }
+                  }
+                ]
+              }
+            },
+            "activation": 1.0,
+            "seen_epoch": 0.0,
+            "recall_armed": 0.0,
+            "context_target": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "a",
+          "has_trace",
+          "tr"
+        ],
+        [
+          "add_edge",
+          "tr",
+          "of_event",
+          "ev"
+        ],
+        [
+          "set_attr",
+          "ev",
+          "appraised",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "mem_decay",
+      "batch": false,
+      "comment": "Each metabolic epoch, a trace's activation decays (activation*retention), once per epoch.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ],
+        [
+          "a",
+          "has_trace",
+          "tr"
+        ]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "tr"
+              },
+              "key": "seen_epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "town"
+              },
+              "key": "epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "tr",
+          "activation",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "tr"
+                      },
+                      "key": "activation"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "town"
+                      },
+                      "key": "retention"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "tr",
+          "seen_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "mem_recall",
+      "batch": false,
+      "comment": "Recall boosts activation and re-appraises the trace toward the recall context (reconsolidation).",
+      "match": [
+        [
+          "a",
+          "has_trace",
+          "tr"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "tr"
+              },
+              "key": "recall_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "tr",
+          "activation",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "tr"
+                          },
+                          "key": "activation"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.5
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "tr",
+          "appraisal",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "tr"
+                          },
+                          "key": "appraisal"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.6
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "tr"
+                          },
+                          "key": "context_target"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.4
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "tr",
+          "recall_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "mem_mood",
+      "batch": false,
+      "comment": "mood = appraisal of the most-active trace (Argmax by activation), else neutral.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "mood",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Gt",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Argmax",
+                    "source": {
+                      "type": "Neighbours",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "edge_type": "has_trace"
+                    },
+                    "var_name": "t",
+                    "value": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t"
+                          },
+                          "key": "activation"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  },
+                  "key": "activation"
+                },
+                "b": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "mood_thr"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              },
+              "then": {
+                "type": "Attr",
+                "node": {
+                  "type": "Argmax",
+                  "source": {
+                    "type": "Neighbours",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "edge_type": "has_trace"
+                  },
+                  "var_name": "t",
+                  "value": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "t"
+                        },
+                        "key": "activation"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                },
+                "key": "appraisal"
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,554 @@
+{
+ "id": "bigville_land_tenure",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R13 (block 261000) -- LAND AS THE ROOT of tenure / construction / collateral, and the STRUCTURAL levers. bl_build (construction REQUIRES owning the plot -- the R12 precondition) + bl_build_trespass (building on ANOTHER'S land is refused = trespass; unowned frontier matches neither -> built stays 0, refusal as absence). bl_foreclose_land grounds R7's PROXIED land-as-collateral: it keys off R7's OWN `foreclosed` flag (R7 decided, over the house) and MOVES the `owns` edge of the plot the same mortgage is `secured_on_plot` from debtor to bank -- foreclosure transfers the LAND. The structural levers that reopen land to the landless: bl_land_tax (the GEORGIST per-plot tax to the jurisdiction) + bl_tax_forfeit (can't pay -> the plot forfeits to the council, the redistribution source) + bl_enclosure_reversal (owned plot -> unowned frontier commons, re-claimable). Every plot transfer MOVES an `owns` edge; no Plot node is minted or destroyed (Sigma conserved). Composes existing DSL Terms; ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bl_build",
+   "batch": false,
+   "match": [
+    [
+     "builder",
+     "wants_to_build",
+     "plot"
+    ],
+    [
+     "builder",
+     "owns",
+     "plot"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "plot"
+       },
+       "key": "built"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 0.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "plot",
+     "built",
+     1.0
+    ],
+    [
+     "del_edge",
+     "builder",
+     "wants_to_build",
+     "plot"
+    ]
+   ]
+  },
+  {
+   "name": "bl_build_trespass",
+   "batch": false,
+   "match": [
+    [
+     "builder",
+     "wants_to_build",
+     "plot"
+    ],
+    [
+     "owner",
+     "owns",
+     "plot"
+    ]
+   ],
+   "where": {
+    "type": "Not",
+    "arg": {
+     "type": "Eq",
+     "a": {
+      "type": "Var",
+      "name": "builder"
+     },
+     "b": {
+      "type": "Var",
+      "name": "owner"
+     }
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "builder",
+     "trespass",
+     1.0
+    ],
+    [
+     "del_edge",
+     "builder",
+     "wants_to_build",
+     "plot"
+    ]
+   ]
+  },
+  {
+   "name": "bl_foreclose_land",
+   "batch": false,
+   "match": [
+    [
+     "debtor",
+     "owns",
+     "plot"
+    ],
+    [
+     "mort",
+     "secured_on_plot",
+     "plot"
+    ],
+    [
+     "bank",
+     "issued",
+     "mort"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "mort"
+         },
+         "key": "foreclosed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "mort"
+         },
+         "key": "land_transferred"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "mort",
+     "land_transferred",
+     1.0
+    ],
+    [
+     "del_edge",
+     "debtor",
+     "owns",
+     "plot"
+    ],
+    [
+     "add_edge",
+     "bank",
+     "owns",
+     "plot"
+    ]
+   ]
+  },
+  {
+   "name": "bl_land_tax",
+   "batch": false,
+   "match": [
+    [
+     "owner",
+     "owns",
+     "plot"
+    ],
+    [
+     "plot",
+     "taxed_by",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "plot"
+         },
+         "key": "tax_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "owner"
+         },
+         "key": "coin"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "plot"
+         },
+         "key": "tax"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "owner",
+     "coin",
+     {
+      "__term__": {
+       "type": "Minus",
+       "a": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "owner"
+          },
+          "key": "coin"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       },
+       "b": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "plot"
+          },
+          "key": "tax"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "council",
+     "coin",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "council"
+           },
+           "key": "coin"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "plot"
+           },
+           "key": "tax"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "plot",
+     "tax_armed",
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "bl_tax_forfeit",
+   "batch": false,
+   "match": [
+    [
+     "owner",
+     "owns",
+     "plot"
+    ],
+    [
+     "plot",
+     "taxed_by",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "plot"
+         },
+         "key": "tax_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Lt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "owner"
+         },
+         "key": "coin"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "plot"
+         },
+         "key": "tax"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "del_edge",
+     "owner",
+     "owns",
+     "plot"
+    ],
+    [
+     "add_edge",
+     "council",
+     "owns",
+     "plot"
+    ],
+    [
+     "set_attr",
+     "plot",
+     "tax_armed",
+     0.0
+    ],
+    [
+     "set_attr",
+     "plot",
+     "forfeited",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bl_enclosure_reversal",
+   "batch": false,
+   "match": [
+    [
+     "owner",
+     "owns",
+     "plot"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "plot"
+       },
+       "key": "revert_armed"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "del_edge",
+     "owner",
+     "owns",
+     "plot"
+    ],
+    [
+     "set_attr",
+     "plot",
+     "owned",
+     0.0
+    ],
+    [
+     "set_attr",
+     "plot",
+     "frontier",
+     1.0
+    ],
+    [
+     "set_attr",
+     "plot",
+     "revert_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

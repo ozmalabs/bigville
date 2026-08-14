@@ -1,0 +1,247 @@
+{
+ "id": "bigville_world_scope",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R11 (block 259000) -- SCOPE-GATING, the compute thesis (HEADLINE). An IN-SCOPE agent carries the activity wiring (active_beat/active_clock) and is MATCHED by bw_run_in_scope (it RUNS each tick: last_beat<-clock.epoch, age+1); an OUT-OF-SCOPE agent is a bare PERSISTED node with NO wiring, so the matcher never scans it -> ~0 compute (DORMANT), its attrs byte-identical across dormant ticks. bw_dissolve_on_leave is the DEPARTURE->dormant DECISION (ties R8): a wired agent with left==1 (R8 dream collapse) has its activity wiring DISSOLVED (del_edge) and goes in_scope=0/dormant=1 -- it walks off the edge of scope and dissolves into the frontier, state persisted. FALSIFIER: ablate scope-gating (wire the whole world) -> every agent is matched and RUNS -> per-tick cost grows with the TOTAL world (measured ~linear), the cost we must NOT pay. Composes existing Terms (Lt/Eq/Plus, del_edge/set_attr effects); zero new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bw_run_in_scope",
+   "match": [
+    [
+     "ag",
+     "active_beat",
+     "hb"
+    ],
+    [
+     "ag",
+     "active_clock",
+     "clk"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ag"
+         },
+         "key": "left"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Lt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ag"
+         },
+         "key": "last_beat"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "clk"
+         },
+         "key": "epoch"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ag",
+     "last_beat",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "clk"
+         },
+         "key": "epoch"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "ag",
+     "age",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "ag"
+           },
+           "key": "age"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        {
+         "type": "Lit",
+         "value": 1.0
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "bw_dissolve_on_leave",
+   "match": [
+    [
+     "ag",
+     "active_beat",
+     "hb"
+    ],
+    [
+     "ag",
+     "active_clock",
+     "clk"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ag"
+         },
+         "key": "left"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ag"
+         },
+         "key": "in_scope"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "del_edge",
+     "ag",
+     "active_beat",
+     "hb"
+    ],
+    [
+     "del_edge",
+     "ag",
+     "active_clock",
+     "clk"
+    ],
+    [
+     "set_attr",
+     "ag",
+     "in_scope",
+     0.0
+    ],
+    [
+     "set_attr",
+     "ag",
+     "dormant",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

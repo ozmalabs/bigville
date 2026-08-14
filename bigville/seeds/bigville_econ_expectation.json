@@ -1,0 +1,134 @@
+{
+ "id": "bigville_econ_expectation",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R4 (block 252000) -- store hours as an EXPECTATION (predict-and-residual, NOT a law). The town HOLDS a prediction 'the stall opens at 8' as an `Expect{open_due}` held by would-be customers (`expects` -> Expect -about_shop-> Shop). When the scheduled open moment arrives (open_due=1, written mechanically from the R3 clock) but the stall is SHUT (open=0, e.g. a keeper who COLLAPSED overnight per be_shop_shut), `be_expect_surprise` registers a SURPRISE -- a `Surprise{residual}` node the customer is `surprised` about -- the substrate's predict-and-residual loop ([[ozma_held_prediction_decay]]) at the SOCIAL level, deduped per shop (surprised_done). This is a DIFFERENT normative register from a LAW violation (block 247000): a law violation draws CENSURE (enforced); an expectation violation is SURPRISE (predicted, not enforced) + a downstream supply gap. This seed touches NO enforcement/censure rule -- the two registers stay distinct (source-audited). Keeper opens on time (open=1) -> no surprise. Composes existing Terms; zero new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "be_expect_surprise",
+   "match": [
+    [
+     "cust",
+     "expects",
+     "exp"
+    ],
+    [
+     "exp",
+     "about_shop",
+     "shop"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "exp"
+         },
+         "key": "open_due"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "shop"
+         },
+         "key": "open"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "exp"
+         },
+         "key": "surprised_done"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "srp",
+     "Surprise",
+     {
+      "residual": 1.0,
+      "kind": 1.0
+     }
+    ],
+    [
+     "add_edge",
+     "cust",
+     "surprised",
+     "srp"
+    ],
+    [
+     "add_edge",
+     "srp",
+     "about_shut",
+     "shop"
+    ],
+    [
+     "set_attr",
+     "exp",
+     "surprised_done",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

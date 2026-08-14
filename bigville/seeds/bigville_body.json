@@ -1,0 +1,1291 @@
+{
+  "seed": "bigville_body",
+  "version": "1.4.0",
+  "comment": "The BODY layer -- World -> Body -> Mind. Physiology (health, mood, satiety, palate, STRENGTH + STAMINA with a short-term stamina RESERVE) on a Body node the Mind HAS. World events drive the body by rule; health modulates strength/stamina; USE builds them slowly toward a base-relative ceiling while exertion DEPLETES the reserve and REST recovers it; the Mind reads the body. EATING relieves hunger (bd_meal_feeds); buying does not.",
+  "rules": [
+    {
+      "name": "bd_meal_health",
+      "batch": false,
+      "comment": "Body layer -- World acts on the Body: a spoiled meal (low feeling) lowers the BODY's health (scaled by how spoiled), once per meal (health_done). Health feeds strength/stamina, so it also flags stats_dirty. A physical consequence, NOT a mind decision -- the mind reads it.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ],
+        [
+          "agent",
+          "ate",
+          "meal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "meal"
+                  },
+                  "key": "has_feeling"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "meal"
+                  },
+                  "key": "health_done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "health",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "body"
+                        },
+                        "key": "health"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Minus",
+                        "a": {
+                          "type": "Lit",
+                          "value": 1.0
+                        },
+                        "b": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "meal"
+                              },
+                              "key": "feeling"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.5
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "body",
+          "stats_dirty",
+          1.0
+        ],
+        [
+          "set_attr",
+          "meal",
+          "health_done",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "bd_train_strength",
+      "batch": false,
+      "comment": "Body layer -- USE builds the stat: a strength task raises TRAINED strength toward a ceiling RELATIVE TO base (base*HEADROOM), diminishing + slow (RATE), scaled by intensity. Once per effort (str_done). Higher base -> higher ceiling + bigger gains.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ],
+        [
+          "agent",
+          "exerted",
+          "effort"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "effort"
+                  },
+                  "key": "uses_strength"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "effort"
+                  },
+                  "key": "str_done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "str_train",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "str_train"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "effort"
+                          },
+                          "key": "intensity"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.12
+                    },
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Times",
+                            "items": [
+                              {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "body"
+                                    },
+                                    "key": "str_base"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.4
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "body"
+                                },
+                                "key": "str_train"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "body",
+          "stats_dirty",
+          1.0
+        ],
+        [
+          "set_attr",
+          "effort",
+          "str_done",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "bd_train_stamina",
+      "batch": false,
+      "comment": "Body layer -- USE builds the stat: a stamina task raises TRAINED stamina toward base*HEADROOM (diminishing, slow, intensity-scaled), once per effort. Orthogonal to strength.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ],
+        [
+          "agent",
+          "exerted",
+          "effort"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "effort"
+                  },
+                  "key": "uses_stamina"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "effort"
+                  },
+                  "key": "sta_done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "sta_train",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "sta_train"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "effort"
+                          },
+                          "key": "intensity"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.12
+                    },
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Times",
+                            "items": [
+                              {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "body"
+                                    },
+                                    "key": "sta_base"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.4
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "body"
+                                },
+                                "key": "sta_train"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "body",
+          "stats_dirty",
+          1.0
+        ],
+        [
+          "set_attr",
+          "effort",
+          "sta_done",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "bd_exert_cost",
+      "batch": false,
+      "comment": "Body layer -- exertion COSTS the short-term stamina RESERVE (clamped >=0) AND makes you HUNGRIER (raises hunger_level by stamina_cost*HUNGER_PER_STAMINA -- the same hunger the sustenance drive reads, so exerting yourself needs more food). Once per effort (cost_done). Reserve is current endurance (0..capacity); empty -> too tired to work.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ],
+        [
+          "agent",
+          "exerted",
+          "effort"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "effort"
+                  },
+                  "key": "stamina_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "effort"
+                  },
+                  "key": "cost_done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "stamina_reserve",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "body"
+                        },
+                        "key": "stamina_reserve"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "effort"
+                        },
+                        "key": "stamina_cost"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "hunger_level",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "hunger_level"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "effort"
+                          },
+                          "key": "stamina_cost"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "effort",
+          "cost_done",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "bd_rest_recover",
+      "batch": false,
+      "comment": "Body layer -- REST RECOVERS the stamina reserve toward CAPACITY (effective stamina): a rest of `amount` raises stamina_reserve, capped at capacity (you cannot rest above your max). Once per rest (rest_done). The counterpart to bd_exert_cost.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ],
+        [
+          "agent",
+          "rested",
+          "rest"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "rest"
+              },
+              "key": "rest_done"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 0.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "stamina_reserve",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "body"
+                              },
+                              "key": "sta_base"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "body"
+                              },
+                              "key": "sta_train"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "health"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "stamina_reserve"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "rest"
+                          },
+                          "key": "amount"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "rest",
+          "rest_done",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "bd_effective_stats",
+      "batch": false,
+      "comment": "Body layer -- the effective stat: strength=(str_base+str_train)*health, stamina likewise. LOWER HEALTH LOWERS BOTH. Also clamps the stamina RESERVE to the (possibly lowered) capacity -- current endurance cannot exceed max. Recomputed when health/training changed (stats_dirty) then clears -- settles to fixpoint, not a loop.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "body"
+              },
+              "key": "stats_dirty"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "strength",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "str_base"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "str_train"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "health"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "body",
+          "stamina",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "sta_base"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "sta_train"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "health"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "body",
+          "stamina_reserve",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "stamina_reserve"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "body"
+                              },
+                              "key": "sta_base"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "body"
+                              },
+                              "key": "sta_train"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "health"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "body",
+          "stats_dirty",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "bd_meal_feeds",
+      "batch": false,
+      "comment": "Body layer -- EATING feeds the body: a meal the agent ATE relieves hunger_level by its `feeds` (how filling), clamped >=0, once per meal (fed_done). This is what lowers hunger -- NOT buying (be_exchange no longer touches hunger). Buying stocks the bag; eating from it feeds you.",
+      "match": [
+        [
+          "agent",
+          "ate",
+          "meal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "meal"
+                  },
+                  "key": "feeds"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "meal"
+                  },
+                  "key": "fed_done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "hunger_level",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "agent"
+                        },
+                        "key": "hunger_level"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "meal"
+                        },
+                        "key": "feeds"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "meal",
+          "fed_done",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

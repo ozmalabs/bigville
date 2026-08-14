@@ -1,0 +1,1062 @@
+{
+  "id": "bigville_will",
+  "version": "1.3.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R54 (block 365000): a WILL IS A NOTE that says what to do when you die -- not a special object, and not auto-distributed. Any Note (the same kind agents write/hold/give/relay, bigville_noticeboard) that names a testator (-willed_by-> dead), an EXECUTOR (-executor-> agent), and bequests (-bequeaths-> Bequest{amount} -to-> beneficiary) is a will. On the testator's death, once BURIED (funeral fee already taken -- bigville_cemetery), the EXECUTOR reads the note and DECIDES: wl_decide collapses {honour, withhold} valued by honesty - greed. wl_honour: he enacts each bequest (pays the beneficiary from the estate; abatement if short). wl_withhold: a grasping executor keeps the estate for himself (a betrayal, contestable via the court). The estate flows ONLY because an agent decided to enact the wishes -- NOT automatically. wl_intestate: no will-note -> the next of kin takes the estate. Composes with the NOTE machinery (a will is written, held, given, relayed like any note), bigville_cemetery (funeral first), ownership/estate/coin, the court/theft (contesting a withholding executor), and bigville_office (the executor is a duty/role). v1.3.0: PIOUS BEQUESTS -- the testator DECIDES whether to leave some money to the church -- pl_pious_decide is a COLLAPSE {bequeath, keep} valued by the agent's OWN piety - greed (from its graph, NOT a threshold), so the pious give (even the poor) and the worldly keep it; pl_pious_grant writes the church legacy (piety*gift_rate, abated to the estate). The church receives pious legacies when the executor honours the will.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "wl_decide",
+      "batch": false,
+      "comment": "A will is just a NOTE that says what to do when you die (note -willed_by-> testator, -executor-> an agent, -bequeaths-> ...). The estate is NOT auto-distributed: once the testator is buried, the EXECUTOR reads the note and DECIDES -- a collapse {honour, withhold} valued by honesty - greed. Agents decide what to do with it.",
+      "match": [
+        [
+          "note",
+          "willed_by",
+          "dead"
+        ],
+        [
+          "note",
+          "executor",
+          "exec"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "buried"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "exec"
+                },
+                "edge_type": "decided_will"
+              },
+              "var_name": "n",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "n"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "note"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "exec",
+          "will_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "HonorStance"
+                },
+                "var_name": "s",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "s"
+                          },
+                          "key": "sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "exec"
+                            },
+                            "key": "honesty"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "exec"
+                            },
+                            "key": "greed"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "exec",
+          "decided_will",
+          "note"
+        ]
+      ]
+    },
+    {
+      "name": "pl_pious_decide",
+      "batch": false,
+      "comment": "A testator DECIDES whether to leave some money to the church -- a COLLAPSE {bequeath, keep} valued by the agent's OWN piety - greed (read from its graph, NOT a threshold on a variable): the pious choose to give (even the poor), the worldly keep it all -- agents diverge. Once per will.",
+      "match": [
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "note",
+          "willed_by",
+          "testator"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Eq",
+          "a": {
+            "type": "Plus",
+            "items": [
+              {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "note"
+                },
+                "key": "pious_decided"
+              },
+              {
+                "type": "Lit",
+                "value": 0.0
+              }
+            ]
+          },
+          "b": {
+            "type": "Lit",
+            "value": 1.0
+          }
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "testator",
+          "pious_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "PietyStance"
+                },
+                "var_name": "s",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "s"
+                          },
+                          "key": "sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "testator"
+                            },
+                            "key": "piety"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "testator"
+                            },
+                            "key": "greed"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "note",
+          "pious_decided",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "pl_pious_grant",
+      "batch": false,
+      "comment": "A testator who DECIDED to bequeath writes a church legacy into the will (amount = piety*gift_rate; wl_honour's abatement caps it at the estate, so even a poor pious person leaves what little they can). The church receives it when the executor honours.",
+      "match": [
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "note",
+          "willed_by",
+          "testator"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "testator"
+              },
+              "key": "pious_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "bequeath"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "note"
+                    },
+                    "key": "pious_added"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "b",
+          "Bequest",
+          {
+            "amount": 0.0,
+            "paid": 0.0,
+            "paid_amount": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "note",
+          "bequeaths",
+          "b"
+        ],
+        [
+          "add_edge",
+          "b",
+          "to",
+          "church"
+        ],
+        [
+          "set_attr",
+          "b",
+          "amount",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "testator"
+                      },
+                      "key": "piety"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "church"
+                      },
+                      "key": "pious_gift_rate"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "note",
+          "pious_added",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "wl_honour",
+      "batch": false,
+      "comment": "An executor who chose to HONOUR the note enacts each bequest -- pays the beneficiary from the estate (abatement if short). The transfer happens BECAUSE the executor decided to carry out the wishes written in the note.",
+      "match": [
+        [
+          "note",
+          "willed_by",
+          "dead"
+        ],
+        [
+          "note",
+          "executor",
+          "exec"
+        ],
+        [
+          "note",
+          "bequeaths",
+          "bequest"
+        ],
+        [
+          "bequest",
+          "to",
+          "beneficiary"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "exec"
+              },
+              "key": "will_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "honour"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "bequest"
+                    },
+                    "key": "paid"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "beneficiary",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "beneficiary"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "bequest"
+                          },
+                          "key": "amount"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "dead"
+                          },
+                          "key": "estate"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "bequest",
+          "paid_amount",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "bequest"
+                      },
+                      "key": "amount"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "dead"
+                      },
+                      "key": "estate"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "dead",
+          "estate",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "dead"
+                    },
+                    "key": "estate"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Min",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "bequest"
+                        },
+                        "key": "amount"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "dead"
+                        },
+                        "key": "estate"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "bequest",
+          "paid",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "wl_withhold",
+      "batch": false,
+      "comment": "An executor who chose to WITHHOLD keeps the estate for himself -- the note's wishes are NOT carried out (a betrayal the heirs can contest via the court). The estate did not flow because the executor decided against it.",
+      "match": [
+        [
+          "note",
+          "willed_by",
+          "dead"
+        ],
+        [
+          "note",
+          "executor",
+          "exec"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "exec"
+              },
+              "key": "will_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "withhold"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "estate"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "note"
+                    },
+                    "key": "withheld"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "exec",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "exec"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "dead"
+                      },
+                      "key": "estate"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "dead",
+          "estate",
+          0.0
+        ],
+        [
+          "set_attr",
+          "note",
+          "withheld",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "wl_intestate",
+      "batch": false,
+      "comment": "No will-note names the deceased (INTESTATE): the estate passes to the next of kin (default succession).",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "dead"
+        ],
+        [
+          "dead",
+          "next_of_kin",
+          "heir"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "buried"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "estate"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "dead"
+                },
+                "edge_type": "willed_by"
+              },
+              "var_name": "n",
+              "predicate": {
+                "type": "Gt",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "n"
+                      },
+                      "key": "is_will"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": -1.0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "heir",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "heir"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "dead"
+                      },
+                      "key": "estate"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "dead",
+          "estate",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

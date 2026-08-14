@@ -1,0 +1,850 @@
+{
+  "id": "episodic_working_memory_core",
+  "version": "1.1.0",
+  "depends_on": ["memory_core"],
+  "area": "memory_and_executive_control",
+  "description": "Executable graph-native episodic and working memory. Grounded/perceived events are bound once with their context, schema and state content; imagined, recalled and predicted material cannot launder itself through an observed-status label. Retrieval is a bounded, conservative partial-cue completion with explicit uncertainty and recalled—not observed—provenance, shaped for remembered world-belief reconstruction. Salience, surprise, value and replay novelty prioritize one wake/offline replay per cycle; replay drives semantic support creation or update. Retrieval produces a bounded reconsolidation trace. A four-slot task-sensitive working memory implements serialized input admission, update, maintain, output and clear gates, capacity refusal, cross-task interference replacement and epoch expiry. Working-memory output conservatively competes for functional broadcast. Every generated recall, replay, semantic support, working-memory output and broadcast offer is explicitly non-observational.",
+  "microtheory": {
+    "name": "bounded_reconstructive_memory",
+    "description": "Memory is reconstructive evidence, not a second sensor. Episodes bind an observed event to its context once; cue completion remains uncertain, replay is prioritized and bounded, semantic knowledge is supported by episodes rather than asserted as observation, and active task memory is capacity limited and explicitly gated."
+  },
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "EpisodicMemoryPolicy",
+      "attrs": {
+        "name": "canonical_episodic_memory_policy",
+        "enabled": 1.0,
+        "retrieval_candidate_limit": 1.0,
+        "minimum_replay_salience": 0.0,
+        "recall_retention_epochs": 4.0,
+        "replay_retention_epochs": 4.0,
+        "reconsolidation_retention_epochs": 4.0
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "WorkingMemoryPolicy",
+      "attrs": {
+        "name": "canonical_working_memory_policy",
+        "enabled": 1.0,
+        "maximum_slots": 4.0,
+        "slot_ttl_epochs": 8.0,
+        "output_retention_epochs": 3.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_episodic_memory_policy",
+      "tgt": {"local": 1},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_working_memory_policy",
+      "tgt": {"local": 2},
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "provenance": "episodic_working_memory:event_context",
+      "src": {"type": "EpisodicEvent", "var": "event"},
+      "edge_type": "in_context",
+      "tgt": {"type": "MemoryContext", "var": "context"}
+    },
+    {
+      "provenance": "episodic_working_memory:episode_event",
+      "src": {"type": "Episode", "var": "episode"},
+      "edge_type": "bound_event",
+      "tgt": {"type": "EpisodicEvent", "var": "event"}
+    },
+    {
+      "provenance": "episodic_working_memory:recall_episode",
+      "src": {"type": "RecallCandidate", "var": "recall"},
+      "edge_type": "recalls_episode",
+      "tgt": {"type": "Episode", "var": "episode"}
+    },
+    {
+      "provenance": "episodic_working_memory:semantic_schema",
+      "src": {"type": "SemanticSupport", "var": "support"},
+      "edge_type": "supports_schema",
+      "tgt": {"type": "MemorySchema", "var": "schema"}
+    },
+    {
+      "provenance": "episodic_working_memory:working_slot_content",
+      "src": {"type": "WorkingMemorySlot", "var": "slot"},
+      "edge_type": "holds_content",
+      "tgt": {"type": "Concept", "var": "content"}
+    }
+  ],
+  "rules": [
+    {
+      "name": "episodic_bind_observed_event_once",
+      "area": "memory_binding",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "One-shot what-here-now binding. The episode is evidence derived from an observation, but is never itself marked observed.",
+      "match": [
+        ["agent", "has_episodic_memory_policy", "policy"],
+        ["agent", "experienced_event", "event"],
+        ["event", "in_context", "context"],
+        ["event", "instantiates_schema", "schema"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "observation_status"}, "b": {"type": "Lit", "value": "observed"}},
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "perceived"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "grounded"}}
+          ]},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "episodically_bound"}, "b": {"type": "Lit", "value": 1.0}}}
+        ]
+      },
+      "effects": [
+        ["add_node", "episode", "Episode", {
+          "episode_key": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "event_key"}},
+          "cue_key": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "cue_key"}},
+          "context_key": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "context_key"}},
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "epoch"}},
+          "tick": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "epoch"}},
+          "state_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "state_kind"}},
+          "state_summary": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "state_summary"}},
+          "salience": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "salience"}},
+          "surprise": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "surprise"}},
+          "value": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "value"}},
+          "memory_architecture": "episodic_working_memory_v1",
+          "provenance_kind": "episodic_trace",
+          "observation_status": "not_observed",
+          "evidence_origin": "derived_from_observed_event",
+          "separation_status": "distinct_event_record",
+          "completion_confidence_cap": 0.85,
+          "retrieval_count": 0.0,
+          "replay_count": 0.0,
+          "reconsolidation_count": 0.0,
+          "semantic_update_due": 0.0,
+          "reconsolidation_due": 0.0,
+          "consolidated": false
+        }],
+        ["add_edge", "agent", "recorded_episode", "episode", {}],
+        ["add_edge", "episode", "bound_event", "event", {}],
+        ["add_edge", "episode", "in_context", "context", {}],
+        ["add_edge", "episode", "instantiates_schema", "schema", {}],
+        ["set_attr", "event", "episodically_bound", 1.0]
+      ]
+    },
+    {
+      "name": "episodic_mark_overlapping_cues_for_conservative_completion",
+      "area": "memory_binding",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "comment": "Cue collisions are represented rather than silently merged. Completion confidence is capped for both traces; their event identities remain separate.",
+      "match": [
+        ["agent", "recorded_episode", "episode"],
+        ["agent", "recorded_episode", "other"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "cue_key"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "other"}, "key": "cue_key"}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "episode_key"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "other"}, "key": "episode_key"}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "separation_status"}, "b": {"type": "Lit", "value": "overlap_detected"}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "episode", "separation_status", "overlap_detected"],
+        ["set_attr", "episode", "completion_confidence_cap", 0.5]
+      ]
+    },
+    {
+      "name": "episodic_retrieve_best_partial_cue",
+      "area": "memory_retrieval",
+      "order": 10,
+      "latency_class": "hard_realtime",
+      "comment": "V1 deliberately emits one best candidate. One is a strict bounded-candidate set; ambiguity is carried as uncertainty rather than multiplying recalled material.",
+      "match": [
+        ["agent", "has_episodic_memory_policy", "policy"],
+        ["agent", "has_memory_retrieval_request", "request"],
+        ["agent", "recorded_episode", "episode"],
+        ["episode", "bound_event", "event"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "retrieval_candidate_limit"}, "b": {"type": "Lit", "value": 0.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "cue_key"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cue_key"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "episode"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "recorded_episode"},
+                "var_name": "candidate_episode",
+                "predicate": {
+                  "type": "Eq",
+                  "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_episode"}, "key": "cue_key"},
+                  "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cue_key"}
+                }
+              },
+              "var_name": "ranked_episode",
+              "value": {
+                "type": "Plus",
+                "items": [
+                  {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "salience"},
+                  {"type": "Times", "items": [{"type": "Lit", "value": 2.0}, {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "surprise"}]},
+                  {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "value"},
+                  {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "completion_confidence_cap"}
+                ]
+              },
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "recall", "RecallCandidate", {
+          "status": "recalled",
+          "retrieval_status": "recalled",
+          "completion_kind": "partial_cue_completion",
+          "completion_scope": "matching_cue_only",
+          "cue_key": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cue_key"}},
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "epoch"}},
+          "candidate_rank": 1.0,
+          "candidate_limit": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "retrieval_candidate_limit"}},
+          "confidence": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "completion_confidence_cap"}},
+          "uncertainty": {"__term__": {"type": "Minus", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "completion_confidence_cap"}}},
+          "provenance_kind": "recalled",
+          "observation_status": "not_observed",
+          "reconsolidation_status": "pending",
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "recall_retention_epochs"}]}}
+        }],
+        ["add_edge", "agent", "has_memory_transient", "recall", {}],
+        ["add_edge", "request", "has_recall_candidate", "recall", {}],
+        ["add_edge", "recall", "recalls_episode", "episode", {}],
+        ["add_edge", "recall", "reconstructs_event", "event", {}],
+        ["set_attr", "request", "status", "completed"],
+        ["set_attr", "request", "candidate_count", 1.0],
+        ["set_attr", "episode", "retrieval_count", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "retrieval_count"}, {"type": "Lit", "value": 1.0}]}}],
+        ["set_attr", "episode", "last_retrieved_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "epoch"}}],
+        ["set_attr", "episode", "reconsolidation_due", 1.0]
+      ]
+    },
+    {
+      "name": "episodic_retrieval_reports_insufficient_information",
+      "area": "memory_retrieval",
+      "order": 11,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_episodic_memory_policy", "policy"],
+        ["agent", "has_memory_retrieval_request", "request"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "recorded_episode"},
+                "var_name": "candidate_episode",
+                "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_episode"}, "key": "cue_key"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cue_key"}}
+              }
+            },
+            "b": {"type": "Lit", "value": 0}
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "outcome", "RecallOutcome", {
+          "status": "insufficient_information",
+          "candidate_count": 0.0,
+          "uncertainty": 1.0,
+          "provenance_kind": "retrieval_failure",
+          "observation_status": "not_observed",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "epoch"}},
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "recall_retention_epochs"}]}}
+        }],
+        ["add_edge", "agent", "has_memory_transient", "outcome", {}],
+        ["add_edge", "request", "has_recall_outcome", "outcome", {}],
+        ["set_attr", "request", "status", "completed"],
+        ["set_attr", "request", "candidate_count", 0.0]
+      ]
+    },
+    {
+      "name": "episodic_reconsolidate_after_retrieval",
+      "area": "memory_retrieval",
+      "order": 12,
+      "latency_class": "hard_realtime",
+      "comment": "Retrieval opens a bounded reconsolidation record. It updates the trace's retrieval history but does not convert recalled content into observed evidence.",
+      "match": [
+        ["agent", "has_episodic_memory_policy", "policy"],
+        ["agent", "has_memory_transient", "recall"],
+        ["recall", "recalls_episode", "episode"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "reconsolidation_status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "reconsolidation_due"}, "b": {"type": "Lit", "value": 1.0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "trace", "ReconsolidationTrace", {
+          "status": "completed",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "epoch"}},
+          "change_scope": "retrieval_history_only",
+          "provenance_kind": "reconsolidated_recall",
+          "observation_status": "not_observed",
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "reconsolidation_retention_epochs"}]}}
+        }],
+        ["add_edge", "agent", "has_memory_transient", "trace", {}],
+        ["add_edge", "trace", "reconsolidates_episode", "episode", {}],
+        ["add_edge", "trace", "triggered_by_recall", "recall", {}],
+        ["set_attr", "recall", "reconsolidation_status", "completed"],
+        ["set_attr", "episode", "reconsolidation_due", 0.0],
+        ["set_attr", "episode", "last_reconsolidated_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "epoch"}}],
+        ["set_attr", "episode", "reconsolidation_count", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "reconsolidation_count"}, {"type": "Lit", "value": 1.0}]}}]
+      ]
+    },
+    {
+      "name": "episodic_prioritize_one_replay_per_cycle",
+      "area": "memory_replay",
+      "order": 20,
+      "latency_class": "background",
+      "comment": "Both quiet-wake and offline cycles use the same bounded priority rule. Surprise is weighted strongly and repeated replay loses novelty.",
+      "match": [
+        ["agent", "has_episodic_memory_policy", "policy"],
+        ["agent", "has_memory_cycle", "cycle"],
+        ["agent", "recorded_episode", "episode"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "cycle"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "cycle"}, "key": "mode"}, "b": {"type": "Lit", "value": "wake"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "cycle"}, "key": "mode"}, "b": {"type": "Lit", "value": "offline"}}
+          ]},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "salience"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "minimum_replay_salience"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "episode"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "recorded_episode"},
+                "var_name": "candidate_episode",
+                "predicate": {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_episode"}, "key": "salience"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "minimum_replay_salience"}}
+              },
+              "var_name": "ranked_episode",
+              "value": {
+                "type": "Plus",
+                "items": [
+                  {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "salience"},
+                  {"type": "Times", "items": [{"type": "Lit", "value": 2.0}, {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "surprise"}]},
+                  {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "value"},
+                  {"type": "Div", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Plus", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "ranked_episode"}, "key": "replay_count"}]}}
+                ]
+              },
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "replay", "ReplayTrace", {
+          "status": "completed",
+          "mode": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "cycle"}, "key": "mode"}},
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "cycle"}, "key": "epoch"}},
+          "priority_basis": "salience_surprise_value_novelty",
+          "provenance_kind": "replayed",
+          "observation_status": "not_observed",
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "cycle"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "replay_retention_epochs"}]}}
+        }],
+        ["add_edge", "agent", "has_memory_transient", "replay", {}],
+        ["add_edge", "cycle", "selected_replay", "replay", {}],
+        ["add_edge", "replay", "replays_episode", "episode", {}],
+        ["set_attr", "cycle", "status", "completed"],
+        ["set_attr", "cycle", "replay_count", 1.0],
+        ["set_attr", "episode", "last_replay_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "cycle"}, "key": "epoch"}}],
+        ["set_attr", "episode", "replay_count", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "replay_count"}, {"type": "Lit", "value": 1.0}]}}],
+        ["set_attr", "episode", "semantic_update_due", 1.0]
+      ]
+    },
+    {
+      "name": "episodic_replay_creates_semantic_support",
+      "area": "memory_consolidation",
+      "order": 21,
+      "latency_class": "background",
+      "comment": "Consolidation has semantic content: it creates uncertain support for the episode's schema and retains episode provenance.",
+      "match": [
+        ["agent", "has_episodic_memory_policy", "policy"],
+        ["agent", "recorded_episode", "episode"],
+        ["episode", "instantiates_schema", "schema"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "semantic_update_due"}, "b": {"type": "Lit", "value": 1.0}},
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_semantic_support"},
+                "var_name": "candidate_support",
+                "predicate": {
+                  "type": "Exists",
+                  "source": {"type": "Neighbours", "node": {"type": "Var", "name": "candidate_support"}, "edge_type": "supports_schema"},
+                  "var_name": "supported_schema",
+                  "predicate": {"type": "Eq", "a": {"type": "Var", "name": "supported_schema"}, "b": {"type": "Var", "name": "schema"}}
+                }
+              }
+            },
+            "b": {"type": "Lit", "value": 0}
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "support", "SemanticSupport", {
+          "status": "supported",
+          "support_count": 1.0,
+          "uncertainty": 0.5,
+          "last_updated_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "last_replay_epoch"}},
+          "provenance_kind": "semantic_support_from_replay",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "agent", "has_semantic_support", "support", {}],
+        ["add_edge", "support", "supports_schema", "schema", {}],
+        ["add_edge", "support", "supported_by_episode", "episode", {}],
+        ["set_attr", "episode", "semantic_update_due", 0.0],
+        ["set_attr", "episode", "consolidated", true],
+        ["set_attr", "episode", "consolidated_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "last_replay_epoch"}}]
+      ]
+    },
+    {
+      "name": "episodic_replay_updates_existing_semantic_support",
+      "area": "memory_consolidation",
+      "order": 22,
+      "latency_class": "background",
+      "match": [
+        ["agent", "recorded_episode", "episode"],
+        ["episode", "instantiates_schema", "schema"],
+        ["agent", "has_semantic_support", "support"],
+        ["support", "supports_schema", "schema"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "semantic_update_due"},
+        "b": {"type": "Lit", "value": 1.0}
+      },
+      "effects": [
+        ["set_attr", "support", "support_count", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "support"}, "key": "support_count"}, {"type": "Lit", "value": 1.0}]}}],
+        ["set_attr", "support", "uncertainty", {"__term__": {"type": "Div", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "support"}, "key": "support_count"}, {"type": "Lit", "value": 2.0}]}}}],
+        ["set_attr", "support", "last_updated_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "last_replay_epoch"}}],
+        ["add_edge", "support", "supported_by_episode", "episode", {}],
+        ["set_attr", "episode", "semantic_update_due", 0.0],
+        ["set_attr", "episode", "consolidated", true],
+        ["set_attr", "episode", "consolidated_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "last_replay_epoch"}}]
+      ]
+    },
+    {
+      "name": "working_memory_select_next_input_gate",
+      "area": "working_memory",
+      "order": 29,
+      "latency_class": "hard_realtime",
+      "comment": "Admission is serialized through one deterministic oldest pending input gate. Argmin's stable node-id tie break orders same-epoch requests, so a fixed-point pass can never admit several requests against the same pre-admission slot count.",
+      "match": [
+        ["agent", "has_working_memory_gate", "gate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "input"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "gate"},
+            "b": {
+              "type": "Argmin",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_working_memory_gate"},
+                "var_name": "pending_gate",
+                "predicate": {
+                  "type": "And",
+                  "items": [
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pending_gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pending_gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "input"}}
+                  ]
+                }
+              },
+              "var_name": "ranked_gate",
+              "value": {"type": "Attr", "node": {"type": "Var", "name": "ranked_gate"}, "key": "epoch"},
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["set_attr", "gate", "admission_status", "selected"]
+      ]
+    },
+    {
+      "name": "working_memory_input_gate",
+      "area": "working_memory",
+      "order": 30,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_working_memory_policy", "policy"],
+        ["agent", "has_working_memory_gate", "gate"],
+        ["gate", "targets_content", "content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "input"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "admission_status"}, "b": {"type": "Lit", "value": "selected"}},
+          {
+            "type": "Lt",
+            "a": {"type": "Count", "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_working_memory_slot"}, "var_name": "active_slot", "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "active_slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}}},
+            "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_slots"}
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "slot", "WorkingMemorySlot", {
+          "status": "active",
+          "opened_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}},
+          "last_gated_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}},
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "slot_ttl_epochs"}]}},
+          "task_context_key": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "task_context_key"}},
+          "priority": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "priority"}},
+          "interference_count": 0.0,
+          "provenance_kind": "actively_maintained",
+          "observation_status": "not_observed"
+        }],
+        ["add_node", "result", "WorkingMemoryGateResult", {
+          "status": "accepted",
+          "operation": "input",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}},
+          "provenance_kind": "working_memory_control",
+          "observation_status": "not_observed",
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "output_retention_epochs"}]}}
+        }],
+        ["add_edge", "agent", "has_working_memory_slot", "slot", {}],
+        ["add_edge", "slot", "holds_content", "content", {}],
+        ["add_edge", "gate", "created_slot", "slot", {}],
+        ["add_edge", "gate", "has_gate_result", "result", {}],
+        ["add_edge", "agent", "has_memory_transient", "result", {}],
+        ["set_attr", "gate", "status", "processed"]
+      ]
+    },
+    {
+      "name": "working_memory_replace_cross_task_interference",
+      "area": "working_memory",
+      "order": 31,
+      "latency_class": "hard_realtime",
+      "comment": "When capacity is full, a new task may replace only the lowest-priority active slot belonging to another task context. Same-task overload is refused rather than silently forgetting.",
+      "match": [
+        ["agent", "has_working_memory_policy", "policy"],
+        ["agent", "has_working_memory_gate", "gate"],
+        ["gate", "targets_content", "content"],
+        ["agent", "has_working_memory_slot", "victim"],
+        ["victim", "holds_content", "old_content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "input"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "admission_status"}, "b": {"type": "Lit", "value": "selected"}},
+          {"type": "Gte", "a": {"type": "Count", "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_working_memory_slot"}, "var_name": "active_slot", "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "active_slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}}}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_slots"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "victim"},
+            "b": {
+              "type": "Argmin",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_working_memory_slot"},
+                "var_name": "candidate_slot",
+                "predicate": {
+                  "type": "And",
+                  "items": [
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+                    {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_slot"}, "key": "task_context_key"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "task_context_key"}}}
+                  ]
+                }
+              },
+              "var_name": "ranked_slot",
+              "value": {"type": "Attr", "node": {"type": "Var", "name": "ranked_slot"}, "key": "priority"},
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["del_edge", "victim", "holds_content", "old_content"],
+        ["add_edge", "victim", "holds_content", "content", {}],
+        ["set_attr", "victim", "task_context_key", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "task_context_key"}}],
+        ["set_attr", "victim", "priority", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "priority"}}],
+        ["set_attr", "victim", "last_gated_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}}],
+        ["set_attr", "victim", "expires_epoch", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "slot_ttl_epochs"}]}}],
+        ["set_attr", "victim", "interference_count", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "victim"}, "key": "interference_count"}, {"type": "Lit", "value": 1.0}]}}],
+        ["set_attr", "victim", "last_replacement_reason", "cross_task_interference"],
+        ["add_node", "result", "WorkingMemoryGateResult", {
+          "status": "accepted_with_interference",
+          "operation": "input",
+          "reason": "cross_task_capacity_replacement",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}},
+          "provenance_kind": "working_memory_control",
+          "observation_status": "not_observed",
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "output_retention_epochs"}]}}
+        }],
+        ["add_edge", "gate", "reused_slot", "victim", {}],
+        ["add_edge", "gate", "has_gate_result", "result", {}],
+        ["add_edge", "agent", "has_memory_transient", "result", {}],
+        ["set_attr", "gate", "status", "processed"]
+      ]
+    },
+    {
+      "name": "working_memory_refuse_same_task_over_capacity",
+      "area": "working_memory",
+      "order": 32,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_working_memory_policy", "policy"],
+        ["agent", "has_working_memory_gate", "gate"],
+        ["gate", "targets_content", "content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "input"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "admission_status"}, "b": {"type": "Lit", "value": "selected"}},
+          {"type": "Gte", "a": {"type": "Count", "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_working_memory_slot"}, "var_name": "active_slot", "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "active_slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}}}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_slots"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Count", "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_working_memory_slot"}, "var_name": "foreign_slot", "predicate": {"type": "And", "items": [
+              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "foreign_slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+              {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "foreign_slot"}, "key": "task_context_key"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "task_context_key"}}}
+            ]}}},
+            "b": {"type": "Lit", "value": 0}
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "result", "WorkingMemoryGateResult", {
+          "status": "refused",
+          "operation": "input",
+          "reason": "capacity_limit",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}},
+          "uncertainty": 1.0,
+          "provenance_kind": "working_memory_control",
+          "observation_status": "not_observed",
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "output_retention_epochs"}]}}
+        }],
+        ["add_edge", "gate", "has_gate_result", "result", {}],
+        ["add_edge", "agent", "has_memory_transient", "result", {}],
+        ["set_attr", "gate", "status", "processed"]
+      ]
+    },
+    {
+      "name": "working_memory_update_gate",
+      "area": "working_memory",
+      "order": 33,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_working_memory_policy", "policy"],
+        ["agent", "has_working_memory_gate", "gate"],
+        ["gate", "targets_slot", "slot"],
+        ["gate", "targets_content", "content"],
+        ["slot", "holds_content", "old_content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "update"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}
+        ]
+      },
+      "effects": [
+        ["del_edge", "slot", "holds_content", "old_content"],
+        ["add_edge", "slot", "holds_content", "content", {}],
+        ["set_attr", "slot", "last_gated_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}}],
+        ["set_attr", "slot", "expires_epoch", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "slot_ttl_epochs"}]}}],
+        ["set_attr", "slot", "task_context_key", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "task_context_key"}}],
+        ["set_attr", "slot", "priority", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "priority"}}],
+        ["set_attr", "gate", "status", "processed"],
+        ["set_attr", "gate", "result", "updated"]
+      ]
+    },
+    {
+      "name": "working_memory_maintain_gate",
+      "area": "working_memory",
+      "order": 34,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_working_memory_policy", "policy"],
+        ["agent", "has_working_memory_gate", "gate"],
+        ["gate", "targets_slot", "slot"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "maintain"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "slot", "last_gated_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}}],
+        ["set_attr", "slot", "expires_epoch", {"__term__": {"type": "Max", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "expires_epoch"},
+          {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "slot_ttl_epochs"}]}
+        ]}}],
+        ["set_attr", "gate", "status", "processed"],
+        ["set_attr", "gate", "result", "maintained"]
+      ]
+    },
+    {
+      "name": "working_memory_output_gate",
+      "area": "working_memory",
+      "order": 35,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_working_memory_policy", "policy"],
+        ["agent", "has_working_memory_gate", "gate"],
+        ["gate", "targets_slot", "slot"],
+        ["slot", "holds_content", "content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "output"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}
+        ]
+      },
+      "effects": [
+        ["add_node", "output", "WorkingMemoryOutput", {
+          "status": "ready",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}},
+          "task_context_key": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "task_context_key"}},
+          "provenance_kind": "working_memory_retrieval",
+          "observation_status": "not_observed",
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "output_retention_epochs"}]}}
+        }],
+        ["add_node", "broadcast_candidate", "BroadcastCandidate", {
+          "status": "pending",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}},
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "output_retention_epochs"}]}},
+          "ttl": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "output_retention_epochs"}},
+          "salience": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "priority"}},
+          "urgency": 0.0,
+          "confidence": 1.0,
+          "precision": 1.0,
+          "priority": 0.0,
+          "source_kind": "working_memory_output",
+          "provenance_kind": "working_memory_retrieval",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "agent", "has_memory_transient", "output", {}],
+        ["add_edge", "agent", "has_memory_transient", "broadcast_candidate", {}],
+        ["add_edge", "agent", "has_broadcast_candidate", "broadcast_candidate", {}],
+        ["add_edge", "gate", "has_working_memory_output", "output", {}],
+        ["add_edge", "output", "outputs_content", "content", {}],
+        ["add_edge", "output", "read_from_slot", "slot", {}],
+        ["add_edge", "output", "offered_as_broadcast_candidate", "broadcast_candidate", {}],
+        ["add_edge", "broadcast_candidate", "about_content", "content", {}],
+        ["set_attr", "gate", "status", "processed"],
+        ["set_attr", "slot", "last_output_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "working_memory_clear_gate",
+      "area": "working_memory",
+      "order": 36,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_working_memory_gate", "gate"],
+        ["gate", "targets_slot", "slot"],
+        ["slot", "holds_content", "content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "operation"}, "b": {"type": "Lit", "value": "clear"}}
+        ]
+      },
+      "effects": [
+        ["del_edge", "slot", "holds_content", "content"],
+        ["set_attr", "slot", "status", "cleared"],
+        ["set_attr", "slot", "terminal_reason", "clear_gate"],
+        ["set_attr", "slot", "expires_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "gate"}, "key": "epoch"}}],
+        ["set_attr", "gate", "status", "processed"],
+        ["set_attr", "gate", "result", "cleared"]
+      ]
+    },
+    {
+      "name": "working_memory_expire_unmaintained_slot",
+      "area": "working_memory",
+      "order": 40,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_memory_clock", "clock"],
+        ["agent", "has_working_memory_slot", "slot"],
+        ["slot", "holds_content", "content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "slot"}, "key": "expires_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_edge", "slot", "holds_content", "content"],
+        ["set_attr", "slot", "status", "expired"],
+        ["set_attr", "slot", "terminal_reason", "maintenance_lapsed"],
+        ["set_attr", "slot", "terminal_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "episodic_prune_expired_transient",
+      "area": "memory_cleanup",
+      "order": 50,
+      "latency_class": "background",
+      "match": [
+        ["agent", "has_memory_clock", "clock"],
+        ["agent", "has_memory_transient", "transient"]
+      ],
+      "where": {
+        "type": "Gte",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"},
+        "b": {"type": "Attr", "node": {"type": "Var", "name": "transient"}, "key": "expires_epoch"}
+      },
+      "effects": [
+        ["del_node", "transient"]
+      ]
+    }
+  ]
+}

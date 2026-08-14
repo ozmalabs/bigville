@@ -1,0 +1,49 @@
+{
+  "id": "conversation_reply",
+  "version": "1.1.0",
+  "depends_on": ["intent"],
+  "description": "Turn-taking reply faculty as graph data: when an inbound Message's Intent expects a response (an adjacency pair, e.g. greeting->greeting, question->answer) and the Message hasn't been responded to yet, construct the agent's outbound second-pair-part Message carrying that speech act and a responds_to edge. The DECISION to reply is this RewriteRule; surface realization (rendering the reply's content) is separate.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "rules": [
+    {
+      "name": "reply_to_adjacency_pair",
+      "match": [
+        ["agent", "is_a", "Agent"],
+        ["m", "has_intent", "i"],
+        ["i", "expects_response", "r"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "InNeighbours",
+                "node": {"type": "Var", "name": "m"},
+                "edge_type": "responds_to"
+              },
+              "var_name": "_x",
+              "predicate": {"type": "Lit", "value": true}
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "from"},
+            "b": {"type": "Lit", "value": "interlocutor"}
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "reply", "Message", {"from": "agent"}],
+        ["add_edge", "reply", "has_speech_act", "r"],
+        ["add_edge", "reply", "responds_to", "m"],
+        ["add_edge", "agent", "sent", "reply"],
+        ["set_attr", "m", "adjacency_replied_act", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "r"}, "key": "name"}}]
+      ]
+    }
+  ]
+}

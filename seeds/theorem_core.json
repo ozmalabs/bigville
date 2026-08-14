@@ -1,0 +1,448 @@
+{
+  "id": "theorem_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "The agent's theorems about its own behaviour (tau-3) as graph data: Theorem nodes each carrying a predicate Term-tree via a predicate edge, asserted by agent_root via asserts. Captured from CuriousAgent._seeded_theorem_specs. The theorem is graph data the DSL evaluates, not Python.",
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "senses"
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "t"
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 4,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "models"
+      }
+    },
+    {
+      "local_id": 5,
+      "type": "Term.In",
+      "attrs": {}
+    },
+    {
+      "local_id": 6,
+      "type": "Term.Not",
+      "attrs": {}
+    },
+    {
+      "local_id": 7,
+      "type": "Term.Filter",
+      "attrs": {
+        "var_name": "t"
+      }
+    },
+    {
+      "local_id": 8,
+      "type": "Term.Count",
+      "attrs": {}
+    },
+    {
+      "local_id": 9,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2
+      }
+    },
+    {
+      "local_id": 10,
+      "type": "Term.Lte",
+      "attrs": {}
+    },
+    {
+      "local_id": 11,
+      "type": "Theorem",
+      "attrs": {
+        "description": "|senses ∖ models| ≤ 2 — the agent comes to model what it sees.",
+        "name": "sensed_implies_modeled"
+      }
+    },
+    {
+      "local_id": 12,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "self"
+      }
+    },
+    {
+      "local_id": 13,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "current_quality"
+      }
+    },
+    {
+      "local_id": 14,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "self"
+      }
+    },
+    {
+      "local_id": 15,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "prev_quality"
+      }
+    },
+    {
+      "local_id": 16,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 17,
+      "type": "Theorem",
+      "attrs": {
+        "description": "Γ-quality (Theorem-A measure) is monotone non-decreasing across checks.",
+        "name": "quality_monotone_non_decreasing"
+      }
+    },
+    {
+      "local_id": 18,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "self"
+      }
+    },
+    {
+      "local_id": 19,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "current_delta"
+      }
+    },
+    {
+      "local_id": 20,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "self"
+      }
+    },
+    {
+      "local_id": 21,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "prev_delta"
+      }
+    },
+    {
+      "local_id": 22,
+      "type": "Term.Lte",
+      "attrs": {}
+    },
+    {
+      "local_id": 23,
+      "type": "Theorem",
+      "attrs": {
+        "description": "The rate at which new relations are discovered is non-increasing.",
+        "name": "discovery_converges"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "local": 1
+      },
+      "tgt": {
+        "local": 0
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 4
+      },
+      "tgt": {
+        "local": 3
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 2
+      },
+      "type": "child.member",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 4
+      },
+      "type": "child.container",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 6
+      },
+      "tgt": {
+        "local": 5
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 1
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 6
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 7
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 10
+      },
+      "tgt": {
+        "local": 8
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 10
+      },
+      "tgt": {
+        "local": 9
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 11
+      },
+      "tgt": {
+        "local": 10
+      },
+      "type": "predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 12
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 15
+      },
+      "tgt": {
+        "local": 14
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 13
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 15
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 17
+      },
+      "tgt": {
+        "local": 16
+      },
+      "type": "predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 19
+      },
+      "tgt": {
+        "local": 18
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 21
+      },
+      "tgt": {
+        "local": 20
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 22
+      },
+      "tgt": {
+        "local": 19
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 22
+      },
+      "tgt": {
+        "local": 21
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 23
+      },
+      "tgt": {
+        "local": 22
+      },
+      "type": "predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 11
+      },
+      "type": "asserts",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 17
+      },
+      "type": "asserts",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 23
+      },
+      "type": "asserts",
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "src": {
+        "type": "Agent",
+        "var": "src"
+      },
+      "edge_type": "asserts",
+      "tgt": {
+        "type": "Theorem",
+        "var": "tgt"
+      },
+      "provenance": "meta:Agent-asserts-Theorem"
+    },
+    {
+      "src": {
+        "type": "Theorem",
+        "var": "src"
+      },
+      "edge_type": "predicate",
+      "tgt": {
+        "type": "Term.Gte",
+        "var": "tgt"
+      },
+      "provenance": "meta:Theorem-predicate-Term.Gte"
+    },
+    {
+      "src": {
+        "type": "Theorem",
+        "var": "src"
+      },
+      "edge_type": "predicate",
+      "tgt": {
+        "type": "Term.Lte",
+        "var": "tgt"
+      },
+      "provenance": "meta:Theorem-predicate-Term.Lte"
+    }
+  ],
+  "rules": []
+}

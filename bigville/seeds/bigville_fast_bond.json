@@ -1,0 +1,99 @@
+{
+ "id": "bigville_fast_bond",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "TARGET-SENSITIVE FAST PATH (block 287000). A cheap bond signal nudges a directed option's shallow impulse so the fast collapse is roughly bond-directed (help@friend > help@neutral) without a first deliberation -- the innate gut-pull resolving the 282000-c weak-bond targeting finding; composes with learned internalization (286000). impulse = base_weight + fast_gain*(affection - resentment), co-present held-in-Bond targets only; SMALL vs the deep supergraph plan_value. FALSIFIER: fast_gain=0. ZERO new Rust; self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "fb_fast_bond",
+   "batch": false,
+   "comment": "TARGET-SENSITIVE FAST PATH: a cheap bond signal nudges a directed option's impulse (the shallow/gut pull) so help@friend outpulls help@neutral WITHOUT deliberation -- resolving the 282000-c weak-bond targeting finding. impulse = base_weight + fast_gain*(affection - resentment), only for a co-present, held-in-Bond target. SMALL vs the deep supergraph plan_value coupling -- the fast path approximates, the deep path computes. FALSIFIER: fast_gain=0 -> impulse=base_weight -> targeting fails again.",
+   "match": [
+    [
+     "m",
+     "in_scene",
+     "d"
+    ],
+    [
+     "d",
+     "aims_at",
+     "o"
+    ],
+    [
+     "m",
+     "sees",
+     "o"
+    ],
+    [
+     "m",
+     "holds_bond",
+     "bond"
+    ],
+    [
+     "bond",
+     "toward",
+     "o"
+    ]
+   ],
+   "effects": [
+    [
+     "set_attr",
+     "d",
+     "impulse",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "d"
+         },
+         "key": "base_weight"
+        },
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "fast_gain"
+          },
+          {
+           "type": "Minus",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "bond"
+            },
+            "key": "affect_affection"
+           },
+           "b": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "bond"
+            },
+            "key": "affect_resentment"
+           }
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

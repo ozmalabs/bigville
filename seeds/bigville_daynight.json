@@ -1,0 +1,582 @@
+{
+  "id": "bigville_daynight",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R59 (block 372000): the DAY/NIGHT CYCLE -- it actually gets dark, the residents notice, and it changes with the time of year. All CALCULATED from the town's own clock (never fetched): daylight length = the astronomical f(latitude, day-of-year) (long summer days, short winter nights); moon_illum = the synodic cycle over sim-days. dn_sky computes is_night (sim-hour vs the calculated sunrise/sunset) and light_level (at night MOONLIGHT through cloud, by day sunlight through cloud). dn_perceive: an outdoor agent PERCEIVES the dark (sees_dark) when light_level < see_threshold -- so a clear FULL-MOON night you can see, but a NEW-MOON or OVERCAST night is blind (moon AND cloud both matter, historically why a moonlit night meant you could travel). The LAMPLIGHTER (dn_lamplighter_lights) lights the street lamps at night; a lit lamp lets you see (dn_lamp_saves) -- his job only exists because it gets dark. Composes with the seasonal weather (same cloud), the map (sheltered places), bigville_office (the lamplighter is an appointed office), and gates outdoor work/travel (a hook: you cannot work a field you cannot see).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "dn_sky",
+      "batch": false,
+      "comment": "The SKY: is_night = the sim-hour is before the (calculated) sunrise or after sunset; light_level = at night MOONLIGHT through cloud (moon_illum*(1-cloud)) -- a clear full moon is bright, an overcast or new-moon night is blind -- and by day SUNLIGHT through cloud (1-cloud). Sunrise/sunset and moon_illum are calculated from the town's own clock, not fetched.",
+      "match": [
+        [
+          "town",
+          "has_sky",
+          "sky"
+        ]
+      ],
+      "effects": [
+        [
+          "set_attr",
+          "sky",
+          "is_night",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Or",
+                "items": [
+                  {
+                    "type": "Lt",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "hour"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "sunrise"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Gt",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "hour"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "sunset"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "sky",
+          "light_level",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Or",
+                "items": [
+                  {
+                    "type": "Lt",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "hour"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "sunrise"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Gt",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "hour"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "sunset"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "then": {
+                "type": "Times",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "sky"
+                        },
+                        "key": "moon_illum"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Minus",
+                    "a": {
+                      "type": "Lit",
+                      "value": 1.0
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "sky"
+                          },
+                          "key": "cloud"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "other": {
+                "type": "Minus",
+                "a": {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                "b": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "sky"
+                      },
+                      "key": "cloud"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "dn_perceive",
+      "batch": false,
+      "comment": "An agent OUTSIDE (unsheltered) at a place with NO lit lamp PERCEIVES the dark: sees_dark = 1 iff the sky's light_level is below what you need to see (see_threshold). By day, or on a bright moonlit night, light_level is high -> sees_dark=0 (you can see). Inside (sheltered) is candlelit -- not matched here, so sees_dark stays 0. Places WITH a lit lamp are handled by dn_lamp_saves (partitioned -> no oscillation).",
+      "match": [
+        [
+          "town",
+          "has_sky",
+          "sky"
+        ],
+        [
+          "town",
+          "has_place",
+          "p"
+        ],
+        [
+          "a",
+          "at",
+          "p"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "p"
+                  },
+                  "key": "sheltered"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "p"
+                },
+                "edge_type": "has_lamp"
+              },
+              "var_name": "lmp",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "lmp"
+                      },
+                      "key": "lit"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "sees_dark",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Lt",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "sky"
+                      },
+                      "key": "light_level"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "sky"
+                      },
+                      "key": "see_threshold"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "dn_lamplighter_lights",
+      "batch": false,
+      "comment": "At NIGHT the LAMPLIGHTER (a council-appointed office; town -has_lamplighter->) does his round and lights every street lamp (lit=1). This is his job -- without him the lamps stay dark and the streets are blind on a moonless/overcast night.",
+      "match": [
+        [
+          "town",
+          "has_sky",
+          "sky"
+        ],
+        [
+          "town",
+          "has_lamplighter",
+          "ll"
+        ],
+        [
+          "p",
+          "has_lamp",
+          "lamp"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "sky"
+              },
+              "key": "is_night"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "lamp",
+          "lit",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "dn_lamplighter_douses",
+      "batch": false,
+      "comment": "By DAY the lamps are out (lit=0) -- no need to burn oil when it is light.",
+      "match": [
+        [
+          "town",
+          "has_sky",
+          "sky"
+        ],
+        [
+          "p",
+          "has_lamp",
+          "lamp"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "sky"
+              },
+              "key": "is_night"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 0.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "lamp",
+          "lit",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "dn_lamp_saves",
+      "batch": false,
+      "comment": "A LIT lamp at your place lets you SEE even in the dark: an agent at a place with a lit lamp has sees_dark=0. This is why the lamplighter matters -- a lit street is passable at night.",
+      "match": [
+        [
+          "a",
+          "at",
+          "p"
+        ],
+        [
+          "p",
+          "has_lamp",
+          "lamp"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "lamp"
+              },
+              "key": "lit"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "sees_dark",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

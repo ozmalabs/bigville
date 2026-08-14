@@ -1,0 +1,531 @@
+{
+  "id": "bigville_commodity_physical",
+  "version": "2.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R70 (block 387000, corrects 386000): A PILE IS JUST A PILE -- a world-fact (kind, qty, located matter, mass-conserved). OWNERSHIP IS A HUMAN FRAME people ADD to piles and others RECOGNIZE -- it is NOT a property of the pile. cp_burn/cp_consume work by ACCESS (co-location), not ownership -- reach, not a deed. cp_owner: a Claim (claimant -claims-> Claim -on-> pile) is ownership only when RECOGNIZED (>=1 recognizer); a pile can be ownerless, its claim unrecognized, or contested -- the substrate never enforces ownership as intrinsic (world-facts vs human-frames). Conservation from 386000 is kept; the owns-on-the-pile model is retired.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cp_burn",
+      "batch": false,
+      "comment": "Making charcoal works by ACCESS, not ownership: an agent burn-armed and AT a place, with a wood pile / charcoal pile / smoke pile also AT that place, turns wood_in of wood into charcoal (*0.25) + smoke (*0.75) -- MASS CONSERVED. Piles are world-facts (located matter); the act needs reach, not a deed. Ownership is a separate recognized frame (cp_owner).",
+      "match": [
+        [
+          "agent",
+          "at",
+          "place"
+        ],
+        [
+          "wood",
+          "at",
+          "place"
+        ],
+        [
+          "char",
+          "at",
+          "place"
+        ],
+        [
+          "smoke",
+          "at",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "burn_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "wood"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "wood"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "char"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "charcoal"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "smoke"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "smoke"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "wood"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "wood_in"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "wood",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "wood"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "wood_in"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "char",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "char"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "wood_in"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.25
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "smoke",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "smoke"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "wood_in"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.75
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "burn_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "cp_consume",
+      "batch": false,
+      "comment": "Using a commodity destroys it, by ACCESS: an agent fire-armed and AT a place consumes charcoal_in from a charcoal pile AT that place (the pile shrinks). Reach, not ownership.",
+      "match": [
+        [
+          "agent",
+          "at",
+          "place"
+        ],
+        [
+          "char",
+          "at",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "char"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "charcoal"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "fire_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "char"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "charcoal_in"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "char",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "char"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "charcoal_in"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "fire_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "cp_owner",
+      "batch": false,
+      "comment": "Ownership = a RECOGNIZED claim. A Claim on a pile is recognized (confers ownership) iff at least one other agent recognizes it (Count(recognizes) >= 1). The substrate does NOT forbid rival or unrecognized claims -- recognition, a social frame, decides; the pile itself stays just a pile.",
+      "match": [
+        [
+          "claim",
+          "on",
+          "pile"
+        ]
+      ],
+      "effects": [
+        [
+          "set_attr",
+          "claim",
+          "recognized",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Gte",
+                "a": {
+                  "type": "Count",
+                  "source": {
+                    "type": "InNeighbours",
+                    "node": {
+                      "type": "Var",
+                      "name": "claim"
+                    },
+                    "edge_type": "recognizes"
+                  }
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "claim",
+          "recognizers",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "claim"
+                },
+                "edge_type": "recognizes"
+              }
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

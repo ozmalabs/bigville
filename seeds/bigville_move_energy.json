@@ -1,0 +1,411 @@
+{
+  "id": "bigville_move_energy",
+  "version": "1.1.0",
+  "depends_on": [],
+  "description": "Per-agent ENERGY budget for bigville R1 (block 249000). `mv_energy_budget` is THE slow-down decision: the per-tick move budget is a graded step function of energy (3/2/1/0 hops as the budget nears threshold) \u2014 the agent SLOWS as it tires; thresholds are per-character (population variation). `mv_deplete` spends energy per applied hop, HUNGER-MODULATED (cost*(1+hunger)). Ablations are graph data: slow_on=0 -> flat budget; energy_cost=0 -> no depletion (both -> no slow-down, the load-bearing control). Composes existing Terms (IfThenElse/Gte/Max/Minus/Times/Plus) \u2014 zero new Rust.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "mv_energy_budget",
+      "match": [
+        [
+          "m",
+          "is_at",
+          "cur"
+        ]
+      ],
+      "effects": [
+        [
+          "set_attr",
+          "m",
+          "move_budget",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "IfThenElse",
+                    "cond": {
+                      "type": "Eq",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "m"
+                            },
+                            "key": "slow_on"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    },
+                    "then": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "m"
+                          },
+                          "key": "budget_flat"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    "other": {
+                      "type": "IfThenElse",
+                      "cond": {
+                        "type": "Gte",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "m"
+                              },
+                              "key": "energy"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "m"
+                              },
+                              "key": "e_high"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0
+                            }
+                          ]
+                        }
+                      },
+                      "then": {
+                        "type": "Lit",
+                        "value": 3.0
+                      },
+                      "other": {
+                        "type": "IfThenElse",
+                        "cond": {
+                          "type": "Gte",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "m"
+                                },
+                                "key": "energy"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "m"
+                                },
+                                "key": "e_mid"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0
+                              }
+                            ]
+                          }
+                        },
+                        "then": {
+                          "type": "Lit",
+                          "value": 2.0
+                        },
+                        "other": {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "Gte",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "m"
+                                  },
+                                  "key": "energy"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "m"
+                                  },
+                                  "key": "e_low"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0
+                                }
+                              ]
+                            }
+                          },
+                          "then": {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          "other": {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Sum",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "m"
+                          },
+                          "edge_type": "has_good",
+                          "any_type": false
+                        },
+                        "var_name": "g",
+                        "value": {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "g"
+                                  },
+                                  "key": "weight"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "g"
+                                  },
+                                  "key": "qty"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.1
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      ],
+      "comment": "A laden mover is SLOWER: the budget is reduced by carried weight (Sum of held goods' weight*qty * 0.1); empty-handed it is unchanged, so a heavy haul costs hops."
+    },
+    {
+      "name": "mv_deplete",
+      "match": [
+        [
+          "m",
+          "is_at",
+          "cur"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "m"
+              },
+              "key": "do_deplete"
+            },
+            {
+              "type": "Lit",
+              "value": 0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "m",
+          "energy",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "energy"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "m"
+                            },
+                            "key": "energy_cost"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "m"
+                                },
+                                "key": "hunger"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "m",
+          "do_deplete",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

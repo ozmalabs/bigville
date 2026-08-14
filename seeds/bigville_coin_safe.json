@@ -1,0 +1,698 @@
+{
+  "id": "bigville_coin_safe",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R47 (block 351000/352000): COINS ARE PHYSICAL and must be STORED -- in a SAFE, behind KEYS. A Safe{stored_coin, open, keys_required} in a place physically HOLDS coin; a Key -opens-> a specific safe; agents HOLD keys (inventory). ACCESS IS A THRESHOLD of DISTINCT authorizers: cs_present -- an agent holding a key that opens the safe AUTHORIZES it (agent -authorizes-> safe, per-agent so one person cannot supply two signatures); cs_open_threshold -- the safe opens once Count(authorizers) >= keys_required. keys_required=1 is an ordinary single-key safe; keys_required=2 is a DUAL-KEY safe requiring TWO different key-holders -- TWO-PERSON INTEGRITY / separation of duties: neither can open it alone, so no single office- holder can embezzle unilaterally (collusion required). cs_withdraw/cs_deposit move physical coin in/out of an OPEN safe (conserved, capped); cs_denied refuses a closed safe. Composes with the Clerk-Treasurer (a dual-key treasury: clerk + a councillor) and theft (steal BOTH keys to open a dual-key safe).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cs_present",
+      "batch": false,
+      "comment": "An agent who HOLDS a key that opens this safe and arms 'open' AUTHORIZES it (agent -authorizes-> safe). Authorization is per AGENT, so one person cannot single-handedly meet a two-person requirement (two-person integrity / separation of duties). No held key that opens this safe -> no authorization.",
+      "match": [
+        [
+          "agent",
+          "accessing",
+          "safe"
+        ],
+        [
+          "agent",
+          "holds",
+          "key"
+        ],
+        [
+          "key",
+          "opens",
+          "safe"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "open_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "agent"
+                },
+                "edge_type": "authorizes"
+              },
+              "var_name": "s",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "s"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "safe"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "agent",
+          "authorizes",
+          "safe"
+        ],
+        [
+          "set_attr",
+          "agent",
+          "open_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "cs_open_threshold",
+      "batch": false,
+      "comment": "The safe opens once at least keys_required DISTINCT agents have authorized it (Count(authorizers) >= keys_required). A single-key safe (keys_required=1) opens on one authorization; a DUAL-KEY safe (2) needs two different key-holders -- neither can open it alone.",
+      "match": [
+        [
+          "town",
+          "has_safe",
+          "safe"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "safe"
+                  },
+                  "key": "open"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "safe"
+                },
+                "edge_type": "authorizes"
+              }
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "safe"
+                  },
+                  "key": "keys_required"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "safe",
+          "open",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "cs_withdraw",
+      "batch": false,
+      "comment": "Withdraw physical coin from an OPEN safe into the purse (conserved, capped at the safe).",
+      "match": [
+        [
+          "agent",
+          "accessing",
+          "safe"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "withdraw_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "safe"
+                  },
+                  "key": "open"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "safe"
+                  },
+                  "key": "stored_coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "amount"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "safe",
+          "stored_coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "safe"
+                    },
+                    "key": "stored_coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "amount"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "amount"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "withdraw_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "cs_deposit",
+      "batch": false,
+      "comment": "Deposit physical coin from the purse into an OPEN safe (conserved, capped at the purse).",
+      "match": [
+        [
+          "agent",
+          "accessing",
+          "safe"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "deposit_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "safe"
+                  },
+                  "key": "open"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "amount"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "safe",
+          "stored_coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "safe"
+                      },
+                      "key": "stored_coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "amount"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "amount"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "deposit_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "cs_denied",
+      "batch": false,
+      "comment": "An attempt to withdraw/deposit against a CLOSED safe is denied -- not enough keys, no access.",
+      "match": [
+        [
+          "agent",
+          "accessing",
+          "safe"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "safe"
+                  },
+                  "key": "open"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "withdraw_armed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "deposit_armed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "access_denied",
+          1.0
+        ],
+        [
+          "set_attr",
+          "agent",
+          "withdraw_armed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "agent",
+          "deposit_armed",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

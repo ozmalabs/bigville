@@ -1,0 +1,760 @@
+{
+  "id": "bigville_market_trader",
+  "version": "2.1.0",
+  "depends_on": [
+    "bigville_bells"
+  ],
+  "self_load_only": true,
+  "description": "bigville R29 v2 (block 318000): the VISITING MARKET TRADER -- sells DIFFERENT goods NOT locally available (superseding v1's undercut-a-local-good model, per the user's correction: a remote seller's value is EXOTIC wares the town cannot make itself). The town `produces` a set of LocalGoods. A Trader sets up a Stall{good,stock,ask_price}. mt_open: a stall opens IFF its good is NOT locally produced (exotic). mt_refuse_local: a stall of a locally-made good is refused (never opens) -- the remote seller does not deal in what the town already makes. mt_grant_access: an open exotic stall gives the town import-access (an ImportedGood recorded once) -- the available-goods set GROWS by import, disjoint from production. mt_buy: an armed resident who wants+affords buys one unit from an OPEN stall; coin leaves to the external trader (external_outflux logs the boundary crossing, the mirror of bw_inn_stay's influx); the trader is the SOLE source of the good. mt_depart: a sold-out stall is struck and the trader departs. One unit per arming (adapter serialises buyers -> stock never races negative). BELL-DRIVEN (block 321000): mt_buy also requires a MARKET bell peal (the market is open only after the market bell tolls) -- no forced market-day flag.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "mt_open",
+      "batch": false,
+      "comment": "A stall opens for trade iff its good is NOT locally produced (exotic).",
+      "match": [
+        [
+          "town",
+          "has_trader",
+          "trader"
+        ],
+        [
+          "trader",
+          "has_stall",
+          "stall"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "stall"
+                },
+                "key": "open"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "town"
+                },
+                "edge_type": "produces"
+              },
+              "var_name": "lg",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "lg"
+                  },
+                  "key": "name"
+                },
+                "b": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stall"
+                  },
+                  "key": "good"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "stall",
+          "open",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "mt_refuse_local",
+      "batch": false,
+      "comment": "A stall whose good IS locally produced is refused (it never opens) -- the remote seller deals only in goods the town cannot make itself.",
+      "match": [
+        [
+          "town",
+          "has_trader",
+          "trader"
+        ],
+        [
+          "trader",
+          "has_stall",
+          "stall"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "stall"
+                },
+                "key": "refused"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          },
+          {
+            "type": "Exists",
+            "source": {
+              "type": "Neighbours",
+              "node": {
+                "type": "Var",
+                "name": "town"
+              },
+              "edge_type": "produces"
+            },
+            "var_name": "lg",
+            "predicate": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "lg"
+                },
+                "key": "name"
+              },
+              "b": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "stall"
+                },
+                "key": "good"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "stall",
+          "refused",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "mt_grant_access",
+      "batch": false,
+      "comment": "An open exotic stall gives the town import-access: the good is recorded as an ImportedGood the town now holds (once). The available-goods set grows.",
+      "match": [
+        [
+          "town",
+          "has_trader",
+          "trader"
+        ],
+        [
+          "trader",
+          "has_stall",
+          "stall"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stall"
+                  },
+                  "key": "open"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "town"
+                },
+                "edge_type": "imports_good"
+              },
+              "var_name": "ig",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "ig"
+                  },
+                  "key": "name"
+                },
+                "b": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stall"
+                  },
+                  "key": "good"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "ig",
+          "ImportedGood",
+          {
+            "name": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "stall"
+                },
+                "key": "good"
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "town",
+          "imports_good",
+          "ig"
+        ]
+      ]
+    },
+    {
+      "name": "mt_buy",
+      "batch": false,
+      "comment": "BELL-DRIVEN: buys only when the MARKET bell has tolled (a market peal opens trading). An armed resident who wants the good and can afford the ask buys one unit from an OPEN (exotic) stall with stock. The trader is the SOLE source; coin leaves the closed economy OUT to the external trader (external_outflux logs it). One unit per arming (buy_armed->0).",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "town",
+          "has_trader",
+          "trader"
+        ],
+        [
+          "trader",
+          "has_stall",
+          "stall"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "peal"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "market"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stall"
+                  },
+                  "key": "open"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "buy_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stall"
+                  },
+                  "key": "stock"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "stall"
+                  },
+                  "key": "ask_price"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "wants"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "r"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "stall"
+                    },
+                    "key": "ask_price"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "trader",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "trader"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "stall"
+                      },
+                      "key": "ask_price"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "stall",
+          "stock",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "stall"
+                    },
+                    "key": "stock"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "r",
+          "wants",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "r"
+                    },
+                    "key": "wants"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "r",
+          "holds_ware",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "r"
+                      },
+                      "key": "holds_ware"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "town",
+          "external_outflux",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "town"
+                      },
+                      "key": "external_outflux"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "stall"
+                      },
+                      "key": "ask_price"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "r",
+          "buy_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "mt_depart",
+      "batch": false,
+      "comment": "A sold-out stall is struck and the trader departs (marked departed, remembered).",
+      "match": [
+        [
+          "town",
+          "has_trader",
+          "trader"
+        ],
+        [
+          "trader",
+          "has_stall",
+          "stall"
+        ]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "stall"
+              },
+              "key": "stock"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 0.5
+        }
+      },
+      "effects": [
+        [
+          "del_edge",
+          "trader",
+          "has_stall",
+          "stall"
+        ],
+        [
+          "set_attr",
+          "trader",
+          "departed",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

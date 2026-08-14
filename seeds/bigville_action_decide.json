@@ -1,0 +1,1853 @@
+{
+  "id": "bigville_action_decide",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R77 (block 396000): OBSERVED-DEMAND PRODUCTION on the data-driven world. po_observe forms the maker's beliefs from OBSERVED signals (adaptive expectation, harvest discounted by his unsold glut); pd_decide is a COLLAPSE over the ACTION catalog -- among his own trade's actions, Argmax by expected demand of the output -- setting will_make + want_qty (a run sized by demand). Ports the produce float world's belief/decide/run/glut onto bigville_world + the general engine; the produce float world is retired.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "pd_decide",
+      "batch": false,
+      "comment": "THE MAKER DECIDES WHAT TO MAKE (a collapse over the ACTION catalog): among the actions of his OWN trade, he picks the one whose output he believes will SELL BEST -- expected demand = base + weight * his belief about that output's demand driver (harvest/building/storage). He sets will_make and want_qty (a run sized by that demand). A smith who believes the harvest will be big makes SCYTHES; one who expects a building boom makes NAILS. Makers DIVERGE on their beliefs.",
+      "match": [
+        [
+          "town",
+          "has_actor",
+          "maker"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "decide_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "maker",
+          "will_make",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "ActionSpec"
+                },
+                "var_name": "sp",
+                "value": {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "sp"
+                      },
+                      "key": "requires"
+                    },
+                    "b": {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "role"
+                    }
+                  },
+                  "then": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "sp"
+                            },
+                            "key": "out_base_demand"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "sp"
+                                },
+                                "key": "out_demand_weight"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "IfThenElse",
+                            "cond": {
+                              "type": "Eq",
+                              "a": {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "sp"
+                                },
+                                "key": "out_driver"
+                              },
+                              "b": {
+                                "type": "Lit",
+                                "value": "harvest"
+                              }
+                            },
+                            "then": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "maker"
+                                  },
+                                  "key": "belief_harvest"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "other": {
+                              "type": "IfThenElse",
+                              "cond": {
+                                "type": "Eq",
+                                "a": {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "sp"
+                                  },
+                                  "key": "out_driver"
+                                },
+                                "b": {
+                                  "type": "Lit",
+                                  "value": "building"
+                                }
+                              },
+                              "then": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "maker"
+                                    },
+                                    "key": "belief_building"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "other": {
+                                "type": "IfThenElse",
+                                "cond": {
+                                  "type": "Eq",
+                                  "a": {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "sp"
+                                    },
+                                    "key": "out_driver"
+                                  },
+                                  "b": {
+                                    "type": "Lit",
+                                    "value": "storage"
+                                  }
+                                },
+                                "then": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "maker"
+                                      },
+                                      "key": "belief_storage"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                },
+                                "other": {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": -999.0
+                  }
+                }
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "want_qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 2.0
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Argmax",
+                                "source": {
+                                  "type": "NodesOfType",
+                                  "node_type": "ActionSpec"
+                                },
+                                "var_name": "sp",
+                                "value": {
+                                  "type": "IfThenElse",
+                                  "cond": {
+                                    "type": "Eq",
+                                    "a": {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "sp"
+                                      },
+                                      "key": "requires"
+                                    },
+                                    "b": {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "maker"
+                                      },
+                                      "key": "role"
+                                    }
+                                  },
+                                  "then": {
+                                    "type": "Plus",
+                                    "items": [
+                                      {
+                                        "type": "Plus",
+                                        "items": [
+                                          {
+                                            "type": "Attr",
+                                            "node": {
+                                              "type": "Var",
+                                              "name": "sp"
+                                            },
+                                            "key": "out_base_demand"
+                                          },
+                                          {
+                                            "type": "Lit",
+                                            "value": 0.0
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Times",
+                                        "items": [
+                                          {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "sp"
+                                                },
+                                                "key": "out_demand_weight"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "IfThenElse",
+                                            "cond": {
+                                              "type": "Eq",
+                                              "a": {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "sp"
+                                                },
+                                                "key": "out_driver"
+                                              },
+                                              "b": {
+                                                "type": "Lit",
+                                                "value": "harvest"
+                                              }
+                                            },
+                                            "then": {
+                                              "type": "Plus",
+                                              "items": [
+                                                {
+                                                  "type": "Attr",
+                                                  "node": {
+                                                    "type": "Var",
+                                                    "name": "maker"
+                                                  },
+                                                  "key": "belief_harvest"
+                                                },
+                                                {
+                                                  "type": "Lit",
+                                                  "value": 0.0
+                                                }
+                                              ]
+                                            },
+                                            "other": {
+                                              "type": "IfThenElse",
+                                              "cond": {
+                                                "type": "Eq",
+                                                "a": {
+                                                  "type": "Attr",
+                                                  "node": {
+                                                    "type": "Var",
+                                                    "name": "sp"
+                                                  },
+                                                  "key": "out_driver"
+                                                },
+                                                "b": {
+                                                  "type": "Lit",
+                                                  "value": "building"
+                                                }
+                                              },
+                                              "then": {
+                                                "type": "Plus",
+                                                "items": [
+                                                  {
+                                                    "type": "Attr",
+                                                    "node": {
+                                                      "type": "Var",
+                                                      "name": "maker"
+                                                    },
+                                                    "key": "belief_building"
+                                                  },
+                                                  {
+                                                    "type": "Lit",
+                                                    "value": 0.0
+                                                  }
+                                                ]
+                                              },
+                                              "other": {
+                                                "type": "IfThenElse",
+                                                "cond": {
+                                                  "type": "Eq",
+                                                  "a": {
+                                                    "type": "Attr",
+                                                    "node": {
+                                                      "type": "Var",
+                                                      "name": "sp"
+                                                    },
+                                                    "key": "out_driver"
+                                                  },
+                                                  "b": {
+                                                    "type": "Lit",
+                                                    "value": "storage"
+                                                  }
+                                                },
+                                                "then": {
+                                                  "type": "Plus",
+                                                  "items": [
+                                                    {
+                                                      "type": "Attr",
+                                                      "node": {
+                                                        "type": "Var",
+                                                        "name": "maker"
+                                                      },
+                                                      "key": "belief_storage"
+                                                    },
+                                                    {
+                                                      "type": "Lit",
+                                                      "value": 0.0
+                                                    }
+                                                  ]
+                                                },
+                                                "other": {
+                                                  "type": "Lit",
+                                                  "value": 0.0
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "other": {
+                                    "type": "Lit",
+                                    "value": -999.0
+                                  }
+                                }
+                              },
+                              "key": "out_base_demand"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Argmax",
+                                    "source": {
+                                      "type": "NodesOfType",
+                                      "node_type": "ActionSpec"
+                                    },
+                                    "var_name": "sp",
+                                    "value": {
+                                      "type": "IfThenElse",
+                                      "cond": {
+                                        "type": "Eq",
+                                        "a": {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "sp"
+                                          },
+                                          "key": "requires"
+                                        },
+                                        "b": {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "maker"
+                                          },
+                                          "key": "role"
+                                        }
+                                      },
+                                      "then": {
+                                        "type": "Plus",
+                                        "items": [
+                                          {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "sp"
+                                                },
+                                                "key": "out_base_demand"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "Times",
+                                            "items": [
+                                              {
+                                                "type": "Plus",
+                                                "items": [
+                                                  {
+                                                    "type": "Attr",
+                                                    "node": {
+                                                      "type": "Var",
+                                                      "name": "sp"
+                                                    },
+                                                    "key": "out_demand_weight"
+                                                  },
+                                                  {
+                                                    "type": "Lit",
+                                                    "value": 0.0
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "type": "IfThenElse",
+                                                "cond": {
+                                                  "type": "Eq",
+                                                  "a": {
+                                                    "type": "Attr",
+                                                    "node": {
+                                                      "type": "Var",
+                                                      "name": "sp"
+                                                    },
+                                                    "key": "out_driver"
+                                                  },
+                                                  "b": {
+                                                    "type": "Lit",
+                                                    "value": "harvest"
+                                                  }
+                                                },
+                                                "then": {
+                                                  "type": "Plus",
+                                                  "items": [
+                                                    {
+                                                      "type": "Attr",
+                                                      "node": {
+                                                        "type": "Var",
+                                                        "name": "maker"
+                                                      },
+                                                      "key": "belief_harvest"
+                                                    },
+                                                    {
+                                                      "type": "Lit",
+                                                      "value": 0.0
+                                                    }
+                                                  ]
+                                                },
+                                                "other": {
+                                                  "type": "IfThenElse",
+                                                  "cond": {
+                                                    "type": "Eq",
+                                                    "a": {
+                                                      "type": "Attr",
+                                                      "node": {
+                                                        "type": "Var",
+                                                        "name": "sp"
+                                                      },
+                                                      "key": "out_driver"
+                                                    },
+                                                    "b": {
+                                                      "type": "Lit",
+                                                      "value": "building"
+                                                    }
+                                                  },
+                                                  "then": {
+                                                    "type": "Plus",
+                                                    "items": [
+                                                      {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "maker"
+                                                        },
+                                                        "key": "belief_building"
+                                                      },
+                                                      {
+                                                        "type": "Lit",
+                                                        "value": 0.0
+                                                      }
+                                                    ]
+                                                  },
+                                                  "other": {
+                                                    "type": "IfThenElse",
+                                                    "cond": {
+                                                      "type": "Eq",
+                                                      "a": {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "sp"
+                                                        },
+                                                        "key": "out_driver"
+                                                      },
+                                                      "b": {
+                                                        "type": "Lit",
+                                                        "value": "storage"
+                                                      }
+                                                    },
+                                                    "then": {
+                                                      "type": "Plus",
+                                                      "items": [
+                                                        {
+                                                          "type": "Attr",
+                                                          "node": {
+                                                            "type": "Var",
+                                                            "name": "maker"
+                                                          },
+                                                          "key": "belief_storage"
+                                                        },
+                                                        {
+                                                          "type": "Lit",
+                                                          "value": 0.0
+                                                        }
+                                                      ]
+                                                    },
+                                                    "other": {
+                                                      "type": "Lit",
+                                                      "value": 0.0
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "other": {
+                                        "type": "Lit",
+                                        "value": -999.0
+                                      }
+                                    }
+                                  },
+                                  "key": "out_demand_weight"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            {
+                              "type": "IfThenElse",
+                              "cond": {
+                                "type": "Eq",
+                                "a": {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Argmax",
+                                    "source": {
+                                      "type": "NodesOfType",
+                                      "node_type": "ActionSpec"
+                                    },
+                                    "var_name": "sp",
+                                    "value": {
+                                      "type": "IfThenElse",
+                                      "cond": {
+                                        "type": "Eq",
+                                        "a": {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "sp"
+                                          },
+                                          "key": "requires"
+                                        },
+                                        "b": {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "maker"
+                                          },
+                                          "key": "role"
+                                        }
+                                      },
+                                      "then": {
+                                        "type": "Plus",
+                                        "items": [
+                                          {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "sp"
+                                                },
+                                                "key": "out_base_demand"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "Times",
+                                            "items": [
+                                              {
+                                                "type": "Plus",
+                                                "items": [
+                                                  {
+                                                    "type": "Attr",
+                                                    "node": {
+                                                      "type": "Var",
+                                                      "name": "sp"
+                                                    },
+                                                    "key": "out_demand_weight"
+                                                  },
+                                                  {
+                                                    "type": "Lit",
+                                                    "value": 0.0
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "type": "IfThenElse",
+                                                "cond": {
+                                                  "type": "Eq",
+                                                  "a": {
+                                                    "type": "Attr",
+                                                    "node": {
+                                                      "type": "Var",
+                                                      "name": "sp"
+                                                    },
+                                                    "key": "out_driver"
+                                                  },
+                                                  "b": {
+                                                    "type": "Lit",
+                                                    "value": "harvest"
+                                                  }
+                                                },
+                                                "then": {
+                                                  "type": "Plus",
+                                                  "items": [
+                                                    {
+                                                      "type": "Attr",
+                                                      "node": {
+                                                        "type": "Var",
+                                                        "name": "maker"
+                                                      },
+                                                      "key": "belief_harvest"
+                                                    },
+                                                    {
+                                                      "type": "Lit",
+                                                      "value": 0.0
+                                                    }
+                                                  ]
+                                                },
+                                                "other": {
+                                                  "type": "IfThenElse",
+                                                  "cond": {
+                                                    "type": "Eq",
+                                                    "a": {
+                                                      "type": "Attr",
+                                                      "node": {
+                                                        "type": "Var",
+                                                        "name": "sp"
+                                                      },
+                                                      "key": "out_driver"
+                                                    },
+                                                    "b": {
+                                                      "type": "Lit",
+                                                      "value": "building"
+                                                    }
+                                                  },
+                                                  "then": {
+                                                    "type": "Plus",
+                                                    "items": [
+                                                      {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "maker"
+                                                        },
+                                                        "key": "belief_building"
+                                                      },
+                                                      {
+                                                        "type": "Lit",
+                                                        "value": 0.0
+                                                      }
+                                                    ]
+                                                  },
+                                                  "other": {
+                                                    "type": "IfThenElse",
+                                                    "cond": {
+                                                      "type": "Eq",
+                                                      "a": {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "sp"
+                                                        },
+                                                        "key": "out_driver"
+                                                      },
+                                                      "b": {
+                                                        "type": "Lit",
+                                                        "value": "storage"
+                                                      }
+                                                    },
+                                                    "then": {
+                                                      "type": "Plus",
+                                                      "items": [
+                                                        {
+                                                          "type": "Attr",
+                                                          "node": {
+                                                            "type": "Var",
+                                                            "name": "maker"
+                                                          },
+                                                          "key": "belief_storage"
+                                                        },
+                                                        {
+                                                          "type": "Lit",
+                                                          "value": 0.0
+                                                        }
+                                                      ]
+                                                    },
+                                                    "other": {
+                                                      "type": "Lit",
+                                                      "value": 0.0
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "other": {
+                                        "type": "Lit",
+                                        "value": -999.0
+                                      }
+                                    }
+                                  },
+                                  "key": "out_driver"
+                                },
+                                "b": {
+                                  "type": "Lit",
+                                  "value": "harvest"
+                                }
+                              },
+                              "then": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "maker"
+                                    },
+                                    "key": "belief_harvest"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "other": {
+                                "type": "IfThenElse",
+                                "cond": {
+                                  "type": "Eq",
+                                  "a": {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Argmax",
+                                      "source": {
+                                        "type": "NodesOfType",
+                                        "node_type": "ActionSpec"
+                                      },
+                                      "var_name": "sp",
+                                      "value": {
+                                        "type": "IfThenElse",
+                                        "cond": {
+                                          "type": "Eq",
+                                          "a": {
+                                            "type": "Attr",
+                                            "node": {
+                                              "type": "Var",
+                                              "name": "sp"
+                                            },
+                                            "key": "requires"
+                                          },
+                                          "b": {
+                                            "type": "Attr",
+                                            "node": {
+                                              "type": "Var",
+                                              "name": "maker"
+                                            },
+                                            "key": "role"
+                                          }
+                                        },
+                                        "then": {
+                                          "type": "Plus",
+                                          "items": [
+                                            {
+                                              "type": "Plus",
+                                              "items": [
+                                                {
+                                                  "type": "Attr",
+                                                  "node": {
+                                                    "type": "Var",
+                                                    "name": "sp"
+                                                  },
+                                                  "key": "out_base_demand"
+                                                },
+                                                {
+                                                  "type": "Lit",
+                                                  "value": 0.0
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "Times",
+                                              "items": [
+                                                {
+                                                  "type": "Plus",
+                                                  "items": [
+                                                    {
+                                                      "type": "Attr",
+                                                      "node": {
+                                                        "type": "Var",
+                                                        "name": "sp"
+                                                      },
+                                                      "key": "out_demand_weight"
+                                                    },
+                                                    {
+                                                      "type": "Lit",
+                                                      "value": 0.0
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "IfThenElse",
+                                                  "cond": {
+                                                    "type": "Eq",
+                                                    "a": {
+                                                      "type": "Attr",
+                                                      "node": {
+                                                        "type": "Var",
+                                                        "name": "sp"
+                                                      },
+                                                      "key": "out_driver"
+                                                    },
+                                                    "b": {
+                                                      "type": "Lit",
+                                                      "value": "harvest"
+                                                    }
+                                                  },
+                                                  "then": {
+                                                    "type": "Plus",
+                                                    "items": [
+                                                      {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "maker"
+                                                        },
+                                                        "key": "belief_harvest"
+                                                      },
+                                                      {
+                                                        "type": "Lit",
+                                                        "value": 0.0
+                                                      }
+                                                    ]
+                                                  },
+                                                  "other": {
+                                                    "type": "IfThenElse",
+                                                    "cond": {
+                                                      "type": "Eq",
+                                                      "a": {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "sp"
+                                                        },
+                                                        "key": "out_driver"
+                                                      },
+                                                      "b": {
+                                                        "type": "Lit",
+                                                        "value": "building"
+                                                      }
+                                                    },
+                                                    "then": {
+                                                      "type": "Plus",
+                                                      "items": [
+                                                        {
+                                                          "type": "Attr",
+                                                          "node": {
+                                                            "type": "Var",
+                                                            "name": "maker"
+                                                          },
+                                                          "key": "belief_building"
+                                                        },
+                                                        {
+                                                          "type": "Lit",
+                                                          "value": 0.0
+                                                        }
+                                                      ]
+                                                    },
+                                                    "other": {
+                                                      "type": "IfThenElse",
+                                                      "cond": {
+                                                        "type": "Eq",
+                                                        "a": {
+                                                          "type": "Attr",
+                                                          "node": {
+                                                            "type": "Var",
+                                                            "name": "sp"
+                                                          },
+                                                          "key": "out_driver"
+                                                        },
+                                                        "b": {
+                                                          "type": "Lit",
+                                                          "value": "storage"
+                                                        }
+                                                      },
+                                                      "then": {
+                                                        "type": "Plus",
+                                                        "items": [
+                                                          {
+                                                            "type": "Attr",
+                                                            "node": {
+                                                              "type": "Var",
+                                                              "name": "maker"
+                                                            },
+                                                            "key": "belief_storage"
+                                                          },
+                                                          {
+                                                            "type": "Lit",
+                                                            "value": 0.0
+                                                          }
+                                                        ]
+                                                      },
+                                                      "other": {
+                                                        "type": "Lit",
+                                                        "value": 0.0
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        "other": {
+                                          "type": "Lit",
+                                          "value": -999.0
+                                        }
+                                      }
+                                    },
+                                    "key": "out_driver"
+                                  },
+                                  "b": {
+                                    "type": "Lit",
+                                    "value": "building"
+                                  }
+                                },
+                                "then": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "maker"
+                                      },
+                                      "key": "belief_building"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                },
+                                "other": {
+                                  "type": "IfThenElse",
+                                  "cond": {
+                                    "type": "Eq",
+                                    "a": {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Argmax",
+                                        "source": {
+                                          "type": "NodesOfType",
+                                          "node_type": "ActionSpec"
+                                        },
+                                        "var_name": "sp",
+                                        "value": {
+                                          "type": "IfThenElse",
+                                          "cond": {
+                                            "type": "Eq",
+                                            "a": {
+                                              "type": "Attr",
+                                              "node": {
+                                                "type": "Var",
+                                                "name": "sp"
+                                              },
+                                              "key": "requires"
+                                            },
+                                            "b": {
+                                              "type": "Attr",
+                                              "node": {
+                                                "type": "Var",
+                                                "name": "maker"
+                                              },
+                                              "key": "role"
+                                            }
+                                          },
+                                          "then": {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Plus",
+                                                "items": [
+                                                  {
+                                                    "type": "Attr",
+                                                    "node": {
+                                                      "type": "Var",
+                                                      "name": "sp"
+                                                    },
+                                                    "key": "out_base_demand"
+                                                  },
+                                                  {
+                                                    "type": "Lit",
+                                                    "value": 0.0
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "type": "Times",
+                                                "items": [
+                                                  {
+                                                    "type": "Plus",
+                                                    "items": [
+                                                      {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "sp"
+                                                        },
+                                                        "key": "out_demand_weight"
+                                                      },
+                                                      {
+                                                        "type": "Lit",
+                                                        "value": 0.0
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "IfThenElse",
+                                                    "cond": {
+                                                      "type": "Eq",
+                                                      "a": {
+                                                        "type": "Attr",
+                                                        "node": {
+                                                          "type": "Var",
+                                                          "name": "sp"
+                                                        },
+                                                        "key": "out_driver"
+                                                      },
+                                                      "b": {
+                                                        "type": "Lit",
+                                                        "value": "harvest"
+                                                      }
+                                                    },
+                                                    "then": {
+                                                      "type": "Plus",
+                                                      "items": [
+                                                        {
+                                                          "type": "Attr",
+                                                          "node": {
+                                                            "type": "Var",
+                                                            "name": "maker"
+                                                          },
+                                                          "key": "belief_harvest"
+                                                        },
+                                                        {
+                                                          "type": "Lit",
+                                                          "value": 0.0
+                                                        }
+                                                      ]
+                                                    },
+                                                    "other": {
+                                                      "type": "IfThenElse",
+                                                      "cond": {
+                                                        "type": "Eq",
+                                                        "a": {
+                                                          "type": "Attr",
+                                                          "node": {
+                                                            "type": "Var",
+                                                            "name": "sp"
+                                                          },
+                                                          "key": "out_driver"
+                                                        },
+                                                        "b": {
+                                                          "type": "Lit",
+                                                          "value": "building"
+                                                        }
+                                                      },
+                                                      "then": {
+                                                        "type": "Plus",
+                                                        "items": [
+                                                          {
+                                                            "type": "Attr",
+                                                            "node": {
+                                                              "type": "Var",
+                                                              "name": "maker"
+                                                            },
+                                                            "key": "belief_building"
+                                                          },
+                                                          {
+                                                            "type": "Lit",
+                                                            "value": 0.0
+                                                          }
+                                                        ]
+                                                      },
+                                                      "other": {
+                                                        "type": "IfThenElse",
+                                                        "cond": {
+                                                          "type": "Eq",
+                                                          "a": {
+                                                            "type": "Attr",
+                                                            "node": {
+                                                              "type": "Var",
+                                                              "name": "sp"
+                                                            },
+                                                            "key": "out_driver"
+                                                          },
+                                                          "b": {
+                                                            "type": "Lit",
+                                                            "value": "storage"
+                                                          }
+                                                        },
+                                                        "then": {
+                                                          "type": "Plus",
+                                                          "items": [
+                                                            {
+                                                              "type": "Attr",
+                                                              "node": {
+                                                                "type": "Var",
+                                                                "name": "maker"
+                                                              },
+                                                              "key": "belief_storage"
+                                                            },
+                                                            {
+                                                              "type": "Lit",
+                                                              "value": 0.0
+                                                            }
+                                                          ]
+                                                        },
+                                                        "other": {
+                                                          "type": "Lit",
+                                                          "value": 0.0
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          "other": {
+                                            "type": "Lit",
+                                            "value": -999.0
+                                          }
+                                        }
+                                      },
+                                      "key": "out_driver"
+                                    },
+                                    "b": {
+                                      "type": "Lit",
+                                      "value": "storage"
+                                    }
+                                  },
+                                  "then": {
+                                    "type": "Plus",
+                                    "items": [
+                                      {
+                                        "type": "Attr",
+                                        "node": {
+                                          "type": "Var",
+                                          "name": "maker"
+                                        },
+                                        "key": "belief_storage"
+                                      },
+                                      {
+                                        "type": "Lit",
+                                        "value": 0.0
+                                      }
+                                    ]
+                                  },
+                                  "other": {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "last_driver",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "ActionSpec"
+                },
+                "var_name": "sp",
+                "value": {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "sp"
+                      },
+                      "key": "requires"
+                    },
+                    "b": {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "role"
+                    }
+                  },
+                  "then": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "sp"
+                            },
+                            "key": "out_base_demand"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "sp"
+                                },
+                                "key": "out_demand_weight"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "IfThenElse",
+                            "cond": {
+                              "type": "Eq",
+                              "a": {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "sp"
+                                },
+                                "key": "out_driver"
+                              },
+                              "b": {
+                                "type": "Lit",
+                                "value": "harvest"
+                              }
+                            },
+                            "then": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "maker"
+                                  },
+                                  "key": "belief_harvest"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "other": {
+                              "type": "IfThenElse",
+                              "cond": {
+                                "type": "Eq",
+                                "a": {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "sp"
+                                  },
+                                  "key": "out_driver"
+                                },
+                                "b": {
+                                  "type": "Lit",
+                                  "value": "building"
+                                }
+                              },
+                              "then": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "maker"
+                                    },
+                                    "key": "belief_building"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "other": {
+                                "type": "IfThenElse",
+                                "cond": {
+                                  "type": "Eq",
+                                  "a": {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "sp"
+                                    },
+                                    "key": "out_driver"
+                                  },
+                                  "b": {
+                                    "type": "Lit",
+                                    "value": "storage"
+                                  }
+                                },
+                                "then": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "maker"
+                                      },
+                                      "key": "belief_storage"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                },
+                                "other": {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": -999.0
+                  }
+                }
+              },
+              "key": "out_driver"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "decide_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "po_observe",
+      "batch": false,
+      "comment": "BELIEF FROM OBSERVATION (not hand-set): the maker updates his beliefs toward what he OBSERVED (town.observed_*) by adaptive expectation (belief += 0.6*(signal - belief)); the HARVEST signal is discounted by his own UNSOLD glut (unsold*0.05) -- a pile of unsold scythes cools him.",
+      "match": [
+        [
+          "town",
+          "has_actor",
+          "maker"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "observe_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "maker",
+          "belief_harvest",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "belief_harvest"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 0.6
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Max",
+                        "items": [
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          },
+                          {
+                            "type": "Minus",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "town"
+                                  },
+                                  "key": "observed_harvest"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Times",
+                              "items": [
+                                {
+                                  "type": "Lit",
+                                  "value": 0.05
+                                },
+                                {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "maker"
+                                      },
+                                      "key": "unsold"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "maker"
+                            },
+                            "key": "belief_harvest"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "belief_building",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "belief_building"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 0.6
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "town"
+                            },
+                            "key": "observed_building"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "maker"
+                            },
+                            "key": "belief_building"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "belief_storage",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "belief_storage"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 0.6
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "town"
+                            },
+                            "key": "observed_storage"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "maker"
+                            },
+                            "key": "belief_storage"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "observe_armed",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

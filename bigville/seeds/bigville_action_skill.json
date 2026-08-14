@@ -1,0 +1,532 @@
+{
+  "id": "bigville_action_skill",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R85 (block 411000): APPRENTICESHIP -- skill is built under a master, not read from a book. Every recipe has a min_skill floor (data, MIN_SKILL); basic work is 0.0 (an apprentice can attempt it badly) but master/specialist work (a plough, a wagon, a fine gown, smelting) needs real skill. sk_apprentice raises an apprentice's skill toward their master's a little each period, until they cross the floor and can make the work. Knowing a recipe (reading it) is necessary but not sufficient -- the hand needs the training. ed_school raises a pupil's literacy + general capability toward their teacher's each period (if they can learn) -- reading/writing and education are learned at school, class-graded and low for most of the village.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "sk_apprentice",
+      "batch": false,
+      "comment": "APPRENTICESHIP: while a learner is apprenticed to a master and less skilled than them, their skill rises toward the master's by APPR_RATE (0.05) once each period. Over several periods an apprentice crosses a recipe's min_skill floor and can finally make the master's work -- you build the hand, you do not read it. Bounded by the master's skill (you learn up to your master).",
+      "match": [
+        [
+          "town",
+          "has_actor",
+          "learner"
+        ],
+        [
+          "learner",
+          "apprenticed_to",
+          "master"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "learner"
+                  },
+                  "key": "skill"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "master"
+                  },
+                  "key": "skill"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "learner"
+                  },
+                  "key": "appr_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "period"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "learner",
+          "skill",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "master"
+                      },
+                      "key": "skill"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "learner"
+                          },
+                          "key": "skill"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.05
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "learner",
+          "appr_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "period"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "ed_school",
+      "batch": false,
+      "comment": "SCHOOLING: a pupil who ATTENDS a teacher and CAN LEARN (learn>0) has their literacy and general capability raised toward the teacher's, by 0.1*learn once each period. A labouring child (low literacy) who goes to school becomes functionally literate, then -- under an educated teacher -- can read the council laws and keep accounts. Bounded by the teacher; a pupil who cannot learn (learn=0) never progresses.",
+      "match": [
+        [
+          "town",
+          "has_actor",
+          "pupil"
+        ],
+        [
+          "pupil",
+          "attends",
+          "teacher"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "pupil"
+                  },
+                  "key": "learn"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "pupil"
+                  },
+                  "key": "school_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "period"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Lt",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "pupil"
+                      },
+                      "key": "literacy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "teacher"
+                      },
+                      "key": "literacy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "Lt",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "pupil"
+                      },
+                      "key": "capability"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "teacher"
+                      },
+                      "key": "capability"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "pupil",
+          "literacy",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "teacher"
+                      },
+                      "key": "literacy"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "pupil"
+                          },
+                          "key": "literacy"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.1
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "pupil"
+                              },
+                              "key": "learn"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "pupil",
+          "capability",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "teacher"
+                      },
+                      "key": "capability"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "pupil"
+                          },
+                          "key": "capability"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.1
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "pupil"
+                              },
+                              "key": "learn"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "pupil",
+          "school_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "period"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

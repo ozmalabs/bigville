@@ -1,0 +1,782 @@
+{
+  "id": "bigville_clerk_treasurer",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R46 (block 345000): the CLERK-TREASURER -- a PAID council office whose job is to KEEP RECORDS and COLLECT TAXES. Money is not magic: the treasury/bank only gains coin because someone COLLECTS it (ct_collect; no clerk in office -> the treasury stays flat), and every move is WRITTEN into a Ledger (recorded_balance + a LedgerEntry per transaction -- someone has to do the books). The clerk is PAID a salary from the treasury, itself a RECORDED expense (ct_pay_clerk). RECONCILIATION (ct_reconcile) checks the written record against the actual coin: an honest, diligent clerk reconciles to 0; an UNRECORDED transaction (actual > recorded) or EMBEZZLEMENT (the clerk records the full tax but banks only honesty*tax, so recorded > actual) surfaces as a non-zero discrepancy -- the books do not balance themselves. Fiscal sibling of the Constable (339000): a public function is an office-holder's JOB, not an automatic effect.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ct_collect",
+      "batch": false,
+      "comment": "THE CLERK-TREASURER collects a resident's tax AND writes the record -- money does not magically appear: with no clerk in office this rule never fires and the treasury stays flat. The resident pays the full assessed tax; only honesty*tax reaches the treasury (a dishonest clerk pockets the rest); the clerk RECORDS the full amount (ledger.recorded += tax_due) and files a LedgerEntry. So a dishonest clerk makes recorded > actual -- the gap the reconciliation will catch.",
+      "match": [
+        [
+          "town",
+          "has_clerk",
+          "clerk"
+        ],
+        [
+          "town",
+          "has_treasury",
+          "treasury"
+        ],
+        [
+          "treasury",
+          "has_ledger",
+          "ledger"
+        ],
+        [
+          "town",
+          "has_resident",
+          "r"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "tax_due"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "r"
+                    },
+                    "key": "tax_collected"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "r"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "r"
+                    },
+                    "key": "tax_due"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "treasury",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "treasury"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "r"
+                          },
+                          "key": "tax_due"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "clerk"
+                          },
+                          "key": "honesty"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "clerk",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "clerk"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "r"
+                          },
+                          "key": "tax_due"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Lit",
+                        "value": 1.0
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "clerk"
+                            },
+                            "key": "honesty"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "ledger",
+          "recorded",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "ledger"
+                      },
+                      "key": "recorded"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "r"
+                      },
+                      "key": "tax_due"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "entry",
+          "LedgerEntry",
+          {
+            "kind": "tax",
+            "amount": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "ledger",
+          "has_entry",
+          "entry"
+        ],
+        [
+          "set_attr",
+          "entry",
+          "amount",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "tax_due"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "entry",
+          "subject",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "r"
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "r",
+          "tax_collected",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "ct_pay_clerk",
+      "batch": false,
+      "comment": "The clerk is a PAID council position: the salary is drawn from the treasury and, being a RECORDED expense (ledger.recorded -= salary + a LedgerEntry), it keeps the books balanced -- a legitimate outflow, not a discrepancy.",
+      "match": [
+        [
+          "town",
+          "has_clerk",
+          "clerk"
+        ],
+        [
+          "town",
+          "has_treasury",
+          "treasury"
+        ],
+        [
+          "treasury",
+          "has_ledger",
+          "ledger"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "treasury"
+              },
+              "key": "pay_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "treasury",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "treasury"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "clerk"
+                    },
+                    "key": "salary"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "clerk",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "clerk"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "clerk"
+                      },
+                      "key": "salary"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "ledger",
+          "recorded",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "ledger"
+                    },
+                    "key": "recorded"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "clerk"
+                    },
+                    "key": "salary"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "add_node",
+          "e",
+          "LedgerEntry",
+          {
+            "kind": "salary",
+            "amount": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "ledger",
+          "has_entry",
+          "e"
+        ],
+        [
+          "set_attr",
+          "e",
+          "amount",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "clerk"
+                      },
+                      "key": "salary"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": -1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "treasury",
+          "pay_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "ct_reconcile",
+      "batch": false,
+      "comment": "RECONCILIATION: the written record vs the actual coin. discrepancy = treasury.coin - ledger.recorded; reconciled iff 0. Every legitimate move (tax in, salary out) is recorded, so an honest, diligent clerk reconciles to 0. An unrecorded transaction (actual > recorded) or embezzlement (recorded > actual) shows up as a non-zero discrepancy -- the books do not balance themselves, and the gap is found.",
+      "match": [
+        [
+          "town",
+          "has_treasury",
+          "treasury"
+        ],
+        [
+          "treasury",
+          "has_ledger",
+          "ledger"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "treasury"
+              },
+              "key": "reconcile_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "treasury",
+          "discrepancy",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "treasury"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "ledger"
+                    },
+                    "key": "recorded"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "treasury",
+          "reconciled",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Eq",
+                "a": {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "treasury"
+                        },
+                        "key": "coin"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "ledger"
+                        },
+                        "key": "recorded"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "treasury",
+          "reconcile_armed",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

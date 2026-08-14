@@ -1,0 +1,1083 @@
+{
+  "seed": "bigville_trade",
+  "version": "2.2.0",
+  "comment": "TRADE IS TWO ACTIONS. A buyer PROPOSES an Offer to a seller (from its expectation of who has the good -- bc_do_acquire); the SELLER decides to accept (tr_accept), decline (tr_decline), or -- if it hasn't the good -- the buyer is SURPRISED and its expectation weakens (tr_surprise). Expectation-driven, co-location NOT required: you can ask the baker in the street. Two parties, two decisions. A trade is CO-LOCATED (buyer + seller at the same cell) -- the agents run on the map; you go to whom you trade with. A sale needs a present, conscious, willing person co-located with the buyer. Opening hours are a CONSTRUCT (the seller's routine), NOT an engine gate -- the baker 'shut' means gone home / asleep, so the buyer finds no one to deal with.",
+  "rules": [
+    {
+      "name": "tr_accept",
+      "batch": false,
+      "comment": "Trade action 2 of 2 -- the SELLER'S DECISION: an Offer is made to this seller for a good it HOLDS (has_good, qty>=1), the buyer can pay the seller's price, and the seller is willing -> it SELLS: coin<->good transfer, offer accepted. The seller can decline (tr_decline). Co-location NOT required -- you can sell to someone who asked you in the street. The buyer's proposal is a separate action (bc_do_acquire). Trade is two decisions by two parties, not one. CO-LOCATED: buyer and seller must be at the SAME place -- you trade with a person where they are (you go to them). Not the shop building; the person's location. The seller must be a PRESENT, CONSCIOUS person (not asleep/collapsed) -- a sale is done by a person who is there and awake. OPENING HOURS ARE A CONSTRUCT (the seller's routine of being at the shop by day, home asleep by night), not an engine gate.",
+      "match": [
+        [
+          "buyer",
+          "is_at",
+          "cell"
+        ],
+        [
+          "seller",
+          "is_at",
+          "cell"
+        ],
+        [
+          "buyer",
+          "offers",
+          "offer"
+        ],
+        [
+          "offer",
+          "to",
+          "seller"
+        ],
+        [
+          "seller",
+          "has_good",
+          "hg"
+        ],
+        [
+          "buyer",
+          "has_good",
+          "big"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "status"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "hg"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "hg"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "big"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "buyer"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "seller"
+                  },
+                  "key": "sell_price"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "seller"
+                  },
+                  "key": "sell_willing"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "seller"
+                      },
+                      "key": "asleep"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "seller"
+                      },
+                      "key": "collapsed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "buyer",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "buyer"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "seller"
+                    },
+                    "key": "sell_price"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "seller",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "seller"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "seller"
+                      },
+                      "key": "sell_price"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "hg",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "hg"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "big",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "big"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "offer",
+          "status",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "tr_decline",
+      "batch": false,
+      "comment": "Trade -- the SELLER declines: it HAS the good but is unwilling to sell (sell_willing=0) -- its own decision. The offer is refused (status -2); no transfer. The other party to the trade. CO-LOCATED: buyer and seller must be at the SAME place -- you trade with a person where they are (you go to them). Not the shop building; the person's location. The seller must be a PRESENT, CONSCIOUS person (not asleep/collapsed) -- a sale is done by a person who is there and awake. OPENING HOURS ARE A CONSTRUCT (the seller's routine of being at the shop by day, home asleep by night), not an engine gate.",
+      "match": [
+        [
+          "buyer",
+          "is_at",
+          "cell"
+        ],
+        [
+          "seller",
+          "is_at",
+          "cell"
+        ],
+        [
+          "buyer",
+          "offers",
+          "offer"
+        ],
+        [
+          "offer",
+          "to",
+          "seller"
+        ],
+        [
+          "seller",
+          "has_good",
+          "hg"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "status"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "hg"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "hg"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "seller"
+                  },
+                  "key": "sell_willing"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "seller"
+                      },
+                      "key": "asleep"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "seller"
+                      },
+                      "key": "collapsed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "offer",
+          "status",
+          -2.0
+        ]
+      ]
+    },
+    {
+      "name": "tr_surprise",
+      "batch": false,
+      "comment": "Trade -- EXPECTATION VIOLATED: the buyer expected this seller to have the good, but it does NOT (no has_good pile for it). The buyer is SURPRISED (mint Surprise, like be_expect_surprise) and the expectation of that source is WEAKENED (confidence down) -- so next time it expects less, or looks elsewhere. The bakery being out of bread surprises you. CO-LOCATED: buyer and seller must be at the SAME place -- you trade with a person where they are (you go to them). Not the shop building; the person's location.",
+      "match": [
+        [
+          "buyer",
+          "is_at",
+          "cell"
+        ],
+        [
+          "seller",
+          "is_at",
+          "cell"
+        ],
+        [
+          "buyer",
+          "offers",
+          "offer"
+        ],
+        [
+          "offer",
+          "to",
+          "seller"
+        ],
+        [
+          "buyer",
+          "expects",
+          "exp"
+        ],
+        [
+          "exp",
+          "source",
+          "seller"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "status"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "exp"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "seller"
+                },
+                "edge_type": "has_good",
+                "any_type": false
+              },
+              "var_name": "hg",
+              "predicate": {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "hg"
+                          },
+                          "key": "good"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "offer"
+                          },
+                          "key": "good"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Gte",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "hg"
+                          },
+                          "key": "qty"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "srp",
+          "Surprise",
+          {
+            "kind": "unmet_expectation"
+          }
+        ],
+        [
+          "add_edge",
+          "buyer",
+          "surprised",
+          "srp"
+        ],
+        [
+          "set_attr",
+          "exp",
+          "confidence",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "exp"
+                    },
+                    "key": "confidence"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 0.5
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "offer",
+          "status",
+          -1.0
+        ]
+      ]
+    },
+    {
+      "name": "tr_cant_afford",
+      "batch": false,
+      "comment": "Trade -- the buyer proposed but CANNOT AFFORD the seller's price (the seller has the good, is willing, but buyer.coin < price). Resolved as can't-afford (-3): no transfer. Poverty -- you know where the bread is and they'd sell it, but you haven't the coin. CO-LOCATED: buyer and seller must be at the SAME place -- you trade with a person where they are (you go to them). Not the shop building; the person's location.",
+      "match": [
+        [
+          "buyer",
+          "is_at",
+          "cell"
+        ],
+        [
+          "seller",
+          "is_at",
+          "cell"
+        ],
+        [
+          "buyer",
+          "offers",
+          "offer"
+        ],
+        [
+          "offer",
+          "to",
+          "seller"
+        ],
+        [
+          "seller",
+          "has_good",
+          "hg"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "status"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "hg"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "offer"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "hg"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "seller"
+                  },
+                  "key": "sell_willing"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "buyer"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "seller"
+                  },
+                  "key": "sell_price"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "offer",
+          "status",
+          -3.0
+        ]
+      ]
+    }
+  ]
+}

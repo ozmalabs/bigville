@@ -1,0 +1,206 @@
+{
+  "id": "bigville_growing",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R67 (block 383000): the SEASON drives the HARVEST. wf_growing derives the farm's weather_factor from the real seasonal weather (bigville_weather's temperature/rain/sun) -- warmth + moisture + sun make a good growing season; a cold drought makes a poor one. Closes the weather->farm hook (weather_factor had sat at the default 1.0 since 368000). Composes bigville_weather + bigville_farm; fm_harvest reads the derived factor.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "wf_growing",
+      "batch": false,
+      "comment": "THE SEASON DRIVES THE HARVEST: the farm's weather_factor is DERIVED from the real seasonal weather (temperature, rain, sun) -- crops want warmth (temp_ok peaks ~20C, 0 at 5C), moisture (some rain; drought=0) and sun. A warm sunny season with rain -> factor ~1.1; a cold drought -> ~0.3. fm_harvest already reads town.weather_factor, so this closes the weather->farm hook left open since 368000.",
+      "match": [
+        [
+          "town",
+          "has_place",
+          "farm"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Attr",
+          "node": {
+            "type": "Var",
+            "name": "farm"
+          },
+          "key": "kind"
+        },
+        "b": {
+          "type": "Lit",
+          "value": "farm"
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "town",
+          "weather_factor",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 1.3
+                },
+                {
+                  "type": "Max",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 0.1
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.2
+                        },
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Lit",
+                              "value": 0.3
+                            },
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "town"
+                                  },
+                                  "key": "sun"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Lit",
+                              "value": 0.3
+                            },
+                            {
+                              "type": "Min",
+                              "items": [
+                                {
+                                  "type": "Lit",
+                                  "value": 1.0
+                                },
+                                {
+                                  "type": "Times",
+                                  "items": [
+                                    {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "town"
+                                          },
+                                          "key": "rain"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.25
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Lit",
+                              "value": 0.4
+                            },
+                            {
+                              "type": "Min",
+                              "items": [
+                                {
+                                  "type": "Lit",
+                                  "value": 1.0
+                                },
+                                {
+                                  "type": "Max",
+                                  "items": [
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    },
+                                    {
+                                      "type": "Times",
+                                      "items": [
+                                        {
+                                          "type": "Minus",
+                                          "a": {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "town"
+                                                },
+                                                "key": "temperature"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          },
+                                          "b": {
+                                            "type": "Lit",
+                                            "value": 5.0
+                                          }
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0667
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

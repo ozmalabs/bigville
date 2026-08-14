@@ -1,0 +1,60 @@
+{
+  "id": "speech",
+  "version": "1.0.0",
+  "depends_on": [
+    "audio"
+  ],
+  "description": "AcousticSign / Lexicon / Utterance productions + ingest_speech-compatible types.",
+  "nodes": [],
+  "edges": [],
+  "productions": [
+    {
+      "src": {
+        "type": "AcousticLexicon",
+        "var": "src"
+      },
+      "edge_type": "has_entry",
+      "tgt": {
+        "type": "AcousticSign",
+        "var": "tgt"
+      },
+      "provenance": "speech:lex_entry"
+    },
+    {
+      "src": {
+        "type": "AcousticSign",
+        "var": "src"
+      },
+      "edge_type": "denotes",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "speech:sign_denotes_concept"
+    },
+    {
+      "src": {
+        "type": "Utterance",
+        "var": "src"
+      },
+      "edge_type": "from_stream",
+      "tgt": {
+        "type": "AudioStream",
+        "var": "tgt"
+      },
+      "provenance": "speech:utt_from_stream"
+    },
+    {
+      "src": {
+        "type": "Utterance",
+        "var": "src"
+      },
+      "edge_type": "heard_as",
+      "tgt": {
+        "type": "AcousticSign",
+        "var": "tgt"
+      },
+      "provenance": "speech:utt_heard_as"
+    }
+  ]
+}

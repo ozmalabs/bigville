@@ -1,0 +1,559 @@
+{
+  "id": "bigville_flow",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R38 / cognitive C5 (block 329000): INTRINSIC MOTIVATION -> FLOW -> GENERATIVITY (SDT + Csikszentmihalyi). fl_state: gap = challenge - skill; flow = max(0,1-flow_gain*gap^2) (peaks at challenge=skill); flow_state = anxiety if gap>tol, boredom if gap<-tol, else flow (three channels). fl_streak: per step flow_streak+1 while in flow else 0 (sustained engagement). fl_generate: flow_streak>=flow_needed -> mint a Creation{quality} and reset (generativity emerges from sustained flow, not one-shot). fl_worth: creation.worth = Count(appreciators) -- value is RECOGNIZED, never intrinsic. Off-flow (bored/anxious) -> no creation (falsifier).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "fl_state",
+      "batch": false,
+      "comment": "Flow = max(0,1-flow_gain*gap^2) peaks at challenge=skill; state = anxiety/boredom/flow.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "flow",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Lit",
+                    "value": 1.0
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "key": "flow_gain"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Minus",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "a"
+                                  },
+                                  "key": "challenge"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "a"
+                                  },
+                                  "key": "skill"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "type": "Minus",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "a"
+                                  },
+                                  "key": "challenge"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "a"
+                                  },
+                                  "key": "skill"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "flow_state",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Gt",
+                "a": {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "challenge"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "skill"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                },
+                "b": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "key": "tol"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": "anxiety"
+              },
+              "other": {
+                "type": "IfThenElse",
+                "cond": {
+                  "type": "Lt",
+                  "a": {
+                    "type": "Minus",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "challenge"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "a"
+                          },
+                          "key": "skill"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Lit",
+                        "value": -1.0
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "key": "tol"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "then": {
+                  "type": "Lit",
+                  "value": "boredom"
+                },
+                "other": {
+                  "type": "Lit",
+                  "value": "flow"
+                }
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "fl_streak",
+      "batch": false,
+      "comment": "Per step, flow_streak grows while in flow, resets otherwise (sustained engagement).",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "stepped_epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "town"
+              },
+              "key": "step_epoch"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "flow_streak",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "key": "flow_state"
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": "flow"
+                }
+              },
+              "then": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "flow_streak"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                ]
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "stepped_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "step_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "fl_generate",
+      "batch": false,
+      "comment": "Sustained flow (streak>=flow_needed) produces a Creation; the streak resets.",
+      "match": [
+        [
+          "town",
+          "has_agent",
+          "a"
+        ]
+      ],
+      "where": {
+        "type": "Gte",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "flow_streak"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "flow_needed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        }
+      },
+      "effects": [
+        [
+          "add_node",
+          "cr",
+          "Creation",
+          {
+            "quality": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "a"
+                    },
+                    "key": "skill"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            },
+            "worth": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "a",
+          "created",
+          "cr"
+        ],
+        [
+          "set_attr",
+          "a",
+          "flow_streak",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "fl_worth",
+      "batch": false,
+      "comment": "A creation's worth = the count of agents who appreciate (recognize) it -- value is recognition.",
+      "match": [
+        [
+          "a",
+          "created",
+          "cr"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "cr",
+          "worth",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "cr"
+                },
+                "edge_type": "appreciates"
+              }
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

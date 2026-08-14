@@ -1,0 +1,652 @@
+{
+  "id": "goal_construction",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "Parameterized goal construction as graph data: generic satisfaction proto Terms (read only from the goal node) + construction Rules that mint typed Goals and point their satisfaction_term at the shared proto. achieve-attr (dynamic attr via AttrByName) and visit (target in agent's at_position). One proto + one Rule per goal family; composes with the seeded goal_weight_term so pressure tracks the world.",
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "g"
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "target"
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "Term.Pick",
+      "attrs": {}
+    },
+    {
+      "local_id": 3,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "g"
+      }
+    },
+    {
+      "local_id": 4,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "target_attr"
+      }
+    },
+    {
+      "local_id": 5,
+      "type": "Term.AttrByName",
+      "attrs": {}
+    },
+    {
+      "local_id": 6,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "g"
+      }
+    },
+    {
+      "local_id": 7,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "target_value"
+      }
+    },
+    {
+      "local_id": 8,
+      "type": "Term.Eq",
+      "attrs": {}
+    },
+    {
+      "local_id": 9,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "g"
+      }
+    },
+    {
+      "local_id": 10,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "target"
+      }
+    },
+    {
+      "local_id": 11,
+      "type": "Term.Pick",
+      "attrs": {}
+    },
+    {
+      "local_id": 12,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "g"
+      }
+    },
+    {
+      "local_id": 13,
+      "type": "Term.InNeighbours",
+      "attrs": {
+        "edge_type": "has_goal"
+      }
+    },
+    {
+      "local_id": 14,
+      "type": "Term.Pick",
+      "attrs": {}
+    },
+    {
+      "local_id": 15,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "at_position"
+      }
+    },
+    {
+      "local_id": 16,
+      "type": "Term.In",
+      "attrs": {}
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "local": 1
+      },
+      "tgt": {
+        "local": 0
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 2
+      },
+      "tgt": {
+        "local": 1
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 4
+      },
+      "tgt": {
+        "local": 3
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 2
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 4
+      },
+      "type": "child.name",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 6
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 5
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 7
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 10
+      },
+      "tgt": {
+        "local": 9
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 11
+      },
+      "tgt": {
+        "local": 10
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 12
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 14
+      },
+      "tgt": {
+        "local": 13
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 15
+      },
+      "tgt": {
+        "local": 14
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 11
+      },
+      "type": "child.member",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 15
+      },
+      "type": "child.container",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 8
+      },
+      "type": "achieve_attr_satisfaction_proto",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 16
+      },
+      "type": "visit_satisfaction_proto",
+      "attrs": {}
+    }
+  ],
+  "productions": [],
+  "rules": [
+    {
+      "name": "create_achieve_attr_goal",
+      "match": [
+        [
+          "agent",
+          "is_a",
+          "Agent"
+        ],
+        [
+          "agent",
+          "achieve_attr_request",
+          "req"
+        ],
+        [
+          "agent",
+          "achieve_attr_satisfaction_proto",
+          "proto"
+        ],
+        [
+          "req",
+          "target",
+          "tgt"
+        ]
+      ],
+      "effects": [
+        [
+          "add_node",
+          "goal",
+          "Goal",
+          {
+            "label": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "req"
+                },
+                "key": "label"
+              }
+            },
+            "priority": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "req"
+                },
+                "key": "priority"
+              }
+            },
+            "persistent": false,
+            "target_attr": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "req"
+                },
+                "key": "target_attr"
+              }
+            },
+            "target_value": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "req"
+                },
+                "key": "target_value"
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "has_goal",
+          "goal"
+        ],
+        [
+          "add_edge",
+          "goal",
+          "target",
+          "tgt"
+        ],
+        [
+          "add_edge",
+          "goal",
+          "satisfaction_term",
+          "proto"
+        ],
+        [
+          "del_edge",
+          "agent",
+          "achieve_attr_request",
+          "req"
+        ]
+      ]
+    },
+    {
+      "name": "create_visit_goal",
+      "match": [
+        [
+          "agent",
+          "is_a",
+          "Agent"
+        ],
+        [
+          "agent",
+          "visit_request",
+          "req"
+        ],
+        [
+          "agent",
+          "visit_satisfaction_proto",
+          "proto"
+        ],
+        [
+          "req",
+          "target",
+          "tgt"
+        ]
+      ],
+      "effects": [
+        [
+          "add_node",
+          "goal",
+          "Goal",
+          {
+            "label": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "req"
+                },
+                "key": "label"
+              }
+            },
+            "priority": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "req"
+                },
+                "key": "priority"
+              }
+            },
+            "persistent": false
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "has_goal",
+          "goal"
+        ],
+        [
+          "add_edge",
+          "goal",
+          "target",
+          "tgt"
+        ],
+        [
+          "add_edge",
+          "goal",
+          "satisfaction_term",
+          "proto"
+        ],
+        [
+          "del_edge",
+          "agent",
+          "visit_request",
+          "req"
+        ]
+      ]
+    },
+    {
+      "name": "rule_allocate_goal_frame",
+      "match": [
+        [
+          "agent",
+          "has_goal",
+          "g"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "has_frame",
+                "node": {
+                  "name": "g",
+                  "type": "Var"
+                }
+              }
+            },
+            "b": {
+              "value": 0,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "resolved",
+                "type": "Attr",
+                "node": {
+                  "name": "g",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": true,
+                "type": "Lit"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "gf",
+          "GoalFrame",
+          {
+            "created_tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "g",
+          "has_frame",
+          "gf"
+        ]
+      ]
+    },
+    {
+      "name": "rule_chunk_resolved_goal",
+      "match": [
+        [
+          "agent",
+          "has_goal",
+          "g"
+        ],
+        [
+          "g",
+          "has_frame",
+          "gf"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "resolved",
+              "type": "Attr",
+              "node": {
+                "name": "g",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": true,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Neighbours",
+                "edge_type": "chunked_to",
+                "node": {
+                  "name": "g",
+                  "type": "Var"
+                }
+              }
+            },
+            "b": {
+              "value": 0,
+              "type": "Lit"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "ch",
+          "Chunk",
+          {
+            "label": {
+              "__term__": {
+                "key": "label",
+                "type": "Attr",
+                "node": {
+                  "name": "g",
+                  "type": "Var"
+                }
+              }
+            },
+            "resolved_tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            },
+            "from_goal_tick": {
+              "__term__": {
+                "key": "created_tick",
+                "type": "Attr",
+                "node": {
+                  "name": "g",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "g",
+          "chunked_to",
+          "ch"
+        ],
+        [
+          "add_edge",
+          "agent",
+          "has_chunk",
+          "ch"
+        ],
+        [
+          "del_node",
+          "gf"
+        ]
+      ]
+    }
+  ]
+}

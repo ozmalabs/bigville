@@ -1,0 +1,770 @@
+{
+  "seed": "bigville_delegation",
+  "version": "2.2.0",
+  "comment": "The OTHER PERSON'S response to being asked -- dl_accept / dl_decline. Choosing WHOM to ask (and whether to ask at all vs do it myself) is the unified PURSUIT (bigville_pursuit); this seed is just the asked person's side: accept if capable + willing (relationship + offer clears their bar), else decline. Two parties, two decisions.",
+  "rules": [
+    {
+      "name": "dl_accept",
+      "batch": false,
+      "comment": "Delegation -- the OTHER PERSON'S DECISION (action 2 of 2): they ACCEPT if CAPABLE and the relationship they have with the asker (bt.strength) PLUS what's offered clears THEIR OWN bar for helping (bt.min_ask). A spouse/child helps freely; an employee/stranger only if the offer is enough. They take the task on (will_do) and the offered coin actually changes hands. Their call. And for a FETCH it accepts only if IT can make the trip (its own src_reach to the good) -- a helper asked for a journey beyond it declines too.",
+      "match": [
+        [
+          "del",
+          "requests",
+          "req"
+        ],
+        [
+          "req",
+          "to",
+          "cand"
+        ],
+        [
+          "req",
+          "for_task",
+          "task"
+        ],
+        [
+          "cand",
+          "tie",
+          "bt"
+        ],
+        [
+          "bt",
+          "toward",
+          "del"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "req"
+                  },
+                  "key": "status"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "requirement"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "IfThenElse",
+                "cond": {
+                  "type": "Exists",
+                  "source": {
+                    "type": "Neighbours",
+                    "node": {
+                      "type": "Var",
+                      "name": "cand"
+                    },
+                    "edge_type": "can_do",
+                    "any_type": false
+                  },
+                  "var_name": "c",
+                  "predicate": {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "c"
+                          },
+                          "key": "kind"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "task"
+                          },
+                          "key": "requirement"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                "other": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "bt"
+                      },
+                      "key": "strength"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "req"
+                      },
+                      "key": "incentive"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "bt"
+                  },
+                  "key": "min_ask"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Not",
+                "arg": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "task"
+                        },
+                        "key": "kind"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              },
+              {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "cand"
+                          },
+                          "key": "src_reach"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "cand"
+                          },
+                          "key": "reach_good"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "task"
+                          },
+                          "key": "good"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "cand",
+          "will_do",
+          "task"
+        ],
+        [
+          "add_edge",
+          "cand",
+          "accepted",
+          "req"
+        ],
+        [
+          "set_attr",
+          "del",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "del"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "req"
+                    },
+                    "key": "incentive"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "cand",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "cand"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "req"
+                      },
+                      "key": "incentive"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "req",
+          "status",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "dl_decline",
+      "batch": false,
+      "comment": "Delegation -- the asked person DECLINES: not capable, or the relationship + offer falls short of their bar (bt.min_ask). A stranger asked for free says no; someone you can't afford to sweeten for says no. If the delegator's model of them was wrong, that's a surprise it can learn from. Also declines a FETCH it cannot make -- the source is beyond its reach.",
+      "match": [
+        [
+          "del",
+          "requests",
+          "req"
+        ],
+        [
+          "req",
+          "to",
+          "cand"
+        ],
+        [
+          "req",
+          "for_task",
+          "task"
+        ],
+        [
+          "cand",
+          "tie",
+          "bt"
+        ],
+        [
+          "bt",
+          "toward",
+          "del"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "req"
+                  },
+                  "key": "status"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Not",
+                "arg": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "IfThenElse",
+                    "cond": {
+                      "type": "Eq",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "task"
+                            },
+                            "key": "requirement"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    },
+                    "then": {
+                      "type": "Lit",
+                      "value": 1.0
+                    },
+                    "other": {
+                      "type": "IfThenElse",
+                      "cond": {
+                        "type": "Exists",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "cand"
+                          },
+                          "edge_type": "can_do",
+                          "any_type": false
+                        },
+                        "var_name": "c",
+                        "predicate": {
+                          "type": "Eq",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "c"
+                                },
+                                "key": "kind"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "task"
+                                },
+                                "key": "requirement"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "then": {
+                        "type": "Lit",
+                        "value": 1.0
+                      },
+                      "other": {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    }
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              },
+              {
+                "type": "Not",
+                "arg": {
+                  "type": "Gte",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "bt"
+                            },
+                            "key": "strength"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "req"
+                            },
+                            "key": "incentive"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "bt"
+                        },
+                        "key": "min_ask"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "task"
+                          },
+                          "key": "kind"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  {
+                    "type": "Not",
+                    "arg": {
+                      "type": "And",
+                      "items": [
+                        {
+                          "type": "Eq",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "cand"
+                                },
+                                "key": "src_reach"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Lit",
+                            "value": 1.0
+                          }
+                        },
+                        {
+                          "type": "Eq",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "cand"
+                                },
+                                "key": "reach_good"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "task"
+                                },
+                                "key": "good"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "req",
+          "status",
+          -1.0
+        ]
+      ]
+    }
+  ]
+}

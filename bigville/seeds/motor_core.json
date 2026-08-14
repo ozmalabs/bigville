@@ -1,0 +1,5501 @@
+{
+  "id": "motor_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "The agent's spatial-motor + navigation control as graph data: motor_value (turn toward target, move when aligned), attention_value (orient to a salient pop-out), exploration_value (recency + under-known + door-to-unknown + salience), forward_wall (is a wall ahead), forward_wall_penalty, operate_control. Captured from CuriousAgent's Term-builders.",
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 4,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 5,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 6,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 7,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 8,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 9,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 10,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 11,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "control"
+      }
+    },
+    {
+      "local_id": 12,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "dtheta_ema"
+      }
+    },
+    {
+      "local_id": 13,
+      "type": "Term.Rotate",
+      "attrs": {}
+    },
+    {
+      "local_id": 14,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "tx"
+      }
+    },
+    {
+      "local_id": 15,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "ty"
+      }
+    },
+    {
+      "local_id": 16,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 17,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 18,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_x_bin"
+      }
+    },
+    {
+      "local_id": 19,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 20,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_y_bin"
+      }
+    },
+    {
+      "local_id": 21,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 22,
+      "type": "Term.VecSub",
+      "attrs": {}
+    },
+    {
+      "local_id": 23,
+      "type": "Term.AngleBetween",
+      "attrs": {}
+    },
+    {
+      "local_id": 24,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 25,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "control"
+      }
+    },
+    {
+      "local_id": 26,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "dspeed_ema"
+      }
+    },
+    {
+      "local_id": 27,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 28,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 29,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 30,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "bounded_by"
+      }
+    },
+    {
+      "local_id": 31,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 32,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "passability"
+      }
+    },
+    {
+      "local_id": 33,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 34,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 35,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 36,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "faces"
+      }
+    },
+    {
+      "local_id": 37,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "d"
+      }
+    },
+    {
+      "local_id": 38,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "vector"
+      }
+    },
+    {
+      "local_id": 39,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 40,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 41,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 42,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 43,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 44,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 45,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 46,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 47,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 48,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 49,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 50,
+      "type": "Term.Dot",
+      "attrs": {}
+    },
+    {
+      "local_id": 51,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.85
+      }
+    },
+    {
+      "local_id": 52,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 53,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "d"
+      }
+    },
+    {
+      "local_id": 54,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 55,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "b"
+      }
+    },
+    {
+      "local_id": 56,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 57,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "perceives"
+      }
+    },
+    {
+      "local_id": 58,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "p"
+      }
+    },
+    {
+      "local_id": 59,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "world_dir"
+      }
+    },
+    {
+      "local_id": 60,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 61,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 62,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 63,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 64,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 65,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 66,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 67,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 68,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 69,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 70,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 71,
+      "type": "Term.Dot",
+      "attrs": {}
+    },
+    {
+      "local_id": 72,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.97
+      }
+    },
+    {
+      "local_id": 73,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 74,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "p"
+      }
+    },
+    {
+      "local_id": 75,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "distance"
+      }
+    },
+    {
+      "local_id": 76,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 77,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "vision_clearance"
+      }
+    },
+    {
+      "local_id": 78,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 79,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 80,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "p"
+      }
+    },
+    {
+      "local_id": 81,
+      "type": "Term.Or",
+      "attrs": {}
+    },
+    {
+      "local_id": 82,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.0
+      }
+    },
+    {
+      "local_id": 83,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 84,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 85,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 86,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 87,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 88,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 89,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 90,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 91,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 92,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 93,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 94,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "tx"
+      }
+    },
+    {
+      "local_id": 95,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "ty"
+      }
+    },
+    {
+      "local_id": 96,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 97,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 98,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_x_bin"
+      }
+    },
+    {
+      "local_id": 99,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 100,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_y_bin"
+      }
+    },
+    {
+      "local_id": 101,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 102,
+      "type": "Term.VecSub",
+      "attrs": {}
+    },
+    {
+      "local_id": 103,
+      "type": "Term.AngleBetween",
+      "attrs": {}
+    },
+    {
+      "local_id": 104,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 105,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 106,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.0
+      }
+    },
+    {
+      "local_id": 107,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 108,
+      "type": "Term.Plus",
+      "attrs": {}
+    },
+    {
+      "local_id": 109,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 110,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "attention_salience"
+      }
+    },
+    {
+      "local_id": 111,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2.0
+      }
+    },
+    {
+      "local_id": 112,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 113,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 114,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 115,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 116,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 117,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 118,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 119,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 120,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 121,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 122,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 123,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 124,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "control"
+      }
+    },
+    {
+      "local_id": 125,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "dtheta_ema"
+      }
+    },
+    {
+      "local_id": 126,
+      "type": "Term.Rotate",
+      "attrs": {}
+    },
+    {
+      "local_id": 127,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 128,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "attention_x"
+      }
+    },
+    {
+      "local_id": 129,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 130,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "attention_y"
+      }
+    },
+    {
+      "local_id": 131,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 132,
+      "type": "Term.AngleBetween",
+      "attrs": {}
+    },
+    {
+      "local_id": 133,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 134,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.0
+      }
+    },
+    {
+      "local_id": 135,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 136,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 137,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_observations"
+      }
+    },
+    {
+      "local_id": 138,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 139,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "last_observed_tick"
+      }
+    },
+    {
+      "local_id": 140,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 141,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 142,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "saturation_count"
+      }
+    },
+    {
+      "local_id": 143,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 30
+      }
+    },
+    {
+      "local_id": 144,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 145,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 10000000.0
+      }
+    },
+    {
+      "local_id": 146,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 147,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 148,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 200000000.0
+      }
+    },
+    {
+      "local_id": 149,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 150,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "bounded_by"
+      }
+    },
+    {
+      "local_id": 151,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 152,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "dynamic"
+      }
+    },
+    {
+      "local_id": 153,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 154,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 155,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 156,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "passability"
+      }
+    },
+    {
+      "local_id": 157,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 158,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 159,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 160,
+      "type": "Term.InNeighbours",
+      "attrs": {
+        "edge_type": "bounded_by"
+      }
+    },
+    {
+      "local_id": 161,
+      "type": "Term.MapNeighbours",
+      "attrs": {
+        "edge_type": "bounded_by"
+      }
+    },
+    {
+      "local_id": 162,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b_sib"
+      }
+    },
+    {
+      "local_id": 163,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "passability"
+      }
+    },
+    {
+      "local_id": 164,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 165,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 166,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b_sib"
+      }
+    },
+    {
+      "local_id": 167,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "faces"
+      }
+    },
+    {
+      "local_id": 168,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b_d"
+      }
+    },
+    {
+      "local_id": 169,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 170,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "faces"
+      }
+    },
+    {
+      "local_id": 171,
+      "type": "Term.MapNeighbours",
+      "attrs": {
+        "edge_type": "perpendicular"
+      }
+    },
+    {
+      "local_id": 172,
+      "type": "Term.In",
+      "attrs": {}
+    },
+    {
+      "local_id": 173,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "b_d"
+      }
+    },
+    {
+      "local_id": 174,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 175,
+      "type": "Term.Filter",
+      "attrs": {
+        "var_name": "b_sib"
+      }
+    },
+    {
+      "local_id": 176,
+      "type": "Term.Count",
+      "attrs": {}
+    },
+    {
+      "local_id": 177,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2
+      }
+    },
+    {
+      "local_id": 178,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 179,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 180,
+      "type": "Term.Or",
+      "attrs": {}
+    },
+    {
+      "local_id": 181,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 182,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "leads_to"
+      }
+    },
+    {
+      "local_id": 183,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "n"
+      }
+    },
+    {
+      "local_id": 184,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "saturation_count"
+      }
+    },
+    {
+      "local_id": 185,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 30
+      }
+    },
+    {
+      "local_id": 186,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 187,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "n"
+      }
+    },
+    {
+      "local_id": 188,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 189,
+      "type": "Term.Filter",
+      "attrs": {
+        "var_name": "b"
+      }
+    },
+    {
+      "local_id": 190,
+      "type": "Term.Count",
+      "attrs": {}
+    },
+    {
+      "local_id": 191,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 192,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 193,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "affordance_known"
+      }
+    },
+    {
+      "local_id": 194,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 195,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 196,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 197,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 198,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "salience"
+      }
+    },
+    {
+      "local_id": 199,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2.0
+      }
+    },
+    {
+      "local_id": 200,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 201,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 100000000.0
+      }
+    },
+    {
+      "local_id": 202,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 203,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "salience"
+      }
+    },
+    {
+      "local_id": 204,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 205,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 206,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 207,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 208,
+      "type": "Term.Plus",
+      "attrs": {}
+    },
+    {
+      "local_id": 209,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 210,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "bounded_by"
+      }
+    },
+    {
+      "local_id": 211,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 212,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "passability"
+      }
+    },
+    {
+      "local_id": 213,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 214,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 215,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 216,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "faces"
+      }
+    },
+    {
+      "local_id": 217,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "d"
+      }
+    },
+    {
+      "local_id": 218,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "vector"
+      }
+    },
+    {
+      "local_id": 219,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 220,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 221,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 222,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 223,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 224,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 225,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 226,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 227,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 228,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 229,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 230,
+      "type": "Term.Dot",
+      "attrs": {}
+    },
+    {
+      "local_id": 231,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.85
+      }
+    },
+    {
+      "local_id": 232,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 233,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "d"
+      }
+    },
+    {
+      "local_id": 234,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 235,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "b"
+      }
+    },
+    {
+      "local_id": 236,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 237,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "perceives"
+      }
+    },
+    {
+      "local_id": 238,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "p"
+      }
+    },
+    {
+      "local_id": 239,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "world_dir"
+      }
+    },
+    {
+      "local_id": 240,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 241,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 242,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 243,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 244,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 245,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 246,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 247,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 248,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 249,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 250,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 251,
+      "type": "Term.Dot",
+      "attrs": {}
+    },
+    {
+      "local_id": 252,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.97
+      }
+    },
+    {
+      "local_id": 253,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 254,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "p"
+      }
+    },
+    {
+      "local_id": 255,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "distance"
+      }
+    },
+    {
+      "local_id": 256,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 257,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "vision_clearance"
+      }
+    },
+    {
+      "local_id": 258,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 259,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 260,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "p"
+      }
+    },
+    {
+      "local_id": 261,
+      "type": "Term.Or",
+      "attrs": {}
+    },
+    {
+      "local_id": 262,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cell"
+      }
+    },
+    {
+      "local_id": 263,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "bounded_by"
+      }
+    },
+    {
+      "local_id": 264,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 265,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "passability"
+      }
+    },
+    {
+      "local_id": 266,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.5
+      }
+    },
+    {
+      "local_id": 267,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 268,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "b"
+      }
+    },
+    {
+      "local_id": 269,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "faces"
+      }
+    },
+    {
+      "local_id": 270,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "d"
+      }
+    },
+    {
+      "local_id": 271,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "vector"
+      }
+    },
+    {
+      "local_id": 272,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 273,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 274,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 275,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 276,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 277,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 278,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 279,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 280,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 281,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 282,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 283,
+      "type": "Term.Dot",
+      "attrs": {}
+    },
+    {
+      "local_id": 284,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.85
+      }
+    },
+    {
+      "local_id": 285,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 286,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "d"
+      }
+    },
+    {
+      "local_id": 287,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 288,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "b"
+      }
+    },
+    {
+      "local_id": 289,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 290,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "perceives"
+      }
+    },
+    {
+      "local_id": 291,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "p"
+      }
+    },
+    {
+      "local_id": 292,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "world_dir"
+      }
+    },
+    {
+      "local_id": 293,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 294,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 295,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 296,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 297,
+      "type": "Term.Cos",
+      "attrs": {}
+    },
+    {
+      "local_id": 298,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 299,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "my_angle"
+      }
+    },
+    {
+      "local_id": 300,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.017453292519943295
+      }
+    },
+    {
+      "local_id": 301,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 302,
+      "type": "Term.Sin",
+      "attrs": {}
+    },
+    {
+      "local_id": 303,
+      "type": "Term.Vec",
+      "attrs": {}
+    },
+    {
+      "local_id": 304,
+      "type": "Term.Dot",
+      "attrs": {}
+    },
+    {
+      "local_id": 305,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.97
+      }
+    },
+    {
+      "local_id": 306,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 307,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "p"
+      }
+    },
+    {
+      "local_id": 308,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "distance"
+      }
+    },
+    {
+      "local_id": 309,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 310,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "vision_clearance"
+      }
+    },
+    {
+      "local_id": 311,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 312,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 313,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "p"
+      }
+    },
+    {
+      "local_id": 314,
+      "type": "Term.Or",
+      "attrs": {}
+    },
+    {
+      "local_id": 315,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": -1000.0
+      }
+    },
+    {
+      "local_id": 316,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.0
+      }
+    },
+    {
+      "local_id": 317,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 318,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 319,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "control_ahead"
+      }
+    },
+    {
+      "local_id": 320,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2.0
+      }
+    },
+    {
+      "local_id": 321,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 322,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 323,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.0
+      }
+    },
+    {
+      "local_id": 324,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "local": 1
+      },
+      "tgt": {
+        "local": 0
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 1
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 2
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 4
+      },
+      "tgt": {
+        "local": 3
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 6
+      },
+      "tgt": {
+        "local": 5
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 6
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 7
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 9
+      },
+      "tgt": {
+        "local": 8
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 10
+      },
+      "tgt": {
+        "local": 4
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 10
+      },
+      "tgt": {
+        "local": 9
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 12
+      },
+      "tgt": {
+        "local": 11
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 10
+      },
+      "type": "child.vec",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 12
+      },
+      "type": "child.angle",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 14
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 15
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 18
+      },
+      "tgt": {
+        "local": 17
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 20
+      },
+      "tgt": {
+        "local": 19
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 21
+      },
+      "tgt": {
+        "local": 18
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 21
+      },
+      "tgt": {
+        "local": 20
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 22
+      },
+      "tgt": {
+        "local": 16
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 22
+      },
+      "tgt": {
+        "local": 21
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 23
+      },
+      "tgt": {
+        "local": 13
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 23
+      },
+      "tgt": {
+        "local": 22
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 24
+      },
+      "tgt": {
+        "local": 23
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 25
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 28
+      },
+      "tgt": {
+        "local": 26
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 28
+      },
+      "tgt": {
+        "local": 27
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 30
+      },
+      "tgt": {
+        "local": 29
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 32
+      },
+      "tgt": {
+        "local": 31
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 34
+      },
+      "tgt": {
+        "local": 32
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 34
+      },
+      "tgt": {
+        "local": 33
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 36
+      },
+      "tgt": {
+        "local": 35
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 38
+      },
+      "tgt": {
+        "local": 37
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 40
+      },
+      "tgt": {
+        "local": 39
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 42
+      },
+      "tgt": {
+        "local": 40
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 42
+      },
+      "tgt": {
+        "local": 41
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 43
+      },
+      "tgt": {
+        "local": 42
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 45
+      },
+      "tgt": {
+        "local": 44
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 47
+      },
+      "tgt": {
+        "local": 45
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 47
+      },
+      "tgt": {
+        "local": 46
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 48
+      },
+      "tgt": {
+        "local": 47
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 43
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 48
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 50
+      },
+      "tgt": {
+        "local": 38
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 50
+      },
+      "tgt": {
+        "local": 49
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 52
+      },
+      "tgt": {
+        "local": 50
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 52
+      },
+      "tgt": {
+        "local": 51
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 53
+      },
+      "tgt": {
+        "local": 36
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 53
+      },
+      "tgt": {
+        "local": 52
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 54
+      },
+      "tgt": {
+        "local": 34
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 54
+      },
+      "tgt": {
+        "local": 53
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 55
+      },
+      "tgt": {
+        "local": 30
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 55
+      },
+      "tgt": {
+        "local": 54
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 57
+      },
+      "tgt": {
+        "local": 56
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 59
+      },
+      "tgt": {
+        "local": 58
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 61
+      },
+      "tgt": {
+        "local": 60
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 63
+      },
+      "tgt": {
+        "local": 61
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 63
+      },
+      "tgt": {
+        "local": 62
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 64
+      },
+      "tgt": {
+        "local": 63
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 66
+      },
+      "tgt": {
+        "local": 65
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 68
+      },
+      "tgt": {
+        "local": 66
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 68
+      },
+      "tgt": {
+        "local": 67
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 69
+      },
+      "tgt": {
+        "local": 68
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 70
+      },
+      "tgt": {
+        "local": 64
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 70
+      },
+      "tgt": {
+        "local": 69
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 71
+      },
+      "tgt": {
+        "local": 59
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 71
+      },
+      "tgt": {
+        "local": 70
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 73
+      },
+      "tgt": {
+        "local": 71
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 73
+      },
+      "tgt": {
+        "local": 72
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 75
+      },
+      "tgt": {
+        "local": 74
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 77
+      },
+      "tgt": {
+        "local": 76
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 78
+      },
+      "tgt": {
+        "local": 75
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 78
+      },
+      "tgt": {
+        "local": 77
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 79
+      },
+      "tgt": {
+        "local": 73
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 79
+      },
+      "tgt": {
+        "local": 78
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 80
+      },
+      "tgt": {
+        "local": 57
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 80
+      },
+      "tgt": {
+        "local": 79
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 81
+      },
+      "tgt": {
+        "local": 55
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 81
+      },
+      "tgt": {
+        "local": 80
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 84
+      },
+      "tgt": {
+        "local": 83
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 86
+      },
+      "tgt": {
+        "local": 84
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 86
+      },
+      "tgt": {
+        "local": 85
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 87
+      },
+      "tgt": {
+        "local": 86
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 89
+      },
+      "tgt": {
+        "local": 88
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 91
+      },
+      "tgt": {
+        "local": 89
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 91
+      },
+      "tgt": {
+        "local": 90
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 92
+      },
+      "tgt": {
+        "local": 91
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 93
+      },
+      "tgt": {
+        "local": 87
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 93
+      },
+      "tgt": {
+        "local": 92
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 96
+      },
+      "tgt": {
+        "local": 94
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 96
+      },
+      "tgt": {
+        "local": 95
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 98
+      },
+      "tgt": {
+        "local": 97
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 100
+      },
+      "tgt": {
+        "local": 99
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 101
+      },
+      "tgt": {
+        "local": 98
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 101
+      },
+      "tgt": {
+        "local": 100
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 102
+      },
+      "tgt": {
+        "local": 96
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 102
+      },
+      "tgt": {
+        "local": 101
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 103
+      },
+      "tgt": {
+        "local": 93
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 103
+      },
+      "tgt": {
+        "local": 102
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 104
+      },
+      "tgt": {
+        "local": 103
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 105
+      },
+      "tgt": {
+        "local": 81
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 105
+      },
+      "tgt": {
+        "local": 82
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 105
+      },
+      "tgt": {
+        "local": 104
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 107
+      },
+      "tgt": {
+        "local": 28
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 107
+      },
+      "tgt": {
+        "local": 105
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 107
+      },
+      "tgt": {
+        "local": 106
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 108
+      },
+      "tgt": {
+        "local": 24
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 108
+      },
+      "tgt": {
+        "local": 107
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 110
+      },
+      "tgt": {
+        "local": 109
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 112
+      },
+      "tgt": {
+        "local": 110
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 112
+      },
+      "tgt": {
+        "local": 111
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 114
+      },
+      "tgt": {
+        "local": 113
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 116
+      },
+      "tgt": {
+        "local": 114
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 116
+      },
+      "tgt": {
+        "local": 115
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 117
+      },
+      "tgt": {
+        "local": 116
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 119
+      },
+      "tgt": {
+        "local": 118
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 121
+      },
+      "tgt": {
+        "local": 119
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 121
+      },
+      "tgt": {
+        "local": 120
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 122
+      },
+      "tgt": {
+        "local": 121
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 123
+      },
+      "tgt": {
+        "local": 117
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 123
+      },
+      "tgt": {
+        "local": 122
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 125
+      },
+      "tgt": {
+        "local": 124
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 126
+      },
+      "tgt": {
+        "local": 123
+      },
+      "type": "child.vec",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 126
+      },
+      "tgt": {
+        "local": 125
+      },
+      "type": "child.angle",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 128
+      },
+      "tgt": {
+        "local": 127
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 130
+      },
+      "tgt": {
+        "local": 129
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 131
+      },
+      "tgt": {
+        "local": 128
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 131
+      },
+      "tgt": {
+        "local": 130
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 132
+      },
+      "tgt": {
+        "local": 126
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 132
+      },
+      "tgt": {
+        "local": 131
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 133
+      },
+      "tgt": {
+        "local": 132
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 135
+      },
+      "tgt": {
+        "local": 112
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 135
+      },
+      "tgt": {
+        "local": 133
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 135
+      },
+      "tgt": {
+        "local": 134
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 137
+      },
+      "tgt": {
+        "local": 136
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 139
+      },
+      "tgt": {
+        "local": 138
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 140
+      },
+      "tgt": {
+        "local": 137
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 140
+      },
+      "tgt": {
+        "local": 139
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 142
+      },
+      "tgt": {
+        "local": 141
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 144
+      },
+      "tgt": {
+        "local": 142
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 144
+      },
+      "tgt": {
+        "local": 143
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 147
+      },
+      "tgt": {
+        "local": 144
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 147
+      },
+      "tgt": {
+        "local": 145
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 147
+      },
+      "tgt": {
+        "local": 146
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 150
+      },
+      "tgt": {
+        "local": 149
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 152
+      },
+      "tgt": {
+        "local": 151
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 154
+      },
+      "tgt": {
+        "local": 152
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 154
+      },
+      "tgt": {
+        "local": 153
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 156
+      },
+      "tgt": {
+        "local": 155
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 158
+      },
+      "tgt": {
+        "local": 156
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 158
+      },
+      "tgt": {
+        "local": 157
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 160
+      },
+      "tgt": {
+        "local": 159
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 161
+      },
+      "tgt": {
+        "local": 160
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 163
+      },
+      "tgt": {
+        "local": 162
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 165
+      },
+      "tgt": {
+        "local": 163
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 165
+      },
+      "tgt": {
+        "local": 164
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 167
+      },
+      "tgt": {
+        "local": 166
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 170
+      },
+      "tgt": {
+        "local": 169
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 171
+      },
+      "tgt": {
+        "local": 170
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 172
+      },
+      "tgt": {
+        "local": 168
+      },
+      "type": "child.member",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 172
+      },
+      "tgt": {
+        "local": 171
+      },
+      "type": "child.container",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 173
+      },
+      "tgt": {
+        "local": 167
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 173
+      },
+      "tgt": {
+        "local": 172
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 174
+      },
+      "tgt": {
+        "local": 165
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 174
+      },
+      "tgt": {
+        "local": 173
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 175
+      },
+      "tgt": {
+        "local": 161
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 175
+      },
+      "tgt": {
+        "local": 174
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 176
+      },
+      "tgt": {
+        "local": 175
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 178
+      },
+      "tgt": {
+        "local": 176
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 178
+      },
+      "tgt": {
+        "local": 177
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 179
+      },
+      "tgt": {
+        "local": 158
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 179
+      },
+      "tgt": {
+        "local": 178
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 180
+      },
+      "tgt": {
+        "local": 154
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 180
+      },
+      "tgt": {
+        "local": 179
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 182
+      },
+      "tgt": {
+        "local": 181
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 184
+      },
+      "tgt": {
+        "local": 183
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 186
+      },
+      "tgt": {
+        "local": 184
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 186
+      },
+      "tgt": {
+        "local": 185
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 187
+      },
+      "tgt": {
+        "local": 182
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 187
+      },
+      "tgt": {
+        "local": 186
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 188
+      },
+      "tgt": {
+        "local": 180
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 188
+      },
+      "tgt": {
+        "local": 187
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 189
+      },
+      "tgt": {
+        "local": 150
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 189
+      },
+      "tgt": {
+        "local": 188
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 190
+      },
+      "tgt": {
+        "local": 189
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 191
+      },
+      "tgt": {
+        "local": 148
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 191
+      },
+      "tgt": {
+        "local": 190
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 193
+      },
+      "tgt": {
+        "local": 192
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 195
+      },
+      "tgt": {
+        "local": 193
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 195
+      },
+      "tgt": {
+        "local": 194
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 198
+      },
+      "tgt": {
+        "local": 197
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 200
+      },
+      "tgt": {
+        "local": 198
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 200
+      },
+      "tgt": {
+        "local": 199
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 203
+      },
+      "tgt": {
+        "local": 202
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 204
+      },
+      "tgt": {
+        "local": 201
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 204
+      },
+      "tgt": {
+        "local": 203
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 206
+      },
+      "tgt": {
+        "local": 200
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 206
+      },
+      "tgt": {
+        "local": 204
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 206
+      },
+      "tgt": {
+        "local": 205
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 207
+      },
+      "tgt": {
+        "local": 195
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 207
+      },
+      "tgt": {
+        "local": 196
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 207
+      },
+      "tgt": {
+        "local": 206
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 208
+      },
+      "tgt": {
+        "local": 140
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 208
+      },
+      "tgt": {
+        "local": 147
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 208
+      },
+      "tgt": {
+        "local": 191
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 2
+      }
+    },
+    {
+      "src": {
+        "local": 208
+      },
+      "tgt": {
+        "local": 207
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 3
+      }
+    },
+    {
+      "src": {
+        "local": 210
+      },
+      "tgt": {
+        "local": 209
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 212
+      },
+      "tgt": {
+        "local": 211
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 214
+      },
+      "tgt": {
+        "local": 212
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 214
+      },
+      "tgt": {
+        "local": 213
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 216
+      },
+      "tgt": {
+        "local": 215
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 218
+      },
+      "tgt": {
+        "local": 217
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 220
+      },
+      "tgt": {
+        "local": 219
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 222
+      },
+      "tgt": {
+        "local": 220
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 222
+      },
+      "tgt": {
+        "local": 221
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 223
+      },
+      "tgt": {
+        "local": 222
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 225
+      },
+      "tgt": {
+        "local": 224
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 227
+      },
+      "tgt": {
+        "local": 225
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 227
+      },
+      "tgt": {
+        "local": 226
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 228
+      },
+      "tgt": {
+        "local": 227
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 229
+      },
+      "tgt": {
+        "local": 223
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 229
+      },
+      "tgt": {
+        "local": 228
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 230
+      },
+      "tgt": {
+        "local": 218
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 230
+      },
+      "tgt": {
+        "local": 229
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 232
+      },
+      "tgt": {
+        "local": 230
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 232
+      },
+      "tgt": {
+        "local": 231
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 233
+      },
+      "tgt": {
+        "local": 216
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 233
+      },
+      "tgt": {
+        "local": 232
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 234
+      },
+      "tgt": {
+        "local": 214
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 234
+      },
+      "tgt": {
+        "local": 233
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 235
+      },
+      "tgt": {
+        "local": 210
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 235
+      },
+      "tgt": {
+        "local": 234
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 237
+      },
+      "tgt": {
+        "local": 236
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 239
+      },
+      "tgt": {
+        "local": 238
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 241
+      },
+      "tgt": {
+        "local": 240
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 243
+      },
+      "tgt": {
+        "local": 241
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 243
+      },
+      "tgt": {
+        "local": 242
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 244
+      },
+      "tgt": {
+        "local": 243
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 246
+      },
+      "tgt": {
+        "local": 245
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 248
+      },
+      "tgt": {
+        "local": 246
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 248
+      },
+      "tgt": {
+        "local": 247
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 249
+      },
+      "tgt": {
+        "local": 248
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 250
+      },
+      "tgt": {
+        "local": 244
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 250
+      },
+      "tgt": {
+        "local": 249
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 251
+      },
+      "tgt": {
+        "local": 239
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 251
+      },
+      "tgt": {
+        "local": 250
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 253
+      },
+      "tgt": {
+        "local": 251
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 253
+      },
+      "tgt": {
+        "local": 252
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 255
+      },
+      "tgt": {
+        "local": 254
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 257
+      },
+      "tgt": {
+        "local": 256
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 258
+      },
+      "tgt": {
+        "local": 255
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 258
+      },
+      "tgt": {
+        "local": 257
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 259
+      },
+      "tgt": {
+        "local": 253
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 259
+      },
+      "tgt": {
+        "local": 258
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 260
+      },
+      "tgt": {
+        "local": 237
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 260
+      },
+      "tgt": {
+        "local": 259
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 261
+      },
+      "tgt": {
+        "local": 235
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 261
+      },
+      "tgt": {
+        "local": 260
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 263
+      },
+      "tgt": {
+        "local": 262
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 265
+      },
+      "tgt": {
+        "local": 264
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 267
+      },
+      "tgt": {
+        "local": 265
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 267
+      },
+      "tgt": {
+        "local": 266
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 269
+      },
+      "tgt": {
+        "local": 268
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 271
+      },
+      "tgt": {
+        "local": 270
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 273
+      },
+      "tgt": {
+        "local": 272
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 275
+      },
+      "tgt": {
+        "local": 273
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 275
+      },
+      "tgt": {
+        "local": 274
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 276
+      },
+      "tgt": {
+        "local": 275
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 278
+      },
+      "tgt": {
+        "local": 277
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 280
+      },
+      "tgt": {
+        "local": 278
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 280
+      },
+      "tgt": {
+        "local": 279
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 281
+      },
+      "tgt": {
+        "local": 280
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 282
+      },
+      "tgt": {
+        "local": 276
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 282
+      },
+      "tgt": {
+        "local": 281
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 283
+      },
+      "tgt": {
+        "local": 271
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 283
+      },
+      "tgt": {
+        "local": 282
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 285
+      },
+      "tgt": {
+        "local": 283
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 285
+      },
+      "tgt": {
+        "local": 284
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 286
+      },
+      "tgt": {
+        "local": 269
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 286
+      },
+      "tgt": {
+        "local": 285
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 287
+      },
+      "tgt": {
+        "local": 267
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 287
+      },
+      "tgt": {
+        "local": 286
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 288
+      },
+      "tgt": {
+        "local": 263
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 288
+      },
+      "tgt": {
+        "local": 287
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 290
+      },
+      "tgt": {
+        "local": 289
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 292
+      },
+      "tgt": {
+        "local": 291
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 294
+      },
+      "tgt": {
+        "local": 293
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 296
+      },
+      "tgt": {
+        "local": 294
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 296
+      },
+      "tgt": {
+        "local": 295
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 297
+      },
+      "tgt": {
+        "local": 296
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 299
+      },
+      "tgt": {
+        "local": 298
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 301
+      },
+      "tgt": {
+        "local": 299
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 301
+      },
+      "tgt": {
+        "local": 300
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 302
+      },
+      "tgt": {
+        "local": 301
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 303
+      },
+      "tgt": {
+        "local": 297
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 303
+      },
+      "tgt": {
+        "local": 302
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 304
+      },
+      "tgt": {
+        "local": 292
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 304
+      },
+      "tgt": {
+        "local": 303
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 306
+      },
+      "tgt": {
+        "local": 304
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 306
+      },
+      "tgt": {
+        "local": 305
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 308
+      },
+      "tgt": {
+        "local": 307
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 310
+      },
+      "tgt": {
+        "local": 309
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 311
+      },
+      "tgt": {
+        "local": 308
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 311
+      },
+      "tgt": {
+        "local": 310
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 312
+      },
+      "tgt": {
+        "local": 306
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 312
+      },
+      "tgt": {
+        "local": 311
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 313
+      },
+      "tgt": {
+        "local": 290
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 313
+      },
+      "tgt": {
+        "local": 312
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 314
+      },
+      "tgt": {
+        "local": 288
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 314
+      },
+      "tgt": {
+        "local": 313
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 317
+      },
+      "tgt": {
+        "local": 314
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 317
+      },
+      "tgt": {
+        "local": 315
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 317
+      },
+      "tgt": {
+        "local": 316
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 319
+      },
+      "tgt": {
+        "local": 318
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 321
+      },
+      "tgt": {
+        "local": 319
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 321
+      },
+      "tgt": {
+        "local": 320
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 324
+      },
+      "tgt": {
+        "local": 321
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 324
+      },
+      "tgt": {
+        "local": 322
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 324
+      },
+      "tgt": {
+        "local": 323
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 108
+      },
+      "type": "motor_value_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 135
+      },
+      "type": "attention_value_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 208
+      },
+      "type": "exploration_value_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 261
+      },
+      "type": "forward_wall_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 317
+      },
+      "type": "forward_wall_penalty_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 324
+      },
+      "type": "operate_control_term",
+      "attrs": {}
+    }
+  ],
+  "productions": [],
+  "rules": []
+}

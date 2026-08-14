@@ -1,0 +1,332 @@
+{
+  "id": "bigville_council_bylaw",
+  "version": "1.0.0",
+  "depends_on": [
+    "bigville_legislature",
+    "bigville_bells"
+  ],
+  "self_load_only": true,
+  "description": "bigville R32 (block 322000): the council's MEETING SCHEDULE is a BYLAW, enacted by an ACTOR (the beadle), on bell time -- NOT now_day % cadence. The LawBook holds a Law{name:council_meeting_interval, value:N} (the bylaw the council sets and amends through its own legislature). cb_beadle_counts: on each CURFEW BellPeal the beadle increments days_since_meeting (once per peal -- the actor marking days by the bell). cb_ring_assembly: when days_since_meeting >= the bylaw's value, the beadle rings the ASSEMBLY bell (arms it) and resets the tally -- the threshold is READ from the bylaw. cb_convene: an ASSEMBLY BellPeal convenes a Meeting (once per peal). The council meets because the bell was rung by an actor reading the bylaw, not because a modulo fired. Amend the bylaw -> the next meeting falls after the new number of curfew days.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cb_beadle_counts",
+      "batch": false,
+      "comment": "On each curfew bell the beadle marks a day passing (days_since_meeting += 1), once per peal.",
+      "match": [
+        [
+          "town",
+          "has_beadle",
+          "beadle"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "peal"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "curfew"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "beadle"
+                },
+                "edge_type": "counted"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "peal"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "beadle",
+          "days_since_meeting",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "beadle"
+                      },
+                      "key": "days_since_meeting"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "beadle",
+          "counted",
+          "peal"
+        ]
+      ]
+    },
+    {
+      "name": "cb_ring_assembly",
+      "batch": false,
+      "comment": "When the beadle's tally reaches the bylaw interval, the beadle rings the ASSEMBLY bell (arms it) and resets the tally. The threshold is read from the council's own bylaw, not hardcoded.",
+      "match": [
+        [
+          "town",
+          "has_beadle",
+          "beadle"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "has_bell",
+          "bell"
+        ],
+        [
+          "town",
+          "has_book",
+          "book"
+        ],
+        [
+          "book",
+          "has_law",
+          "bylaw"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "bylaw"
+              },
+              "key": "name"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "council_meeting_interval"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "bylaw"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "active"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "beadle"
+                  },
+                  "key": "days_since_meeting"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "bylaw"
+                  },
+                  "key": "value"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "bell",
+          "toll_kind",
+          "assembly"
+        ],
+        [
+          "set_attr",
+          "bell",
+          "ring_armed",
+          1.0
+        ],
+        [
+          "set_attr",
+          "beadle",
+          "days_since_meeting",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "cb_convene",
+      "batch": false,
+      "comment": "An ASSEMBLY bell peal convenes a Meeting (once per peal). The council meets on the bell.",
+      "match": [
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "peal"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "assembly"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "peal"
+                },
+                "key": "convened"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "mtg",
+          "Meeting",
+          {
+            "convened": 1.0
+          }
+        ],
+        [
+          "add_edge",
+          "town",
+          "has_meeting",
+          "mtg"
+        ],
+        [
+          "add_edge",
+          "mtg",
+          "meeting_of",
+          "peal"
+        ],
+        [
+          "set_attr",
+          "peal",
+          "convened",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

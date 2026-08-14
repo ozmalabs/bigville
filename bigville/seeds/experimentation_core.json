@@ -1,0 +1,2499 @@
+{
+  "id": "experimentation_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "The agent's curiosity drives + active experimentation + introspection as graph data: order_n_curiosity, abs_info_gain, event_salience, intervention_lift, hypothesis_test, experiment_value, and wonder_why_query (windowed event-recall the surprise-investigation runs to look at what just happened). Captured from builders + DSL.",
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "config_total"
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 4,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 5,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "distinct_configs"
+      }
+    },
+    {
+      "local_id": 6,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 7,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "config_total"
+      }
+    },
+    {
+      "local_id": 8,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 9,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 10,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 11,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "modal_config_count"
+      }
+    },
+    {
+      "local_id": 12,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 13,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "config_total"
+      }
+    },
+    {
+      "local_id": 14,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 15,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 16,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 17,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 18,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 19,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 20,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "abs_passes"
+      }
+    },
+    {
+      "local_id": 21,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 22,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 23,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 24,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "synthesis_error_ema"
+      }
+    },
+    {
+      "local_id": 25,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 26,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 27,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 28,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "types"
+      }
+    },
+    {
+      "local_id": 29,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 30,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "tracks_event_base_rate"
+      }
+    },
+    {
+      "local_id": 31,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "ebr"
+      }
+    },
+    {
+      "local_id": 32,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "kind"
+      }
+    },
+    {
+      "local_id": 33,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "kind"
+      }
+    },
+    {
+      "local_id": 34,
+      "type": "Term.Eq",
+      "attrs": {}
+    },
+    {
+      "local_id": 35,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "ebr"
+      }
+    },
+    {
+      "local_id": 36,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "of_body_type"
+      }
+    },
+    {
+      "local_id": 37,
+      "type": "Term.Pick",
+      "attrs": {}
+    },
+    {
+      "local_id": 38,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "name"
+      }
+    },
+    {
+      "local_id": 39,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "t"
+      }
+    },
+    {
+      "local_id": 40,
+      "type": "Term.Eq",
+      "attrs": {}
+    },
+    {
+      "local_id": 41,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 42,
+      "type": "Term.Filter",
+      "attrs": {
+        "var_name": "ebr"
+      }
+    },
+    {
+      "local_id": 43,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "ebr"
+      }
+    },
+    {
+      "local_id": 44,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "count"
+      }
+    },
+    {
+      "local_id": 45,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 46,
+      "type": "Term.MaxOver",
+      "attrs": {
+        "var_name": "ebr"
+      }
+    },
+    {
+      "local_id": 47,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "c"
+      }
+    },
+    {
+      "local_id": 48,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 49,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 50,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 51,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_events"
+      }
+    },
+    {
+      "local_id": 52,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "c"
+      }
+    },
+    {
+      "local_id": 53,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 54,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 55,
+      "type": "Term.IfThenElse",
+      "attrs": {}
+    },
+    {
+      "local_id": 56,
+      "type": "Term.Let",
+      "attrs": {
+        "name": "c"
+      }
+    },
+    {
+      "local_id": 57,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 58,
+      "type": "Term.MaxOver",
+      "attrs": {
+        "var_name": "t"
+      }
+    },
+    {
+      "local_id": 59,
+      "type": "Term.Max",
+      "attrs": {}
+    },
+    {
+      "local_id": 60,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 61,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_with"
+      }
+    },
+    {
+      "local_id": 62,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 63,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_a"
+      }
+    },
+    {
+      "local_id": 64,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 65,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 66,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_y"
+      }
+    },
+    {
+      "local_id": 67,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 68,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_ticks"
+      }
+    },
+    {
+      "local_id": 69,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 70,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 71,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "h"
+      }
+    },
+    {
+      "local_id": 72,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "tests"
+      }
+    },
+    {
+      "local_id": 73,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 74,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_with"
+      }
+    },
+    {
+      "local_id": 75,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 5
+      }
+    },
+    {
+      "local_id": 76,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 77,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 78,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_with"
+      }
+    },
+    {
+      "local_id": 79,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 80,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_a"
+      }
+    },
+    {
+      "local_id": 81,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 82,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2.0
+      }
+    },
+    {
+      "local_id": 83,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 84,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_y"
+      }
+    },
+    {
+      "local_id": 85,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 86,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_with"
+      }
+    },
+    {
+      "local_id": 87,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 88,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 89,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_ticks"
+      }
+    },
+    {
+      "local_id": 90,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 91,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_a"
+      }
+    },
+    {
+      "local_id": 92,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 93,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 94,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 95,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 96,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 97,
+      "type": "Term.Exists",
+      "attrs": {
+        "var_name": "iv"
+      }
+    },
+    {
+      "local_id": 98,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 99,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "hypothesizes"
+      }
+    },
+    {
+      "local_id": 100,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "h"
+      }
+    },
+    {
+      "local_id": 101,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "status"
+      }
+    },
+    {
+      "local_id": 102,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": "open"
+      }
+    },
+    {
+      "local_id": 103,
+      "type": "Term.Eq",
+      "attrs": {}
+    },
+    {
+      "local_id": 104,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "h"
+      }
+    },
+    {
+      "local_id": 105,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "action"
+      }
+    },
+    {
+      "local_id": 106,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "this_action"
+      }
+    },
+    {
+      "local_id": 107,
+      "type": "Term.Eq",
+      "attrs": {}
+    },
+    {
+      "local_id": 108,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 109,
+      "type": "Term.Filter",
+      "attrs": {
+        "var_name": "h"
+      }
+    },
+    {
+      "local_id": 110,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.0
+      }
+    },
+    {
+      "local_id": 111,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 112,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "h"
+      }
+    },
+    {
+      "local_id": 113,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "trials"
+      }
+    },
+    {
+      "local_id": 114,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 12.0
+      }
+    },
+    {
+      "local_id": 115,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 116,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 117,
+      "type": "Term.Max",
+      "attrs": {}
+    },
+    {
+      "local_id": 118,
+      "type": "Term.Sum",
+      "attrs": {
+        "var_name": "h"
+      }
+    },
+    {
+      "local_id": 119,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "agent"
+      }
+    },
+    {
+      "local_id": 120,
+      "type": "Term.Neighbours",
+      "attrs": {
+        "edge_type": "logged"
+      }
+    },
+    {
+      "local_id": 121,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "e"
+      }
+    },
+    {
+      "local_id": 122,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "timestamp"
+      }
+    },
+    {
+      "local_id": 123,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "subr"
+      }
+    },
+    {
+      "local_id": 124,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "at_tick"
+      }
+    },
+    {
+      "local_id": 125,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "subr"
+      }
+    },
+    {
+      "local_id": 126,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "window"
+      }
+    },
+    {
+      "local_id": 127,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 128,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 129,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "e"
+      }
+    },
+    {
+      "local_id": 130,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "timestamp"
+      }
+    },
+    {
+      "local_id": 131,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "subr"
+      }
+    },
+    {
+      "local_id": 132,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "at_tick"
+      }
+    },
+    {
+      "local_id": 133,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 134,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 135,
+      "type": "Term.Filter",
+      "attrs": {
+        "var_name": "e"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "local": 1
+      },
+      "tgt": {
+        "local": 0
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 1
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 2
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 4
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 6
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 5
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 7
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 11
+      },
+      "tgt": {
+        "local": 10
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 12
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 14
+      },
+      "tgt": {
+        "local": 11
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 14
+      },
+      "tgt": {
+        "local": 13
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 15
+      },
+      "tgt": {
+        "local": 9
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 15
+      },
+      "tgt": {
+        "local": 14
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 8
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 15
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 18
+      },
+      "tgt": {
+        "local": 3
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 18
+      },
+      "tgt": {
+        "local": 16
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 18
+      },
+      "tgt": {
+        "local": 17
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 20
+      },
+      "tgt": {
+        "local": 19
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 22
+      },
+      "tgt": {
+        "local": 20
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 22
+      },
+      "tgt": {
+        "local": 21
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 24
+      },
+      "tgt": {
+        "local": 23
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 22
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 24
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 25
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 30
+      },
+      "tgt": {
+        "local": 29
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 32
+      },
+      "tgt": {
+        "local": 31
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 34
+      },
+      "tgt": {
+        "local": 32
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 34
+      },
+      "tgt": {
+        "local": 33
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 36
+      },
+      "tgt": {
+        "local": 35
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 37
+      },
+      "tgt": {
+        "local": 36
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 38
+      },
+      "tgt": {
+        "local": 37
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 40
+      },
+      "tgt": {
+        "local": 38
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 40
+      },
+      "tgt": {
+        "local": 39
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 41
+      },
+      "tgt": {
+        "local": 34
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 41
+      },
+      "tgt": {
+        "local": 40
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 42
+      },
+      "tgt": {
+        "local": 30
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 42
+      },
+      "tgt": {
+        "local": 41
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 44
+      },
+      "tgt": {
+        "local": 43
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 46
+      },
+      "tgt": {
+        "local": 42
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 46
+      },
+      "tgt": {
+        "local": 44
+      },
+      "type": "child.value",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 46
+      },
+      "tgt": {
+        "local": 45
+      },
+      "type": "child.default",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 47
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 48
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 51
+      },
+      "tgt": {
+        "local": 50
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 53
+      },
+      "tgt": {
+        "local": 51
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 53
+      },
+      "tgt": {
+        "local": 52
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 55
+      },
+      "tgt": {
+        "local": 49
+      },
+      "type": "child.cond",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 55
+      },
+      "tgt": {
+        "local": 53
+      },
+      "type": "child.then",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 55
+      },
+      "tgt": {
+        "local": 54
+      },
+      "type": "child.other",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 56
+      },
+      "tgt": {
+        "local": 46
+      },
+      "type": "child.value",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 56
+      },
+      "tgt": {
+        "local": 55
+      },
+      "type": "child.body",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 58
+      },
+      "tgt": {
+        "local": 28
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 58
+      },
+      "tgt": {
+        "local": 56
+      },
+      "type": "child.value",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 58
+      },
+      "tgt": {
+        "local": 57
+      },
+      "type": "child.default",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 59
+      },
+      "tgt": {
+        "local": 27
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 59
+      },
+      "tgt": {
+        "local": 58
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 61
+      },
+      "tgt": {
+        "local": 60
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 63
+      },
+      "tgt": {
+        "local": 62
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 64
+      },
+      "tgt": {
+        "local": 61
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 64
+      },
+      "tgt": {
+        "local": 63
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 66
+      },
+      "tgt": {
+        "local": 65
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 68
+      },
+      "tgt": {
+        "local": 67
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 69
+      },
+      "tgt": {
+        "local": 66
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 69
+      },
+      "tgt": {
+        "local": 68
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 70
+      },
+      "tgt": {
+        "local": 64
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 70
+      },
+      "tgt": {
+        "local": 69
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 72
+      },
+      "tgt": {
+        "local": 71
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 74
+      },
+      "tgt": {
+        "local": 73
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 76
+      },
+      "tgt": {
+        "local": 74
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 76
+      },
+      "tgt": {
+        "local": 75
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 78
+      },
+      "tgt": {
+        "local": 77
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 80
+      },
+      "tgt": {
+        "local": 79
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 81
+      },
+      "tgt": {
+        "local": 78
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 81
+      },
+      "tgt": {
+        "local": 80
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 84
+      },
+      "tgt": {
+        "local": 83
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 86
+      },
+      "tgt": {
+        "local": 85
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 87
+      },
+      "tgt": {
+        "local": 84
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 87
+      },
+      "tgt": {
+        "local": 86
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 89
+      },
+      "tgt": {
+        "local": 88
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 91
+      },
+      "tgt": {
+        "local": 90
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 92
+      },
+      "tgt": {
+        "local": 89
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 92
+      },
+      "tgt": {
+        "local": 91
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 93
+      },
+      "tgt": {
+        "local": 87
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 93
+      },
+      "tgt": {
+        "local": 92
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 94
+      },
+      "tgt": {
+        "local": 82
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 94
+      },
+      "tgt": {
+        "local": 93
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 95
+      },
+      "tgt": {
+        "local": 81
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 95
+      },
+      "tgt": {
+        "local": 94
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 96
+      },
+      "tgt": {
+        "local": 76
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 96
+      },
+      "tgt": {
+        "local": 95
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 97
+      },
+      "tgt": {
+        "local": 72
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 97
+      },
+      "tgt": {
+        "local": 96
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 99
+      },
+      "tgt": {
+        "local": 98
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 101
+      },
+      "tgt": {
+        "local": 100
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 103
+      },
+      "tgt": {
+        "local": 101
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 103
+      },
+      "tgt": {
+        "local": 102
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 105
+      },
+      "tgt": {
+        "local": 104
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 107
+      },
+      "tgt": {
+        "local": 105
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 107
+      },
+      "tgt": {
+        "local": 106
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 108
+      },
+      "tgt": {
+        "local": 103
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 108
+      },
+      "tgt": {
+        "local": 107
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 109
+      },
+      "tgt": {
+        "local": 99
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 109
+      },
+      "tgt": {
+        "local": 108
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 113
+      },
+      "tgt": {
+        "local": 112
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 115
+      },
+      "tgt": {
+        "local": 113
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 115
+      },
+      "tgt": {
+        "local": 114
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 116
+      },
+      "tgt": {
+        "local": 111
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 116
+      },
+      "tgt": {
+        "local": 115
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 117
+      },
+      "tgt": {
+        "local": 110
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 117
+      },
+      "tgt": {
+        "local": 116
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 118
+      },
+      "tgt": {
+        "local": 109
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 118
+      },
+      "tgt": {
+        "local": 117
+      },
+      "type": "child.value",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 120
+      },
+      "tgt": {
+        "local": 119
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 122
+      },
+      "tgt": {
+        "local": 121
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 124
+      },
+      "tgt": {
+        "local": 123
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 126
+      },
+      "tgt": {
+        "local": 125
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 127
+      },
+      "tgt": {
+        "local": 124
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 127
+      },
+      "tgt": {
+        "local": 126
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 128
+      },
+      "tgt": {
+        "local": 122
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 128
+      },
+      "tgt": {
+        "local": 127
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 130
+      },
+      "tgt": {
+        "local": 129
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 132
+      },
+      "tgt": {
+        "local": 131
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 133
+      },
+      "tgt": {
+        "local": 130
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 133
+      },
+      "tgt": {
+        "local": 132
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 134
+      },
+      "tgt": {
+        "local": 128
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 134
+      },
+      "tgt": {
+        "local": 133
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 135
+      },
+      "tgt": {
+        "local": 120
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 135
+      },
+      "tgt": {
+        "local": 134
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 18
+      },
+      "type": "order_n_curiosity_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 26
+      },
+      "type": "abs_info_gain_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 59
+      },
+      "type": "event_salience_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 70
+      },
+      "type": "intervention_lift_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 97
+      },
+      "type": "hypothesis_test_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 118
+      },
+      "type": "experiment_value_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 135
+      },
+      "type": "wonder_why_query_term",
+      "attrs": {}
+    }
+  ],
+  "productions": [],
+  "rules": [
+    {
+      "name": "rule_surface_curiosity",
+      "match": [
+        [
+          "agent",
+          "knows_concept",
+          "c"
+        ],
+        [
+          "agent",
+          "inquire_sat_term_root",
+          "sat_root"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "placeholder",
+              "type": "Attr",
+              "node": {
+                "name": "c",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": true,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "var_name": "g",
+                "predicate": {
+                  "type": "And",
+                  "items": [
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "communicate_kind",
+                        "type": "Attr",
+                        "node": {
+                          "name": "g",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "value": "inquire",
+                        "type": "Lit"
+                      }
+                    },
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "inquires_about_form",
+                        "type": "Attr",
+                        "node": {
+                          "name": "g",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "key": "name",
+                        "type": "Attr",
+                        "node": {
+                          "name": "c",
+                          "type": "Var"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "Neighbours",
+                  "edge_type": "has_goal",
+                  "node": {
+                    "name": "agent",
+                    "type": "Var"
+                  }
+                }
+              }
+            },
+            "b": {
+              "value": 0,
+              "type": "Lit"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "m_root",
+          "Meaning",
+          {}
+        ],
+        [
+          "add_node",
+          "m_force",
+          "Meaning",
+          {
+            "value": "ask"
+          }
+        ],
+        [
+          "add_edge",
+          "m_root",
+          "slot",
+          "m_force",
+          {
+            "name": "force"
+          }
+        ],
+        [
+          "add_node",
+          "m_verb",
+          "Meaning",
+          {}
+        ],
+        [
+          "add_edge",
+          "m_root",
+          "slot",
+          "m_verb",
+          {
+            "name": "know"
+          }
+        ],
+        [
+          "add_node",
+          "m_of",
+          "Meaning",
+          {
+            "value": {
+              "__term__": {
+                "key": "name",
+                "type": "Attr",
+                "node": {
+                  "name": "c",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "m_verb",
+          "slot",
+          "m_of",
+          {
+            "name": "of"
+          }
+        ],
+        [
+          "add_node",
+          "goal",
+          "Goal",
+          {
+            "label": "inquire",
+            "priority": {
+              "__term__": {
+                "value": 1.0,
+                "type": "Lit"
+              }
+            },
+            "persistent": false,
+            "created_tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            },
+            "inquires_about_form": {
+              "__term__": {
+                "key": "name",
+                "type": "Attr",
+                "node": {
+                  "name": "c",
+                  "type": "Var"
+                }
+              }
+            },
+            "communicate_kind": "inquire"
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "has_goal",
+          "goal"
+        ],
+        [
+          "add_edge",
+          "goal",
+          "has_meaning",
+          "m_root"
+        ],
+        [
+          "add_edge",
+          "goal",
+          "satisfaction_term",
+          "sat_root"
+        ]
+      ]
+    }
+  ]
+}

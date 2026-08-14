@@ -1,0 +1,355 @@
+{
+  "id": "bigville_jail",
+  "version": "2.0.0",
+  "depends_on": [
+    "bigville_court",
+    "bigville_bells"
+  ],
+  "self_load_only": true,
+  "description": "bigville R26 (block 314000): the JAIL -- custodial sentences. A Charge may carry a prescribed jail_term (days, the statutory penalty for the offence). The jail is a first-class institution (Town -has_jail-> Jail). jl_imprison: a GUILTY charge with jail_term>0 imprisons the defendant (Jail -holds_inmate-> d, d.imprisoned=1, d.sentence_remaining=jail_term), once -- IN ADDITION to the fine ct_sentence applies (custody and fine are independent consequences of one guilty verdict). jl_serve_day: BELL-DRIVEN (block 321000) -- when the CURFEW bell tolls the day (a curfew BellPeal from the church) each inmate with time left decrements sentence_remaining by 1, once per day (served_today guard). jl_release: an inmate whose sentence_remaining reaches 0 is freed (del_edge holds_inmate, d.imprisoned=0) -- the FULL term, no early release. An acquitted defendant is never jailed; a jail_term=0 charge fines but does not imprison.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "jl_imprison",
+      "batch": false,
+      "comment": "A GUILTY charge with a prescribed custodial term imprisons the defendant (held on the jail roll, remaining=term), once. Additive to ct_sentence's fine.",
+      "match": [
+        [
+          "town",
+          "has_charge",
+          "charge"
+        ],
+        [
+          "charge",
+          "about_subject",
+          "d"
+        ],
+        [
+          "town",
+          "has_jail",
+          "jail"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "guilty"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "charge"
+                  },
+                  "key": "jail_term"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "key": "jailed"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "jail",
+          "holds_inmate",
+          "d"
+        ],
+        [
+          "set_attr",
+          "d",
+          "imprisoned",
+          1.0
+        ],
+        [
+          "set_attr",
+          "d",
+          "sentence_remaining",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "jail_term"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "charge",
+          "jailed",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "jl_serve_day",
+      "batch": false,
+      "comment": "BELL-DRIVEN: each inmate serves one day when the CURFEW bell tolls (a curfew BellPeal from the church), once per peal (served_peal guard). No forced town.advancing flag -- the day turns because the bell marks it.",
+      "match": [
+        [
+          "town",
+          "has_jail",
+          "jail"
+        ],
+        [
+          "jail",
+          "holds_inmate",
+          "d"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "peal"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "curfew"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "d"
+                  },
+                  "key": "sentence_remaining"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "d"
+                },
+                "edge_type": "served_peal"
+              },
+              "var_name": "sp",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "sp"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "peal"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "d",
+          "sentence_remaining",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "d"
+                    },
+                    "key": "sentence_remaining"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "d",
+          "served_peal",
+          "peal"
+        ]
+      ]
+    },
+    {
+      "name": "jl_release",
+      "batch": false,
+      "comment": "An inmate whose sentence_remaining has reached 0 is released: off the jail roll, imprisoned=0. The full term is served -- no early release.",
+      "match": [
+        [
+          "town",
+          "has_jail",
+          "jail"
+        ],
+        [
+          "jail",
+          "holds_inmate",
+          "d"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "d"
+                  },
+                  "key": "imprisoned"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "d"
+                  },
+                  "key": "sentence_remaining"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.5
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "del_edge",
+          "jail",
+          "holds_inmate",
+          "d"
+        ],
+        [
+          "set_attr",
+          "d",
+          "imprisoned",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

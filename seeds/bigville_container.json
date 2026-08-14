@@ -1,0 +1,895 @@
+{
+  "id": "bigville_container",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R71 (block 388000): CONTAINERS -- a class of the same kind as PILE. A Pile is loose matter (kind, qty); a Container (a barrel, sack, bucket, bin, chest, safe) is the sibling class: a physical, located, claimable world-fact too, but with a CAPACITY that holds CONTENTS (cont -contains-> inner pile). ct_fill moves matter from a loose pile INTO a container up to its remaining room (never overfilled); ct_empty takes it back out -- both by ACCESS (co-location), both CONSERVED. Unifies the safe (coins in a locked container) and the Larder (cold store). Composes with the physical pile model (387000: piles are world-facts, ownership is recognized). Deferred: discrete containment (a chest of tool ITEMS via contains-edges); a lock+key gating access to a container (the safe); per-content ownership vs owning the vessel. LOCK+KEY: a container may be lockable (locked, lock_id); access (fill/empty) requires it be unlocked OR the agent hold a key that opens it -- a SAFE is a locked container. ck_lock/ck_unlock: a keyholder locks/unlocks. Composes with bigville_coin_safe.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ct_fill",
+      "batch": false,
+      "comment": "FILLING a container (by ACCESS): an agent AT a place, a loose pile AT the place, and a container AT the place holding an inner pile of the SAME kind -- move min(fill_amount, loose.qty, remaining room) from the loose pile into the container. Bounded by CAPACITY (never overfilled); matter is MOVED not created (conserved). A container is a peer of a pile -- both located world-facts -- but it has capacity and CONTAINS. (moved is stashed first, then applied to both sides -- avoids the sequential-read lag.) LOCK: only if the container is unlocked, or the agent holds a key that opens it (a locked safe blocks access without the key).",
+      "match": [
+        [
+          "agent",
+          "at",
+          "place"
+        ],
+        [
+          "cont",
+          "at",
+          "place"
+        ],
+        [
+          "loose",
+          "at",
+          "place"
+        ],
+        [
+          "cont",
+          "contains",
+          "inner"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "fill_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "loose"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "inner"
+              },
+              "key": "kind"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "loose"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "cont"
+                      },
+                      "key": "locked"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Exists",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "edge_type": "holds_key"
+                },
+                "var_name": "k",
+                "predicate": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "k"
+                        },
+                        "key": "opens"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "cont"
+                        },
+                        "key": "lock_id"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "moved",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "fill_amount"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "loose"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Max",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "cont"
+                            },
+                            "key": "capacity"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "inner"
+                            },
+                            "key": "qty"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "loose",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "loose"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "moved"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "inner",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "inner"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "moved"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "fill_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "ct_empty",
+      "batch": false,
+      "comment": "EMPTYING a container (by access): move min(empty_amount, inner.qty) from the inner pile back out to a loose pile of the same kind at the place. Conserved. LOCK: only if the container is unlocked, or the agent holds a key that opens it (a locked safe blocks access without the key).",
+      "match": [
+        [
+          "agent",
+          "at",
+          "place"
+        ],
+        [
+          "cont",
+          "at",
+          "place"
+        ],
+        [
+          "loose",
+          "at",
+          "place"
+        ],
+        [
+          "cont",
+          "contains",
+          "inner"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "empty_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "loose"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "inner"
+              },
+              "key": "kind"
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "cont"
+                      },
+                      "key": "locked"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Exists",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "edge_type": "holds_key"
+                },
+                "var_name": "k",
+                "predicate": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "k"
+                        },
+                        "key": "opens"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "cont"
+                        },
+                        "key": "lock_id"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "moved",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "empty_amount"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "inner"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "inner",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "inner"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "moved"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "loose",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "loose"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "moved"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "empty_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "ck_lock",
+      "batch": false,
+      "comment": "A person holding a key that opens the container can LOCK it (locked=1.0). The key is the authority to open; without it a locked container stays shut.",
+      "match": [
+        [
+          "agent",
+          "at",
+          "place"
+        ],
+        [
+          "cont",
+          "at",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "lock_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Exists",
+            "source": {
+              "type": "Neighbours",
+              "node": {
+                "type": "Var",
+                "name": "agent"
+              },
+              "edge_type": "holds_key"
+            },
+            "var_name": "k",
+            "predicate": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "k"
+                    },
+                    "key": "opens"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "cont"
+                    },
+                    "key": "lock_id"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "cont",
+          "locked",
+          1.0
+        ],
+        [
+          "set_attr",
+          "agent",
+          "lock_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "ck_unlock",
+      "batch": false,
+      "comment": "A person holding a key that opens the container can UNLOCK it (locked=0.0). The key is the authority to open; without it a locked container stays shut.",
+      "match": [
+        [
+          "agent",
+          "at",
+          "place"
+        ],
+        [
+          "cont",
+          "at",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "unlock_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Exists",
+            "source": {
+              "type": "Neighbours",
+              "node": {
+                "type": "Var",
+                "name": "agent"
+              },
+              "edge_type": "holds_key"
+            },
+            "var_name": "k",
+            "predicate": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "k"
+                    },
+                    "key": "opens"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "cont"
+                    },
+                    "key": "lock_id"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "cont",
+          "locked",
+          0.0
+        ],
+        [
+          "set_attr",
+          "agent",
+          "unlock_armed",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

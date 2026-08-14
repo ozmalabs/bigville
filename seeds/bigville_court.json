@@ -1,0 +1,515 @@
+{
+  "id": "bigville_court",
+  "version": "2.0.0",
+  "depends_on": [
+    "bigville_legislature",
+    "agent_judgment"
+  ],
+  "self_load_only": true,
+  "description": "bigville R24 v2 (block 313000): the council sits as court -- REWIRED onto the GENERIC decision-by-collapse (agent_judgment), superseding v1's evidence>=bar threshold (the user's correction: the councillor CHOOSES; the verdict is the agent's OWN collapse, not a comparator). The Constable files a Charge that IS a Matter: it carries weight (evidence) and -about_subject-> the defendant, and every councillor -considers-> it. Each councillor is a governed agent, so jc_conclude (agent_judgment) fires: each collapses the charge against its OWN dispositions into its own Conclusion -- councillors DIVERGE on the same charge. The court then AGGREGATES: ct_hear registers each councillor who has concluded; ct_condemn registers those whose conclusion is condemning (verdict_pole>0); the verdict settles once ALL councillors have concluded (heard >= council size) -- GUILTY iff the condemning councillors reach the charge's threshold, else ACQUITTED. A guilty verdict SENTENCES the defendant (a fine into the same Treasury the land_tax feeds + a standing hit), once. The verdict is the council's collective collapse, not a function of the evidence alone -- who the defendant is, and each juror's disposition, move it.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ct_hear",
+      "batch": false,
+      "comment": "Register each councillor who has reached a conclusion about the charge (condemning or not) -- this counts when deliberation is complete.",
+      "match": [
+        [
+          "town",
+          "on_council",
+          "c"
+        ],
+        [
+          "c",
+          "holds_conclusion",
+          "concl"
+        ],
+        [
+          "concl",
+          "about",
+          "charge"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "source": {
+            "type": "Neighbours",
+            "node": {
+              "type": "Var",
+              "name": "c"
+            },
+            "edge_type": "heard"
+          },
+          "var_name": "x",
+          "predicate": {
+            "type": "Eq",
+            "a": {
+              "type": "Var",
+              "name": "x"
+            },
+            "b": {
+              "type": "Var",
+              "name": "charge"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "c",
+          "heard",
+          "charge"
+        ]
+      ]
+    },
+    {
+      "name": "ct_condemn",
+      "batch": false,
+      "comment": "Register a councillor whose conclusion about the charge is CONDEMNING (verdict_pole>0). These are the convicting votes -- but each is the councillor's own collapse, not a threshold on evidence.",
+      "match": [
+        [
+          "town",
+          "on_council",
+          "c"
+        ],
+        [
+          "c",
+          "holds_conclusion",
+          "concl"
+        ],
+        [
+          "concl",
+          "about",
+          "charge"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "concl"
+                  },
+                  "key": "verdict_pole"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "c"
+                },
+                "edge_type": "condemns_charge"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "charge"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "c",
+          "condemns_charge",
+          "charge"
+        ]
+      ]
+    },
+    {
+      "name": "ct_verdict_guilty",
+      "batch": false,
+      "comment": "The verdict settles once EVERY councillor has concluded (heard >= council size). GUILTY iff the condemning councillors reach the charge's threshold.",
+      "match": [
+        [
+          "town",
+          "has_charge",
+          "charge"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "filed"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "edge_type": "heard"
+              }
+            },
+            "b": {
+              "type": "Count",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "town"
+                },
+                "edge_type": "on_council"
+              }
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "edge_type": "condemns_charge"
+              }
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "threshold"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "charge",
+          "convict_votes",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "edge_type": "condemns_charge"
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "charge",
+          "status",
+          "guilty"
+        ]
+      ]
+    },
+    {
+      "name": "ct_verdict_acquit",
+      "batch": false,
+      "comment": "... else ACQUITTED (the condemning councillors fell short of the threshold).",
+      "match": [
+        [
+          "town",
+          "has_charge",
+          "charge"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "filed"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "edge_type": "heard"
+              }
+            },
+            "b": {
+              "type": "Count",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "town"
+                },
+                "edge_type": "on_council"
+              }
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "edge_type": "condemns_charge"
+              }
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "threshold"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "charge",
+          "convict_votes",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "edge_type": "condemns_charge"
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "charge",
+          "status",
+          "acquitted"
+        ]
+      ]
+    },
+    {
+      "name": "ct_sentence",
+      "batch": false,
+      "comment": "A GUILTY charge sentences the defendant: fine (coin -> the Treasury) + a standing hit, applied exactly once (Not sentenced). Acquittal never reaches here.",
+      "match": [
+        [
+          "town",
+          "has_charge",
+          "charge"
+        ],
+        [
+          "charge",
+          "about_subject",
+          "d"
+        ],
+        [
+          "town",
+          "has_treasury",
+          "tr"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "guilty"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "key": "sentenced"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "d",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "d"
+                },
+                "key": "coin"
+              },
+              "b": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "key": "penalty"
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "tr",
+          "collected",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "tr"
+                  },
+                  "key": "collected"
+                },
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "charge"
+                  },
+                  "key": "penalty"
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "d",
+          "standing",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "d"
+                },
+                "key": "standing"
+              },
+              "b": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "key": "standing_penalty"
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "charge",
+          "sentenced",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

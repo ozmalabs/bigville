@@ -1,0 +1,683 @@
+{
+  "id": "bigville_apprentice",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "TAKING ON AN APPRENTICE is the master's COLLAPSE (ap_decide/accept/decline). bigville R61 (block 374000): the TRADES TRAIN APPRENTICES. A master takes on an apprentice (master -has_apprentice-> app); ap_learn nudges the apprentice's craft SKILL up toward the master's, once per training period (diminishing returns) -- and because it is the same `skill` attr bigville_craft reads for QUALITY, a trained apprentice makes better tools (poor -> good over training). ap_graduate: at ~80% of the master's skill the apprentice becomes a JOURNEYMAN, competent to practise the trade. ap_succeed: when the master DIES a graduated apprentice inherits the trade (the trade survives its master -- succession). Builds on the town's existing skill-teach / skill-learn / school machinery for the general case; this is the trade-scoped role lifecycle. Composes with bigville_craft (skill=quality), the forge/woodshop (373000), and bigville_office (a trade is a role).",
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "ApprenticeStance",
+      "attrs": {
+        "label": "accept",
+        "sign": 1.0
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "ApprenticeStance",
+      "attrs": {
+        "label": "decline",
+        "sign": -1.0
+      }
+    }
+  ],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ap_decide",
+      "batch": false,
+      "comment": "TAKING ON AN APPRENTICE IS THE MASTER'S DECISION (a collapse, not an adapter call): a would-be apprentice seeks a master (cand -seeks_master-> master); the master COLLAPSES over accept(+1)/decline(-1) stances valued by sign * his OWN willingness (mentoring - reluctance - 2*current apprentices). A generous master accepts; a curmudgeon or a master already at capacity declines. Sets cand.apprentice_verdict; agents DIVERGE on the same candidate.",
+      "match": [
+        [
+          "cand",
+          "seeks_master",
+          "master"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Eq",
+          "a": {
+            "type": "Attr",
+            "node": {
+              "type": "Var",
+              "name": "cand"
+            },
+            "key": "apprentice_verdict"
+          },
+          "b": {
+            "type": "Lit",
+            "value": "accept"
+          }
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "cand",
+          "apprentice_verdict",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "ApprenticeStance"
+                },
+                "var_name": "s",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "s"
+                          },
+                          "key": "sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "master"
+                            },
+                            "key": "mentoring"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "master"
+                                },
+                                "key": "reluctance"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Times",
+                            "items": [
+                              {
+                                "type": "Lit",
+                                "value": 2.0
+                              },
+                              {
+                                "type": "Count",
+                                "source": {
+                                  "type": "Neighbours",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "master"
+                                  },
+                                  "edge_type": "has_apprentice"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "ap_accept",
+      "batch": false,
+      "comment": "The master ACCEPTED: bind the apprenticeship (master -has_apprentice-> cand, role=apprentice) and consume the request. The ap_learn/ap_graduate/ap_succeed lifecycle takes over.",
+      "match": [
+        [
+          "cand",
+          "seeks_master",
+          "master"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Attr",
+          "node": {
+            "type": "Var",
+            "name": "cand"
+          },
+          "key": "apprentice_verdict"
+        },
+        "b": {
+          "type": "Lit",
+          "value": "accept"
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "master",
+          "has_apprentice",
+          "cand"
+        ],
+        [
+          "set_attr",
+          "cand",
+          "role",
+          "apprentice"
+        ],
+        [
+          "del_edge",
+          "cand",
+          "seeks_master",
+          "master"
+        ]
+      ]
+    },
+    {
+      "name": "ap_decline",
+      "batch": false,
+      "comment": "The master DECLINED: the candidate is turned away (role=turned_away); the request is consumed.",
+      "match": [
+        [
+          "cand",
+          "seeks_master",
+          "master"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Attr",
+          "node": {
+            "type": "Var",
+            "name": "cand"
+          },
+          "key": "apprentice_verdict"
+        },
+        "b": {
+          "type": "Lit",
+          "value": "decline"
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "cand",
+          "role",
+          "turned_away"
+        ],
+        [
+          "del_edge",
+          "cand",
+          "seeks_master",
+          "master"
+        ]
+      ]
+    },
+    {
+      "name": "ap_learn",
+      "batch": false,
+      "comment": "LEARNING THE TRADE: an apprentice working under a master nudges their own craft skill UP toward the master's, once per training period (epoch guard learned_epoch < master.period), by learn_rate * (master.skill - app.skill) -- diminishing returns, asymptoting to the master. This is the agent's own `skill` attr (the SAME one bigville_craft reads for tool QUALITY), so a trained apprentice makes better tools. The trade-scoped analog of the general bs_practice loop.",
+      "match": [
+        [
+          "master",
+          "has_apprentice",
+          "app"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "app"
+                  },
+                  "key": "skill"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "master"
+                  },
+                  "key": "skill"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "app"
+                  },
+                  "key": "learned_epoch"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "master"
+                  },
+                  "key": "period"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "app",
+          "skill",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "app"
+                      },
+                      "key": "skill"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "app"
+                          },
+                          "key": "learn_rate"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "master"
+                            },
+                            "key": "skill"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "app"
+                            },
+                            "key": "skill"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "app",
+          "learned_epoch",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "master"
+                  },
+                  "key": "period"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "ap_graduate",
+      "batch": false,
+      "comment": "GRADUATION: when the apprentice's skill reaches GRAD_FRACTION of the master's (nearly as good), they become a JOURNEYMAN -- competent to practise the trade in their own right (graduated=1, role=journeyman). A competence fact, not a value-decision.",
+      "match": [
+        [
+          "master",
+          "has_apprentice",
+          "app"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "app"
+                  },
+                  "key": "skill"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.8
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "master"
+                      },
+                      "key": "skill"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "app"
+                    },
+                    "key": "graduated"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "app",
+          "graduated",
+          1.0
+        ],
+        [
+          "set_attr",
+          "app",
+          "role",
+          "journeyman"
+        ],
+        [
+          "set_attr",
+          "app",
+          "trade",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "master"
+              },
+              "key": "trade"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "ap_succeed",
+      "batch": false,
+      "comment": "SUCCESSION: when the master DIES (alive=0) and the apprentice has GRADUATED, the apprentice inherits the trade (role=master, succeeded=1) -- the trade does not die with the master. The maker-role EDGE is then moved to them by the adapter (mechanical, trade read from data -- the has_<trade> edge type is a fixed string so it cannot be added by a generic rule).",
+      "match": [
+        [
+          "master",
+          "has_apprentice",
+          "app"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "master"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "app"
+                  },
+                  "key": "graduated"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "app"
+                    },
+                    "key": "succeeded"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "app",
+          "succeeded",
+          1.0
+        ],
+        [
+          "set_attr",
+          "app",
+          "role",
+          "master"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+ "id": "spite_skill",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "area": "retina",
+ "description": "BLOCK 213000 -- SPITE + SKILL: two NEW knobs on the 204000 core_emotions value economy, wired into the 212000 HARVEST commons. (1) The SPITE region: a w_spite term that VALUES reducing another agent's / the collective's yield -- the negative-social MIRROR of w_supergraph. Sign-only, exactly like w_supergraph (a burn action's published burn_harm enters decision_value iff w_spite>0). A spiteful agent (w_spite>0) picks a self-costly BURN that harms others -- an action NEITHER a payoff-maximizer NOR an INDIFFERENT psychopath (w_supergraph=0, w_spite=0) takes: malice is not indifference. (2) The SKILL / order-N axis: order_n gates whether the anticipated N-step SANCTION (individual_cost) enters decision_value. LOW order-N (order_n=0, myopic) ignores it and grabs; HIGH order-N (order_n>=1, strategic) includes it and RESTRAINS under enforcement -- cooperation-from-CALCULATION, distinct from cooperation-from-CARE (w_supergraph>0). Both knobs are GRAPH DATA read by the rule ss_decision_value; the adapter only publishes observations and reads the Argmax. decision_value is a FRESH key (never total_value) so there is NO write-conflict with core em_total_value in the run_rules fixpoint; at neutral knobs (order_n>=1, w_spite=0, mood_bias=0) decision_value == core total_value, so a neutral spite-world agent's Argmax is byte-identical to a 212000 agent's. Integer-native (Argmax/Attr/Neighbours/IfThenElse/Gt/Plus/Minus only; no Rust, no new Term). OFF by default: self_load_only, nothing depends_on it, every rule guards on HeldEmotionParams.enabled AND skill_spite_on -- absent it every existing path is byte-identical. A synthetic MODEL that re-derives the hot/cold (reactive/instrumental) aggression split (spite = costly money-burning, Zizzo-Oswald / Abbink-Sadrieh joy-of-destruction) and the folk-theorem cooperation-from-self-interest (skill); the contribution is the glass-box attribution to a named knob, not new social science.",
+ "microtheory": {
+  "name": "spite_skill",
+  "description": "The social-value axis has a NEGATIVE region (w_spite: actively value reducing others' yield) mirroring its positive region (w_supergraph: value the collective's yield); malice (self-costly harm-seeking) is DISTINCT from indifference (benefit-maximizing psychopathy). ORTHOGONALLY, planning depth (order_n) gates which anticipated consequences enter the value -- a myopic agent ignores the future sanction and grabs, a strategic agent anticipates it and restrains: cooperation-from-calculation, distinct from cooperation-from-care."
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {"provenance": "seed:spite_skill:candidate",
+   "src": {"type": "EmotionHub", "var": "hub"},
+   "edge_type": "has_candidate",
+   "tgt": {"type": "Appraisal", "var": "c"}},
+  {"provenance": "seed:spite_skill:decision",
+   "src": {"type": "EmotionHub", "var": "hub"},
+   "edge_type": "has_decision",
+   "tgt": {"type": "HarvestDecision", "var": "dec"}}
+ ],
+ "rules": [
+  {"name": "ss_decision_value",
+   "area": "retina",
+   "order": 15,
+   "latency_class": "hard_realtime",
+   "comment": "The augmented decision value on each candidate Appraisal -- a FRESH key (never total_value, so no fixpoint write-conflict with core em_total_value). decision_value = individual_benefit - gated_cost + mood_bias + fulfilment_value + spite_value. gated_cost = individual_cost gated by order_n>0 (SKILL: a myopic agent, order_n=0, ignores the anticipated sanction). spite_value = burn_harm gated by w_spite>0 (SPITE: a spiteful agent values the harm a burn inflicts on others; sign-only, exactly like w_supergraph gates supergraph_contribution in em_fulfilment_value). fulfilment_value is read as core computed it ([w_supergraph>0]*supergraph_contribution + mood_bias -- the CARE term, ungated by skill). At neutral knobs (order_n>=1, w_spite=0, mood_bias=0) this equals core total_value exactly.",
+   "match": [
+    ["hub", "has_emotion_params", "ep"],
+    ["hub", "has_appraisal", "ap"]
+   ],
+   "where": {"type": "And", "items": [
+     {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "skill_spite_on"}, "b": {"type": "Lit", "value": 1.0}}
+   ]},
+   "effects": [
+    ["set_attr", "ap", "decision_value",
+     {"__term__": {"type": "Plus", "items": [
+       {"type": "Minus",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "ap"}, "key": "individual_benefit"},
+        "b": {"type": "IfThenElse",
+          "cond": {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "order_n"}, "b": {"type": "Lit", "value": 0.0}},
+          "then": {"type": "Attr", "node": {"type": "Var", "name": "ap"}, "key": "individual_cost"},
+          "other": {"type": "Lit", "value": 0.0}}},
+       {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "mood_bias"},
+       {"type": "Attr", "node": {"type": "Var", "name": "ap"}, "key": "fulfilment_value"},
+       {"type": "IfThenElse",
+         "cond": {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "w_spite"}, "b": {"type": "Lit", "value": 0.0}},
+         "then": {"type": "Attr", "node": {"type": "Var", "name": "ap"}, "key": "burn_harm"},
+         "other": {"type": "Lit", "value": 0.0}}
+     ]}}]
+   ]},
+
+  {"name": "ss_choose_harvest",
+   "area": "retina",
+   "order": 20,
+   "latency_class": "hard_realtime",
+   "comment": "The harvest decision -- the 212000 hv_choose_harvest Argmax pattern generalized to decision_value and a fresh key (chosen_harvest2) so it never conflicts with hv_choose_harvest's total_value read. chosen_harvest2 = harvest_level of the Argmax candidate by decision_value.",
+   "match": [
+    ["hub", "has_emotion_params", "ep"],
+    ["hub", "has_decision", "dec"]
+   ],
+   "where": {"type": "And", "items": [
+     {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "skill_spite_on"}, "b": {"type": "Lit", "value": 1.0}}
+   ]},
+   "effects": [
+    ["set_attr", "dec", "chosen_harvest2",
+     {"__term__": {"type": "Attr",
+       "node": {"type": "Argmax",
+         "source": {"type": "Neighbours", "node": {"type": "Var", "name": "hub"}, "edge_type": "has_candidate", "any_type": false},
+         "var_name": "c",
+         "value": {"type": "Attr", "node": {"type": "Var", "name": "c"}, "key": "decision_value"}},
+       "key": "harvest_level"}}]
+   ]},
+
+  {"name": "ss_choose_burn",
+   "area": "retina",
+   "order": 20,
+   "latency_class": "hard_realtime",
+   "comment": "The burn (destroy) magnitude of the SAME Argmax winner -- read burn_level off the candidate that maximises decision_value. A harvest candidate has burn_level=0; a burn candidate has burn_level=d>0 and individual_benefit<0 (self-costly). Only a spiteful Argmax lands on a burn candidate. Two Argmax terms over the SAME source/value select the SAME node (deterministic), so chosen_harvest2 and chosen_burn are consistent read-offs of one decision.",
+   "match": [
+    ["hub", "has_emotion_params", "ep"],
+    ["hub", "has_decision", "dec"]
+   ],
+   "where": {"type": "And", "items": [
+     {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ep"}, "key": "skill_spite_on"}, "b": {"type": "Lit", "value": 1.0}}
+   ]},
+   "effects": [
+    ["set_attr", "dec", "chosen_burn",
+     {"__term__": {"type": "Attr",
+       "node": {"type": "Argmax",
+         "source": {"type": "Neighbours", "node": {"type": "Var", "name": "hub"}, "edge_type": "has_candidate", "any_type": false},
+         "var_name": "c",
+         "value": {"type": "Attr", "node": {"type": "Var", "name": "c"}, "key": "decision_value"}},
+       "key": "burn_level"}}]
+   ]}
+ ]
+}

@@ -1,0 +1,3151 @@
+{
+  "id": "bigville_theft",
+  "version": "1.3.0",
+  "depends_on": [
+    "bigville_recognition",
+    "bigville_court",
+    "bigville_bond_update"
+  ],
+  "self_load_only": true,
+  "description": "bigville R44 (block 337000): THEFT AS A MEANINGFUL ACTION AND LAW -- wiring ownership (336000) into the recognition + court machinery. TAKING is a WORLD-FACT (th_take): anyone can physically take what another holds; the substrate never forbids it. THEFT is a RECOGNIZED FRAME, not a fact: each witness who recognizes the owner's claim COLLAPSES {theft,innocent} valued by lawfulness - alliance_to_taker (th_recognize_theft -- the WIRE to the recognition faculty; the lawful see theft, the thief's allies do not, agents DIVERGE); recognized theft = Count(sees_theft) (th_standing). A taking of property NOBODY recognizes is seen by no witness -> standing 0 -> NOT a crime (the frame boundary). A recognized theft (standing >= court.quorum) is a chargeable Offense (th_charge); a panel of jurors COLLAPSES guilt (th_vote/th_cast_guilty), the verdict is the majority (th_verdict); a guilty verdict is ENACTED as restitution -- possession returns to the recognized owner (th_restitution). Taking one's OWN recognized property, or with the owner's CONSENT, is never theft. Custodial sentencing composes with bigville_jail/sentence. Ownership stays recognition (own_recognition, Count) -- owner is never a world fact. v1.1.0: OWNERSHIP RECOGNITION NOW EMERGES from a collapse (own_decide/own_grant): each resident decides {recognize,reject} a claim valued by legitimacy*deference - prop_skepticism -- a legitimate claim gathers broad recognition, a usurper's grab little; ownership is emergent, not seeded, and theft rests on it. And a guilty verdict now imposes DAMAGES (to victim) + a FINE (to court) beyond return-of-goods (th_penalty), coin-CONSERVED and bounded by ability to pay (unpaid remainder = debt). v1.2.0: DEBT COLLECTION IS THE CONSTABLE'S JOB (not an automatic effect). th_penalty now splits the unpaid remainder into debt_damages (owed the victim) + debt_fine (owed the court). con_office: the constable's authority = Count(recognizers) (recognized office, not a title). con_duty: the constable COLLAPSES {enforce, forbear} valued by duty - how he FEELS about THIS debtor, read from his first-class held Bond(A->B) TOWARD the charged party (warmth = affect_affection - affect_resentment, the SAME quantity bigville_fast_bond reads; the Bond's six relational emotions are evolved by bigville_bond_update -- NOT a loyalty knob). th_collect: a RECOGNIZED, enforcing constable collects the debt -- damages-first then fine, capped at the debtor's coin, repeating as they earn until cleared; lawful because the office AND the judgment are recognized. A loyal constable forbears; an unrecognized 'constable' cannot lawfully collect. v1.3.0 (block 354000, design-audit 6.1/6.4 Step B): COMPOSES bigville_recognition -- depends_on it, and the ownership-recognition COUNT is now the canonical rc_count (parameterised over the claim node) living in bigville_recognition; theft's duplicate own_recognition is DELETED. The adapter loads bigville_recognition before bigville_theft, so rc_count fires on each recognized OwnershipClaim (per-claim by the match-bound join, the 6.7 measurement). The ownership COLLAPSE (own_decide/own_grant, lean = legitimacy*deference - prop_skepticism) stays theft's own: its lean is ownership-specific and differs from rc_recognize's (fear*force + opportunism - loyalty), so routing it through the canonical collapse is 6.2 (shared stance codebook, deferred) not 6.1. Ownership claims are still seeded with recognition=0.0 so a claim NOBODY recognizes reads 0 (rc_count fires only where a recognizes edge exists). v1.4.0 (block 355000, design-audit 6.3/6.4 Step C + 6.10): COMPOSES bigville_court -- the VERDICT is now the court's collapse, not theft's own jury. th_vote/th_cast_guilty/th_verdict are DELETED. th_charge mints a court Charge/Matter (adds off -about_subject-> taker and town -has_charge-> off; weight = item.theft_standing, threshold = Count(on_council)*0.5+0.5 = a strict majority, penalty/standing_penalty 0 so ct_sentence is an economic no-op). th_refer seats each juror's consideration (juror -considers-> off) so agent_judgment's jc_conclude fires per juror; bigville_court's ct_hear/ct_condemn/ct_verdict_guilty/ct_verdict_acquit aggregate the collapse. The juror's theft lean (lawfulness*theft_standing - doubt) is reproduced through jc_conclude's lean (weight*credence + punitiveness - deference*standing) by the adapter mapping credence=lawfulness, punitiveness=-doubt (the defendant's standing is 0 so the deference term vanishes). th_restitution/th_penalty now read off.status=='guilty' (the court's verdict), not the deleted off.decided/off.guilty. FINE SINK RECONCILED (6.10): th_penalty's fine and th_collect's fine now flow to the town Treasury (tr.collected), the SAME coffer bigville_court's ct_sentence fines -- not court.coin. v1.5.0 (block 356000, design-audit 6.4 Step D + 6.10): COMPOSES bigville_bond_update -- the constable's Bond is no longer an adapter-seeded STATIC feeling; its six relational emotions EVOLVE from a benefit/betrayal HISTORY. The adapter seeds the Bond with the bond-dynamics knobs (update_gain>0, pos_weight, neg_weight, reappraise_factor) and attaches BondEvent nodes (bond -has_event-> ev); bond_event_benefit raises affect_affection from a positive event (the debtor once helped the constable), bond_event_betrayal raises affect_resentment (and re-appraises affection down) from a negative one. con_duty reads the EVOLVED warmth = affect_affection - affect_resentment -- a constable forbears for someone whose kindness EARNED his warmth, enforces on one who betrayed him. Falsifier: update_gain=0 freezes the bond to its 0 prior, so no history moves the feeling and the fond constable no longer forbears. v1.6.0 (block 357000, design-audit 6.4 Step E): ADAPTER SHRINK -- the collapse stance codebooks (TheftStance/OwnStance/DutyStance + the graded judgment Stance the court's jurors collapse over) are now SEED DATA in this manifest's `nodes` (installed by the loader), not minted in the adapter. The adapter builds only the per-scenario world (town/court/treasury + agents/items/OwnershipClaims/Bonds -- legitimate world ingest), arms th_take, and reads. (has_juror minting was retired in Step C when jurors were seated on the court's on_council panel; the static Bond scalar was retired in Step D when the constable's feeling became an evolved benefit/betrayal history.)",
+  "nodes": [
+    {"local_id": 1, "type": "TheftStance", "attrs": {"label": "theft", "sign": 1.0}},
+    {"local_id": 2, "type": "TheftStance", "attrs": {"label": "innocent", "sign": -1.0}},
+    {"local_id": 3, "type": "OwnStance", "attrs": {"label": "recognize", "sign": 1.0}},
+    {"local_id": 4, "type": "OwnStance", "attrs": {"label": "reject", "sign": -1.0}},
+    {"local_id": 5, "type": "DutyStance", "attrs": {"label": "enforce", "sign": 1.0}},
+    {"local_id": 6, "type": "DutyStance", "attrs": {"label": "forbear", "sign": -1.0}},
+    {"local_id": 7, "type": "Stance", "attrs": {"label": "denounce", "pole": 2.0}},
+    {"local_id": 8, "type": "Stance", "attrs": {"label": "condemn", "pole": 1.0}},
+    {"local_id": 9, "type": "Stance", "attrs": {"label": "doubt", "pole": -1.0}},
+    {"local_id": 10, "type": "Stance", "attrs": {"label": "exonerate", "pole": -2.0}}
+  ],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "own_decide",
+      "batch": false,
+      "comment": "OWNERSHIP RECOGNITION IS A DECISION (the wire): each alive resident collapses {recognize, reject} an OwnershipClaim, valued by claim.legitimacy*deference - prop_skepticism (Argmax over OwnStance, same shape as rc_recognize). A LEGITIMATE claim (provenance) gathers broad recognition from the law-abiding; a usurper's low-legitimacy grab gathers little -- ownership EMERGES, it is not seeded. Fires only on claims with legitimacy > 0 (a bare 0-legitimacy claim recognizes no one).",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "claim",
+          "over",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "claim"
+                  },
+                  "key": "legitimacy"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "decided_own"
+              },
+              "var_name": "c",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "c"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "claim"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "own_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "OwnStance"
+                },
+                "var_name": "s",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "s"
+                          },
+                          "key": "sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "claim"
+                                },
+                                "key": "legitimacy"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "r"
+                                },
+                                "key": "deference"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "r"
+                            },
+                            "key": "prop_skepticism"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "r",
+          "decided_own",
+          "claim"
+        ]
+      ]
+    },
+    {
+      "name": "own_grant",
+      "batch": false,
+      "comment": "A resident whose collapse chose 'recognize' grants ownership recognition. Once per (r,claim).",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "claim",
+          "over",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "r"
+              },
+              "key": "own_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "recognize"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "recognizes"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "claim"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "r",
+          "recognizes",
+          "claim"
+        ]
+      ]
+    },
+    {
+      "name": "th_take",
+      "batch": false,
+      "comment": "WORLD-FACT: an armed taker physically takes an item the holder holds -- possession transfers. The substrate does NOT forbid it (like rc_strike). Marks the taking so the town can RECOGNIZE it as theft, or not.",
+      "match": [
+        [
+          "taker",
+          "taking",
+          "item"
+        ],
+        [
+          "holder",
+          "holds",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "taker"
+                  },
+                  "key": "take_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Var",
+                "name": "taker"
+              },
+              "b": {
+                "type": "Var",
+                "name": "holder"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "del_edge",
+          "holder",
+          "holds",
+          "item"
+        ],
+        [
+          "add_edge",
+          "taker",
+          "holds",
+          "item"
+        ],
+        [
+          "set_attr",
+          "item",
+          "taken",
+          1.0
+        ],
+        [
+          "set_attr",
+          "item",
+          "taker_name",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "taker"
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "taker",
+          "take_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "th_recognize_theft",
+      "batch": false,
+      "comment": "THEFT IS RECOGNIZED, not a fact (the WIRE to the recognition faculty). Each alive witness who RECOGNIZES the owner's claim collapses {theft, innocent} valued by lawfulness - alliance_to_taker: the lawful see theft, the thief's allies do not -- agents DIVERGE. Fires only when the taker is NOT the recognized owner and there was no consent. Property nobody recognizes is seen by no witness -> no crime.",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "w"
+        ],
+        [
+          "taker",
+          "taking",
+          "item"
+        ],
+        [
+          "claim",
+          "over",
+          "item"
+        ],
+        [
+          "claim",
+          "by",
+          "owner"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "w"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "taken"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "item"
+                    },
+                    "key": "consented"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Var",
+                "name": "taker"
+              },
+              "b": {
+                "type": "Var",
+                "name": "owner"
+              }
+            }
+          },
+          {
+            "type": "Exists",
+            "source": {
+              "type": "Neighbours",
+              "node": {
+                "type": "Var",
+                "name": "w"
+              },
+              "edge_type": "recognizes"
+            },
+            "var_name": "c",
+            "predicate": {
+              "type": "Eq",
+              "a": {
+                "type": "Var",
+                "name": "c"
+              },
+              "b": {
+                "type": "Var",
+                "name": "claim"
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "w"
+                },
+                "edge_type": "decided_theft"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "item"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "w",
+          "theft_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "TheftStance"
+                },
+                "var_name": "s",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "s"
+                          },
+                          "key": "sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "w"
+                            },
+                            "key": "lawfulness"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "w"
+                            },
+                            "key": "ally_taker"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "w",
+          "decided_theft",
+          "item"
+        ]
+      ]
+    },
+    {
+      "name": "th_grant_theft",
+      "batch": false,
+      "comment": "A witness whose collapse chose 'theft' backs it -- sees_theft edge. Once per (w,item).",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "w"
+        ],
+        [
+          "taker",
+          "taking",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "w"
+              },
+              "key": "theft_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "theft"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "w"
+                },
+                "edge_type": "sees_theft"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "item"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "w",
+          "sees_theft",
+          "item"
+        ]
+      ]
+    },
+    {
+      "name": "th_standing",
+      "batch": false,
+      "comment": "Recognized theft = Count(sees_theft). Unrecognized property -> 0 -> no crime.",
+      "match": [
+        [
+          "taker",
+          "taking",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "item",
+          "theft_standing",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "item"
+                },
+                "edge_type": "sees_theft"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "th_charge",
+      "batch": false,
+      "comment": "A taking the town RECOGNIZES as theft (standing >= court.quorum) becomes a chargeable Offense (offender, victim=owner, over the item). A taking nobody recognizes as theft (standing < quorum) is NOT charged -- no crime.",
+      "match": [
+        [
+          "town",
+          "has_court",
+          "court"
+        ],
+        [
+          "taker",
+          "taking",
+          "item"
+        ],
+        [
+          "claim",
+          "over",
+          "item"
+        ],
+        [
+          "claim",
+          "by",
+          "owner"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "taken"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "theft_standing"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "court"
+                  },
+                  "key": "quorum"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Var",
+                "name": "taker"
+              },
+              "b": {
+                "type": "Var",
+                "name": "owner"
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "item"
+                    },
+                    "key": "charged"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "off",
+          "Offense",
+          {
+            "kind": "theft",
+            "status": "filed",
+            "penalty": 0.0,
+            "standing_penalty": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "off",
+          "charges",
+          "taker"
+        ],
+        [
+          "add_edge",
+          "off",
+          "against",
+          "owner"
+        ],
+        [
+          "add_edge",
+          "off",
+          "over_offense",
+          "item"
+        ],
+        [
+          "add_edge",
+          "off",
+          "about_subject",
+          "taker"
+        ],
+        [
+          "add_edge",
+          "town",
+          "has_charge",
+          "off"
+        ],
+        [
+          "set_attr",
+          "off",
+          "weight",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "theft_standing"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "threshold",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Count",
+                      "source": {
+                        "type": "Neighbours",
+                        "node": {
+                          "type": "Var",
+                          "name": "town"
+                        },
+                        "edge_type": "on_council"
+                      }
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.5
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.5
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "item",
+          "charged",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "th_refer",
+      "batch": false,
+      "comment": "COMPOSE THE COURT (design-audit 6.3, block 355000): each seated juror (on_council) CONSIDERS the charge, so agent_judgment's jc_conclude fires per juror -- the verdict is the court's collapse, not theft's own th_vote. Once per (juror, charge).",
+      "match": [
+        [
+          "town",
+          "on_council",
+          "j"
+        ],
+        [
+          "town",
+          "has_charge",
+          "off"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "source": {
+            "type": "Neighbours",
+            "node": {
+              "type": "Var",
+              "name": "j"
+            },
+            "edge_type": "considers"
+          },
+          "var_name": "x",
+          "predicate": {
+            "type": "Eq",
+            "a": {
+              "type": "Var",
+              "name": "x"
+            },
+            "b": {
+              "type": "Var",
+              "name": "off"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "j",
+          "considers",
+          "off"
+        ]
+      ]
+    },
+    {
+      "name": "th_restitution",
+      "batch": false,
+      "comment": "A GUILTY theft verdict is enacted: possession RETURNS to the recognized owner (world-fact reversal). Custodial sentencing composes with bigville_jail/sentence.",
+      "match": [
+        [
+          "off",
+          "over_offense",
+          "item"
+        ],
+        [
+          "off",
+          "against",
+          "owner"
+        ],
+        [
+          "holder",
+          "holds",
+          "item"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "off"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "guilty"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "off"
+                    },
+                    "key": "restored"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "del_edge",
+          "holder",
+          "holds",
+          "item"
+        ],
+        [
+          "add_edge",
+          "owner",
+          "holds",
+          "item"
+        ],
+        [
+          "set_attr",
+          "item",
+          "restored",
+          1.0
+        ],
+        [
+          "set_attr",
+          "off",
+          "restored",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "th_penalty",
+      "batch": false,
+      "comment": "A GUILTY theft verdict imposes DAMAGES (item value, to victim) + a FINE (value*fine_rate, to court) on top of restitution. Coin-CONSERVED: pay damages-first then fine, capped at the offender's balance; the UNPAID remainder is split into debt_damages (still owed the victim) + debt_fine (still owed the court) for the constable to collect. Offender coin written LAST.",
+      "match": [
+        [
+          "town",
+          "has_court",
+          "court"
+        ],
+        [
+          "town",
+          "has_treasury",
+          "tr"
+        ],
+        [
+          "off",
+          "over_offense",
+          "item"
+        ],
+        [
+          "off",
+          "charges",
+          "taker"
+        ],
+        [
+          "off",
+          "against",
+          "owner"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "off"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "guilty"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "off"
+                    },
+                    "key": "penalized"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "owner",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "owner"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "item"
+                          },
+                          "key": "value"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "taker"
+                          },
+                          "key": "coin"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "tr",
+          "collected",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "tr"
+                      },
+                      "key": "collected"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "item"
+                              },
+                              "key": "value"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "court"
+                              },
+                              "key": "fine_rate"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "taker"
+                            },
+                            "key": "coin"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Min",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "item"
+                                },
+                                "key": "value"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "taker"
+                                },
+                                "key": "coin"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "damages",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "item"
+                  },
+                  "key": "value"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "fine",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "item"
+                      },
+                      "key": "value"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "court"
+                      },
+                      "key": "fine_rate"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "paid",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "item"
+                          },
+                          "key": "value"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "taker"
+                          },
+                          "key": "coin"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Min",
+                  "items": [
+                    {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "item"
+                              },
+                              "key": "value"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "court"
+                              },
+                              "key": "fine_rate"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "taker"
+                            },
+                            "key": "coin"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Min",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "item"
+                                },
+                                "key": "value"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "taker"
+                                },
+                                "key": "coin"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "debt_damages",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "item"
+                    },
+                    "key": "value"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Min",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "item"
+                        },
+                        "key": "value"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "taker"
+                        },
+                        "key": "coin"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "debt_fine",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Times",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "item"
+                        },
+                        "key": "value"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "court"
+                        },
+                        "key": "fine_rate"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              },
+              "b": {
+                "type": "Min",
+                "items": [
+                  {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "item"
+                            },
+                            "key": "value"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "court"
+                            },
+                            "key": "fine_rate"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Minus",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "taker"
+                          },
+                          "key": "coin"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Min",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "item"
+                              },
+                              "key": "value"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "taker"
+                              },
+                              "key": "coin"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "debt",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "item"
+                        },
+                        "key": "value"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "item"
+                            },
+                            "key": "value"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "court"
+                            },
+                            "key": "fine_rate"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Min",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "item"
+                            },
+                            "key": "value"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "taker"
+                            },
+                            "key": "coin"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Min",
+                    "items": [
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "item"
+                                },
+                                "key": "value"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "court"
+                                },
+                                "key": "fine_rate"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Minus",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "taker"
+                              },
+                              "key": "coin"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Min",
+                          "items": [
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "item"
+                                  },
+                                  "key": "value"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "taker"
+                                  },
+                                  "key": "coin"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "penalized",
+          1.0
+        ],
+        [
+          "set_attr",
+          "taker",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "taker"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Min",
+                    "items": [
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "item"
+                            },
+                            "key": "value"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "taker"
+                            },
+                            "key": "coin"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Min",
+                    "items": [
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "item"
+                                },
+                                "key": "value"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "court"
+                                },
+                                "key": "fine_rate"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Minus",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "taker"
+                              },
+                              "key": "coin"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Min",
+                          "items": [
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "item"
+                                  },
+                                  "key": "value"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "taker"
+                                  },
+                                  "key": "coin"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "con_office",
+      "batch": false,
+      "comment": "The constable's authority = Count(residents who recognize the office). Not a title.",
+      "match": [
+        [
+          "town",
+          "has_constable",
+          "con"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "con",
+          "authority",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "con"
+                },
+                "edge_type": "recognizes_office"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "con_duty",
+      "batch": false,
+      "comment": "The constable collapses {enforce, forbear} valued by duty - how he FEELS about THIS debtor, read from his first-class held Bond TOWARD the charged party (con -holds_bond-> bond -toward-> debtor): warmth = affect_affection - affect_resentment, the SAME quantity bigville_fast_bond reads. He forbears for someone he feels warmly toward (a brother, a friend) beyond his duty; he enforces on someone he feels nothing/ill for. The feeling is the real directed Bond(A->B) with its six relational emotions -- evolved by bigville_bond_update (benefit/betrayal/gossip), NOT a loyalty knob. No Bond toward the debtor -> no warmth read -> duty alone.",
+      "match": [
+        [
+          "town",
+          "has_constable",
+          "con"
+        ],
+        [
+          "off",
+          "over_offense",
+          "item"
+        ],
+        [
+          "off",
+          "charges",
+          "debtor"
+        ],
+        [
+          "con",
+          "holds_bond",
+          "bond"
+        ],
+        [
+          "bond",
+          "toward",
+          "debtor"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "off"
+              },
+              "key": "penalized"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "con",
+          "duty_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "DutyStance"
+                },
+                "var_name": "s",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "s"
+                          },
+                          "key": "sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "con"
+                            },
+                            "key": "duty"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Minus",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "bond"
+                              },
+                              "key": "affect_affection"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "bond"
+                              },
+                              "key": "affect_resentment"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "th_collect",
+      "batch": false,
+      "comment": "THE CONSTABLE'S JOB: a constable whose office the town RECOGNIZES (authority >= quorum) and who chose to ENFORCE collects the offender's outstanding debt -- victim's damages FIRST, then the court's fine -- capped at what the debtor now HOLDS, repeating as the debtor earns until cleared. A world-fact transfer made LAWFUL by the recognized office + recognized judgment. NB effect ORDER: the collected amounts are stored on the offense FIRST (take_dmg/take_fine), then every transfer reads those STABLE values -- otherwise the take terms would re-read debt_damages after it is mutated (the C6 sequential-effects gotcha).",
+      "match": [
+        [
+          "town",
+          "has_constable",
+          "con"
+        ],
+        [
+          "town",
+          "has_court",
+          "court"
+        ],
+        [
+          "town",
+          "has_treasury",
+          "tr"
+        ],
+        [
+          "off",
+          "over_offense",
+          "item"
+        ],
+        [
+          "off",
+          "charges",
+          "debtor"
+        ],
+        [
+          "off",
+          "against",
+          "victim"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "off"
+                  },
+                  "key": "penalized"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "con"
+              },
+              "key": "duty_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "enforce"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "con"
+                  },
+                  "key": "authority"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "court"
+                  },
+                  "key": "quorum"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "off"
+                      },
+                      "key": "debt_damages"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "off"
+                      },
+                      "key": "debt_fine"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "debtor"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "off",
+          "take_dmg",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "off"
+                      },
+                      "key": "debt_damages"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "debtor"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "take_fine",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "off"
+                      },
+                      "key": "debt_fine"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "debtor"
+                        },
+                        "key": "coin"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "off"
+                        },
+                        "key": "take_dmg"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "victim",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "victim"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "off"
+                      },
+                      "key": "take_dmg"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "tr",
+          "collected",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "tr"
+                      },
+                      "key": "collected"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "off"
+                      },
+                      "key": "take_fine"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "con",
+          "collected",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "con"
+                      },
+                      "key": "collected"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "off"
+                          },
+                          "key": "take_dmg"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "off"
+                          },
+                          "key": "take_fine"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "debt",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "off"
+                    },
+                    "key": "debt"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "off"
+                        },
+                        "key": "take_dmg"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "off"
+                        },
+                        "key": "take_fine"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "debt_damages",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "off"
+                    },
+                    "key": "debt_damages"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "off"
+                    },
+                    "key": "take_dmg"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "off",
+          "debt_fine",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "off"
+                    },
+                    "key": "debt_fine"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "off"
+                    },
+                    "key": "take_fine"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "debtor",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "debtor"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "off"
+                        },
+                        "key": "take_dmg"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "off"
+                        },
+                        "key": "take_fine"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

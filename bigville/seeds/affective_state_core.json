@@ -1,0 +1,221 @@
+{
+  "id": "affective_state_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "area": "retina",
+  "description": "Canonical graph-native affect contract. Every loaded agent owns a neutral AffectiveState baseline. PSI ModulatorState projects valence, arousal, resolution, selection threshold, securing, competence, and epoch into that state. The same seed selects a leading drive from weighted urgency and preserves the incumbent until a challenger exceeds it by the graph-held switch threshold. No host-side choice or affect computation.",
+  "microtheory": {
+    "name": "canonical_affective_state",
+    "description": "Affect is a persistent control-state vector shared by perception, motivation, fast defaults, and deliberation. PSI modulators project into one agent-owned state rather than creating parallel affect representations."
+  },
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "AffectiveState",
+      "attrs": {
+        "name": "neutral_affective_state",
+        "baseline": 1.0,
+        "valence": 0.0,
+        "arousal": 0.0,
+        "resolution": 0.0,
+        "selection_threshold": 0.0,
+        "securing": 0.0,
+        "competence": 0.0,
+        "epoch": -1.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_affective_state",
+      "tgt": {"local": 1},
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "provenance": "affective_state_core:agent_affect",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_affective_state",
+      "tgt": {"type": "AffectiveState", "var": "affect"}
+    },
+    {
+      "provenance": "affective_state_core:hub_affect",
+      "src": {"type": "EmotionHub", "var": "hub"},
+      "edge_type": "has_affective_state",
+      "tgt": {"type": "AffectiveState", "var": "affect"}
+    },
+    {
+      "provenance": "affective_state_core:modulator_projection",
+      "src": {"type": "ModulatorState", "var": "ms"},
+      "edge_type": "projects_affect_to",
+      "tgt": {"type": "AffectiveState", "var": "affect"}
+    },
+    {
+      "provenance": "affective_state_core:context_affect",
+      "src": {"type": "DualProcessContext", "var": "context"},
+      "edge_type": "uses_affective_state",
+      "tgt": {"type": "AffectiveState", "var": "affect"}
+    }
+  ],
+  "rules": [
+    {
+      "name": "psi_select_initial_leading_drive",
+      "area": "retina",
+      "order": 3,
+      "latency_class": "hard_realtime",
+      "match": [["ms", "has_active_drive", "d"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "enabled"},
+            "b": {"type": "Lit", "value": 1.0}
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Neighbours",
+                "node": {"type": "Var", "name": "ms"},
+                "edge_type": "leading_drive",
+                "any_type": false
+              }
+            },
+            "b": {"type": "Lit", "value": 0.0}
+          },
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "d"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Neighbours",
+                "node": {"type": "Var", "name": "ms"},
+                "edge_type": "has_active_drive",
+                "any_type": false
+              },
+              "var_name": "candidate",
+              "value": {
+                "type": "Times",
+                "items": [
+                  {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "weight"},
+                  {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "urgency"}
+                ]
+              },
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [["add_edge", "ms", "leading_drive", "d"]]
+    },
+    {
+      "name": "psi_switch_leading_drive",
+      "area": "retina",
+      "order": 3,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["ms", "leading_drive", "incumbent"],
+        ["ms", "has_active_drive", "challenger"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "enabled"},
+            "b": {"type": "Lit", "value": 1.0}
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {"type": "Var", "name": "challenger"},
+              "b": {"type": "Var", "name": "incumbent"}
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "challenger"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Neighbours",
+                "node": {"type": "Var", "name": "ms"},
+                "edge_type": "has_active_drive",
+                "any_type": false
+              },
+              "var_name": "candidate",
+              "value": {
+                "type": "Times",
+                "items": [
+                  {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "weight"},
+                  {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "urgency"}
+                ]
+              },
+              "default": {"type": "Lit", "value": null}
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Times",
+              "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "challenger"}, "key": "weight"},
+                {"type": "Attr", "node": {"type": "Var", "name": "challenger"}, "key": "urgency"}
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Times",
+                  "items": [
+                    {"type": "Attr", "node": {"type": "Var", "name": "incumbent"}, "key": "weight"},
+                    {"type": "Attr", "node": {"type": "Var", "name": "incumbent"}, "key": "urgency"}
+                  ]
+                },
+                {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "drive_switch_threshold"}
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["del_edge", "ms", "leading_drive", "incumbent"],
+        ["add_edge", "ms", "leading_drive", "challenger"]
+      ]
+    },
+    {
+      "name": "psi_project_canonical_affect",
+      "area": "retina",
+      "order": 20,
+      "latency_class": "hard_realtime",
+      "match": [["ms", "projects_affect_to", "affect"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "enabled"},
+            "b": {"type": "Lit", "value": 1.0}
+          }
+        ]
+      },
+      "effects": [
+        ["set_attr", "affect", "valence", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "valence"}}],
+        ["set_attr", "affect", "arousal", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "arousal"}}],
+        ["set_attr", "affect", "resolution", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "resolution"}}],
+        ["set_attr", "affect", "selection_threshold", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "sel_threshold"}}],
+        ["set_attr", "affect", "securing", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "securing"}}],
+        ["set_attr", "affect", "competence", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "competence"}}],
+        ["set_attr", "affect", "epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "ms"}, "key": "epoch"}}],
+        ["set_attr", "affect", "baseline", 0.0]
+      ]
+    }
+  ]
+}

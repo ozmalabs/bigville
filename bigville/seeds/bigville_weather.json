@@ -1,0 +1,408 @@
+{
+  "id": "bigville_weather",
+  "version": "1.0.1",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R56 (block 369000): REAL, CHANGING, EMBODIED WEATHER. The weather is a real forecast (Open-Meteo, backed by numerical weather-prediction models -- ICON/GFS), not a toy generator: the adapter fetches the daily AMBIENT TEMPERATURE (temperature_2m), RAIN (precipitation) and SUN LOAD (shortwave_radiation) and injects them onto the town (town.temperature/rain/sun), which CHANGE day to day (sunny days, rainy days). Seasons are the slow bias in those series, not fixed labels. The EMBODIED effect is graph-native: we_outside -- an agent at an UNSHELTERED place is exposed (wetness += rain; felt_temp = temperature + sun*SUN_HEAT -> hot on a sunny day, cold on a cold one); we_inside -- an agent at a SHELTERED place (a building) dries off and stays at the indoor_temp (dry and warm). So the same day makes the outdoor labourer wet and the indoor clerk dry. Composes with the map (buildings = shelter; the square/fields = outdoors), the farm (temperature/rain/sun drive the growing season and the harvest), and the affect/health lines (cold+wet -> chill/illness). (Epoch-guarded: each day's weather applies exactly once per agent -- weather_seen < town.day.)",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "we_outside",
+      "batch": false,
+      "comment": "An agent OUTSIDE (unsheltered) is EXPOSED to the day's real weather, ONCE per day (epoch guard weather_seen < town.day): wetness += rain (wet in the rain); felt_temp = temperature + sun*SUN_HEAT (hot in the sun, cold on a cold day). Real forecast values.",
+      "match": [
+        [
+          "town",
+          "has_place",
+          "place"
+        ],
+        [
+          "agent",
+          "at",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "place"
+                  },
+                  "key": "sheltered"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "weather_seen"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "day"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "wetness",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "key": "wetness"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "town"
+                      },
+                      "key": "rain"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "felt_temp",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "town"
+                      },
+                      "key": "temperature"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "town"
+                          },
+                          "key": "sun"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 8.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "exposed",
+          1.0
+        ],
+        [
+          "set_attr",
+          "agent",
+          "weather_seen",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "day"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "we_inside",
+      "batch": false,
+      "comment": "An agent INSIDE (sheltered) is protected, ONCE per day: wetness dries off (max(0, wetness - DRY)); felt_temp = the building's indoor_temp (dry and warm, whatever the weather outside).",
+      "match": [
+        [
+          "town",
+          "has_place",
+          "place"
+        ],
+        [
+          "agent",
+          "at",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "place"
+                  },
+                  "key": "sheltered"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "weather_seen"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "day"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "wetness",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "agent"
+                        },
+                        "key": "wetness"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": 3.0
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "felt_temp",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "place"
+                  },
+                  "key": "indoor_temp"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "exposed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "agent",
+          "weather_seen",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "town"
+                  },
+                  "key": "day"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,330 @@
+{
+ "id": "bigville_move_nav",
+ "version": "1.0.0",
+ "depends_on": [],
+ "description": "Graph-native grid MOVEMENT for bigville R1 (block 249000). A persistent map-belief of walkable MoveCell nodes + `adj` edges (unknown = absence). `mv_seed_goal` zeros the active mover's goal; `mv_relax` is a BELLMAN flood (run_rules fixpoint = BFS distance field) that routes AROUND walls because `adj` only links walkable cells; `mv_pick_hop` is THE movement decision, an Argmin over the current cell's neighbours descending the gdist gradient. No goal / unreachable / already-at-goal => no fire => idle, never a teleport. Composes existing Terms only (Argmin/Neighbours/Plus/Lt/Gte/And) \u2014 zero new Rust. Adapter only ingests the map, seeds a goal, applies the rule-chosen hop to host position, and reads state.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "mv_seed_goal",
+   "match": [
+    [
+     "m",
+     "seeks",
+     "g"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "active"
+      },
+      {
+       "type": "Lit",
+       "value": 0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "g",
+     "gdist",
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "mv_relax",
+   "match": [
+    [
+     "c",
+     "adj",
+     "n"
+    ]
+   ],
+   "where": {
+    "type": "Lt",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "n"
+         },
+         "key": "gdist"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      {
+       "type": "Lit",
+       "value": 1
+      }
+     ]
+    },
+    "b": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "c"
+       },
+       "key": "gdist"
+      },
+      {
+       "type": "Lit",
+       "value": 0
+      }
+     ]
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "c",
+     "gdist",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "n"
+           },
+           "key": "gdist"
+          },
+          {
+           "type": "Lit",
+           "value": 0
+          }
+         ]
+        },
+        {
+         "type": "Lit",
+         "value": 1
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "mv_pick_hop",
+   "match": [
+    [
+     "m",
+     "is_at",
+     "cur"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "active"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "cur"
+         },
+         "key": "gdist"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Lt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "cur"
+         },
+         "key": "gdist"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1000000.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "has_next",
+     1.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "next_cx",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmin",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "cur"
+         },
+         "edge_type": "adj",
+         "any_type": false
+        },
+        "var_name": "nb",
+        "value": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "nb"
+           },
+           "key": "gdist"
+          },
+          {
+           "type": "Lit",
+           "value": 0
+          }
+         ]
+        },
+        "default": {
+         "type": "Var",
+         "name": "cur"
+        }
+       },
+       "key": "cx"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "next_cy",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmin",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "cur"
+         },
+         "edge_type": "adj",
+         "any_type": false
+        },
+        "var_name": "nb",
+        "value": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "nb"
+           },
+           "key": "gdist"
+          },
+          {
+           "type": "Lit",
+           "value": 0
+          }
+         ]
+        },
+        "default": {
+         "type": "Var",
+         "name": "cur"
+        }
+       },
+       "key": "cy"
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

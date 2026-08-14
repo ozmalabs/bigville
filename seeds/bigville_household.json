@@ -1,0 +1,686 @@
+{
+  "seed": "bigville_household",
+  "version": "1.3.0",
+  "comment": "HOUSEHOLD LABOUR DIVISION: a household is a group with ONE shared food need and ONE shared store. When the store runs low the household wants food; ONE member volunteers to fetch it (the others don't duplicate), carries it home to the shared store, and everyone eats from it. Fixes the spouses-both-fetch collision -- labour divides.",
+  "rules": [
+    {
+      "name": "hh_avail",
+      "batch": false,
+      "comment": "Household -- each member's availability = its body's stamina reserve (the most rested goes).",
+      "match": [
+        [
+          "hh",
+          "has_member",
+          "member"
+        ],
+        [
+          "member",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "member"
+              },
+              "key": "alive"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "member",
+          "avail",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "body"
+                  },
+                  "key": "stamina_reserve"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "hh_want_food",
+      "batch": false,
+      "comment": "Household labour division -- ONE need for the whole house: when the SHARED store is below the household's projected need (horizon*ration*members) and nothing is already in flight, the HOUSEHOLD wants food (a fetch task on the household). Not each member provisioning separately.",
+      "match": [
+        [
+          "hh",
+          "has_good",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "hh"
+                      },
+                      "key": "plan_horizon"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "hh"
+                      },
+                      "key": "daily_ration"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Sum",
+                  "source": {
+                    "type": "Neighbours",
+                    "node": {
+                      "type": "Var",
+                      "name": "hh"
+                    },
+                    "edge_type": "has_member",
+                    "any_type": false
+                  },
+                  "var_name": "m",
+                  "value": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "hh"
+                },
+                "edge_type": "wants_done",
+                "any_type": false
+              },
+              "var_name": "t2",
+              "predicate": {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t2"
+                          },
+                          "key": "kind"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t2"
+                          },
+                          "key": "done"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "task",
+          "Task",
+          {
+            "kind": 1.0,
+            "good": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "hh"
+                    },
+                    "key": "provision_good"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            },
+            "requirement": 0.0,
+            "done": 0.0,
+            "stage": 0.0,
+            "pursued": 1.0
+          }
+        ],
+        [
+          "add_edge",
+          "hh",
+          "wants_done",
+          "task"
+        ]
+      ]
+    },
+    {
+      "name": "hh_volunteer",
+      "batch": false,
+      "comment": "Household labour division -- ONE member VOLUNTEERS: an idle, alive member takes the household's fetch task on (will_do), but only if no household-mate already has it. So one member goes for the food and the others don't set out too -- the collision is gone. The member then executes it on the map (dx_*: go to the source, buy, carry it HOME) and delivers to the shared store. The fetcher is the household's PROVIDER (a fixed role, H provides_via member) if one is set -- so the SAME member does the errands, not alternating; otherwise it falls back to the most-rested member. Still only if no mate already has it.",
+      "match": [
+        [
+          "hh",
+          "has_member",
+          "member"
+        ],
+        [
+          "hh",
+          "wants_done",
+          "task"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "member"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "member"
+                },
+                "edge_type": "will_do",
+                "any_type": false
+              },
+              "var_name": "t3",
+              "predicate": {
+                "type": "Lit",
+                "value": true
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "hh"
+                },
+                "edge_type": "has_member",
+                "any_type": false
+              },
+              "var_name": "m2",
+              "predicate": {
+                "type": "Exists",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "m2"
+                  },
+                  "edge_type": "will_do",
+                  "any_type": false
+                },
+                "var_name": "t4",
+                "predicate": {
+                  "type": "Lit",
+                  "value": true
+                }
+              }
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Exists",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "hh"
+                  },
+                  "edge_type": "provides_via",
+                  "any_type": false
+                },
+                "var_name": "p",
+                "predicate": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Var",
+                    "name": "p"
+                  },
+                  "b": {
+                    "type": "Var",
+                    "name": "member"
+                  }
+                }
+              },
+              {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Not",
+                    "arg": {
+                      "type": "Exists",
+                      "source": {
+                        "type": "Neighbours",
+                        "node": {
+                          "type": "Var",
+                          "name": "hh"
+                        },
+                        "edge_type": "provides_via",
+                        "any_type": false
+                      },
+                      "var_name": "p",
+                      "predicate": {
+                        "type": "Lit",
+                        "value": true
+                      }
+                    }
+                  },
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Var",
+                      "name": "member"
+                    },
+                    "b": {
+                      "type": "Argmax",
+                      "source": {
+                        "type": "Neighbours",
+                        "node": {
+                          "type": "Var",
+                          "name": "hh"
+                        },
+                        "edge_type": "has_member",
+                        "any_type": false
+                      },
+                      "var_name": "mm",
+                      "value": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "mm"
+                            },
+                            "key": "avail"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "member",
+          "will_do",
+          "task"
+        ]
+      ]
+    },
+    {
+      "name": "hh_eat",
+      "batch": false,
+      "comment": "Household -- members EAT from the SHARED store when hungry and home (co-located with the household). One member's fetch feeds everyone. Draws the store down; the meal relieves hunger (bd_meal_feeds). One member eats per tick -- the HUNGRIEST -- so the shared store is never over-drawn.",
+      "match": [
+        [
+          "hh",
+          "has_member",
+          "member"
+        ],
+        [
+          "hh",
+          "has_good",
+          "store"
+        ],
+        [
+          "member",
+          "is_at",
+          "cell"
+        ],
+        [
+          "hh",
+          "is_at",
+          "cell"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "member"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "member"
+                  },
+                  "key": "hunger_level"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Var",
+              "name": "member"
+            },
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "hh"
+                },
+                "edge_type": "has_member",
+                "any_type": false
+              },
+              "var_name": "mh",
+              "value": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "mh"
+                    },
+                    "key": "hunger_level"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "store",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "add_node",
+          "meal",
+          "Meal",
+          {
+            "feeds": 5.0,
+            "fed_done": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "member",
+          "ate",
+          "meal"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,380 @@
+{
+  "id": "bigville_sentence",
+  "version": "1.0.0",
+  "depends_on": [
+    "bigville_jail"
+  ],
+  "self_load_only": true,
+  "description": "bigville R27 (block 315000): SENTENCING BY COLLAPSE, BOUNDED BY LAW. On a GUILTY verdict the council DECIDES the custodial term by collapse -- but the law limits it to a statutory [min_term,max_term]. A SentenceLaw{offence,min_term,max_term,status} lives in the LawBook (amendable by the council). sn_sentence: the council's DESIRED severity = charge.base_days + (condemn_count - threshold) (how hard it condemned beyond bare guilt); the term = Attr(Argmax over SentenceLevel candidates valued by IfThenElse(min<=days<=max, -(days-desired)^2, -inf), 'days') -- the Argmax may only pick a level INSIDE the legal range, and picks the admissible level nearest desired. THE LAW IS THE ADMISSIBLE SET: desired above the ceiling -> max_term; below the floor -> min_term. The chosen term is written to charge.jail_term; jl_imprison (314000) then gaols for exactly that. Acquittal -> no term. Amend max_term -> the ceiling moves (real law, not a constant).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "sn_sentence",
+      "batch": false,
+      "comment": "A GUILTY charge is sentenced by the council's collapse over the legally-admissible SentenceLevels: term = nearest level within the offence's [min_term,max_term] to the council's desired severity. Written to jail_term (jl_imprison gaols for it). Once, via the term_set guard.",
+      "match": [
+        [
+          "town",
+          "has_charge",
+          "charge"
+        ],
+        [
+          "town",
+          "has_book",
+          "book"
+        ],
+        [
+          "book",
+          "has_sentence_law",
+          "law"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "guilty"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "law"
+              },
+              "key": "offence"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "charge"
+              },
+              "key": "offence"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "law"
+              },
+              "key": "status"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "active"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "charge"
+                },
+                "key": "term_set"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "charge",
+          "jail_term",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "SentenceLevel"
+                },
+                "var_name": "level",
+                "value": {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "And",
+                    "items": [
+                      {
+                        "type": "Gte",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "level"
+                              },
+                              "key": "days"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "law"
+                              },
+                              "key": "min_term"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "Gte",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "law"
+                              },
+                              "key": "max_term"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "level"
+                              },
+                              "key": "days"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "then": {
+                    "type": "Minus",
+                    "a": {
+                      "type": "Lit",
+                      "value": 0.0
+                    },
+                    "b": {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "level"
+                                },
+                                "key": "days"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "charge"
+                                    },
+                                    "key": "base_days"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Minus",
+                                "a": {
+                                  "type": "Count",
+                                  "source": {
+                                    "type": "InNeighbours",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "charge"
+                                    },
+                                    "edge_type": "condemns_charge"
+                                  }
+                                },
+                                "b": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "charge"
+                                      },
+                                      "key": "threshold"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "level"
+                                },
+                                "key": "days"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "charge"
+                                    },
+                                    "key": "base_days"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Minus",
+                                "a": {
+                                  "type": "Count",
+                                  "source": {
+                                    "type": "InNeighbours",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "charge"
+                                    },
+                                    "edge_type": "condemns_charge"
+                                  }
+                                },
+                                "b": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "charge"
+                                      },
+                                      "key": "threshold"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": -1000000.0
+                  }
+                }
+              },
+              "key": "days"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "charge",
+          "term_set",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

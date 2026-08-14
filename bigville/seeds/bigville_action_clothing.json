@@ -1,0 +1,510 @@
+{
+  "id": "bigville_action_clothing",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R84 (block 407000): CLOTHES -- dyed, worn, and protective. A garment (coat/cloak/hat/shirt/breeches/dress/boots) is a discrete made item with a warmth and a rain rating (data). cl_dye gives a garment a COLOUR from a dye (madder->red, woad->blue, weld->yellow). cl_warmth sums the protection of what an agent WEARS (scaled by condition); cl_chill turns the town's cold/wet weather into the agent's chill/soaked AFTER the clothes take their share. People are seen wearing what they wear (a wears edge); clothes stand between them and the weather. cl_finery sums the finery of what is worn -- plain garments (smock/tunic/cap/clogs) mark a tradesperson; fine ones (gown/doublet/fur_cloak/silk_shirt, sewn from imported silk/velvet/fur) mark the rich.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cl_dye",
+      "batch": false,
+      "comment": "DYE gives a garment a COLOUR: a dyer arms a garment against a dye Stock; the garment takes the dye's colour (from the dye's data -- madder->red, woad->blue, weld->yellow) and one dye is consumed. The colour is not decided here -- it is carried from the dye.",
+      "match": [
+        [
+          "garment",
+          "dyed_with",
+          "dye"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "garment"
+                  },
+                  "key": "dye_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dye"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "garment",
+          "colour",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "dye"
+              },
+              "key": "colour"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "dye",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "dye"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "garment",
+          "dye_armed",
+          0.0
+        ],
+        [
+          "del_edge",
+          "garment",
+          "dyed_with",
+          "dye"
+        ]
+      ]
+    },
+    {
+      "name": "cl_warmth",
+      "batch": false,
+      "comment": "WORN CLOTHES PROTECT: an agent's warmth and rain-cover are the SUM over the garments they WEAR of that garment's warmth/rain scaled by its condition (a ragged coat protects less). Recomputed each pass from what is worn -- take a garment off and the protection falls.",
+      "match": [
+        [
+          "town",
+          "has_actor",
+          "agent"
+        ]
+      ],
+      "where": {
+        "type": "Gte",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "agent"
+              },
+              "key": "alive"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "warmth",
+          {
+            "__term__": {
+              "type": "Sum",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "agent"
+                },
+                "edge_type": "wears"
+              },
+              "var_name": "g",
+              "value": {
+                "type": "Times",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "g"
+                        },
+                        "key": "warmth"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "g"
+                        },
+                        "key": "condition"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "rain_cover",
+          {
+            "__term__": {
+              "type": "Sum",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "agent"
+                },
+                "edge_type": "wears"
+              },
+              "var_name": "g",
+              "value": {
+                "type": "Times",
+                "items": [
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "g"
+                        },
+                        "key": "rain"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "g"
+                        },
+                        "key": "condition"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cl_chill",
+      "batch": false,
+      "comment": "ENVIRONMENTAL PROTECTION: an exposed agent's CHILL is the town's cold minus the warmth of what they wear (never below zero); SOAKED is the rain minus their rain-cover. Naked in the cold -> full chill; a coat and cloak -> warm. The clothes stand between the weather and the person.",
+      "match": [
+        [
+          "town",
+          "has_actor",
+          "agent"
+        ]
+      ],
+      "where": {
+        "type": "Gte",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "agent"
+              },
+              "key": "alive"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "chill",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "town"
+                        },
+                        "key": "cold"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "agent"
+                        },
+                        "key": "warmth"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "soaked",
+          {
+            "__term__": {
+              "type": "Max",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                },
+                {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "town"
+                        },
+                        "key": "wet"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "agent"
+                        },
+                        "key": "rain_cover"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cl_finery",
+      "batch": false,
+      "comment": "CLOTHES SIGNAL STATION: an agent's finery is the SUM over the garments they WEAR of that garment's finery (a plain smock adds nothing; a silk gown a great deal). This is what marks a tradesperson's plain dress from a rich person's fine dress -- it is READ from what is worn, not owned.",
+      "match": [
+        [
+          "town",
+          "has_actor",
+          "agent"
+        ]
+      ],
+      "where": {
+        "type": "Gte",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "agent"
+              },
+              "key": "alive"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "finery",
+          {
+            "__term__": {
+              "type": "Sum",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "agent"
+                },
+                "edge_type": "wears"
+              },
+              "var_name": "g",
+              "value": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "g"
+                    },
+                    "key": "finery"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

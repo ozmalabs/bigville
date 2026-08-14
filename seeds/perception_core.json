@@ -1,0 +1,852 @@
+{
+  "id": "perception_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "The agent's perception/observe recognitions + aesthetic goal-prior as graph data: gauge-type recognition, turns-remaining clamp, novelty channel-1, and the aesthetic value (beauty=compressibility=order: entropy reduction -> order, simplicity, weighted aesthetic sum) the agent climbs as a universal goal-prior. Attached to agent_root by named edges. Parity-verified.",
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "Term.NodesOfType",
+      "attrs": {
+        "node_type": "BodyType"
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "bt"
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "net_shed_to_floor"
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "thr_minus_1"
+      }
+    },
+    {
+      "local_id": 4,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 5,
+      "type": "Term.Filter",
+      "attrs": {
+        "var_name": "bt"
+      }
+    },
+    {
+      "local_id": 6,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "bt"
+      }
+    },
+    {
+      "local_id": 7,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "net_shed_to_floor"
+      }
+    },
+    {
+      "local_id": 8,
+      "type": "Term.Argmax",
+      "attrs": {
+        "var_name": "bt"
+      }
+    },
+    {
+      "local_id": 9,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "gauge_full"
+      }
+    },
+    {
+      "local_id": 10,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "shed"
+      }
+    },
+    {
+      "local_id": 11,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 12,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0
+      }
+    },
+    {
+      "local_id": 13,
+      "type": "Term.Max",
+      "attrs": {}
+    },
+    {
+      "local_id": 14,
+      "type": "Term.ScalarAttrTriples",
+      "attrs": {
+        "skip_prefix": "Term."
+      }
+    },
+    {
+      "local_id": 15,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "t"
+      }
+    },
+    {
+      "local_id": 16,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "seen"
+      }
+    },
+    {
+      "local_id": 17,
+      "type": "Term.In",
+      "attrs": {}
+    },
+    {
+      "local_id": 18,
+      "type": "Term.Not",
+      "attrs": {}
+    },
+    {
+      "local_id": 19,
+      "type": "Term.FilterList",
+      "attrs": {
+        "var_name": "t"
+      }
+    },
+    {
+      "local_id": 20,
+      "type": "Term.Count",
+      "attrs": {}
+    },
+    {
+      "local_id": 21,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "counts"
+      }
+    },
+    {
+      "local_id": 22,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "k"
+      }
+    },
+    {
+      "local_id": 23,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "n"
+      }
+    },
+    {
+      "local_id": 24,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 25,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "k"
+      }
+    },
+    {
+      "local_id": 26,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "n"
+      }
+    },
+    {
+      "local_id": 27,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 28,
+      "type": "Term.Log",
+      "attrs": {}
+    },
+    {
+      "local_id": 29,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 30,
+      "type": "Term.Sum",
+      "attrs": {
+        "var_name": "k"
+      }
+    },
+    {
+      "local_id": 31,
+      "type": "Term.Neg",
+      "attrs": {}
+    },
+    {
+      "local_id": 32,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 33,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "ent"
+      }
+    },
+    {
+      "local_id": 34,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "max_ent"
+      }
+    },
+    {
+      "local_id": 35,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 36,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 37,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.0
+      }
+    },
+    {
+      "local_id": 38,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "n_colours"
+      }
+    },
+    {
+      "local_id": 39,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 40,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.6
+      }
+    },
+    {
+      "local_id": 41,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "best"
+      }
+    },
+    {
+      "local_id": 42,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 43,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.25
+      }
+    },
+    {
+      "local_id": 44,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "order"
+      }
+    },
+    {
+      "local_id": 45,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 46,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.15
+      }
+    },
+    {
+      "local_id": 47,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "simplicity"
+      }
+    },
+    {
+      "local_id": 48,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 49,
+      "type": "Term.Plus",
+      "attrs": {}
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "local": 2
+      },
+      "tgt": {
+        "local": 1
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 4
+      },
+      "tgt": {
+        "local": 2
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 4
+      },
+      "tgt": {
+        "local": 3
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 0
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 4
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 6
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 5
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 7
+      },
+      "type": "child.value",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 11
+      },
+      "tgt": {
+        "local": 9
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 11
+      },
+      "tgt": {
+        "local": 10
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 11
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 12
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 17
+      },
+      "tgt": {
+        "local": 15
+      },
+      "type": "child.member",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 17
+      },
+      "tgt": {
+        "local": 16
+      },
+      "type": "child.container",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 18
+      },
+      "tgt": {
+        "local": 17
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 19
+      },
+      "tgt": {
+        "local": 14
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 19
+      },
+      "tgt": {
+        "local": 18
+      },
+      "type": "child.predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 20
+      },
+      "tgt": {
+        "local": 19
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 24
+      },
+      "tgt": {
+        "local": 22
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 24
+      },
+      "tgt": {
+        "local": 23
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 27
+      },
+      "tgt": {
+        "local": 25
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 27
+      },
+      "tgt": {
+        "local": 26
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 28
+      },
+      "tgt": {
+        "local": 27
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 29
+      },
+      "tgt": {
+        "local": 24
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 29
+      },
+      "tgt": {
+        "local": 28
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 30
+      },
+      "tgt": {
+        "local": 21
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 30
+      },
+      "tgt": {
+        "local": 29
+      },
+      "type": "child.value",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 31
+      },
+      "tgt": {
+        "local": 30
+      },
+      "type": "child.arg",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 35
+      },
+      "tgt": {
+        "local": 33
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 35
+      },
+      "tgt": {
+        "local": 34
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 36
+      },
+      "tgt": {
+        "local": 32
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 36
+      },
+      "tgt": {
+        "local": 35
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 39
+      },
+      "tgt": {
+        "local": 37
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 39
+      },
+      "tgt": {
+        "local": 38
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 42
+      },
+      "tgt": {
+        "local": 40
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 42
+      },
+      "tgt": {
+        "local": 41
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 45
+      },
+      "tgt": {
+        "local": 43
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 45
+      },
+      "tgt": {
+        "local": 44
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 48
+      },
+      "tgt": {
+        "local": 46
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 48
+      },
+      "tgt": {
+        "local": 47
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 42
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 45
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 48
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 2
+      }
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 8
+      },
+      "type": "gauge_recognition_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 13
+      },
+      "type": "turns_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 20
+      },
+      "type": "novelty_ch1_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 31
+      },
+      "type": "entropy_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 36
+      },
+      "type": "order_from_entropy_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 39
+      },
+      "type": "simplicity_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 49
+      },
+      "type": "aesthetic_value_term",
+      "attrs": {}
+    }
+  ],
+  "productions": [],
+  "rules": []
+}

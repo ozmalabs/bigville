@@ -1,0 +1,628 @@
+{
+ "id": "retinal_carve_2d",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [
+  "retinal_onset_2d"
+ ],
+ "area": "retina",
+ "description": "Async COMMON-FATE CARVE on a 2-D az\u00d7el RETINA (the 2-D expansion of Rung 3). Objects are CARVED from the ASYNC onset-event stream (RetinalOnsetEvent, now carrying (column_index=az, row_index=el)) as maximal 8-connected COMPONENTS of firing cells sharing a coherent motion. THE 2-D CAPABILITY: two objects at the SAME azimuth but DIFFERENT elevation are ONE azimuth span to the 1-D carve (elevation collapsed) and TWO distinct 2-D components here, at their correct (az,el). The `retinal_common_fate_carve_2d` Rust task kind reduces events to one mean epoch per firing cell, groups cells into 8-connected components (a spatial gap in azimuth OR elevation separates components), fits each component's 2-D motion, and emits a fixed per-cell stride-9 layout [is_group_start, col_min, col_max, row_min, row_max, direction, speed, coherence, n_events] with each component's block written at its ANCHOR cell (smallest flat index). This rule matches every RetinalColumn cell against the done carve task and mints ONE VisionPolygon per component when coherence and n_events exceed thresholds held as DATA on a RetinaCarveParams2d node, once per cell-epoch via a carve2d_epoch guard. HONEST SCOPE: splitting two spatially-touching objects of different common fate, and 2-D motion / salience, are named follow-ons. OFF by default: the rule cannot fire unless a RetinaCarveParams2d node exists (created by the adapter only when context['retina_2d'] is set).",
+ "microtheory": {
+  "name": "retinal_carve_2d",
+  "description": "8-connected common-fate grouping of (az,el) onset events -> VisionPolygon (az,el) regions"
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:retinal_carve_2d:retina-carve-params-2d",
+   "src": {
+    "type": "Retina",
+    "var": "retina"
+   },
+   "edge_type": "has_carve_params_2d",
+   "tgt": {
+    "type": "RetinaCarveParams2d",
+    "var": "cparams"
+   }
+  },
+  {
+   "provenance": "seed:retinal_carve_2d:retina-carve-task-2d",
+   "src": {
+    "type": "Retina",
+    "var": "retina"
+   },
+   "edge_type": "has_carve_task_2d",
+   "tgt": {
+    "type": "CognitiveTask",
+    "var": "task"
+   }
+  },
+  {
+   "provenance": "seed:retinal_carve_2d:retina-vision-polygon",
+   "src": {
+    "type": "Retina",
+    "var": "retina"
+   },
+   "edge_type": "has_vision_polygon",
+   "tgt": {
+    "type": "VisionPolygon",
+    "var": "polygon"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "name": "retinal_mint_carve_2d",
+   "area": "retina",
+   "order": 4,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "retina",
+     "has_carve_params_2d",
+     "cparams"
+    ],
+    [
+     "retina",
+     "has_column",
+     "column"
+    ],
+    [
+     "retina",
+     "has_carve_task_2d",
+     "task"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "task"
+       },
+       "key": "kind"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "retinal_common_fate_carve_2d"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "task"
+       },
+       "key": "status"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "done"
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "column"
+        },
+        "key": "carve2d_epoch"
+       },
+       "b": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "input_epoch"
+       }
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "IndexAt",
+       "seq": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "output"
+       },
+       "index": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Times",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "column"
+            },
+            "key": "cell_index"
+           },
+           {
+            "type": "Lit",
+            "value": 9
+           }
+          ]
+         },
+         {
+          "type": "Lit",
+          "value": 0
+         }
+        ]
+       }
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "IndexAt",
+       "seq": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "output"
+       },
+       "index": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Times",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "column"
+            },
+            "key": "cell_index"
+           },
+           {
+            "type": "Lit",
+            "value": 9
+           }
+          ]
+         },
+         {
+          "type": "Lit",
+          "value": 7
+         }
+        ]
+       }
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "cparams"
+       },
+       "key": "min_coherence"
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "IndexAt",
+       "seq": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "output"
+       },
+       "index": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Times",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "column"
+            },
+            "key": "cell_index"
+           },
+           {
+            "type": "Lit",
+            "value": 9
+           }
+          ]
+         },
+         {
+          "type": "Lit",
+          "value": 8
+         }
+        ]
+       }
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "cparams"
+       },
+       "key": "min_events"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "polygon",
+     "VisionPolygon",
+     {
+      "col_min": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 1
+          }
+         ]
+        }
+       }
+      },
+      "col_max": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 2
+          }
+         ]
+        }
+       }
+      },
+      "row_min": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 3
+          }
+         ]
+        }
+       }
+      },
+      "row_max": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 4
+          }
+         ]
+        }
+       }
+      },
+      "direction": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 5
+          }
+         ]
+        }
+       }
+      },
+      "speed": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 6
+          }
+         ]
+        }
+       }
+      },
+      "coherence": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 7
+          }
+         ]
+        }
+       }
+      },
+      "n_events": {
+       "__term__": {
+        "type": "IndexAt",
+        "seq": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "task"
+         },
+         "key": "output"
+        },
+        "index": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "column"
+             },
+             "key": "cell_index"
+            },
+            {
+             "type": "Lit",
+             "value": 9
+            }
+           ]
+          },
+          {
+           "type": "Lit",
+           "value": 8
+          }
+         ]
+        }
+       }
+      },
+      "epoch": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "input_epoch"
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "retina",
+     "has_vision_polygon",
+     "polygon"
+    ],
+    [
+     "set_attr",
+     "column",
+     "carve2d_epoch",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "task"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

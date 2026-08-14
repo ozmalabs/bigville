@@ -1,0 +1,294 @@
+{
+ "id": "bigville_loop_reputation",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R5 (block 253000) -- the economy->affect->SOCIETY closing hop. bl_badmouth: a creditor soured by a DEFAULT (R4 be_default_affect -> demand_cash=1) badmouths the defaulting debtor (debtor.badmouthed rises; a Badmouth node minted). bl_townsfolk_opinion: a townsperson's backing of that debtor flips via the SAME standing>testimony comparison 245's bd_villager_backs uses. Composes existing Terms; zero new Rust. Roots at debtor/owe, traverses `creditor` outgoing (multi-debtor safe).",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bl_badmouth",
+   "comment": "ECONOMY -> AFFECT -> SOCIETY (close): a creditor soured by a DEFAULT (be_default_affect set demand_cash=1) BADMOUTHS the defaulting debtor -- a real state change: the debtor's `badmouthed` reputation-harm counter rises by the creditor's badmouth_strength, and a Badmouth node is minted (glass-box). One-shot per obligation (badmouth_done). Roots at debtor/owe, traverses `creditor` OUTGOING (multi-debtor safe).",
+   "match": [
+    [
+     "debtor",
+     "owes",
+     "owe"
+    ],
+    [
+     "owe",
+     "creditor",
+     "cred"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "owe"
+         },
+         "key": "defaulted"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "cred"
+         },
+         "key": "demand_cash"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "owe"
+         },
+         "key": "badmouth_done"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "debtor",
+     "badmouthed",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "debtor"
+           },
+           "key": "badmouthed"
+          },
+          {
+           "type": "Lit",
+           "value": 0
+          }
+         ]
+        },
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "cred"
+           },
+           "key": "badmouth_strength"
+          },
+          {
+           "type": "Lit",
+           "value": 0
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "add_node",
+     "bm",
+     "Badmouth",
+     {
+      "strength": 1.0
+     }
+    ],
+    [
+     "add_edge",
+     "cred",
+     "badmouths",
+     "bm"
+    ],
+    [
+     "add_edge",
+     "bm",
+     "about_debtor",
+     "debtor"
+    ],
+    [
+     "set_attr",
+     "owe",
+     "badmouth_done",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bl_townsfolk_opinion",
+   "comment": "THE 245 CREDIBILITY ARITHMETIC, driven by the badmouth: a townsperson backs the debtor iff standing > badmouthed*badmouth_weight (mirrors bd_villager_backs' cred comparison). badmouthed=0 -> backs=1; the cascade raises badmouthed past standing -> backs flips to 0.",
+   "match": [
+    [
+     "t",
+     "opines_on",
+     "deb"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "t"
+       },
+       "key": "opinion_on"
+      },
+      {
+       "type": "Lit",
+       "value": 0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "t",
+     "backs_debtor",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Gt",
+        "a": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "deb"
+           },
+           "key": "standing"
+          },
+          {
+           "type": "Lit",
+           "value": 0
+          }
+         ]
+        },
+        "b": {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "deb"
+             },
+             "key": "badmouthed"
+            },
+            {
+             "type": "Lit",
+             "value": 0
+            }
+           ]
+          },
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "t"
+             },
+             "key": "badmouth_weight"
+            },
+            {
+             "type": "Lit",
+             "value": 0
+            }
+           ]
+          }
+         ]
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "Lit",
+        "value": 0.0
+       }
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

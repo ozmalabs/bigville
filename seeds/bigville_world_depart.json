@@ -1,0 +1,156 @@
+{
+ "id": "bigville_world_depart",
+ "version": "1.0.0",
+ "depends_on": [
+  "bigville_goal_dream"
+ ],
+ "self_load_only": true,
+ "description": "BIGVILLE R11 (block 259000) -- the DREAM-of-moving -> DEPARTURE (R8 meets R11). Builds ON R8 bigville_goal_dream (loaded read-only alongside): a resident holds an UNGROUNDED Giantville escape Dream. bw_recruiter_grounds_path is the concrete `recruiter with a grounded_path` R8's gg_dream_collapse_path already references: a TRAVELLER with is_recruiter==1 who `recruits` a resident with an un-collapsed Dream and offers (offer_armed) MINTS a grounded_path Dest{to_giantville} on the dream. R8's gg_dream_collapse_path then COLLAPSES the dream into an ActionGoal{leave} (left=1) when collapse is armed. bw_dissolve_on_leave (bigville_world_scope) then dissolves the departed resident's activity wiring -> OUT OF SCOPE (dormant) -- 'leaving for the big city' IS the dream->departure->out-of-scope pipeline (ties emigration to scope-gating; the town shrinks when people leave). They may REOCCUR as a returning traveller now GROUNDING Giantville. Composes existing Terms; zero new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bw_recruiter_grounds_path",
+   "match": [
+    [
+     "trav",
+     "recruits",
+     "res"
+    ],
+    [
+     "res",
+     "has_dream",
+     "dr"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "trav"
+         },
+         "key": "is_recruiter"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "trav"
+         },
+         "key": "offer_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dr"
+         },
+         "key": "collapsed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Exists",
+       "source": {
+        "type": "Neighbours",
+        "node": {
+         "type": "Var",
+         "name": "dr"
+        },
+        "edge_type": "grounded_path",
+        "any_type": false
+       },
+       "var_name": "_x",
+       "predicate": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "dest",
+     "Dest",
+     {
+      "kind": "recruiter_dest",
+      "to_giantville": 1.0
+     }
+    ],
+    [
+     "add_edge",
+     "dr",
+     "grounded_path",
+     "dest"
+    ],
+    [
+     "set_attr",
+     "dr",
+     "path_offered",
+     1.0
+    ],
+    [
+     "set_attr",
+     "trav",
+     "offer_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

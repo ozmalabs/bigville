@@ -1,0 +1,235 @@
+{
+ "id": "bigville_council_board",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "description": "bigville R20 (268000): the NOTICEBOARD -- the council's OFFICIAL written record. cm_clerk_writes has ONE council member (the clerk) write the minutes as a RENDERING: recorded = held_decision + clerk_bias (a biased clerk DISTORTS the record -- institutional 234). cm_post_notice posts it on the town-hall board and marks it officially_known REGARDLESS of who reads. cm_resident_reads: a resident LEARNS the law iff at_hall (R1 access) AND (literate (R18) OR the literacy gate is ablated); an illiterate/distant resident never fires -> officially_known=1 but knows_law_flag=0 (unequal ignorance-of-the-law -- the poor/unschooled less able to know the rules that bind them). Composes existing Terms (And/Or/Eq/Plus/Attr/Var/Lit) -- zero new Rust. self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "cm_clerk_writes",
+   "match": [
+    [
+     "notice",
+     "of_meeting",
+     "m"
+    ],
+    [
+     "notice",
+     "written_by",
+     "clerk"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "m"
+     },
+     "key": "convened"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "notice",
+     "recorded",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "held_decision"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "clerk"
+         },
+         "key": "clerk_bias"
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "cm_post_notice",
+   "match": [
+    [
+     "board",
+     "posts",
+     "notice"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "notice"
+     },
+     "key": "posted"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 0.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "notice",
+     "posted",
+     1.0
+    ],
+    [
+     "set_attr",
+     "notice",
+     "officially_known",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "cm_resident_reads",
+   "match": [
+    [
+     "res",
+     "visits",
+     "board"
+    ],
+    [
+     "board",
+     "posts",
+     "notice"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "notice"
+       },
+       "key": "posted"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "res"
+       },
+       "key": "at_hall"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Or",
+      "items": [
+       {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "notice"
+         },
+         "key": "literacy_gate_on"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 0.0
+        }
+       },
+       {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "res"
+         },
+         "key": "literate"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       }
+      ]
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "res"
+       },
+       "key": "knows_law_flag"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "res",
+     "knows_law",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "notice"
+       },
+       "key": "recorded"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "res",
+     "knows_law_flag",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

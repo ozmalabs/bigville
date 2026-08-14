@@ -1,0 +1,71 @@
+{
+ "id": "bigville_column_alloc_lorem",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "Untracked-distortion FALSIFIER: mints a printed clause with NO veracity/relevance/informativeness tags. Must FAIL G-three-axes-tracked -- the glass-box requires every printed clause be OWNED and tracked, not absent.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "lorem_untracked",
+   "batch": false,
+   "comment": "Mint an UNTRACKED printed clause (no tags). Mint-once.",
+   "match": [
+    [
+     "col",
+     "by",
+     "w"
+    ]
+   ],
+   "where": {
+    "type": "Not",
+    "arg": {
+     "type": "Exists",
+     "source": {
+      "type": "NodesOfType",
+      "node_type": "PadOption"
+     },
+     "var_name": "q",
+     "predicate": {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "q"
+       },
+       "key": "untracked"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    }
+   },
+   "effects": [
+    [
+     "add_node",
+     "fab",
+     "PadOption",
+     {
+      "untracked": 1.0,
+      "printed": 1.0,
+      "pos": 99.0,
+      "rendered": 1.0,
+      "text": "lorem ipsum dolor sit amet consectetur"
+     }
+    ],
+    [
+     "add_edge",
+     "col",
+     "has_pad",
+     "fab"
+    ]
+   ]
+  }
+ ]
+}

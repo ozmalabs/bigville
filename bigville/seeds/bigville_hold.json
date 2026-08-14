@@ -1,0 +1,55 @@
+{
+  "id": "bigville_hold",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R22 / newspaper-writer Rung C (block 295000): the publisher HOLDS what he is told or witnessed as a general belief. hold_told: a Fact the publisher `received` (delivered by a reporter, Rung B) becomes a held belief (pub `knows` f) with testimony provenance. hold_witnessed: a Fact the publisher saw directly (pub `witnessed_fact` f) becomes a held belief with witness provenance. Testimony-bound and anti-confabulation are STRUCTURAL: `knows` is minted ONLY from `received` or `witnessed_fact` -- no rule mints knowledge from nothing, so the publisher's held set is exactly (told) union (witnessed) and never a fact he was not given.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "hold_told",
+      "batch": false,
+      "comment": "A Fact the publisher was TOLD (received via a reporter's delivery) becomes a held belief: pub `knows` f, provenance = testimony. Guarded by Not-already-known so it fires once.",
+      "match": [
+        ["pub", "received", "f"]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "pub"}, "edge_type": "knows"},
+          "var_name": "k",
+          "predicate": {"type": "Eq", "a": {"type": "Var", "name": "k"}, "b": {"type": "Var", "name": "f"}}
+        }
+      },
+      "effects": [
+        ["add_edge", "pub", "knows", "f"],
+        ["set_attr", "f", "provenance_testimony", 1.0]
+      ]
+    },
+    {
+      "name": "hold_witnessed",
+      "batch": false,
+      "comment": "A Fact the publisher WITNESSED directly (pub `witnessed_fact` f) becomes a held belief: pub `knows` f, provenance = witness. He can know things he saw himself, not only things he was told.",
+      "match": [
+        ["pub", "witnessed_fact", "f"]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "pub"}, "edge_type": "knows"},
+          "var_name": "k",
+          "predicate": {"type": "Eq", "a": {"type": "Var", "name": "k"}, "b": {"type": "Var", "name": "f"}}
+        }
+      },
+      "effects": [
+        ["add_edge", "pub", "knows", "f"],
+        ["set_attr", "f", "provenance_witness", 1.0]
+      ]
+    }
+  ]
+}

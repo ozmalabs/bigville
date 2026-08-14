@@ -1,0 +1,475 @@
+{
+ "id": "bigville_council_gov",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "description": "bigville R20 (268000): TWO-TIER COUNCIL GOVERNANCE. cm_convene fires a meeting on the R3-time CADENCE (Mod(now_day,cadence)==0). cm_public_address reads the mayor's benevolent ADDRESS onto the meeting; cm_attendee_hears_address delivers that PUBLIC content to attendees. cm_member_vote is the PRIVATE deliberation on the council backing-graph: vote = captured ? (base+malice*self_serving_premium) : public_demand (a captured council ignores the town; a responsive one tracks it). cm_private_decision sets held_decision = mean vote over has_member (the collective decision_value). cm_attendee_hears_decision delivers the decision to the town ONLY when the private tier is ablated (private_on==0) -- else the room is occluded (R19 observe-vs-hear). cm_institutional_gap = |address - decision| is the 234 stated!=held atom at institutional scale (ablate malice -> gap closes). Composes existing Terms (IfThenElse/Eq/And/Abs/Plus/Minus/Times/IDiv/Mod/Sum/Count/Neighbours/Attr/Var/Lit) -- zero new Rust. self_load_only. AUDIT 6.8 (block 348000): cm_convene's Mod(now_day,cadence) scheduling is a LEGACY FORCED CLOCK, superseded for scheduling by bigville_council_bylaw (cb_beadle_counts/cb_ring_assembly/cb_convene on BELL TIME, block 322000); this seed is retained for its two-tier public/private governance content, and a demonstrator wanting bell-time convening loads bigville_council_bylaw. The now_epoch term-expiry comparisons in the econ seeds are NOT this defect (legitimate in-frame integer timestamps).",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "cm_convene",
+   "match": [
+    [
+     "m",
+     "convenes",
+     "c"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "armed"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Mod",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "key": "now_day"
+       },
+       "b": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "key": "cadence"
+       }
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "convened"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "convened",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "cm_public_address",
+   "match": [
+    [
+     "m",
+     "addressed_by",
+     "mayor"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "m"
+     },
+     "key": "convened"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "public_address",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "mayor"
+       },
+       "key": "stated_position"
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "cm_attendee_hears_address",
+   "match": [
+    [
+     "m",
+     "attended_by",
+     "att"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "m"
+     },
+     "key": "convened"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "att",
+     "knows_address",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "public_address"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "att",
+     "heard_address",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "cm_member_vote",
+   "match": [
+    [
+     "m",
+     "convenes",
+     "c"
+    ],
+    [
+     "c",
+     "has_member",
+     "mem"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "m"
+     },
+     "key": "convened"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "mem",
+     "vote",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "c"
+         },
+         "key": "captured"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "mem"
+          },
+          "key": "base_position"
+         },
+         {
+          "type": "Times",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "malice_on"
+           },
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "mem"
+            },
+            "key": "self_serving_premium"
+           }
+          ]
+         }
+        ]
+       },
+       "other": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "key": "public_demand"
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "cm_private_decision",
+   "match": [
+    [
+     "m",
+     "convenes",
+     "c"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "m"
+     },
+     "key": "convened"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "held_decision",
+     {
+      "__term__": {
+       "type": "IDiv",
+       "a": {
+        "type": "Sum",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "c"
+         },
+         "edge_type": "has_member",
+         "any_type": false
+        },
+        "var_name": "mm",
+        "value": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "mm"
+         },
+         "key": "vote"
+        }
+       },
+       "b": {
+        "type": "Count",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "c"
+         },
+         "edge_type": "has_member",
+         "any_type": false
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "cm_attendee_hears_decision",
+   "match": [
+    [
+     "m",
+     "attended_by",
+     "att"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "convened"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "private_on"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "att",
+     "knows_decision",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "held_decision"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "att",
+     "heard_decision",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "cm_institutional_gap",
+   "match": [
+    [
+     "m",
+     "convenes",
+     "c"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "m"
+     },
+     "key": "convened"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "stated_held_gap",
+     {
+      "__term__": {
+       "type": "Abs",
+       "arg": {
+        "type": "Minus",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "public_address"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "held_decision"
+        }
+       }
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

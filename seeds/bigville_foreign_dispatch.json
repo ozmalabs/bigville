@@ -1,0 +1,301 @@
+{
+  "id": "bigville_foreign_dispatch",
+  "version": "1.0.0",
+  "depends_on": [
+    "bigville_world_news"
+  ],
+  "self_load_only": true,
+  "description": "bigville R28 (block 316000): WORD FROM GIANTVILLE in the paper. Connects the 259000 wider-world news to the 293000+ newspaper writer. A traveller brings a NewsItem about Giantville; the publisher HEARS it and forms a GiantvilleBelief via the existing bw_news_secondhand (confidence = teller credibility, hearsay) or holds a grounded one (confidence 1.0). fd_write_confirmed / fd_write_hearsay then mint a foreign_dispatch Story the paper prints, rendered by StringConcat -- and the PROVENANCE becomes WORD CHOICE: a credible/grounded report is printed 'confirmed by one lately returned', a shaky one is hedged 'travellers bring word... as yet unconfirmed'. With NO traveller the publisher forms no belief and the paper carries no Giantville news (unknown = absence, first-class). The newspaper's veracity axis, applied to foreign news. Zero new Rust.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "fd_write_confirmed",
+      "batch": false,
+      "comment": "The paper carries the Giantville news the publisher holds, rendered by StringConcat -- provenance/confidence become WORD CHOICE (the hedge). Written once via the foreign_written guard.",
+      "match": [
+        [
+          "town",
+          "has_paper",
+          "paper"
+        ],
+        [
+          "paper",
+          "employs",
+          "pub"
+        ],
+        [
+          "pub",
+          "giantville_belief",
+          "blf"
+        ],
+        [
+          "pub",
+          "hears",
+          "news"
+        ],
+        [
+          "news",
+          "about",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "blf"
+                },
+                "key": "foreign_written"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "blf"
+                  },
+                  "key": "confidence"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.75
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "story",
+          "Story",
+          {
+            "kind": "foreign_dispatch",
+            "captured": 0.0,
+            "text": {
+              "__term__": {
+                "type": "StringConcat",
+                "parts": [
+                  {
+                    "type": "Lit",
+                    "value": "Word from "
+                  },
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "place"
+                    },
+                    "key": "name"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": " that "
+                  },
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "news"
+                    },
+                    "key": "content"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": ", confirmed by one lately returned."
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "paper",
+          "prints",
+          "story"
+        ],
+        [
+          "add_edge",
+          "story",
+          "from_belief",
+          "blf"
+        ],
+        [
+          "set_attr",
+          "blf",
+          "foreign_written",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "fd_write_hearsay",
+      "batch": false,
+      "comment": "The paper carries the Giantville news the publisher holds, rendered by StringConcat -- provenance/confidence become WORD CHOICE (the hedge). Written once via the foreign_written guard.",
+      "match": [
+        [
+          "town",
+          "has_paper",
+          "paper"
+        ],
+        [
+          "paper",
+          "employs",
+          "pub"
+        ],
+        [
+          "pub",
+          "giantville_belief",
+          "blf"
+        ],
+        [
+          "pub",
+          "hears",
+          "news"
+        ],
+        [
+          "news",
+          "about",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "blf"
+                },
+                "key": "foreign_written"
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "blf"
+                  },
+                  "key": "confidence"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.75
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "story",
+          "Story",
+          {
+            "kind": "foreign_dispatch",
+            "captured": 0.0,
+            "text": {
+              "__term__": {
+                "type": "StringConcat",
+                "parts": [
+                  {
+                    "type": "Lit",
+                    "value": "Travellers bring word from "
+                  },
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "place"
+                    },
+                    "key": "name"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": " that "
+                  },
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "news"
+                    },
+                    "key": "content"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": " \u2014 though the account is as yet unconfirmed."
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "paper",
+          "prints",
+          "story"
+        ],
+        [
+          "add_edge",
+          "story",
+          "from_belief",
+          "blf"
+        ],
+        [
+          "set_attr",
+          "blf",
+          "foreign_written",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

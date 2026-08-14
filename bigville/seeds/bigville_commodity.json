@@ -1,0 +1,254 @@
+{
+  "id": "bigville_commodity",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R63 (block 377000): a GOOD IS TRADEABLE PURELY BECAUSE IT EXISTS. One generic rule (tr_trade) trades ANY Good node -- a seller holds a Good{kind,qty,price}; a resident who wants that kind and can afford it buys it; the good moves and coin moves (conserved); no kind-whitelist. So CHARCOAL trades for exactly the same reason timber/grain/a tool does -- being a physical good someone wants is sufficient. Composes with the craft material loop (a lot of the smith's charcoal, or wood, or a finished tool, packaged as a Good, is sellable at market) and the existing exchange/market machinery.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "tr_trade",
+      "batch": false,
+      "comment": "GENERIC COMMODITY TRADE -- a good is tradeable PURELY BECAUSE IT EXISTS. A seller HOLDS a Good (any kind, qty, price); a resident who WANTS that kind and holds coin >= price buys it: the Good moves (seller -> buyer via `holds`), coin moves (buyer -price, seller +price -- conserved), and the want is consumed. The rule matches ANY Good node -- no kind whitelist -- so charcoal trades for the same reason timber, grain, or a tool does: it is a physical good someone wants. seller != buyer (identity guard).",
+      "match": [
+        [
+          "seller",
+          "holds",
+          "good"
+        ],
+        [
+          "town",
+          "has_resident",
+          "buyer"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "buyer"
+              },
+              "key": "wants"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "good"
+              },
+              "key": "kind"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "good"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "buyer"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "good"
+                  },
+                  "key": "price"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Var",
+                "name": "seller"
+              },
+              "b": {
+                "type": "Var",
+                "name": "buyer"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "del_edge",
+          "seller",
+          "holds",
+          "good"
+        ],
+        [
+          "add_edge",
+          "buyer",
+          "holds",
+          "good"
+        ],
+        [
+          "set_attr",
+          "buyer",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "buyer"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "good"
+                    },
+                    "key": "price"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "seller",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "seller"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "good"
+                      },
+                      "key": "price"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "good",
+          "owner",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "buyer"
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "buyer",
+          "wants",
+          ""
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+ "id": "bigville_news_reach",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "description": "bigville R21 (269000): PROPAGATION BEYOND EARSHOT + COLLECTIVE ACTION. np_witness_knows: a resident who WITNESSED the event (event -in_town-> town -has_resident-> res, res.witnessed==1) knows the TRUE value DIRECTLY (the oral/direct layer, open to literate AND illiterate alike -- R19 proximity). np_reader_learns: a LITERATE resident who READS the paper (res -reads-> paper -reports-> story -about-> event, story.printed==1, res.literate==1) acquires the belief from the paper BEYOND earshot -- knows_event = story.content (the paper's bias-shaped rendering, NOT necessarily the truth); an ILLITERATE non-witness never fires (literacy gate, R18) -> stays ignorant (the informed/uninformed divide). np_count_informed: coalition.informed = Sum over the town's residents of knows_event_flag (the count that hold the shared knowledge). np_coalition_forms: formed=1 iff informed >= quorum -- a shared grievance become COMMON KNOWLEDGE via the paper lets the coalition form; suppress the story -> the count never reaches quorum -> no coordination (information as a precondition of collective action). Composes existing Terms (And/Eq/Gte/Sum/Neighbours/Attr/Var/Lit) -- zero new Rust. self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "np_witness_knows",
+   "match": [
+    ["event", "in_town", "town"],
+    ["town", "has_resident", "res"]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "res"}, "key": "witnessed"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "res"}, "key": "knows_event_flag"},
+      "b": {"type": "Lit", "value": 0.0}}
+    ]
+   },
+   "effects": [
+    ["set_attr", "res", "knows_event",
+     {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "truth_value"}}],
+    ["set_attr", "res", "knows_event_flag", 1.0]
+   ]
+  },
+  {
+   "name": "np_reader_learns",
+   "match": [
+    ["res", "reads", "paper"],
+    ["paper", "reports", "story"],
+    ["story", "about", "event"]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "printed"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "res"}, "key": "literate"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "res"}, "key": "knows_event_flag"},
+      "b": {"type": "Lit", "value": 0.0}}
+    ]
+   },
+   "effects": [
+    ["set_attr", "res", "knows_event",
+     {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "content"}}],
+    ["set_attr", "res", "knows_event_flag", 1.0]
+   ]
+  },
+  {
+   "name": "np_count_informed",
+   "match": [
+    ["coal", "in_town", "town"]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {"type": "Attr", "node": {"type": "Var", "name": "coal"}, "key": "formed"},
+    "b": {"type": "Lit", "value": 0.0}
+   },
+   "effects": [
+    ["set_attr", "coal", "informed",
+     {"__term__": {"type": "Sum",
+       "source": {"type": "Neighbours", "node": {"type": "Var", "name": "town"},
+                  "edge_type": "has_resident", "any_type": false},
+       "var_name": "rr",
+       "value": {"type": "Attr", "node": {"type": "Var", "name": "rr"}, "key": "knows_event_flag"}}}]
+   ]
+  },
+  {
+   "name": "np_coalition_forms",
+   "match": [
+    ["coal", "in_town", "town"]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {"type": "Gte",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "coal"}, "key": "informed"},
+      "b": {"type": "Attr", "node": {"type": "Var", "name": "coal"}, "key": "quorum"}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "coal"}, "key": "formed"},
+      "b": {"type": "Lit", "value": 0.0}}
+    ]
+   },
+   "effects": [
+    ["set_attr", "coal", "formed", 1.0]
+   ]
+  }
+ ]
+}

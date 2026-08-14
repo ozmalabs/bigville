@@ -1,0 +1,1580 @@
+{
+  "id": "self_monitoring",
+  "version": "1.0.0",
+  "depends_on": [
+    "experimentation_core"
+  ],
+  "description": "The agent's surprise->investigation self-monitoring as graph data: the 3-rule cascade (construct the per-firing investigation subroutine + its windowed event-recall query; execute the query into causes_set; pick the top cause by nested Argmax over salience). Auto-captured from the agent's own make_rule-built graph-native Rules (no Python callback -- _do_surprise_investigation was deleted). Depends on experimentation_core for the wonder_why_query recall.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "rules": [
+    {
+      "name": "rule_surprise_investigation_construct",
+      "match": [
+        [
+          "agent",
+          "has_emotion",
+          "emo"
+        ],
+        [
+          "agent",
+          "wonder_why_query_root",
+          "qroot"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "name",
+              "type": "Attr",
+              "node": {
+                "name": "emo",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "surprise",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "key": "last_surprise_investigation_tick",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "tick",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "subr",
+          "Subroutine",
+          {
+            "name": {
+              "__term__": {
+                "value": "why_surprised_active",
+                "type": "Lit"
+              }
+            },
+            "window": {
+              "__term__": {
+                "value": 16,
+                "type": "Lit"
+              }
+            },
+            "at_tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            },
+            "purpose": {
+              "__term__": {
+                "value": "why did that happen?",
+                "type": "Lit"
+              }
+            },
+            "triggered_by": {
+              "__term__": {
+                "value": "surprise",
+                "type": "Lit"
+              }
+            },
+            "surprise_value": {
+              "__term__": {
+                "type": "EvalSubgraph",
+                "node": {
+                  "type": "Pick",
+                  "source": {
+                    "type": "Neighbours",
+                    "edge_type": "sample_term",
+                    "node": {
+                      "name": "emo",
+                      "type": "Var"
+                    }
+                  }
+                }
+              }
+            },
+            "constructed_by": {
+              "__term__": {
+                "value": "rule_17b2",
+                "type": "Lit"
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "authored_subroutine",
+          "subr"
+        ],
+        [
+          "add_edge",
+          "subr",
+          "query",
+          "qroot"
+        ],
+        [
+          "set_attr",
+          "agent",
+          "last_surprise_investigation_tick",
+          {
+            "__term__": {
+              "key": "tick",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rule_surprise_investigation_execute",
+      "match": [
+        [
+          "agent",
+          "authored_subroutine",
+          "subr"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "constructed_by",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "rule_17b2",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "executed",
+                "type": "Attr",
+                "node": {
+                  "name": "subr",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": true,
+                "type": "Lit"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "subr",
+          "causes_set",
+          {
+            "__term__": {
+              "type": "EvalSubgraph",
+              "node": {
+                "type": "Pick",
+                "source": {
+                  "type": "Neighbours",
+                  "edge_type": "query",
+                  "node": {
+                    "name": "subr",
+                    "type": "Var"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "subr",
+          "executed",
+          {
+            "__term__": {
+              "value": true,
+              "type": "Lit"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rule_surprise_top_cause",
+      "match": [
+        [
+          "agent",
+          "authored_subroutine",
+          "subr"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "constructed_by",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "rule_17b2",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "executed",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": true,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "top_cause_set_done",
+                "type": "Attr",
+                "node": {
+                  "name": "subr",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": true,
+                "type": "Lit"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "subr",
+          "top_existential_kind",
+          {
+            "__term__": {
+              "key": "kind",
+              "type": "Attr",
+              "node": {
+                "value": {
+                  "value": {
+                    "name": "c",
+                    "value": {
+                      "value": {
+                        "key": "count",
+                        "type": "Attr",
+                        "node": {
+                          "name": "ebr",
+                          "type": "Var"
+                        }
+                      },
+                      "type": "MaxOver",
+                      "var_name": "ebr",
+                      "source": {
+                        "type": "Filter",
+                        "var_name": "ebr",
+                        "predicate": {
+                          "type": "And",
+                          "items": [
+                            {
+                              "type": "Eq",
+                              "a": {
+                                "key": "kind",
+                                "type": "Attr",
+                                "node": {
+                                  "name": "ebr",
+                                  "type": "Var"
+                                }
+                              },
+                              "b": {
+                                "key": "kind",
+                                "type": "Attr",
+                                "node": {
+                                  "name": "e",
+                                  "type": "Var"
+                                }
+                              }
+                            },
+                            {
+                              "type": "In",
+                              "member": {
+                                "type": "Pick",
+                                "source": {
+                                  "type": "Neighbours",
+                                  "edge_type": "of_body_type",
+                                  "node": {
+                                    "name": "ebr",
+                                    "type": "Var"
+                                  }
+                                }
+                              },
+                              "container": {
+                                "type": "SetT",
+                                "items": [
+                                  {
+                                    "name": "bt",
+                                    "type": "Var"
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        "source": {
+                          "type": "Neighbours",
+                          "edge_type": "tracks_event_base_rate",
+                          "node": {
+                            "name": "agent",
+                            "type": "Var"
+                          }
+                        }
+                      },
+                      "default": {
+                        "value": 0,
+                        "type": "Lit"
+                      }
+                    },
+                    "type": "Let",
+                    "body": {
+                      "cond": {
+                        "type": "Gt",
+                        "a": {
+                          "name": "c",
+                          "type": "Var"
+                        },
+                        "b": {
+                          "value": 0,
+                          "type": "Lit"
+                        }
+                      },
+                      "type": "IfThenElse",
+                      "other": {
+                        "value": 0,
+                        "type": "Lit"
+                      },
+                      "then": {
+                        "type": "Div",
+                        "a": {
+                          "key": "n_events",
+                          "type": "Attr",
+                          "node": {
+                            "name": "agent",
+                            "type": "Var"
+                          }
+                        },
+                        "b": {
+                          "name": "c",
+                          "type": "Var"
+                        }
+                      }
+                    }
+                  },
+                  "type": "MaxOver",
+                  "var_name": "bt",
+                  "source": {
+                    "type": "Neighbours",
+                    "edge_type": "involves",
+                    "node": {
+                      "name": "e",
+                      "type": "Var"
+                    }
+                  },
+                  "default": {
+                    "value": 0,
+                    "type": "Lit"
+                  }
+                },
+                "type": "Argmax",
+                "var_name": "e",
+                "source": {
+                  "type": "Filter",
+                  "var_name": "e",
+                  "predicate": {
+                    "type": "In",
+                    "member": {
+                      "key": "kind",
+                      "type": "Attr",
+                      "node": {
+                        "name": "e",
+                        "type": "Var"
+                      }
+                    },
+                    "container": {
+                      "type": "SetT",
+                      "items": [
+                        {
+                          "value": "ceased_to_exist",
+                          "type": "Lit"
+                        },
+                        {
+                          "value": "object_changed",
+                          "type": "Lit"
+                        },
+                        {
+                          "value": "came_into_view",
+                          "type": "Lit"
+                        },
+                        {
+                          "value": "left_view",
+                          "type": "Lit"
+                        }
+                      ]
+                    }
+                  },
+                  "source": {
+                    "key": "causes_set",
+                    "type": "Attr",
+                    "node": {
+                      "name": "subr",
+                      "type": "Var"
+                    }
+                  }
+                },
+                "default": null
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "subr",
+          "top_existential_type",
+          {
+            "__term__": {
+              "key": "name",
+              "type": "Attr",
+              "node": {
+                "value": {
+                  "name": "c",
+                  "value": {
+                    "value": {
+                      "key": "count",
+                      "type": "Attr",
+                      "node": {
+                        "name": "ebr",
+                        "type": "Var"
+                      }
+                    },
+                    "type": "MaxOver",
+                    "var_name": "ebr",
+                    "source": {
+                      "type": "Filter",
+                      "var_name": "ebr",
+                      "predicate": {
+                        "type": "And",
+                        "items": [
+                          {
+                            "type": "Eq",
+                            "a": {
+                              "key": "kind",
+                              "type": "Attr",
+                              "node": {
+                                "name": "ebr",
+                                "type": "Var"
+                              }
+                            },
+                            "b": {
+                              "key": "kind",
+                              "type": "Attr",
+                              "node": {
+                                "value": {
+                                  "value": {
+                                    "name": "c",
+                                    "value": {
+                                      "value": {
+                                        "key": "count",
+                                        "type": "Attr",
+                                        "node": {
+                                          "name": "ebr",
+                                          "type": "Var"
+                                        }
+                                      },
+                                      "type": "MaxOver",
+                                      "var_name": "ebr",
+                                      "source": {
+                                        "type": "Filter",
+                                        "var_name": "ebr",
+                                        "predicate": {
+                                          "type": "And",
+                                          "items": [
+                                            {
+                                              "type": "Eq",
+                                              "a": {
+                                                "key": "kind",
+                                                "type": "Attr",
+                                                "node": {
+                                                  "name": "ebr",
+                                                  "type": "Var"
+                                                }
+                                              },
+                                              "b": {
+                                                "key": "kind",
+                                                "type": "Attr",
+                                                "node": {
+                                                  "name": "e",
+                                                  "type": "Var"
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "In",
+                                              "member": {
+                                                "type": "Pick",
+                                                "source": {
+                                                  "type": "Neighbours",
+                                                  "edge_type": "of_body_type",
+                                                  "node": {
+                                                    "name": "ebr",
+                                                    "type": "Var"
+                                                  }
+                                                }
+                                              },
+                                              "container": {
+                                                "type": "SetT",
+                                                "items": [
+                                                  {
+                                                    "name": "bt",
+                                                    "type": "Var"
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        "source": {
+                                          "type": "Neighbours",
+                                          "edge_type": "tracks_event_base_rate",
+                                          "node": {
+                                            "name": "agent",
+                                            "type": "Var"
+                                          }
+                                        }
+                                      },
+                                      "default": {
+                                        "value": 0,
+                                        "type": "Lit"
+                                      }
+                                    },
+                                    "type": "Let",
+                                    "body": {
+                                      "cond": {
+                                        "type": "Gt",
+                                        "a": {
+                                          "name": "c",
+                                          "type": "Var"
+                                        },
+                                        "b": {
+                                          "value": 0,
+                                          "type": "Lit"
+                                        }
+                                      },
+                                      "type": "IfThenElse",
+                                      "other": {
+                                        "value": 0,
+                                        "type": "Lit"
+                                      },
+                                      "then": {
+                                        "type": "Div",
+                                        "a": {
+                                          "key": "n_events",
+                                          "type": "Attr",
+                                          "node": {
+                                            "name": "agent",
+                                            "type": "Var"
+                                          }
+                                        },
+                                        "b": {
+                                          "name": "c",
+                                          "type": "Var"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "type": "MaxOver",
+                                  "var_name": "bt",
+                                  "source": {
+                                    "type": "Neighbours",
+                                    "edge_type": "involves",
+                                    "node": {
+                                      "name": "e",
+                                      "type": "Var"
+                                    }
+                                  },
+                                  "default": {
+                                    "value": 0,
+                                    "type": "Lit"
+                                  }
+                                },
+                                "type": "Argmax",
+                                "var_name": "e",
+                                "source": {
+                                  "type": "Filter",
+                                  "var_name": "e",
+                                  "predicate": {
+                                    "type": "In",
+                                    "member": {
+                                      "key": "kind",
+                                      "type": "Attr",
+                                      "node": {
+                                        "name": "e",
+                                        "type": "Var"
+                                      }
+                                    },
+                                    "container": {
+                                      "type": "SetT",
+                                      "items": [
+                                        {
+                                          "value": "ceased_to_exist",
+                                          "type": "Lit"
+                                        },
+                                        {
+                                          "value": "object_changed",
+                                          "type": "Lit"
+                                        },
+                                        {
+                                          "value": "came_into_view",
+                                          "type": "Lit"
+                                        },
+                                        {
+                                          "value": "left_view",
+                                          "type": "Lit"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "source": {
+                                    "key": "causes_set",
+                                    "type": "Attr",
+                                    "node": {
+                                      "name": "subr",
+                                      "type": "Var"
+                                    }
+                                  }
+                                },
+                                "default": null
+                              }
+                            }
+                          },
+                          {
+                            "type": "In",
+                            "member": {
+                              "type": "Pick",
+                              "source": {
+                                "type": "Neighbours",
+                                "edge_type": "of_body_type",
+                                "node": {
+                                  "name": "ebr",
+                                  "type": "Var"
+                                }
+                              }
+                            },
+                            "container": {
+                              "type": "SetT",
+                              "items": [
+                                {
+                                  "name": "bt",
+                                  "type": "Var"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "source": {
+                        "type": "Neighbours",
+                        "edge_type": "tracks_event_base_rate",
+                        "node": {
+                          "name": "agent",
+                          "type": "Var"
+                        }
+                      }
+                    },
+                    "default": {
+                      "value": 0,
+                      "type": "Lit"
+                    }
+                  },
+                  "type": "Let",
+                  "body": {
+                    "cond": {
+                      "type": "Gt",
+                      "a": {
+                        "name": "c",
+                        "type": "Var"
+                      },
+                      "b": {
+                        "value": 0,
+                        "type": "Lit"
+                      }
+                    },
+                    "type": "IfThenElse",
+                    "other": {
+                      "value": 0,
+                      "type": "Lit"
+                    },
+                    "then": {
+                      "type": "Div",
+                      "a": {
+                        "key": "n_events",
+                        "type": "Attr",
+                        "node": {
+                          "name": "agent",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "name": "c",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                },
+                "type": "Argmax",
+                "var_name": "bt",
+                "source": {
+                  "type": "Neighbours",
+                  "edge_type": "involves",
+                  "node": {
+                    "value": {
+                      "value": {
+                        "name": "c",
+                        "value": {
+                          "value": {
+                            "key": "count",
+                            "type": "Attr",
+                            "node": {
+                              "name": "ebr",
+                              "type": "Var"
+                            }
+                          },
+                          "type": "MaxOver",
+                          "var_name": "ebr",
+                          "source": {
+                            "type": "Filter",
+                            "var_name": "ebr",
+                            "predicate": {
+                              "type": "And",
+                              "items": [
+                                {
+                                  "type": "Eq",
+                                  "a": {
+                                    "key": "kind",
+                                    "type": "Attr",
+                                    "node": {
+                                      "name": "ebr",
+                                      "type": "Var"
+                                    }
+                                  },
+                                  "b": {
+                                    "key": "kind",
+                                    "type": "Attr",
+                                    "node": {
+                                      "name": "e",
+                                      "type": "Var"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "In",
+                                  "member": {
+                                    "type": "Pick",
+                                    "source": {
+                                      "type": "Neighbours",
+                                      "edge_type": "of_body_type",
+                                      "node": {
+                                        "name": "ebr",
+                                        "type": "Var"
+                                      }
+                                    }
+                                  },
+                                  "container": {
+                                    "type": "SetT",
+                                    "items": [
+                                      {
+                                        "name": "bt",
+                                        "type": "Var"
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            "source": {
+                              "type": "Neighbours",
+                              "edge_type": "tracks_event_base_rate",
+                              "node": {
+                                "name": "agent",
+                                "type": "Var"
+                              }
+                            }
+                          },
+                          "default": {
+                            "value": 0,
+                            "type": "Lit"
+                          }
+                        },
+                        "type": "Let",
+                        "body": {
+                          "cond": {
+                            "type": "Gt",
+                            "a": {
+                              "name": "c",
+                              "type": "Var"
+                            },
+                            "b": {
+                              "value": 0,
+                              "type": "Lit"
+                            }
+                          },
+                          "type": "IfThenElse",
+                          "other": {
+                            "value": 0,
+                            "type": "Lit"
+                          },
+                          "then": {
+                            "type": "Div",
+                            "a": {
+                              "key": "n_events",
+                              "type": "Attr",
+                              "node": {
+                                "name": "agent",
+                                "type": "Var"
+                              }
+                            },
+                            "b": {
+                              "name": "c",
+                              "type": "Var"
+                            }
+                          }
+                        }
+                      },
+                      "type": "MaxOver",
+                      "var_name": "bt",
+                      "source": {
+                        "type": "Neighbours",
+                        "edge_type": "involves",
+                        "node": {
+                          "name": "e",
+                          "type": "Var"
+                        }
+                      },
+                      "default": {
+                        "value": 0,
+                        "type": "Lit"
+                      }
+                    },
+                    "type": "Argmax",
+                    "var_name": "e",
+                    "source": {
+                      "type": "Filter",
+                      "var_name": "e",
+                      "predicate": {
+                        "type": "In",
+                        "member": {
+                          "key": "kind",
+                          "type": "Attr",
+                          "node": {
+                            "name": "e",
+                            "type": "Var"
+                          }
+                        },
+                        "container": {
+                          "type": "SetT",
+                          "items": [
+                            {
+                              "value": "ceased_to_exist",
+                              "type": "Lit"
+                            },
+                            {
+                              "value": "object_changed",
+                              "type": "Lit"
+                            },
+                            {
+                              "value": "came_into_view",
+                              "type": "Lit"
+                            },
+                            {
+                              "value": "left_view",
+                              "type": "Lit"
+                            }
+                          ]
+                        }
+                      },
+                      "source": {
+                        "key": "causes_set",
+                        "type": "Attr",
+                        "node": {
+                          "name": "subr",
+                          "type": "Var"
+                        }
+                      }
+                    },
+                    "default": null
+                  }
+                },
+                "default": null
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "subr",
+          "top_cause_set_done",
+          {
+            "__term__": {
+              "value": true,
+              "type": "Lit"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rule_monitor_self_and_partner",
+      "match": [
+        [
+          "agent",
+          "has_self_model",
+          "sm"
+        ],
+        [
+          "agent",
+          "measures_against",
+          "std"
+        ],
+        [
+          "agent",
+          "participates_in",
+          "ch"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "key": "name",
+          "type": "Attr",
+          "node": {
+            "name": "std",
+            "type": "Var"
+          }
+        },
+        "b": {
+          "value": "partner",
+          "type": "Lit"
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "sm",
+          "recent_utterance_avg_length",
+          {
+            "__term__": {
+              "cond": {
+                "type": "Gt",
+                "a": {
+                  "type": "Count",
+                  "source": {
+                    "type": "Filter",
+                    "var_name": "m",
+                    "predicate": {
+                      "type": "Eq",
+                      "a": {
+                        "key": "from",
+                        "type": "Attr",
+                        "node": {
+                          "name": "m",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "value": "agent",
+                        "type": "Lit"
+                      }
+                    },
+                    "source": {
+                      "type": "InNeighbours",
+                      "edge_type": "in_channel",
+                      "node": {
+                        "name": "ch",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                },
+                "b": {
+                  "value": 0,
+                  "type": "Lit"
+                }
+              },
+              "type": "IfThenElse",
+              "other": {
+                "value": 0.0,
+                "type": "Lit"
+              },
+              "then": {
+                "type": "Div",
+                "a": {
+                  "value": {
+                    "key": "token_count",
+                    "type": "Attr",
+                    "node": {
+                      "name": "m",
+                      "type": "Var"
+                    }
+                  },
+                  "type": "Sum",
+                  "var_name": "m",
+                  "source": {
+                    "type": "Filter",
+                    "var_name": "m",
+                    "predicate": {
+                      "type": "Eq",
+                      "a": {
+                        "key": "from",
+                        "type": "Attr",
+                        "node": {
+                          "name": "m",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "value": "agent",
+                        "type": "Lit"
+                      }
+                    },
+                    "source": {
+                      "type": "InNeighbours",
+                      "edge_type": "in_channel",
+                      "node": {
+                        "name": "ch",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                },
+                "b": {
+                  "type": "Count",
+                  "source": {
+                    "type": "Filter",
+                    "var_name": "m",
+                    "predicate": {
+                      "type": "Eq",
+                      "a": {
+                        "key": "from",
+                        "type": "Attr",
+                        "node": {
+                          "name": "m",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "value": "agent",
+                        "type": "Lit"
+                      }
+                    },
+                    "source": {
+                      "type": "InNeighbours",
+                      "edge_type": "in_channel",
+                      "node": {
+                        "name": "ch",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "sm",
+          "recent_utterance_count",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "var_name": "m",
+                "predicate": {
+                  "type": "Eq",
+                  "a": {
+                    "key": "from",
+                    "type": "Attr",
+                    "node": {
+                      "name": "m",
+                      "type": "Var"
+                    }
+                  },
+                  "b": {
+                    "value": "agent",
+                    "type": "Lit"
+                  }
+                },
+                "source": {
+                  "type": "InNeighbours",
+                  "edge_type": "in_channel",
+                  "node": {
+                    "name": "ch",
+                    "type": "Var"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "sm",
+          "last_updated_tick",
+          {
+            "__term__": {
+              "key": "tick",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "std",
+          "recent_utterance_avg_length",
+          {
+            "__term__": {
+              "cond": {
+                "type": "Gt",
+                "a": {
+                  "type": "Count",
+                  "source": {
+                    "type": "Filter",
+                    "var_name": "m",
+                    "predicate": {
+                      "type": "Eq",
+                      "a": {
+                        "key": "from",
+                        "type": "Attr",
+                        "node": {
+                          "name": "m",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "value": "interlocutor",
+                        "type": "Lit"
+                      }
+                    },
+                    "source": {
+                      "type": "InNeighbours",
+                      "edge_type": "in_channel",
+                      "node": {
+                        "name": "ch",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                },
+                "b": {
+                  "value": 0,
+                  "type": "Lit"
+                }
+              },
+              "type": "IfThenElse",
+              "other": {
+                "value": 0.0,
+                "type": "Lit"
+              },
+              "then": {
+                "type": "Div",
+                "a": {
+                  "value": {
+                    "key": "token_count",
+                    "type": "Attr",
+                    "node": {
+                      "name": "m",
+                      "type": "Var"
+                    }
+                  },
+                  "type": "Sum",
+                  "var_name": "m",
+                  "source": {
+                    "type": "Filter",
+                    "var_name": "m",
+                    "predicate": {
+                      "type": "Eq",
+                      "a": {
+                        "key": "from",
+                        "type": "Attr",
+                        "node": {
+                          "name": "m",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "value": "interlocutor",
+                        "type": "Lit"
+                      }
+                    },
+                    "source": {
+                      "type": "InNeighbours",
+                      "edge_type": "in_channel",
+                      "node": {
+                        "name": "ch",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                },
+                "b": {
+                  "type": "Count",
+                  "source": {
+                    "type": "Filter",
+                    "var_name": "m",
+                    "predicate": {
+                      "type": "Eq",
+                      "a": {
+                        "key": "from",
+                        "type": "Attr",
+                        "node": {
+                          "name": "m",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "value": "interlocutor",
+                        "type": "Lit"
+                      }
+                    },
+                    "source": {
+                      "type": "InNeighbours",
+                      "edge_type": "in_channel",
+                      "node": {
+                        "name": "ch",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "std",
+          "recent_utterance_count",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "var_name": "m",
+                "predicate": {
+                  "type": "Eq",
+                  "a": {
+                    "key": "from",
+                    "type": "Attr",
+                    "node": {
+                      "name": "m",
+                      "type": "Var"
+                    }
+                  },
+                  "b": {
+                    "value": "interlocutor",
+                    "type": "Lit"
+                  }
+                },
+                "source": {
+                  "type": "InNeighbours",
+                  "edge_type": "in_channel",
+                  "node": {
+                    "name": "ch",
+                    "type": "Var"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "std",
+          "last_updated_tick",
+          {
+            "__term__": {
+              "key": "tick",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rule_author_asymmetry_assessment",
+      "match": [
+        [
+          "agent",
+          "has_self_model",
+          "sm"
+        ],
+        [
+          "agent",
+          "measures_against",
+          "std"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "name",
+              "type": "Attr",
+              "node": {
+                "name": "std",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "partner",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "key": "recent_utterance_count",
+              "type": "Attr",
+              "node": {
+                "name": "sm",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": 2,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "key": "recent_utterance_count",
+              "type": "Attr",
+              "node": {
+                "name": "std",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": 2,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Minus",
+              "a": {
+                "key": "recent_utterance_avg_length",
+                "type": "Attr",
+                "node": {
+                  "name": "std",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "key": "recent_utterance_avg_length",
+                "type": "Attr",
+                "node": {
+                  "name": "sm",
+                  "type": "Var"
+                }
+              }
+            },
+            "b": {
+              "key": "self_insight_asymmetry_threshold",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "ass",
+          "Assessment",
+          {
+            "kind": "asymmetry_vs_partner",
+            "tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            },
+            "delta": {
+              "__term__": {
+                "type": "Minus",
+                "a": {
+                  "key": "recent_utterance_avg_length",
+                  "type": "Attr",
+                  "node": {
+                    "name": "std",
+                    "type": "Var"
+                  }
+                },
+                "b": {
+                  "key": "recent_utterance_avg_length",
+                  "type": "Attr",
+                  "node": {
+                    "name": "sm",
+                    "type": "Var"
+                  }
+                }
+              }
+            },
+            "own_value": {
+              "__term__": {
+                "key": "recent_utterance_avg_length",
+                "type": "Attr",
+                "node": {
+                  "name": "sm",
+                  "type": "Var"
+                }
+              }
+            },
+            "partner_value": {
+              "__term__": {
+                "key": "recent_utterance_avg_length",
+                "type": "Attr",
+                "node": {
+                  "name": "std",
+                  "type": "Var"
+                }
+              }
+            },
+            "addressed": false
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "has_assessment",
+          "ass"
+        ],
+        [
+          "add_edge",
+          "ass",
+          "about",
+          "sm"
+        ],
+        [
+          "add_edge",
+          "ass",
+          "compares_to",
+          "std"
+        ],
+        [
+          "add_node",
+          "goal",
+          "Goal",
+          {
+            "label": "develop_expressiveness",
+            "priority": {
+              "__term__": {
+                "value": 0.8,
+                "type": "Lit"
+              }
+            },
+            "persistent": false,
+            "created_tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "has_goal",
+          "goal"
+        ]
+      ]
+    }
+  ]
+}

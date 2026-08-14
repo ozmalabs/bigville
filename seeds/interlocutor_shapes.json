@@ -1,0 +1,96 @@
+{
+  "id": "interlocutor_shapes",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "InterlocutorShape codebook (course correction 2026-07-11, refinement 3: 'not just a track record - by shape matching and priors. you can assume a lot about a person within a confidence interval based on a lot of things.'). The SAME ShapeDecode idiom the substrate already applies to strokes/objects/transforms, applied to a PERSON: a small starter codebook of signatures over the dimensions interlocutor_model.py's Party model ALREADY accumulates (feat_counts: register/cadence/style/affect). Each shape carries PRIOR expectations as DATA -- self_report_reliability_prior + reliability_interval (the prior's confidence-interval width) + expected_domains + precision_prior + evidence_decay_k (how fast individual track-record evidence overtakes the population prior, domains.interlocutor_model.effective_reliability's n/(n+decay_k) blend weight) + tom_capacity_prior (course correction 2026-07-11, 4th refinement: 'realistically, some humans barely have theory of mind' -- how much THIS shape of interlocutor is expected to model the agent/others; terse-imperative shapes prior LOWER, technical/academic shapes prior mid-high; consumed by seeds/conversation_grice.json's reply_topic_repeat_known guard -- a low-tom party's literal repeat question is licensed as a genuine re-ask, not read as 'the prior answer was inadequate'). Evidence-based revision of tom_capacity (a party who visibly tracks/adapts to what was said vs. one who repeats/ignores) is a NAMED RESIDUAL -- only the shape prior is wired this wave, per explicit scope instruction ('do not build elaborate pragmatics'). 'default_uncalibrated' is the HONEST ABSTAIN entry: a signature that matches nothing on purpose (sig_*='__none__'), so a poor-fit party gets the WIDEST interval as a real seeded fact, never a Python magic-number fallback. Growth (minting a NEW shape for a party that fits none of these) is a NAMED RESIDUAL -- not built this wave; the fit/abstain datum is recorded so a future sd-loop-style mint rule has something to grow from.",
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "InterlocutorShape",
+      "attrs": {
+        "name": "technical_precise",
+        "sig_register": "neutral",
+        "sig_cadence": "medium",
+        "sig_style": "plain",
+        "sig_affect": "calm",
+        "self_report_reliability_prior": 0.65,
+        "reliability_interval": 0.15,
+        "expected_domains": ["technical"],
+        "precision_prior": 0.8,
+        "evidence_decay_k": 5.0,
+        "tom_capacity_prior": 0.65
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "InterlocutorShape",
+      "attrs": {
+        "name": "casual_conversational",
+        "sig_register": "casual",
+        "sig_cadence": "short",
+        "sig_style": "plain",
+        "sig_affect": "warm",
+        "self_report_reliability_prior": 0.45,
+        "reliability_interval": 0.2,
+        "expected_domains": [],
+        "precision_prior": 0.4,
+        "evidence_decay_k": 5.0,
+        "tom_capacity_prior": 0.5
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "InterlocutorShape",
+      "attrs": {
+        "name": "formal_academic",
+        "sig_register": "formal",
+        "sig_cadence": "long",
+        "sig_style": "ornate",
+        "sig_affect": "calm",
+        "self_report_reliability_prior": 0.6,
+        "reliability_interval": 0.15,
+        "expected_domains": ["academic"],
+        "precision_prior": 0.7,
+        "evidence_decay_k": 5.0,
+        "tom_capacity_prior": 0.6
+      }
+    },
+    {
+      "local_id": 4,
+      "type": "InterlocutorShape",
+      "attrs": {
+        "name": "terse_imperative",
+        "sig_register": "neutral",
+        "sig_cadence": "short",
+        "sig_style": "plain",
+        "sig_affect": "calm",
+        "self_report_reliability_prior": 0.4,
+        "reliability_interval": 0.25,
+        "expected_domains": [],
+        "precision_prior": 0.5,
+        "evidence_decay_k": 5.0,
+        "tom_capacity_prior": 0.3
+      }
+    },
+    {
+      "local_id": 5,
+      "type": "InterlocutorShape",
+      "attrs": {
+        "name": "default_uncalibrated",
+        "sig_register": "__none__",
+        "sig_cadence": "__none__",
+        "sig_style": "__none__",
+        "sig_affect": "__none__",
+        "self_report_reliability_prior": 0.5,
+        "reliability_interval": 0.35,
+        "expected_domains": [],
+        "precision_prior": null,
+        "evidence_decay_k": 5.0,
+        "tom_capacity_prior": 0.5
+      }
+    }
+  ],
+  "edges": [],
+  "productions": [],
+  "rules": []
+}

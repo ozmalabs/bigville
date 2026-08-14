@@ -1,0 +1,830 @@
+{
+ "id": "bigville_laws_enforcement",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "area": "retina",
+ "description": "BLOCK 247000 -- BIGVILLE: KNOWN LAWS + IN-GAME ENFORCEMENT. Laws are FIRST-CLASS graph objects the inhabitants HOLD (knows_law), NOT a hardcoded world constraint: a PROHIBITION law (office-holder must not harm a villager from office) John can VIOLATE, and a REMOVAL law (office-holder removable by a council process) that is the LAWFUL instrument of Mary's counter. A violation is WITNESSED (occlusion-gated by the sim's line-of-sight query -- an occluded office scheme is never detected) and decoded against the held law's `prohibits` pattern (bl_detect_violation). Enforcement is an AGENT's decision by rule (bl_enforce/bl_decline): the Constable acts iff its duty outweighs its loyalty to John -- an impartial enforcer censures, a captured one (John's lever) declines, and the violation persists. Mary's reduce_office_hold goal runs THROUGH the removal law: she files a RemovalMotion (bl_mary_files_motion) and the Council removes John only via that motion + impartiality + a believing quorum (bl_council_removes) -- the credibility asymmetry gates the lawful counter. Integer-native (Eq/Gt/And/Not/Plus/IfThenElse/Sum/Exists/NodesOfType/Attr only; no Rust, no new Term). OFF by default: self_load_only, nothing depends_on it, every rule guards on flags (enforce_on/impartial/kind) absent in every existing path. A synthetic MODEL of a law-enforcement mechanism, NOT a claim about real law or politics.",
+ "microtheory": {
+  "name": "bigville_laws_enforcement",
+  "description": "Whether a known law is enforced is set by (a) whether a witnessing enforcer PERCEIVES the violation (occlusion gate), (b) whether the enforcer's own motivation (duty vs loyalty) favours acting, and (c) for removal, whether a lawful motion clears an impartial council at quorum. The law is KNOWN (held by inhabitants); enforcement is an in-game agent decision, never an external referee."
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:bigville_laws_enforcement:con_knows",
+   "src": {
+    "type": "Constable",
+    "var": "con"
+   },
+   "edge_type": "knows_law",
+   "tgt": {
+    "type": "Law",
+    "var": "law"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:mary_knows",
+   "src": {
+    "type": "MaryTom",
+    "var": "mary"
+   },
+   "edge_type": "knows_law",
+   "tgt": {
+    "type": "Law",
+    "var": "law"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:council_knows",
+   "src": {
+    "type": "Council",
+    "var": "council"
+   },
+   "edge_type": "knows_law",
+   "tgt": {
+    "type": "Law",
+    "var": "law"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:hub_knows",
+   "src": {
+    "type": "EmotionHub",
+    "var": "hub"
+   },
+   "edge_type": "knows_law",
+   "tgt": {
+    "type": "Law",
+    "var": "law"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:villager_knows",
+   "src": {
+    "type": "Villager",
+    "var": "v"
+   },
+   "edge_type": "knows_law",
+   "tgt": {
+    "type": "Law",
+    "var": "law"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:con_oversees",
+   "src": {
+    "type": "Constable",
+    "var": "con"
+   },
+   "edge_type": "oversees_office",
+   "tgt": {
+    "type": "Office",
+    "var": "office"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:council_oversees",
+   "src": {
+    "type": "Council",
+    "var": "council"
+   },
+   "edge_type": "oversees_office",
+   "tgt": {
+    "type": "Office",
+    "var": "office"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:john_appoints",
+   "src": {
+    "type": "EmotionHub",
+    "var": "hub"
+   },
+   "edge_type": "appointed",
+   "tgt": {
+    "type": "Constable",
+    "var": "con"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:detected",
+   "src": {
+    "type": "Constable",
+    "var": "con"
+   },
+   "edge_type": "detected_violation",
+   "tgt": {
+    "type": "Violation",
+    "var": "viol"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:made_enf",
+   "src": {
+    "type": "Constable",
+    "var": "con"
+   },
+   "edge_type": "made_enforcement",
+   "tgt": {
+    "type": "EnforcementDecision",
+    "var": "dec"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:filed",
+   "src": {
+    "type": "MaryTom",
+    "var": "mary"
+   },
+   "edge_type": "filed_motion",
+   "tgt": {
+    "type": "RemovalMotion",
+    "var": "motion"
+   }
+  },
+  {
+   "provenance": "seed:bigville_laws_enforcement:enacted",
+   "src": {
+    "type": "Council",
+    "var": "council"
+   },
+   "edge_type": "enacted",
+   "tgt": {
+    "type": "RemovalOutcome",
+    "var": "outcome"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "name": "bl_detect_violation",
+   "area": "retina",
+   "order": 45,
+   "latency_class": "hard_realtime",
+   "comment": "DETECTION (occlusion-gated). A witnessing enforcer (Constable) DECODES its perceived act against the prohibition Law it HOLDS (knows_law): fires iff the held law's `prohibits` pattern == the act it actually WITNESSED (witnessed_act, adapter-set only under line-of-sight to the office AND held harm) AND it has witnessed harm (witnessed_harm>0). An OCCLUDED constable never accrues witnessed_harm, so no Violation is minted -- detection flips with occlusion, not with John's behaviour. NOT scripted: John governing => witnessed_act='none' != 'office_harm' => no violation. Fires once (detected guard).",
+   "match": [
+    [
+     "con",
+     "knows_law",
+     "law"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "enforce_on"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "law"
+       },
+       "key": "kind"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "prohibition"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "law"
+       },
+       "key": "prohibits"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "witnessed_act"
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "witnessed_harm"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "detected"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "viol",
+     "Violation",
+     {
+      "about": "John",
+      "act": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "con"
+        },
+        "key": "witnessed_act"
+       }
+      },
+      "law_code": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "law"
+        },
+        "key": "code"
+       }
+      },
+      "witnessed_by": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "con"
+        },
+        "key": "name"
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "con",
+     "detected_violation",
+     "viol"
+    ],
+    [
+     "set_attr",
+     "con",
+     "detected",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bl_enforce",
+   "area": "retina",
+   "order": 46,
+   "latency_class": "hard_realtime",
+   "comment": "ENFORCEMENT DECISION (the enforcer's OWN motivation, as a rule). Given a detected Violation it oversees, the Constable ACTS iff duty_weight > loyalty_to_john -- an impartial enforcer (loyalty_to_john=0) enforces. Consequence: a censure on the Office (office.censures=1) + an EnforcementDecision(outcome=enforce). No external referee; no Python decides this. Fires once (enforced guard).",
+   "match": [
+    [
+     "con",
+     "detected_violation",
+     "viol"
+    ],
+    [
+     "con",
+     "oversees_office",
+     "office"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "enforce_on"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "enforced"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "duty_weight"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "loyalty_to_john"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "office",
+     "censures",
+     1.0
+    ],
+    [
+     "add_node",
+     "dec",
+     "EnforcementDecision",
+     {
+      "about": "John",
+      "by": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "con"
+        },
+        "key": "name"
+       }
+      },
+      "outcome": "enforce"
+     }
+    ],
+    [
+     "add_edge",
+     "con",
+     "made_enforcement",
+     "dec"
+    ],
+    [
+     "set_attr",
+     "con",
+     "enforced",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bl_decline",
+   "area": "retina",
+   "order": 47,
+   "latency_class": "hard_realtime",
+   "comment": "ENFORCEMENT DECLINE (a captured enforcer -- John's lever). Given the SAME detected Violation, a constable whose loyalty_to_john >= duty_weight DECLINES: mints EnforcementDecision(outcome=decline, reason=loyalty), applies NO censure -> the violation persists. The two arms (impartial=enforce, captured=decline) differ only in the enforcer's held motivation. Fires once (enforced guard); ordered after bl_enforce so the two are mutually exclusive.",
+   "match": [
+    [
+     "con",
+     "detected_violation",
+     "viol"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "enforce_on"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "con"
+       },
+       "key": "enforced"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Gt",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "con"
+        },
+        "key": "duty_weight"
+       },
+       "b": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "con"
+        },
+        "key": "loyalty_to_john"
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "dec",
+     "EnforcementDecision",
+     {
+      "about": "John",
+      "by": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "con"
+        },
+        "key": "name"
+       }
+      },
+      "outcome": "decline",
+      "reason": "loyalty"
+     }
+    ],
+    [
+     "add_edge",
+     "con",
+     "made_enforcement",
+     "dec"
+    ],
+    [
+     "set_attr",
+     "con",
+     "enforced",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bl_mary_files_motion",
+   "area": "retina",
+   "order": 48,
+   "latency_class": "hard_realtime",
+   "comment": "LAWFUL COUNTER (invoke the removal law). Mary's DramaGoal(reduce_office_hold) does NOT act extra-legally -- gated on the removal Law she HOLDS (knows_law, kind=removal), she FILES a RemovalMotion citing that law's code. The motion is the lawful instrument; without the removal law she holds no such instrument. Fires once (no existing Mary motion).",
+   "match": [
+    [
+     "mary",
+     "has_goal",
+     "goal"
+    ],
+    [
+     "mary",
+     "knows_law",
+     "rlaw"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "goal"
+       },
+       "key": "kind"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "reduce_office_hold"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rlaw"
+       },
+       "key": "kind"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "removal"
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Exists",
+       "source": {
+        "type": "NodesOfType",
+        "node_type": "RemovalMotion"
+       },
+       "var_name": "m2",
+       "predicate": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m2"
+         },
+         "key": "by"
+        },
+        "b": {
+         "type": "Lit",
+         "value": "Mary"
+        }
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "motion",
+     "RemovalMotion",
+     {
+      "about": "John",
+      "by": "Mary",
+      "law_code": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "rlaw"
+        },
+        "key": "code"
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "mary",
+     "filed_motion",
+     "motion"
+    ]
+   ]
+  },
+  {
+   "name": "bl_council_removes",
+   "area": "retina",
+   "order": 49,
+   "latency_class": "hard_realtime",
+   "comment": "COUNCIL PROCESS (the removal law's mechanism). The Council enacts removal iff: a lawful RemovalMotion about John exists, the council is impartial (impartial=1), AND a quorum of the ELECTORATE believes the accusation (Sum over Villagers that are electors AND back Mary  >  quorum; the press is is_elector=0 and excluded). Consequence: office.hold=0, office.removed=1, a RemovalOutcome(lawful=1). The removal is THROUGH the law + motion + quorum -- never extra-legal; a captured council, no motion, or sub-quorum backing (John's charm suppresses it) leaves John in office. Fires once (acted guard).",
+   "match": [
+    [
+     "council",
+     "knows_law",
+     "rlaw"
+    ],
+    [
+     "council",
+     "oversees_office",
+     "office"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rlaw"
+       },
+       "key": "kind"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "removal"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "council"
+       },
+       "key": "impartial"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "council"
+       },
+       "key": "acted"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Exists",
+      "source": {
+       "type": "NodesOfType",
+       "node_type": "RemovalMotion"
+      },
+      "var_name": "m3",
+      "predicate": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "m3"
+        },
+        "key": "about"
+       },
+       "b": {
+        "type": "Lit",
+        "value": "John"
+       }
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Sum",
+       "source": {
+        "type": "NodesOfType",
+        "node_type": "Villager"
+       },
+       "var_name": "v",
+       "value": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "And",
+         "items": [
+          {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "backs_mary"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          },
+          {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "is_elector"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          }
+         ]
+        },
+        "then": {
+         "type": "Lit",
+         "value": 1.0
+        },
+        "other": {
+         "type": "Lit",
+         "value": 0.0
+        }
+       }
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "council"
+       },
+       "key": "quorum"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "office",
+     "hold",
+     0.0
+    ],
+    [
+     "set_attr",
+     "office",
+     "removed",
+     1.0
+    ],
+    [
+     "add_node",
+     "outcome",
+     "RemovalOutcome",
+     {
+      "about": "John",
+      "by": "council",
+      "lawful": 1.0,
+      "outcome": "removed"
+     }
+    ],
+    [
+     "add_edge",
+     "council",
+     "enacted",
+     "outcome"
+    ],
+    [
+     "set_attr",
+     "council",
+     "acted",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

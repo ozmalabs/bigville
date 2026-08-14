@@ -1,0 +1,1756 @@
+{
+  "id": "bigville_craft",
+  "version": "2.3.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R57 (block 370000): TOOLS ARE ASSEMBLED FROM PARTS MADE BY DIFFERENT CRAFTSMEN. A pick is not made by the smith alone -- it is a HEAD (forged by the BLACKSMITH from iron) fitted to a HANDLE (carved by the WOODWORKER from timber). cr_forge_head / cr_carve_handle each mint a Component whose quality = that craftsman's skill; a lone part gets only a WEAK improvised Fitness (IMPROV=0.2 of full) -- 'alone they are not hugely useful'. cr_assemble fits a loose head + loose handle into a working Tool: it takes the head's identity (kind/verb/base_mult), its QUALITY is the average of the two parts (a poor handle spoils a good head), and its Fitness = base_mult*combined -- FAR above either part alone. The parts are CONSUMED into the tool (part_of). Closes two loops (ore->iron->head, timber->handle) and needs TWO trades to cooperate. The tool is a bigville_tools Tool (fit_for -> Fitness{verb,mult,effort}), immediately usable. Composes with bigville_tools, mining/woodcutting (materials), bigville_office (the two trades), the market. CHARCOAL: the forge burns CHARCOAL (store.charcoal), not raw wood; the COLLIER (cc_burn) makes charcoal from wood with a ~0.25 yield -- closing woodcutter->timber->collier->charcoal->forge.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cr_forge_head",
+      "batch": false,
+      "comment": "A BLACKSMITH forges a HEAD (the working iron -- a pick-head, an axe-head, a scythe-blade) from IRON + fuel. The head carries the tool's IDENTITY: its kind, its verb (mine/reap/...), its base_mult. Alone it is only weakly useful (an improvised Fitness at IMPROV of full). FUEL IS CHARCOAL: the forge burns store.charcoal (not raw wood -- wood won't reach forging heat); no charcoal -> no forging. (Composite orders only: making_simple==0, the default.)",
+      "match": [
+        [
+          "town",
+          "has_smith",
+          "maker"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "make_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "iron"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "mat_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "charcoal"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "fuel_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "making_simple"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "part",
+          "Component",
+          {
+            "part": "head",
+            "tool_kind": "",
+            "verb": "",
+            "quality": 0.0,
+            "base_mult": 0.0,
+            "base_effort": 0.0,
+            "assembled": 0.0,
+            "made_by": ""
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "tool_kind",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "making_kind"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "verb",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "making_verb"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "quality",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "skill"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "base_mult",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "base_mult"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "base_effort",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "base_effort"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "made_by",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "town",
+          "has_part",
+          "part"
+        ],
+        [
+          "add_node",
+          "imp",
+          "Fitness",
+          {
+            "verb": "",
+            "mult": 0.0,
+            "effort": 0.0,
+            "improvised": 1.0
+          }
+        ],
+        [
+          "set_attr",
+          "imp",
+          "verb",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "making_verb"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "imp",
+          "mult",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "base_mult"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "skill"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.2
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "imp",
+          "effort",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "base_effort"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "part",
+          "fit_for",
+          "imp"
+        ],
+        [
+          "set_attr",
+          "store",
+          "iron",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "iron"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "maker"
+                    },
+                    "key": "mat_cost"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "store",
+          "charcoal",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "charcoal"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "maker"
+                    },
+                    "key": "fuel_cost"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "make_armed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "maker",
+          "made",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "made"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cr_carve_handle",
+      "batch": false,
+      "comment": "A WOODWORKER carves a HANDLE (the haft/shaft that gives leverage) from TIMBER. Alone a handle is little more than a stick (a weak improvised Fitness). The value comes when it is fitted to a head. (Composite orders only: making_simple==0, the default.)",
+      "match": [
+        [
+          "town",
+          "has_woodworker",
+          "maker"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "make_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "timber"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "mat_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "fuel"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "fuel_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "making_simple"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "part",
+          "Component",
+          {
+            "part": "handle",
+            "tool_kind": "",
+            "verb": "",
+            "quality": 0.0,
+            "base_mult": 0.0,
+            "base_effort": 0.0,
+            "assembled": 0.0,
+            "made_by": ""
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "tool_kind",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "making_kind"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "verb",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "making_verb"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "quality",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "skill"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "base_mult",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "base_mult"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "base_effort",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "base_effort"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "part",
+          "made_by",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "town",
+          "has_part",
+          "part"
+        ],
+        [
+          "add_node",
+          "imp",
+          "Fitness",
+          {
+            "verb": "",
+            "mult": 0.0,
+            "effort": 0.0,
+            "improvised": 1.0
+          }
+        ],
+        [
+          "set_attr",
+          "imp",
+          "verb",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "maker"
+              },
+              "key": "making_verb"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "imp",
+          "mult",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "base_mult"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "skill"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.2
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "imp",
+          "effort",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "maker"
+                  },
+                  "key": "base_effort"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "part",
+          "fit_for",
+          "imp"
+        ],
+        [
+          "set_attr",
+          "store",
+          "timber",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "timber"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "maker"
+                    },
+                    "key": "mat_cost"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "store",
+          "fuel",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "fuel"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "maker"
+                    },
+                    "key": "fuel_cost"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "maker",
+          "make_armed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "maker",
+          "made",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "maker"
+                      },
+                      "key": "made"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cr_assemble",
+      "batch": false,
+      "comment": "ASSEMBLY IS AN ACT SOMEONE PERFORMS -- it does NOT happen by itself. An assembler hafts a specific head + handle (asm -hafts-> head, asm -hafts-> handle) and is assemble_armed. Only then are the two fitted into a Tool (identity/verb/base_mult from the head; quality = the average of the parts; Fitness = base_mult*combined). The parts are consumed (assembled=1, part_of the tool) and the hafts edges + arming are cleared. A head and a handle left on the shelf stay loose until someone decides to join them.",
+      "match": [
+        [
+          "town",
+          "has_assembler",
+          "asm"
+        ],
+        [
+          "asm",
+          "hafts",
+          "head"
+        ],
+        [
+          "asm",
+          "hafts",
+          "handle"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "asm"
+                  },
+                  "key": "assemble_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "head"
+              },
+              "key": "part"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "head"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "handle"
+              },
+              "key": "part"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "handle"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "head"
+                  },
+                  "key": "assembled"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "handle"
+                  },
+                  "key": "assembled"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "tool",
+          "Tool",
+          {
+            "kind": "",
+            "quality": 0.0,
+            "made_from": "head+handle",
+            "condition": 1.0,
+            "wear": 0.1,
+            "broken": 0.0,
+            "uses": 0.0
+          }
+        ],
+        [
+          "set_attr",
+          "tool",
+          "kind",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "head"
+              },
+              "key": "tool_kind"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "tool",
+          "quality",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Lit",
+                  "value": 0.5
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "head"
+                          },
+                          "key": "quality"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "handle"
+                          },
+                          "key": "quality"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "town",
+          "has_tool",
+          "tool"
+        ],
+        [
+          "add_node",
+          "fit",
+          "Fitness",
+          {
+            "verb": "",
+            "base": 0.0,
+            "mult": 0.0,
+            "effort": 0.0
+          }
+        ],
+        [
+          "set_attr",
+          "fit",
+          "verb",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "head"
+              },
+              "key": "verb"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "fit",
+          "base",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "head"
+                      },
+                      "key": "base_mult"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 0.5
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "head"
+                              },
+                              "key": "quality"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "handle"
+                              },
+                              "key": "quality"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "fit",
+          "mult",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "head"
+                      },
+                      "key": "base_mult"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Lit",
+                      "value": 0.5
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "head"
+                              },
+                              "key": "quality"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "handle"
+                              },
+                              "key": "quality"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "fit",
+          "effort",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "head"
+                  },
+                  "key": "base_effort"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "tool",
+          "fit_for",
+          "fit"
+        ],
+        [
+          "add_edge",
+          "head",
+          "part_of",
+          "tool"
+        ],
+        [
+          "add_edge",
+          "handle",
+          "part_of",
+          "tool"
+        ],
+        [
+          "set_attr",
+          "head",
+          "assembled",
+          1.0
+        ],
+        [
+          "set_attr",
+          "handle",
+          "assembled",
+          1.0
+        ],
+        [
+          "del_edge",
+          "asm",
+          "hafts",
+          "head"
+        ],
+        [
+          "del_edge",
+          "asm",
+          "hafts",
+          "handle"
+        ],
+        [
+          "set_attr",
+          "asm",
+          "assemble_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "cc_burn",
+      "batch": false,
+      "comment": "At VILLAGE SCALE the SMITH burns his OWN charcoal (a clamp out back of the forge): a burn-armed smith pyrolyses store.timber (wood_in) into store.charcoal = wood_in * yield (~0.25, the real mass loss -- about four units of wood per unit of charcoal). Same person forges (make_armed) and burns (burn_armed); disjoint arming. A DEDICATED collier is a larger-scale role (supplying several forges or a bloomery) -- deferred; the same rule would then match a has_collier burner.",
+      "match": [
+        [
+          "town",
+          "has_smith",
+          "smith"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "smith"
+                  },
+                  "key": "burn_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "store"
+                  },
+                  "key": "timber"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "smith"
+                  },
+                  "key": "wood_in"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "store",
+          "timber",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "store"
+                    },
+                    "key": "timber"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "smith"
+                    },
+                    "key": "wood_in"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "store",
+          "charcoal",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "store"
+                      },
+                      "key": "charcoal"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "smith"
+                          },
+                          "key": "wood_in"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "smith"
+                          },
+                          "key": "yield"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "smith",
+          "burn_armed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "smith",
+          "burned",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "smith"
+                      },
+                      "key": "burned"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

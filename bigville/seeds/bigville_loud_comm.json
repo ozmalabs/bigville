@@ -1,0 +1,283 @@
+{
+ "id": "bigville_loud_comm",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "description": "bigville R19 (267000): utterance LOUDNESS scales the EXISTING earshot query and the OBSERVE-vs-HEAR split. lo_choose_loudness decides eff_loudness = clamp(chosen,max) under choice, base when choice is ablated, and a FLAT radius when loudness is ablated (loudness_on=0). lo_deliver_content sets got_content iff eff_loudness>=dist AND not hear-occluded (loudness IS the Chebyshev hearing radius). lo_observe_act mints a CommAct for any witness with sight (range+no occlusion) to the speaker, REGARDLESS of content. Composes existing Terms (IfThenElse/Gt/Gte/Eq/And/Attr/Var/Lit/add_node/add_edge/set_attr) \u2014 zero new Rust. self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "lo_choose_loudness",
+   "match": [
+    [
+     "u",
+     "spoken_by",
+     "spk"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Lit",
+     "value": 1.0
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "u",
+     "eff_loudness",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "u"
+         },
+         "key": "loudness_on"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Eq",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "u"
+          },
+          "key": "choice_on"
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        },
+        "then": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "u"
+           },
+           "key": "chosen_loudness"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "u"
+           },
+           "key": "max_loudness"
+          }
+         },
+         "then": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "u"
+          },
+          "key": "max_loudness"
+         },
+         "other": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "u"
+          },
+          "key": "chosen_loudness"
+         }
+        },
+        "other": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "u"
+         },
+         "key": "base_loudness"
+        }
+       },
+       "other": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "u"
+        },
+        "key": "flat_radius"
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "lo_deliver_content",
+   "match": [
+    [
+     "u",
+     "reception",
+     "r"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "u"
+       },
+       "key": "eff_loudness"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "r"
+       },
+       "key": "dist"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "r"
+       },
+       "key": "hear_occluded"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "r",
+     "got_content",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "lo_observe_act",
+   "match": [
+    [
+     "u",
+     "reception",
+     "r"
+    ],
+    [
+     "r",
+     "to",
+     "p"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Lit",
+       "value": 7.0
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "r"
+       },
+       "key": "dist"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "r"
+       },
+       "key": "sight_occluded"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "r"
+       },
+       "key": "observed_act"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "r",
+     "observed_act",
+     1.0
+    ],
+    [
+     "add_node",
+     "ca",
+     "CommAct",
+     {
+      "minted": 1.0
+     }
+    ],
+    [
+     "add_edge",
+     "p",
+     "observes",
+     "ca"
+    ],
+    [
+     "add_edge",
+     "r",
+     "act",
+     "ca"
+    ]
+   ]
+  }
+ ]
+}

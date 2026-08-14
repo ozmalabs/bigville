@@ -1,0 +1,67 @@
+{
+  "id": "bigville_trades",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville production-economy R2 (block 301000): production CONSUMES raw material, and tradesmen TRANSFORM raw -> goods. A Shop{trade,input_kind,output_kind,recipe_in,recipe_out,price,open,coin} holds an input Stock (raw, filled by R1 delivery) and an output Stock (goods). tf_transform consumes recipe_in raw and makes recipe_out goods (carpenter lumber->furniture, mason stone->blocks, fishmonger fish->fish_ready). tf_sell sells one output good to a co-located customer for coin. The supply dependency is REAL: no input -> no transform -> no output -> NO SALE. The fishmonger cannot sell fish nobody caught.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "tf_transform",
+      "batch": false,
+      "comment": "An OPEN shop with enough raw input transforms recipe_in raw -> recipe_out goods. Consumes the input (in.amount -= recipe_in) and stocks the output (out.amount += recipe_out). Gated by input availability -- the material coupling.",
+      "match": [
+        ["shop", "has_stock", "instk"],
+        ["shop", "has_output", "outstk"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "open"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "instk"}, "key": "amount"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "recipe_in"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "instk", "amount", {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "instk"}, "key": "amount"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "recipe_in"}}}],
+        ["set_attr", "outstk", "amount", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "outstk"}, "key": "amount"},
+          {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "recipe_out"}
+        ]}}]
+      ]
+    },
+    {
+      "name": "tf_sell",
+      "batch": false,
+      "comment": "A co-located customer with enough coin buys ONE output good, iff the shop HAS output (out.amount>0). Coin moves customer->shop (conserved); output decrements; customer.bought increments. If output is 0 (no raw was ever delivered/transformed) the sale CANNOT fire -- the fishmonger can't sell fish nobody caught.",
+      "match": [
+        ["cust", "is_at", "c"],
+        ["shop", "at_cell", "c"],
+        ["shop", "has_output", "outstk"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "cust"}, "key": "sale_armed"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "outstk"}, "key": "amount"}, "b": {"type": "Lit", "value": 0.0}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "cust"}, "key": "coin"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "outstk", "amount", {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "outstk"}, "key": "amount"}, "b": {"type": "Lit", "value": 1.0}}}],
+        ["set_attr", "cust", "coin", {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "cust"}, "key": "coin"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price"}}}],
+        ["set_attr", "shop", "coin", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "coin"},
+          {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price"}
+        ]}}],
+        ["set_attr", "cust", "bought", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "cust"}, "key": "bought"},
+          {"type": "Lit", "value": 1.0}
+        ]}}],
+        ["set_attr", "cust", "sale_armed", 0.0]
+      ]
+    }
+  ]
+}

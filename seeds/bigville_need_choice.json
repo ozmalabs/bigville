@@ -1,0 +1,821 @@
+{
+  "id": "bigville_need_choice",
+  "version": "1.4.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "BIGVILLE R2 (block 250000) -- the PREFERENCE + satisficing decision: WHICH good a sustenance goal targets is the substrate's `decision_value` Argmax over REACHABLE satisfiers, the SAME Argmax family as ss_choose_burn. `nd_seed_here` zeros a CHOICE distance field `cdist` at the choosing villager's current cell; `nd_relax` is the Bellman flood (BFS over the walkable map-belief's `adj` edges -- reuses the R1 nav flood's Terms with a distinct field so R1's gdist is untouched); `nd_source_cost` copies each Source cell's settled cdist onto the Source as `travel_cost`. `nd_choose_good` is THE choice: Argmax over every Source of value = active_urge * preference[villager][good] - cost_on * travel_cost, where preference is the Sum over the villager's has_pref of [p.good==src.good]*weight (exactly one matches). It writes chosen_good + target_cx/cy; the adapter mechanically wires that cell as the R1 nav seeks target. SATISFICING EMERGES: move the orchard far and its travel_cost dominates so bread wins DESPITE the higher apple preference -- the choice flips on distance alone. Ablations are graph data: equal preference weights -> nearest wins; cost_on=0 -> top preference however far. Composes existing Terms only; zero new Rust.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "nd_seed_here",
+      "match": [
+        [
+          "m",
+          "is_at",
+          "cur"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "m"
+              },
+              "key": "choosing"
+            },
+            {
+              "type": "Lit",
+              "value": 0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "cur",
+          "cdist",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "nd_relax",
+      "match": [
+        [
+          "c",
+          "adj",
+          "n"
+        ]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "n"
+                  },
+                  "key": "cdist"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "type": "Lit",
+              "value": 1
+            }
+          ]
+        },
+        "b": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "c"
+              },
+              "key": "cdist"
+            },
+            {
+              "type": "Lit",
+              "value": 0
+            }
+          ]
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "c",
+          "cdist",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "n"
+                      },
+                      "key": "cdist"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "nd_source_cost",
+      "match": [
+        [
+          "src",
+          "at_cell",
+          "cell"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Eq",
+          "a": {
+            "type": "Plus",
+            "items": [
+              {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "src"
+                },
+                "key": "travel_cost"
+              },
+              {
+                "type": "Lit",
+                "value": 0
+              }
+            ]
+          },
+          "b": {
+            "type": "Plus",
+            "items": [
+              {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "cell"
+                },
+                "key": "cdist"
+              },
+              {
+                "type": "Lit",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "src",
+          "travel_cost",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "cell"
+                  },
+                  "key": "cdist"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "nd_choose_good",
+      "match": [
+        [
+          "m",
+          "has_sustenance_goal",
+          "goal"
+        ],
+        [
+          "m",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "m"
+                  },
+                  "key": "choosing"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "m"
+                  },
+                  "key": "choose_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "m",
+          "chosen_good",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "Source"
+                },
+                "var_name": "src",
+                "value": {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "active_urge"
+                      },
+                      {
+                        "type": "Sum",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "m"
+                          },
+                          "edge_type": "has_pref",
+                          "any_type": false
+                        },
+                        "var_name": "p",
+                        "value": {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "Eq",
+                            "a": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "p"
+                              },
+                              "key": "good"
+                            },
+                            "b": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "src"
+                              },
+                              "key": "good"
+                            }
+                          },
+                          "then": {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "p"
+                            },
+                            "key": "weight"
+                          },
+                          "other": {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        }
+                      },
+                      {
+                        "type": "IfThenElse",
+                        "cond": {
+                          "type": "Exists",
+                          "source": {
+                            "type": "Neighbours",
+                            "node": {
+                              "type": "Var",
+                              "name": "m"
+                            },
+                            "edge_type": "holds_belief",
+                            "any_type": false
+                          },
+                          "var_name": "law",
+                          "predicate": {
+                            "type": "Eq",
+                            "a": {
+                              "type": "Lit",
+                              "value": 1.0
+                            },
+                            "b": {
+                              "type": "Lit",
+                              "value": 1.0
+                            }
+                          }
+                        },
+                        "then": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "src"
+                              },
+                              "key": "freshness"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "other": {
+                          "type": "Lit",
+                          "value": 1.0
+                        }
+                      },
+                      {
+                        "type": "IfThenElse",
+                        "cond": {
+                          "type": "Eq",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "src"
+                                },
+                                "key": "good"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "body"
+                                },
+                                "key": "last_food"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        },
+                        "then": {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "body"
+                                },
+                                "key": "satiety"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        },
+                        "other": {
+                          "type": "Lit",
+                          "value": 1.0
+                        }
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "cost_on"
+                      },
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "src"
+                        },
+                        "key": "travel_cost"
+                      }
+                    ]
+                  }
+                }
+              },
+              "key": "good"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "m",
+          "target_cx",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "Source"
+                },
+                "var_name": "src",
+                "value": {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "active_urge"
+                      },
+                      {
+                        "type": "Sum",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "m"
+                          },
+                          "edge_type": "has_pref",
+                          "any_type": false
+                        },
+                        "var_name": "p",
+                        "value": {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "Eq",
+                            "a": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "p"
+                              },
+                              "key": "good"
+                            },
+                            "b": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "src"
+                              },
+                              "key": "good"
+                            }
+                          },
+                          "then": {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "p"
+                            },
+                            "key": "weight"
+                          },
+                          "other": {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "cost_on"
+                      },
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "src"
+                        },
+                        "key": "travel_cost"
+                      }
+                    ]
+                  }
+                }
+              },
+              "key": "cx"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "m",
+          "target_cy",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "Source"
+                },
+                "var_name": "src",
+                "value": {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "active_urge"
+                      },
+                      {
+                        "type": "Sum",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "m"
+                          },
+                          "edge_type": "has_pref",
+                          "any_type": false
+                        },
+                        "var_name": "p",
+                        "value": {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "Eq",
+                            "a": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "p"
+                              },
+                              "key": "good"
+                            },
+                            "b": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "src"
+                              },
+                              "key": "good"
+                            }
+                          },
+                          "then": {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "p"
+                            },
+                            "key": "weight"
+                          },
+                          "other": {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "cost_on"
+                      },
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "src"
+                        },
+                        "key": "travel_cost"
+                      }
+                    ]
+                  }
+                }
+              },
+              "key": "cy"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "m",
+          "chosen_cost",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "Source"
+                },
+                "var_name": "src",
+                "value": {
+                  "type": "Minus",
+                  "a": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "active_urge"
+                      },
+                      {
+                        "type": "Sum",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "m"
+                          },
+                          "edge_type": "has_pref",
+                          "any_type": false
+                        },
+                        "var_name": "p",
+                        "value": {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "Eq",
+                            "a": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "p"
+                              },
+                              "key": "good"
+                            },
+                            "b": {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "src"
+                              },
+                              "key": "good"
+                            }
+                          },
+                          "then": {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "p"
+                            },
+                            "key": "weight"
+                          },
+                          "other": {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "m"
+                        },
+                        "key": "cost_on"
+                      },
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "src"
+                        },
+                        "key": "travel_cost"
+                      }
+                    ]
+                  }
+                }
+              },
+              "key": "travel_cost"
+            }
+          }
+        ]
+      ],
+      "comment": "The choice value is scaled by the source's FRESHNESS: with equal urgency and cost, a shopper prefers the fresher stall (a stale source ranks lower). Fresh (1.0) is unchanged. The freshness weighting is CONSULTED FROM HELD KNOWLEDGE: only a shopper who HOLDS a DegradationLaw (holds_law) weighs a stall's freshness; a naive shopper does not. The decision reads held knowledge, it is not imposed by the engine. And an APPETITE dimension (automatic, from satiety): a stall selling the food the shopper is sick of (src.good == their last_food) is weighed down by their satiety (1 - satiety) -- 'what do I feel like'. The choice is one COLLAPSE over all held dimensions (urge x preference x freshness-belief x appetite); adding a dimension does not touch the Argmax. (Body layer: the appetite dimension is read from the BODY -- has_body -- the mind reading its body's satiety.)"
+    }
+  ]
+}

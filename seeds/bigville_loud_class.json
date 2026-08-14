@@ -1,0 +1,161 @@
+{
+ "id": "bigville_loud_class",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [
+  "bigville_loud_comm"
+ ],
+ "description": "bigville R19 (267000): the loudness-specific CLASSROOM-CHATTER dynamic on a minimal teacher/child proxy. lo_chatter_distracts drops a child's `attending` when it RECEIVES peer chatter content (low-loudness, is_control=0); lo_control_restores raises it when the child RECEIVES the teacher's HIGH-loudness control content (is_control=1). SCOPED PROXY: `attending` stands in for the R17/R18 attention-gate; the true acquisition/learning coupling is DEFERRED (needs R18). self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "lo_chatter_distracts",
+   "match": [
+    [
+     "u",
+     "reception",
+     "r"
+    ],
+    [
+     "r",
+     "to",
+     "p"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "r"
+       },
+       "key": "got_content"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "u"
+       },
+       "key": "is_control"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "p"
+       },
+       "key": "peer_pull"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "p",
+     "attending",
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "lo_control_restores",
+   "match": [
+    [
+     "u",
+     "reception",
+     "r"
+    ],
+    [
+     "r",
+     "to",
+     "p"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "r"
+       },
+       "key": "got_content"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "u"
+       },
+       "key": "is_control"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "p"
+       },
+       "key": "peer_pull"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "p",
+     "attending",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

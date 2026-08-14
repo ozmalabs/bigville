@@ -1,0 +1,200 @@
+{
+ "id": "bigville_affect_decide",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R17 (block 265000) -- af_choose_action (THE HEADLINE): the chosen action is the decision_value Argmax over the Action menu (same Argmax family as nd_choose_good / ss_choose_burn). decision_value = base_value + affect_gain * eff_distress * grief_affinity, eff_distress = grief_distress * clamp01(1-regulation). work has high base + NEGATIVE grief affinity (grief makes work unreachable); withdraw/drink(self-medicate)/snap(lowered snap threshold -> R15 violence) have increasing positive affinities, so grief SHIFTS the Argmax from work toward withdrawal->drink->snap. affect_gain is the COUPLING KNOB and the FALSIFIER: affect_gain=0 removes grief from decision_value -> base_value only -> identical under grief and contentment = the proven DIORAMA. The affect is FELT only because it is a TERM in the selector. Composes existing Terms only; ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "af_choose_action",
+   "batch": false,
+   "match": [
+    [
+     "m",
+     "is_at",
+     "cur"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "decide_armed"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "chosen_action",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "NodesOfType",
+         "node_type": "Action"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "act"
+             },
+             "key": "base_value"
+            },
+            {
+             "type": "Lit",
+             "value": 0.0
+            }
+           ]
+          },
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Plus",
+             "items": [
+              {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "m"
+               },
+               "key": "affect_gain"
+              },
+              {
+               "type": "Lit",
+               "value": 0.0
+              }
+             ]
+            },
+            {
+             "type": "Times",
+             "items": [
+              {
+               "type": "Plus",
+               "items": [
+                {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "m"
+                 },
+                 "key": "grief_distress"
+                },
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                }
+               ]
+              },
+              {
+               "type": "Max",
+               "items": [
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                },
+                {
+                 "type": "Min",
+                 "items": [
+                  {
+                   "type": "Lit",
+                   "value": 1.0
+                  },
+                  {
+                   "type": "Minus",
+                   "a": {
+                    "type": "Lit",
+                    "value": 1.0
+                   },
+                   "b": {
+                    "type": "Plus",
+                    "items": [
+                     {
+                      "type": "Attr",
+                      "node": {
+                       "type": "Var",
+                       "name": "m"
+                      },
+                      "key": "regulation"
+                     },
+                     {
+                      "type": "Lit",
+                      "value": 0.0
+                     }
+                    ]
+                   }
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "type": "Plus",
+             "items": [
+              {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "act"
+               },
+               "key": "grief_affinity"
+              },
+              {
+               "type": "Lit",
+               "value": 0.0
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       },
+       "key": "code"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "decide_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,90 @@
+{
+  "id": "bigville_resource_extract",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville production-economy R1 (block 300000): the natural-resource base. A Deposit{kind,stock,growback,capacity,grow_epoch} regenerates once per town epoch (Sugarscape growback, capped at capacity). A Labourer (a Mover) co-located with a deposit extracts stock into hand (proximity-gated act); co-located with a Store it delivers into the store's per-kind Stock. Material is conserved: deposit loss = carried = store gain, nothing minted. Rates are demonstrator inputs; the balance (steady vs depletion) is what FALLS OUT (anti-tuning).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "rx_growback",
+      "batch": false,
+      "comment": "A deposit below capacity regenerates once per town epoch by `growback`, capped at `capacity` (Min). grow_epoch<epoch fires it once per tick; then grow_epoch=epoch.",
+      "match": [["town", "has_deposit", "dep"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "capacity"}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "grow_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "dep", "stock", {"__term__": {"type": "Min", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "capacity"},
+          {"type": "Plus", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"},
+            {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "growback"}
+          ]}
+        ]}}],
+        ["set_attr", "dep", "grow_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "rx_extract",
+      "batch": false,
+      "comment": "A Labourer co-located with a Deposit (is_at the same cell), armed and empty-handed, with stock>=yield, extracts: deposit stock -= yield, carrying = yield, carry_kind = deposit.kind, disarm. Proximity-gated -- extraction is an ACT at the deposit, reached by the nav.",
+      "match": [
+        ["lab", "is_at", "c"],
+        ["dep", "at_cell", "c"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "lab"}, "key": "extract_armed"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "lab"}, "key": "carrying"}, "b": {"type": "Lit", "value": 0.0}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"}, "b": {"type": "Lit", "value": 0.0}}
+        ]
+      },
+      "comment_take": "PARTIAL TAKE: a labourer catches min(yield, stock) -- what is actually there -- so a depleted deposit floors at 0 (never negative) and material is conserved even when several would over-draw. carry = Min(yield,stock); stock -= Min(yield,stock).",
+      "effects": [
+        ["set_attr", "lab", "carrying", {"__term__": {"type": "Min", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "lab"}, "key": "yield"},
+          {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"}
+        ]}}],
+        ["set_attr", "dep", "stock", {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"}, "b": {"type": "Min", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "lab"}, "key": "yield"},
+          {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"}
+        ]}}}],
+        ["set_attr", "lab", "carry_kind", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "kind"}}],
+        ["set_attr", "lab", "extract_armed", 0.0]
+      ]
+    },
+    {
+      "name": "rx_deliver",
+      "batch": false,
+      "comment": "A Labourer co-located with a Store, carrying>0, delivers into the store's Stock node whose kind matches what it carries: amount += carrying, carrying = 0. Kind-matched so fish never fills the lumber stock.",
+      "match": [
+        ["lab", "is_at", "c"],
+        ["store", "at_cell", "c"],
+        ["store", "has_stock", "stk"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "lab"}, "key": "carrying"}, "b": {"type": "Lit", "value": 0.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "stk"}, "key": "kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "lab"}, "key": "carry_kind"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "stk", "amount", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "stk"}, "key": "amount"},
+          {"type": "Attr", "node": {"type": "Var", "name": "lab"}, "key": "carrying"}
+        ]}}],
+        ["set_attr", "lab", "carrying", 0.0]
+      ]
+    }
+  ]
+}

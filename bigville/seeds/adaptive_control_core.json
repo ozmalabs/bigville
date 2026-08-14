@@ -1,0 +1,1124 @@
+{
+  "id": "adaptive_control_core",
+  "version": "1.0.0",
+  "depends_on": ["affective_state_core", "dual_process_core", "motor_core"],
+  "description": "Domain-neutral graph-native adaptive control. Verified outcome receipts produce signed temporal-difference errors and bounded eligibility credit across recent state, action, controller, and attention choices. Expected noise, volatility, and model ignorance remain distinct and independently shape precision, plasticity, and exploration. Applied motor commands author efference copies and predicted sensory consequences; receipt-backed residuals calibrate a learned forward model. Repeated reliable action sequences become option candidates. Interoceptive forecasts expose allostatic errors, and a conservative TTL-bounded competition broadcasts selected graph content to held consumers. The broadcast is functional routing only and makes no claim about consciousness.",
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "AdaptiveControlPolicy",
+      "attrs": {
+        "name": "core_adaptive_control_policy",
+        "enabled": 1,
+        "discount": 0.8,
+        "value_learning_rate": 0.25,
+        "eligibility_decay": 0.75,
+        "eligibility_horizon": 4.0,
+        "expected_noise_gain": 1.0,
+        "volatility_learning_gain": 1.0,
+        "model_ignorance_gain": 1.0,
+        "exploration_volatility_gain": 0.5,
+        "exploration_ignorance_gain": 1.0,
+        "exploration_noise_discount": 0.5,
+        "forward_model_learning_rate": 0.25,
+        "confidence_learning_rate": 0.2,
+        "residual_scale": 1.0,
+        "reliable_residual_threshold": 0.25,
+        "reliable_prediction_error_threshold": 0.25,
+        "broadcast_ttl": 2.0,
+        "broadcast_minimum_priority": 0.25,
+        "allostatic_broadcast_threshold": 0.4,
+        "transient_retention_epochs": 2.0
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "BroadcastRefusalMark",
+      "attrs": {
+        "name": "broadcast_exact_tie",
+        "is_refusal_marker": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_adaptive_control_policy",
+      "tgt": {"local": 1},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_broadcast_refusal_mark",
+      "tgt": {"local": 2},
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "provenance": "adaptive_control_core:agent_policy",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_adaptive_control_policy",
+      "tgt": {"type": "AdaptiveControlPolicy", "var": "policy"}
+    },
+    {
+      "provenance": "adaptive_control_core:agent_decision",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_adaptive_decision",
+      "tgt": {"type": "AdaptiveDecision", "var": "decision"}
+    },
+    {
+      "provenance": "adaptive_control_core:agent_outcome",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_adaptive_outcome",
+      "tgt": {"type": "AdaptiveOutcome", "var": "outcome"}
+    },
+    {
+      "provenance": "adaptive_control_core:agent_broadcast",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_functional_broadcast",
+      "tgt": {"type": "FunctionalBroadcast", "var": "broadcast"}
+    }
+  ],
+  "rules": [
+    {
+      "name": "adaptive_control_mint_controller_value",
+      "area": "adaptive_learning",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "A controller gets one graph-held value estimate on first use. The estimate belongs to that controller, not to a global scalar critic.",
+      "match": [
+        ["agent", "has_adaptive_decision", "decision"],
+        ["decision", "selected_controller", "controller"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "status"}, "b": {"type": "Lit", "value": "committed"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "controller"}, "edge_type": "has_controller_value"}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Var", "name": "decision"}, "b": {
+            "type": "Argmin",
+            "source": {
+              "type": "Filter",
+              "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "controller"}, "edge_type": "selected_controller"},
+              "var_name": "peer_decision",
+              "predicate": {"type": "Eq",
+                "a": {"type": "Attr", "node": {"type": "Var", "name": "peer_decision"}, "key": "status"},
+                "b": {"type": "Lit", "value": "committed"}
+              }
+            },
+            "var_name": "peer_decision",
+            "value": {"type": "Attr", "node": {"type": "Var", "name": "peer_decision"}, "key": "epoch"}
+          }}
+        ]
+      },
+      "effects": [
+        ["add_node", "value", "ControllerValue", {
+          "estimate": 0.0,
+          "experience_count": 0.0,
+          "last_update_epoch": -1.0,
+          "provenance_kind": "learned_from_verified_outcomes"
+        }],
+        ["add_edge", "controller", "has_controller_value", "value"],
+        ["add_edge", "decision", "uses_controller_value", "value"]
+      ]
+    },
+    {
+      "name": "adaptive_control_attach_controller_value",
+      "area": "adaptive_learning",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "comment": "Later decisions by the same controller reuse its held estimate.",
+      "match": [
+        ["agent", "has_adaptive_decision", "decision"],
+        ["decision", "selected_controller", "controller"],
+        ["controller", "has_controller_value", "value"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "status"}, "b": {"type": "Lit", "value": "committed"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "decision"}, "edge_type": "uses_controller_value"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "decision", "uses_controller_value", "value"]
+      ]
+    },
+    {
+      "name": "adaptive_control_predict_outcome",
+      "area": "adaptive_learning",
+      "order": 2,
+      "latency_class": "hard_realtime",
+      "comment": "The controller-specific value estimate becomes an explicit prediction with predicted provenance. It is not an observation.",
+      "match": [
+        ["agent", "has_adaptive_decision", "decision"],
+        ["decision", "uses_controller_value", "value"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "status"}, "b": {"type": "Lit", "value": "committed"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "prediction_authored"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "prediction", "OutcomePrediction", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}},
+          "expected_value": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "value"}, "key": "estimate"}},
+          "provenance_kind": "predicted",
+          "observation_status": "not_observed",
+          "status": "open"
+        }],
+        ["add_edge", "decision", "has_outcome_prediction", "prediction"],
+        ["set_attr", "decision", "prediction_authored", 1]
+      ]
+    },
+    {
+      "name": "adaptive_control_open_bounded_eligibility_trace",
+      "area": "adaptive_learning",
+      "order": 2,
+      "latency_class": "hard_realtime",
+      "comment": "A committed decision captures the state, action, controller, and attention choices that may deserve later credit. Expiry is an explicit epoch bound.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_decision", "decision"],
+        ["decision", "selected_state", "state"],
+        ["decision", "selected_action", "action"],
+        ["decision", "selected_controller", "controller"],
+        ["decision", "selected_attention", "attention"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "status"}, "b": {"type": "Lit", "value": "committed"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "trace_authored"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "trace", "EligibilityTrace", {
+          "status": "open",
+          "start_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}},
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"},
+            {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "eligibility_horizon"}
+          ]}},
+          "strength": 1.0,
+          "last_credited_epoch": -1.0,
+          "provenance_kind": "decision_history"
+        }],
+        ["add_edge", "agent", "has_eligibility_trace", "trace"],
+        ["add_edge", "trace", "traces_decision", "decision"],
+        ["add_edge", "trace", "traces_state", "state"],
+        ["add_edge", "trace", "traces_action", "action"],
+        ["add_edge", "trace", "traces_controller", "controller"],
+        ["add_edge", "trace", "traces_attention", "attention"],
+        ["set_attr", "decision", "trace_authored", 1]
+      ]
+    },
+    {
+      "name": "adaptive_control_author_sensorimotor_prediction",
+      "area": "sensorimotor_prediction",
+      "order": 2,
+      "latency_class": "hard_realtime",
+      "comment": "An intended command creates an efference copy and a predicted sensory consequence in parallel. Neither is evidence that the world applied the action.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_decision", "decision"],
+        ["decision", "selected_action", "action"],
+        ["decision", "uses_forward_model", "model"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "status"}, "b": {"type": "Lit", "value": "committed"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "sensorimotor_prediction_authored"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "copy", "EfferenceCopy", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}},
+          "command_value": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "command_value"}},
+          "status": "intended_not_yet_verified",
+          "provenance_kind": "self_command_copy"
+        }],
+        ["add_node", "sensory_prediction", "PredictedSensoryConsequence", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}},
+          "predicted_signal": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "predicted_consequence"}},
+          "model_confidence": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "confidence"}},
+          "expected_noise": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "expected_noise"}},
+          "status": "awaiting_receipt",
+          "provenance_kind": "predicted",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "decision", "has_efference_copy", "copy"],
+        ["add_edge", "copy", "copies_action", "action"],
+        ["add_edge", "decision", "has_sensory_prediction", "sensory_prediction"],
+        ["add_edge", "sensory_prediction", "predicted_by_forward_model", "model"],
+        ["set_attr", "decision", "sensorimotor_prediction_authored", 1]
+      ]
+    },
+    {
+      "name": "adaptive_control_compute_signed_prediction_error",
+      "area": "adaptive_learning",
+      "order": 10,
+      "latency_class": "soft_realtime",
+      "comment": "Only a verified outcome receipt closes a prediction. TD error is observed value plus discounted next estimate minus the prior prediction. Noise, volatility, and ignorance stay separate.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_outcome", "outcome"],
+        ["outcome", "evaluates_prediction", "prediction"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "verified"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "error_evaluated"}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "receipt_verified"}, "b": {"type": "Lit", "value": 1}},
+            {"type": "Exists",
+              "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "prediction"}, "edge_type": "has_outcome_prediction"},
+              "var_name": "source_decision",
+              "predicate": {"type": "Exists",
+                "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "source_decision"}, "edge_type": "reports_decision"},
+                "var_name": "consequence",
+                "predicate": {"type": "And", "items": [
+                  {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "status"}, "b": {"type": "Lit", "value": "observed"}},
+                  {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "receipt_verified"}, "b": {"type": "Lit", "value": 1}},
+                  {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"}}
+                ]}
+              }
+            }
+          ]}
+        ]
+      },
+      "effects": [
+        ["set_attr", "outcome", "predicted_value", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "expected_value"}}],
+        ["set_attr", "outcome", "prediction_error", {"__term__": {"type": "Minus",
+          "a": {"type": "Plus", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "observed_value"},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "discount"},
+              {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "next_value"}
+            ]}
+          ]},
+          "b": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "expected_value"}
+        }}],
+        ["set_attr", "outcome", "precision_weight", {"__term__": {"type": "Div",
+          "a": {"type": "Lit", "value": 1.0},
+          "b": {"type": "Plus", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "expected_noise_gain"},
+              {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "expected_noise"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "model_ignorance_gain"},
+              {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "model_ignorance"}
+            ]}
+          ]}
+        }}],
+        ["set_attr", "outcome", "adaptive_learning_rate", {"__term__": {"type": "Div",
+          "a": {"type": "Times", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "value_learning_rate"},
+            {"type": "Plus", "items": [
+              {"type": "Lit", "value": 1.0},
+              {"type": "Times", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "volatility_learning_gain"},
+                {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "volatility"}
+              ]}
+            ]}
+          ]},
+          "b": {"type": "Plus", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "expected_noise_gain"},
+              {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "expected_noise"}
+            ]},
+            {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "model_ignorance_gain"},
+              {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "model_ignorance"}
+            ]}
+          ]}
+        }}],
+        ["set_attr", "outcome", "exploration_pressure", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Minus",
+              "a": {"type": "Plus", "items": [
+                {"type": "Times", "items": [
+                  {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "exploration_volatility_gain"},
+                  {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "volatility"}
+                ]},
+                {"type": "Times", "items": [
+                  {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "exploration_ignorance_gain"},
+                  {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "model_ignorance"}
+                ]}
+              ]},
+              "b": {"type": "Times", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "exploration_noise_discount"},
+                {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "expected_noise"}
+              ]}
+            }
+          ]}
+        ]}}],
+        ["set_attr", "outcome", "error_evaluated", 1],
+        ["set_attr", "outcome", "status", "evaluated"],
+        ["set_attr", "prediction", "status", "resolved_by_verified_outcome"]
+      ]
+    },
+    {
+      "name": "adaptive_control_assign_discounted_credit",
+      "area": "adaptive_learning",
+      "order": 11,
+      "latency_class": "soft_realtime",
+      "comment": "Every still-eligible decision in the same context receives discounted signed credit once per outcome. The trace carries the four chosen components and controller values update locally.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_outcome", "outcome"],
+        ["outcome", "in_adaptive_context", "context"],
+        ["agent", "has_eligibility_trace", "trace"],
+        ["trace", "traces_decision", "decision"],
+        ["decision", "in_adaptive_context", "context"],
+        ["decision", "uses_controller_value", "value"],
+        ["trace", "traces_state", "state"],
+        ["trace", "traces_action", "action"],
+        ["trace", "traces_controller", "controller"],
+        ["trace", "traces_attention", "attention"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "evaluated"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "status"}, "b": {"type": "Lit", "value": "open"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}},
+          {"type": "Lte", "a": {"type": "Minus",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"},
+            "b": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}
+          }, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "eligibility_horizon"}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "last_credited_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"}}
+        ]
+      },
+      "effects": [
+        ["add_node", "credit", "CreditAssignment", {
+          "outcome_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"}},
+          "lag": {"__term__": {"type": "Minus",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"},
+            "b": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}
+          }},
+          "prediction_error": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "prediction_error"}},
+          "discounted_error": {"__term__": {"type": "Times", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "prediction_error"},
+            {"type": "Pow",
+              "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "discount"},
+              "b": {"type": "Minus",
+                "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"},
+                "b": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}
+              }
+            },
+            {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "strength"}
+          ]}},
+          "learning_rate": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "adaptive_learning_rate"}},
+          "provenance_kind": "verified_temporal_credit",
+          "status": "applied"
+        }],
+        ["add_edge", "agent", "has_credit_assignment", "credit"],
+        ["add_edge", "credit", "credits_decision", "decision"],
+        ["add_edge", "credit", "credits_state", "state"],
+        ["add_edge", "credit", "credits_action", "action"],
+        ["add_edge", "credit", "credits_controller", "controller"],
+        ["add_edge", "credit", "credits_attention", "attention"],
+        ["set_attr", "value", "estimate", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "value"}, "key": "estimate"},
+          {"type": "Times", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "adaptive_learning_rate"},
+            {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "prediction_error"},
+            {"type": "Pow",
+              "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "discount"},
+              "b": {"type": "Minus",
+                "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"},
+                "b": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "epoch"}
+              }
+            },
+            {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "strength"}
+          ]}
+        ]}}],
+        ["set_attr", "value", "experience_count", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "value"}, "key": "experience_count"},
+          {"type": "Lit", "value": 1.0}
+        ]}}],
+        ["set_attr", "value", "last_update_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"}}],
+        ["set_attr", "trace", "strength", {"__term__": {"type": "Times", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "strength"},
+          {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "eligibility_decay"}
+        ]}}],
+        ["set_attr", "trace", "last_credited_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "adaptive_control_expire_eligibility_trace",
+      "area": "adaptive_learning",
+      "order": 12,
+      "latency_class": "soft_realtime",
+      "comment": "Clock evidence closes traces at their explicit horizon; fixed-point ticks do not age them.",
+      "match": [
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_eligibility_trace", "trace"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "status"}, "b": {"type": "Lit", "value": "open"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "expires_epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "trace", "status", "expired"],
+        ["set_attr", "trace", "expired_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "adaptive_control_calibrate_forward_model",
+      "area": "sensorimotor_prediction",
+      "order": 10,
+      "latency_class": "hard_realtime",
+      "comment": "Only a causal receipt permits an observed consequence to calibrate the forward model. Residual is observation minus prediction; self-attribution remains receipt-backed.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_decision", "decision"],
+        ["decision", "has_sensory_prediction", "prediction"],
+        ["decision", "uses_forward_model", "model"],
+        ["consequence", "reports_decision", "decision"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "status"}, "b": {"type": "Lit", "value": "observed"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "receipt_verified"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "calibration_applied"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "residual", "SensorimotorResidual", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "epoch"}},
+          "residual": {"__term__": {"type": "Minus",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "signal_value"},
+            "b": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "predicted_signal"}
+          }},
+          "absolute_residual": {"__term__": {"type": "Abs", "arg": {"type": "Minus",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "signal_value"},
+            "b": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "predicted_signal"}
+          }}},
+          "expected_noise": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "expected_noise"}},
+          "attribution": "self_generated_receipt_backed",
+          "provenance_kind": "observed_minus_predicted"
+        }],
+        ["add_edge", "decision", "has_sensorimotor_residual", "residual"],
+        ["add_edge", "residual", "compares_prediction", "prediction"],
+        ["add_edge", "residual", "compares_consequence", "consequence"],
+        ["set_attr", "model", "predicted_consequence", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "predicted_consequence"},
+          {"type": "Times", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "forward_model_learning_rate"},
+            {"type": "Minus",
+              "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "signal_value"},
+              "b": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "predicted_signal"}
+            }
+          ]}
+        ]}}],
+        ["set_attr", "model", "confidence", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "confidence"},
+              {"type": "Times", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "confidence_learning_rate"},
+                {"type": "Minus",
+                  "a": {"type": "Minus",
+                    "a": {"type": "Lit", "value": 1.0},
+                    "b": {"type": "Min", "items": [
+                      {"type": "Lit", "value": 1.0},
+                      {"type": "Div",
+                        "a": {"type": "Abs", "arg": {"type": "Minus",
+                          "a": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "signal_value"},
+                          "b": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "predicted_signal"}
+                        }},
+                        "b": {"type": "Plus", "items": [
+                          {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "residual_scale"},
+                          {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "expected_noise"}
+                        ]}
+                      }
+                    ]}
+                  },
+                  "b": {"type": "Attr", "node": {"type": "Var", "name": "model"}, "key": "confidence"}
+                }
+              ]}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "model", "last_calibration_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "consequence"}, "key": "epoch"}}],
+        ["set_attr", "prediction", "status", "compared_with_observation"],
+        ["set_attr", "consequence", "calibration_applied", 1]
+      ]
+    },
+    {
+      "name": "adaptive_control_mark_reliable_decision",
+      "area": "skill_learning",
+      "order": 20,
+      "latency_class": "soft_realtime",
+      "comment": "A decision is reliable only when both its sensorimotor residual and its value-prediction error are small.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_outcome", "outcome"],
+        ["outcome", "in_adaptive_context", "context"],
+        ["agent", "has_eligibility_trace", "trace"],
+        ["trace", "traces_decision", "decision"],
+        ["decision", "in_adaptive_context", "context"],
+        ["decision", "has_sensorimotor_residual", "residual"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "status"}, "b": {"type": "Lit", "value": "evaluated"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "residual"}, "key": "absolute_residual"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "reliable_residual_threshold"}},
+          {"type": "Lte", "a": {"type": "Abs", "arg": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "prediction_error"}}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "reliable_prediction_error_threshold"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "decision"}, "key": "reliable"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "decision", "reliable", 1],
+        ["set_attr", "decision", "reliability_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "outcome"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "adaptive_control_propose_repeated_skill_option",
+      "area": "skill_learning",
+      "order": 21,
+      "latency_class": "soft_realtime",
+      "comment": "Two temporally separate reliable executions of the same two-action identity sequence are evidence for a reusable option candidate. It is proposed, not silently adopted.",
+      "match": [
+        ["agent", "has_adaptive_decision", "first_a"],
+        ["first_a", "next_adaptive_decision", "second_a"],
+        ["first_a", "selected_action", "action_one"],
+        ["second_a", "selected_action", "action_two"],
+        ["agent", "has_adaptive_decision", "first_b"],
+        ["first_b", "next_adaptive_decision", "second_b"],
+        ["first_b", "selected_action", "action_one"],
+        ["second_b", "selected_action", "action_two"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "first_a"}, "key": "reliable"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "second_a"}, "key": "reliable"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "first_b"}, "key": "reliable"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "second_b"}, "key": "reliable"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "second_a"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "first_b"}, "key": "epoch"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "first_a"}, "key": "option_evidence_used"}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "first_b"}, "key": "option_evidence_used"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "option", "SkillOptionCandidate", {
+          "status": "candidate",
+          "sequence_length": 2.0,
+          "reliable_execution_count": 2.0,
+          "provenance_kind": "repeated_reliable_sequence",
+          "requires_evaluation": 1
+        }],
+        ["add_edge", "agent", "has_skill_option_candidate", "option"],
+        ["add_edge", "option", "first_action", "action_one"],
+        ["add_edge", "option", "second_action", "action_two"],
+        ["add_edge", "option", "supported_by_execution", "first_a"],
+        ["add_edge", "option", "supported_by_execution", "first_b"],
+        ["set_attr", "first_a", "option_evidence_used", 1],
+        ["set_attr", "first_b", "option_evidence_used", 1]
+      ]
+    },
+    {
+      "name": "adaptive_control_forecast_allostatic_error",
+      "area": "allostasis",
+      "order": 5,
+      "latency_class": "hard_realtime",
+      "comment": "Forecast demand before threshold failure. The allostatic error is desired reserve minus forecast reserve, with precision kept explicit.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_interoceptive_forecast", "forecast"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "status"}, "b": {"type": "Lit", "value": "raw"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "processed"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "error", "AllostaticError", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "epoch"}},
+          "forecast_level": {"__term__": {"type": "Minus",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "current_level"},
+            "b": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "predicted_demand"}
+          }},
+          "error": {"__term__": {"type": "Minus",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "desired_reserve"},
+            "b": {"type": "Minus",
+              "a": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "current_level"},
+              "b": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "predicted_demand"}
+            }
+          }},
+          "urgency": {"__term__": {"type": "Max", "items": [
+            {"type": "Lit", "value": 0.0},
+            {"type": "Minus",
+              "a": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "desired_reserve"},
+              "b": {"type": "Minus",
+                "a": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "current_level"},
+                "b": {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "predicted_demand"}
+              }
+            }
+          ]}},
+          "precision": {"__term__": {"type": "Div",
+            "a": {"type": "Lit", "value": 1.0},
+            "b": {"type": "Plus", "items": [
+              {"type": "Lit", "value": 1.0},
+              {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "expected_noise"},
+              {"type": "Attr", "node": {"type": "Var", "name": "forecast"}, "key": "model_ignorance"}
+            ]}
+          }},
+          "broadcast_offered": 0,
+          "provenance_kind": "predicted_internal_state",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "agent", "has_allostatic_error", "error"],
+        ["add_edge", "error", "forecasted_from", "forecast"],
+        ["set_attr", "forecast", "status", "forecasted"],
+        ["set_attr", "forecast", "processed", 1]
+      ]
+    },
+    {
+      "name": "adaptive_control_offer_allostatic_broadcast",
+      "area": "allostasis",
+      "order": 6,
+      "latency_class": "hard_realtime",
+      "comment": "A sufficiently large predicted internal deficit competes for routing; it is not granted broadcast by fiat.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_allostatic_error", "error"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "urgency"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "allostatic_broadcast_threshold"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "broadcast_offered"}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "candidate", "BroadcastCandidate", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "epoch"}},
+          "status": "pending",
+          "salience": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "urgency"}},
+          "urgency": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "urgency"}},
+          "confidence": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "precision"}},
+          "precision": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "precision"}},
+          "ttl": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "broadcast_ttl"}},
+          "priority": 0.0,
+          "source_kind": "allostatic_forecast",
+          "provenance_kind": "predicted_internal_state"
+        }],
+        ["add_edge", "agent", "has_broadcast_candidate", "candidate"],
+        ["add_edge", "candidate", "about_content", "error"],
+        ["set_attr", "error", "broadcast_offered", 1]
+      ]
+    },
+    {
+      "name": "adaptive_control_score_broadcast_candidate",
+      "area": "functional_broadcast",
+      "order": 30,
+      "latency_class": "hard_realtime",
+      "comment": "Candidates compete on urgency plus precision-weighted salience. Expected imprecision cannot masquerade as priority.",
+      "match": [
+        ["agent", "has_broadcast_candidate", "candidate"],
+        ["candidate", "about_content", "content"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"},
+        "b": {"type": "Lit", "value": "pending"}
+      },
+      "effects": [
+        ["set_attr", "candidate", "priority", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "urgency"},
+          {"type": "Times", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "salience"},
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "confidence"},
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "precision"}
+          ]}
+        ]}}],
+        ["set_attr", "candidate", "status", "scored"]
+      ]
+    },
+    {
+      "name": "adaptive_control_refuse_exact_broadcast_tie",
+      "area": "functional_broadcast",
+      "order": 31,
+      "latency_class": "hard_realtime",
+      "comment": "An exact top-score tie first mints an epoch-scoped refusal. Winner selection is gated by its absence, so a later fixed-point pass cannot accidentally break the tie.",
+      "match": [
+        ["agent", "has_broadcast_refusal_mark", "mark"],
+        ["agent", "has_broadcast_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}},
+          {"type": "Eq", "a": {"type": "Var", "name": "candidate"}, "b": {
+            "type": "Argmax",
+            "source": {
+              "type": "Filter",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_broadcast_candidate"},
+              "var_name": "peer",
+              "predicate": {"type": "And", "items": [
+                {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}},
+                {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}}
+              ]}
+            },
+            "var_name": "peer",
+            "value": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "priority"}
+          }},
+          {"type": "Gt", "a": {"type": "Count", "source": {
+            "type": "Filter",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_broadcast_candidate"},
+            "var_name": "peer",
+            "predicate": {"type": "And", "items": [
+              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}},
+              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}},
+              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "priority"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "priority"}}
+            ]}
+          }}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Count", "source": {
+            "type": "Filter",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_broadcast_tie"},
+            "var_name": "tie",
+            "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "tie"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}}
+          }}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "tie", "BroadcastTie", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}},
+          "status": "refused",
+          "reason": "exact_priority_tie"
+        }],
+        ["add_edge", "agent", "has_broadcast_tie", "tie"]
+      ]
+    },
+    {
+      "name": "adaptive_control_mark_tied_broadcast_candidates",
+      "area": "functional_broadcast",
+      "order": 32,
+      "latency_class": "hard_realtime",
+      "comment": "All candidates in the refused epoch are terminally marked; none can become a winner after peers are marked.",
+      "match": [
+        ["agent", "has_broadcast_tie", "tie"],
+        ["agent", "has_broadcast_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "tie"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "candidate", "status", "refused_exact_tie"]
+      ]
+    },
+    {
+      "name": "adaptive_control_select_functional_broadcast",
+      "area": "functional_broadcast",
+      "order": 33,
+      "latency_class": "hard_realtime",
+      "comment": "A unique sufficiently important winner becomes a short-lived routing episode. This is shared access among graph consumers, not a consciousness assertion.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_broadcast_refusal_mark", "mark"],
+        ["agent", "has_broadcast_candidate", "candidate"],
+        ["candidate", "about_content", "content"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "priority"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "broadcast_minimum_priority"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {
+            "type": "Filter",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_broadcast_tie"},
+            "var_name": "tie",
+            "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "tie"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}}
+          }}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Var", "name": "candidate"}, "b": {
+            "type": "Argmax",
+            "source": {
+              "type": "Filter",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_broadcast_candidate"},
+              "var_name": "peer",
+              "predicate": {"type": "And", "items": [
+                {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}},
+                {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}}
+              ]}
+            },
+            "var_name": "peer",
+            "value": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "priority"}
+          }},
+          {"type": "Eq", "a": {"type": "Count", "source": {
+            "type": "Filter",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_broadcast_candidate"},
+            "var_name": "peer",
+            "predicate": {"type": "And", "items": [
+              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}},
+              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}},
+              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "peer"}, "key": "priority"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "priority"}}
+            ]}
+          }}, "b": {"type": "Lit", "value": 1}}
+        ]
+      },
+      "effects": [
+        ["add_node", "broadcast", "FunctionalBroadcast", {
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"}},
+          "expires_epoch": {"__term__": {"type": "Plus", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"},
+            {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "ttl"}
+          ]}},
+          "priority": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "priority"}},
+          "source_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "source_kind"}},
+          "provenance_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "provenance_kind"}},
+          "status": "active",
+          "functional_routing_only": 1
+        }],
+        ["add_edge", "agent", "has_functional_broadcast", "broadcast"],
+        ["add_edge", "broadcast", "broadcasts_content", "content"],
+        ["add_edge", "broadcast", "selected_from_candidate", "candidate"],
+        ["set_attr", "candidate", "status", "selected"]
+      ]
+    },
+    {
+      "name": "adaptive_control_deliver_functional_broadcast",
+      "area": "functional_broadcast",
+      "order": 34,
+      "latency_class": "hard_realtime",
+      "comment": "Every graph-held consumer receives an availability edge to the same selected episode; consumers decide locally whether to use it.",
+      "match": [
+        ["agent", "has_functional_broadcast", "broadcast"],
+        ["agent", "has_broadcast_consumer", "consumer"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "broadcast"}, "key": "status"},
+        "b": {"type": "Lit", "value": "active"}
+      },
+      "effects": [
+        ["add_edge", "broadcast", "available_to_consumer", "consumer"]
+      ]
+    },
+    {
+      "name": "adaptive_control_expire_broadcast_candidate",
+      "area": "functional_broadcast",
+      "order": 35,
+      "latency_class": "hard_realtime",
+      "comment": "Unselected candidates have the same explicit clock-bounded lifetime as winners; fixed-point ticks alone cannot age them.",
+      "match": [
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_broadcast_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "scored"}}
+          ]},
+          {"type": "Gte",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"},
+            "b": {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"},
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "ttl"}
+            ]}
+          }
+        ]
+      },
+      "effects": [
+        ["set_attr", "candidate", "status", "expired"],
+        ["set_attr", "candidate", "expired_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "adaptive_control_expire_functional_broadcast",
+      "area": "functional_broadcast",
+      "order": 35,
+      "latency_class": "hard_realtime",
+      "comment": "Clock evidence expires shared availability at the held TTL. Re-ticking without a later clock cannot consume time.",
+      "match": [
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_functional_broadcast", "broadcast"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "broadcast"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "broadcast"}, "key": "expires_epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "broadcast", "status", "expired"],
+        ["set_attr", "broadcast", "expired_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "adaptive_control_prune_expired_broadcast",
+      "area": "adaptive_cleanup",
+      "order": 50,
+      "latency_class": "background",
+      "comment": "An expired routing episode remains inspectable for a bounded retention interval, then only the transient episode is deleted.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_functional_broadcast", "broadcast"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "broadcast"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+          {"type": "Gte",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"},
+            "b": {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "broadcast"}, "key": "expired_epoch"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transient_retention_epochs"}
+            ]}
+          }
+        ]
+      },
+      "effects": [
+        ["del_node", "broadcast"]
+      ]
+    },
+    {
+      "name": "adaptive_control_prune_terminal_broadcast_candidate",
+      "area": "adaptive_cleanup",
+      "order": 51,
+      "latency_class": "background",
+      "comment": "Selected, expired, and tie-refused candidates are terminal evidence envelopes. Content nodes and any durable knowledge they reference survive.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_broadcast_candidate", "candidate"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "selected"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "status"}, "b": {"type": "Lit", "value": "refused_exact_tie"}}
+          ]},
+          {"type": "Gte",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"},
+            "b": {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "epoch"},
+              {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "ttl"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transient_retention_epochs"}
+            ]}
+          }
+        ]
+      },
+      "effects": [
+        ["del_node", "candidate"]
+      ]
+    },
+    {
+      "name": "adaptive_control_prune_broadcast_tie",
+      "area": "adaptive_cleanup",
+      "order": 52,
+      "latency_class": "background",
+      "comment": "The epoch-scoped tie refusal is retained through its broadcast window plus the audit interval, then removed.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_broadcast_tie", "tie"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "tie"}, "key": "status"}, "b": {"type": "Lit", "value": "refused"}},
+          {"type": "Gte",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"},
+            "b": {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "tie"}, "key": "epoch"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "broadcast_ttl"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transient_retention_epochs"}
+            ]}
+          }
+        ]
+      },
+      "effects": [
+        ["del_node", "tie"]
+      ]
+    },
+    {
+      "name": "adaptive_control_prune_expired_eligibility_trace",
+      "area": "adaptive_cleanup",
+      "order": 53,
+      "latency_class": "background",
+      "comment": "Expired traces are short-lived causal bookkeeping. Controller values and forward models learned through them are deliberately untouched.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_eligibility_trace", "trace"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+          {"type": "Gte",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"},
+            "b": {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "trace"}, "key": "expired_epoch"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transient_retention_epochs"}
+            ]}
+          }
+        ]
+      },
+      "effects": [
+        ["del_node", "trace"]
+      ]
+    },
+    {
+      "name": "adaptive_control_prune_integrated_prediction_error",
+      "area": "adaptive_cleanup",
+      "order": 54,
+      "latency_class": "background",
+      "comment": "A prediction error integrated into its durable model has a bounded audit life. The learned transition/controller model survives deletion of the residual.",
+      "match": [
+        ["agent", "has_adaptive_control_policy", "policy"],
+        ["agent", "has_adaptive_clock", "clock"],
+        ["agent", "has_prediction_error", "error"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "status"}, "b": {"type": "Lit", "value": "integrated"}},
+          {"type": "Gte",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"},
+            "b": {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "epoch"},
+              {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transient_retention_epochs"}
+            ]}
+          }
+        ]
+      },
+      "effects": [
+        ["del_node", "error"]
+      ]
+    }
+  ]
+}

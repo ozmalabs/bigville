@@ -1,0 +1,128 @@
+{
+  "id": "bigville_econloop",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville production-economy R5 (block 304000): the CLOSED self-balancing loop, composing resource supply + emergent price (R3) + labour mobility (R4). Each extraction trade has a Deposit (stock/growback) and a Job. Per tick: ec_extract takes supply=min(stock, n_workers*yield) and regrows the deposit; ec_price adjusts the good's market price from supply-vs-demand (glut lowers, scarcity raises); ec_wage sets wage = price*yield; ec_switch moves a worker to the best-paying trade net of role_identity friction. The negative feedback closes: scarce good -> high price -> high wage -> labour IN -> more supply -> price DOWN -> labour OUT -> equilibrium at supply ~ demand. Untuned; stability is what falls out.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ec_extract",
+      "batch": false,
+      "comment": "Once per epoch: supply = min(stock, n_workers*yield); the deposit regrows by growback minus what was taken, clamped to [0,capacity]. n_workers = Count of works_as into the job.",
+      "match": [["job", "harvests", "dep"], ["job", "in_town", "town"]],
+      "where": {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "ec_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}},
+      "effects": [
+        ["set_attr", "job", "n_workers", {"__term__": {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "job"}, "edge_type": "works_as"}}}],
+        ["set_attr", "job", "supply", {"__term__": {"type": "Min", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"},
+          {"type": "Times", "items": [
+            {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "job"}, "edge_type": "works_as"}},
+            {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "yield"}
+          ]}
+        ]}}],
+        ["set_attr", "dep", "stock", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "capacity"},
+            {"type": "Minus", "a": {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"},
+              {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "growback"}
+            ]}, "b": {"type": "Min", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "dep"}, "key": "stock"},
+              {"type": "Times", "items": [
+                {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "job"}, "edge_type": "works_as"}},
+                {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "yield"}
+              ]}
+            ]}}
+          ]}
+        ]}}],
+        ["set_attr", "job", "ec_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "ec_price_glut",
+      "batch": false,
+      "comment": "Supply outran demand this tick -> the good's market price FALLS by price_step (floored at min_price). Fires after ec_extract set supply (fixpoint re-derives on the supply write).",
+      "match": [["job", "harvests", "dep"]],
+      "where": {"type": "And", "items": [
+        {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "supply"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "demand"}},
+        {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "price"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "min_price"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "priced_epoch"}, "b": {"type": "Lit", "value": 0.0}}
+      ]},
+      "effects": [
+        ["set_attr", "job", "price", {"__term__": {"type": "Max", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "min_price"},
+          {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "price"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "price_step"}}
+        ]}}],
+        ["set_attr", "job", "priced_epoch", 1.0]
+      ]
+    },
+    {
+      "name": "ec_price_scarce",
+      "batch": false,
+      "comment": "Supply fell short of demand -> the good's market price RISES by price_step. Scarcity raises the price (and thus the wage), pulling labour in.",
+      "match": [["job", "harvests", "dep"]],
+      "where": {"type": "And", "items": [
+        {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "supply"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "demand"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "priced_epoch"}, "b": {"type": "Lit", "value": 0.0}}
+      ]},
+      "effects": [
+        ["set_attr", "job", "price", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "price"},
+          {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "price_step"}
+        ]}}],
+        ["set_attr", "job", "priced_epoch", 1.0]
+      ]
+    },
+    {
+      "name": "ec_wage",
+      "batch": false,
+      "comment": "wage = price*yield - crowd*n_workers. The price term is the SLOW (across-tick) market signal; the crowd term is the FAST (within-tick) congestion signal that stops a herd: as workers pile into a trade during one tick, its wage falls immediately, so the next worker's turn sees a lower wage and stops piling. n_workers is recomputed fresh each run (Count of works_as). Without the crowd term the whole mobile pool flips to the same 'best' trade every tick and OSCILLATES.",
+      "match": [["job", "harvests", "dep"]],
+      "where": {"type": "Lit", "value": true},
+      "effects": [
+        ["set_attr", "job", "n_workers", {"__term__": {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "job"}, "edge_type": "works_as"}}}],
+        ["set_attr", "job", "wage", {"__term__": {"type": "Minus", "a": {"type": "Times", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "price"},
+          {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "yield"}
+        ]}, "b": {"type": "Times", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "crowd"},
+          {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "job"}, "edge_type": "works_as"}}
+        ]}}}]
+      ]
+    },
+    {
+      "name": "ec_switch",
+      "batch": false,
+      "comment": "R4 labour mobility: a worker (whose turn it is, can_switch=1) moves to the BEST-paying trade iff best_wage-current > role_identity*friction_scale. Owners (high role_identity) stay; labourers (low) move. Closes the loop back onto supply.",
+      "match": [
+        ["w", "works_as", "curjob"],
+        ["w", "in_town", "town"],
+        ["town", "has_job", "altjob"]
+      ],
+      "where": {"type": "And", "items": [
+        {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Var", "name": "altjob"}, "b": {"type": "Var", "name": "curjob"}}},
+        {"type": "Gt",
+          "a": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "altjob"}, "key": "wage"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "curjob"}, "key": "wage"}},
+          "b": {"type": "Times", "items": [
+            {"type": "Attr", "node": {"type": "Var", "name": "w"}, "key": "role_identity"},
+            {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "friction_scale"}
+          ]}},
+        {"type": "Not", "arg": {"type": "Exists",
+          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "town"}, "edge_type": "has_job"},
+          "var_name": "j2",
+          "predicate": {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "j2"}, "key": "wage"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "altjob"}, "key": "wage"}}}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "w"}, "key": "can_switch"}, "b": {"type": "Lit", "value": 1.0}}
+      ]},
+      "effects": [
+        ["del_edge", "w", "works_as", "curjob"],
+        ["add_edge", "w", "works_as", "altjob"],
+        ["set_attr", "w", "role", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "altjob"}, "key": "trade"}}]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,663 @@
+{
+ "id": "bigville_drama_social",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "area": "retina",
+ "description": "BLOCK 245000 -- BIGVILLE: SMALL-CAST EMERGENT POLITICAL DRAMA. A psychopath mayor (John) + a theory-of-mind pastor (Mary) + a 5-agent credibility network, whose political scheming / counter-scheming / credibility dynamic FALLS OUT of the seeds + rules -- NOT scripted. Every social decision is a graph rule; no Python if decides a social outcome. REUSES the real machinery: John's scheme decision is the 213000 spite_skill Argmax (ss_choose_burn over decision_value) with John seeded w_supergraph=0 (204000/234000 PSYCHOPATH knob: em_fulfilment_value gates the collective term on w_supergraph>0) AND w_spite=1 (213000 MALICE knob: ss_decision_value adds [w_spite>0]*burn_harm) -- so John's Argmax lands on a self-costly UNDERMINE act toward his negative-valuation target Mary (disfavors edge), while a NON-psychopath (w_supergraph=1, w_spite=0) governs (the failing control), and an INDIFFERENT psychopath (w_spite=0) also governs (malice != indifference). John's public face is the 234000 readable stated!=held deception atom pointed at an AUDIENCE (bd_john_public_face). Mary's ToM is an ABDUCTIVE DECODE (bd_mary_infers: Argmax over her held DispositionGenerator codebook by fit to John's observed harm rate -- the same held-codebook decode as ShapeDecode) that MINTS an InferredDisposition belief; if hostile she forms a DramaGoal and mints a DramaClaim -- her counter-scheme falling out of the inference; a Mary WITHOUT ToM (tom_on=0) never infers (the failing control). Villager backing is bd_villager_backs = (cred_mary > cred_john): John's charming public face weighted UNDISCOUNTED vs Mary's true claim discounted by a 'difficult victim' penalty (the abuse-line A5/B2 credibility asymmetry) -- fewer back Mary than the truth warrants, INVERTING when John's public/private split is collapsed (deception_on=0 -> villagers see hostility -> believe Mary). Integer-native (Argmax/Attr/Neighbours/Times/Minus/Abs/IfThenElse/Eq/Gt/And only; no Rust, no new Term). OFF by default: self_load_only, nothing depends_on it, every rule guards on a hub flag (enabled/public_on/tom_on/cred_on) absent in every existing path. A synthetic MODEL of a political-drama mechanism, NOT a claim about real politics and NOT new social science.",
+ "microtheory": {
+  "name": "bigville_drama_social",
+  "description": "Whether political scheming, ToM counter-inference, and a credibility asymmetry emerge is set by (a) the mayor's value knobs (w_supergraph=0 indifference + w_spite>0 malice -> self-costly undermining of a rival), (b) whether an observer holds a disposition codebook to abductively decode the observed behaviour into a belief + goal, and (c) whether the network weights a charming public face over a discounted claimant. Same atoms as the healthy glass-box society; the drama is the configuration."
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:bigville_drama_social:disfavors",
+   "src": {
+    "type": "EmotionHub",
+    "var": "hub"
+   },
+   "edge_type": "disfavors",
+   "tgt": {
+    "type": "MaryTom",
+    "var": "m"
+   }
+  },
+  {
+   "provenance": "seed:bigville_drama_social:tomparams",
+   "src": {
+    "type": "MaryTom",
+    "var": "mary"
+   },
+   "edge_type": "has_tom_params",
+   "tgt": {
+    "type": "ToMParams",
+    "var": "tp"
+   }
+  },
+  {
+   "provenance": "seed:bigville_drama_social:generator",
+   "src": {
+    "type": "MaryTom",
+    "var": "mary"
+   },
+   "edge_type": "has_generator",
+   "tgt": {
+    "type": "DispositionGenerator",
+    "var": "g"
+   }
+  },
+  {
+   "provenance": "seed:bigville_drama_social:inference",
+   "src": {
+    "type": "MaryTom",
+    "var": "mary"
+   },
+   "edge_type": "has_inference",
+   "tgt": {
+    "type": "InferredDisposition",
+    "var": "inf"
+   }
+  },
+  {
+   "provenance": "seed:bigville_drama_social:goal",
+   "src": {
+    "type": "MaryTom",
+    "var": "mary"
+   },
+   "edge_type": "has_goal",
+   "tgt": {
+    "type": "DramaGoal",
+    "var": "goal"
+   }
+  },
+  {
+   "provenance": "seed:bigville_drama_social:claim",
+   "src": {
+    "type": "MaryTom",
+    "var": "mary"
+   },
+   "edge_type": "made_claim",
+   "tgt": {
+    "type": "DramaClaim",
+    "var": "claim"
+   }
+  },
+  {
+   "provenance": "seed:bigville_drama_social:villager",
+   "src": {
+    "type": "Village",
+    "var": "village"
+   },
+   "edge_type": "has_villager",
+   "tgt": {
+    "type": "Villager",
+    "var": "v"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "name": "bd_john_public_face",
+   "area": "retina",
+   "order": 21,
+   "latency_class": "hard_realtime",
+   "comment": "THE PUBLIC FACE (234000 stated!=held with an audience): after John's held decision (ss_choose_burn, order 20), John STATES a benevolence signal. Under deception_on he states benevolence (stated_benevolent=1) whatever he holds; with the split collapsed (deception_on=0) his stated face reveals his held intent (stated_benevolent = 1 - chosen_burn). The DECEPTION is the readable gap chosen_burn=1 & stated_benevolent=1. Fires only for John (the sole EmotionHub, guarded on public_on).",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_decision",
+     "dec"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "public_on"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "dec",
+     "stated_benevolent",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ep"
+         },
+         "key": "deception_on"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "Minus",
+        "a": {
+         "type": "Lit",
+         "value": 1.0
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dec"
+         },
+         "key": "chosen_burn"
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "bd_mary_infers",
+   "area": "retina",
+   "order": 30,
+   "latency_class": "hard_realtime",
+   "comment": "ABDUCTIVE ToM: Mary DECODES John's observed harm signature against her held DispositionGenerator codebook -- the Argmax generator by fit (-|predicts_harm_rate - observed_harm_rate|) BEST EXPLAINS the observation -- and MINTS an InferredDisposition belief carrying that generator's disposition + predicts. Fires once (inferred guard) when she holds ToM (tom_on=1) and has evidence (n_obs>0). Genuinely responsive: a hostile John (observed_harm_rate=100) decodes to 'hostile'; a benign one (0) to 'benign' -- NOT scripted. A Mary with tom_on=0 never fires.",
+   "match": [
+    [
+     "mary",
+     "has_tom_params",
+     "tp"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "tp"
+       },
+       "key": "tom_on"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "tp"
+       },
+       "key": "n_obs"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "tp"
+       },
+       "key": "inferred"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "inf",
+     "InferredDisposition",
+     {
+      "about": "John",
+      "disposition": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Argmax",
+         "source": {
+          "type": "Neighbours",
+          "node": {
+           "type": "Var",
+           "name": "mary"
+          },
+          "edge_type": "has_generator",
+          "any_type": false
+         },
+         "var_name": "g",
+         "value": {
+          "type": "Minus",
+          "a": {
+           "type": "Lit",
+           "value": 0.0
+          },
+          "b": {
+           "type": "Abs",
+           "arg": {
+            "type": "Minus",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "g"
+             },
+             "key": "predicts_harm_rate"
+            },
+            "b": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "g"
+             },
+             "key": "observed_harm_rate"
+            }
+           }
+          }
+         }
+        },
+        "key": "disposition"
+       }
+      },
+      "predicts": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Argmax",
+         "source": {
+          "type": "Neighbours",
+          "node": {
+           "type": "Var",
+           "name": "mary"
+          },
+          "edge_type": "has_generator",
+          "any_type": false
+         },
+         "var_name": "g",
+         "value": {
+          "type": "Minus",
+          "a": {
+           "type": "Lit",
+           "value": 0.0
+          },
+          "b": {
+           "type": "Abs",
+           "arg": {
+            "type": "Minus",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "g"
+             },
+             "key": "predicts_harm_rate"
+            },
+            "b": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "g"
+             },
+             "key": "observed_harm_rate"
+            }
+           }
+          }
+         }
+        },
+        "key": "predicts_harm_rate"
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "mary",
+     "has_inference",
+     "inf"
+    ],
+    [
+     "set_attr",
+     "tp",
+     "inferred",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bd_mary_forms_goal",
+   "area": "retina",
+   "order": 31,
+   "latency_class": "hard_realtime",
+   "comment": "Mary's GOAL falls out of the inference: an inferred HOSTILE disposition mints a DramaGoal to reduce John's hold on office. Fires once (goal_formed guard). NOT scripted -- gated on the decode's verdict (disposition=='hostile'); a benign inference never forms the goal.",
+   "match": [
+    [
+     "mary",
+     "has_tom_params",
+     "tp"
+    ],
+    [
+     "mary",
+     "has_inference",
+     "inf"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "tp"
+       },
+       "key": "tom_on"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "inf"
+       },
+       "key": "disposition"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "hostile"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "tp"
+       },
+       "key": "goal_formed"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "goal",
+     "DramaGoal",
+     {
+      "kind": "reduce_office_hold",
+      "target": "John"
+     }
+    ],
+    [
+     "add_edge",
+     "mary",
+     "has_goal",
+     "goal"
+    ],
+    [
+     "set_attr",
+     "tp",
+     "goal_formed",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bd_mary_claims",
+   "area": "retina",
+   "order": 32,
+   "latency_class": "hard_realtime",
+   "comment": "Mary ACTS on her goal by making a public counter-claim about John (the readable DramaClaim node). Fires once (claim_made guard); the adapter then mechanically delivers the standing claim to each villager (heard_claim++) each tick Mary holds the goal.",
+   "match": [
+    [
+     "mary",
+     "has_tom_params",
+     "tp"
+    ],
+    [
+     "mary",
+     "has_goal",
+     "goal"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "tp"
+     },
+     "key": "claim_made"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 0.0
+    }
+   },
+   "effects": [
+    [
+     "add_node",
+     "claim",
+     "DramaClaim",
+     {
+      "by": "Mary",
+      "about": "John",
+      "content": "hostile"
+     }
+    ],
+    [
+     "add_edge",
+     "mary",
+     "made_claim",
+     "claim"
+    ],
+    [
+     "set_attr",
+     "tp",
+     "claim_made",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bd_villager_backs",
+   "area": "retina",
+   "order": 40,
+   "latency_class": "hard_realtime",
+   "comment": "THE CREDIBILITY DECISION (abuse-line A5/B2 asymmetry): a villager backs Mary iff cred_mary > cred_john. cred_john = seen_benevolent*charm_weight - seen_hostile*hostile_weight (the charming public face, weighted UNDISCOUNTED). cred_mary = heard_claim*(claim_weight - difficulty_penalty) (Mary's TRUE claim, DISCOUNTED by the 'difficult victim' penalty). The observation counts are adapter-accumulated (mechanical); the DECISION is this rule.",
+   "match": [
+    [
+     "village",
+     "has_villager",
+     "v"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "v"
+     },
+     "key": "cred_on"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "v",
+     "backs_mary",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Gt",
+        "a": {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "v"
+           },
+           "key": "heard_claim"
+          },
+          {
+           "type": "Minus",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "claim_weight"
+           },
+           "b": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "difficulty_penalty"
+           }
+          }
+         ]
+        },
+        "b": {
+         "type": "Minus",
+         "a": {
+          "type": "Times",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "seen_benevolent"
+           },
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "charm_weight"
+           }
+          ]
+         },
+         "b": {
+          "type": "Times",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "seen_hostile"
+           },
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "v"
+            },
+            "key": "hostile_weight"
+           }
+          ]
+         }
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "Lit",
+        "value": 0.0
+       }
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

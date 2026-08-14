@@ -1,0 +1,4567 @@
+{
+ "id": "psychology",
+ "version": "1.0.0",
+ "depends_on": [],
+ "description": "Mental-state vocabulary + theory-of-mind concepts.",
+ "nodes": [
+  {
+   "local_id": 597,
+   "type": "Microtheory",
+   "attrs": {
+    "description": "basic psychology: mental states, mind, theory of mind",
+    "name": "psychology"
+   }
+  },
+  {
+   "local_id": 598,
+   "type": "Concept",
+   "attrs": {
+    "description": "parent class for mental states",
+    "name": "mental_state"
+   }
+  },
+  {
+   "local_id": 599,
+   "type": "Concept",
+   "attrs": {
+    "description": "proposition the holder takes to be true",
+    "name": "belief"
+   }
+  },
+  {
+   "local_id": 600,
+   "type": "Concept",
+   "attrs": {
+    "description": "wanted state of affairs (the agent's goals are these)",
+    "name": "desire"
+   }
+  },
+  {
+   "local_id": 601,
+   "type": "Concept",
+   "attrs": {
+    "description": "commitment to a course of action",
+    "name": "intention"
+   }
+  },
+  {
+   "local_id": 602,
+   "type": "Concept",
+   "attrs": {
+    "description": "grounded belief",
+    "name": "knowledge"
+   }
+  },
+  {
+   "local_id": 603,
+   "type": "Concept",
+   "attrs": {
+    "description": "experiential state caused by sensing the world",
+    "name": "perception"
+   }
+  },
+  {
+   "local_id": 604,
+   "type": "Concept",
+   "attrs": {
+    "description": "selective focus of cognitive resources",
+    "name": "attention"
+   }
+  },
+  {
+   "local_id": 605,
+   "type": "Concept",
+   "attrs": {
+    "description": "being conscious of something",
+    "name": "awareness"
+   }
+  },
+  {
+   "local_id": 606,
+   "type": "Concept",
+   "attrs": {
+    "description": "affective mental state",
+    "name": "emotion"
+   }
+  },
+  {
+   "local_id": 819,
+   "type": "Concept",
+   "attrs": {
+    "description": "anticipation about future state",
+    "name": "expectation"
+   }
+  },
+  {
+   "local_id": 607,
+   "type": "Concept",
+   "attrs": {
+    "description": "the bearer of mental states",
+    "name": "mind"
+   }
+  },
+  {
+   "local_id": 608,
+   "type": "Concept",
+   "attrs": {
+    "description": "the mind whose perspective is this agent's own",
+    "name": "self"
+   }
+  },
+  {
+   "local_id": 609,
+   "type": "Concept",
+   "attrs": {
+    "description": "a mind's viewpoint on the world; the heart of ToM",
+    "name": "perspective"
+   }
+  },
+  {
+   "local_id": 610,
+   "type": "Concept",
+   "attrs": {
+    "description": "alias of perspective",
+    "name": "viewpoint"
+   }
+  },
+  {
+   "local_id": 611,
+   "type": "Concept",
+   "attrs": {
+    "description": "assigning a mental state to a mind",
+    "name": "attribution"
+   }
+  },
+  {
+   "local_id": 612,
+   "type": "Concept",
+   "attrs": {
+    "description": "attributing mental states to others; distinguishing own from other's; Premack & Woodruff 1978, Wimmer & Perner 1983, Baron-Cohen 1995",
+    "name": "theory_of_mind"
+   }
+  },
+  {
+   "local_id": 613,
+   "type": "Concept",
+   "attrs": {
+    "description": "another mind's belief that diverges from one's own \u2014 the canonical ToM test",
+    "name": "false_belief"
+   }
+  },
+  {
+   "local_id": 614,
+   "type": "Concept",
+   "attrs": {
+    "description": "the other entity in a conversation",
+    "name": "interlocutor"
+   }
+  },
+  {
+   "local_id": 615,
+   "type": "Concept",
+   "attrs": {
+    "description": "a desired state of affairs the agent pursues",
+    "name": "goal"
+   }
+  },
+  {
+   "local_id": 616,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: believe",
+    "name": "believe"
+   }
+  },
+  {
+   "local_id": 617,
+   "type": "Lexicon",
+   "attrs": {
+    "id": "lexicon"
+   }
+  },
+  {
+   "local_id": 618,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "det",
+    "form": "determinant",
+    "id": "lex_determinant",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 619,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "determinant_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 620,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "trace",
+    "form": "trace",
+    "id": "lex_trace",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 621,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "trace_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 622,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "rank",
+    "form": "rank",
+    "id": "lex_rank",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 623,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "rank_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 624,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "inverse",
+    "form": "inverse",
+    "id": "lex_inverse",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 625,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "inverse_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 626,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "transpose",
+    "form": "transpose",
+    "id": "lex_transpose",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 627,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "transpose_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 628,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "dim",
+    "form": "dimension",
+    "id": "lex_dimension",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 629,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "dimension_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 630,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "order",
+    "form": "order",
+    "id": "lex_order",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 631,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "order_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 632,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "card",
+    "form": "cardinality",
+    "id": "lex_cardinality",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 633,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "cardinality_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 634,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "kernel",
+    "form": "kernel",
+    "id": "lex_kernel",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 635,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "kernel_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 636,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "image",
+    "form": "image",
+    "id": "lex_image",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 637,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "image_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 638,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "domain",
+    "form": "domain",
+    "id": "lex_domain",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 639,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "domain_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 640,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "genus",
+    "form": "genus",
+    "id": "lex_genus",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 641,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "genus_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 642,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "euler",
+    "form": "Euler characteristic",
+    "id": "lex_Euler characteristic",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 643,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "Euler characteristic_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 644,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "wolfram_code",
+    "form": "Wolfram code",
+    "id": "lex_Wolfram code",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 645,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "Wolfram code_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 646,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "char",
+    "form": "characteristic",
+    "id": "lex_characteristic",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 647,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "characteristic_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 648,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "expectation",
+    "form": "expectation",
+    "id": "lex_expectation",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 649,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "expectation_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 650,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "variance",
+    "form": "variance",
+    "id": "lex_variance",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 651,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "variance_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 652,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "largest_prime_factor",
+    "form": "largest prime divisor",
+    "id": "lex_largest prime divisor",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 653,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "largest prime divisor_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 654,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "largest_prime_factor",
+    "form": "largest prime factor",
+    "id": "lex_largest prime factor",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 655,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "largest prime factor_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 656,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "prime_factors",
+    "form": "prime factors",
+    "id": "lex_prime factors",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 657,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "prime factors_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 658,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "derivative",
+    "form": "derivative",
+    "id": "lex_derivative",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 659,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "derivative_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 660,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "limit",
+    "form": "limit",
+    "id": "lex_limit",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 661,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "limit_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 662,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "subgroups",
+    "form": "subgroups",
+    "id": "lex_subgroups",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 663,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "subgroups_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 664,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "generators",
+    "form": "generators",
+    "id": "lex_generators",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 665,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "generators_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 666,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "automorphisms",
+    "form": "automorphisms",
+    "id": "lex_automorphisms",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 667,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "automorphisms_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 668,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "next_term",
+    "form": "next term",
+    "id": "lex_next term",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 669,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "next term_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 670,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "solution",
+    "form": "solution",
+    "id": "lex_solution",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 671,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "solution_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 672,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "count",
+    "form": "number",
+    "id": "lex_number",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 673,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "number_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 674,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "count",
+    "form": "how many",
+    "id": "lex_how many",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 675,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "how many_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 676,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "product",
+    "form": "product",
+    "id": "lex_product",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 677,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "product_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 678,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "product_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 679,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "sum",
+    "form": "sum",
+    "id": "lex_sum",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 680,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "sum_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 681,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "sum_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 682,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "gcd",
+    "form": "gcd",
+    "id": "lex_gcd",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 683,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "gcd_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 684,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "gcd_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 685,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "lcm",
+    "form": "lcm",
+    "id": "lex_lcm",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 686,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "lcm_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 687,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "lcm_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 688,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "union",
+    "form": "union",
+    "id": "lex_union",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 689,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "union_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 690,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "union_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 691,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "intersection",
+    "form": "intersection",
+    "id": "lex_intersection",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 692,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "intersection_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 693,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "intersection_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 694,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "index",
+    "form": "index",
+    "id": "lex_index",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 695,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "index_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 696,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "index_arg1",
+    "marker": "in",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 697,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "plus",
+    "form": "plus",
+    "id": "lex_plus",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 698,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "plus_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 699,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "plus_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 700,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "times",
+    "form": "times",
+    "id": "lex_times",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 701,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "times_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 702,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "times_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 703,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "minus",
+    "form": "minus",
+    "id": "lex_minus",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 704,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "minus_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 705,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "minus_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 706,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "equals",
+    "form": "equals",
+    "id": "lex_equals",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 707,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "equals_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 708,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "equals_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 709,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "divides",
+    "form": "divides",
+    "id": "lex_divides",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 710,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "divides_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 711,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "divides_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 712,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "prime",
+    "form": "prime",
+    "id": "lex_prime",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 713,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "prime_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 714,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "even",
+    "form": "even",
+    "id": "lex_even",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 715,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "even_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 716,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "odd",
+    "form": "odd",
+    "id": "lex_odd",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 717,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "odd_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 718,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "invertible",
+    "form": "invertible",
+    "id": "lex_invertible",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 719,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "invertible_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 720,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "normal",
+    "form": "normal",
+    "id": "lex_normal",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 721,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "normal_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 722,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "abelian",
+    "form": "abelian",
+    "id": "lex_abelian",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 723,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "abelian_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 724,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "cyclic",
+    "form": "cyclic",
+    "id": "lex_cyclic",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 725,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "cyclic_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 726,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "solvable",
+    "form": "solvable",
+    "id": "lex_solvable",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 727,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "solvable_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 728,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "connected",
+    "form": "connected",
+    "id": "lex_connected",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 729,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "connected_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 730,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "injective",
+    "form": "injective",
+    "id": "lex_injective",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 731,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "injective_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 732,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "surjective",
+    "form": "surjective",
+    "id": "lex_surjective",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 733,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "surjective_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 734,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "bijective",
+    "form": "bijective",
+    "id": "lex_bijective",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 735,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "bijective_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 736,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "isomorphic",
+    "form": "isomorphic",
+    "id": "lex_isomorphic",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 737,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "isomorphic_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 738,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "independent",
+    "form": "independent",
+    "id": "lex_independent",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 739,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "independent_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 740,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "finite",
+    "form": "finite",
+    "id": "lex_finite",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 741,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "finite_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 742,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "infinite",
+    "form": "infinite",
+    "id": "lex_infinite",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 743,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "infinite_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 744,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "group",
+    "form": "group",
+    "id": "lex_group",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 745,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "matrix",
+    "form": "matrix",
+    "id": "lex_matrix",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 746,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "set",
+    "form": "set",
+    "id": "lex_set",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 747,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "function",
+    "form": "function",
+    "id": "lex_function",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 748,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "sequence",
+    "form": "sequence",
+    "id": "lex_sequence",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 749,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "field",
+    "form": "field",
+    "id": "lex_field",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 750,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "ring",
+    "form": "ring",
+    "id": "lex_ring",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 751,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "graph",
+    "form": "graph",
+    "id": "lex_graph",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 752,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "polynomial",
+    "form": "polynomial",
+    "id": "lex_polynomial",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 753,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "automaton",
+    "form": "automaton",
+    "id": "lex_automaton",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 754,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "equation",
+    "form": "equation",
+    "id": "lex_equation",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 755,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "system",
+    "form": "system",
+    "id": "lex_system",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 756,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "A",
+    "form": "A",
+    "id": "lex_A",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 757,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "B",
+    "form": "B",
+    "id": "lex_B",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 758,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "C",
+    "form": "C",
+    "id": "lex_C",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 759,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "M",
+    "form": "M",
+    "id": "lex_M",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 760,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "N",
+    "form": "N",
+    "id": "lex_N",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 761,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "G",
+    "form": "G",
+    "id": "lex_G",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 762,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "H",
+    "form": "H",
+    "id": "lex_H",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 763,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "X",
+    "form": "X",
+    "id": "lex_X",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 764,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "Y",
+    "form": "Y",
+    "id": "lex_Y",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 765,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "Z",
+    "form": "Z",
+    "id": "lex_Z",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 766,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "f",
+    "form": "f",
+    "id": "lex_f",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 767,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "g",
+    "form": "g",
+    "id": "lex_g",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 768,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "p",
+    "form": "p",
+    "id": "lex_p",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 769,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "q",
+    "form": "q",
+    "id": "lex_q",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 770,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "n",
+    "form": "n",
+    "id": "lex_n",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 771,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "of",
+    "id": "lex_of",
+    "kind": "mark"
+   }
+  },
+  {
+   "local_id": 772,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "and",
+    "id": "lex_and",
+    "kind": "mark"
+   }
+  },
+  {
+   "local_id": 773,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "in",
+    "id": "lex_in",
+    "kind": "mark"
+   }
+  },
+  {
+   "local_id": 774,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "by",
+    "id": "lex_by",
+    "kind": "mark"
+   }
+  },
+  {
+   "local_id": 775,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "under",
+    "id": "lex_under",
+    "kind": "mark"
+   }
+  },
+  {
+   "local_id": 776,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "the",
+    "id": "lex_the",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 777,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "is",
+    "id": "lex_is",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 778,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "are",
+    "id": "lex_are",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 779,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "a",
+    "id": "lex_a",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 780,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "an",
+    "id": "lex_an",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 781,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "does",
+    "id": "lex_does",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 782,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "do",
+    "id": "lex_do",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 783,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "have",
+    "id": "lex_have",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 784,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "what",
+    "id": "lex_what",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 785,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": null,
+    "form": "to",
+    "id": "lex_to",
+    "kind": "func"
+   }
+  },
+  {
+   "local_id": 786,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "believe",
+    "form": "believe",
+    "id": "lex_believe",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 787,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "believe_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 788,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: want",
+    "name": "want"
+   }
+  },
+  {
+   "local_id": 789,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "want",
+    "form": "want",
+    "id": "lex_want",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 790,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "want_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 791,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: intend",
+    "name": "intend"
+   }
+  },
+  {
+   "local_id": 792,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "intend",
+    "form": "intend",
+    "id": "lex_intend",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 793,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "intend_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 794,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: perceive",
+    "name": "perceive"
+   }
+  },
+  {
+   "local_id": 795,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "perceive",
+    "form": "perceive",
+    "id": "lex_perceive",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 796,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "perceive_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 797,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: see",
+    "name": "see"
+   }
+  },
+  {
+   "local_id": 798,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "see",
+    "form": "see",
+    "id": "lex_see",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 799,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "see_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 800,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: hear",
+    "name": "hear"
+   }
+  },
+  {
+   "local_id": 801,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "hear",
+    "form": "hear",
+    "id": "lex_hear",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 802,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "hear_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 803,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: feel",
+    "name": "feel"
+   }
+  },
+  {
+   "local_id": 804,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "feel",
+    "form": "feel",
+    "id": "lex_feel",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 805,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "feel_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 806,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: attend",
+    "name": "attend"
+   }
+  },
+  {
+   "local_id": 807,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "attend",
+    "form": "attend",
+    "id": "lex_attend",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 808,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "attend_arg0",
+    "marker": "to",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 809,
+   "type": "Concept",
+   "attrs": {
+    "description": "mental verb: expect",
+    "name": "expect"
+   }
+  },
+  {
+   "local_id": 810,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "expect",
+    "form": "expect",
+    "id": "lex_expect",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 811,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "expect_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 812,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "self",
+    "form": "you",
+    "id": "lex_you",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 813,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "self",
+    "form": "your",
+    "id": "lex_your",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 814,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "self",
+    "form": "i",
+    "id": "lex_i",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 815,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "self",
+    "form": "me",
+    "id": "lex_me",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 816,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "self",
+    "form": "my",
+    "id": "lex_my",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 817,
+   "type": "Concept",
+   "attrs": {
+    "description": "report the agent's identity",
+    "name": "describe_self"
+   }
+  },
+  {
+   "local_id": 818,
+   "type": "Frame",
+   "attrs": {
+    "binding_pattern": "predicate_of_subject",
+    "core_elements": {
+     "__tuple__": []
+    },
+    "evoked_by": {
+     "__tuple__": [
+      "what are you",
+      "who are you",
+      "what am i",
+      "tell me about you",
+      "tell me about yourself",
+      "describe yourself"
+     ]
+    },
+    "name": "self_identity_query_frame",
+    "peripheral_elements": {
+     "__tuple__": []
+    }
+   }
+  },
+  {
+   "local_id": 820,
+   "type": "Concept",
+   "attrs": {
+    "name": "other",
+    "description": "another mind distinct from the self"
+   }
+  }
+ ],
+ "edges": [
+  {
+   "src": {
+    "role": "agent_root"
+   },
+   "type": "operates_in",
+   "tgt": {
+    "local": 597
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 819
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "demonstrates",
+   "tgt": {
+    "local": 614
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 600
+   },
+   "type": "demonstrates",
+   "tgt": {
+    "local": 615
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 600
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 601
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 602
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 603
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 604
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 605
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 606
+   },
+   "type": "subtype_of",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 612
+   },
+   "type": "demonstrates",
+   "tgt": {
+    "local": 599
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 612
+   },
+   "type": "demonstrates",
+   "tgt": {
+    "local": 609
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 612
+   },
+   "type": "demonstrates",
+   "tgt": {
+    "local": 611
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 618
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 620
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 622
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 624
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 626
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 628
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 630
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 632
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 634
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 636
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 638
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 640
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 642
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 644
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 646
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 648
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 650
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 652
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 654
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 656
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 658
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 660
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 662
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 664
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 666
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 668
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 670
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 672
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 674
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 676
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 679
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 682
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 685
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 688
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 691
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 694
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 697
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 700
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 703
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 706
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 709
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 712
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 714
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 716
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 718
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 720
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 722
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 724
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 726
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 728
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 730
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 732
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 734
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 736
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 738
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 740
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 742
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 744
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 745
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 746
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 747
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 748
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 749
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 750
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 751
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 752
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 753
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 754
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 755
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 756
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 757
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 758
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 759
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 760
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 761
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 762
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 763
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 764
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 765
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 766
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 767
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 768
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 769
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 770
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 771
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 772
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 773
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 774
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 775
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 776
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 777
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 778
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 779
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 780
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 781
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 782
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 783
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 784
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 785
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 786
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 789
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 792
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 795
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 798
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 801
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 804
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 807
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 810
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 812
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 813
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 814
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 815
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 617
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 816
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 618
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 619
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 620
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 621
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 622
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 623
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 624
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 625
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 626
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 627
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 628
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 629
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 630
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 631
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 632
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 633
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 634
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 635
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 636
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 637
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 638
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 639
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 640
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 641
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 642
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 643
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 644
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 645
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 646
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 647
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 648
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 649
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 650
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 651
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 652
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 653
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 654
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 655
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 656
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 657
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 658
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 659
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 660
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 661
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 662
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 663
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 664
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 665
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 666
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 667
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 668
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 669
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 670
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 671
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 672
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 673
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 674
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 675
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 676
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 677
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 676
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 678
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 679
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 680
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 679
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 681
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 682
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 683
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 682
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 684
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 685
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 686
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 685
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 687
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 688
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 689
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 688
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 690
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 691
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 692
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 691
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 693
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 694
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 695
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 694
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 696
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 697
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 698
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 697
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 699
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 700
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 701
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 700
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 702
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 703
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 704
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 703
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 705
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 706
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 707
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 706
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 708
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 709
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 710
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 709
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 711
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 712
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 713
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 714
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 715
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 716
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 717
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 718
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 719
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 720
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 721
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 722
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 723
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 724
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 725
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 726
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 727
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 728
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 729
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 730
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 731
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 732
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 733
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 734
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 735
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 736
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 737
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 738
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 739
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 740
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 741
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 742
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 743
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 786
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 787
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 786
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 616
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 789
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 790
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 789
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 788
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 792
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 793
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 792
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 791
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 795
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 796
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 795
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 794
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 798
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 799
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 798
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 797
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 801
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 802
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 801
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 800
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 804
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 805
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 804
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 803
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 807
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 808
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 807
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 806
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 810
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 811
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 810
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 809
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 812
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 608
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 813
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 608
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 814
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 608
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 815
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 608
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 816
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 608
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 817
+   },
+   "type": "holds_in",
+   "tgt": {
+    "local": 597
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 818
+   },
+   "type": "holds_in",
+   "tgt": {
+    "local": 597
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 818
+   },
+   "type": "realised_by",
+   "tgt": {
+    "local": 817
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 820
+   },
+   "type": "holds_in",
+   "tgt": {
+    "local": 597
+   },
+   "attrs": {}
+  }
+ ],
+ "productions": [
+  {
+   "src": {
+    "type": "Agent",
+    "var": "src"
+   },
+   "edge_type": "has_mind",
+   "tgt": {
+    "type": "Concept",
+    "var": "tgt"
+   },
+   "provenance": "meta:Agent-has_mind-Concept"
+  },
+  {
+   "src": {
+    "type": "Concept",
+    "var": "src"
+   },
+   "edge_type": "demonstrates",
+   "tgt": {
+    "type": "Concept",
+    "var": "tgt"
+   },
+   "provenance": "meta:Concept-demonstrates-Concept (psychology link)"
+  },
+  {
+   "src": {
+    "type": "Concept",
+    "var": "src"
+   },
+   "edge_type": "subtype_of",
+   "tgt": {
+    "type": "Concept",
+    "var": "tgt"
+   },
+   "provenance": "meta:Concept-subtype_of-Concept"
+  },
+  {
+   "src": {
+    "type": "Interlocutor",
+    "var": "src"
+   },
+   "edge_type": "has_mind",
+   "tgt": {
+    "type": "Concept",
+    "var": "tgt"
+   },
+   "provenance": "meta:Interlocutor-has_mind-Concept"
+  }
+ ]
+}

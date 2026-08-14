@@ -1,0 +1,992 @@
+{
+ "id": "bigville_speech_decide",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE RUNG 2/3 (block 278000) -- EMERGENT SPEECH: the DECISION to speak, not a schedule. An utterance is an EMERGENT ACTION -- at an encounter/trade an agent DECIDES whether/to-whom/what-KIND to speak OR to STAY SILENT by reading its held Bond(A->B) (rung 1) + conversational norms + affect, with NO clock term. sp_choose_utterance EXTENDS af_choose_action into a speech-act Argmax over a GLOBAL SpeechOption menu that INCLUDES stay_silent: value = occasion x relationship x goal x affect_gain - face_cost - civil_inattention, over a per-agent loquacity_threshold. Adjacency (a pending FPP) is the strongest norm term (routes to the matching option -> a greeting begets a greeting). KIND is DERIVED from adjacency then the Bond's relational affect. sp_noticeable_absence mints a LEGIBLE snub node when an obligation goes unmet (non-response is a MOVE, Schegloff). sp_set_chosen_loudness feeds arousal into the LANDED lo_choose_loudness (delivery gate). FALSIFIER: zeroing the coupling gains collapses the decision to ONE fixed kind regardless of Bond = the OLD forced schedule (mirrors af_choose_action's affect_gain). Composes existing DSL Terms only; ZERO new Rust. OFF by default.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "sp_choose_utterance",
+   "batch": false,
+   "comment": "THE HEADLINE (extends af_choose_action into speech): chosen_speech_code = the value Argmax over the GLOBAL SpeechOption menu, which INCLUDES stay_silent. value = occasion x relationship(Bond affect/tie) x norm(pending FPP) x goal x affect_gain - face_cost - civil_inattention, over a per-agent loquacity_threshold. NO clock/schedule term -> emergent. KIND is DERIVED (adjacency-first via the norm term routing to the matching option, else the Bond's relational affect: resentment->barb, affection->warm greeting, fear->hedged, salient-event+high-tie->share, neutral->smalltalk). The coupling gains are the FALSIFIER: zeroed -> talk_value collapses to base-face -> the same fixed kind regardless of Bond = the OLD forced schedule. Composes existing Terms only; ZERO Rust.",
+   "match": [
+    [
+     "enc",
+     "at_bond",
+     "bond"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "enc"
+       },
+       "key": "decide_armed"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "enc",
+     "chosen_speech_code",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "NodesOfType",
+         "node_type": "SpeechOption"
+        },
+        "var_name": "opt",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Eq",
+          "a": {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "opt"
+             },
+             "key": "is_silence"
+            },
+            {
+             "type": "Lit",
+             "value": 0.0
+            }
+           ]
+          },
+          "b": {
+           "type": "Lit",
+           "value": 1.0
+          }
+         },
+         "then": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "enc"
+            },
+            "key": "loquacity_threshold"
+           },
+           {
+            "type": "Lit",
+            "value": 0.0
+           }
+          ]
+         },
+         "other": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Plus",
+            "items": [
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "opt"
+              },
+              "key": "base_value"
+             },
+             {
+              "type": "Lit",
+              "value": 0.0
+             }
+            ]
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "occasion_gain"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "occasion"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "opt"
+                },
+                "key": "talk_aff"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "norm_gain"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "obligation"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Times",
+                "items": [
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "opt"
+                    },
+                    "key": "greet_answer_aff"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "enc"
+                    },
+                    "key": "fpp_is_greeting"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Times",
+                "items": [
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "opt"
+                    },
+                    "key": "q_answer_aff"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "enc"
+                    },
+                    "key": "fpp_is_question"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "affect_gain"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Times",
+                "items": [
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "bond"
+                    },
+                    "key": "affect_affection"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "opt"
+                    },
+                    "key": "warm_aff"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Times",
+                "items": [
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "bond"
+                    },
+                    "key": "affect_resentment"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "opt"
+                    },
+                    "key": "hostile_aff"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Times",
+                "items": [
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "bond"
+                    },
+                    "key": "affect_fear"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Plus",
+                  "items": [
+                   {
+                    "type": "Attr",
+                    "node": {
+                     "type": "Var",
+                     "name": "opt"
+                    },
+                    "key": "hedge_aff"
+                   },
+                   {
+                    "type": "Lit",
+                    "value": 0.0
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "affect_gain"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "opt"
+                },
+                "key": "confide_aff"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "bond"
+                },
+                "key": "tie_strength"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "share_salience"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "goal_gain"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "goal_pressure"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "opt"
+                },
+                "key": "goal_aff"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "arousal_gain"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "enc"
+                },
+                "key": "speaker_arousal"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "opt"
+                },
+                "key": "hostile_aff"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Minus",
+            "a": {
+             "type": "Lit",
+             "value": 0.0
+            },
+            "b": {
+             "type": "Times",
+             "items": [
+              {
+               "type": "Plus",
+               "items": [
+                {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "opt"
+                 },
+                 "key": "face_cost"
+                },
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                }
+               ]
+              },
+              {
+               "type": "Plus",
+               "items": [
+                {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "enc"
+                 },
+                 "key": "face_weight"
+                },
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                }
+               ]
+              }
+             ]
+            }
+           },
+           {
+            "type": "Minus",
+            "a": {
+             "type": "Lit",
+             "value": 0.0
+            },
+            "b": {
+             "type": "Times",
+             "items": [
+              {
+               "type": "Plus",
+               "items": [
+                {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "enc"
+                 },
+                 "key": "civil_gain"
+                },
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                }
+               ]
+              },
+              {
+               "type": "Plus",
+               "items": [
+                {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "enc"
+                 },
+                 "key": "stranger"
+                },
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                }
+               ]
+              },
+              {
+               "type": "Plus",
+               "items": [
+                {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "opt"
+                 },
+                 "key": "talk_aff"
+                },
+                {
+                 "type": "Lit",
+                 "value": 0.0
+                }
+               ]
+              }
+             ]
+            }
+           }
+          ]
+         }
+        }
+       },
+       "key": "kind_code"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "enc",
+     "decide_armed",
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "sp_noticeable_absence",
+   "batch": false,
+   "comment": "NON-RESPONSE IS A MOVE (Schegloff official absence, SCIENCE \u00a71.3/\u00a73.3): when a conditionally-relevant obligation existed (obligation==1, a pending FPP was directed at A) and the chosen code is silence (0), MINT a legible NoticeableAbsence node and wire the snubbed target -notices-> it, so other agents' ToM/affect can read the snub. Silence is a first-class output here, NOT the mere non-firing of a rule. Mint-once (absence_minted guard).",
+   "match": [
+    [
+     "enc",
+     "at_bond",
+     "bond"
+    ],
+    [
+     "bond",
+     "toward",
+     "tgt"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "enc"
+         },
+         "key": "chosen_speech_code"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "enc"
+         },
+         "key": "obligation"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "enc"
+         },
+         "key": "absence_minted"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "enc",
+     "absence_minted",
+     1.0
+    ],
+    [
+     "add_node",
+     "abs",
+     "NoticeableAbsence",
+     {
+      "minted": 1.0
+     }
+    ],
+    [
+     "add_edge",
+     "enc",
+     "has_absence",
+     "abs"
+    ],
+    [
+     "add_edge",
+     "tgt",
+     "notices",
+     "abs"
+    ]
+   ]
+  },
+  {
+   "name": "sp_set_chosen_loudness",
+   "batch": false,
+   "comment": "DELIVERY GATE (SCIENCE \u00a73.4): arousal raises loudness. Sets chosen_loudness = base_loudness + loud_arousal_gain*speaker_arousal (a real TERM, not a constant), then the LANDED lo_choose_loudness (seeds/bigville_loud_comm.json, loaded and composed) turns chosen_loudness into eff_loudness = clamp(chosen,max). loud_arousal_gain=0 -> constant loudness (the control proving the term does the work). Mint-once (loud_armed guard).",
+   "match": [
+    [
+     "u",
+     "spoken_by",
+     "spk"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "u"
+       },
+       "key": "loud_armed"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "u",
+     "chosen_loudness",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "u"
+           },
+           "key": "base_loudness"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "u"
+             },
+             "key": "loud_arousal_gain"
+            },
+            {
+             "type": "Lit",
+             "value": 0.0
+            }
+           ]
+          },
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "u"
+             },
+             "key": "speaker_arousal"
+            },
+            {
+             "type": "Lit",
+             "value": 0.0
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "u",
+     "loud_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

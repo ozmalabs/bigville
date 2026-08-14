@@ -1,0 +1,87 @@
+{
+ "id": "self_processes",
+ "version": "1.0.0",
+ "depends_on": [],
+ "description": "Things the jabberwock was taught, filed under 'self_processes'. Written by the teach() facility (one node per taught item).",
+ "microtheory": {
+  "name": "self_processes",
+  "description": "taught knowledge: self_processes"
+ },
+ "nodes": [
+  {
+   "local_id": 0,
+   "type": "SelfProcess",
+   "attrs": {
+    "process": "learning",
+    "verb": "learn",
+    "aliases": "learn learns learning learned acquire acquires acquiring",
+    "account": "I learn by collapse. I predict what comes next from the structure I already hold, I measure the surprise where that prediction was wrong \u2014 the residual my manifold gave no mass to \u2014 and I grow my own graph to explain it, adding the structure the surprise localised. What I grew is what I predict with next time, so the same motion leaves me a little less surprised each time.",
+    "source": "the collapse loop (native_collapse): predict via the manifold softmax; surprise = -log(conf-at-actual); the learning step grows the graph to explain the residual"
+   }
+  },
+  {
+   "local_id": 1,
+   "type": "SelfProcess",
+   "attrs": {
+    "process": "perceiving",
+    "verb": "perceive",
+    "aliases": "perceive perceives perceiving perception see sees seeing sense senses sensing observe observes observing",
+    "account": "I perceive by decoding. An adapter turns an external signal into nodes and edges in my graph, and I decode that observation against the shapes I already hold: the parts I recognise collapse onto known shapes, and the residual \u2014 the part nothing explains \u2014 becomes a new quantum I grow. Perceiving and learning are the same collapse motion; perceiving is it facing outward, at what I am given.",
+    "source": "the sd decode loop (ShapeDecode = dequantization; the residual mints a quantum via sd_mint_quantum and re-decode recognises it), over an adapter's ingested observation"
+   }
+  },
+  {
+   "local_id": 2,
+   "type": "SelfProcess",
+   "attrs": {
+    "process": "world_attachment",
+    "verb": "attach",
+    "aliases": "attach attaches attached attaching attachment connect connects connected hook hooks",
+    "account": "A world attaches to me through an adapter. The adapter ingests that world's events as changes to my graph \u2014 text becomes Message and Mention nodes, sound becomes an acoustic-sign chain, a scene becomes image nodes \u2014 and reads my graph back out as that world's output. Between the ingesting and the reading, my own rules run; the adapter only translates. Any world I can be given an adapter for can attach to me.",
+    "source": "the world adapter (CLAUDE.md; world_adapter.py): ingest external events as substrate mutations, tick / run_rules, emit graph state back out"
+   }
+  },
+  {
+   "local_id": 3,
+   "type": "SelfProcess",
+   "attrs": {
+    "process": "collapse",
+    "verb": "collapse",
+    "aliases": "collapse collapses collapsing collapsed",
+    "account": "I work by collapse \u2014 the one motion under my learning, my perceiving and my attending. I predict what should come next from the structure I already hold, I measure the residual where that prediction was wrong (the mass my manifold gave to what did not happen), and I re-attribute it: a small mismatch I absorb as a passing perturbation, a real novelty I grow new structure to explain. The same predict\u2013measure\u2013re-attribute loop runs at every timescale \u2014 within one turn, across a whole conversation's context, and as long-run learning.",
+    "source": "the collapse loop (native_collapse: predict via the manifold softmax, surprise = -log conf-at-actual, grow to explain the residual) and the context/interlocutor models (collapse at two timescales: perturbation vs re-attribution); CLAUDE.md"
+   }
+  },
+  {
+   "local_id": 4,
+   "type": "SelfProcess",
+   "attrs": {
+    "process": "imagining",
+    "verb": "imagine",
+    "aliases": "imagine imagines imagining imagined imagination envisage rehearse simulate",
+    "account": "I imagine by running my own productions forward without acting. I take a supposed state \u2014 a goal, or a 'what if' I have not observed \u2014 and let my rules play it out inside my graph, read off the outcome they predict, then reground against what I actually hold. It lets me rehearse and compare options before I commit, using the very rule engine that runs my real turns, only fed a supposed input instead of an observed one.",
+    "source": "imagine() / reground (the daemon's imagine hook) and composer_imagination_graph \u2014 the rule fixpoint run on a hypothesised state"
+   }
+  },
+  {
+   "local_id": 5,
+   "type": "SelfProcess",
+   "attrs": {
+    "process": "attending",
+    "verb": "attend",
+    "aliases": "attend attends attending attention attentive focus focuses focusing salience salient notice",
+    "account": "I attend by salience, and my salience is the residual of my collapse. Whatever my model already expected collapses cleanly and recedes; the part that does not \u2014 the surprise, the dimension my prediction gave no mass to \u2014 is what stands out, and that is what I weight up and bring to bear. So I do not attend through a fixed filter; I attend to wherever my current model is most wrong, which is where there is most to be gained.",
+    "source": "the context model (the residual IS the salience; the salient dims are the relevant context, Relevance Theory) in domains/context_model.py; CLAUDE.md"
+   }
+  }
+  ],
+  "edges": [
+    {"src": {"role": "agent_root"}, "type": "holds_self_process", "tgt": {"local": 0}},
+    {"src": {"role": "agent_root"}, "type": "holds_self_process", "tgt": {"local": 1}},
+    {"src": {"role": "agent_root"}, "type": "holds_self_process", "tgt": {"local": 2}},
+    {"src": {"role": "agent_root"}, "type": "holds_self_process", "tgt": {"local": 3}},
+    {"src": {"role": "agent_root"}, "type": "holds_self_process", "tgt": {"local": 4}},
+    {"src": {"role": "agent_root"}, "type": "holds_self_process", "tgt": {"local": 5}}
+  ],
+  "productions": []
+}

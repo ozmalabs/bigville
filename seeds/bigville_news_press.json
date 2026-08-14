@@ -1,0 +1,110 @@
+{
+ "id": "bigville_news_press",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "description": "bigville R21 (269000): THE PAPER & THE REPORTER -- the writing/printing/capture channel. np_reporter_writes: the reporter writes a Story for the event they COVER only if reporter.witnessed==1 (occlusion-bound, R19); content = event.truth_value + reporter_bias (the reporter's OWN independent bias, which can attack the council). np_capture_suppresses: a CAPTURED paper LAUNDERS/OMITS a story that implicates its patron -- suppressed=1 iff paper.captured==1 AND event.damaging_to_owner==1 (it does NOT suppress an ordinary story). np_paper_prints: printed=1 iff written AND not suppressed AND paper.active==1 (active is the paper-exists ablation lever). np_clerk_records: the SECOND channel (the noticeboard minutes, re-modelled locally so both renderings score against ONE ground truth) -- minutes.value = event.truth_value + clerk_bias (the clerk PROTECTS the council -- a DIFFERENT bias profile from the reporter). Composes existing Terms (And/Eq/Plus/Attr/Var/Lit) -- zero new Rust. self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "np_reporter_writes",
+   "match": [
+    ["reporter", "covers", "event"],
+    ["paper", "employs", "reporter"],
+    ["paper", "reports", "story"],
+    ["story", "about", "event"]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "reporter"}, "key": "witnessed"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "written"},
+      "b": {"type": "Lit", "value": 0.0}}
+    ]
+   },
+   "effects": [
+    ["set_attr", "story", "content",
+     {"__term__": {"type": "Plus", "items": [
+       {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "truth_value"},
+       {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "reporter_bias"}
+     ]}}],
+    ["set_attr", "story", "written", 1.0]
+   ]
+  },
+  {
+   "name": "np_capture_suppresses",
+   "match": [
+    ["paper", "reports", "story"],
+    ["story", "about", "event"]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "paper"}, "key": "captured"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "damaging_to_owner"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "suppressed"},
+      "b": {"type": "Lit", "value": 0.0}}
+    ]
+   },
+   "effects": [
+    ["set_attr", "story", "suppressed", 1.0]
+   ]
+  },
+  {
+   "name": "np_paper_prints",
+   "match": [
+    ["paper", "reports", "story"]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "written"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "suppressed"},
+      "b": {"type": "Lit", "value": 0.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "paper"}, "key": "active"},
+      "b": {"type": "Lit", "value": 1.0}},
+     {"type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "printed"},
+      "b": {"type": "Lit", "value": 0.0}}
+    ]
+   },
+   "effects": [
+    ["set_attr", "story", "printed", 1.0]
+   ]
+  },
+  {
+   "name": "np_clerk_records",
+   "match": [
+    ["minutes", "of_event", "event"]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {"type": "Attr", "node": {"type": "Var", "name": "minutes"}, "key": "recorded"},
+    "b": {"type": "Lit", "value": 0.0}
+   },
+   "effects": [
+    ["set_attr", "minutes", "value",
+     {"__term__": {"type": "Plus", "items": [
+       {"type": "Attr", "node": {"type": "Var", "name": "event"}, "key": "truth_value"},
+       {"type": "Attr", "node": {"type": "Var", "name": "minutes"}, "key": "clerk_bias"}
+     ]}}],
+    ["set_attr", "minutes", "recorded", 1.0]
+   ]
+  }
+ ]
+}

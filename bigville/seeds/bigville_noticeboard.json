@@ -1,0 +1,141 @@
+{
+  "id": "bigville_noticeboard",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R49 (block 359000): a NOTICEBOARD in the town square -- a public posting medium. Agents already WRITE notes (a held Note{content,author}), GIVE them to others, and RELAY them (hand-off chains) -- this adds POSTING and READING. nb_post: an agent PRESENT at the square (agent -at-> square) and HOLDING the note pins it on the board -- it leaves his hand and becomes PUBLIC (note -posted_on-> board); you must be there and hold the note (which may have reached you by a relay). nb_read: anyone PRESENT at the square reads the board and learns each posted note (reader -read-> note); someone who never visits never sees it -- a LOCAL public medium, unlike word of mouth which travels along `knows` ties. Composes with the generated map (the board is an affordance of the square), with navigation (agents walk to the square), and with the office advertising (a job note posted on the board is read by visitors -> they become aware of the opening).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "nb_post",
+      "batch": false,
+      "comment": "POST: an agent must be PRESENT at the square (agent -at-> square) and HOLD the note to pin it on the board. The note leaves his hand and becomes PUBLIC (note -posted_on-> board). You cannot post from afar, and you must have the note (it may have reached you by a relay of hand-offs).",
+      "match": [
+        [
+          "agent",
+          "at",
+          "square"
+        ],
+        [
+          "square",
+          "has_board",
+          "board"
+        ],
+        [
+          "agent",
+          "holds",
+          "note"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "note"
+              },
+              "key": "post_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "note",
+          "posted_on",
+          "board"
+        ],
+        [
+          "del_edge",
+          "agent",
+          "holds",
+          "note"
+        ],
+        [
+          "set_attr",
+          "note",
+          "post_armed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "note",
+          "posted",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "nb_read",
+      "batch": false,
+      "comment": "READ: anyone PRESENT at the square reads the board and learns each posted note's content (reader -read-> note). Someone who never visits the square never sees it -- the board is a LOCAL, public medium (contrast word of mouth, which travels along ties).",
+      "match": [
+        [
+          "reader",
+          "at",
+          "square"
+        ],
+        [
+          "square",
+          "has_board",
+          "board"
+        ],
+        [
+          "note",
+          "posted_on",
+          "board"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "source": {
+            "type": "Neighbours",
+            "node": {
+              "type": "Var",
+              "name": "reader"
+            },
+            "edge_type": "read"
+          },
+          "var_name": "x",
+          "predicate": {
+            "type": "Eq",
+            "a": {
+              "type": "Var",
+              "name": "x"
+            },
+            "b": {
+              "type": "Var",
+              "name": "note"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "reader",
+          "read",
+          "note"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,660 @@
+{
+  "id": "bigville_recognition",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R33 (block 324000): AUTHORITY IS RECOGNITION, not a fact -- the usurper is possible. World-fact vs human-frame, made explicit. rc_strike: an armed agent kills a target (target.alive=0, striker.shown_force+1) -- a WORLD FACT the engine does not forbid; any agent can kill the mayor. rc_recognize: each alive agent DECIDES whether to recognize a Claim by a collapse over {recognize,reject} valued by recog_sign*(fear_weight*claimant.shown_force + opportunism - loyalty_prior) -- the fearful and opportunists recognize the strongman, the loyal reject; agents DIVERGE. rc_grant: a recognizing agent grants recognition (recognizes the claim). rc_authority: claim.authority = Count(recognizers) -- authority is emergent recognition, NEVER a hardcoded edge. rc_decree_tribute: a decree under the claim takes tribute ONLY from agents who recognize it (a rejecter has no recognizes edge -> the effect never matches them, they are untouched). Legitimacy is just wider recognition -- the prior mayor's authority is the SAME kind of thing. The substrate PERMITS the usurpation; what stops it is the distribution of recognition (agents), not an engine rule. v1.1.0 (block 354000, design-audit 6.1): rc_count -- THE CANONICAL RECOGNITION COUNT, parameterised over the claim NODE. It matches a bare `[r, recognizes, claim]` edge (binding the specific claim) and sets claim.recognition = Count(InNeighbours(claim, recognizes)) -- a single generic primitive that fires for ANY recognizes-target (office authority, ownership, tool-ownership), per-claim by the match-bound join (the 6.7 measurement: the count is inherently per-claim). bigville_theft/tools compose this and delete their own copies (own_recognition / oc_recognition). rc_authority is retained (writes the legacy `authority` attr the recognition demonstrator reads); rc_count writes the canonical `recognition` attr.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "rc_strike",
+      "batch": false,
+      "comment": "WORLD FACT: an armed agent strikes a living target -> it dies. The engine does NOT forbid killing the mayor. Killing shows force (feeds recognition).",
+      "match": [
+        [
+          "s",
+          "strikes",
+          "t"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "s"
+                  },
+                  "key": "strike_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "t"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "t",
+          "alive",
+          0.0
+        ],
+        [
+          "set_attr",
+          "s",
+          "strike_armed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "s",
+          "shown_force",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "s"
+                      },
+                      "key": "shown_force"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rc_recognize",
+      "batch": false,
+      "comment": "Each alive agent decides whether to recognize a claim to rule, by a collapse over {recognize,reject}: fear of the claimant's shown force + opportunism vs loyalty to the prior order. Once per (agent,claim).",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "town",
+          "has_claim",
+          "claim"
+        ],
+        [
+          "claim",
+          "by",
+          "claimant"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "decided_claim"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "claim"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "recog_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "RecogChoice"
+                },
+                "var_name": "c",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "c"
+                          },
+                          "key": "recog_sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Times",
+                            "items": [
+                              {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "r"
+                                    },
+                                    "key": "fear_weight"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "claimant"
+                                    },
+                                    "key": "shown_force"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "r"
+                                },
+                                "key": "opportunism"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "r"
+                            },
+                            "key": "loyalty_prior"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "r",
+          "decided_claim",
+          "claim"
+        ]
+      ]
+    },
+    {
+      "name": "rc_grant",
+      "batch": false,
+      "comment": "An agent whose collapse chose 'recognize' grants recognition to the claim.",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "town",
+          "has_claim",
+          "claim"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "r"
+              },
+              "key": "recog_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "recognize"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "recognizes"
+              },
+              "var_name": "y",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "y"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "claim"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "r",
+          "recognizes",
+          "claim"
+        ]
+      ]
+    },
+    {
+      "name": "rc_authority",
+      "batch": false,
+      "comment": "The claim's authority is the COUNT of agents who recognize it -- emergent, not a fact.",
+      "match": [
+        [
+          "town",
+          "has_claim",
+          "claim"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "claim",
+          "authority",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "claim"
+                },
+                "edge_type": "recognizes"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rc_count",
+      "batch": false,
+      "comment": "THE CANONICAL RECOGNITION COUNT (design-audit 6.1, block 354000). Parameterised over the claim NODE: it matches a bare recognizes edge [r -recognizes-> claim] -- binding the SPECIFIC claim -- and sets claim.recognition = Count(InNeighbours(claim, 'recognizes')). Because the count is InNeighbours of the match-bound claim, it is inherently PER-CLAIM (the 6.7 co-load measurement): two recognition families sharing the 'recognizes' edge do NOT cross-contaminate. Fires for ANY recognizes-target -- office authority, ownership claims, tool-ownership -- so bigville_theft/tools compose this instead of re-authoring the count. Idempotent: every match recomputes the same Count, reaching fixpoint.",
+      "match": [
+        [
+          "r",
+          "recognizes",
+          "claim"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "claim",
+          "recognition",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "claim"
+                },
+                "edge_type": "recognizes"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rc_decree_tribute",
+      "batch": false,
+      "comment": "A decree under the claim takes tribute ONLY from agents who RECOGNIZE it (the match requires r -recognizes-> claim). A rejecter never matches -> is untouched. The effect is recognition-gated, NOT forced on everyone.",
+      "match": [
+        [
+          "town",
+          "has_decree",
+          "decree"
+        ],
+        [
+          "decree",
+          "under_claim",
+          "claim"
+        ],
+        [
+          "claim",
+          "by",
+          "claimant"
+        ],
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "r",
+          "recognizes",
+          "claim"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "tributed"
+              },
+              "var_name": "z",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "z"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "decree"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "r"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "decree"
+                    },
+                    "key": "amount"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "claimant",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "claimant"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "decree"
+                      },
+                      "key": "amount"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "r",
+          "tributed",
+          "decree"
+        ]
+      ]
+    }
+  ]
+}

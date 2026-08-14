@@ -1,0 +1,1648 @@
+{
+  "seed": "bigville_body_choice",
+  "version": "2.4.0",
+  "comment": "The body's ACTION is a DECISION, not a world call. Every tick, while alive, (deliberating), it scores its options -- EAT (pull = hunger, gated by holding food, the world's affordance) and REST (pull = how depleted it is) -- then COLLAPSES (Argmax) to the strongest pull above threshold and acts. The world provides information (hunger/fatigue) + affordances (food held); the AGENT decides -- INCLUDING whether to do an acquisition ITSELF or ASK SOMEONE, one decision over routes, not a separate delegation faculty. It also decides to BUY FOOD FOR LATER (ACQUIRE) from its PROJECTED future needs -- it understands it and its dependents will get hungry over the days ahead, so it provisions (the point of food).",
+  "rules": [
+    {
+      "name": "bc_score_eat",
+      "batch": false,
+      "comment": "Body decision -- the EAT option's pull = how hungry you are (hunger_level*HUNGER_SCALE) GATED by the affordance (you hold edible food); 0 if the world offers no food. Only on the agent's turn. ZERO for household members -- they eat from the SHARED store (hh_eat), not their own transit inventory.",
+      "match": [
+        [
+          "agent",
+          "may_do",
+          "opt"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "opt"
+                  },
+                  "key": "kind"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "opt",
+          "value",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "hunger_level"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.2
+                    },
+                    {
+                      "type": "IfThenElse",
+                      "cond": {
+                        "type": "Exists",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "edge_type": "has_good",
+                          "any_type": false
+                        },
+                        "var_name": "g",
+                        "predicate": {
+                          "type": "Gte",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "g"
+                                },
+                                "key": "qty"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Lit",
+                            "value": 1.0
+                          }
+                        }
+                      },
+                      "then": {
+                        "type": "Lit",
+                        "value": 1.0
+                      },
+                      "other": {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "in_household"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  "then": {
+                    "type": "Lit",
+                    "value": 0.0
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "bc_score_rest",
+      "batch": false,
+      "comment": "Body decision -- the REST option's pull = how depleted you are (capacity - reserve). ZERO while EN ROUTE AND ABLE (going_to with stamina above the exhaustion floor) -- you do not rest while walking. But when EXHAUSTED (reserve <= min) you stop to catch your breath and rest, even mid-journey, then walk on. Travel tires you; you rest when spent or arrived.",
+      "match": [
+        [
+          "agent",
+          "may_do",
+          "opt"
+        ],
+        [
+          "agent",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "opt"
+                  },
+                  "key": "kind"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 2.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "opt",
+          "value",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Exists",
+                    "source": {
+                      "type": "Neighbours",
+                      "node": {
+                        "type": "Var",
+                        "name": "agent"
+                      },
+                      "edge_type": "going_to",
+                      "any_type": false
+                    },
+                    "var_name": "g",
+                    "predicate": {
+                      "type": "Lit",
+                      "value": true
+                    }
+                  },
+                  {
+                    "type": "Gt",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "stamina_reserve"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 0.15
+                    }
+                  }
+                ]
+              },
+              "then": {
+                "type": "Lit",
+                "value": 0.0
+              },
+              "other": {
+                "type": "Max",
+                "items": [
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  },
+                  {
+                    "type": "Minus",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "stamina"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "stamina_reserve"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "bc_choose",
+      "batch": false,
+      "comment": "Body decision -- THE COLLAPSE: the agent picks the action with the greatest pull, an Argmax over its may_do options (eat vs rest), reading the value each scored from body-state + affordance. Sets chosen_action = the winner's kind and chosen_val = its pull. Never a threshold -- a choice between competing stances (the same Argmax family as nd_choose_good). Only on the agent's turn.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "agent"
+              },
+              "key": "alive"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "chosen_action",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "edge_type": "may_do",
+                  "any_type": false
+                },
+                "var_name": "opt",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "opt"
+                      },
+                      "key": "value"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              },
+              "key": "kind"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "chosen_val",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "edge_type": "may_do",
+                  "any_type": false
+                },
+                "var_name": "opt",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "opt"
+                      },
+                      "key": "value"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              },
+              "key": "value"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "bc_do_eat",
+      "batch": false,
+      "comment": "Body decision -> act: if the agent CHOSE to eat and the pull clears the act threshold, it EATS one held food -- consume a unit + mint a Meal (bd_meal_feeds then relieves hunger). Resets the choice so the next turn re-decides. The agent eating BY ITS OWN DECISION, not a world call.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ],
+        [
+          "agent",
+          "has_good",
+          "food"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "chosen_action"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "chosen_val"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.3
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "food"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "food",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "food"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ],
+        [
+          "add_node",
+          "meal",
+          "Meal",
+          {
+            "feeds": 5.0,
+            "fed_done": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "ate",
+          "meal"
+        ],
+        [
+          "set_attr",
+          "agent",
+          "chosen_action",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "bc_do_rest",
+      "batch": false,
+      "comment": "Body decision -> act: if the agent CHOSE to rest and the pull clears the threshold, it RESTS -- recovering stamina_reserve toward capacity. Resets the choice. The agent resting BY ITS OWN DECISION.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "chosen_action"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 2.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "chosen_val"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.3
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "stamina_reserve",
+          {
+            "__term__": {
+              "type": "Min",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "stamina"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "body"
+                          },
+                          "key": "stamina_reserve"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.5
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "chosen_action",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "bc_score_acquire",
+      "batch": false,
+      "comment": "Body decision -- the ACQUIRE need = max(provision-for-later shortfall [capped], IMMEDIATE [hungry + no food, ~hunger]), gated by SOME route plausibly existing (I know a source for what I provision, or someone I could ask). WINNING mints a fetch task; the PURSUIT routes it (myself vs ask). The need, not the means -- the means is one pursuit for every goal. ZERO if the agent is in a HOUSEHOLD -- there the household provisions once and one member fetches, not each member separately.",
+      "match": [
+        [
+          "agent",
+          "may_do",
+          "opt"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "opt"
+                  },
+                  "key": "kind"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 3.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "opt",
+          "value",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "acq_done"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  },
+                  "then": {
+                    "type": "Lit",
+                    "value": 1.0
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                },
+                {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "Or",
+                    "items": [
+                      {
+                        "type": "Exists",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "edge_type": "expects",
+                          "any_type": false
+                        },
+                        "var_name": "e",
+                        "predicate": {
+                          "type": "And",
+                          "items": [
+                            {
+                              "type": "Eq",
+                              "a": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "e"
+                                    },
+                                    "key": "good"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "b": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "agent"
+                                    },
+                                    "key": "provision_good"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "Eq",
+                              "a": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "e"
+                                    },
+                                    "key": "avail"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "b": {
+                                "type": "Lit",
+                                "value": 1.0
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "Exists",
+                        "source": {
+                          "type": "Neighbours",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "edge_type": "tie",
+                          "any_type": false
+                        },
+                        "var_name": "t",
+                        "predicate": {
+                          "type": "Lit",
+                          "value": true
+                        }
+                      }
+                    ]
+                  },
+                  "then": {
+                    "type": "Lit",
+                    "value": 1.0
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                },
+                {
+                  "type": "Max",
+                  "items": [
+                    {
+                      "type": "Min",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.5
+                        },
+                        {
+                          "type": "Times",
+                          "items": [
+                            {
+                              "type": "Max",
+                              "items": [
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                },
+                                {
+                                  "type": "Minus",
+                                  "a": {
+                                    "type": "Min",
+                                    "items": [
+                                      {
+                                        "type": "Times",
+                                        "items": [
+                                          {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "agent"
+                                                },
+                                                "key": "plan_horizon"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Attr",
+                                                "node": {
+                                                  "type": "Var",
+                                                  "name": "agent"
+                                                },
+                                                "key": "daily_ration"
+                                              },
+                                              {
+                                                "type": "Lit",
+                                                "value": 0.0
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "Plus",
+                                            "items": [
+                                              {
+                                                "type": "Lit",
+                                                "value": 1.0
+                                              },
+                                              {
+                                                "type": "Sum",
+                                                "source": {
+                                                  "type": "Neighbours",
+                                                  "node": {
+                                                    "type": "Var",
+                                                    "name": "agent"
+                                                  },
+                                                  "edge_type": "provides_for",
+                                                  "any_type": false
+                                                },
+                                                "var_name": "dep",
+                                                "value": {
+                                                  "type": "Lit",
+                                                  "value": 1.0
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Plus",
+                                        "items": [
+                                          {
+                                            "type": "Attr",
+                                            "node": {
+                                              "type": "Var",
+                                              "name": "agent"
+                                            },
+                                            "key": "larder_capacity"
+                                          },
+                                          {
+                                            "type": "Lit",
+                                            "value": 0.0
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "b": {
+                                    "type": "Sum",
+                                    "source": {
+                                      "type": "Neighbours",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "agent"
+                                      },
+                                      "edge_type": "has_good",
+                                      "any_type": false
+                                    },
+                                    "var_name": "g",
+                                    "value": {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "g"
+                                          },
+                                          "key": "qty"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.35
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "IfThenElse",
+                      "cond": {
+                        "type": "Lt",
+                        "a": {
+                          "type": "Sum",
+                          "source": {
+                            "type": "Neighbours",
+                            "node": {
+                              "type": "Var",
+                              "name": "agent"
+                            },
+                            "edge_type": "has_good",
+                            "any_type": false
+                          },
+                          "var_name": "g",
+                          "value": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "g"
+                                },
+                                "key": "qty"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        },
+                        "b": {
+                          "type": "Lit",
+                          "value": 1.0
+                        }
+                      },
+                      "then": {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "key": "hunger_level"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.2
+                          }
+                        ]
+                      },
+                      "other": {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "in_household"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  "then": {
+                    "type": "Lit",
+                    "value": 0.0
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "bc_expect_source",
+      "batch": false,
+      "comment": "Body decision -- the affordance to provision is EXPECTATION-driven, generic, NOT co-location: the agent holds an expectation that some source has food (agent -expects-> Expect{avail} -source-> holder). Being at a shop is NOT required -- you plan from where you EXPECT to get food. Sets can_provision for the turn (live() clears it).",
+      "match": [
+        [
+          "agent",
+          "expects",
+          "exp"
+        ],
+        [
+          "exp",
+          "source",
+          "holder"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "exp"
+                  },
+                  "key": "avail"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "can_provision",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "bc_want_food",
+      "batch": false,
+      "comment": "Body decision -> the acquire action MINTS A GOAL: when the agent chose to acquire, it forms a wants_done fetch task for the good it provisions (unless one is already pending). The unified PURSUIT then meets it -- go myself or ask someone. Acquiring food is a task like any other.",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "chosen_action"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 3.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "chosen_val"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.3
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "acq_done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "agent"
+                },
+                "edge_type": "wants_done",
+                "any_type": false
+              },
+              "var_name": "t2",
+              "predicate": {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t2"
+                          },
+                          "key": "kind"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t2"
+                          },
+                          "key": "good"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "provision_good"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t2"
+                          },
+                          "key": "done"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "task",
+          "Task",
+          {
+            "kind": 1.0,
+            "good": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "provision_good"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            },
+            "requirement": 0.0,
+            "done": 0.0,
+            "pursued": 0.0,
+            "pursue_ready": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "wants_done",
+          "task"
+        ],
+        [
+          "set_attr",
+          "agent",
+          "acq_done",
+          1.0
+        ],
+        [
+          "set_attr",
+          "agent",
+          "chosen_action",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

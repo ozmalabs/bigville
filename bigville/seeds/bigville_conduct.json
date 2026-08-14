@@ -1,0 +1,292 @@
+{
+ "id": "bigville_conduct",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "DIRECTED, BOND-COUPLED CONDUCT (block 281000). The affordance vocabulary (280000) offers agent-directed actions whenever a target is in range; these rules make WHOM you act on read the held Bond (277000). Each directed action's DEEP (plan_value) score = plan_base + a coupling to the Bond's affect toward its target: harm rises with resentment and falls with affection; help/transfer rise with affection. The FAST pull (impulse = vocabulary base_weight; harm LOW, help HIGH) is unchanged -- the Bond only shapes the model-based re-score, so the decision core (279000) collapse directs harm at a resented rival (not a friend) and giving/aid toward the cared-for, while violence stays rare. Reading held affect is a RULE (graph read), not adapter arithmetic. FALSIFIER: conduct_resent_gain = conduct_affection_gain = 0 collapses plan_value to plan_base -> no directedness (rival indistinguishable from friend). Gains are knobs on the ConductState. ZERO new Rust; self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "conduct_couple_harm",
+   "batch": false,
+   "comment": "DIRECTED HARM couples to the held Bond: resentment RAISES the deep value of harming this target, affection LOWERS it. You do not harm someone you love; a resented rival scores higher. The fast pull (impulse) stays the LOW harm prior -- the Bond only shapes the deep re-score, so violence stays rare and, when it happens, is DIRECTED.",
+   "match": [
+    [
+     "m",
+     "in_scene",
+     "d"
+    ],
+    [
+     "d",
+     "aims_at",
+     "o"
+    ],
+    [
+     "m",
+     "holds_bond",
+     "bond"
+    ],
+    [
+     "bond",
+     "toward",
+     "o"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "d"
+     },
+     "key": "name"
+    },
+    "b": {
+     "type": "Lit",
+     "value": "harm"
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "d",
+     "plan_value",
+     {
+      "__term__": {
+       "type": "Minus",
+       "a": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "d"
+          },
+          "key": "plan_base"
+         },
+         {
+          "type": "Times",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "conduct_resent_gain"
+           },
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "bond"
+            },
+            "key": "affect_resentment"
+           }
+          ]
+         }
+        ]
+       },
+       "b": {
+        "type": "Times",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "m"
+          },
+          "key": "conduct_affection_gain"
+         },
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "bond"
+          },
+          "key": "affect_affection"
+         }
+        ]
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "conduct_couple_help",
+   "batch": false,
+   "comment": "DIRECTED HELP couples to affection: you aid those you care for. help's fast pull is already HIGH (pro-social prior); the Bond points it at the right person.",
+   "match": [
+    [
+     "m",
+     "in_scene",
+     "d"
+    ],
+    [
+     "d",
+     "aims_at",
+     "o"
+    ],
+    [
+     "m",
+     "holds_bond",
+     "bond"
+    ],
+    [
+     "bond",
+     "toward",
+     "o"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "d"
+     },
+     "key": "name"
+    },
+    "b": {
+     "type": "Lit",
+     "value": "help"
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "d",
+     "plan_value",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "d"
+         },
+         "key": "plan_base"
+        },
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "conduct_affection_gain"
+          },
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "bond"
+           },
+           "key": "affect_affection"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "conduct_couple_transfer",
+   "batch": false,
+   "comment": "DIRECTED GIVING couples to affection (Mauss: the gift builds the bond; you give to those you are close to).",
+   "match": [
+    [
+     "m",
+     "in_scene",
+     "d"
+    ],
+    [
+     "d",
+     "aims_at",
+     "o"
+    ],
+    [
+     "m",
+     "holds_bond",
+     "bond"
+    ],
+    [
+     "bond",
+     "toward",
+     "o"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "d"
+     },
+     "key": "name"
+    },
+    "b": {
+     "type": "Lit",
+     "value": "transfer"
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "d",
+     "plan_value",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "d"
+         },
+         "key": "plan_base"
+        },
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "conduct_affection_gain"
+          },
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "bond"
+           },
+           "key": "affect_affection"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

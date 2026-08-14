@@ -1,0 +1,1104 @@
+{
+  "id": "default_mode_core",
+  "version": "2.0.0",
+  "depends_on": ["affective_state_core", "dual_process_core", "generative_world_model"],
+  "area": "intrinsic_state",
+  "description": "Graph-native intrinsic/default-mode control. A continuous NetworkModeState tracks external load, task demand, interoceptive urgency, uncertainty, idle duration, and overlapping external-attention, executive, salience, and default-mode weights. During genuinely low external demand it creates one bounded, interruptible internally generated context from an unresolved goal or consolidated episode. Imagined scenarios and predicted states carry explicit non-observation provenance. Epoch, deadline, budget, cooldown, and cleanup guards prevent fixed-point runaway and unbounded transient growth. Prospective-simulation and episodic-replay SystemTwoTaskSets are graph-held seams for asynchronous cognitive tasks; no host-side cognition is required.",
+  "microtheory": {
+    "name": "intrinsic_default_mode_control",
+    "description": "Default-mode cognition is an overlapping, resource-bounded network regime rather than an exclusive switch. It proposes imagined and predicted material from held goals and episodes when the world is quiet, and yields immediately to salient external demand."
+  },
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "DefaultModePolicy",
+      "attrs": {
+        "name": "core_default_mode_policy",
+        "enabled": 1.0,
+        "idle_threshold": 4.0,
+        "entry_weight": 0.6,
+        "maximum_external_load": 0.2,
+        "maximum_task_demand": 0.2,
+        "maximum_interoceptive_urgency": 0.3,
+        "interrupt_salience": 0.7,
+        "interrupt_task_demand": 0.6,
+        "context_budget": 2.0,
+        "maximum_context_epochs": 4.0,
+        "source_revisit_epochs": 8.0,
+        "retention_epochs": 2.0
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "NetworkModeState",
+      "attrs": {
+        "name": "canonical_network_mode_state",
+        "epoch": -1.0,
+        "exteroceptive_load": 1.0,
+        "task_demand": 0.0,
+        "interoceptive_urgency": 0.0,
+        "uncertainty": 0.0,
+        "idle_duration": 0.0,
+        "external_attention_weight": 1.0,
+        "executive_control_weight": 0.0,
+        "salience_weight": 1.0,
+        "default_mode_weight": 0.0,
+        "last_sample_epoch": -1.0
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "SystemTwoTaskSet",
+      "attrs": {
+        "name": "default_mode_prospective_simulation",
+        "area": "default_mode_prospection",
+        "task_kind": "prospective_simulation",
+        "enabled": 1.0
+      }
+    },
+    {
+      "local_id": 4,
+      "type": "SystemTwoTaskSet",
+      "attrs": {
+        "name": "default_mode_episodic_replay",
+        "area": "default_mode_replay",
+        "task_kind": "episodic_replay",
+        "enabled": 1.0
+      }
+    },
+    {
+      "local_id": 5,
+      "type": "SystemTwoTaskSet",
+      "attrs": {
+        "name": "default_mode_generative_world_model",
+        "area": "world_model_simulation",
+        "task_kind": "counterfactual_rollout",
+        "enabled": 1.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_default_mode_policy",
+      "tgt": {"local": 1},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_network_mode_state",
+      "tgt": {"local": 2},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_prospective_simulation_task_set",
+      "tgt": {"local": 3},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_episodic_replay_task_set",
+      "tgt": {"local": 4},
+      "attrs": {}
+    },
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_world_model_simulation_task_set",
+      "tgt": {"local": 5},
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "provenance": "default_mode_core:agent_mode",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_network_mode_state",
+      "tgt": {"type": "NetworkModeState", "var": "mode"}
+    },
+    {
+      "provenance": "default_mode_core:agent_sample",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_network_mode_sample",
+      "tgt": {"type": "NetworkModeSample", "var": "sample"}
+    },
+    {
+      "provenance": "default_mode_core:agent_internal_context",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_internally_generated_context",
+      "tgt": {"type": "InternallyGeneratedContext", "var": "context"}
+    },
+    {
+      "provenance": "default_mode_core:context_imagination",
+      "src": {"type": "InternallyGeneratedContext", "var": "context"},
+      "edge_type": "has_imagined_scenario",
+      "tgt": {"type": "ImaginedScenario", "var": "scenario"}
+    },
+    {
+      "provenance": "default_mode_core:context_prediction",
+      "src": {"type": "InternallyGeneratedContext", "var": "context"},
+      "edge_type": "has_predicted_state",
+      "tgt": {"type": "PredictedState", "var": "prediction"}
+    },
+    {
+      "provenance": "default_mode_core:context_task",
+      "src": {"type": "InternallyGeneratedContext", "var": "context"},
+      "edge_type": "has_default_mode_task_request",
+      "tgt": {"type": "SystemTwoEscalation", "var": "request"}
+    },
+    {
+      "provenance": "default_mode_core:context_cognitive_task",
+      "src": {"type": "InternallyGeneratedContext", "var": "context"},
+      "edge_type": "has_default_mode_cognitive_task",
+      "tgt": {"type": "CognitiveTask", "var": "task"}
+    },
+    {
+      "provenance": "default_mode_core:cognitive_task_context",
+      "src": {"type": "CognitiveTask", "var": "task"},
+      "edge_type": "about_context",
+      "tgt": {"type": "InternallyGeneratedContext", "var": "context"}
+    },
+    {
+      "provenance": "default_mode_core:cognitive_task_clock",
+      "src": {"type": "CognitiveTask", "var": "task"},
+      "edge_type": "validated_by_clock",
+      "tgt": {"type": "NetworkModeState", "var": "mode"}
+    },
+    {
+      "provenance": "default_mode_core:cognitive_task_result",
+      "src": {"type": "CognitiveTask", "var": "task"},
+      "edge_type": "has_result",
+      "tgt": {"type": "TaskResult", "var": "result"}
+    },
+    {
+      "provenance": "default_mode_core:request_task_set",
+      "src": {"type": "SystemTwoEscalation", "var": "request"},
+      "edge_type": "recruits_task_set",
+      "tgt": {"type": "SystemTwoTaskSet", "var": "task_set"}
+    },
+    {
+      "provenance": "default_mode_core:agent_world_model_task_set",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_world_model_simulation_task_set",
+      "tgt": {"type": "SystemTwoTaskSet", "var": "task_set"}
+    },
+    {
+      "provenance": "default_mode_core:context_belief",
+      "src": {"type": "InternallyGeneratedContext", "var": "context"},
+      "edge_type": "has_source_belief",
+      "tgt": {"type": "BeliefState", "var": "belief"}
+    },
+    {
+      "provenance": "default_mode_core:context_simulation",
+      "src": {"type": "InternallyGeneratedContext", "var": "context"},
+      "edge_type": "has_world_model_simulation",
+      "tgt": {"type": "SimulationRequest", "var": "request"}
+    },
+    {
+      "provenance": "default_mode_core:context_trajectory",
+      "src": {"type": "InternallyGeneratedContext", "var": "context"},
+      "edge_type": "has_prediction_trajectory",
+      "tgt": {"type": "PredictionTrajectory", "var": "trajectory"}
+    }
+  ],
+  "rules": [
+    {
+      "name": "default_mode_integrate_latest_network_sample",
+      "area": "intrinsic_state",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "One graph-held sample advances all continuous mode variables once. The weights overlap: this is not a winner-take-all network switch.",
+      "match": [
+        ["agent", "has_default_mode_policy", "policy"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_network_mode_sample", "sample"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "last_sample_epoch"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "sample"},
+            "b": {
+              "type": "Argmax",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_network_mode_sample"},
+              "var_name": "candidate_sample",
+              "value": {"type": "Attr", "node": {"type": "Var", "name": "candidate_sample"}, "key": "epoch"},
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["set_attr", "mode", "epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "epoch"}}],
+        ["set_attr", "mode", "exteroceptive_load", {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "exteroceptive_load"}]}]}}],
+        ["set_attr", "mode", "task_demand", {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "task_demand"}]}]}}],
+        ["set_attr", "mode", "interoceptive_urgency", {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "interoceptive_urgency"}]}]}}],
+        ["set_attr", "mode", "uncertainty", {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "uncertainty"}]}]}}],
+        ["set_attr", "mode", "idle_duration", {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "idle_duration"}]}}],
+        ["set_attr", "mode", "external_attention_weight", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Max", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "exteroceptive_load"},
+              {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "task_demand"}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "mode", "executive_control_weight", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Plus", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "task_demand"},
+              {"type": "Times", "items": [{"type": "Lit", "value": 0.5}, {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "uncertainty"}]}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "mode", "salience_weight", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Max", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "exteroceptive_load"},
+              {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "interoceptive_urgency"}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "mode", "default_mode_weight", {"__term__": {"type": "Max", "items": [
+          {"type": "Lit", "value": 0.0},
+          {"type": "Min", "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Times", "items": [
+              {"type": "Div", "a": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "idle_duration"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "idle_threshold"}},
+              {"type": "Minus", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "exteroceptive_load"}},
+              {"type": "Minus", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "task_demand"}},
+              {"type": "Minus", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "interoceptive_urgency"}}
+            ]}
+          ]}
+        ]}}],
+        ["set_attr", "mode", "last_sample_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "epoch"}}],
+        ["set_attr", "sample", "status", "integrated"]
+      ]
+    },
+    {
+      "name": "default_mode_mint_goal_context",
+      "area": "intrinsic_state",
+      "order": 10,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_default_mode_policy", "policy"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_goal", "source"],
+        ["agent", "has_prospective_simulation_task_set", "task_set"],
+        ["agent", "has_world_model_simulation_task_set", "world_task_set"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "status"}, "b": {"type": "Lit", "value": "unresolved"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}}
+          ]},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "source"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_goal"},
+                "var_name": "candidate_source",
+                "predicate": {
+                  "type": "Or",
+                  "items": [
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_source"}, "key": "status"}, "b": {"type": "Lit", "value": "unresolved"}},
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_source"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}}
+                  ]
+                }
+              },
+              "var_name": "ranked_source",
+              "value": {"type": "Lit", "value": 0.0},
+              "default": {"type": "Lit", "value": null}
+            }
+          },
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "default_mode_weight"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "entry_weight"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "exteroceptive_load"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_external_load"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "task_demand"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_task_demand"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "interoceptive_urgency"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_interoceptive_urgency"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_internally_generated_context"}, "var_name": "held_context", "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "held_context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "last_internal_epoch"}, "b": {"type": "Lit", "value": null}},
+            {"type": "Gte", "a": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "last_internal_epoch"}}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "source_revisit_epochs"}}
+          ]}
+        ]
+      },
+      "effects": [
+        ["add_node", "context", "InternallyGeneratedContext", {
+          "status": "active",
+          "source_kind": "unresolved_goal",
+          "provenance_kind": "internally_generated",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_context_epochs"}]}},
+          "budget_remaining": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "context_budget"}},
+          "last_budget_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}}
+        }],
+        ["add_node", "request", "SystemTwoEscalation", {
+          "status": "requested",
+          "reason": "intrinsic_prospective_simulation",
+          "request_kind": "default_mode",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}},
+          "task_kind": "prospective_simulation",
+          "input_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_context_epochs"}]}},
+          "budget": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "context_budget"}},
+          "interruptible": 1.0
+        }],
+        ["add_edge", "agent", "has_internally_generated_context", "context", {}],
+        ["add_edge", "context", "generated_from_goal", "source", {}],
+        ["add_edge", "context", "has_default_mode_task_request", "request", {}],
+        ["add_edge", "request", "about_context", "context", {}],
+        ["add_edge", "request", "recruits_task_set", "task_set", {}],
+        ["add_edge", "request", "recruits_task_set", "world_task_set", {}],
+        ["set_attr", "source", "last_internal_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "default_mode_mint_episode_context",
+      "area": "intrinsic_state",
+      "order": 11,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_default_mode_policy", "policy"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "recorded_episode", "source"],
+        ["agent", "has_episodic_replay_task_set", "task_set"],
+        ["agent", "has_world_model_simulation_task_set", "world_task_set"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "consolidated"}, "b": {"type": "Lit", "value": true}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "source"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "recorded_episode"},
+                "var_name": "candidate_source",
+                "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_source"}, "key": "consolidated"}, "b": {"type": "Lit", "value": true}}
+              },
+              "var_name": "ranked_source",
+              "value": {"type": "Attr", "node": {"type": "Var", "name": "ranked_source"}, "key": "salience"},
+              "default": {"type": "Lit", "value": null}
+            }
+          },
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "default_mode_weight"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "entry_weight"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "exteroceptive_load"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_external_load"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "task_demand"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_task_demand"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "interoceptive_urgency"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_interoceptive_urgency"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Filter", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_internally_generated_context"}, "var_name": "held_context", "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "held_context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "last_internal_epoch"}, "b": {"type": "Lit", "value": null}},
+            {"type": "Gte", "a": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "last_internal_epoch"}}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "source_revisit_epochs"}}
+          ]}
+        ]
+      },
+      "effects": [
+        ["add_node", "context", "InternallyGeneratedContext", {
+          "status": "active",
+          "source_kind": "episodic_memory",
+          "provenance_kind": "internally_generated",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_context_epochs"}]}},
+          "budget_remaining": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "context_budget"}},
+          "last_budget_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}}
+        }],
+        ["add_node", "request", "SystemTwoEscalation", {
+          "status": "requested",
+          "reason": "intrinsic_episodic_replay",
+          "request_kind": "default_mode",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}},
+          "task_kind": "episodic_replay",
+          "input_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_context_epochs"}]}},
+          "budget": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "context_budget"}},
+          "interruptible": 1.0
+        }],
+        ["add_edge", "agent", "has_internally_generated_context", "context", {}],
+        ["add_edge", "context", "replays_episode", "source", {}],
+        ["add_edge", "context", "has_default_mode_task_request", "request", {}],
+        ["add_edge", "request", "about_context", "context", {}],
+        ["add_edge", "request", "recruits_task_set", "task_set", {}],
+        ["add_edge", "request", "recruits_task_set", "world_task_set", {}],
+        ["set_attr", "source", "last_internal_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "default_mode_request_goal_projection_task",
+      "area": "default_mode_prospection",
+      "order": 12,
+      "latency_class": "soft_realtime",
+      "match": [
+        ["agent", "has_internally_generated_context", "context"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["context", "generated_from_goal", "source"],
+        ["context", "has_default_mode_task_request", "request"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "admitted"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_default_mode_cognitive_task"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "task", "CognitiveTask", {
+          "status": "requested",
+          "kind": "default_mode_projection",
+          "execution_class": "system_two",
+          "task_kind": "prospective_simulation",
+          "payload": {"__term__": {
+            "type": "Append",
+            "seq": {
+              "type": "Append",
+              "seq": {
+                "type": "Append",
+                "seq": {
+                  "type": "Append",
+                  "seq": {"type": "Lit", "value": []},
+                  "item": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}
+                },
+                "item": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}
+              },
+              "item": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "budget_remaining"}
+            },
+            "item": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "uncertainty"}
+          }},
+          "input_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}},
+          "logical_time": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "area": "default_mode_prospection"
+        }],
+        ["add_edge", "context", "has_default_mode_cognitive_task", "task", {}],
+        ["add_edge", "task", "about_context", "context", {}],
+        ["add_edge", "task", "validated_by_clock", "mode", {}]
+      ]
+    },
+    {
+      "name": "default_mode_request_episode_projection_task",
+      "area": "default_mode_replay",
+      "order": 12,
+      "latency_class": "soft_realtime",
+      "match": [
+        ["agent", "has_internally_generated_context", "context"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["context", "replays_episode", "source"],
+        ["context", "has_default_mode_task_request", "request"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "admitted"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_default_mode_cognitive_task"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "task", "CognitiveTask", {
+          "status": "requested",
+          "kind": "default_mode_projection",
+          "execution_class": "system_two",
+          "task_kind": "episodic_replay",
+          "payload": {"__term__": {
+            "type": "Append",
+            "seq": {
+              "type": "Append",
+              "seq": {
+                "type": "Append",
+                "seq": {
+                  "type": "Append",
+                  "seq": {"type": "Lit", "value": []},
+                  "item": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}
+                },
+                "item": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}
+              },
+              "item": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "budget_remaining"}
+            },
+            "item": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "uncertainty"}
+          }},
+          "input_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}},
+          "logical_time": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "area": "default_mode_replay"
+        }],
+        ["add_edge", "context", "has_default_mode_cognitive_task", "task", {}],
+        ["add_edge", "task", "about_context", "context", {}],
+        ["add_edge", "task", "validated_by_clock", "mode", {}]
+      ]
+    },
+    {
+      "name": "default_mode_fold_goal_projection",
+      "area": "intrinsic_state",
+      "order": 13,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["context", "generated_from_goal", "source"],
+        ["context", "has_default_mode_cognitive_task", "task"],
+        ["task", "has_result", "result"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "task"}, "key": "status"}, "b": {"type": "Lit", "value": "done"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "status"}, "b": {"type": "Lit", "value": "done"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "source_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_imagined_scenario"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "scenario", "ImaginedScenario", {
+          "status": "proposal",
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed",
+          "simulation_output": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "output"}},
+          "source_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "source_epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}}
+        }],
+        ["add_edge", "context", "has_imagined_scenario", "scenario", {}],
+        ["add_edge", "scenario", "prospects_goal", "source", {}]
+      ]
+    },
+    {
+      "name": "default_mode_fold_episode_projection",
+      "area": "intrinsic_state",
+      "order": 13,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["context", "replays_episode", "source"],
+        ["context", "has_default_mode_cognitive_task", "task"],
+        ["task", "has_result", "result"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "task"}, "key": "status"}, "b": {"type": "Lit", "value": "done"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "status"}, "b": {"type": "Lit", "value": "done"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "source_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_imagined_scenario"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "scenario", "ImaginedScenario", {
+          "status": "proposal",
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed",
+          "simulation_output": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "output"}},
+          "source_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "result"}, "key": "source_epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}}
+        }],
+        ["add_edge", "context", "has_imagined_scenario", "scenario", {}],
+        ["add_edge", "scenario", "recalled_from_episode", "source", {}]
+      ]
+    },
+    {
+      "name": "default_mode_materialize_prediction",
+      "area": "intrinsic_state",
+      "order": 14,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["context", "has_imagined_scenario", "scenario"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_predicted_state"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "prediction", "PredictedState", {
+          "status": "proposal",
+          "provenance_kind": "predicted",
+          "observation_status": "not_observed",
+          "source_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}}
+        }],
+        ["add_edge", "context", "has_predicted_state", "prediction", {}],
+        ["add_edge", "prediction", "predicted_from_imagined_scenario", "scenario", {}]
+      ]
+    },
+    {
+      "name": "default_mode_bind_current_belief_to_goal_context",
+      "area": "default_mode_prospection",
+      "order": 15,
+      "latency_class": "hard_realtime",
+      "comment": "Prospection starts from the newest current perceived belief snapshot. The context retains the explicit source instead of allowing a host-selected implicit world state.",
+      "match": [
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "generated_from_goal", "goal"],
+        ["agent", "has_belief_state", "belief"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "belief"}, "key": "status"}, "b": {"type": "Lit", "value": "current"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "belief"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "perceived"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_source_belief"}}, "b": {"type": "Lit", "value": 0}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "belief"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_belief_state"},
+                "var_name": "candidate_belief",
+                "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_belief"}, "key": "status"}, "b": {"type": "Lit", "value": "current"}}
+              },
+              "var_name": "ranked_belief",
+              "value": {"type": "Attr", "node": {"type": "Var", "name": "ranked_belief"}, "key": "epoch"},
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["add_edge", "context", "has_source_belief", "belief", {}]
+      ]
+    },
+    {
+      "name": "default_mode_reconstruct_episode_belief",
+      "area": "default_mode_replay",
+      "order": 15,
+      "latency_class": "hard_realtime",
+      "comment": "Episodic default-mode content is reconstructed as remembered support, never relabelled as a current perception.",
+      "match": [
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "replays_episode", "episode"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_source_belief"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "belief", "BeliefState", {
+          "status": "reconstructed",
+          "state_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "state_kind"}},
+          "state_summary": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "state_summary"}},
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "memory_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "epoch"}},
+          "confidence": {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "salience"}]}]}},
+          "uncertainty": 0.25,
+          "provenance_kind": "remembered",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "agent", "has_belief_state", "belief", {}],
+        ["add_edge", "belief", "reconstructed_from_episode", "episode", {}],
+        ["add_edge", "context", "has_source_belief", "belief", {}]
+      ]
+    },
+    {
+      "name": "default_mode_request_content_bearing_simulation",
+      "area": "default_mode_prospection",
+      "order": 16,
+      "latency_class": "hard_realtime",
+      "comment": "The default-mode context authors an inspectable simulation request. The generative world-model seed, rather than the host, expands its action-conditioned content.",
+      "match": [
+        ["agent", "has_default_mode_policy", "policy"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "has_source_belief", "belief"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_world_model_simulation"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "simulation", "SimulationRequest", {
+          "status": "collecting_actions",
+          "request_kind": "default_mode_counterfactual",
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed",
+          "input_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}},
+          "horizon": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_context_epochs"}},
+          "budget": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "budget_remaining"}},
+          "maximum_branching": 2.0,
+          "interruptible": 1.0
+        }],
+        ["add_edge", "agent", "has_simulation_request", "simulation", {}],
+        ["add_edge", "context", "has_world_model_simulation", "simulation", {}],
+        ["add_edge", "simulation", "has_source_belief", "belief", {}],
+        ["add_edge", "simulation", "validated_by_clock", "mode", {}]
+      ]
+    },
+    {
+      "name": "default_mode_offer_world_model_actions",
+      "area": "default_mode_prospection",
+      "order": 16,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "has_world_model_simulation", "simulation"],
+        ["agent", "has_world_model_action", "action"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "simulation"}, "key": "status"}, "b": {"type": "Lit", "value": "collecting_actions"}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "simulation", "considers_action", "action", {}]
+      ]
+    },
+    {
+      "name": "default_mode_seal_world_model_action_snapshot",
+      "area": "default_mode_prospection",
+      "order": 17,
+      "latency_class": "hard_realtime",
+      "comment": "Action collection is a separate graph phase so the generative model sees a complete immutable branch set, independent of rule-area evaluation order.",
+      "match": [
+        ["context", "has_world_model_simulation", "simulation"],
+        ["simulation", "considers_action", "action"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "simulation"}, "key": "status"}, "b": {"type": "Lit", "value": "collecting_actions"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "simulation", "status", "active"]
+      ]
+    },
+    {
+      "name": "default_mode_expose_content_trajectory",
+      "area": "intrinsic_state",
+      "order": 18,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["context", "has_world_model_simulation", "simulation"],
+        ["simulation", "has_prediction_trajectory", "trajectory"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"},
+        "b": {"type": "Lit", "value": "active"}
+      },
+      "effects": [
+        ["add_edge", "context", "has_prediction_trajectory", "trajectory", {}]
+      ]
+    },
+    {
+      "name": "default_mode_cancel_content_simulation_on_interrupt",
+      "area": "intrinsic_state",
+      "order": 22,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["context", "has_world_model_simulation", "simulation"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "simulation"}, "key": "status"}, "b": {"type": "Lit", "value": "collecting_actions"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "simulation"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "simulation"}, "key": "status"}, "b": {"type": "Lit", "value": "completed"}}
+          ]}
+        ]
+      },
+      "effects": [
+        ["set_attr", "simulation", "status", "cancelled"],
+        ["set_attr", "simulation", "terminal_reason", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "terminal_reason"}}],
+        ["set_attr", "simulation", "cleanup_after_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "cleanup_after_epoch"}}]
+      ]
+    },
+    {
+      "name": "default_mode_spend_context_budget_once_per_epoch",
+      "area": "intrinsic_state",
+      "order": 20,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "last_budget_epoch"}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "budget_remaining"}, "b": {"type": "Lit", "value": 0.0}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "context", "budget_remaining", {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "budget_remaining"}, "b": {"type": "Lit", "value": 1.0}}]}}],
+        ["set_attr", "context", "last_budget_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "default_mode_interrupt_for_salient_external_demand",
+      "area": "intrinsic_state",
+      "order": 21,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_default_mode_policy", "policy"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Or", "items": [
+            {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "salience_weight"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "interrupt_salience"}},
+            {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "task_demand"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "interrupt_task_demand"}}
+          ]}
+        ]
+      },
+      "effects": [
+        ["set_attr", "context", "status", "interrupted"],
+        ["set_attr", "context", "terminal_reason", "salient_external_demand"],
+        ["set_attr", "context", "cleanup_after_epoch", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "retention_epochs"}]}}]
+      ]
+    },
+    {
+      "name": "default_mode_expire_context_at_deadline",
+      "area": "intrinsic_state",
+      "order": 22,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_default_mode_policy", "policy"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "deadline_epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "context", "status", "expired"],
+        ["set_attr", "context", "terminal_reason", "deadline"],
+        ["set_attr", "context", "cleanup_after_epoch", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "retention_epochs"}]}}]
+      ]
+    },
+    {
+      "name": "default_mode_close_exhausted_context",
+      "area": "intrinsic_state",
+      "order": 23,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_default_mode_policy", "policy"],
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "budget_remaining"}, "b": {"type": "Lit", "value": 0.0}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "context", "status", "completed"],
+        ["set_attr", "context", "terminal_reason", "budget_exhausted"],
+        ["set_attr", "context", "cleanup_after_epoch", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "retention_epochs"}]}}]
+      ]
+    },
+    {
+      "name": "default_mode_close_task_request_with_context",
+      "area": "intrinsic_state",
+      "order": 24,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["context", "has_default_mode_task_request", "request"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "cancelled"}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "stale"}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "request", "status", "cancelled"],
+        ["set_attr", "request", "terminal_reason", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "terminal_reason"}}]
+      ]
+    },
+    {
+      "name": "default_mode_prune_old_network_samples",
+      "area": "intrinsic_state",
+      "order": 30,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_network_mode_sample", "sample"]
+      ],
+      "where": {
+        "type": "Lt",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "sample"}, "key": "epoch"},
+        "b": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}
+      },
+      "effects": [
+        ["del_node", "sample"]
+      ]
+    },
+    {
+      "name": "default_mode_prune_terminal_task_result",
+      "area": "intrinsic_state",
+      "order": 31,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "has_default_mode_cognitive_task", "task"],
+        ["task", "has_result", "result"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "cleanup_after_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_node", "result"]
+      ]
+    },
+    {
+      "name": "default_mode_prune_terminal_cognitive_task",
+      "area": "intrinsic_state",
+      "order": 32,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "has_default_mode_cognitive_task", "task"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "cleanup_after_epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "task"}, "edge_type": "has_result"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["del_node", "task"]
+      ]
+    },
+    {
+      "name": "default_mode_prune_terminal_scenario",
+      "area": "intrinsic_state",
+      "order": 33,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "has_imagined_scenario", "scenario"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "cleanup_after_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_node", "scenario"]
+      ]
+    },
+    {
+      "name": "default_mode_prune_terminal_prediction",
+      "area": "intrinsic_state",
+      "order": 34,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "has_predicted_state", "prediction"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "cleanup_after_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_node", "prediction"]
+      ]
+    },
+    {
+      "name": "default_mode_prune_terminal_request",
+      "area": "intrinsic_state",
+      "order": 35,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"],
+        ["context", "has_default_mode_task_request", "request"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "cleanup_after_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_node", "request"]
+      ]
+    },
+    {
+      "name": "default_mode_prune_terminal_context",
+      "area": "intrinsic_state",
+      "order": 36,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_network_mode_state", "mode"],
+        ["agent", "has_internally_generated_context", "context"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mode"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "context"}, "key": "cleanup_after_epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_imagined_scenario"}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_predicted_state"}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_default_mode_task_request"}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "context"}, "edge_type": "has_default_mode_cognitive_task"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["del_node", "context"]
+      ]
+    }
+  ]
+}

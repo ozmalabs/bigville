@@ -1,0 +1,234 @@
+{
+  "id": "self_extension",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "GAP 2 — self-extension WITHOUT a hosted model. When a frontier needs a capability no held faculty addresses (a needs_tool impasse), the agent COMPOSES a new operator from the held primitives whose advertised CapKeys cover the need, carries an a-priori KNOWN CONFIDENCE (coverage x mean reliability of the parts), and lets the measurement trial confirm it. When NOTHING it holds touches the need (zero coverage), it does NOT invent or fabricate a placeholder that falsely saturates the axis — it surfaces an honest HumanImpasse naming the missing keys. Capability is a graph JOIN over CapKey nodes (axis -requires_key-> CapKey <-provides_key- primitive), not list-attr code. Replaces the claude -p consult in _self_extend_reflex. The impasse is the finding, never papered over.",
+  "microtheory": {
+    "name": "self_extension",
+    "description": "compose held primitives on a capability need; honest impasse when nothing covers it"
+  },
+  "nodes": [],
+  "edges": [],
+  "rules": [
+    {
+      "name": "escalate_open_on_stall",
+      "match": [["ag", "operates_in", "w"], ["ax", "investigated_by", "op"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ax"}, "key": "is_axis"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "ax"}, "key": "mf_stall"}, "b": {"type": "Lit", "value": 4}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ax"}, "key": "escalating"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ax"}, "key": "subskill"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Not", "arg": {"type": "Exists", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "ax"}, "edge_type": "investigated_by"}, "var_name": "exop", "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "exop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}}}}
+        ]
+      },
+      "effects": [
+        ["add_node", "mi", "Impasse", {"resolved": false, "kind": "escalation", "order": 2, "acted_order": 1, "note": "stalled with no teacher — climb the ladder to self-extension by composing held primitives (confidence-driven)."}],
+        ["add_edge", "ag", "surprised_by", "mi"],
+        ["add_edge", "mi", "about_axis", "ax"],
+        ["add_edge", "ax", "tried", "op"],
+        ["set_attr", "ax", "escalating", 1.0]
+      ]
+    },
+    {
+      "name": "compose_zero_coverage_impasse",
+      "match": [["mi", "needs_tool", "ax"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "mi"}, "key": "se_handled"}, "b": {"type": "Lit", "value": 1}}},
+          {"type": "Not", "arg": {
+            "type": "Exists",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "ax"}, "edge_type": "requires_key"},
+            "var_name": "k",
+            "predicate": {"type": "Exists",
+              "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "k"}, "edge_type": "provides_key"},
+              "var_name": "p", "predicate": {"type": "Lit", "value": true}}
+          }}
+        ]
+      },
+      "effects": [
+        ["add_node", "mh", "HumanImpasse", {"kind": "capability_gap", "needs_human": 1.0, "resolved": false, "question": "a needed capability has no held primitive that provides any of it — what should I be given or read to address it?"}],
+        ["add_edge", "mh", "about_axis", "ax"],
+        ["set_attr", "ax", "needs_human", 1],
+        ["set_attr", "mi", "se_handled", 1]
+      ]
+    },
+    {
+      "name": "compose_from_held_primitives",
+      "match": [["mi", "needs_tool", "ax"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "mi"}, "key": "se_handled"}, "b": {"type": "Lit", "value": 1}}},
+          {"type": "Exists",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "ax"}, "edge_type": "requires_key"},
+            "var_name": "k",
+            "predicate": {"type": "Exists",
+              "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "k"}, "edge_type": "provides_key"},
+              "var_name": "p", "predicate": {"type": "Lit", "value": true}}},
+          {"type": "Not", "arg": {"type": "Exists",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "ax"}, "edge_type": "investigated_by"},
+            "var_name": "o", "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "o"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}}}}
+        ]
+      },
+      "effects": [
+        ["add_node", "cop", "Operator", {"name": "composed", "composed": 1.0, "runner": "composed", "compose_confidence": 0.0, "provisional": 1.0, "authored_by_escalation": 1.0}],
+        ["add_edge", "ax", "investigated_by", "cop"],
+        ["set_attr", "ax", "confirmations", 0],
+        ["set_attr", "mi", "se_handled", 1]
+      ]
+    },
+    {
+      "name": "wire_composed_primitive",
+      "match": [
+        ["ax", "investigated_by", "cop"],
+        ["ax", "requires_key", "k"],
+        ["p", "provides_key", "k"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "cop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Not", "arg": {"type": "In", "member": {"type": "Var", "name": "p"},
+            "container": {"type": "Neighbours", "node": {"type": "Var", "name": "cop"}, "edge_type": "composed_from"}}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "cop", "composed_from", "p"],
+        ["add_edge", "ax", "covered_key", "k"]
+      ]
+    },
+    {
+      "name": "set_compose_confidence",
+      "match": [["cax", "investigated_by", "ccop"], ["ccop", "composed_from", "cprim"]],
+      "where": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "ccop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+      "effects": [
+        ["set_attr", "ccop", "compose_confidence", {"__term__": {
+          "type": "Times", "items": [
+            {"type": "Div",
+              "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "cax"}, "edge_type": "covered_key"}},
+              "b": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "cax"}, "edge_type": "requires_key"}}},
+            {"type": "Div",
+              "a": {"type": "Sum", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "ccop"}, "edge_type": "composed_from"}, "var_name": "q", "value": {"type": "Attr", "node": {"type": "Var", "name": "q"}, "key": "reliability"}},
+              "b": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "ccop"}, "edge_type": "composed_from"}}}
+          ]
+        }}],
+        ["set_attr", "cax", "compose_confidence", {"__term__": {
+          "type": "Div",
+          "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "cax"}, "edge_type": "covered_key"}},
+          "b": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "cax"}, "edge_type": "requires_key"}}}}],
+        ["set_attr", "cax", "provisional", {"__term__": {
+          "type": "IfThenElse",
+          "cond": {"type": "Lt",
+            "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "cax"}, "edge_type": "covered_key"}},
+            "b": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "cax"}, "edge_type": "requires_key"}}},
+          "then": {"type": "Lit", "value": 1},
+          "other": {"type": "Lit", "value": 0}}}]
+      ]
+    },
+    {
+      "name": "recompose_reproduce",
+      "match": [["mc", "measures_axis", "rax"], ["rax", "investigated_by", "rcop"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "rcop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "mc"}, "key": "measured"},
+            "b": {"type": "Attr", "node": {"type": "Var", "name": "mc"}, "key": "target"}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "mc"}, "key": "se_counted"}, "b": {"type": "Lit", "value": 1}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "mc", "se_counted", 1],
+        ["set_attr", "rax", "confirmations", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "rax"}, "key": "confirmations"}, {"type": "Lit", "value": 1}]}}]
+      ]
+    },
+    {
+      "name": "compose_confirm_full",
+      "match": [["fax", "investigated_by", "fcop"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "fcop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "fax"}, "key": "provisional"}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "fax"}, "key": "confirmations"}, "b": {"type": "Lit", "value": 1}}
+        ]
+      },
+      "effects": [["set_attr", "fax", "compose_confirmed", 1]]
+    },
+    {
+      "name": "compose_confirm_provisional",
+      "match": [["pax", "investigated_by", "pcop"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pcop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pax"}, "key": "provisional"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "pax"}, "key": "confirmations"}, "b": {"type": "Lit", "value": 2}}
+        ]
+      },
+      "effects": [["set_attr", "pax", "compose_confirmed", 1]]
+    },
+    {
+      "name": "confirm_compose_by_sibling",
+      "match": [["sax", "investigated_by", "scop"], ["tax", "investigated_by", "tcop"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "scop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "tcop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "tax"}, "key": "compose_confirmed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "sax"}, "key": "compose_confirmed"}, "b": {"type": "Lit", "value": 1}}},
+          {"type": "Eq",
+            "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "scop"}, "edge_type": "composed_from"}},
+            "b": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "tcop"}, "edge_type": "composed_from"}}},
+          {"type": "Not", "arg": {"type": "Exists",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "scop"}, "edge_type": "composed_from"},
+            "var_name": "sp",
+            "predicate": {"type": "Not", "arg": {"type": "In", "member": {"type": "Var", "name": "sp"},
+              "container": {"type": "Neighbours", "node": {"type": "Var", "name": "tcop"}, "edge_type": "composed_from"}}}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "sax", "confirmations", 2],
+        ["set_attr", "sax", "compose_confirmed", 1],
+        ["set_attr", "sax", "confirmed_by_sibling", 1]
+      ]
+    },
+    {
+      "name": "compose_partial_exhausted",
+      "match": [["mc", "measures_axis", "pax"], ["pax", "investigated_by", "pcop"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pcop"}, "key": "composed"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pax"}, "key": "provisional"}, "b": {"type": "Lit", "value": 1}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "mc"}, "key": "measured"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "mc"}, "key": "target"}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pax"}, "key": "partial_surfaced"}, "b": {"type": "Lit", "value": 1}}}
+        ]
+      },
+      "effects": [
+        ["add_node", "pmh", "HumanImpasse", {"kind": "capability_gap_partial", "needs_human": 1.0, "resolved": false, "question": "a composition from held primitives covers only part of the need and plateaus below target; the uncovered keys are named below — what primitive should I be given for them?"}],
+        ["add_edge", "pmh", "about_axis", "pax"],
+        ["set_attr", "pax", "partial_surfaced", 1],
+        ["set_attr", "pax", "needs_human", 1]
+      ]
+    },
+    {
+      "name": "mark_uncovered_key",
+      "match": [["pax", "requires_key", "uk"], ["pmh", "about_axis", "pax"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "pmh"}, "key": "kind"}, "b": {"type": "Lit", "value": "capability_gap_partial"}},
+          {"type": "Not", "arg": {"type": "In", "member": {"type": "Var", "name": "uk"}, "container": {"type": "Neighbours", "node": {"type": "Var", "name": "pax"}, "edge_type": "covered_key"}}},
+          {"type": "Not", "arg": {"type": "In", "member": {"type": "Var", "name": "uk"}, "container": {"type": "Neighbours", "node": {"type": "Var", "name": "pmh"}, "edge_type": "uncovered_key"}}}
+        ]
+      },
+      "effects": [["add_edge", "pmh", "uncovered_key", "uk"]]
+    }
+  ]
+}

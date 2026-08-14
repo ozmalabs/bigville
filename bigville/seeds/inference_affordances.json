@@ -1,0 +1,27 @@
+{
+  "id": "inference_affordances",
+  "version": "1.0.0",
+  "depends_on": ["movement_affordances"],
+  "description": "Held cognitive/spatial inference capabilities for polar 'can you infer/reason/deduce...?' questions. These are graph-native faculties (shape decode, spatial structure, perspective layout) — not body-dependent movement.",
+  "microtheory": {
+    "name": "inference_affordances",
+    "description": "held inference capability accounts"
+  },
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "HeldCapability",
+      "attrs": {
+        "name": "spatial_inference",
+        "verb": "infer",
+        "aliases": "infer infers inferring deduce deduces deducing reason reasons reasoning reconstruct reconstructs reconstructing interpret interprets interpreting derive derives deriving",
+        "account": "Yes — I can infer depth and spatial layout from perspective cues in a 2D image. I decode the observation against held shape and spatial structure; the layout perspective implies becomes graph structure I can reason over — the same collapse motion as perception, applied to spatial depth rather than a flat label lookup."
+      }
+    }
+  ],
+  "edges": [
+    {"src": {"role": "agent_root"}, "type": "holds_capability", "tgt": {"local": 0}}
+  ],
+  "productions": [],
+  "rules": []
+}

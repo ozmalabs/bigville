@@ -1,0 +1,240 @@
+{
+ "id": "bigville_world_news",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R11 (block 259000) -- NEWS from the frontier (GIANTVILLE). The wider world is the frontier: unknown = absence, first-class -- with NO traveller a resident has NO Giantville belief (the place stays unknown). bw_news_secondhand: a traveller brings a NewsItem `about` Giantville; a resident with comprehend_armed and NO belief yet folds it into a SECOND-HAND GiantvilleBelief{provenance_hearsay:1} whose confidence is the teller's `credibility` (distortable -> a less credible teller yields a lower-confidence belief). bw_belief_grounded: a resident who VISITED Giantville grounds it FIRST-HAND -- GiantvilleBelief{provenance_grounded:1, confidence:1.0}. The grounding boundary applied to a PLACE: hearsay (ungrounded, lower confidence) vs grounded-by-visit, both glass-box (you can read whose belief is knowledge and whose is rumor). A minimal graph-native fold stands in for the 244/246 comprehension pipeline (honest residual). Zero new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bw_news_secondhand",
+   "match": [
+    [
+     "res",
+     "hears",
+     "news"
+    ],
+    [
+     "news",
+     "about",
+     "place"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "res"
+         },
+         "key": "comprehend_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Exists",
+       "source": {
+        "type": "Neighbours",
+        "node": {
+         "type": "Var",
+         "name": "res"
+        },
+        "edge_type": "giantville_belief",
+        "any_type": false
+       },
+       "var_name": "_x",
+       "predicate": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "blf",
+     "GiantvilleBelief",
+     {
+      "provenance_hearsay": 1.0,
+      "provenance_grounded": 0.0,
+      "confidence": {
+       "__term__": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "news"
+          },
+          "key": "credibility"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       }
+      },
+      "about_place": {
+       "__term__": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "place"
+          },
+          "key": "place_id"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "res",
+     "giantville_belief",
+     "blf"
+    ],
+    [
+     "set_attr",
+     "res",
+     "comprehend_armed",
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "bw_belief_grounded",
+   "match": [
+    [
+     "res",
+     "visited",
+     "place"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "res"
+         },
+         "key": "ground_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Exists",
+       "source": {
+        "type": "Neighbours",
+        "node": {
+         "type": "Var",
+         "name": "res"
+        },
+        "edge_type": "giantville_belief",
+        "any_type": false
+       },
+       "var_name": "_x",
+       "predicate": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "blf",
+     "GiantvilleBelief",
+     {
+      "provenance_hearsay": 0.0,
+      "provenance_grounded": 1.0,
+      "confidence": 1.0,
+      "about_place": {
+       "__term__": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "place"
+          },
+          "key": "place_id"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "res",
+     "giantville_belief",
+     "blf"
+    ],
+    [
+     "set_attr",
+     "res",
+     "ground_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

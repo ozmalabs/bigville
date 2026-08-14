@@ -1,0 +1,953 @@
+{
+ "id": "staleness_decay",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "area": "retina",
+ "description": "SHARED integer-half-life DECAY PRIMITIVE (block 196000). One representation for any decaying quantity: last_refresh_epoch (integer innovation clock) + half_life (integer epochs, set INVERSELY by surprise) + freshness = Ashr(C0, IDiv(now_epoch - last_refresh_epoch, half_life)) -- the integer-EXACT x2^-k (scale2) atom read on the per-sensor epoch axis. The held surface is the FIRST consumer: the order-0 residual against the held prediction (sd_residual, an INTEGER temporal surprise |caught - obs_prev|) sets half_life (sd_gate) and gates the innovation clock; freshness (sd_freshness) precision-weights a Kalman blend of held-vs-new (sd_blend) so a STATIC cell keeps a long half-life and denoises (density accrues) while a MOVING cell's freshness collapses and it ADOPTS the new content (refreshed, not smeared) -- density and latency DECOUPLE over ONE held belief. A second consumer (sd_flag_stale) foveates by reading the exposed freshness attribute. A synthetic DecayTrace (sd_freshness_generic) is decayed by byte-structurally-identical machinery -- proving the primitive is shared, not perception-local. OFF by default: the rules need a HeldDecayParams node the measure adapter creates only on opt-in; absent it every existing path is byte-identical (held_surface.json untouched). NO Rust, NO new Term (Ashr/IDiv/Abs/IfThenElse/Max exist).",
+ "microtheory": {
+  "name": "staleness_decay",
+  "description": "Integer-half-life freshness (scale2 on the epoch axis) as a shared decay primitive; decay proportional to surprise decouples accumulation density from adopt latency in the held surface."
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:staleness_decay:retina-decay-params",
+   "src": {
+    "type": "Retina",
+    "var": "retina"
+   },
+   "edge_type": "has_held_decay_params",
+   "tgt": {
+    "type": "HeldDecayParams",
+    "var": "dparams"
+   }
+  },
+  {
+   "provenance": "seed:staleness_decay:retina-decay-trace",
+   "src": {
+    "type": "Retina",
+    "var": "retina"
+   },
+   "edge_type": "has_decay_trace",
+   "tgt": {
+    "type": "DecayTrace",
+    "var": "dt"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "name": "sd_residual",
+   "area": "retina",
+   "order": 0,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "retina",
+     "has_held_decay_params",
+     "dparams"
+    ],
+    [
+     "retina",
+     "has_column",
+     "column"
+    ],
+    [
+     "column",
+     "rod_receptor",
+     "rod"
+    ],
+    [
+     "column",
+     "has_held_surface_cell",
+     "hs"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "dparams"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "hs"
+       },
+       "key": "epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rod"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "hs",
+     "residual",
+     {
+      "__term__": {
+       "type": "Abs",
+       "arg": {
+        "type": "Minus",
+        "a": {
+         "type": "IDiv",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "rod"
+          },
+          "key": "caught_quanta"
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        },
+        "b": {
+         "type": "IDiv",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "hs"
+          },
+          "key": "value"
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "sd_gate",
+   "area": "retina",
+   "order": 1,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "retina",
+     "has_held_decay_params",
+     "dparams"
+    ],
+    [
+     "retina",
+     "has_column",
+     "column"
+    ],
+    [
+     "column",
+     "rod_receptor",
+     "rod"
+    ],
+    [
+     "column",
+     "has_held_surface_cell",
+     "hs"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "dparams"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "hs"
+       },
+       "key": "epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rod"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "hs",
+     "half_life",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dparams"
+         },
+         "key": "uniform"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "dparams"
+        },
+        "key": "uniform_hl"
+       },
+       "other": {
+        "type": "Max",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "dparams"
+          },
+          "key": "hl_min"
+         },
+         {
+          "type": "IDiv",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "dparams"
+           },
+           "key": "hl_scale"
+          },
+          "b": {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "hs"
+             },
+             "key": "residual"
+            },
+            {
+             "type": "Lit",
+             "value": 1.0
+            }
+           ]
+          }
+         }
+        ]
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "hs",
+     "last_refresh_epoch",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dparams"
+         },
+         "key": "uniform"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "hs"
+        },
+        "key": "last_refresh_epoch"
+       },
+       "other": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Lt",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "hs"
+          },
+          "key": "residual"
+         },
+         "b": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "dparams"
+          },
+          "key": "refresh_thresh"
+         }
+        },
+        "then": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "column"
+         },
+         "key": "input_epoch"
+        },
+        "other": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "hs"
+         },
+         "key": "last_refresh_epoch"
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "sd_freshness",
+   "area": "retina",
+   "order": 2,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "retina",
+     "has_held_decay_params",
+     "dparams"
+    ],
+    [
+     "retina",
+     "has_column",
+     "column"
+    ],
+    [
+     "column",
+     "rod_receptor",
+     "rod"
+    ],
+    [
+     "column",
+     "has_held_surface_cell",
+     "hs"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "dparams"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "hs"
+       },
+       "key": "epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rod"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "hs",
+     "freshness",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dparams"
+         },
+         "key": "pin_freshness"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "dparams"
+        },
+        "key": "c0"
+       },
+       "other": {
+        "type": "Ashr",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dparams"
+         },
+         "key": "c0"
+        },
+        "b": {
+         "type": "IDiv",
+         "a": {
+          "type": "Minus",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "column"
+           },
+           "key": "input_epoch"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "hs"
+           },
+           "key": "last_refresh_epoch"
+          }
+         },
+         "b": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "hs"
+          },
+          "key": "half_life"
+         }
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "sd_blend",
+   "area": "retina",
+   "order": 4,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "retina",
+     "has_held_decay_params",
+     "dparams"
+    ],
+    [
+     "retina",
+     "has_column",
+     "column"
+    ],
+    [
+     "column",
+     "rod_receptor",
+     "rod"
+    ],
+    [
+     "column",
+     "has_held_surface_cell",
+     "hs"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "dparams"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "hs"
+       },
+       "key": "epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rod"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "hs",
+     "value",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "hs"
+         },
+         "key": "value"
+        },
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "dparams"
+             },
+             "key": "lr_min"
+            },
+            {
+             "type": "Times",
+             "items": [
+              {
+               "type": "Minus",
+               "a": {
+                "type": "Lit",
+                "value": 1.0
+               },
+               "b": {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "dparams"
+                },
+                "key": "lr_min"
+               }
+              },
+              {
+               "type": "Div",
+               "a": {
+                "type": "Minus",
+                "a": {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "dparams"
+                 },
+                 "key": "c0"
+                },
+                "b": {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "hs"
+                 },
+                 "key": "freshness"
+                }
+               },
+               "b": {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "dparams"
+                },
+                "key": "c0"
+               }
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "type": "Minus",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "rod"
+            },
+            "key": "caught_quanta"
+           },
+           "b": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "hs"
+            },
+            "key": "value"
+           }
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "hs",
+     "obs",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rod"
+       },
+       "key": "caught_quanta"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "hs",
+     "epoch",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "sd_flag_stale",
+   "area": "retina",
+   "order": 3,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "retina",
+     "has_held_decay_params",
+     "dparams"
+    ],
+    [
+     "retina",
+     "has_column",
+     "column"
+    ],
+    [
+     "column",
+     "has_held_surface_cell",
+     "hs"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "dparams"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "hs",
+     "needs_attention",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Lt",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "hs"
+         },
+         "key": "freshness"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dparams"
+         },
+         "key": "attn_thresh"
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "Lit",
+        "value": 0.0
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "sd_freshness_generic",
+   "area": "retina",
+   "order": 2,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "retina",
+     "has_held_decay_params",
+     "dparams"
+    ],
+    [
+     "retina",
+     "has_decay_trace",
+     "dt"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "dparams"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "dt",
+     "freshness",
+     {
+      "__term__": {
+       "type": "Ashr",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "dparams"
+        },
+        "key": "c0"
+       },
+       "b": {
+        "type": "IDiv",
+        "a": {
+         "type": "Minus",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "dt"
+          },
+          "key": "now_epoch"
+         },
+         "b": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "dt"
+          },
+          "key": "last_refresh_epoch"
+         }
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "dt"
+         },
+         "key": "half_life"
+        }
+       }
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

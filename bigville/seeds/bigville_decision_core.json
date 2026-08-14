@@ -1,0 +1,1386 @@
+{
+ "id": "bigville_decision_core",
+ "version": "1.1.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE DECISION CORE (block 279000) -- the conduct decision is ONE COLLAPSE applied to conduct (the same collapse the eye and the sd loop run), with RESIDUAL as the depth-driver. The four 'parts' are the FACES of one collapse: (0) the SHALLOW collapse = a genuinely compiled/cached net (native NetForward over a NetworkAssemblage) settling in one pass over an availability-filtered consideration set -- the connectionist-descent face; the RESIDUAL (surprise = |cached value - grounded model value|) IS the arbiter -- a collapse with residual above settle_tol has NOT settled, so it CONTINUES; (N) the DEEPER collapse = a model-based symbolic Argmax that runs ONLY because the shallow pass left residual (the symbolic-rewrite face; carries rationalise_gain so deliberation can rationalise, not only override -- correction #2); (settle-back) INTERNALIZATION = net_collapse writing the settled result into the held net (the SAME collapse at a slower timescale, Mattar&Daw MB->MF replay), so the shallow pass settles it directly next time = the automation curve. 'yes...wait...no' is ONE collapse trace: fast settle (yes) -> residual (wait, not settled) -> deeper settle (no). Two coupled knobs (correction #1): depth (order) x precision (settle_tol, the collapse tolerance) -- residual, not a bolted-on threshold, drives it; scalar residual logged, no depletion term. Violence sits on BOTH the shallow and deep faces. Every face is a rule composing existing DSL Terms + the native net collapse ops (NetForward / net_collapse); ZERO new Rust. OFF by default (self_load_only). Falsifiers: replay_gain<=0 freezes the settle-back (flat curve); deepen_enabled=0 caps depth at the shallow collapse (pure order-0).",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "dc_collapse_pass",
+   "batch": false,
+   "comment": "THE SHALLOW COLLAPSE (order-0, connectionist-descent face). The conduct held-state settles in ONE fast pass: the cached NetForward value over the availability-filtered consideration set (pruning lives HERE) picks the fast candidate. The RESIDUAL is read off the same pass -- surprise = |cached value - grounded model value| = how far this fast settle is from a settled state. This is NOT 'a few live iterations of the symbolic decode'; it is a compiled net lookup. Sets order=0.",
+   "match": [
+    [
+     "m",
+     "has_net",
+     "rn"
+    ],
+    [
+     "rn",
+     "net_assemblage",
+     "asm"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "collapse_armed"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "cand_code",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "IndexAt",
+          "seq": {
+           "type": "NetForward",
+           "assemblage": {
+            "type": "Var",
+            "name": "asm"
+           },
+           "inputs": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "input_vec"
+           }
+          },
+          "index": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "index"
+          }
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "code"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "cand_name",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "IndexAt",
+          "seq": {
+           "type": "NetForward",
+           "assemblage": {
+            "type": "Var",
+            "name": "asm"
+           },
+           "inputs": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "input_vec"
+           }
+          },
+          "index": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "index"
+          }
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "name"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "cand_index",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "IndexAt",
+          "seq": {
+           "type": "NetForward",
+           "assemblage": {
+            "type": "Var",
+            "name": "asm"
+           },
+           "inputs": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "input_vec"
+           }
+          },
+          "index": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "index"
+          }
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "index"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "cand_val",
+     {
+      "__term__": {
+       "type": "IndexAt",
+       "seq": {
+        "type": "NetForward",
+        "assemblage": {
+         "type": "Var",
+         "name": "asm"
+        },
+        "inputs": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "input_vec"
+        }
+       },
+       "index": {
+        "type": "Attr",
+        "node": {
+         "type": "Argmax",
+         "source": {
+          "type": "Neighbours",
+          "node": {"type": "Var", "name": "m"},
+          "edge_type": "in_scene"
+         },
+         "var_name": "act",
+         "value": {
+          "type": "IfThenElse",
+          "cond": {
+           "type": "Gt",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "act"
+            },
+            "key": "impulse"
+           },
+           "b": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "consideration_threshold"
+           }
+          },
+          "then": {
+           "type": "IndexAt",
+           "seq": {
+            "type": "NetForward",
+            "assemblage": {
+             "type": "Var",
+             "name": "asm"
+            },
+            "inputs": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "m"
+             },
+             "key": "input_vec"
+            }
+           },
+           "index": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "act"
+            },
+            "key": "index"
+           }
+          },
+          "other": {
+           "type": "Lit",
+           "value": -1000000000.0
+          }
+         }
+        },
+        "key": "index"
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "cand_plan",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "IndexAt",
+          "seq": {
+           "type": "NetForward",
+           "assemblage": {
+            "type": "Var",
+            "name": "asm"
+           },
+           "inputs": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "input_vec"
+           }
+          },
+          "index": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "index"
+          }
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "plan_value"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "cand_transg",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "IndexAt",
+          "seq": {
+           "type": "NetForward",
+           "assemblage": {
+            "type": "Var",
+            "name": "asm"
+           },
+           "inputs": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "input_vec"
+           }
+          },
+          "index": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "index"
+          }
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "is_transgressive"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "residual",
+     {
+      "__term__": {
+       "type": "Abs",
+       "arg": {
+        "type": "Minus",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "cand_val"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "cand_plan"
+        }
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "order",
+     0.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "collapse_armed",
+     0.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "settle_check_armed",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "dc_collapse_settle",
+   "batch": false,
+   "comment": "SETTLED SHALLOW. The residual IS the arbiter -- there is no separate 'should I escalate?' decision. A collapse whose residual is within settle_tol HAS settled; it commits the held candidate directly (order-0, deepened=0). Also settles here when depth is capped (deepen_enabled=0 = the collapse cannot go deeper) -- pure order-0 / habitual. No write-back needed: a settled shallow state is one the held net already predicts. This is the impulsive/automatic path.",
+   "match": [
+    [
+     "m",
+     "has_net",
+     "rn"
+    ],
+    [
+     "rn",
+     "net_assemblage",
+     "asm"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "settle_check_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Or",
+      "items": [
+       {
+        "type": "Not",
+        "arg": {
+         "type": "Gt",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "m"
+          },
+          "key": "residual"
+         },
+         "b": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "m"
+          },
+          "key": "settle_tol"
+         }
+        }
+       },
+       {
+        "type": "Not",
+        "arg": {
+         "type": "Eq",
+         "a": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "deepen_enabled"
+           },
+           {
+            "type": "Lit",
+            "value": 0.0
+           }
+          ]
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "chosen_code",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "cand_code"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "chosen_name",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "cand_name"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "chosen_via",
+     "order0"
+    ],
+    [
+     "set_attr",
+     "m",
+     "deepened",
+     0.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "settle_check_armed",
+     0.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "done",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "dc_collapse_deepen",
+   "batch": false,
+   "comment": "THE COLLAPSE CONTINUES TO HIGHER ORDER (order-N, symbolic-rewrite face) -- and it runs ONLY BECAUSE the shallow pass left residual above settle_tol (not settled). This is the same collapse, deeper: a model-based Argmax over the consideration set by plan_value + rationalise_gain*impulse. rationalise_gain=0 -> corrects the impulse (override); high -> settles BACK on the impulse with a justification (motivated reasoning rides UP, correction #2). Violence is a low-weight option on THIS path too. Arms the settle-back (write-in).",
+   "match": [
+    [
+     "m",
+     "has_net",
+     "rn"
+    ],
+    [
+     "rn",
+     "net_assemblage",
+     "asm"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "settle_check_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "residual"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "settle_tol"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "deepen_enabled"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "chosen_code",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "act"
+            },
+            "key": "plan_value"
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "m"
+              },
+              "key": "rationalise_gain"
+             },
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "act"
+              },
+              "key": "impulse"
+             }
+            ]
+           }
+          ]
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "code"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "chosen_name",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "act"
+            },
+            "key": "plan_value"
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "m"
+              },
+              "key": "rationalise_gain"
+             },
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "act"
+              },
+              "key": "impulse"
+             }
+            ]
+           }
+          ]
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "name"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "s2_choice_code",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "act"
+            },
+            "key": "plan_value"
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "m"
+              },
+              "key": "rationalise_gain"
+             },
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "act"
+              },
+              "key": "impulse"
+             }
+            ]
+           }
+          ]
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "code"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "s2_choice_name",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {"type": "Var", "name": "m"},
+         "edge_type": "in_scene"
+        },
+        "var_name": "act",
+        "value": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "act"
+           },
+           "key": "impulse"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "consideration_threshold"
+          }
+         },
+         "then": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "act"
+            },
+            "key": "plan_value"
+           },
+           {
+            "type": "Times",
+            "items": [
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "m"
+              },
+              "key": "rationalise_gain"
+             },
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "act"
+              },
+              "key": "impulse"
+             }
+            ]
+           }
+          ]
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1000000000.0
+         }
+        }
+       },
+       "key": "name"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "chosen_via",
+     "orderN"
+    ],
+    [
+     "set_attr",
+     "m",
+     "order",
+     1.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "deepened",
+     1.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "settle_check_armed",
+     0.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "writeback_armed",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "dc_collapse_writeback",
+   "batch": false,
+   "comment": "THE COLLAPSE SETTLES BACK INTO THE HELD STATE (internalization = the same collapse at a slower timescale, Mattar&Daw MB->MF replay). net_collapse writes the deepened (order-N) result into the order-0 net toward the model-value target, so next time the SHALLOW pass settles it directly -- residual shrinks over reps = the automation curve. eta = replay_gain*replay_eta. FALSIFIER: replay_gain<=0 routes to dc_collapse_no_writeback -> the held state never improves -> the shallow collapse leaves the same residual every rep -> it deepens forever -> curve is flat.",
+   "match": [
+    [
+     "m",
+     "has_net",
+     "rn"
+    ],
+    [
+     "rn",
+     "net_assemblage",
+     "asm"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "writeback_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "replay_gain"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "net_collapse",
+     "rn",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "input_vec"
+      }
+     },
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "target_vec"
+      }
+     },
+     {
+      "__term__": {
+       "type": "Times",
+       "items": [
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "replay_gain"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "replay_eta"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "writeback_armed",
+     0.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "done",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "dc_collapse_no_writeback",
+   "batch": false,
+   "comment": "The frozen-internalization complement (falsifier): replay_gain<=0 completes the deepened collapse WITHOUT settling back into the held state. One-knob falsifier -- kills the automation curve while leaving per-decision collapse intact.",
+   "match": [
+    [
+     "m",
+     "has_net",
+     "rn"
+    ],
+    [
+     "rn",
+     "net_assemblage",
+     "asm"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "writeback_armed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Gt",
+       "a": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "m"
+          },
+          "key": "replay_gain"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       },
+       "b": {
+        "type": "Lit",
+        "value": 0.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "writeback_armed",
+     0.0
+    ],
+    [
+     "set_attr",
+     "m",
+     "done",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

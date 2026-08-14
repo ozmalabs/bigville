@@ -1,0 +1,61 @@
+{
+  "id": "bigville_report",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R22 / newspaper-writer Rung B (block 294000): townspeople GO TO the publisher to report what they hold, via GENERAL directed conduct + the nav flood. A Mover holding a salient Fact it has not yet reported forms a report goal aimed at whoever affords makes_known -- rep_form_report_goal sets the mover's `seeks` edge to the afforder's cell (this is literally 'go to him': the nav flood then routes there). On co-location, rep_deliver_on_arrival fires a directed delivery (the afforder `received` the Fact) -- proximity/travel-bound, exactly like every other conduct. Ablate the affordance -> no target, no goal, no delivery. Ablate movement -> never arrives, no delivery.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "rep_form_report_goal",
+      "batch": false,
+      "comment": "A resident (Mover) holding a SALIENT, not-yet-reported Fact forms the intent to report it to whoever affords makes_known: it sets its own `seeks` edge to the afforder's current cell (the nav flood routes it there -- 'go to him' is spatial) and marks report_intent so this fires once. The target is chosen by the AFFORDANCE (find who affords making-things-known), never by a hardcoded reporter identity.",
+      "match": [
+        ["m", "holds", "f"],
+        ["pub", "affords", "aff"],
+        ["pub", "is_at", "c"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "aff"}, "key": "name"}, "b": {"type": "Lit", "value": "makes_known"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "salience"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "reported"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "report_intent"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Var", "name": "m"}, "b": {"type": "Var", "name": "pub"}}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "m", "seeks", "c"],
+        ["set_attr", "m", "report_intent", 1.0]
+      ]
+    },
+    {
+      "name": "rep_deliver_on_arrival",
+      "batch": false,
+      "comment": "When the reporting Mover reaches the afforder's cell (both is_at the SAME cell), it delivers: the afforder `received` the Fact and the Fact is marked reported. Directed, proximity-bound conduct -- the delivery cannot happen at a distance, so it depends on the mover actually TRAVELLING there. The reporter is not the afforder (Not m==pub).",
+      "match": [
+        ["m", "is_at", "c"],
+        ["pub", "is_at", "c"],
+        ["pub", "affords", "aff"],
+        ["m", "holds", "f"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "aff"}, "key": "name"}, "b": {"type": "Lit", "value": "makes_known"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "report_intent"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "reported"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Var", "name": "m"}, "b": {"type": "Var", "name": "pub"}}}
+        ]
+      },
+      "effects": [
+        ["add_edge", "pub", "received", "f"],
+        ["set_attr", "f", "reported", 1.0]
+      ]
+    }
+  ]
+}

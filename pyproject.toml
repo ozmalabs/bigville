@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bigville"
+version = "0.1.0"
+description = "A data-driven, turn-based village simulation with pluggable cognition backends"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.24",
+    "substrate-rs @ git+https://github.com/ozmalabs/ocelot.git@main#subdirectory=runners/dsl",
+]
+
+[tool.setuptools.packages.find]
+include = ["bigville*", "domains*", "substrate*", "worlds*"]
+
+[tool.setuptools.package-data]
+bigville = ["seeds/*.json"]

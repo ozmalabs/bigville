@@ -1,0 +1,3084 @@
+{
+ "id": "core_emotions",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "area": "retina",
+ "description": "THE CORE-EMOTION SET (block 204000) as APPRAISAL -> ACTION-TENDENCY rules over the EXISTING signal economy -- NOT a new module. Each emotion is a RULE reading the same integer atoms already in the tree: the 196000 staleness_decay freshness = Ashr(c0, IDiv(now-last_refresh, half_life)) (scale2 half-life) + the 199000 present readout (freshness>=t_present) -> a threat precision that DECAYS is FEAR, one that WON'T is ANXIETY (the same PTSD knob, appraised as emotion); the 202000 learning_progress = residual_prev - residual -> CURIOSITY(>0)/BOREDOM(->0) (the noisy-TV cut); the 202000 diminishing-returns value = V_max - Ashr(V_max, step) -> JOY's value_progress, and the scale2 decay Ashr(v0,k) -> SADNESS's un-re-groundable loss. Appraisal theory (Scherer/Lazarus/Frijda action tendencies); the circumplex (valence=sign of progress/value, arousal=magnitude of surprise/precision) read off in-graph. THE REFERENCE-FRAME-PER-EMOTION PRINCIPLE: each emotion's value function reads value at a LEVEL OF SELECTION -- the individual emotions read the individual ledger (happiness = benefit-cost); FULFILMENT reads the SUPERGRAPH (w_supergraph gates the contribution term), fires when the agent's action raised the COLLECTIVE's success, and is DISTINCT from joy. G4 value-side disorder glass-box (ties 199000): PSYCHOPATHY = the w_supergraph knob at ~0 (reads others -- contribution still computed -- but does not VALUE them -> fulfilment collapses, the somatic brake on supergraph-harmful acts is removed); pure-knob reversal restores it. mood_bias suppresses (depression) / inflates (mania) value across BOTH frames. The behavioural factors are SHADOWS of the state-knobs. Integer-native (Ashr/IDiv/Minus/Plus/Abs/IfThenElse/Eq/Gt/Lt/Gte/And/Or/Not only); NO Rust, NO new Term. OFF by default: every rule guards on a HeldEmotionParams.enabled node the measure adapter creates only on opt-in; absent it every existing path is byte-identical. Understanding not judgment; the FUNCTIONAL regulator, NOT a claim to felt qualia.",
+ "microtheory": {
+  "name": "core_emotions",
+  "description": "An emotion is an appraisal of the signal economy that produces an action tendency; its value function reads a level of selection (individual vs supergraph). Same integer decay/progress/value atoms as perception/curiosity; fulfilment is the supergraph frame, psychopathy the supergraph-value knob at zero."
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:core_emotions:hub-params",
+   "src": {
+    "type": "EmotionHub",
+    "var": "hub"
+   },
+   "edge_type": "has_emotion_params",
+   "tgt": {
+    "type": "HeldEmotionParams",
+    "var": "ep"
+   }
+  },
+  {
+   "provenance": "seed:core_emotions:hub-appraisal",
+   "src": {
+    "type": "EmotionHub",
+    "var": "hub"
+   },
+   "edge_type": "has_appraisal",
+   "tgt": {
+    "type": "Appraisal",
+    "var": "ap"
+   }
+  },
+  {
+   "provenance": "seed:core_emotions:agent-supergraph",
+   "src": {
+    "type": "EmotionHub",
+    "var": "hub"
+   },
+   "edge_type": "member_of",
+   "tgt": {
+    "type": "Supergraph",
+    "var": "sg"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "name": "em_threat_precision",
+   "area": "retina",
+   "order": 0,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "threat"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "threat_precision",
+     {
+      "__term__": {
+       "type": "Ashr",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "ap"
+        },
+        "key": "threat_c0"
+       },
+       "b": {
+        "type": "IDiv",
+        "a": {
+         "type": "Minus",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "threat_now_epoch"
+         },
+         "b": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "threat_last_refresh"
+         }
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "threat_half_life"
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_threat_persist",
+   "area": "retina",
+   "order": 1,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "threat"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "threat_persists",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Gte",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "threat_precision"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "t_present"
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "Lit",
+        "value": 0.0
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_learning_progress",
+   "area": "retina",
+   "order": 0,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "ep"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "learning_progress",
+     {
+      "__term__": {
+       "type": "Minus",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "ap"
+        },
+        "key": "residual_prev"
+       },
+       "b": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "ap"
+        },
+        "key": "residual"
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_joy_progress",
+   "area": "retina",
+   "order": 0,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "valued_goal"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "goal_blocked"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "value_progress",
+     {
+      "__term__": {
+       "type": "Minus",
+       "a": {
+        "type": "Ashr",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "v_max"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "step_prev"
+        }
+       },
+       "b": {
+        "type": "Ashr",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "v_max"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "step"
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_loss_progress",
+   "area": "retina",
+   "order": 0,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "attachment"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "regroundable"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "value_progress",
+     {
+      "__term__": {
+       "type": "Minus",
+       "a": {
+        "type": "Ashr",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "attach_v0"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "attach_k_now"
+        }
+       },
+       "b": {
+        "type": "Ashr",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "attach_v0"
+        },
+        "b": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "attach_k_prev"
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_happiness",
+   "area": "retina",
+   "order": 2,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "ep"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "happiness",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Minus",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "individual_benefit"
+         },
+         "b": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "individual_cost"
+         }
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ep"
+         },
+         "key": "mood_bias"
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_fulfilment_value",
+   "area": "retina",
+   "order": 2,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "ep"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "fulfilment_value",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "ep"
+           },
+           "key": "w_supergraph"
+          },
+          "b": {
+           "type": "Lit",
+           "value": 0.0
+          }
+         },
+         "then": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "supergraph_contribution"
+         },
+         "other": {
+          "type": "Lit",
+          "value": 0.0
+         }
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ep"
+         },
+         "key": "mood_bias"
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_total_value",
+   "area": "retina",
+   "order": 3,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "ep"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "total_value",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "happiness"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "fulfilment_value"
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_endorse",
+   "area": "retina",
+   "order": 4,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "ep"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "act_endorsed",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Gte",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "total_value"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 0.0
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "Lit",
+        "value": 0.0
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_surprise",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "residual"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "residual_thresh"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_surprise",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_fear",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "threat"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "threat_persists"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_fear",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_anxiety",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "threat"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "threat_persists"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_anxiety",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_anger",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "valued_goal"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "goal_blocked"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "blocker_present"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_anger",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_frustration",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "valued_goal"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "goal_blocked"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "blocker_present"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_frustration",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_disgust",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "contamination"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_disgust",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_joy",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "valued_goal"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "goal_blocked"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "value_progress"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_joy",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_sadness",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "attachment"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "regroundable"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Lt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "value_progress"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_sadness",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_curiosity",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "learning_progress"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_curiosity",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_boredom",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "learning_progress"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "was_engaged"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_boredom",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_fulfilment",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "supergraph_contribution"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "w_supergraph"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "collective_success"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "collective_success_prev"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_fulfilment",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_pride",
+   "area": "retina",
+   "order": 5,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "enabled"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "appraised"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "supergraph_contribution"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ep"
+       },
+       "key": "w_supergraph"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "contribution_by_self"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "ap"
+       },
+       "key": "observed_by_other"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "hit_pride",
+     {
+      "__term__": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_nfired",
+   "area": "retina",
+   "order": 8,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "ep"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "n_fired",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_surprise"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_fear"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_anxiety"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_anger"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_frustration"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_disgust"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_joy"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_sadness"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_curiosity"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_boredom"
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_fulfilment"
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "em_readoff",
+   "area": "retina",
+   "order": 9,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "hub",
+     "has_emotion_params",
+     "ep"
+    ],
+    [
+     "hub",
+     "has_appraisal",
+     "ap"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "ep"
+     },
+     "key": "enabled"
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "ap",
+     "action_tendency",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_surprise"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Eq",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "hit_fear"
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        },
+        "then": {
+         "type": "Lit",
+         "value": 2.0
+        },
+        "other": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Eq",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "ap"
+           },
+           "key": "hit_anxiety"
+          },
+          "b": {
+           "type": "Lit",
+           "value": 1.0
+          }
+         },
+         "then": {
+          "type": "Lit",
+          "value": 3.0
+         },
+         "other": {
+          "type": "IfThenElse",
+          "cond": {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "ap"
+            },
+            "key": "hit_anger"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          },
+          "then": {
+           "type": "Lit",
+           "value": 4.0
+          },
+          "other": {
+           "type": "IfThenElse",
+           "cond": {
+            "type": "Eq",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ap"
+             },
+             "key": "hit_frustration"
+            },
+            "b": {
+             "type": "Lit",
+             "value": 1.0
+            }
+           },
+           "then": {
+            "type": "Lit",
+            "value": 5.0
+           },
+           "other": {
+            "type": "IfThenElse",
+            "cond": {
+             "type": "Eq",
+             "a": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "ap"
+              },
+              "key": "hit_disgust"
+             },
+             "b": {
+              "type": "Lit",
+              "value": 1.0
+             }
+            },
+            "then": {
+             "type": "Lit",
+             "value": 6.0
+            },
+            "other": {
+             "type": "IfThenElse",
+             "cond": {
+              "type": "Eq",
+              "a": {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "ap"
+               },
+               "key": "hit_joy"
+              },
+              "b": {
+               "type": "Lit",
+               "value": 1.0
+              }
+             },
+             "then": {
+              "type": "Lit",
+              "value": 7.0
+             },
+             "other": {
+              "type": "IfThenElse",
+              "cond": {
+               "type": "Eq",
+               "a": {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "ap"
+                },
+                "key": "hit_sadness"
+               },
+               "b": {
+                "type": "Lit",
+                "value": 1.0
+               }
+              },
+              "then": {
+               "type": "Lit",
+               "value": 8.0
+              },
+              "other": {
+               "type": "IfThenElse",
+               "cond": {
+                "type": "Eq",
+                "a": {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "ap"
+                 },
+                 "key": "hit_curiosity"
+                },
+                "b": {
+                 "type": "Lit",
+                 "value": 1.0
+                }
+               },
+               "then": {
+                "type": "Lit",
+                "value": 9.0
+               },
+               "other": {
+                "type": "IfThenElse",
+                "cond": {
+                 "type": "Eq",
+                 "a": {
+                  "type": "Attr",
+                  "node": {
+                   "type": "Var",
+                   "name": "ap"
+                  },
+                  "key": "hit_boredom"
+                 },
+                 "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                 }
+                },
+                "then": {
+                 "type": "Lit",
+                 "value": 10.0
+                },
+                "other": {
+                 "type": "IfThenElse",
+                 "cond": {
+                  "type": "Eq",
+                  "a": {
+                   "type": "Attr",
+                   "node": {
+                    "type": "Var",
+                    "name": "ap"
+                   },
+                   "key": "hit_fulfilment"
+                  },
+                  "b": {
+                   "type": "Lit",
+                   "value": 1.0
+                  }
+                 },
+                 "then": {
+                  "type": "Lit",
+                  "value": 11.0
+                 },
+                 "other": {
+                  "type": "Lit",
+                  "value": 0.0
+                 }
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "ap",
+     "emotion",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_surprise"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 1.0
+       },
+       "other": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Eq",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "hit_fear"
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        },
+        "then": {
+         "type": "Lit",
+         "value": 2.0
+        },
+        "other": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Eq",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "ap"
+           },
+           "key": "hit_anxiety"
+          },
+          "b": {
+           "type": "Lit",
+           "value": 1.0
+          }
+         },
+         "then": {
+          "type": "Lit",
+          "value": 3.0
+         },
+         "other": {
+          "type": "IfThenElse",
+          "cond": {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "ap"
+            },
+            "key": "hit_anger"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          },
+          "then": {
+           "type": "Lit",
+           "value": 4.0
+          },
+          "other": {
+           "type": "IfThenElse",
+           "cond": {
+            "type": "Eq",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ap"
+             },
+             "key": "hit_frustration"
+            },
+            "b": {
+             "type": "Lit",
+             "value": 1.0
+            }
+           },
+           "then": {
+            "type": "Lit",
+            "value": 5.0
+           },
+           "other": {
+            "type": "IfThenElse",
+            "cond": {
+             "type": "Eq",
+             "a": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "ap"
+              },
+              "key": "hit_disgust"
+             },
+             "b": {
+              "type": "Lit",
+              "value": 1.0
+             }
+            },
+            "then": {
+             "type": "Lit",
+             "value": 6.0
+            },
+            "other": {
+             "type": "IfThenElse",
+             "cond": {
+              "type": "Eq",
+              "a": {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "ap"
+               },
+               "key": "hit_joy"
+              },
+              "b": {
+               "type": "Lit",
+               "value": 1.0
+              }
+             },
+             "then": {
+              "type": "Lit",
+              "value": 7.0
+             },
+             "other": {
+              "type": "IfThenElse",
+              "cond": {
+               "type": "Eq",
+               "a": {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "ap"
+                },
+                "key": "hit_sadness"
+               },
+               "b": {
+                "type": "Lit",
+                "value": 1.0
+               }
+              },
+              "then": {
+               "type": "Lit",
+               "value": 8.0
+              },
+              "other": {
+               "type": "IfThenElse",
+               "cond": {
+                "type": "Eq",
+                "a": {
+                 "type": "Attr",
+                 "node": {
+                  "type": "Var",
+                  "name": "ap"
+                 },
+                 "key": "hit_curiosity"
+                },
+                "b": {
+                 "type": "Lit",
+                 "value": 1.0
+                }
+               },
+               "then": {
+                "type": "Lit",
+                "value": 9.0
+               },
+               "other": {
+                "type": "IfThenElse",
+                "cond": {
+                 "type": "Eq",
+                 "a": {
+                  "type": "Attr",
+                  "node": {
+                   "type": "Var",
+                   "name": "ap"
+                  },
+                  "key": "hit_boredom"
+                 },
+                 "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                 }
+                },
+                "then": {
+                 "type": "Lit",
+                 "value": 10.0
+                },
+                "other": {
+                 "type": "IfThenElse",
+                 "cond": {
+                  "type": "Eq",
+                  "a": {
+                   "type": "Attr",
+                   "node": {
+                    "type": "Var",
+                    "name": "ap"
+                   },
+                   "key": "hit_fulfilment"
+                  },
+                  "b": {
+                   "type": "Lit",
+                   "value": 1.0
+                  }
+                 },
+                 "then": {
+                  "type": "Lit",
+                  "value": 11.0
+                 },
+                 "other": {
+                  "type": "Lit",
+                  "value": 0.0
+                 }
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "ap",
+     "valence",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "n_fired"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 0.0
+        }
+       },
+       "then": {
+        "type": "Lit",
+        "value": 0.0
+       },
+       "other": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Eq",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "hit_surprise"
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        },
+        "then": {
+         "type": "Lit",
+         "value": 0.0
+        },
+        "other": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Or",
+          "items": [
+           {
+            "type": "Eq",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ap"
+             },
+             "key": "hit_joy"
+            },
+            "b": {
+             "type": "Lit",
+             "value": 1.0
+            }
+           },
+           {
+            "type": "Eq",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ap"
+             },
+             "key": "hit_curiosity"
+            },
+            "b": {
+             "type": "Lit",
+             "value": 1.0
+            }
+           },
+           {
+            "type": "Eq",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ap"
+             },
+             "key": "hit_fulfilment"
+            },
+            "b": {
+             "type": "Lit",
+             "value": 1.0
+            }
+           }
+          ]
+         },
+         "then": {
+          "type": "Lit",
+          "value": 1.0
+         },
+         "other": {
+          "type": "Lit",
+          "value": -1.0
+         }
+        }
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "ap",
+     "arousal",
+     {
+      "__term__": {
+       "type": "IfThenElse",
+       "cond": {
+        "type": "Eq",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "hit_surprise"
+        },
+        "b": {
+         "type": "Lit",
+         "value": 1.0
+        }
+       },
+       "then": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "ap"
+        },
+        "key": "residual"
+       },
+       "other": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Or",
+         "items": [
+          {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "ap"
+            },
+            "key": "hit_fear"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          },
+          {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "ap"
+            },
+            "key": "hit_anxiety"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          }
+         ]
+        },
+        "then": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "ap"
+         },
+         "key": "threat_precision"
+        },
+        "other": {
+         "type": "IfThenElse",
+         "cond": {
+          "type": "Eq",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "ap"
+           },
+           "key": "hit_curiosity"
+          },
+          "b": {
+           "type": "Lit",
+           "value": 1.0
+          }
+         },
+         "then": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "ap"
+          },
+          "key": "learning_progress"
+         },
+         "other": {
+          "type": "IfThenElse",
+          "cond": {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "ap"
+            },
+            "key": "hit_joy"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          },
+          "then": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "ap"
+           },
+           "key": "value_progress"
+          },
+          "other": {
+           "type": "IfThenElse",
+           "cond": {
+            "type": "Eq",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ap"
+             },
+             "key": "hit_fulfilment"
+            },
+            "b": {
+             "type": "Lit",
+             "value": 1.0
+            }
+           },
+           "then": {
+            "type": "Abs",
+            "arg": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ap"
+             },
+             "key": "supergraph_contribution"
+            }
+           },
+           "other": {
+            "type": "IfThenElse",
+            "cond": {
+             "type": "Or",
+             "items": [
+              {
+               "type": "Eq",
+               "a": {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "ap"
+                },
+                "key": "hit_anger"
+               },
+               "b": {
+                "type": "Lit",
+                "value": 1.0
+               }
+              },
+              {
+               "type": "Eq",
+               "a": {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "ap"
+                },
+                "key": "hit_frustration"
+               },
+               "b": {
+                "type": "Lit",
+                "value": 1.0
+               }
+              }
+             ]
+            },
+            "then": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ep"
+             },
+             "key": "high_arousal"
+            },
+            "other": {
+             "type": "IfThenElse",
+             "cond": {
+              "type": "Eq",
+              "a": {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "ap"
+               },
+               "key": "hit_disgust"
+              },
+              "b": {
+               "type": "Lit",
+               "value": 1.0
+              }
+             },
+             "then": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "ep"
+              },
+              "key": "mid_arousal"
+             },
+             "other": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "ep"
+              },
+              "key": "low_arousal"
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

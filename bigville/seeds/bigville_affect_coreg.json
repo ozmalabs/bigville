@@ -1,0 +1,127 @@
+{
+ "id": "bigville_affect_coreg",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R17 (block 265000) -- af_regulation_from_coreg: regulation is READ from the REUSED 239000 window the person holds -- regulation = clamp01(k * (widen_count - narrow_count)). Co-regulation (a regulated caregiver, run through the UNCHANGED 239000 stress-episode rules via R14 attend/rear_episode) WIDENS the window -> regulation rises -> eff_distress falls -> the regulated choice (work) becomes REACHABLE again -> recovery. No support -> the window narrows -> regulation stays 0 -> the spiral runs to breakdown. Breakdown vs recovery is a MEASURED function of support presence -- 'does well if it can', not a will to fail. This IS the RESTORE arm of the induce->measure->RESTORE ethics protocol (co-regulation, not a reset). Composes existing Terms only; ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "af_regulation_from_coreg",
+   "batch": false,
+   "match": [
+    [
+     "m",
+     "has_window",
+     "wot"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "regul_armed"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 1.0
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "regulation",
+     {
+      "__term__": {
+       "type": "Max",
+       "items": [
+        {
+         "type": "Lit",
+         "value": 0.0
+        },
+        {
+         "type": "Min",
+         "items": [
+          {
+           "type": "Lit",
+           "value": 1.0
+          },
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Lit",
+             "value": 0.15
+            },
+            {
+             "type": "Minus",
+             "a": {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "wot"
+                },
+                "key": "widen_count"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             },
+             "b": {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "wot"
+                },
+                "key": "narrow_count"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "regul_armed",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

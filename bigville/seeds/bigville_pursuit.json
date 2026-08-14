@@ -1,0 +1,2438 @@
+{
+  "seed": "bigville_pursuit",
+  "version": "2.1.0",
+  "comment": "ONE task pursuit -- the merge of the two delegation paths. Any goal is a wants_done Task; the agent makes ONE route decision -- do it MYSELF (kind-specific: fetch=propose a trade; else just do it) or ASK the cheapest CAPABLE person I can afford -- and dispatches. Delegation is the 'ask' route, not a separate faculty. The food-acquire need mints a fetch task; a note is a task too. The agents RUN ON THE MAP: going myself means HEADING FOR the source and trading when I ARRIVE (co-located) -- fetching takes ticks to walk there.",
+  "rules": [
+    {
+      "name": "pu_estimate",
+      "batch": false,
+      "comment": "Task pursuit -- ESTIMATE THE JOURNEY to the source it expects: the distance (manhattan over my current position and theirs) and the stamina it would cost. src_reach=1 only if my full stamina capacity could cover it -- else the trip is beyond me and I must ask someone. Every agent estimates this for its own expected source -- lets an agent (asker OR asked) look before it leaps: rest if I'm short, decline if it's too far.",
+      "match": [
+        [
+          "agent",
+          "expects",
+          "exp"
+        ],
+        [
+          "exp",
+          "source",
+          "holder"
+        ],
+        [
+          "agent",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "exp"
+              },
+              "key": "avail"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "src_est",
+          {
+            "__term__": {
+              "type": "Times",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "key": "cx"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "holder"
+                                },
+                                "key": "cx"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "holder"
+                                },
+                                "key": "cx"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "key": "cx"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "key": "cy"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "holder"
+                                },
+                                "key": "cy"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "holder"
+                                },
+                                "key": "cy"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "key": "cy"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.1
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "src_reach",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Gte",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "stamina"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Max",
+                          "items": [
+                            {
+                              "type": "Minus",
+                              "a": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "agent"
+                                    },
+                                    "key": "cx"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "b": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "holder"
+                                    },
+                                    "key": "cx"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "Minus",
+                              "a": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "holder"
+                                    },
+                                    "key": "cx"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "b": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "agent"
+                                    },
+                                    "key": "cx"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Max",
+                          "items": [
+                            {
+                              "type": "Minus",
+                              "a": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "agent"
+                                    },
+                                    "key": "cy"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "b": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "holder"
+                                    },
+                                    "key": "cy"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "Minus",
+                              "a": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "holder"
+                                    },
+                                    "key": "cy"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "b": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "agent"
+                                    },
+                                    "key": "cy"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.1
+                    }
+                  ]
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "agent",
+          "reach_good",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "exp"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "pu_score_tie",
+      "batch": false,
+      "comment": "Task pursuit -- cost of asking each person to do this task: their offer (my model - our relationship, priced) + a little ask-effort, but ONLY if they are CAPABLE and I can afford it; else out of reach. One mechanism for ANY task (fetch bread, deliver a note).",
+      "match": [
+        [
+          "agent",
+          "wants_done",
+          "task"
+        ],
+        [
+          "agent",
+          "tie",
+          "t"
+        ],
+        [
+          "t",
+          "toward",
+          "cand"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "done"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "pursued"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "t",
+          "ask_cost",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "IfThenElse",
+                      "cond": {
+                        "type": "Eq",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "task"
+                              },
+                              "key": "requirement"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      },
+                      "then": {
+                        "type": "Lit",
+                        "value": 1.0
+                      },
+                      "other": {
+                        "type": "IfThenElse",
+                        "cond": {
+                          "type": "Exists",
+                          "source": {
+                            "type": "Neighbours",
+                            "node": {
+                              "type": "Var",
+                              "name": "t"
+                            },
+                            "edge_type": "toward",
+                            "any_type": false
+                          },
+                          "var_name": "cd",
+                          "predicate": {
+                            "type": "Exists",
+                            "source": {
+                              "type": "Neighbours",
+                              "node": {
+                                "type": "Var",
+                                "name": "cd"
+                              },
+                              "edge_type": "can_do",
+                              "any_type": false
+                            },
+                            "var_name": "c",
+                            "predicate": {
+                              "type": "Eq",
+                              "a": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "c"
+                                    },
+                                    "key": "kind"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              },
+                              "b": {
+                                "type": "Plus",
+                                "items": [
+                                  {
+                                    "type": "Attr",
+                                    "node": {
+                                      "type": "Var",
+                                      "name": "task"
+                                    },
+                                    "key": "requirement"
+                                  },
+                                  {
+                                    "type": "Lit",
+                                    "value": 0.0
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "then": {
+                          "type": "Lit",
+                          "value": 1.0
+                        },
+                        "other": {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      }
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  {
+                    "type": "Gte",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "agent"
+                          },
+                          "key": "coin"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Max",
+                      "items": [
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        },
+                        {
+                          "type": "Minus",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "t"
+                                },
+                                "key": "expected_ask"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "t"
+                                },
+                                "key": "strength"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "then": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Times",
+                    "items": [
+                      {
+                        "type": "Max",
+                        "items": [
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          },
+                          {
+                            "type": "Minus",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "t"
+                                  },
+                                  "key": "expected_ask"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "t"
+                                  },
+                                  "key": "strength"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.1
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.05
+                  }
+                ]
+              },
+              "other": {
+                "type": "Lit",
+                "value": 999.0
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "pu_route",
+      "batch": false,
+      "comment": "Task pursuit -- the ONE route decision for a goal: cost of doing it MYSELF (my effort, if I am capable and -- for a fetch -- know a source) vs the CHEAPEST PERSON to ask (min over ties). Same decision for every task; delegation is just the 'ask' route. Sets the costs + arms the dispatch. Going myself on a FETCH is out of reach (self_cost BIG) if the journey exceeds my stamina capacity (src_reach 0) -- then I ask someone who can.",
+      "match": [
+        [
+          "agent",
+          "wants_done",
+          "task"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "done"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "pursued"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "task",
+          "self_cost",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "And",
+                "items": [
+                  {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Times",
+                      "items": [
+                        {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "Eq",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "task"
+                                  },
+                                  "key": "requirement"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          },
+                          "then": {
+                            "type": "Lit",
+                            "value": 1.0
+                          },
+                          "other": {
+                            "type": "IfThenElse",
+                            "cond": {
+                              "type": "Exists",
+                              "source": {
+                                "type": "Neighbours",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "edge_type": "can_do",
+                                "any_type": false
+                              },
+                              "var_name": "c",
+                              "predicate": {
+                                "type": "Eq",
+                                "a": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "c"
+                                      },
+                                      "key": "kind"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                },
+                                "b": {
+                                  "type": "Plus",
+                                  "items": [
+                                    {
+                                      "type": "Attr",
+                                      "node": {
+                                        "type": "Var",
+                                        "name": "task"
+                                      },
+                                      "key": "requirement"
+                                    },
+                                    {
+                                      "type": "Lit",
+                                      "value": 0.0
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "then": {
+                              "type": "Lit",
+                              "value": 1.0
+                            },
+                            "other": {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          }
+                        },
+                        {
+                          "type": "IfThenElse",
+                          "cond": {
+                            "type": "Eq",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "task"
+                                  },
+                                  "key": "kind"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Lit",
+                              "value": 1.0
+                            }
+                          },
+                          "then": {
+                            "type": "IfThenElse",
+                            "cond": {
+                              "type": "Exists",
+                              "source": {
+                                "type": "Neighbours",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "agent"
+                                },
+                                "edge_type": "expects",
+                                "any_type": false
+                              },
+                              "var_name": "e",
+                              "predicate": {
+                                "type": "And",
+                                "items": [
+                                  {
+                                    "type": "Eq",
+                                    "a": {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "e"
+                                          },
+                                          "key": "good"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    },
+                                    "b": {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "task"
+                                          },
+                                          "key": "good"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  {
+                                    "type": "Eq",
+                                    "a": {
+                                      "type": "Plus",
+                                      "items": [
+                                        {
+                                          "type": "Attr",
+                                          "node": {
+                                            "type": "Var",
+                                            "name": "e"
+                                          },
+                                          "key": "avail"
+                                        },
+                                        {
+                                          "type": "Lit",
+                                          "value": 0.0
+                                        }
+                                      ]
+                                    },
+                                    "b": {
+                                      "type": "Lit",
+                                      "value": 1.0
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "then": {
+                              "type": "Lit",
+                              "value": 1.0
+                            },
+                            "other": {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          },
+                          "other": {
+                            "type": "Lit",
+                            "value": 1.0
+                          }
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Lit",
+                      "value": 1.0
+                    }
+                  },
+                  {
+                    "type": "Or",
+                    "items": [
+                      {
+                        "type": "Not",
+                        "arg": {
+                          "type": "Eq",
+                          "a": {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "task"
+                                },
+                                "key": "kind"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          "b": {
+                            "type": "Lit",
+                            "value": 1.0
+                          }
+                        }
+                      },
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "agent"
+                              },
+                              "key": "src_reach"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Lit",
+                          "value": 1.0
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "type": "Lit",
+                "value": 0.15
+              },
+              "other": {
+                "type": "Lit",
+                "value": 999.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "task",
+          "ask_cost",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Exists",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "edge_type": "tie",
+                  "any_type": false
+                },
+                "var_name": "t",
+                "predicate": {
+                  "type": "Lit",
+                  "value": true
+                }
+              },
+              "then": {
+                "type": "Attr",
+                "node": {
+                  "type": "Argmin",
+                  "source": {
+                    "type": "Neighbours",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "edge_type": "tie",
+                    "any_type": false
+                  },
+                  "var_name": "t",
+                  "value": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "t"
+                        },
+                        "key": "ask_cost"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  }
+                },
+                "key": "ask_cost"
+              },
+              "other": {
+                "type": "Lit",
+                "value": 999.0
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "task",
+          "pursue_ready",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "pu_do_self_fetch",
+      "batch": false,
+      "comment": "Task pursuit -> act (route MYSELF, a fetch): I HEAD FOR the source I expect (a navigation intent, going_to) -- I do not teleport. The trade happens when I ARRIVE and am co-located (pu_at_source). Walking there takes ticks. (Only when going myself is at least as cheap as asking.) Only set out if I have the STAMINA for the trip now (reserve >= estimate); if I'm short I stay and REST first, then go.",
+      "match": [
+        [
+          "agent",
+          "wants_done",
+          "task"
+        ],
+        [
+          "agent",
+          "expects",
+          "exp"
+        ],
+        [
+          "exp",
+          "source",
+          "holder"
+        ],
+        [
+          "agent",
+          "has_body",
+          "body"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "done"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "pursued"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "pursue_ready"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "kind"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "exp"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "good"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "exp"
+                  },
+                  "key": "avail"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "self_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "ask_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "body"
+                  },
+                  "key": "stamina_reserve"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "src_est"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "agent",
+          "going_to",
+          "holder"
+        ],
+        [
+          "set_attr",
+          "task",
+          "pursued",
+          1.0
+        ],
+        [
+          "set_attr",
+          "task",
+          "en_route",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "pu_do_self_generic",
+      "batch": false,
+      "comment": "Task pursuit -> act (route MYSELF, a non-fetch task like delivering a note): I carry it out myself and it is done. (When going myself is at least as cheap as asking, and I am capable.)",
+      "match": [
+        [
+          "agent",
+          "wants_done",
+          "task"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "done"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "pursued"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "pursue_ready"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "task"
+                    },
+                    "key": "kind"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "requirement"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "IfThenElse",
+                "cond": {
+                  "type": "Exists",
+                  "source": {
+                    "type": "Neighbours",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "edge_type": "can_do",
+                    "any_type": false
+                  },
+                  "var_name": "c",
+                  "predicate": {
+                    "type": "Eq",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "c"
+                          },
+                          "key": "kind"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "task"
+                          },
+                          "key": "requirement"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                "other": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "self_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "ask_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "self_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 999.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "task",
+          "pursued",
+          1.0
+        ],
+        [
+          "set_attr",
+          "task",
+          "done",
+          1.0
+        ],
+        [
+          "set_attr",
+          "task",
+          "did_self",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "pu_do_ask",
+      "batch": false,
+      "comment": "Task pursuit -> act (route ASK): when asking the cheapest person beats doing it myself, I ask THEM -- mint a Request carrying the offer I decided. They accept (dl_accept) and carry it out (dx_fetch/dx_deliver for a fetch; the general delegation for anything). ONE ask path for every task -- the merge of the old general + food delegations.",
+      "match": [
+        [
+          "agent",
+          "wants_done",
+          "task"
+        ],
+        [
+          "agent",
+          "tie",
+          "t"
+        ],
+        [
+          "t",
+          "toward",
+          "cand"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "done"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "task"
+                      },
+                      "key": "pursued"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "pursue_ready"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "ask_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "self_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Lte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "t"
+                  },
+                  "key": "ask_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "ask_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "t"
+                  },
+                  "key": "ask_cost"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 999.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "req",
+          "Request",
+          {
+            "incentive": {
+              "__term__": {
+                "type": "Max",
+                "items": [
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  },
+                  {
+                    "type": "Minus",
+                    "a": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t"
+                          },
+                          "key": "expected_ask"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    "b": {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "t"
+                          },
+                          "key": "strength"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "status": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "requests",
+          "req"
+        ],
+        [
+          "add_edge",
+          "req",
+          "to",
+          "cand"
+        ],
+        [
+          "add_edge",
+          "req",
+          "for_task",
+          "task"
+        ],
+        [
+          "set_attr",
+          "task",
+          "pursued",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "pu_at_source",
+      "batch": false,
+      "comment": "Task pursuit -- ARRIVED at the source: now that I am co-located with the holder I was heading for, I propose the trade for the good (the two-sided, co-located trade). Clears the navigation intent. This is why fetching takes time -- I had to get here.",
+      "match": [
+        [
+          "agent",
+          "going_to",
+          "holder"
+        ],
+        [
+          "agent",
+          "is_at",
+          "cell"
+        ],
+        [
+          "holder",
+          "is_at",
+          "cell"
+        ],
+        [
+          "agent",
+          "wants_done",
+          "task"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "agent"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "kind"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "task"
+                  },
+                  "key": "en_route"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "offer",
+          "Offer",
+          {
+            "good": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "task"
+                    },
+                    "key": "good"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            },
+            "status": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "offers",
+          "offer"
+        ],
+        [
+          "add_edge",
+          "offer",
+          "to",
+          "holder"
+        ],
+        [
+          "del_edge",
+          "agent",
+          "going_to",
+          "holder"
+        ],
+        [
+          "set_attr",
+          "task",
+          "en_route",
+          0.0
+        ],
+        [
+          "set_attr",
+          "task",
+          "done",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

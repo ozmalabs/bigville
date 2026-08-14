@@ -1,0 +1,428 @@
+{
+  "id": "bigville_waste",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R51 (block 362000): WHERE DOES RUBBISH GO? It does not vanish -- conservation at the waste end of the pipe. wa_produce: living/working PRODUCES refuse (occupants*waste_rate), which ACCUMULATES where it is made (ash, scraps, nightsoil, breakages). wa_hazard: UNMANAGED refuse above town.hazard_threshold makes the place a HEALTH HAZARD (disease/smell -- a district with no collection sickens; ties to the determinants of health). wa_collect: disposal is SOMEONE'S JOB -- a RAKER (an appointed sanitation office, composes bigville_office) carts a place's refuse to the town TIP (a midden), conserved (place -> tip: moved, not destroyed). wa_dump: dumping in the RIVER moves the problem as POLLUTION (conserved, relocated -- not solved). Total waste = sum(places) + tip + river: nothing disappears. Composes with the map (places), the food lifecycle (scraps/ash), the office (the raker role), and health (accumulation -> disease).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "wa_produce",
+      "batch": false,
+      "comment": "Living and working PRODUCE rubbish -- an occupied place accrues refuse (occupants * waste_rate) each day. It does not vanish; it piles up where it is made (cooking ash, food scraps, nightsoil, broken things).",
+      "match": [
+        [
+          "town",
+          "has_place",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "place"
+              },
+              "key": "produce_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "place",
+          "refuse",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "place"
+                      },
+                      "key": "refuse"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "place"
+                          },
+                          "key": "occupants"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "place"
+                          },
+                          "key": "waste_rate"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "place",
+          "produce_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "wa_hazard",
+      "batch": false,
+      "comment": "UNMANAGED rubbish is a HEALTH HAZARD: refuse >= town.hazard_threshold -> place.hazard=1 (disease/smell -- a district with no collection sickens; ties to the determinants of health). Cleared refuse -> hazard=0.",
+      "match": [
+        [
+          "town",
+          "has_place",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "place",
+          "hazard",
+          {
+            "__term__": {
+              "type": "IfThenElse",
+              "cond": {
+                "type": "Gte",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "place"
+                      },
+                      "key": "refuse"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "town"
+                      },
+                      "key": "hazard_threshold"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              },
+              "then": {
+                "type": "Lit",
+                "value": 1.0
+              },
+              "other": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "wa_collect",
+      "batch": false,
+      "comment": "Disposal is SOMEONE'S JOB: a RAKER (a scavenger -- an appointed sanitation office, composes with bigville_office) carts a place's refuse to the town TIP. Conserved: the refuse leaves the place and CONCENTRATES at the tip (it still exists -- it is moved, not destroyed).",
+      "match": [
+        [
+          "town",
+          "has_raker",
+          "raker"
+        ],
+        [
+          "town",
+          "has_tip",
+          "tip"
+        ],
+        [
+          "town",
+          "has_place",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "raker"
+                  },
+                  "key": "collect_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "place"
+                  },
+                  "key": "refuse"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "tip",
+          "refuse",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "tip"
+                      },
+                      "key": "refuse"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "place"
+                      },
+                      "key": "refuse"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "place",
+          "refuse",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "wa_dump",
+      "batch": false,
+      "comment": "DUMPING in the river moves the problem, it does not solve it: the place's refuse becomes river POLLUTION (conserved -- relocated downstream, not destroyed).",
+      "match": [
+        [
+          "town",
+          "has_river",
+          "river"
+        ],
+        [
+          "town",
+          "has_place",
+          "place"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "place"
+              },
+              "key": "dump_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "river",
+          "pollution",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "river"
+                      },
+                      "key": "pollution"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "place"
+                      },
+                      "key": "refuse"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "place",
+          "refuse",
+          0.0
+        ],
+        [
+          "set_attr",
+          "place",
+          "dump_armed",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

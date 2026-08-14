@@ -1,0 +1,94 @@
+{
+  "id": "bigville_news_copy",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville: THE PRINTED NEWSPAPER CARRIES ITS STORY. A physical newspaper copy (a Good `of_paper` the paper) in a resident's hands confers readership -- np_copy_confers_reading adds the `reads` edge the existing news/reach layer (np_reader_learns) already acts on. So the press-printed newspaper (414000), once bought/held, actually informs the reader; readership is possession, not just subscription. Ties the catalog-driven good into the living news layer.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "np_copy_confers_reading",
+      "batch": false,
+      "comment": "A PHYSICAL newspaper carries its story: a resident who HOLDS a copy (a Good that is `of_paper` the paper, qty>=1) thereby READS the paper -- so a BOUGHT paper, not just a subscription, informs the reader. The existing np_reader_learns does the learning. Guarded against a duplicate reads edge (a subscriber who also holds a copy). Composes existing Terms; zero new Rust.",
+      "match": [
+        [
+          "res",
+          "has_good",
+          "copy"
+        ],
+        [
+          "copy",
+          "of_paper",
+          "paper"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "copy"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "res"
+                },
+                "edge_type": "reads",
+                "any_type": false
+              },
+              "var_name": "pp",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "pp"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "paper"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "res",
+          "reads",
+          "paper"
+        ]
+      ]
+    }
+  ]
+}

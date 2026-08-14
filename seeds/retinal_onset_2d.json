@@ -1,0 +1,111 @@
+{
+ "id": "retinal_onset_2d",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [
+  "photon_retina"
+ ],
+ "area": "retina",
+ "description": "Event-native visual onset on a 2-D az×el RETINA (the 2-D expansion of Rung 1). Rungs 1-4 are 1-D because the photon eye is a 1-D azimuth strip (elevation collapsed). Here the retina is a 2-D azimuth×elevation cell sheet: each cell (a RetinalColumn carrying `col`=azimuth index, `row`=elevation index, `cell_index`=flat row-major index) has its OWN adapting rod receptor and onset history, and a discrete RetinalOnsetEvent is MINTED for a cell when its rod's transduced drive departs its OWN adapting floor by an adapting-threshold in dB, with a per-cell refractory. The dB departure is computed by the SAME byte-identical `photon_transduce_onset` task kind Rung 1 uses (output[3]); this rule thresholds it, enforces the refractory, and — the 2-D difference — writes BOTH `column_index`=cell.col AND `row_index`=cell.row onto the event so the downstream 2-D carve knows each event's elevation. OFF by default: the rule cannot fire unless a RetinaOnsetParams2d node exists (created by the adapter only when context['retina_2d'] is set); the 1-D retinal_onset seed is NOT loaded in 2-D mode, so the two onset rules never both fire.",
+ "microtheory": {
+  "name": "retinal_onset_2d",
+  "description": "adapting-floor drive departure -> discrete per-CELL (az,el) visual onset events"
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:retinal_onset_2d:retina-onset-params-2d",
+   "src": {"type": "Retina", "var": "retina"},
+   "edge_type": "has_onset_params_2d",
+   "tgt": {"type": "RetinaOnsetParams2d", "var": "params"}
+  },
+  {
+   "provenance": "seed:retinal_onset_2d:cell-onset-event",
+   "src": {"type": "RetinalColumn", "var": "column"},
+   "edge_type": "has_onset_event",
+   "tgt": {"type": "RetinalOnsetEvent", "var": "event"}
+  }
+ ],
+ "rules": [
+  {
+   "name": "retinal_mint_onset_2d",
+   "area": "retina",
+   "order": 2,
+   "latency_class": "hard_realtime",
+   "match": [
+    ["retina", "has_column", "column"],
+    ["column", "rod_receptor", "rod"],
+    ["rod", "has_task", "task"],
+    ["retina", "has_onset_params_2d", "params"]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "task"}, "key": "kind"},
+      "b": {"type": "Lit", "value": "photon_transduce_onset"}
+     },
+     {
+      "type": "Eq",
+      "a": {"type": "Attr", "node": {"type": "Var", "name": "task"}, "key": "status"},
+      "b": {"type": "Lit", "value": "done"}
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {"type": "Attr", "node": {"type": "Var", "name": "task"}, "key": "onset_seen"},
+       "b": {"type": "Lit", "value": 1.0}
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "IndexAt",
+       "seq": {"type": "Attr", "node": {"type": "Var", "name": "task"}, "key": "output"},
+       "index": {"type": "Lit", "value": 3}
+      },
+      "b": {"type": "Attr", "node": {"type": "Var", "name": "params"}, "key": "threshold_db"}
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Minus",
+       "a": {"type": "Attr", "node": {"type": "Var", "name": "rod"}, "key": "input_epoch"},
+       "b": {"type": "Attr", "node": {"type": "Var", "name": "column"}, "key": "last_onset_epoch"}
+      },
+      "b": {"type": "Attr", "node": {"type": "Var", "name": "params"}, "key": "refractory_epochs"}
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "event",
+     "RetinalOnsetEvent",
+     {
+      "column_index": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "column"}, "key": "col"}},
+      "row_index": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "column"}, "key": "row"}},
+      "magnitude_db": {"__term__": {
+       "type": "IndexAt",
+       "seq": {"type": "Attr", "node": {"type": "Var", "name": "task"}, "key": "output"},
+       "index": {"type": "Lit", "value": 3}
+      }},
+      "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "rod"}, "key": "input_epoch"}},
+      "logical_time": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "rod"}, "key": "input_epoch"}}
+     }
+    ],
+    ["add_edge", "column", "has_onset_event", "event"],
+    [
+     "set_attr",
+     "column",
+     "last_onset_epoch",
+     {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "rod"}, "key": "input_epoch"}}
+    ],
+    ["set_attr", "task", "onset_seen", 1.0]
+   ]
+  }
+ ]
+}

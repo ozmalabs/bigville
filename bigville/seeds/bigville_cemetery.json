@@ -1,0 +1,563 @@
+{
+  "id": "bigville_cemetery",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R53 (block 364000): the CHURCHYARD CEMETERY, FUNERALS, and the PAUPER'S GRAVE -- where the dead go, as an economic event (the death-end parallel to where rubbish goes). The cemetery is AT THE CHURCH (church -has_cemetery-> cem). cy_funeral: a death with a SOLVENT estate (estate >= church.funeral_fee) gets a church FUNERAL -- the estate PAYS the fee (church revenue, coin conserved) and the UNDERTAKER digs a proper grave. cy_pauper: an estate that CANNOT pay gets a PAUPER'S GRAVE (pauper=1, no fee, the parish bears it, no funeral) -- the poverty gradient reaches the grave. cy_unburied_hazard: no undertaker -> the body lies unburied (a hazard, like unmanaged rubbish). In a SMALL TOWN the undertaker is ALSO the DOCTOR -- one person holds BOTH roles (a PLURAL office; bigville_office's one-office-per-person is a big-town assumption). Composes with the church (funerals, like services/counsel; funeral fees = church income), the map (the churchyard is by the church), bigville_office (death VACATES the deceased's posts -> succession; the undertaker is an appointed role), the doctor, ownership/estate (the estate pays), and the health/poverty line.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "cy_funeral",
+      "batch": false,
+      "comment": "A death with a SOLVENT estate (estate >= church.funeral_fee): the CHURCH holds a funeral in the CHURCHYARD -- the estate PAYS the fee (church.coin += fee, estate -= fee, coin conserved), the UNDERTAKER digs a proper Grave (pauper=0), the body is buried. Funeral fees are church revenue.",
+      "match": [
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "has_cemetery",
+          "cem"
+        ],
+        [
+          "town",
+          "has_undertaker",
+          "u"
+        ],
+        [
+          "town",
+          "has_resident",
+          "dead"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "dead"
+                      },
+                      "key": "alive"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Not",
+                "arg": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "dead"
+                        },
+                        "key": "buried"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "estate"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "church"
+                  },
+                  "key": "funeral_fee"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "dead",
+          "estate",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "dead"
+                    },
+                    "key": "estate"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "church"
+                    },
+                    "key": "funeral_fee"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "church",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "church"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "church"
+                      },
+                      "key": "funeral_fee"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "grave",
+          "Grave",
+          {
+            "pauper": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "cem",
+          "has_grave",
+          "grave"
+        ],
+        [
+          "add_edge",
+          "grave",
+          "holds",
+          "dead"
+        ],
+        [
+          "set_attr",
+          "dead",
+          "buried",
+          1.0
+        ],
+        [
+          "set_attr",
+          "dead",
+          "unburied",
+          0.0
+        ],
+        [
+          "set_attr",
+          "cem",
+          "graves",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "cem"
+                      },
+                      "key": "graves"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cy_pauper",
+      "batch": false,
+      "comment": "A death whose estate CANNOT pay the funeral fee (estate < church.funeral_fee): no paid funeral -- a PAUPER'S GRAVE (pauper=1). Still buried (the parish bears a pauper burial), but no fee reaches the church and there is no funeral. The poverty gradient reaches even the grave.",
+      "match": [
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "has_cemetery",
+          "cem"
+        ],
+        [
+          "town",
+          "has_undertaker",
+          "u"
+        ],
+        [
+          "town",
+          "has_resident",
+          "dead"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "dead"
+                      },
+                      "key": "alive"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Not",
+                "arg": {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "dead"
+                        },
+                        "key": "buried"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "estate"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "church"
+                  },
+                  "key": "funeral_fee"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "grave",
+          "Grave",
+          {
+            "pauper": 1.0
+          }
+        ],
+        [
+          "add_edge",
+          "cem",
+          "has_grave",
+          "grave"
+        ],
+        [
+          "add_edge",
+          "grave",
+          "holds",
+          "dead"
+        ],
+        [
+          "set_attr",
+          "dead",
+          "buried",
+          1.0
+        ],
+        [
+          "set_attr",
+          "dead",
+          "unburied",
+          0.0
+        ],
+        [
+          "set_attr",
+          "cem",
+          "graves",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "cem"
+                      },
+                      "key": "graves"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "cy_unburied_hazard",
+      "batch": false,
+      "comment": "A body left UNBURIED (no undertaker in office) is a health hazard -- like unmanaged rubbish.",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "dead"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "dead"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "dead"
+                    },
+                    "key": "buried"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "dead",
+          "unburied",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

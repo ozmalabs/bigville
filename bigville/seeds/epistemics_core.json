@@ -1,0 +1,848 @@
+{
+  "id": "epistemics_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "The agent's epistemic/ontological judgment predicates as graph data: saturation ('I know this well enough'), ephemerality vs object-permanence (is a type a transient effect or a persistent object), law-discovery (regime-pinned invariant) and conservation (globally constant composite). Attached to agent_root by named edges; already DSL-built, here a captured seed. Parity-verified (see docs/migration_ledger.md).",
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "attr"
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "saturation_count"
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 30
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 4,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "type"
+      }
+    },
+    {
+      "local_id": 5,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_left_view"
+      }
+    },
+    {
+      "local_id": 6,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 8
+      }
+    },
+    {
+      "local_id": 7,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 8,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "type"
+      }
+    },
+    {
+      "local_id": 9,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_ceased"
+      }
+    },
+    {
+      "local_id": 10,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "type"
+      }
+    },
+    {
+      "local_id": 11,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_left_view"
+      }
+    },
+    {
+      "local_id": 12,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 13,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.4
+      }
+    },
+    {
+      "local_id": 14,
+      "type": "Term.Gt",
+      "attrs": {}
+    },
+    {
+      "local_id": 15,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 16,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "type"
+      }
+    },
+    {
+      "local_id": 17,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_left_view"
+      }
+    },
+    {
+      "local_id": 18,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 8
+      }
+    },
+    {
+      "local_id": 19,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 20,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "type"
+      }
+    },
+    {
+      "local_id": 21,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_ceased"
+      }
+    },
+    {
+      "local_id": 22,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "type"
+      }
+    },
+    {
+      "local_id": 23,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_left_view"
+      }
+    },
+    {
+      "local_id": 24,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 25,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 0.2
+      }
+    },
+    {
+      "local_id": 26,
+      "type": "Term.Lt",
+      "attrs": {}
+    },
+    {
+      "local_id": 27,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 28,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 29,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "obs_count"
+      }
+    },
+    {
+      "local_id": 30,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 6
+      }
+    },
+    {
+      "local_id": 31,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 32,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 33,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "distinct_count"
+      }
+    },
+    {
+      "local_id": 34,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1
+      }
+    },
+    {
+      "local_id": 35,
+      "type": "Term.Eq",
+      "attrs": {}
+    },
+    {
+      "local_id": 36,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "stat"
+      }
+    },
+    {
+      "local_id": 37,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "global_distinct"
+      }
+    },
+    {
+      "local_id": 38,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2
+      }
+    },
+    {
+      "local_id": 39,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 40,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 41,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "att"
+      }
+    },
+    {
+      "local_id": 42,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "observed_count"
+      }
+    },
+    {
+      "local_id": 43,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 6
+      }
+    },
+    {
+      "local_id": 44,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 45,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "att"
+      }
+    },
+    {
+      "local_id": 46,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "distinct_count"
+      }
+    },
+    {
+      "local_id": 47,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1
+      }
+    },
+    {
+      "local_id": 48,
+      "type": "Term.Eq",
+      "attrs": {}
+    },
+    {
+      "local_id": 49,
+      "type": "Term.And",
+      "attrs": {}
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "local": 1
+      },
+      "tgt": {
+        "local": 0
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 1
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 2
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 4
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 5
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 6
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 9
+      },
+      "tgt": {
+        "local": 8
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 11
+      },
+      "tgt": {
+        "local": 10
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 12
+      },
+      "tgt": {
+        "local": 9
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 12
+      },
+      "tgt": {
+        "local": 11
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 14
+      },
+      "tgt": {
+        "local": 12
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 14
+      },
+      "tgt": {
+        "local": 13
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 15
+      },
+      "tgt": {
+        "local": 7
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 15
+      },
+      "tgt": {
+        "local": 14
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 17
+      },
+      "tgt": {
+        "local": 16
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 19
+      },
+      "tgt": {
+        "local": 17
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 19
+      },
+      "tgt": {
+        "local": 18
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 21
+      },
+      "tgt": {
+        "local": 20
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 23
+      },
+      "tgt": {
+        "local": 22
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 24
+      },
+      "tgt": {
+        "local": 21
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 24
+      },
+      "tgt": {
+        "local": 23
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 24
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 25
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 27
+      },
+      "tgt": {
+        "local": 19
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 27
+      },
+      "tgt": {
+        "local": 26
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 29
+      },
+      "tgt": {
+        "local": 28
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 31
+      },
+      "tgt": {
+        "local": 29
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 31
+      },
+      "tgt": {
+        "local": 30
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 33
+      },
+      "tgt": {
+        "local": 32
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 35
+      },
+      "tgt": {
+        "local": 33
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 35
+      },
+      "tgt": {
+        "local": 34
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 37
+      },
+      "tgt": {
+        "local": 36
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 39
+      },
+      "tgt": {
+        "local": 37
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 39
+      },
+      "tgt": {
+        "local": 38
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 40
+      },
+      "tgt": {
+        "local": 31
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 40
+      },
+      "tgt": {
+        "local": 35
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 40
+      },
+      "tgt": {
+        "local": 39
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 2
+      }
+    },
+    {
+      "src": {
+        "local": 42
+      },
+      "tgt": {
+        "local": 41
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 44
+      },
+      "tgt": {
+        "local": 42
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 44
+      },
+      "tgt": {
+        "local": 43
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 46
+      },
+      "tgt": {
+        "local": 45
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 48
+      },
+      "tgt": {
+        "local": 46
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 48
+      },
+      "tgt": {
+        "local": 47
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 44
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 48
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 3
+      },
+      "type": "saturation_predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 15
+      },
+      "type": "ephemeral_predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 27
+      },
+      "type": "persistent_object_predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 40
+      },
+      "type": "law_predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 49
+      },
+      "type": "conservation_predicate",
+      "attrs": {}
+    }
+  ],
+  "productions": [],
+  "rules": []
+}

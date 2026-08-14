@@ -1,0 +1,2635 @@
+{
+ "id": "relations",
+ "version": "1.0.0",
+ "depends_on": [],
+ "description": "Foundational binary semantic relations (uses / has / runs_on / is_a / depends_on / \u2026).",
+ "nodes": [
+  {
+   "local_id": 597,
+   "type": "Microtheory",
+   "attrs": {
+    "description": "binary semantic relations the agent uses to express how concepts connect",
+    "name": "relations"
+   }
+  },
+  {
+   "local_id": 598,
+   "type": "Concept",
+   "attrs": {
+    "description": "X uses Y as a tool, component, or means",
+    "name": "uses"
+   }
+  },
+  {
+   "local_id": 599,
+   "type": "Lexicon",
+   "attrs": {
+    "id": "lexicon"
+   }
+  },
+  {
+   "local_id": 601,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "determinant_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 603,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "trace_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 605,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "rank_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 607,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "inverse_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 609,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "transpose_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 611,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "dimension_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 613,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "order_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 615,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "cardinality_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 617,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "kernel_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 619,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "image_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 621,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "domain_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 623,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "genus_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 625,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "Euler characteristic_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 627,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "Wolfram code_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 629,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "characteristic_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 631,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "expectation_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 633,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "variance_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 635,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "largest prime divisor_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 637,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "largest prime factor_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 639,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "prime factors_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 641,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "derivative_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 643,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "limit_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 645,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "subgroups_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 647,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "generators_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 649,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "automorphisms_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 651,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "next term_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 653,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "solution_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 655,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "number_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 657,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "how many_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "of"
+   }
+  },
+  {
+   "local_id": 659,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "product_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 660,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "product_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 662,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "sum_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 663,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "sum_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 665,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "gcd_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 666,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "gcd_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 668,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "lcm_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 669,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "lcm_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 671,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "union_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 672,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "union_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 674,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "intersection_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 675,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "intersection_arg1",
+    "marker": "and",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 677,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "index_arg0",
+    "marker": "of",
+    "order": 0,
+    "role": "a"
+   }
+  },
+  {
+   "local_id": 678,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "index_arg1",
+    "marker": "in",
+    "order": 1,
+    "role": "b"
+   }
+  },
+  {
+   "local_id": 680,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "plus_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 681,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "plus_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 683,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "times_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 684,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "times_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 686,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "minus_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 687,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "minus_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 689,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "equals_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 690,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "equals_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 692,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "divides_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 693,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "divides_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 695,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "prime_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 697,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "even_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 699,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "odd_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 701,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "invertible_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 703,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "normal_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 705,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "abelian_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 707,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "cyclic_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 709,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "solvable_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 711,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "connected_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 713,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "injective_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 715,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "surjective_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 717,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "bijective_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 719,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "isomorphic_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 721,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "independent_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 723,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "finite_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 725,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "infinite_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "arg"
+   }
+  },
+  {
+   "local_id": 768,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "uses",
+    "form": "uses",
+    "id": "lex_uses",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 769,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "uses_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 770,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "uses_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 771,
+   "type": "Concept",
+   "attrs": {
+    "description": "X needs Y to function or exist",
+    "name": "needs"
+   }
+  },
+  {
+   "local_id": 772,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "needs",
+    "form": "needs",
+    "id": "lex_needs",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 773,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "needs_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 774,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "needs_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 775,
+   "type": "Concept",
+   "attrs": {
+    "description": "X requires Y as a precondition",
+    "name": "requires"
+   }
+  },
+  {
+   "local_id": 776,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "requires",
+    "form": "requires",
+    "id": "lex_requires",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 777,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "requires_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 778,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "requires_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 779,
+   "type": "Concept",
+   "attrs": {
+    "description": "X has Y as a part, property, or possession",
+    "name": "has_rel"
+   }
+  },
+  {
+   "local_id": 780,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "has_rel",
+    "form": "has",
+    "id": "lex_has",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 781,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "has_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 782,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "has_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 783,
+   "type": "Concept",
+   "attrs": {
+    "description": "X implements Y as a concrete realisation of an abstraction",
+    "name": "implements"
+   }
+  },
+  {
+   "local_id": 784,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "implements",
+    "form": "implements",
+    "id": "lex_implements",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 785,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "implements_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 786,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "implements_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 787,
+   "type": "Concept",
+   "attrs": {
+    "description": "X extends Y by inheritance or addition",
+    "name": "extends"
+   }
+  },
+  {
+   "local_id": 788,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "extends",
+    "form": "extends",
+    "id": "lex_extends",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 789,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "extends_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 790,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "extends_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 791,
+   "type": "Concept",
+   "attrs": {
+    "description": "X produces Y as an output",
+    "name": "produces"
+   }
+  },
+  {
+   "local_id": 792,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "produces",
+    "form": "produces",
+    "id": "lex_produces",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 793,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "produces_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 794,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "produces_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 795,
+   "type": "Concept",
+   "attrs": {
+    "description": "X causes Y; X is sufficient for Y",
+    "name": "causes"
+   }
+  },
+  {
+   "local_id": 796,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "causes",
+    "form": "causes",
+    "id": "lex_causes",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 797,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "causes_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 798,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "causes_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 799,
+   "type": "Concept",
+   "attrs": {
+    "description": "X enables Y; X is necessary for Y",
+    "name": "enables"
+   }
+  },
+  {
+   "local_id": 800,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "enables",
+    "form": "enables",
+    "id": "lex_enables",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 801,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "enables_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 802,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "enables_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 803,
+   "type": "Concept",
+   "attrs": {
+    "description": "X contains Y as an element",
+    "name": "contains"
+   }
+  },
+  {
+   "local_id": 804,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "contains",
+    "form": "contains",
+    "id": "lex_contains",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 805,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "contains_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 806,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "contains_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 807,
+   "type": "Concept",
+   "attrs": {
+    "description": "X represents Y; X stands for Y in some encoding",
+    "name": "represents"
+   }
+  },
+  {
+   "local_id": 808,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "represents",
+    "form": "represents",
+    "id": "lex_represents",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 809,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "represents_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 810,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "represents_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 811,
+   "type": "Concept",
+   "attrs": {
+    "description": "X supports Y; X is a substrate for Y",
+    "name": "supports"
+   }
+  },
+  {
+   "local_id": 812,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "supports",
+    "form": "supports",
+    "id": "lex_supports",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 813,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "supports_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 814,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "supports_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 815,
+   "type": "Concept",
+   "attrs": {
+    "description": "X runs on Y as its execution host",
+    "name": "runs_on"
+   }
+  },
+  {
+   "local_id": 816,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "runs_on",
+    "form": "runs",
+    "id": "lex_runs",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 817,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "runs_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 818,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "runs_arg1",
+    "marker": "on",
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 819,
+   "type": "Concept",
+   "attrs": {
+    "description": "X depends on Y for correct operation",
+    "name": "depends_on"
+   }
+  },
+  {
+   "local_id": 820,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "depends_on",
+    "form": "depends",
+    "id": "lex_depends",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 821,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "depends_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 822,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "depends_arg1",
+    "marker": "on",
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 823,
+   "type": "Concept",
+   "attrs": {
+    "description": "X interacts with Y bidirectionally",
+    "name": "interacts_with"
+   }
+  },
+  {
+   "local_id": 824,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "interacts_with",
+    "form": "interacts",
+    "id": "lex_interacts",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 825,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "interacts_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 826,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "interacts_arg1",
+    "marker": "with",
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 827,
+   "type": "Concept",
+   "attrs": {
+    "description": "X is optimised for Y as its target",
+    "name": "optimised_for"
+   }
+  },
+  {
+   "local_id": 828,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "optimised_for",
+    "form": "optimised",
+    "id": "lex_optimised",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 829,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "optimised_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 830,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "optimised_arg1",
+    "marker": "for",
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 831,
+   "type": "Concept",
+   "attrs": {
+    "description": "X is designed for Y",
+    "name": "designed_for"
+   }
+  },
+  {
+   "local_id": 832,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "designed_for",
+    "form": "designed",
+    "id": "lex_designed",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 833,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "designed_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 834,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "designed_arg1",
+    "marker": "for",
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 835,
+   "type": "Concept",
+   "attrs": {
+    "description": "X works with Y as a partner",
+    "name": "works_with"
+   }
+  },
+  {
+   "local_id": 836,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "works_with",
+    "form": "works",
+    "id": "lex_works",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 837,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "works_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 838,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "works_arg1",
+    "marker": "with",
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 839,
+   "type": "Concept",
+   "attrs": {
+    "description": "X is composed of Y as constituents",
+    "name": "composed_of"
+   }
+  },
+  {
+   "local_id": 840,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "composed_of",
+    "form": "composed",
+    "id": "lex_composed",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 841,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "composed_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 842,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "composed_arg1",
+    "marker": "of",
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 843,
+   "type": "Concept",
+   "attrs": {
+    "description": "X is a Y; instance-of-class",
+    "name": "is_a"
+   }
+  },
+  {
+   "local_id": 844,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "is_a",
+    "form": "is_a",
+    "id": "lex_is_a",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 845,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "is_a_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 846,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "is_a_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 847,
+   "type": "Concept",
+   "attrs": {
+    "description": "X is a kind of Y; subtype",
+    "name": "kind_of"
+   }
+  },
+  {
+   "local_id": 848,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "kind_of",
+    "form": "kind_of",
+    "id": "lex_kind_of",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 849,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "kind_of_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 850,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "kind_of_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 851,
+   "type": "Concept",
+   "attrs": {
+    "description": "X is part of Y; mereology",
+    "name": "part_of"
+   }
+  },
+  {
+   "local_id": 852,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "part_of",
+    "form": "part_of",
+    "id": "lex_part_of",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 853,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "part_of_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 854,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "part_of_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  },
+  {
+   "local_id": 855,
+   "type": "Concept",
+   "attrs": {
+    "description": "X is an instance of Y",
+    "name": "instance_of"
+   }
+  },
+  {
+   "local_id": 856,
+   "type": "Lexeme",
+   "attrs": {
+    "concept": "instance_of",
+    "form": "instance_of",
+    "id": "lex_instance_of",
+    "kind": "content"
+   }
+  },
+  {
+   "local_id": 857,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "L",
+    "id": "instance_of_arg0",
+    "marker": null,
+    "order": 0,
+    "role": "left"
+   }
+  },
+  {
+   "local_id": 858,
+   "type": "LexSlot",
+   "attrs": {
+    "dir": "R",
+    "id": "instance_of_arg1",
+    "marker": null,
+    "order": 1,
+    "role": "right"
+   }
+  }
+ ],
+ "edges": [
+  {
+   "src": {
+    "role": "agent_root"
+   },
+   "type": "operates_in",
+   "tgt": {
+    "local": 597
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 768
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 772
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 776
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 780
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 784
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 788
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 792
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 796
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 800
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 804
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 808
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 812
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 816
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 820
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 824
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 828
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 832
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 836
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 840
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 844
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 848
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 852
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 599
+   },
+   "type": "entry",
+   "tgt": {
+    "local": 856
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 768
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 769
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 768
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 770
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 768
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 598
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 772
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 773
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 772
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 774
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 772
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 771
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 776
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 777
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 776
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 778
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 776
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 775
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 780
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 781
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 780
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 782
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 780
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 779
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 784
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 785
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 784
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 786
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 784
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 783
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 788
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 789
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 788
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 790
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 788
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 787
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 792
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 793
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 792
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 794
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 792
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 791
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 796
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 797
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 796
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 798
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 796
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 795
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 800
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 801
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 800
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 802
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 800
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 799
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 804
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 805
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 804
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 806
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 804
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 803
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 808
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 809
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 808
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 810
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 808
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 807
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 812
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 813
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 812
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 814
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 812
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 811
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 816
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 817
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 816
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 818
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 816
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 815
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 820
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 821
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 820
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 822
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 820
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 819
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 824
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 825
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 824
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 826
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 824
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 823
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 828
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 829
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 828
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 830
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 828
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 827
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 832
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 833
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 832
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 834
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 832
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 831
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 836
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 837
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 836
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 838
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 836
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 835
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 840
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 841
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 840
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 842
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 840
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 839
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 844
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 845
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 844
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 846
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 844
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 843
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 848
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 849
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 848
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 850
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 848
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 847
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 852
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 853
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 852
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 854
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 852
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 851
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 856
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 857
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 856
+   },
+   "type": "arg",
+   "tgt": {
+    "local": 858
+   },
+   "attrs": {}
+  },
+  {
+   "src": {
+    "local": 856
+   },
+   "type": "denotes",
+   "tgt": {
+    "local": 855
+   },
+   "attrs": {}
+  }
+ ],
+ "productions": []
+}

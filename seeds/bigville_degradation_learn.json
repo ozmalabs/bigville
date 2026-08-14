@@ -1,0 +1,199 @@
+{
+  "id": "bigville_degradation_learn",
+  "version": "2.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville: an agent LEARNS from SURPRISE, not by acquiring a named concept. A meal that felt worse than expected is a prediction error; dk_learn mints a NEW AXIS from the feeling and forms a BELIEF (spoiled=bad, weighted by the surprise) that the agent holds. Its buy decision then weights that axis down vs fresh. Arbitrary discovered knowledge -- surprise -> mint axis -> belief -> weight, the substrate's native learning on the food loop.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "dk_learn",
+      "batch": false,
+      "comment": "LEARN FROM SURPRISE (no named concept): a meal that FELT much worse than expected is a surprise (expected_feeling - meal.feeling > threshold). From it the agent MINTS A NEW AXIS keyed on the feeling it sensed (an arbitrary discovered dimension -- not a pre-named law) and FORMS A BELIEF on that axis that low feeling (spoiled) is bad (valence -1), weighted by how surprised it was. Its buy decision then weights that axis DOWN vs fresh. Fresh food (no surprise) mints nothing. It does not re-mint what it already believes.",
+      "match": [
+        [
+          "agent",
+          "ate",
+          "meal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "expected_feeling"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "meal"
+                    },
+                    "key": "feeling"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.3
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "agent"
+                },
+                "edge_type": "holds_belief",
+                "any_type": false
+              },
+              "var_name": "b",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Lit",
+                  "value": 1.0
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              }
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "meal"
+                  },
+                  "key": "has_feeling"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "axis",
+          "Axis",
+          {
+            "minted": 1.0
+          }
+        ],
+        [
+          "add_node",
+          "belief",
+          "Belief",
+          {
+            "valence": -1.0
+          }
+        ],
+        [
+          "set_attr",
+          "belief",
+          "weight",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "agent"
+                    },
+                    "key": "expected_feeling"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "meal"
+                    },
+                    "key": "feeling"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "belief",
+          "on_axis",
+          "axis"
+        ],
+        [
+          "add_edge",
+          "agent",
+          "holds_belief",
+          "belief"
+        ]
+      ]
+    }
+  ]
+}

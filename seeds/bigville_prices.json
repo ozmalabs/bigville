@@ -1,0 +1,82 @@
+{
+  "id": "bigville_prices",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville production-economy R3 (block 302000): EMERGENT scarcity prices. A shop's price is not hand-set -- it adjusts from local supply/demand imbalance (the decentralized Gintis/Sugarscape mechanism, posted-price form): unmet demand (a customer wanted to buy but the shop was SOLD OUT) RAISES the price; a glut (output stock piled above threshold) LOWERS it (floored at min_price). At most one adjustment per town epoch. Scarce fish -> higher fish price, automatically.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "pr_note_unmet",
+      "batch": false,
+      "comment": "A co-located customer who armed a sale but found the shop SOLD OUT (output==0) records unmet demand on the shop and disarms. Mutually exclusive with tf_sell (which needs output>0). The scarcity signal.",
+      "match": [
+        ["cust", "is_at", "c"],
+        ["shop", "at_cell", "c"],
+        ["shop", "has_output", "outstk"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "cust"}, "key": "sale_armed"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "outstk"}, "key": "amount"}, "b": {"type": "Lit", "value": 0.0}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "shop", "unmet", 1.0],
+        ["set_attr", "cust", "sale_armed", 0.0]
+      ]
+    },
+    {
+      "name": "pr_scarce_raise",
+      "batch": false,
+      "comment": "Unmet demand this epoch -> raise the price by price_step (once per epoch via price_epoch gate), then clear the unmet flag. Scarcity pushes the price up.",
+      "match": [
+        ["shop", "has_output", "outstk"],
+        ["shop", "in_town", "town"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "unmet"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "shop", "price", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price"},
+          {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price_step"}
+        ]}}],
+        ["set_attr", "shop", "unmet", 0.0],
+        ["set_attr", "shop", "price_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "pr_glut_lower",
+      "batch": false,
+      "comment": "Output piled above glut_threshold (supply outran demand) -> lower the price by price_step, floored at min_price (Max), once per epoch. Glut pushes the price down.",
+      "match": [
+        ["shop", "has_output", "outstk"],
+        ["shop", "in_town", "town"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "outstk"}, "key": "amount"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "glut_threshold"}},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "min_price"}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price_epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "shop", "price", {"__term__": {"type": "Max", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "min_price"},
+          {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "shop"}, "key": "price_step"}}
+        ]}}],
+        ["set_attr", "shop", "price_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "epoch"}}]
+      ]
+    }
+  ]
+}

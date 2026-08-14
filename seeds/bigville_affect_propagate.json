@@ -1,0 +1,85 @@
+{
+ "id": "bigville_affect_propagate",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R17 (block 265000) -- af_grief_narrows_caregiving: a grief-narrowed PARENT who caregives a child cannot provide co-regulation -- the rule clears that caregiver's `regulated` flag -> the reused 239000 mark_coreg_support no longer sets got_coreg -> each of the child's stress episodes resolves down the 239000 NARROW path -> the child's window NARROWS -> the child's adult priors shift DOWN via R14 bl_come_of_age. The failure mode crosses a GENERATION (ties R14 rearing + the three foundational priors). gen_gain=0 decouples grief from caregiving -> the caregiver stays regulated -> no cross-generation transfer. NO reward/punishment token. Composes existing Terms only; ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "af_grief_narrows_caregiving",
+   "batch": false,
+   "match": [
+    [
+     "parent",
+     "caregives",
+     "cg"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "parent"
+         },
+         "key": "gen_gain"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "parent"
+         },
+         "key": "grief_distress"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 2.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "cg",
+     "regulated",
+     0.0
+    ]
+   ]
+  }
+ ]
+}

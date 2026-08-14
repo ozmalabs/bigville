@@ -1,0 +1,359 @@
+{
+  "id": "bigville_deed",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R55 (block 366000): LAND OWNERSHIP is managed by the CLERK and the BANK with DEEDS -- the FORMAL, institutional version of the recognition thesis. ld_clerk_authority: the Clerk's authority = Count(recognizers) -- its register is authoritative only insofar as the office is recognized. ld_record: the clerk enters a submitted Deed into the REGISTER (register -has_deed-> deed); land ownership is now WHAT THE REGISTER RECORDS (a squatter with no registered deed does not own the plot -- the register decides). ld_transfer: a sale/gift/bequest -- the clerk records the new owner; ownership FOLLOWS the register (unrecorded -> the old owner still holds it). ld_foreclose: the BANK holds a mortgaged deed (in its dual-key safe); on default it FORECLOSES (the clerk records the bank as owner). The register's authority rests on the recognized clerk's office -- formal recognition on top of the informal Count(recognizers) of bigville ownership. Composes with bigville_clerk_treasurer (the clerk keeps the records), bigville_recognition (the clerk's office), bigville_coin_safe (the bank's deed vault), and bigville_will (land bequeathed = a deed transfer the clerk records).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ld_clerk_authority",
+      "batch": false,
+      "comment": "The Clerk's authority = Count(recognizers). The register is authoritative only insofar as the office is.",
+      "match": [
+        [
+          "town",
+          "has_clerk",
+          "clerk"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "clerk",
+          "authority",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "clerk"
+                },
+                "edge_type": "recognizes"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "ld_record",
+      "batch": false,
+      "comment": "LAND OWNERSHIP IS BY DEED, RECORDED BY THE CLERK: the clerk enters a submitted Deed (deed -submitted_to-> register) into the REGISTER -- register -has_deed-> deed, deed.registered=1. Ownership is now what the register records. Requires a RECOGNIZED clerk (authority>=1) -- an unrecognized clerk's register has no authority.",
+      "match": [
+        [
+          "town",
+          "has_clerk",
+          "clerk"
+        ],
+        [
+          "town",
+          "has_register",
+          "register"
+        ],
+        [
+          "deed",
+          "submitted_to",
+          "register"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "clerk"
+                  },
+                  "key": "authority"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "deed"
+                    },
+                    "key": "registered"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "register",
+          "has_deed",
+          "deed"
+        ],
+        [
+          "set_attr",
+          "deed",
+          "registered",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "ld_transfer",
+      "batch": false,
+      "comment": "Transfer of land (sale/gift/bequest): the CLERK records the new owner on the registered deed (deed.owner <- transfer_to). Ownership FOLLOWS the register -- until the transfer is recorded, the old owner still holds it. Requires a recognized clerk.",
+      "match": [
+        [
+          "town",
+          "has_clerk",
+          "clerk"
+        ],
+        [
+          "register",
+          "has_deed",
+          "deed"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "clerk"
+                  },
+                  "key": "authority"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "deed"
+                },
+                "key": "transfer_to"
+              },
+              "b": {
+                "type": "Lit",
+                "value": ""
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "deed",
+          "owner",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "deed"
+              },
+              "key": "transfer_to"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "deed",
+          "transfer_to",
+          ""
+        ]
+      ]
+    },
+    {
+      "name": "ld_foreclose",
+      "batch": false,
+      "comment": "The BANK holds a mortgaged deed (deed -pledged_to-> bank, kept in the bank's dual-key safe). On DEFAULT (deed.defaulted=1) the bank FORECLOSES -- the clerk records the bank as owner (owner <- bank.name). The register still decides; the bank now holds the land.",
+      "match": [
+        [
+          "town",
+          "has_clerk",
+          "clerk"
+        ],
+        [
+          "register",
+          "has_deed",
+          "deed"
+        ],
+        [
+          "deed",
+          "pledged_to",
+          "bank"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "clerk"
+                  },
+                  "key": "authority"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "deed"
+                  },
+                  "key": "defaulted"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "deed"
+                    },
+                    "key": "foreclosed"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "deed",
+          "owner",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "bank"
+              },
+              "key": "name"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "deed",
+          "foreclosed",
+          1.0
+        ],
+        [
+          "set_attr",
+          "deed",
+          "defaulted",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

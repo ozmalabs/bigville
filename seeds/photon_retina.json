@@ -1,0 +1,672 @@
+{
+ "id": "photon_retina",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [
+  "cognitive_areas",
+  "cognitive_scheduler"
+ ],
+ "area": "retina",
+ "description": "Photon/biology visual floor. Integer photon packets drive typed rod/L/M/S photoreceptors through a native spectral-transduction task; adaptation persists in graph state; retinal columns synthesize intensity, opponent colour and temporal salience by graph rules. No RGB pixels, Sobel, Harris, Gaussian blur or contours enter cognition.",
+ "microtheory": {
+  "name": "photon_retina",
+  "description": "photon quanta -> adapting receptors -> opponent retinal field"
+ },
+ "nodes": [],
+ "edges": [],
+ "productions": [
+  {
+   "provenance": "seed:photon_retina:retina-column",
+   "src": {
+    "type": "Retina",
+    "var": "retina"
+   },
+   "edge_type": "has_column",
+   "tgt": {
+    "type": "RetinalColumn",
+    "var": "column"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:retina-exposure",
+   "src": {
+    "type": "Retina",
+    "var": "retina"
+   },
+   "edge_type": "has_exposure",
+   "tgt": {
+    "type": "PhotonExposure",
+    "var": "exposure"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:column-receptor",
+   "src": {
+    "type": "RetinalColumn",
+    "var": "column"
+   },
+   "edge_type": "has_receptor",
+   "tgt": {
+    "type": "Photoreceptor",
+    "var": "receptor"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:column-rod",
+   "src": {
+    "type": "RetinalColumn",
+    "var": "column"
+   },
+   "edge_type": "rod_receptor",
+   "tgt": {
+    "type": "Photoreceptor",
+    "var": "receptor"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:column-l",
+   "src": {
+    "type": "RetinalColumn",
+    "var": "column"
+   },
+   "edge_type": "l_receptor",
+   "tgt": {
+    "type": "Photoreceptor",
+    "var": "receptor"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:column-m",
+   "src": {
+    "type": "RetinalColumn",
+    "var": "column"
+   },
+   "edge_type": "m_receptor",
+   "tgt": {
+    "type": "Photoreceptor",
+    "var": "receptor"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:column-s",
+   "src": {
+    "type": "RetinalColumn",
+    "var": "column"
+   },
+   "edge_type": "s_receptor",
+   "tgt": {
+    "type": "Photoreceptor",
+    "var": "receptor"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:column-percept",
+   "src": {
+    "type": "RetinalColumn",
+    "var": "column"
+   },
+   "edge_type": "has_retinal_percept",
+   "tgt": {
+    "type": "RetinalPercept",
+    "var": "percept"
+   }
+  },
+  {
+   "provenance": "seed:photon_retina:receptor-task",
+   "src": {
+    "type": "Photoreceptor",
+    "var": "receptor"
+   },
+   "edge_type": "has_task",
+   "tgt": {
+    "type": "CognitiveTask",
+    "var": "task"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "name": "photon_apply_receptor_transduction",
+   "area": "retina",
+   "order": 0,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "column",
+     "has_receptor",
+     "receptor"
+    ],
+    [
+     "receptor",
+     "has_task",
+     "task"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "task"
+       },
+       "key": "status"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "done"
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "retina_applied"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr_if_different",
+     "receptor",
+     "prev_activation",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "receptor"
+       },
+       "key": "activation"
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "receptor",
+     "activation",
+     {
+      "__term__": {
+       "type": "IndexAt",
+       "seq": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "output"
+       },
+       "index": {
+        "type": "Lit",
+        "value": 0
+       }
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "receptor",
+     "adaptation",
+     {
+      "__term__": {
+       "type": "IndexAt",
+       "seq": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "output"
+       },
+       "index": {
+        "type": "Lit",
+        "value": 1
+       }
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "receptor",
+     "caught_quanta",
+     {
+      "__term__": {
+       "type": "IndexAt",
+       "seq": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "task"
+        },
+        "key": "output"
+       },
+       "index": {
+        "type": "Lit",
+        "value": 2
+       }
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "receptor",
+     "input_epoch",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "task"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "task",
+     "retina_applied",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "photon_column_synthesizes_retinal_percept",
+   "area": "retina",
+   "order": 1,
+   "latency_class": "hard_realtime",
+   "match": [
+    [
+     "column",
+     "rod_receptor",
+     "rod"
+    ],
+    [
+     "column",
+     "l_receptor",
+     "l"
+    ],
+    [
+     "column",
+     "m_receptor",
+     "m"
+    ],
+    [
+     "column",
+     "s_receptor",
+     "s"
+    ],
+    [
+     "column",
+     "has_retinal_percept",
+     "percept"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "percept"
+       },
+       "key": "input_epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "rod"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "l"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "m"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "s"
+       },
+       "key": "input_epoch"
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr_if_different",
+     "percept",
+     "intensity",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Lit",
+           "value": 0.4
+          },
+          {
+           "type": "Plus",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "l"
+             },
+             "key": "activation"
+            },
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "m"
+             },
+             "key": "activation"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Lit",
+           "value": 0.2
+          },
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "rod"
+           },
+           "key": "activation"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "percept",
+     "red_green",
+     {
+      "__term__": {
+       "type": "Minus",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "l"
+        },
+        "key": "activation"
+       },
+       "b": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "key": "activation"
+       }
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "percept",
+     "blue_yellow",
+     {
+      "__term__": {
+       "type": "Minus",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "s"
+        },
+        "key": "activation"
+       },
+       "b": {
+        "type": "Times",
+        "items": [
+         {
+          "type": "Lit",
+          "value": 0.5
+         },
+         {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "l"
+            },
+            "key": "activation"
+           },
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "m"
+            },
+            "key": "activation"
+           }
+          ]
+         }
+        ]
+       }
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "percept",
+     "salience",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Abs",
+         "arg": {
+          "type": "Minus",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "rod"
+           },
+           "key": "activation"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "rod"
+           },
+           "key": "prev_activation"
+          }
+         }
+        },
+        {
+         "type": "Abs",
+         "arg": {
+          "type": "Minus",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "l"
+           },
+           "key": "activation"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "l"
+           },
+           "key": "prev_activation"
+          }
+         }
+        },
+        {
+         "type": "Abs",
+         "arg": {
+          "type": "Minus",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "activation"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "m"
+           },
+           "key": "prev_activation"
+          }
+         }
+        },
+        {
+         "type": "Abs",
+         "arg": {
+          "type": "Minus",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "s"
+           },
+           "key": "activation"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "s"
+           },
+           "key": "prev_activation"
+          }
+         }
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr_if_different",
+     "percept",
+     "input_epoch",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "column"
+       },
+       "key": "input_epoch"
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

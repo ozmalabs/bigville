@@ -1,0 +1,754 @@
+{
+ "id": "bigville_viol_evidence",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R15 (block 263000) -- THE 247 EVIDENCE-AND-PROOF PIPELINE (NOT omniscience). The constable learns of an act by WITNESS (bv_witness_evidence, line-of-sight) OR REPORT (bv_report_evidence, a testimony Message -- the load-bearing report channel); bv_physical logs the victim's real health-drop as PHYSICAL evidence (the corroboration a false report lacks). bv_form_belief is the ABDUCTION: observed = Sum of evidence weights, verdict = Argmax over the constable's held CaseGenerator codebook by fit -|predicts-observed| (a RECONSTRUCTION, not a fact -- the manifold-of-projections move). bv_sufficient_proof requires a GUILTY verdict with confidence >= proof_threshold (the decision_value); insufficient/contradicted evidence DECLINES for the RIGHT reason (unseen-abuse / false-accusation floor). ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bv_witness_evidence",
+   "batch": false,
+   "match": [
+    [
+     "con",
+     "investigates",
+     "case"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "witnessed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "witness_logged"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "ev",
+     "Evidence",
+     {
+      "kind": 1.0,
+      "weight": 6.0
+     }
+    ],
+    [
+     "add_edge",
+     "case",
+     "has_evidence",
+     "ev"
+    ],
+    [
+     "set_attr",
+     "case",
+     "witness_logged",
+     1.0
+    ],
+    [
+     "set_attr",
+     "case",
+     "known",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_report_evidence",
+   "batch": false,
+   "match": [
+    [
+     "case",
+     "reported_by",
+     "rep"
+    ]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {
+     "type": "Plus",
+     "items": [
+      {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "case"
+       },
+       "key": "report_logged"
+      },
+      {
+       "type": "Lit",
+       "value": 0.0
+      }
+     ]
+    },
+    "b": {
+     "type": "Lit",
+     "value": 0.0
+    }
+   },
+   "effects": [
+    [
+     "add_node",
+     "ev",
+     "Evidence",
+     {
+      "kind": 2.0,
+      "weight": 3.0
+     }
+    ],
+    [
+     "add_edge",
+     "case",
+     "has_evidence",
+     "ev"
+    ],
+    [
+     "set_attr",
+     "case",
+     "report_logged",
+     1.0
+    ],
+    [
+     "set_attr",
+     "case",
+     "known",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_physical",
+   "batch": false,
+   "match": [
+    [
+     "con",
+     "investigates",
+     "case"
+    ],
+    [
+     "case",
+     "against_victim",
+     "v"
+    ],
+    [
+     "v",
+     "has_life",
+     "life"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "known"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "physical_logged"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Lt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "life"
+         },
+         "key": "health"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "life"
+         },
+         "key": "max_health"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "ev",
+     "Evidence",
+     {
+      "kind": 3.0,
+      "weight": 3.0
+     }
+    ],
+    [
+     "add_edge",
+     "case",
+     "has_evidence",
+     "ev"
+    ],
+    [
+     "set_attr",
+     "case",
+     "physical_logged",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_form_belief",
+   "batch": false,
+   "match": [
+    [
+     "con",
+     "investigates",
+     "case"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "known"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "belief_formed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "case",
+     "verdict",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "con"
+         },
+         "edge_type": "has_case_generator",
+         "any_type": false
+        },
+        "var_name": "g",
+        "value": {
+         "type": "Minus",
+         "a": {
+          "type": "Lit",
+          "value": 0.0
+         },
+         "b": {
+          "type": "Abs",
+          "arg": {
+           "type": "Minus",
+           "a": {
+            "type": "Plus",
+            "items": [
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "g"
+              },
+              "key": "predicts_evidence"
+             },
+             {
+              "type": "Lit",
+              "value": 0.0
+             }
+            ]
+           },
+           "b": {
+            "type": "Sum",
+            "source": {
+             "type": "Neighbours",
+             "node": {
+              "type": "Var",
+              "name": "case"
+             },
+             "edge_type": "has_evidence",
+             "any_type": false
+            },
+            "var_name": "e",
+            "value": {
+             "type": "Plus",
+             "items": [
+              {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "e"
+               },
+               "key": "weight"
+              },
+              {
+               "type": "Lit",
+               "value": 0.0
+              }
+             ]
+            }
+           }
+          }
+         }
+        }
+       },
+       "key": "verdict"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "case",
+     "confidence",
+     {
+      "__term__": {
+       "type": "Sum",
+       "source": {
+        "type": "Neighbours",
+        "node": {
+         "type": "Var",
+         "name": "case"
+        },
+        "edge_type": "has_evidence",
+        "any_type": false
+       },
+       "var_name": "e",
+       "value": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "e"
+          },
+          "key": "weight"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       }
+      }
+     }
+    ],
+    [
+     "add_node",
+     "bel",
+     "Belief",
+     {
+      "verdict": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Argmax",
+         "source": {
+          "type": "Neighbours",
+          "node": {
+           "type": "Var",
+           "name": "con"
+          },
+          "edge_type": "has_case_generator",
+          "any_type": false
+         },
+         "var_name": "g",
+         "value": {
+          "type": "Minus",
+          "a": {
+           "type": "Lit",
+           "value": 0.0
+          },
+          "b": {
+           "type": "Abs",
+           "arg": {
+            "type": "Minus",
+            "a": {
+             "type": "Plus",
+             "items": [
+              {
+               "type": "Attr",
+               "node": {
+                "type": "Var",
+                "name": "g"
+               },
+               "key": "predicts_evidence"
+              },
+              {
+               "type": "Lit",
+               "value": 0.0
+              }
+             ]
+            },
+            "b": {
+             "type": "Sum",
+             "source": {
+              "type": "Neighbours",
+              "node": {
+               "type": "Var",
+               "name": "case"
+              },
+              "edge_type": "has_evidence",
+              "any_type": false
+             },
+             "var_name": "e",
+             "value": {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "e"
+                },
+                "key": "weight"
+               },
+               {
+                "type": "Lit",
+                "value": 0.0
+               }
+              ]
+             }
+            }
+           }
+          }
+         }
+        },
+        "key": "verdict"
+       }
+      },
+      "confidence": {
+       "__term__": {
+        "type": "Sum",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "edge_type": "has_evidence",
+         "any_type": false
+        },
+        "var_name": "e",
+        "value": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "e"
+           },
+           "key": "weight"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        }
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "con",
+     "believes",
+     "bel"
+    ],
+    [
+     "set_attr",
+     "case",
+     "belief_formed",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_sufficient_proof",
+   "batch": false,
+   "match": [
+    [
+     "con",
+     "investigates",
+     "case"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "belief_formed"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "verdict"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "confidence"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "con"
+         },
+         "key": "proof_threshold"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "proven"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "case",
+     "proven",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

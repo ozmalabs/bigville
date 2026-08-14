@@ -1,0 +1,151 @@
+{
+ "id": "bigville_supergraph_conduct",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "SUPERGRAPH CONDUCT VALUATION (block 282000). The town is a supergraph (a level of selection above the individual); a directed action's value is the actor's own stake (plan_base) PLUS the target's fulfilment change (target_effect) weighted by how much the actor cares about that target -- a SIGNED per-pair weight bond_w (from the Bond) scaled by the global psychopathy gate ep.w_supergraph. ONE action-type-agnostic rule conduct_supergraph_value replaces the three hand-tuned conduct_couple_* rules (281000): plan_value = plan_base + (ep.w_supergraph*bond_w)*target_effect, bond_w = altruism_bias + k*affect_affection - k*affect_resentment. Revives the DEAD Bond slot altruism_bias (the per-pair care prior), adds the per-agent psychopathy knob (w_supergraph=0 -> weights no one), and gives spite a principled per-pair form (negative bond_w). Term shape = coll_evict bc_pick_cheapest_hands (the only existing multiplicative w_supergraph*magnitude); ZERO new Rust. target_effect published per directed DecAction by the world adapter. Load INSTEAD OF bigville_conduct (both write plan_value). self_load_only.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "conduct_supergraph_value",
+   "batch": false,
+   "comment": "SUPERGRAPH CONDUCT VALUATION (block 282000). One action-type-agnostic rule replacing the three conduct_couple_* rules: a directed action's plan_value = plan_base + (ep.w_supergraph * bond_w) * target_effect, bond_w = altruism_bias + k*affect_affection - k*affect_resentment. The town is a supergraph -- the actor weights the target's fulfilment change (target_effect) by how much it cares about that target (signed per-pair bond_w) scaled by the global psychopathy gate (ep.w_supergraph). Sign lives in target_effect (harm<0, help/transfer>0), so a negative bond_w (resentment) times a negative harm-effect scores harming a rival UP, while helping a friend (positive*positive) scores UP. Matches the existing conduct edges (in_scene/aims_at/holds_bond/toward) + the actor's EmotionParams (has_ep). Only fires on DIRECTED actions (aims_at present). Term shape = bigville_coll_evict.json bc_pick_cheapest_hands. ZERO new Rust. FALSIFIER: conduct_k=0 AND altruism_bias=0 -> bond_w=0 -> plan_value=plan_base -> no directedness. PSYCHOPATHY: ep.w_supergraph=0 -> no per-pair care at all.",
+   "match": [
+    [
+     "m",
+     "in_scene",
+     "d"
+    ],
+    [
+     "d",
+     "aims_at",
+     "o"
+    ],
+    [
+     "m",
+     "holds_bond",
+     "bond"
+    ],
+    [
+     "bond",
+     "toward",
+     "o"
+    ],
+    [
+     "m",
+     "has_ep",
+     "ep"
+    ]
+   ],
+   "effects": [
+    [
+     "set_attr",
+     "d",
+     "plan_value",
+     {
+      "__term__": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "d"
+         },
+         "key": "plan_base"
+        },
+        {
+         "type": "Times",
+         "items": [
+          {
+           "type": "Times",
+           "items": [
+            {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "ep"
+             },
+             "key": "w_supergraph"
+            },
+            {
+             "type": "Minus",
+             "a": {
+              "type": "Plus",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "bond"
+                },
+                "key": "altruism_bias"
+               },
+               {
+                "type": "Times",
+                "items": [
+                 {
+                  "type": "Attr",
+                  "node": {
+                   "type": "Var",
+                   "name": "m"
+                  },
+                  "key": "conduct_k"
+                 },
+                 {
+                  "type": "Attr",
+                  "node": {
+                   "type": "Var",
+                   "name": "bond"
+                  },
+                  "key": "affect_affection"
+                 }
+                ]
+               }
+              ]
+             },
+             "b": {
+              "type": "Times",
+              "items": [
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "m"
+                },
+                "key": "conduct_k"
+               },
+               {
+                "type": "Attr",
+                "node": {
+                 "type": "Var",
+                 "name": "bond"
+                },
+                "key": "affect_resentment"
+               }
+              ]
+             }
+            }
+           ]
+          },
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "d"
+           },
+           "key": "target_effect"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1359 @@
+{
+  "id": "conversation",
+  "version": "1.0.0",
+  "depends_on": [
+    "relations",
+    "faculty_lessons"
+  ],
+  "description": "Speech-act taxonomy + adjacency-pair structure + Grice maxims + repair concepts + conversational signs. Depends on faculty_lessons so the agent always boots carrying its accumulated lessons (otherwise that seed is orphaned and the learning never loads).",
+  "nodes": [
+    {
+      "local_id": 859,
+      "type": "Microtheory",
+      "attrs": {
+        "description": "the agent's model of dialogue",
+        "name": "conversation"
+      }
+    },
+    {
+      "local_id": 860,
+      "type": "Concept",
+      "attrs": {
+        "description": "Searle illocutionary class: assertive",
+        "name": "assertive"
+      }
+    },
+    {
+      "local_id": 861,
+      "type": "Concept",
+      "attrs": {
+        "description": "Searle illocutionary class: directive",
+        "name": "directive"
+      }
+    },
+    {
+      "local_id": 862,
+      "type": "Concept",
+      "attrs": {
+        "description": "Searle illocutionary class: commissive",
+        "name": "commissive"
+      }
+    },
+    {
+      "local_id": 863,
+      "type": "Concept",
+      "attrs": {
+        "description": "Searle illocutionary class: expressive",
+        "name": "expressive"
+      }
+    },
+    {
+      "local_id": 864,
+      "type": "Concept",
+      "attrs": {
+        "description": "Searle illocutionary class: declarative",
+        "name": "declarative"
+      }
+    },
+    {
+      "local_id": 865,
+      "type": "Concept",
+      "attrs": {
+        "description": "asserts a proposition is true",
+        "name": "statement"
+      }
+    },
+    {
+      "local_id": 866,
+      "type": "Concept",
+      "attrs": {
+        "description": "supplies info responsive to a question",
+        "name": "answer"
+      }
+    },
+    {
+      "local_id": 867,
+      "type": "Concept",
+      "attrs": {
+        "description": "registers receipt of a prior turn",
+        "name": "acknowledgment"
+      }
+    },
+    {
+      "local_id": 868,
+      "type": "Concept",
+      "attrs": {
+        "description": "asks the hearer for information",
+        "name": "question"
+      }
+    },
+    {
+      "local_id": 869,
+      "type": "Concept",
+      "attrs": {
+        "description": "asks specifically about an unknown",
+        "name": "inquiry"
+      }
+    },
+    {
+      "local_id": 870,
+      "type": "Concept",
+      "attrs": {
+        "description": "asks the hearer to do something",
+        "name": "request"
+      }
+    },
+    {
+      "local_id": 871,
+      "type": "Concept",
+      "attrs": {
+        "description": "asks for refinement of a prior turn",
+        "name": "clarification"
+      }
+    },
+    {
+      "local_id": 872,
+      "type": "Concept",
+      "attrs": {
+        "description": "commits speaker to a future act if accepted",
+        "name": "offer"
+      }
+    },
+    {
+      "local_id": 873,
+      "type": "Concept",
+      "attrs": {
+        "description": "commits speaker unconditionally",
+        "name": "promise"
+      }
+    },
+    {
+      "local_id": 874,
+      "type": "Concept",
+      "attrs": {
+        "description": "social opener / closer",
+        "name": "greeting"
+      }
+    },
+    {
+      "local_id": 875,
+      "type": "Concept",
+      "attrs": {
+        "description": "gratitude",
+        "name": "thanks"
+      }
+    },
+    {
+      "local_id": 876,
+      "type": "Concept",
+      "attrs": {
+        "description": "regret for an act or state",
+        "name": "apology"
+      }
+    },
+    {
+      "local_id": 877,
+      "type": "Concept",
+      "attrs": {
+        "description": "makes something institutionally so",
+        "name": "announce"
+      }
+    },
+    {
+      "local_id": 878,
+      "type": "Concept",
+      "attrs": {
+        "description": "dispreferred alt: non_answer",
+        "name": "non_answer"
+      }
+    },
+    {
+      "local_id": 879,
+      "type": "Concept",
+      "attrs": {
+        "description": "second-pair-part: grant",
+        "name": "grant"
+      }
+    },
+    {
+      "local_id": 880,
+      "type": "Concept",
+      "attrs": {
+        "description": "dispreferred alt: refusal",
+        "name": "refusal"
+      }
+    },
+    {
+      "local_id": 881,
+      "type": "Concept",
+      "attrs": {
+        "description": "second-pair-part: acceptance",
+        "name": "acceptance"
+      }
+    },
+    {
+      "local_id": 882,
+      "type": "Concept",
+      "attrs": {
+        "description": "dispreferred alt: decline",
+        "name": "decline"
+      }
+    },
+    {
+      "local_id": 883,
+      "type": "Concept",
+      "attrs": {
+        "description": "Grice's overarching principle",
+        "name": "cooperative_principle"
+      }
+    },
+    {
+      "local_id": 884,
+      "type": "Concept",
+      "attrs": {
+        "description": "be as informative as required, no more",
+        "name": "quantity"
+      }
+    },
+    {
+      "local_id": 885,
+      "type": "Concept",
+      "attrs": {
+        "description": "say only what you believe; have evidence",
+        "name": "quality"
+      }
+    },
+    {
+      "local_id": 886,
+      "type": "Concept",
+      "attrs": {
+        "description": "be relevant to the topic and turn",
+        "name": "relation"
+      }
+    },
+    {
+      "local_id": 887,
+      "type": "Concept",
+      "attrs": {
+        "description": "be perspicuous \u2014 clear, brief, orderly, unambiguous",
+        "name": "manner"
+      }
+    },
+    {
+      "local_id": 888,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational mechanism for handling trouble",
+        "name": "repair"
+      }
+    },
+    {
+      "local_id": 889,
+      "type": "Concept",
+      "attrs": {
+        "description": "repair kind: self_initiated_self_repair",
+        "name": "self_initiated_self_repair"
+      }
+    },
+    {
+      "local_id": 890,
+      "type": "Concept",
+      "attrs": {
+        "description": "repair kind: self_initiated_other_repair",
+        "name": "self_initiated_other_repair"
+      }
+    },
+    {
+      "local_id": 891,
+      "type": "Concept",
+      "attrs": {
+        "description": "repair kind: other_initiated_self_repair",
+        "name": "other_initiated_self_repair"
+      }
+    },
+    {
+      "local_id": 892,
+      "type": "Concept",
+      "attrs": {
+        "description": "repair kind: other_initiated_other_repair",
+        "name": "other_initiated_other_repair"
+      }
+    },
+    {
+      "local_id": 893,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: know",
+        "name": "know"
+      }
+    },
+    {
+      "local_id": 894,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "know",
+        "form": "know",
+        "id": "lex_know",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 895,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "know_arg0",
+        "marker": "of",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 896,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: learn",
+        "name": "learn"
+      }
+    },
+    {
+      "local_id": 897,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "learn",
+        "form": "learn",
+        "id": "lex_learn",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 898,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "learn_arg0",
+        "marker": "of",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 899,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: understand",
+        "name": "understand"
+      }
+    },
+    {
+      "local_id": 900,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "understand",
+        "form": "understand",
+        "id": "lex_understand",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 901,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "understand_arg0",
+        "marker": "of",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 902,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: think",
+        "name": "think"
+      }
+    },
+    {
+      "local_id": 903,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "think",
+        "form": "think",
+        "id": "lex_think",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 904,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "think_arg0",
+        "marker": "of",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 905,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: tell",
+        "name": "tell"
+      }
+    },
+    {
+      "local_id": 906,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "tell",
+        "form": "tell",
+        "id": "lex_tell",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 907,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "tell_arg0",
+        "marker": "of",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 908,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: say",
+        "name": "say"
+      }
+    },
+    {
+      "local_id": 909,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "say",
+        "form": "say",
+        "id": "lex_say",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 910,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "say_arg0",
+        "marker": "of",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 911,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: ask",
+        "name": "ask"
+      }
+    },
+    {
+      "local_id": 912,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "ask",
+        "form": "ask",
+        "id": "lex_ask",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 913,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "ask_arg0",
+        "marker": "about",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 914,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "answer",
+        "form": "answer",
+        "id": "lex_answer",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 915,
+      "type": "LexSlot",
+      "attrs": {
+        "dir": "R",
+        "id": "answer_arg0",
+        "marker": "of",
+        "order": 0,
+        "role": "of"
+      }
+    },
+    {
+      "local_id": 916,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: yes",
+        "name": "yes"
+      }
+    },
+    {
+      "local_id": 917,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "yes",
+        "form": "yes",
+        "id": "lex_yes",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 918,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: no",
+        "name": "no"
+      }
+    },
+    {
+      "local_id": 919,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "no",
+        "form": "no",
+        "id": "lex_no",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 920,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: noted",
+        "name": "noted"
+      }
+    },
+    {
+      "local_id": 921,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "noted",
+        "form": "noted",
+        "id": "lex_noted",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 922,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: hello",
+        "name": "hello"
+      }
+    },
+    {
+      "local_id": 923,
+      "type": "Lexeme",
+      "attrs": {
+        "concept": "hello",
+        "form": "hello",
+        "id": "lex_hello",
+        "kind": "content"
+      }
+    },
+    {
+      "local_id": 924,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: and_conj",
+        "name": "and_conj"
+      }
+    },
+    {
+      "local_id": 925,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: with_rel",
+        "name": "with_rel"
+      }
+    },
+    {
+      "local_id": 926,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: for_rel",
+        "name": "for_rel"
+      }
+    },
+    {
+      "local_id": 927,
+      "type": "Concept",
+      "attrs": {
+        "description": "conversational concept: on_rel",
+        "name": "on_rel"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "type": "operates_in",
+      "tgt": {
+        "local": 859
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 894
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 897
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 900
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 903
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 906
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 909
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 912
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 914
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 917
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 919
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 921
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "type": "Lexicon",
+        "id": "lexicon"
+      },
+      "type": "entry",
+      "tgt": {
+        "local": 923
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 865
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 867
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 865
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 860
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 866
+      },
+      "type": "preferred_over",
+      "tgt": {
+        "local": 878
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 866
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 860
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 867
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 860
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 868
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 866
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 868
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 861
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 869
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 866
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 869
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 861
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 870
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 879
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 870
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 861
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 871
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 866
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 871
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 861
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 872
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 881
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 872
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 862
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 873
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 862
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 874
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 874
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 874
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 863
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 875
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 867
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 875
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 863
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 876
+      },
+      "type": "expects_response",
+      "tgt": {
+        "local": 867
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 876
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 863
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 877
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 864
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 879
+      },
+      "type": "preferred_over",
+      "tgt": {
+        "local": 880
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 881
+      },
+      "type": "preferred_over",
+      "tgt": {
+        "local": 882
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 884
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 883
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 885
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 883
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 886
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 883
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 887
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 883
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 889
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 888
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 890
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 888
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 891
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 888
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 892
+      },
+      "type": "subtype_of",
+      "tgt": {
+        "local": 888
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 894
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 895
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 894
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 893
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 897
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 898
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 897
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 896
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 900
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 901
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 900
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 899
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 903
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 904
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 903
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 902
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 906
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 907
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 906
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 905
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 909
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 910
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 909
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 908
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 912
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 913
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 912
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 911
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 914
+      },
+      "type": "arg",
+      "tgt": {
+        "local": 915
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 914
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 866
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 917
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 916
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 919
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 918
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 921
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 920
+      },
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 923
+      },
+      "type": "denotes",
+      "tgt": {
+        "local": 922
+      },
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "src": {
+        "type": "Channel",
+        "var": "src"
+      },
+      "edge_type": "common_ground_concept",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Channel-common_ground_concept-Concept"
+    },
+    {
+      "src": {
+        "type": "Concept",
+        "var": "src"
+      },
+      "edge_type": "expects_response",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Concept-expects_response-Concept (adjacency pair)"
+    },
+    {
+      "src": {
+        "type": "Concept",
+        "var": "src"
+      },
+      "edge_type": "preferred_over",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Concept-preferred_over-Concept (preference)"
+    },
+    {
+      "src": {
+        "type": "Concept",
+        "var": "src"
+      },
+      "edge_type": "subtype_of",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Concept-subtype_of-Concept"
+    },
+    {
+      "src": {
+        "type": "Message",
+        "var": "src"
+      },
+      "edge_type": "has_speech_act",
+      "tgt": {
+        "type": "Concept",
+        "var": "tgt"
+      },
+      "provenance": "meta:Message-has_speech_act-Concept"
+    },
+    {
+      "src": {
+        "type": "Message",
+        "var": "src"
+      },
+      "edge_type": "responds_to",
+      "tgt": {
+        "type": "Message",
+        "var": "tgt"
+      },
+      "provenance": "meta:Message-responds_to-Message"
+    }
+  ]
+}

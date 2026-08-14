@@ -1,0 +1,1258 @@
+{
+ "id": "bigville_townspeople_50",
+ "version": "1.0.0",
+ "block": 276000,
+ "description": "50-resident register: the 30-register (bigville_townspeople_30) plus 20 ordinary townsfolk drawn from the SAME generative model at archetype offset 0 (grand-mean residents + individual noise; population = distribution over seeds). Deterministic (rng seed 276000).",
+ "register": "inspired-by Terry Pratchett (original characters; no lifted names/places)",
+ "generative_model": {
+  "note": "value = f(base, sigma_scale*(archetype_offset + N(0, ind_sd))); lognorm strictly>0, logit in (0,1) -- no clip artifact; sigma_scale=0 => grand-mean clones (zero-variance = cloning tell)",
+  "seed": 248000,
+  "sigma_scale": 1.0,
+  "params": [
+   {
+    "name": "charm_weight",
+    "kind": "lognorm",
+    "base": 1.2,
+    "ind_sd": 0.55
+   },
+   {
+    "name": "w_supergraph",
+    "kind": "lognorm",
+    "base": 1.0,
+    "ind_sd": 0.45
+   },
+   {
+    "name": "w_spite",
+    "kind": "lognorm",
+    "base": 0.06,
+    "ind_sd": 0.6
+   },
+   {
+    "name": "cred_on",
+    "kind": "lognorm",
+    "base": 1.0,
+    "ind_sd": 0.12
+   },
+   {
+    "name": "claim_weight",
+    "kind": "lognorm",
+    "base": 2.0,
+    "ind_sd": 0.3
+   },
+   {
+    "name": "difficulty_penalty",
+    "kind": "lognorm",
+    "base": 1.0,
+    "ind_sd": 0.35
+   },
+   {
+    "name": "hostile_weight",
+    "kind": "lognorm",
+    "base": 1.0,
+    "ind_sd": 0.3
+   },
+   {
+    "name": "mood_bias",
+    "kind": "normal",
+    "base": 0.0,
+    "ind_sd": 0.3
+   },
+   {
+    "name": "prior_world_safe",
+    "kind": "logit",
+    "base": 0.6,
+    "ind_sd": 0.55
+   },
+   {
+    "name": "prior_others_trust",
+    "kind": "logit",
+    "base": 0.6,
+    "ind_sd": 0.55
+   },
+   {
+    "name": "prior_self_worth",
+    "kind": "logit",
+    "base": 0.6,
+    "ind_sd": 0.55
+   }
+  ]
+ },
+ "inhabitants": [
+  {
+   "index": 0,
+   "name": "John",
+   "role": "mayor",
+   "archetype": "malice_ruler",
+   "emoji": "\ud83c\udfa9",
+   "motivation": "Mayor of Bigville. Charming in public, a grudge in private -- treats the town as things to be moved.",
+   "params": {
+    "charm_weight": 0.5651000831395484,
+    "w_supergraph": 0.1609562712856285,
+    "w_spite": 0.11247290319224455,
+    "cred_on": 1.1527115700620805,
+    "claim_weight": 1.4751147809896128,
+    "difficulty_penalty": 0.7150675358517563,
+    "hostile_weight": 0.5186955447402236,
+    "mood_bias": 0.29403456925221627,
+    "prior_world_safe": 0.8329030427248106,
+    "prior_others_trust": 0.3652321934633742,
+    "prior_self_worth": 0.8750111827097846
+   }
+  },
+  {
+   "index": 1,
+   "name": "Mary",
+   "role": "pastor",
+   "archetype": "tom_pastor",
+   "emoji": "\u26ea",
+   "motivation": "Pastor of Bigville. Reads people for a living and is quietly certain the mayor means her harm.",
+   "params": {
+    "charm_weight": 0.2647735939288409,
+    "w_supergraph": 1.3483893437109284,
+    "w_spite": 0.014600209249340555,
+    "cred_on": 1.300086312547193,
+    "claim_weight": 1.8148720844789368,
+    "difficulty_penalty": 0.8846015297074176,
+    "hostile_weight": 0.9528990019922026,
+    "mood_bias": 0.2336730496909204,
+    "prior_world_safe": 0.6666787804092323,
+    "prior_others_trust": 0.7472608747713796,
+    "prior_self_worth": 0.6173515503288677
+   }
+  },
+  {
+   "index": 2,
+   "name": "Prudence Inkwell",
+   "role": "reporter",
+   "archetype": "truth_press",
+   "emoji": "\ud83d\udcf0",
+   "motivation": "Editor of the Bigville Bugle. Holds that a printed fact outlives any mayor, and prints accordingly.",
+   "params": {
+    "charm_weight": 0.32407695267668746,
+    "w_supergraph": 1.8495270377424322,
+    "w_spite": 0.05199939848347772,
+    "cred_on": 0.9694178310949768,
+    "claim_weight": 4.079498033365595,
+    "difficulty_penalty": 1.2062192495831416,
+    "hostile_weight": 0.7436214801986425,
+    "mood_bias": 0.15138963157952054,
+    "prior_world_safe": 0.6583947189522599,
+    "prior_others_trust": 0.5093882458368784,
+    "prior_self_worth": 0.6869174375308474
+   }
+  },
+  {
+   "index": 3,
+   "name": "Sergeant Bram Cobble",
+   "role": "constable",
+   "archetype": "watch_law",
+   "emoji": "\ud83e\ude96",
+   "motivation": "The whole of the Bigville Watch. Flat-footed, incorruptible, certain the law must reach the mayor's door too.",
+   "params": {
+    "charm_weight": 0.297520865357889,
+    "w_supergraph": 4.079994107833716,
+    "w_spite": 0.09266749873202862,
+    "cred_on": 1.1080902025792707,
+    "claim_weight": 1.7906996167626315,
+    "difficulty_penalty": 0.49112577758354875,
+    "hostile_weight": 1.5630081229497337,
+    "mood_bias": -0.25411208910169947,
+    "prior_world_safe": 0.3897889236812257,
+    "prior_others_trust": 0.38263234690371833,
+    "prior_self_worth": 0.634678362395915
+   }
+  },
+  {
+   "index": 4,
+   "name": "Adelina Frost",
+   "role": "clerk",
+   "archetype": "cold_competent",
+   "emoji": "\ud83e\uddca",
+   "motivation": "Town Clerk. Runs Bigville with glacial precision. Despises John not for scheming but for being BAD at it.",
+   "params": {
+    "charm_weight": 0.29449134716481223,
+    "w_supergraph": 1.8379491396136085,
+    "w_spite": 0.08358602472578472,
+    "cred_on": 1.0797599091847552,
+    "claim_weight": 1.4701655339159327,
+    "difficulty_penalty": 0.9457849875602653,
+    "hostile_weight": 0.9271210778275353,
+    "mood_bias": 0.5141029061417068,
+    "prior_world_safe": 0.643113676718956,
+    "prior_others_trust": 0.549793810726547,
+    "prior_self_worth": 0.939075108195605
+   }
+  },
+  {
+   "index": 5,
+   "name": "Alderman Hogget Purlin",
+   "role": "council",
+   "archetype": "guild_boss",
+   "emoji": "\ud83d\udd28",
+   "motivation": "Master of the Carpenters' Guild. Measures the world in board-feet and old grudges against the masons.",
+   "params": {
+    "charm_weight": 1.064364237557385,
+    "w_supergraph": 0.6718399827090611,
+    "w_spite": 0.0969245070851355,
+    "cred_on": 0.9465753010214484,
+    "claim_weight": 1.7113528735232952,
+    "difficulty_penalty": 1.1729635519168138,
+    "hostile_weight": 0.6725222511102825,
+    "mood_bias": -0.12658333933548022,
+    "prior_world_safe": 0.5791536691145192,
+    "prior_others_trust": 0.4518630730093833,
+    "prior_self_worth": 0.6232154820853922
+   }
+  },
+  {
+   "index": 6,
+   "name": "Councillor Ida Marrow",
+   "role": "council",
+   "archetype": "guild_pragmatist",
+   "emoji": "\ud83e\udd55",
+   "motivation": "Head of the Grocers' Guild. Weighs every argument by the ounce and sells to the highest bidder.",
+   "params": {
+    "charm_weight": 1.2714689809587945,
+    "w_supergraph": 1.0335986758788842,
+    "w_spite": 0.03635518240168237,
+    "cred_on": 0.8394885539142981,
+    "claim_weight": 2.530760320902878,
+    "difficulty_penalty": 1.0983123407875492,
+    "hostile_weight": 0.7175275449835681,
+    "mood_bias": 0.2430328712306461,
+    "prior_world_safe": 0.5737081933735635,
+    "prior_others_trust": 0.6682021369319804,
+    "prior_self_worth": 0.3531473548584196
+   }
+  },
+  {
+   "index": 7,
+   "name": "Councillor Erasmus Quill",
+   "role": "council",
+   "archetype": "pompous_credulous",
+   "emoji": "\ud83d\udd8b\ufe0f",
+   "motivation": "Chief Scrivener. Pompous, quotable, and flattered into agreement more easily than he would ever admit.",
+   "params": {
+    "charm_weight": 8.542072208691833,
+    "w_supergraph": 0.7140911372693108,
+    "w_spite": 0.09309772299170985,
+    "cred_on": 1.0407597598613065,
+    "claim_weight": 3.14100606607155,
+    "difficulty_penalty": 0.5970485905691073,
+    "hostile_weight": 0.9808985479643507,
+    "mood_bias": 0.11182185170253595,
+    "prior_world_safe": 0.6219398520767205,
+    "prior_others_trust": 0.7196442494669398,
+    "prior_self_worth": 0.5425605362257238
+   }
+  },
+  {
+   "index": 8,
+   "name": "Councillor Bettony Slade",
+   "role": "council",
+   "archetype": "guild_boss",
+   "emoji": "\ud83e\uddf1",
+   "motivation": "Mistress of the Masons' Guild. Solid as her stone and locked in an ancestral feud with the carpenters.",
+   "params": {
+    "charm_weight": 1.165789539865541,
+    "w_supergraph": 1.2527870377972445,
+    "w_spite": 0.09963198375490984,
+    "cred_on": 0.9342561513243255,
+    "claim_weight": 1.8850301969662502,
+    "difficulty_penalty": 0.9087053018526864,
+    "hostile_weight": 0.6761920246103452,
+    "mood_bias": 0.1556348259091529,
+    "prior_world_safe": 0.6338467112488382,
+    "prior_others_trust": 0.6145946139695105,
+    "prior_self_worth": 0.7727130481571347
+   }
+  },
+  {
+   "index": 9,
+   "name": "Tobias Crane",
+   "role": "smith",
+   "archetype": "honest_trade",
+   "emoji": "\u2692\ufe0f",
+   "motivation": "Blacksmith. Speaks little, mends much, and would rather be owed a favour than owe one.",
+   "params": {
+    "charm_weight": 2.705967893311388,
+    "w_supergraph": 2.37957764781353,
+    "w_spite": 0.12948828087045625,
+    "cred_on": 0.9489273176037336,
+    "claim_weight": 4.258452339771122,
+    "difficulty_penalty": 0.5509698767110066,
+    "hostile_weight": 1.1479507683576293,
+    "mood_bias": 0.20169449005591752,
+    "prior_world_safe": 0.6408137433492823,
+    "prior_others_trust": 0.7898255434842564,
+    "prior_self_worth": 0.7337120686739464
+   }
+  },
+  {
+   "index": 10,
+   "name": "Wat Crane",
+   "role": "apprentice",
+   "archetype": "eager_youth",
+   "emoji": "\ud83d\udd27",
+   "motivation": "Smith's apprentice and Tobias's boy. Believes the best of everyone, including the mayor -- for now.",
+   "params": {
+    "charm_weight": 3.242738387969291,
+    "w_supergraph": 0.7110013279877769,
+    "w_spite": 0.013299165806166581,
+    "cred_on": 1.2613208240759899,
+    "claim_weight": 2.656700496991886,
+    "difficulty_penalty": 1.2869191686067534,
+    "hostile_weight": 0.6269420360399891,
+    "mood_bias": -0.1277450211059297,
+    "prior_world_safe": 0.7700031479876274,
+    "prior_others_trust": 0.8266689625289868,
+    "prior_self_worth": 0.4543313348725811
+   }
+  },
+  {
+   "index": 11,
+   "name": "Marjorie Dough",
+   "role": "baker",
+   "archetype": "honest_trade",
+   "emoji": "\ud83c\udf5e",
+   "motivation": "Baker. Up before the town, feeds it whether it pays or not, and misses nothing said over the counter.",
+   "params": {
+    "charm_weight": 0.9555385697277753,
+    "w_supergraph": 1.8440707093577906,
+    "w_spite": 0.03411989165879391,
+    "cred_on": 0.9402147561896742,
+    "claim_weight": 2.0946272559993404,
+    "difficulty_penalty": 0.801923715166293,
+    "hostile_weight": 0.4810735388312933,
+    "mood_bias": 0.012896414022305095,
+    "prior_world_safe": 0.7270089462065099,
+    "prior_others_trust": 0.7185396463249576,
+    "prior_self_worth": 0.6267098586428315
+   }
+  },
+  {
+   "index": 12,
+   "name": "Cask Barleigh",
+   "role": "brewer",
+   "archetype": "genial_trade",
+   "emoji": "\ud83c\udf7a",
+   "motivation": "Brewer and keeper of the tap-room where Bigville does its real talking.",
+   "params": {
+    "charm_weight": 1.1185753944333638,
+    "w_supergraph": 2.66658153701136,
+    "w_spite": 0.05735260618854347,
+    "cred_on": 1.1107502725611385,
+    "claim_weight": 1.6683660947965615,
+    "difficulty_penalty": 1.6290868855217824,
+    "hostile_weight": 0.7264324753108263,
+    "mood_bias": -0.3985389236225581,
+    "prior_world_safe": 0.850551754748612,
+    "prior_others_trust": 0.7537107141646523,
+    "prior_self_worth": 0.6410577277261654
+   }
+  },
+  {
+   "index": 13,
+   "name": "Gristle Sowerby",
+   "role": "butcher",
+   "archetype": "gruff_trade",
+   "emoji": "\ud83d\udd2a",
+   "motivation": "Butcher. Blunt as his cleaver, at open war with the herbalist over what people ought to eat.",
+   "params": {
+    "charm_weight": 0.7678080853978406,
+    "w_supergraph": 1.5069807052510227,
+    "w_spite": 0.15707301048017183,
+    "cred_on": 0.8984430752891219,
+    "claim_weight": 3.4704105146055846,
+    "difficulty_penalty": 0.9272251817884575,
+    "hostile_weight": 1.6926844965392127,
+    "mood_bias": 0.45204628503793576,
+    "prior_world_safe": 0.5995551758617863,
+    "prior_others_trust": 0.2891501491808552,
+    "prior_self_worth": 0.5642222959764545
+   }
+  },
+  {
+   "index": 14,
+   "name": "Agnes Thorn",
+   "role": "herbalist",
+   "archetype": "wise_woman",
+   "emoji": "\ud83c\udf3f",
+   "motivation": "Herbalist and midwife. Sharp-eyed, unbribable, and immune to charm -- she has seen how people really end up.",
+   "params": {
+    "charm_weight": 0.3628389840670536,
+    "w_supergraph": 4.596892532593448,
+    "w_spite": 0.05275337461729787,
+    "cred_on": 0.8661974900245724,
+    "claim_weight": 1.2396578114515973,
+    "difficulty_penalty": 0.5010612542898678,
+    "hostile_weight": 1.001628985458123,
+    "mood_bias": -0.14213493771083005,
+    "prior_world_safe": 0.6563388776655434,
+    "prior_others_trust": 0.4346330887935186,
+    "prior_self_worth": 0.7106036619127323
+   }
+  },
+  {
+   "index": 15,
+   "name": "Peony Fen",
+   "role": "teacher",
+   "archetype": "civic_carer",
+   "emoji": "\ud83d\udcda",
+   "motivation": "Schoolteacher. Teaches the town's children their letters and, without meaning to, its conscience.",
+   "params": {
+    "charm_weight": 0.8639796006336627,
+    "w_supergraph": 2.5597636421841825,
+    "w_spite": 0.10131197876882943,
+    "cred_on": 1.038890267615948,
+    "claim_weight": 2.8522225636696175,
+    "difficulty_penalty": 0.6389710515816426,
+    "hostile_weight": 1.0874266450398815,
+    "mood_bias": 0.6438036647960572,
+    "prior_world_safe": 0.6282538879139777,
+    "prior_others_trust": 0.751671437699057,
+    "prior_self_worth": 0.5910885610776309
+   }
+  },
+  {
+   "index": 16,
+   "name": "Corvin Rooke",
+   "role": "printer",
+   "archetype": "quiet_scholar",
+   "emoji": "\ud83d\udcd6",
+   "motivation": "Bookseller and printer. Sets the Bugle's type and reads everything twice before he believes it once.",
+   "params": {
+    "charm_weight": 0.7863252564832697,
+    "w_supergraph": 1.9916659749559262,
+    "w_spite": 0.07622093540758305,
+    "cred_on": 1.1787468362167899,
+    "claim_weight": 2.0710062200218458,
+    "difficulty_penalty": 1.7136784958707534,
+    "hostile_weight": 0.8441632232705643,
+    "mood_bias": -0.3668257031694878,
+    "prior_world_safe": 0.5585144839153499,
+    "prior_others_trust": 0.5542671129340558,
+    "prior_self_worth": 0.7199575934088487
+   }
+  },
+  {
+   "index": 17,
+   "name": "Nettie Sparrow",
+   "role": "seamstress",
+   "archetype": "shrewd_trade",
+   "emoji": "\ud83e\uddf5",
+   "motivation": "Seamstress. Guild-proud, shrewd, and privy to what everyone wears and what everyone owes.",
+   "params": {
+    "charm_weight": 1.5352101962266662,
+    "w_supergraph": 1.8917103234828727,
+    "w_spite": 0.07094556673350264,
+    "cred_on": 1.077125162214051,
+    "claim_weight": 1.54815035162533,
+    "difficulty_penalty": 0.7994284113246496,
+    "hostile_weight": 0.9281050039084581,
+    "mood_bias": 0.2851616554118988,
+    "prior_world_safe": 0.5941052611078662,
+    "prior_others_trust": 0.5210368379845312,
+    "prior_self_worth": 0.5410004036222831
+   }
+  },
+  {
+   "index": 18,
+   "name": "Old Tussock",
+   "role": "nightsoil",
+   "archetype": "dignified_labour",
+   "emoji": "\ud83e\udea3",
+   "motivation": "The night-soil man. Does the job nobody thanks him for, and learns every household's secrets from its bins.",
+   "params": {
+    "charm_weight": 0.5491070729721969,
+    "w_supergraph": 1.108786594571607,
+    "w_spite": 0.026383982558826145,
+    "cred_on": 1.0763763373142203,
+    "claim_weight": 2.129721242739875,
+    "difficulty_penalty": 0.40614837446286267,
+    "hostile_weight": 1.3237075065379076,
+    "mood_bias": 0.02481185308352727,
+    "prior_world_safe": 0.6727270834205862,
+    "prior_others_trust": 0.7515500853648064,
+    "prior_self_worth": 0.3015348771564855
+   }
+  },
+  {
+   "index": 19,
+   "name": "Doreen Ferrety",
+   "role": "fishmonger",
+   "archetype": "loud_trade",
+   "emoji": "\ud83d\udc1f",
+   "motivation": "Fishmonger. Loudest voice in the market and at feud with the butcher over the best pitch.",
+   "params": {
+    "charm_weight": 2.460093367569659,
+    "w_supergraph": 1.1302557695734352,
+    "w_spite": 0.10765158415153413,
+    "cred_on": 0.9546397525600399,
+    "claim_weight": 1.6549526414966467,
+    "difficulty_penalty": 0.5764826920707105,
+    "hostile_weight": 0.8916487316101003,
+    "mood_bias": 0.09928798685856063,
+    "prior_world_safe": 0.7808588010207517,
+    "prior_others_trust": 0.5556735243765443,
+    "prior_self_worth": 0.6221887870297672
+   }
+  },
+  {
+   "index": 20,
+   "name": "Ambrose Tallow",
+   "role": "chandler",
+   "archetype": "honest_trade",
+   "emoji": "\ud83d\udd6f\ufe0f",
+   "motivation": "Chandler. Makes the candles that light every honest -- and dishonest -- late-night meeting in town.",
+   "params": {
+    "charm_weight": 2.327653386990384,
+    "w_supergraph": 2.410437570427168,
+    "w_spite": 0.13227676685278203,
+    "cred_on": 1.1060791949879603,
+    "claim_weight": 1.6005292535970403,
+    "difficulty_penalty": 0.7973967428185285,
+    "hostile_weight": 0.8963262578556117,
+    "mood_bias": -0.08307187523795624,
+    "prior_world_safe": 0.3805074029019393,
+    "prior_others_trust": 0.6032817278830876,
+    "prior_self_worth": 0.633919699227462
+   }
+  },
+  {
+   "index": 21,
+   "name": "Hesper Lull",
+   "role": "apothecary",
+   "archetype": "anxious_trade",
+   "emoji": "\u2697\ufe0f",
+   "motivation": "Apothecary. Fretful, precise, and nervously certain the herbalist is stealing his trade.",
+   "params": {
+    "charm_weight": 1.9897281888269407,
+    "w_supergraph": 0.8229380858836011,
+    "w_spite": 0.07655177599382756,
+    "cred_on": 0.8598640864688308,
+    "claim_weight": 1.4615498496806905,
+    "difficulty_penalty": 0.9428592214843259,
+    "hostile_weight": 1.181534808065775,
+    "mood_bias": -0.3663036951513136,
+    "prior_world_safe": 0.22187489888433426,
+    "prior_others_trust": 0.43358140004409634,
+    "prior_self_worth": 0.5162369803377942
+   }
+  },
+  {
+   "index": 22,
+   "name": "Barnaby Stoat",
+   "role": "beggar",
+   "archetype": "cynic_street",
+   "emoji": "\ud83e\ude99",
+   "motivation": "Speaker for the Beggars. Sees everything from the gutter, trusts nothing, and sells the truth to the Bugle cheap.",
+   "params": {
+    "charm_weight": 0.7625052400069409,
+    "w_supergraph": 0.8984634541858562,
+    "w_spite": 0.03331688001699167,
+    "cred_on": 1.03146647194696,
+    "claim_weight": 1.5712402408733124,
+    "difficulty_penalty": 1.6441710357368429,
+    "hostile_weight": 0.9112081364085933,
+    "mood_bias": 0.6726597101506292,
+    "prior_world_safe": 0.38039200373548043,
+    "prior_others_trust": 0.15013358922989728,
+    "prior_self_worth": 0.4754677805694287
+   }
+  },
+  {
+   "index": 23,
+   "name": "Ferdinand Cloot",
+   "role": "farmer",
+   "archetype": "salt_earth",
+   "emoji": "\ud83c\udf3e",
+   "motivation": "Farmer. Grows the town's bread and takes a dim, patient view of everyone who has never dug a furrow.",
+   "params": {
+    "charm_weight": 1.1673825245633802,
+    "w_supergraph": 1.0839374362784844,
+    "w_spite": 0.0647400172465895,
+    "cred_on": 1.0847801770346757,
+    "claim_weight": 2.37404150126214,
+    "difficulty_penalty": 0.7216822815920588,
+    "hostile_weight": 0.7264903887124279,
+    "mood_bias": -0.005734973407452317,
+    "prior_world_safe": 0.6008231524668063,
+    "prior_others_trust": 0.5936091875913952,
+    "prior_self_worth": 0.7391155170400558
+   }
+  },
+  {
+   "index": 24,
+   "name": "Hannah Cloot",
+   "role": "farmer",
+   "archetype": "salt_earth",
+   "emoji": "\ud83d\udc04",
+   "motivation": "Farmer, Ferdinand's wife. Runs the dairy and the family's memory of who owes whom.",
+   "params": {
+    "charm_weight": 0.9931145184350254,
+    "w_supergraph": 1.1282294504630532,
+    "w_spite": 0.04706715251302177,
+    "cred_on": 0.9789080765472278,
+    "claim_weight": 1.5665090737555238,
+    "difficulty_penalty": 1.2241481709170865,
+    "hostile_weight": 1.1112573870585225,
+    "mood_bias": 0.1918682955340245,
+    "prior_world_safe": 0.8086685887474337,
+    "prior_others_trust": 0.3418822356354949,
+    "prior_self_worth": 0.5565311741578595
+   }
+  },
+  {
+   "index": 25,
+   "name": "Jem Cloot",
+   "role": "farmhand",
+   "archetype": "eager_youth",
+   "emoji": "\ud83d\ude9c",
+   "motivation": "Farmhand, the Cloots' boy. Strong, cheerful, and easily impressed by a mayor's fine words.",
+   "params": {
+    "charm_weight": 1.1314336132947196,
+    "w_supergraph": 1.1424861228666676,
+    "w_spite": 0.07992898737191315,
+    "cred_on": 1.0456620916455812,
+    "claim_weight": 1.3042194638823215,
+    "difficulty_penalty": 1.8185112976518127,
+    "hostile_weight": 0.7762953698692774,
+    "mood_bias": -0.1654113750899714,
+    "prior_world_safe": 0.6284995721603124,
+    "prior_others_trust": 0.8094507712083913,
+    "prior_self_worth": 0.5086995582371432
+   }
+  },
+  {
+   "index": 26,
+   "name": "Verity Small",
+   "role": "dairymaid",
+   "archetype": "honest_trade",
+   "emoji": "\ud83e\udd5b",
+   "motivation": "Dairymaid. Plain-spoken to a fault; will tell you the milk is off and the mayor with it.",
+   "params": {
+    "charm_weight": 0.6436646655808683,
+    "w_supergraph": 2.767157828601822,
+    "w_spite": 0.06948875396320814,
+    "cred_on": 1.3386334383246008,
+    "claim_weight": 3.29741330420757,
+    "difficulty_penalty": 1.1803583755804614,
+    "hostile_weight": 2.8910634138798854,
+    "mood_bias": 0.02423902678658357,
+    "prior_world_safe": 0.794112984735473,
+    "prior_others_trust": 0.6939117325224018,
+    "prior_self_worth": 0.6563654871997852
+   }
+  },
+  {
+   "index": 27,
+   "name": "Mordecai Fitch",
+   "role": "clockmaker",
+   "archetype": "precise_pedant",
+   "emoji": "\u23f0",
+   "motivation": "Clockmaker. Believes a town, like a clock, runs on parts doing their duty -- and admires the Clerk for it.",
+   "params": {
+    "charm_weight": 0.5514817896417575,
+    "w_supergraph": 0.7416382575177072,
+    "w_spite": 0.059559540354111706,
+    "cred_on": 1.0565545838564572,
+    "claim_weight": 2.6661356918104535,
+    "difficulty_penalty": 0.8611371540798558,
+    "hostile_weight": 0.8879595955231462,
+    "mood_bias": -0.03600964470625465,
+    "prior_world_safe": 0.5392802706335256,
+    "prior_others_trust": 0.8012844541035118,
+    "prior_self_worth": 0.6928359516284279
+   }
+  },
+  {
+   "index": 28,
+   "name": "Lettice Prickle",
+   "role": "cobbler",
+   "archetype": "gruff_trade",
+   "emoji": "\ud83d\udc5e",
+   "motivation": "Cobbler. Grumbles at every customer and remembers every foot in Bigville.",
+   "params": {
+    "charm_weight": 0.9275879117370369,
+    "w_supergraph": 2.1141177927292376,
+    "w_spite": 0.10021030433601581,
+    "cred_on": 0.8374435794449255,
+    "claim_weight": 2.0754503203539363,
+    "difficulty_penalty": 0.6960549080174081,
+    "hostile_weight": 1.286193260377074,
+    "mood_bias": -0.010305296764643134,
+    "prior_world_safe": 0.5613439890483456,
+    "prior_others_trust": 0.43206463245128457,
+    "prior_self_worth": 0.7728607876611601
+   }
+  },
+  {
+   "index": 29,
+   "name": "Silas Grimm",
+   "role": "undertaker",
+   "archetype": "morbid_calm",
+   "emoji": "\u26b0\ufe0f",
+   "motivation": "Undertaker. Unflappable; deals with everyone eventually and is the one man in town John cannot intimidate.",
+   "params": {
+    "charm_weight": 0.8607981765185719,
+    "w_supergraph": 2.1232299630427742,
+    "w_spite": 0.0311100239970308,
+    "cred_on": 0.9027747256864002,
+    "claim_weight": 3.41847435923088,
+    "difficulty_penalty": 0.3634642498965317,
+    "hostile_weight": 1.0399753849928377,
+    "mood_bias": 0.32414172689496495,
+    "prior_world_safe": 0.7895189583446304,
+    "prior_others_trust": 0.6449049911905197,
+    "prior_self_worth": 0.6541067344823732
+   }
+  },
+  {
+   "index": 30,
+   "name": "Tamsin Reeve",
+   "role": "weaver",
+   "archetype": "townsfolk",
+   "emoji": "\ud83e\uddf5",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.037532,
+    "w_supergraph": 1.041942,
+    "w_spite": 0.061887,
+    "cred_on": 1.025485,
+    "claim_weight": 2.011115,
+    "difficulty_penalty": 0.657943,
+    "hostile_weight": 1.157343,
+    "mood_bias": -0.259999,
+    "prior_world_safe": 0.739593,
+    "prior_others_trust": 0.351652,
+    "prior_self_worth": 0.453216
+   }
+  },
+  {
+   "index": 31,
+   "name": "Osric Pinch",
+   "role": "tanner",
+   "archetype": "townsfolk",
+   "emoji": "\ud83e\udd7e",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.702183,
+    "w_supergraph": 0.687974,
+    "w_spite": 0.084826,
+    "cred_on": 1.061621,
+    "claim_weight": 2.537018,
+    "difficulty_penalty": 1.330285,
+    "hostile_weight": 1.138133,
+    "mood_bias": 0.310281,
+    "prior_world_safe": 0.436813,
+    "prior_others_trust": 0.743271,
+    "prior_self_worth": 0.600625
+   }
+  },
+  {
+   "index": 32,
+   "name": "Dorcas Mellow",
+   "role": "dairymaid",
+   "archetype": "townsfolk",
+   "emoji": "\ud83e\udd5b",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.236849,
+    "w_supergraph": 1.656387,
+    "w_spite": 0.026646,
+    "cred_on": 0.98519,
+    "claim_weight": 2.180609,
+    "difficulty_penalty": 0.843987,
+    "hostile_weight": 1.191146,
+    "mood_bias": 0.23837,
+    "prior_world_safe": 0.510934,
+    "prior_others_trust": 0.358406,
+    "prior_self_worth": 0.508446
+   }
+  },
+  {
+   "index": 33,
+   "name": "Wilmot Grubb",
+   "role": "labourer",
+   "archetype": "townsfolk",
+   "emoji": "\u26cf\ufe0f",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.428327,
+    "w_supergraph": 0.757752,
+    "w_spite": 0.083929,
+    "cred_on": 1.119937,
+    "claim_weight": 3.552698,
+    "difficulty_penalty": 0.919706,
+    "hostile_weight": 1.064507,
+    "mood_bias": 0.716747,
+    "prior_world_safe": 0.603418,
+    "prior_others_trust": 0.581833,
+    "prior_self_worth": 0.77142
+   }
+  },
+  {
+   "index": 34,
+   "name": "Bryony Tench",
+   "role": "fishwife",
+   "archetype": "townsfolk",
+   "emoji": "\ud83d\udc1f",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.28451,
+    "w_supergraph": 0.976733,
+    "w_spite": 0.018458,
+    "cred_on": 1.051959,
+    "claim_weight": 2.029091,
+    "difficulty_penalty": 1.107521,
+    "hostile_weight": 0.957925,
+    "mood_bias": -0.117951,
+    "prior_world_safe": 0.44561,
+    "prior_others_trust": 0.533766,
+    "prior_self_worth": 0.706048
+   }
+  },
+  {
+   "index": 35,
+   "name": "Enoch Fettle",
+   "role": "miller",
+   "archetype": "townsfolk",
+   "emoji": "\ud83c\udf3e",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 2.479777,
+    "w_supergraph": 0.69021,
+    "w_spite": 0.113906,
+    "cred_on": 1.172291,
+    "claim_weight": 2.431294,
+    "difficulty_penalty": 0.735376,
+    "hostile_weight": 0.789931,
+    "mood_bias": 0.260032,
+    "prior_world_safe": 0.826394,
+    "prior_others_trust": 0.683605,
+    "prior_self_worth": 0.461573
+   }
+  },
+  {
+   "index": 36,
+   "name": "Clemency Ashby",
+   "role": "laundress",
+   "archetype": "townsfolk",
+   "emoji": "\ud83e\uddfa",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 0.774741,
+    "w_supergraph": 1.459791,
+    "w_spite": 0.061396,
+    "cred_on": 0.985923,
+    "claim_weight": 2.009713,
+    "difficulty_penalty": 0.862742,
+    "hostile_weight": 0.865205,
+    "mood_bias": -0.262729,
+    "prior_world_safe": 0.373169,
+    "prior_others_trust": 0.399316,
+    "prior_self_worth": 0.639239
+   }
+  },
+  {
+   "index": 37,
+   "name": "Hodge Turvey",
+   "role": "carter",
+   "archetype": "townsfolk",
+   "emoji": "\ud83d\uded2",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.240366,
+    "w_supergraph": 1.034761,
+    "w_spite": 0.10909,
+    "cred_on": 1.024122,
+    "claim_weight": 1.800127,
+    "difficulty_penalty": 0.898622,
+    "hostile_weight": 1.413447,
+    "mood_bias": -0.161336,
+    "prior_world_safe": 0.533277,
+    "prior_others_trust": 0.753818,
+    "prior_self_worth": 0.46681
+   }
+  },
+  {
+   "index": 38,
+   "name": "Mabel Crouch",
+   "role": "spinster",
+   "archetype": "townsfolk",
+   "emoji": "\ud83e\uddf6",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.087525,
+    "w_supergraph": 0.771588,
+    "w_spite": 0.063039,
+    "cred_on": 1.041224,
+    "claim_weight": 1.817229,
+    "difficulty_penalty": 0.763352,
+    "hostile_weight": 1.532859,
+    "mood_bias": 0.155548,
+    "prior_world_safe": 0.605678,
+    "prior_others_trust": 0.6888,
+    "prior_self_worth": 0.721155
+   }
+  },
+  {
+   "index": 39,
+   "name": "Zebediah Frost",
+   "role": "thatcher",
+   "archetype": "townsfolk",
+   "emoji": "\ud83c\udfda\ufe0f",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 2.127164,
+    "w_supergraph": 1.234615,
+    "w_spite": 0.040839,
+    "cred_on": 0.991731,
+    "claim_weight": 1.551733,
+    "difficulty_penalty": 0.83054,
+    "hostile_weight": 0.813308,
+    "mood_bias": -0.054455,
+    "prior_world_safe": 0.438743,
+    "prior_others_trust": 0.711795,
+    "prior_self_worth": 0.612487
+   }
+  },
+  {
+   "index": 40,
+   "name": "Constance Dabble",
+   "role": "potter",
+   "archetype": "townsfolk",
+   "emoji": "\ud83c\udffa",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.618531,
+    "w_supergraph": 1.432364,
+    "w_spite": 0.032336,
+    "cred_on": 1.100465,
+    "claim_weight": 1.626881,
+    "difficulty_penalty": 0.870851,
+    "hostile_weight": 1.095716,
+    "mood_bias": -0.453962,
+    "prior_world_safe": 0.650021,
+    "prior_others_trust": 0.753498,
+    "prior_self_worth": 0.675608
+   }
+  },
+  {
+   "index": 41,
+   "name": "Fenwick Loam",
+   "role": "gardener",
+   "archetype": "townsfolk",
+   "emoji": "\ud83c\udf31",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 0.950392,
+    "w_supergraph": 0.922669,
+    "w_spite": 0.028741,
+    "cred_on": 1.036805,
+    "claim_weight": 1.676585,
+    "difficulty_penalty": 0.631035,
+    "hostile_weight": 1.419316,
+    "mood_bias": 0.226423,
+    "prior_world_safe": 0.398028,
+    "prior_others_trust": 0.458597,
+    "prior_self_worth": 0.854448
+   }
+  },
+  {
+   "index": 42,
+   "name": "Prue Hartle",
+   "role": "goodwife",
+   "archetype": "townsfolk",
+   "emoji": "\ud83c\udf72",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.091557,
+    "w_supergraph": 0.671807,
+    "w_spite": 0.04373,
+    "cred_on": 0.963146,
+    "claim_weight": 1.735917,
+    "difficulty_penalty": 1.233641,
+    "hostile_weight": 1.310033,
+    "mood_bias": 0.162435,
+    "prior_world_safe": 0.850128,
+    "prior_others_trust": 0.571074,
+    "prior_self_worth": 0.527566
+   }
+  },
+  {
+   "index": 43,
+   "name": "Grigor Stump",
+   "role": "woodcutter",
+   "archetype": "townsfolk",
+   "emoji": "\ud83e\ude93",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.035223,
+    "w_supergraph": 1.610316,
+    "w_spite": 0.023645,
+    "cred_on": 1.309814,
+    "claim_weight": 2.426481,
+    "difficulty_penalty": 1.166924,
+    "hostile_weight": 0.944083,
+    "mood_bias": -0.192275,
+    "prior_world_safe": 0.573164,
+    "prior_others_trust": 0.637948,
+    "prior_self_worth": 0.612801
+   }
+  },
+  {
+   "index": 44,
+   "name": "Winnifred Pell",
+   "role": "midwife",
+   "archetype": "townsfolk",
+   "emoji": "\ud83d\udc76",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.144687,
+    "w_supergraph": 1.66728,
+    "w_spite": 0.022002,
+    "cred_on": 0.956202,
+    "claim_weight": 1.642705,
+    "difficulty_penalty": 1.966584,
+    "hostile_weight": 0.748163,
+    "mood_bias": -0.110744,
+    "prior_world_safe": 0.729247,
+    "prior_others_trust": 0.83924,
+    "prior_self_worth": 0.630019
+   }
+  },
+  {
+   "index": 45,
+   "name": "Alby Snerd",
+   "role": "ratcatcher",
+   "archetype": "townsfolk",
+   "emoji": "\ud83d\udc00",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 0.723319,
+    "w_supergraph": 1.51905,
+    "w_spite": 0.049098,
+    "cred_on": 0.921164,
+    "claim_weight": 2.230992,
+    "difficulty_penalty": 0.756964,
+    "hostile_weight": 1.121631,
+    "mood_bias": -0.260144,
+    "prior_world_safe": 0.623918,
+    "prior_others_trust": 0.583111,
+    "prior_self_worth": 0.585213
+   }
+  },
+  {
+   "index": 46,
+   "name": "Hepzibah Vole",
+   "role": "gossip",
+   "archetype": "townsfolk",
+   "emoji": "\ud83d\udde3\ufe0f",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 0.923053,
+    "w_supergraph": 1.328506,
+    "w_spite": 0.061677,
+    "cred_on": 1.013151,
+    "claim_weight": 2.46827,
+    "difficulty_penalty": 0.725235,
+    "hostile_weight": 0.875213,
+    "mood_bias": 0.125746,
+    "prior_world_safe": 0.311116,
+    "prior_others_trust": 0.657146,
+    "prior_self_worth": 0.5604
+   }
+  },
+  {
+   "index": 47,
+   "name": "Cuthbert Dray",
+   "role": "drover",
+   "archetype": "townsfolk",
+   "emoji": "\ud83d\udc02",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 0.814003,
+    "w_supergraph": 1.674361,
+    "w_spite": 0.046322,
+    "cred_on": 1.170312,
+    "claim_weight": 3.734372,
+    "difficulty_penalty": 0.77229,
+    "hostile_weight": 0.820118,
+    "mood_bias": -0.216384,
+    "prior_world_safe": 0.557863,
+    "prior_others_trust": 0.332814,
+    "prior_self_worth": 0.69648
+   }
+  },
+  {
+   "index": 48,
+   "name": "Nan Sallow",
+   "role": "charwoman",
+   "archetype": "townsfolk",
+   "emoji": "\ud83e\uddf9",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.260023,
+    "w_supergraph": 0.867259,
+    "w_spite": 0.041505,
+    "cred_on": 0.964983,
+    "claim_weight": 1.700426,
+    "difficulty_penalty": 1.202317,
+    "hostile_weight": 1.061214,
+    "mood_bias": 0.517997,
+    "prior_world_safe": 0.563808,
+    "prior_others_trust": 0.627133,
+    "prior_self_worth": 0.578591
+   }
+  },
+  {
+   "index": 49,
+   "name": "Rufus Ganton",
+   "role": "porter",
+   "archetype": "townsfolk",
+   "emoji": "\ud83d\udce6",
+   "motivation": "An ordinary resident of Bigville.",
+   "params": {
+    "charm_weight": 1.384817,
+    "w_supergraph": 1.203688,
+    "w_spite": 0.062178,
+    "cred_on": 0.943632,
+    "claim_weight": 1.651993,
+    "difficulty_penalty": 1.106115,
+    "hostile_weight": 0.902674,
+    "mood_bias": 0.453067,
+    "prior_world_safe": 0.570565,
+    "prior_others_trust": 0.592097,
+    "prior_self_worth": 0.498058
+   }
+  }
+ ],
+ "relationships": [
+  {
+   "src": "Mary",
+   "edge": "rival_of",
+   "tgt": "John"
+  },
+  {
+   "src": "Mary",
+   "edge": "allied_with",
+   "tgt": "Sergeant Bram Cobble"
+  },
+  {
+   "src": "Adelina Frost",
+   "edge": "rival_of",
+   "tgt": "John"
+  },
+  {
+   "src": "Sergeant Bram Cobble",
+   "edge": "allied_with",
+   "tgt": "Adelina Frost"
+  },
+  {
+   "src": "Prudence Inkwell",
+   "edge": "rival_of",
+   "tgt": "John"
+  },
+  {
+   "src": "Prudence Inkwell",
+   "edge": "friend_of",
+   "tgt": "Barnaby Stoat"
+  },
+  {
+   "src": "Prudence Inkwell",
+   "edge": "allied_with",
+   "tgt": "Corvin Rooke"
+  },
+  {
+   "src": "Alderman Hogget Purlin",
+   "edge": "rival_of",
+   "tgt": "Councillor Bettony Slade"
+  },
+  {
+   "src": "Gristle Sowerby",
+   "edge": "rival_of",
+   "tgt": "Agnes Thorn"
+  },
+  {
+   "src": "Doreen Ferrety",
+   "edge": "rival_of",
+   "tgt": "Gristle Sowerby"
+  },
+  {
+   "src": "Agnes Thorn",
+   "edge": "rival_of",
+   "tgt": "Hesper Lull"
+  },
+  {
+   "src": "Marjorie Dough",
+   "edge": "friend_of",
+   "tgt": "Cask Barleigh"
+  },
+  {
+   "src": "Tobias Crane",
+   "edge": "parent_of",
+   "tgt": "Wat Crane"
+  },
+  {
+   "src": "Ferdinand Cloot",
+   "edge": "spouse_of",
+   "tgt": "Hannah Cloot"
+  },
+  {
+   "src": "Ferdinand Cloot",
+   "edge": "parent_of",
+   "tgt": "Jem Cloot"
+  },
+  {
+   "src": "Hannah Cloot",
+   "edge": "parent_of",
+   "tgt": "Jem Cloot"
+  },
+  {
+   "src": "Adelina Frost",
+   "edge": "friend_of",
+   "tgt": "Mordecai Fitch"
+  },
+  {
+   "src": "Peony Fen",
+   "edge": "friend_of",
+   "tgt": "Corvin Rooke"
+  },
+  {
+   "src": "Old Tussock",
+   "edge": "friend_of",
+   "tgt": "Barnaby Stoat"
+  },
+  {
+   "src": "John",
+   "edge": "charmed",
+   "tgt": "Councillor Erasmus Quill"
+  },
+  {
+   "src": "John",
+   "edge": "charmed",
+   "tgt": "Councillor Ida Marrow"
+  },
+  {
+   "src": "John",
+   "edge": "charmed",
+   "tgt": "Jem Cloot"
+  }
+ ],
+ "param_sd": {
+  "charm_weight": 1.5513550661356312,
+  "w_supergraph": 0.9924899348939685,
+  "w_spite": 0.03605061691737078,
+  "cred_on": 0.13045283934291635,
+  "claim_weight": 0.8328216605122154,
+  "difficulty_penalty": 0.3930638831869452,
+  "hostile_weight": 0.4515205669409497,
+  "mood_bias": 0.2775208288841925,
+  "prior_world_safe": 0.1445764475708108,
+  "prior_others_trust": 0.17534872286530054,
+  "prior_self_worth": 0.1358936145727974
+ },
+ "self_load_only": true
+}

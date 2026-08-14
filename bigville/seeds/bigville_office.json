@@ -1,0 +1,1530 @@
+{
+  "id": "bigville_office",
+  "version": "1.2.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R48 (block 358000): JOBS/ROLES ARE AGENT-CREATED, ADVERTISED, APPLIED-FOR, APPOINTED, DELEGATED -- never hardcoded, never magically filled. CREATE: of_council_create (only via a DECREE -- the council's bureaucracy: 'more police', 'a tax collector') / of_owner_create (an OWNER directly, when an establishment's workload exceeds capacity -- the overloaded innkeeper conceives a cook). MAKE IT KNOWN: an opening is not magically known -- it is ADVERTISED (a posted Notice heard by residents, of_hear_notice), spread by WORD OF MOUTH through `knows` ties (of_word_of_mouth), or the creator directly ASKS a person (adapter makes them aware). APPLY: an aware agent DECIDES whether to apply -- a collapse {apply,pass} valued by want_work - reservation (a job-seeker applies, a content person passes; you cannot be appointed to a job you did not apply for). SELECT: the delegator chooses among the APPLICANTS (Argmax by w_competence*competence + w_loyalty*loyalty -- bodies diverge), of_install appoints the choice (one office per person). DELEGATE: the holder's authority IS the delegator's (constable wields the council's; lose recognition, lose it). VACATE/SUCCEED: a holder who dies/leaves vacates; the office outlives him and the opening is re-advertised for a successor (falls-down-a-well safe). of_revoke removes a holder. Composes with bigville_recognition (council authority) and the council decree machinery. v1.2.0: office advertising is WIRED TO THE NOTICEBOARD -- of_hear_posted: a resident who READ a posted job-note advertising an office (bigville_noticeboard) becomes aware of the opening. Advertising a role posts a physical Note on the square's board; visitors read it and learn of the job (the abstract of_hear_notice remains for the note-less demonstrator).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "of_council_authority",
+      "batch": false,
+      "comment": "A council's authority is recognition: Count(residents who recognize it).",
+      "match": [
+        [
+          "town",
+          "has_council",
+          "council"
+        ]
+      ],
+      "where": {
+        "type": "Lit",
+        "value": true
+      },
+      "effects": [
+        [
+          "set_attr",
+          "council",
+          "authority",
+          {
+            "__term__": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "council"
+                },
+                "edge_type": "recognizes"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "of_council_create",
+      "batch": false,
+      "comment": "ROLES ARE NOT HARDCODED. The council CREATES a role only via a DECREE (its bureaucracy -- the product of a convened meeting): an armed Decree naming a role the council has no office for MINTS that Office (vacant, un-advertised), delegated by the council.",
+      "match": [
+        [
+          "town",
+          "has_council",
+          "council"
+        ],
+        [
+          "council",
+          "holds_decree",
+          "decree"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "decree"
+                  },
+                  "key": "armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "council"
+                  },
+                  "key": "authority"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "council"
+                },
+                "edge_type": "delegates"
+              },
+              "var_name": "o",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "o"
+                  },
+                  "key": "title"
+                },
+                "b": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "decree"
+                  },
+                  "key": "title"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "office",
+          "Office",
+          {
+            "title": "",
+            "filled": 0.0,
+            "advertised": 0.0,
+            "chosen_name": "",
+            "holder_name": "",
+            "revoke_armed": 0.0
+          }
+        ],
+        [
+          "set_attr",
+          "office",
+          "title",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "decree"
+              },
+              "key": "title"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "council",
+          "delegates",
+          "office"
+        ],
+        [
+          "set_attr",
+          "decree",
+          "armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "of_owner_create",
+      "batch": false,
+      "comment": "An OWNER creates a role DIRECTLY (no decree) for their own establishment when workload exceeds capacity (the overloaded innkeeper conceives a cook). Vacant, un-advertised.",
+      "match": [
+        [
+          "owner",
+          "owns",
+          "estab"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "estab"
+                  },
+                  "key": "workload"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "estab"
+                  },
+                  "key": "capacity"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "owner"
+                },
+                "edge_type": "delegates"
+              },
+              "var_name": "o",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "o"
+                  },
+                  "key": "title"
+                },
+                "b": {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "estab"
+                  },
+                  "key": "needed_role"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "office",
+          "Office",
+          {
+            "title": "",
+            "filled": 0.0,
+            "advertised": 0.0,
+            "chosen_name": "",
+            "holder_name": "",
+            "revoke_armed": 0.0
+          }
+        ],
+        [
+          "set_attr",
+          "office",
+          "title",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "estab"
+              },
+              "key": "needed_role"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "owner",
+          "delegates",
+          "office"
+        ]
+      ]
+    },
+    {
+      "name": "of_hear_notice",
+      "batch": false,
+      "comment": "An opening is not magically known -- it must be ADVERTISED. A resident HEARS of an advertised office (sees the posted note) and becomes aware_of it. No note, no awareness.",
+      "match": [
+        [
+          "notice",
+          "advertises",
+          "office"
+        ],
+        [
+          "town",
+          "has_resident",
+          "r"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "office"
+                  },
+                  "key": "advertised"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "aware_of"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "office"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "r",
+          "aware_of",
+          "office"
+        ]
+      ]
+    },
+    {
+      "name": "of_word_of_mouth",
+      "batch": false,
+      "comment": "WORD OF MOUTH: someone who knows of the opening tells a person they know -> awareness spreads.",
+      "match": [
+        [
+          "teller",
+          "aware_of",
+          "office"
+        ],
+        [
+          "teller",
+          "knows",
+          "hearer"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "hearer"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "hearer"
+                },
+                "edge_type": "aware_of"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "office"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "hearer",
+          "aware_of",
+          "office"
+        ]
+      ]
+    },
+    {
+      "name": "of_hear_posted",
+      "batch": false,
+      "comment": "NOTICEBOARD PATH: a resident who READ a posted job-note advertising an office becomes aware_of the opening (composes bigville_noticeboard: the note was pinned on the square's board and read by a visitor). You learn of the job by reading the board -- physical and local, unlike the abstract of_hear_notice. Word of mouth (of_word_of_mouth) then spreads it from a reader to those he knows.",
+      "match": [
+        [
+          "reader",
+          "read",
+          "note"
+        ],
+        [
+          "note",
+          "advertises",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "office"
+                  },
+                  "key": "filled"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "reader"
+                },
+                "edge_type": "aware_of"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "office"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "reader",
+          "aware_of",
+          "office"
+        ]
+      ]
+    },
+    {
+      "name": "of_apply_decide",
+      "batch": false,
+      "comment": "An aware agent DECIDES whether to apply -- a collapse {apply,pass} valued by want_work - reservation (a job-seeker applies; a content person passes; agents diverge). You cannot be appointed to a job you did not apply for.",
+      "match": [
+        [
+          "r",
+          "aware_of",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "office"
+                  },
+                  "key": "filled"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "decided_office"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "office"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "apply_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "ApplyStance"
+                },
+                "var_name": "s",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "s"
+                          },
+                          "key": "sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "r"
+                            },
+                            "key": "want_work"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "r"
+                            },
+                            "key": "reservation"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "r",
+          "decided_office",
+          "office"
+        ]
+      ]
+    },
+    {
+      "name": "of_apply_grant",
+      "batch": false,
+      "comment": "An agent whose collapse chose 'apply' submits an application (applies_to). Once per (r,office).",
+      "match": [
+        [
+          "r",
+          "aware_of",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "r"
+              },
+              "key": "apply_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "apply"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "applies_to"
+              },
+              "var_name": "x",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "x"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "office"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "r",
+          "applies_to",
+          "office"
+        ]
+      ]
+    },
+    {
+      "name": "of_select",
+      "batch": false,
+      "comment": "The delegator SELECTS among the APPLICANTS (Argmax over who applied, by w_competence*competence + w_loyalty*loyalty; already-employed/absent applicants scored -1000). Only those who applied are considered.",
+      "match": [
+        [
+          "delegator",
+          "delegates",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "office"
+                  },
+                  "key": "filled"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Exists",
+            "source": {
+              "type": "InNeighbours",
+              "node": {
+                "type": "Var",
+                "name": "office"
+              },
+              "edge_type": "applies_to"
+            },
+            "var_name": "a",
+            "predicate": {
+              "type": "And",
+              "items": [
+                {
+                  "type": "Eq",
+                  "a": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Attr",
+                        "node": {
+                          "type": "Var",
+                          "name": "a"
+                        },
+                        "key": "alive"
+                      },
+                      {
+                        "type": "Lit",
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "b": {
+                    "type": "Lit",
+                    "value": 1.0
+                  }
+                },
+                {
+                  "type": "Not",
+                  "arg": {
+                    "type": "Exists",
+                    "source": {
+                      "type": "Neighbours",
+                      "node": {
+                        "type": "Var",
+                        "name": "a"
+                      },
+                      "edge_type": "holds_office"
+                    },
+                    "var_name": "o",
+                    "predicate": {
+                      "type": "Gt",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "o"
+                            },
+                            "key": "filled"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": -1.0
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "office",
+          "chosen_name",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "InNeighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "office"
+                  },
+                  "edge_type": "applies_to"
+                },
+                "var_name": "a",
+                "value": {
+                  "type": "IfThenElse",
+                  "cond": {
+                    "type": "And",
+                    "items": [
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "type": "Plus",
+                          "items": [
+                            {
+                              "type": "Attr",
+                              "node": {
+                                "type": "Var",
+                                "name": "a"
+                              },
+                              "key": "alive"
+                            },
+                            {
+                              "type": "Lit",
+                              "value": 0.0
+                            }
+                          ]
+                        },
+                        "b": {
+                          "type": "Lit",
+                          "value": 1.0
+                        }
+                      },
+                      {
+                        "type": "Not",
+                        "arg": {
+                          "type": "Exists",
+                          "source": {
+                            "type": "Neighbours",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "edge_type": "holds_office"
+                          },
+                          "var_name": "o",
+                          "predicate": {
+                            "type": "Gt",
+                            "a": {
+                              "type": "Plus",
+                              "items": [
+                                {
+                                  "type": "Attr",
+                                  "node": {
+                                    "type": "Var",
+                                    "name": "o"
+                                  },
+                                  "key": "filled"
+                                },
+                                {
+                                  "type": "Lit",
+                                  "value": 0.0
+                                }
+                              ]
+                            },
+                            "b": {
+                              "type": "Lit",
+                              "value": -1.0
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "then": {
+                    "type": "Plus",
+                    "items": [
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "delegator"
+                                },
+                                "key": "w_competence"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "a"
+                                },
+                                "key": "competence"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "delegator"
+                                },
+                                "key": "w_loyalty"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "a"
+                                },
+                                "key": "loyalty"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "other": {
+                    "type": "Lit",
+                    "value": -1000.0
+                  }
+                }
+              },
+              "key": "name"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "of_install",
+      "batch": false,
+      "comment": "The selected APPLICANT is appointed (holds_office). One office per person.",
+      "match": [
+        [
+          "delegator",
+          "delegates",
+          "office"
+        ],
+        [
+          "cand",
+          "applies_to",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "office"
+                  },
+                  "key": "filled"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "cand"
+              },
+              "key": "name"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "office"
+              },
+              "key": "chosen_name"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "cand"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "cand"
+                },
+                "edge_type": "holds_office"
+              },
+              "var_name": "o",
+              "predicate": {
+                "type": "Gt",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "o"
+                      },
+                      "key": "filled"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": -1.0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "cand",
+          "holds_office",
+          "office"
+        ],
+        [
+          "set_attr",
+          "office",
+          "filled",
+          1.0
+        ],
+        [
+          "set_attr",
+          "office",
+          "holder_name",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "cand"
+              },
+              "key": "name"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "of_delegate",
+      "batch": false,
+      "comment": "The holder's authority is DELEGATED: holder.delegated_authority = delegator.authority. The constable's authority is the COUNCIL's; if the council loses recognition, so does it.",
+      "match": [
+        [
+          "delegator",
+          "delegates",
+          "office"
+        ],
+        [
+          "holder",
+          "holds_office",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "office"
+              },
+              "key": "filled"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "set_attr",
+          "holder",
+          "delegated_authority",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "delegator"
+                  },
+                  "key": "authority"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "of_vacate",
+      "batch": false,
+      "comment": "A holder who dies (alive=0) or leaves (left=1) VACATES the office; it outlives him. The opening is re-advertised (advertised reset) so a SUCCESSOR is found the same way.",
+      "match": [
+        [
+          "holder",
+          "holds_office",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "Or",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "holder"
+                  },
+                  "key": "alive"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "holder"
+                  },
+                  "key": "left"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "del_edge",
+          "holder",
+          "holds_office",
+          "office"
+        ],
+        [
+          "set_attr",
+          "office",
+          "filled",
+          0.0
+        ],
+        [
+          "set_attr",
+          "office",
+          "holder_name",
+          ""
+        ],
+        [
+          "set_attr",
+          "office",
+          "chosen_name",
+          ""
+        ],
+        [
+          "set_attr",
+          "holder",
+          "delegated_authority",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "of_revoke",
+      "batch": false,
+      "comment": "The delegator REVOKES an appointment: the holder is removed and the office falls vacant.",
+      "match": [
+        [
+          "delegator",
+          "delegates",
+          "office"
+        ],
+        [
+          "holder",
+          "holds_office",
+          "office"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "office"
+              },
+              "key": "revoke_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "del_edge",
+          "holder",
+          "holds_office",
+          "office"
+        ],
+        [
+          "set_attr",
+          "office",
+          "filled",
+          0.0
+        ],
+        [
+          "set_attr",
+          "office",
+          "holder_name",
+          ""
+        ],
+        [
+          "set_attr",
+          "office",
+          "chosen_name",
+          ""
+        ],
+        [
+          "set_attr",
+          "office",
+          "revoke_armed",
+          0.0
+        ],
+        [
+          "set_attr",
+          "holder",
+          "delegated_authority",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

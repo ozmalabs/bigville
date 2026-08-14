@@ -1,0 +1,267 @@
+{
+  "id": "bigville_econ_production",
+  "version": "2.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "BIGVILLE R4 (block 252000) -- PRODUCTION requires SKILL + the store-OPEN derivation. `be_shop_open`/`be_shop_shut` DERIVE a shop's `open` flag from the world fact `open_scheduled` (business hours, written mechanically from the R3 day/night clock) AND its keeper being present & AWAKE -- so a keeper who COLLAPSED (R3, block 251000) keeps the stall SHUT even in business hours (the hook the expectation-violation rides). be_produce is RETIRED into the unified recipe engine (bigville_econ_recipe): all production -- 1-input classic shops included -- runs through be_meet_input/be_recipe_done (consume need_qty, yield out_qty*skill, gated by tools + a CONSCIOUS keeper). be_shop_open/be_shop_shut REMAIN: they derive the `open` flag as a held EXPECTATION/frame (never a sale gate, 426000).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "be_shop_open",
+      "match": [
+        [
+          "shop",
+          "kept_by",
+          "keeper"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "shop"
+                    },
+                    "key": "open"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "shop"
+                  },
+                  "key": "open_scheduled"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "And",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "collapsed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "asleep"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "shop",
+          "open",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "be_shop_shut",
+      "match": [
+        [
+          "shop",
+          "kept_by",
+          "keeper"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "shop"
+                    },
+                    "key": "open"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 0.0
+              }
+            }
+          },
+          {
+            "type": "Or",
+            "items": [
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "shop"
+                      },
+                      "key": "open_scheduled"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "collapsed"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              },
+              {
+                "type": "Eq",
+                "a": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "keeper"
+                      },
+                      "key": "asleep"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0
+                    }
+                  ]
+                },
+                "b": {
+                  "type": "Lit",
+                  "value": 1.0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "shop",
+          "open",
+          0.0
+        ]
+      ]
+    }
+  ]
+}

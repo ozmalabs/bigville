@@ -1,0 +1,108 @@
+{
+  "id": "bigville_publisher_role",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R22 / newspaper-writer Rung A (block 293000): the gather-and-publish role is a PORTABLE held goal + affordance, not a hardcoded reporter. A Resident who `affords` a makes_known Affordance is (1) employed by the town's Paper via a RULE (pub_employ_afforder) and stops being employed when it no longer affords it (pub_unemploy_non_afforder), so the writer FOLLOWS the affordance; and (2) acquires the general gather goal Goal{kind:know} (pub_role_gathers). No Python picks the reporter; move the affords edge and the role moves. Gibsonian: the publisher is whoever affords making-things-known.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "pub_employ_afforder",
+      "batch": false,
+      "comment": "The town's Paper employs a Resident who affords a makes_known Affordance. This DERIVES the writer from the held affordance instead of a Python role-pick. Guarded by Not-already-employed so it fires once and reaches a fixpoint.",
+      "match": [
+        ["town", "has_resident", "res"],
+        ["town", "has_paper", "p"],
+        ["res", "affords", "aff"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "aff"}, "key": "name"},
+            "b": {"type": "Lit", "value": "makes_known"}
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "p"}, "edge_type": "employs"},
+              "var_name": "e",
+              "predicate": {
+                "type": "Eq",
+                "a": {"type": "Var", "name": "e"},
+                "b": {"type": "Var", "name": "res"}
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["add_edge", "p", "employs", "res"]
+      ]
+    },
+    {
+      "name": "pub_unemploy_non_afforder",
+      "batch": false,
+      "comment": "The Paper stops employing a resident who no longer affords a makes_known Affordance, so the employs edge FOLLOWS the affordance rather than accreting. Together with pub_employ_afforder this makes the publish role portable: move the affords edge and the writer moves.",
+      "match": [
+        ["p", "employs", "res"]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "res"}, "edge_type": "affords"},
+          "var_name": "aff",
+          "predicate": {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "aff"}, "key": "name"},
+            "b": {"type": "Lit", "value": "makes_known"}
+          }
+        }
+      },
+      "effects": [
+        ["del_edge", "p", "employs", "res"]
+      ]
+    },
+    {
+      "name": "pub_role_gathers",
+      "batch": false,
+      "comment": "A resident who affords makes_known acquires the GENERAL gather goal Goal{kind:know} if it holds none — the publish role BUNDLES the gather goal (the same general goal any curious agent holds). Guarded by Not-already-pursuing-a-know-goal so it mints exactly once.",
+      "match": [
+        ["res", "affords", "aff"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "aff"}, "key": "name"},
+            "b": {"type": "Lit", "value": "makes_known"}
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "res"}, "edge_type": "pursues"},
+              "var_name": "g",
+              "predicate": {
+                "type": "Eq",
+                "a": {"type": "Attr", "node": {"type": "Var", "name": "g"}, "key": "kind"},
+                "b": {"type": "Lit", "value": "know"}
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "g", "Goal", {"kind": "know", "topic": "town"}],
+        ["add_edge", "res", "pursues", "g"]
+      ]
+    }
+  ]
+}

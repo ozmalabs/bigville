@@ -1,0 +1,488 @@
+{
+  "id": "bigville_actions",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R69 (block 385000): WORLD ACTIONS ARE A DATA STRUCTURE, NOT CODE. An ActionSpec is a recipe data row -- name, requires (role), two typed inputs (kind+qty), an output (kind+qty), difficulty, time_minutes, wear_rate. ONE generic rule (ax_do) executes ANY recipe: it names no action, reads everything from the data, consumes the inputs from stock, produces the output, and tires the actor by the difficulty. Adding a new action -- saw planks, tan leather, grind flour -- is a DATA ROW, no code. This is the unifying model the bespoke craft rules (cc_burn, cr_forge_simple, ...) collapse into. Items are likewise data (Stock{kind,qty}; discrete tools carry per-unit props via ToolSpec). Deferred: N-ary recipes (more input slots or ingredient iteration); discrete per-item outputs with individual wear; folding time via the worktime engine.",
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "ActionSpec",
+      "attrs": {
+        "name": "burn_charcoal",
+        "requires": "collier",
+        "in1_kind": "timber",
+        "in1_qty": 4.0,
+        "in2_kind": "none",
+        "in2_qty": 0.0,
+        "out_kind": "charcoal",
+        "out_qty": 1.0,
+        "difficulty": 2.0,
+        "time_minutes": 60.0,
+        "wear_rate": 0.0
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "ActionSpec",
+      "attrs": {
+        "name": "smelt_iron",
+        "requires": "smith",
+        "in1_kind": "ore",
+        "in1_qty": 2.0,
+        "in2_kind": "charcoal",
+        "in2_qty": 1.0,
+        "out_kind": "iron",
+        "out_qty": 1.0,
+        "difficulty": 3.0,
+        "time_minutes": 90.0,
+        "wear_rate": 0.05
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "ActionSpec",
+      "attrs": {
+        "name": "forge_nails",
+        "requires": "smith",
+        "in1_kind": "iron",
+        "in1_qty": 1.0,
+        "in2_kind": "charcoal",
+        "in2_qty": 1.0,
+        "out_kind": "nails",
+        "out_qty": 5.0,
+        "difficulty": 1.5,
+        "time_minutes": 10.0,
+        "wear_rate": 0.1
+      }
+    }
+  ],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "ax_do",
+      "batch": false,
+      "comment": "GENERIC RECIPE ENGINE -- actions are DATA, not code. An actor 'doing' an ActionSpec whose requires-role he has, and whose two input Stocks (matched by kind) hold enough, executes the recipe: input1 -= in1_qty, input2 -= in2_qty, output += out_qty, and the actor's fatigue += the recipe's difficulty. Unused input slots use the 'none' stock (in2_kind='none', qty 0). This ONE rule runs burn-charcoal, smelt-iron, forge-nails, saw-planks and any recipe added as a data row -- it names no action. (Time_to_make/wear_rate are carried as data too; the worktime engine consumes time_minutes, and wear_rate applies to the tool used.) (Bulk/material outputs only: out_discrete==0, the default; tool outputs go through ax_forge -> discrete items.)",
+      "match": [
+        [
+          "town",
+          "has_actionspec",
+          "aspec"
+        ],
+        [
+          "town",
+          "has_actor",
+          "actor"
+        ],
+        [
+          "town",
+          "has_store",
+          "store"
+        ],
+        [
+          "store",
+          "stock",
+          "in1"
+        ],
+        [
+          "store",
+          "stock",
+          "in2"
+        ],
+        [
+          "store",
+          "stock",
+          "out"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "actor"
+              },
+              "key": "doing"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "aspec"
+              },
+              "key": "name"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "actor"
+              },
+              "key": "role"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "aspec"
+              },
+              "key": "requires"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "in1"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "aspec"
+              },
+              "key": "in1_kind"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "in1"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "aspec"
+                  },
+                  "key": "in1_qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "in2"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "aspec"
+              },
+              "key": "in2_kind"
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "in2"
+                  },
+                  "key": "qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "aspec"
+                  },
+                  "key": "in2_qty"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "out"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "aspec"
+              },
+              "key": "out_kind"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "aspec"
+                  },
+                  "key": "out_discrete"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "in1",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "in1"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "aspec"
+                    },
+                    "key": "in1_qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "in2",
+          "qty",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "in2"
+                    },
+                    "key": "qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "aspec"
+                    },
+                    "key": "in2_qty"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "out",
+          "qty",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "out"
+                      },
+                      "key": "qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "aspec"
+                      },
+                      "key": "out_qty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "actor",
+          "fatigue",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "actor"
+                      },
+                      "key": "fatigue"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "aspec"
+                      },
+                      "key": "difficulty"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "actor",
+          "doing",
+          ""
+        ]
+      ]
+    }
+  ]
+}

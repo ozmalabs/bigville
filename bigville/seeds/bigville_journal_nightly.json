@@ -1,0 +1,42 @@
+{
+ "id": "bigville_journal_nightly",
+ "version": "1.0.0",
+ "self_load_only": true,
+ "depends_on": [],
+ "description": "bigville R10c (274000): THE NIGHTLY JOURNAL -- a graph-native first-person diary. jn_write_entry: when a resident is armed for the night (journal_armed==1, set by the adapter once per night as mechanical world-delivery), the rule MINTS a JournalEntry node that CAPTURES the resident's day FROM THEIR OWN GRAPH STATE -- day / coin / grief / snap-pressure / wellbeing / conflict / chosen-action / backing -- each copied by an Attr term reading the mover, wires wrote_journal (the export reads this edge) + has_entry on the resident's Diary, and clears journal_armed so it fires EXACTLY once per night. NO prose is authored here or in Python: the entry's content is a mechanical render of real graph state (the export formats these attrs into a first-person line, exactly as R10b's `held` export formats real reads). Composes existing Terms (Eq/Attr/Var/Lit) -- zero new Rust. self_load_only; nothing depends_on it; guards on journal_armed absent in every existing path.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "jn_write_entry",
+   "batch": false,
+   "match": [
+    ["m", "has_diary", "d"]
+   ],
+   "where": {
+    "type": "Eq",
+    "a": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "journal_armed"},
+    "b": {"type": "Lit", "value": 1.0}
+   },
+   "effects": [
+    ["add_node", "e", "JournalEntry", {
+      "day":       {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "journal_day"}},
+      "coin_held": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "coin"}},
+      "grief":     {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "grief_distress"}},
+      "snap":      {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "snap_pressure"}},
+      "wellbeing": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "wellbeing"}},
+      "conflict":  {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "conflict"}},
+      "did":       {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "chosen_action"}},
+      "backed":    {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "backs_mary"}},
+      "informed":  {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "m"}, "key": "jn_informed"}},
+      "written": 1.0
+    }],
+    ["add_edge", "m", "wrote_journal", "e"],
+    ["add_edge", "d", "has_entry", "e"],
+    ["set_attr", "m", "journal_armed", 0.0]
+   ]
+  }
+ ]
+}

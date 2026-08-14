@@ -1,0 +1,96 @@
+{
+  "id": "bigville_headline",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R22 / newspaper-writer fold-in (block 297000): the integ3 weekly paper's HEADLINE is RENDERED from the week's real event's structured fields (subject/event_verb/place/patron), by StringConcat -- replacing the Python f-string. hl_render_full names the patron (the cause clause) for a story that has one; hl_render_plain renders a story with no patron (a natural death); hl_render_laundered drops the patron for a CAPTURED paper on a DAMAGING story. The prose is the engine's; Python supplies only the held meaning (the real fields off death_log / the town).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "hl_render_full",
+      "batch": false,
+      "comment": "A story that HAS a patron and is not laundered (free paper, or captured+ordinary) renders the full sentence naming the patron.",
+      "match": [["paper", "reports", "story"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "render_me"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "text_written"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "has_patron"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Not", "arg": {"type": "And", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "paper"}, "key": "captured"}, "b": {"type": "Lit", "value": 1.0}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "damaging"}, "b": {"type": "Lit", "value": 1.0}}
+          ]}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "story", "text_written", 1.0],
+        ["set_attr", "story", "text", {"__term__": {"type": "StringConcat", "parts": [
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "subject"},
+          {"type": "Lit", "value": " "},
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "event_verb"},
+          {"type": "Lit", "value": " "},
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "place"},
+          {"type": "Lit", "value": ", at the hand of "},
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "patron"},
+          {"type": "Lit", "value": "."}
+        ]}}]
+      ]
+    },
+    {
+      "name": "hl_render_plain",
+      "batch": false,
+      "comment": "A story with NO patron (e.g. a natural death) renders subject + verb + place, no cause clause.",
+      "match": [["paper", "reports", "story"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "render_me"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "text_written"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "has_patron"}, "b": {"type": "Lit", "value": 1.0}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "story", "text_written", 1.0],
+        ["set_attr", "story", "text", {"__term__": {"type": "StringConcat", "parts": [
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "subject"},
+          {"type": "Lit", "value": " "},
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "event_verb"},
+          {"type": "Lit", "value": " "},
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "place"},
+          {"type": "Lit", "value": "."}
+        ]}}]
+      ]
+    },
+    {
+      "name": "hl_render_laundered",
+      "batch": false,
+      "comment": "A CAPTURED paper LAUNDERS a DAMAGING story: it renders the same held event WITHOUT the 'at the hand of <patron>' clause -- the patron is omitted. Free vs captured = different words on the same event.",
+      "match": [["paper", "reports", "story"]],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "render_me"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "text_written"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "has_patron"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "paper"}, "key": "captured"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "damaging"}, "b": {"type": "Lit", "value": 1.0}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "story", "text_written", 1.0],
+        ["set_attr", "story", "text", {"__term__": {"type": "StringConcat", "parts": [
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "subject"},
+          {"type": "Lit", "value": " "},
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "event_verb"},
+          {"type": "Lit", "value": " "},
+          {"type": "Attr", "node": {"type": "Var", "name": "story"}, "key": "place"},
+          {"type": "Lit", "value": "."}
+        ]}}]
+      ]
+    }
+  ]
+}

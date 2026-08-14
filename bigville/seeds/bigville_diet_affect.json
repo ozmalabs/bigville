@@ -1,0 +1,166 @@
+{
+  "id": "bigville_diet_affect",
+  "version": "1.1.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville: the diet's psychology feeds the AFFECT loop. af_meal_mood moves an eater's mood toward each meal's satisfaction (the researched sensory-specific-satiety model, meal_satisfaction, computed as the meal is served). A poor monotonous diet sinks mood over days; variety holds it -- the welfare cost of monotony, now on the agent's actual mood, not just a read-off.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "af_meal_mood",
+      "batch": false,
+      "comment": "THE AFFECT LOOP: a meal's satisfaction (from the researched sensory-specific-satiety model, computed as the meal is served) moves the eater's MOOD toward it -- mood += (satisfaction - mood)*0.4 (hedonic adaptation toward recent experience). So a monotonous diet of low-satisfaction meals SINKS the mood day by day, while variety keeps it up. Fires once per meal (mood_done). (Body layer: the meal acts on the BODY -- mood is physiology; the mind reads it.)",
+      "match": [
+        [
+          "agent",
+          "has_body",
+          "body"
+        ],
+        [
+          "agent",
+          "ate",
+          "meal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "meal"
+                  },
+                  "key": "has_satisfaction"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "meal"
+                  },
+                  "key": "mood_done"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "body",
+          "mood",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "body"
+                      },
+                      "key": "mood"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "meal"
+                            },
+                            "key": "satisfaction"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "body"
+                            },
+                            "key": "mood"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.4
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "meal",
+          "mood_done",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

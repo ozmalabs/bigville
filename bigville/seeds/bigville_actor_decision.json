@@ -1,0 +1,103 @@
+{
+  "id": "bigville_actor_decision",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "Graph-native resident action selection. The world publishes currently legal ActorOption affordances; the resident's Ocelot graph selects the highest-scoring option and exposes its action payload. The adapter only reads and enacts that choice.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "oa_choose_option",
+      "batch": false,
+      "comment": "Select one currently afforded action by graph-native Argmax.",
+      "match": [
+        ["a", "has_option", "option"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "a"}, "key": "decision_armed"},
+            "b": {"type": "Lit", "value": 1.0}
+          },
+          {
+            "type": "Eq",
+            "a": {"type": "Attr", "node": {"type": "Var", "name": "a"}, "key": "chosen_action"},
+            "b": {"type": "Lit", "value": ""}
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr", "a", "chosen_action",
+          {"__term__": {"type": "Attr",
+            "node": {"type": "Argmax",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
+              "var_name": "candidate",
+              "value": {"type": "Plus", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
+                {"type": "Lit", "value": 0.0}
+              ]},
+              "default": {"type": "Lit", "value": "rest"}},
+            "key": "action"}}
+        ],
+        [
+          "set_attr", "a", "chosen_kind",
+          {"__term__": {"type": "Attr",
+            "node": {"type": "Argmax",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
+              "var_name": "candidate",
+              "value": {"type": "Plus", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
+                {"type": "Lit", "value": 0.0}
+              ]},
+              "default": {"type": "Lit", "value": ""}},
+            "key": "kind"}}
+        ],
+        [
+          "set_attr", "a", "chosen_trade",
+          {"__term__": {"type": "Attr",
+            "node": {"type": "Argmax",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
+              "var_name": "candidate",
+              "value": {"type": "Plus", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
+                {"type": "Lit", "value": 0.0}
+              ]},
+              "default": {"type": "Lit", "value": ""}},
+            "key": "trade"}}
+        ],
+        [
+          "set_attr", "a", "chosen_recipe",
+          {"__term__": {"type": "Attr",
+            "node": {"type": "Argmax",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
+              "var_name": "candidate",
+              "value": {"type": "Plus", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
+                {"type": "Lit", "value": 0.0}
+              ]},
+              "default": {"type": "Lit", "value": ""}},
+            "key": "recipe"}}
+        ],
+        [
+          "set_attr", "a", "chosen_target",
+          {"__term__": {"type": "Attr",
+            "node": {"type": "Argmax",
+              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
+              "var_name": "candidate",
+              "value": {"type": "Plus", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
+                {"type": "Lit", "value": 0.0}
+              ]},
+              "default": {"type": "Lit", "value": ""}},
+            "key": "target"}}
+        ]
+      ]
+    }
+  ]
+}

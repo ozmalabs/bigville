@@ -1,0 +1,116 @@
+{
+  "id": "bigville_write",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R22 / newspaper-writer Rung D (block 296000): the publisher WRITES prose from his HELD beliefs, and bias/capture become WORD choices. For each Fact the publisher `knows` (Rung C), a Story is minted whose `text` is RENDERED by StringConcat over the fact's structured fields (subject/event/place/patron) -- graph-native prose, NOT a Python f-string. write_free / write_captured_ordinary render the FULL sentence (naming the patron -- the cause clause); write_laundered (a captured paper on a DAMAGING story that implicates its patron) renders the SAME held fact WITHOUT the patron clause. So a free paper and a captured paper produce DIFFERENT PROSE about the same held belief -- the free-vs-captured flagship, now legible as words.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "write_free",
+      "batch": false,
+      "comment": "A FREE paper (not captured) writes the full sentence for a held fact, naming the patron (the cause clause). Rendered by StringConcat over the fact's fields -- no f-string.",
+      "match": [
+        ["pub", "knows", "f"],
+        ["pub", "writes_for", "paper"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "story_written"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "paper"}, "key": "captured"}, "b": {"type": "Lit", "value": 1.0}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "f", "story_written", 1.0],
+        ["add_node", "story", "Story", {
+          "captured": 0.0,
+          "text": {"__term__": {"type": "StringConcat", "parts": [
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "subject"},
+            {"type": "Lit", "value": " "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "event"},
+            {"type": "Lit", "value": " "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "place"},
+            {"type": "Lit", "value": ", at the hand of "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "patron"},
+            {"type": "Lit", "value": "."}
+          ]}}
+        }],
+        ["add_edge", "paper", "prints", "story"],
+        ["add_edge", "story", "about", "f"]
+      ]
+    },
+    {
+      "name": "write_captured_ordinary",
+      "batch": false,
+      "comment": "A CAPTURED paper still prints an ORDINARY (not damaging) story in full -- capture is TARGETED. Same full render as write_free.",
+      "match": [
+        ["pub", "knows", "f"],
+        ["pub", "writes_for", "paper"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "story_written"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "paper"}, "key": "captured"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "damaging"}, "b": {"type": "Lit", "value": 1.0}}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "f", "story_written", 1.0],
+        ["add_node", "story", "Story", {
+          "captured": 1.0,
+          "text": {"__term__": {"type": "StringConcat", "parts": [
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "subject"},
+            {"type": "Lit", "value": " "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "event"},
+            {"type": "Lit", "value": " "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "place"},
+            {"type": "Lit", "value": ", at the hand of "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "patron"},
+            {"type": "Lit", "value": "."}
+          ]}}
+        }],
+        ["add_edge", "paper", "prints", "story"],
+        ["add_edge", "story", "about", "f"]
+      ]
+    },
+    {
+      "name": "write_laundered",
+      "batch": false,
+      "comment": "A CAPTURED paper LAUNDERS a DAMAGING story that implicates its patron: it renders the SAME held fact WITHOUT the 'at the hand of <patron>' cause clause -- the patron is omitted. Same subject/event/place, different WORDS. This is the free-vs-captured divergence at the prose level.",
+      "match": [
+        ["pub", "knows", "f"],
+        ["pub", "writes_for", "paper"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "story_written"}, "b": {"type": "Lit", "value": 1.0}}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "paper"}, "key": "captured"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "damaging"}, "b": {"type": "Lit", "value": 1.0}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "f", "story_written", 1.0],
+        ["add_node", "story", "Story", {
+          "captured": 1.0,
+          "laundered": 1.0,
+          "text": {"__term__": {"type": "StringConcat", "parts": [
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "subject"},
+            {"type": "Lit", "value": " "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "event"},
+            {"type": "Lit", "value": " "},
+            {"type": "Attr", "node": {"type": "Var", "name": "f"}, "key": "place"},
+            {"type": "Lit", "value": "."}
+          ]}}
+        }],
+        ["add_edge", "paper", "prints", "story"],
+        ["add_edge", "story", "about", "f"]
+      ]
+    }
+  ]
+}

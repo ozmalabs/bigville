@@ -1,0 +1,309 @@
+{
+ "id": "bigville_need_drive_goal",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R2 (block 250000) -- a DRIVE above threshold mints a spatial GOAL. REUSES the 207000 `drives` seed: a Mover carries `enabled=1` + `has_active_drive`->Drive so drives' own drive_urge rule computes each drive's `urge=|v_d-c_d|`. `nd_arbitrate` is THE competing-drives decision -- the SAME Argmax family as the drama's ss_choose_burn: active_need = need_code of the Argmax-urge drive, active_urge = MaxOver urge, fired only when the max urge clears the villager's hunger_threshold (idempotent across the per-drive matches). `nd_form_sustenance_goal` mints a SustenanceGoal iff the WINNING need is sustenance; `nd_form_rest_goal` mints a RestGoal iff it is fatigue -- so the HIGHER drive's goal is the one formed, and ABLATING the drive (removing the Drive node) leaves no drive above threshold => active_need stays 0 => NO goal (load-bearing, a la Harlow 233000). Composes existing Terms only; zero new Rust. NOTE: the spec named `conflicting_goals_default` for arbitration, but that seed is a text-disclaimer codebook with no rules -- the load-bearing directive is the Argmax family, which this reuses.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "nd_arbitrate",
+   "match": [
+    [
+     "m",
+     "has_active_drive",
+     "d"
+    ]
+   ],
+   "where": {
+    "type": "Gte",
+    "a": {
+     "type": "MaxOver",
+     "source": {
+      "type": "Neighbours",
+      "node": {
+       "type": "Var",
+       "name": "m"
+      },
+      "edge_type": "has_active_drive",
+      "any_type": false
+     },
+     "var_name": "x",
+     "value": {
+      "type": "Attr",
+      "node": {
+       "type": "Var",
+       "name": "x"
+      },
+      "key": "urge"
+     },
+     "default": {
+      "type": "Attr",
+      "node": {
+       "type": "Var",
+       "name": "d"
+      },
+      "key": "urge"
+     }
+    },
+    "b": {
+     "type": "Attr",
+     "node": {
+      "type": "Var",
+      "name": "m"
+     },
+     "key": "hunger_threshold"
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "m",
+     "active_urge",
+     {
+      "__term__": {
+       "type": "MaxOver",
+       "source": {
+        "type": "Neighbours",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "edge_type": "has_active_drive",
+        "any_type": false
+       },
+       "var_name": "x",
+       "value": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "x"
+        },
+        "key": "urge"
+       },
+       "default": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "d"
+        },
+        "key": "urge"
+       }
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "m",
+     "active_need",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Argmax",
+        "source": {
+         "type": "Neighbours",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "edge_type": "has_active_drive",
+         "any_type": false
+        },
+        "var_name": "x",
+        "value": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "x"
+         },
+         "key": "urge"
+        },
+        "default": {
+         "type": "Var",
+         "name": "d"
+        }
+       },
+       "key": "need_code"
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "nd_form_sustenance_goal",
+   "match": [
+    [
+     "m",
+     "has_active_drive",
+     "d"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "active_need"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Exists",
+       "source": {
+        "type": "Neighbours",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "edge_type": "has_sustenance_goal",
+        "any_type": false
+       },
+       "var_name": "g",
+       "predicate": {
+        "type": "Lit",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "goal",
+     "SustenanceGoal",
+     {
+      "need_code": 1.0,
+      "urge": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "key": "active_urge"
+       }
+      },
+      "kind": "get_food"
+     }
+    ],
+    [
+     "add_edge",
+     "m",
+     "has_sustenance_goal",
+     "goal"
+    ]
+   ]
+  },
+  {
+   "name": "nd_form_rest_goal",
+   "match": [
+    [
+     "m",
+     "has_active_drive",
+     "d"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "m"
+         },
+         "key": "active_need"
+        },
+        {
+         "type": "Lit",
+         "value": 0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 2.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Exists",
+       "source": {
+        "type": "Neighbours",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "edge_type": "has_rest_goal",
+        "any_type": false
+       },
+       "var_name": "g",
+       "predicate": {
+        "type": "Lit",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "goal",
+     "RestGoal",
+     {
+      "need_code": 2.0,
+      "urge": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "m"
+        },
+        "key": "active_urge"
+       }
+      },
+      "kind": "go_home"
+     }
+    ],
+    [
+     "add_edge",
+     "m",
+     "has_rest_goal",
+     "goal"
+    ]
+   ]
+  }
+ ]
+}

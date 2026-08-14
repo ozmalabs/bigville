@@ -1,0 +1,429 @@
+{
+  "id": "bigville_news_ads",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R50 (block 361000): the NEWSPAPER IS AD-SUPPORTED. na_place_ad: an advertiser PAYS the paper to run an ad (coin conserved: advertiser -ad_spend, paper +ad_spend; paper.ad_revenue accrues; a paper -runs-> Ad -by-> advertiser) -- ad revenue IS the paper's income. na_see_ad: readers of the paper SEE each ad (it reaches the readership). na_advertiser_capture: the paper WILL NOT BITE THE HAND THAT FEEDS IT -- a story that damages a MAJOR advertiser (ad_spend >= paper.capture_threshold) is SUPPRESSED, while a story damaging a non-advertiser or minor one prints freely. This is the ad-supported analogue of the existing patron capture (bigville_news_press np_capture_suppresses), keyed to advertisers rather than one bankroller -- ad-support is a funding model AND a bias. Composes with the news press/reach channel and the coin economy.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "na_place_ad",
+      "batch": false,
+      "comment": "The newspaper is AD-SUPPORTED: an advertiser PAYS the paper to run an ad (advertiser.coin -= ad_spend, paper.coin += ad_spend, coin CONSERVED; paper.ad_revenue accrues). The ad runs in the paper (paper -runs-> Ad -by-> advertiser). This is the paper's income -- no ads, no revenue.",
+      "match": [
+        [
+          "advertiser",
+          "advertises_in",
+          "paper"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "advertiser"
+                  },
+                  "key": "ad_armed"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "advertiser"
+                  },
+                  "key": "coin"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "advertiser"
+                  },
+                  "key": "ad_spend"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "advertiser",
+          "coin",
+          {
+            "__term__": {
+              "type": "Minus",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "advertiser"
+                    },
+                    "key": "coin"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "advertiser"
+                    },
+                    "key": "ad_spend"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "paper",
+          "coin",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "paper"
+                      },
+                      "key": "coin"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "advertiser"
+                      },
+                      "key": "ad_spend"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "paper",
+          "ad_revenue",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "paper"
+                      },
+                      "key": "ad_revenue"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "advertiser"
+                      },
+                      "key": "ad_spend"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_node",
+          "ad",
+          "Ad",
+          {
+            "spend": 0.0
+          }
+        ],
+        [
+          "add_edge",
+          "paper",
+          "runs",
+          "ad"
+        ],
+        [
+          "add_edge",
+          "ad",
+          "by",
+          "advertiser"
+        ],
+        [
+          "set_attr",
+          "ad",
+          "spend",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "advertiser"
+                  },
+                  "key": "ad_spend"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "advertiser",
+          "ad_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "na_see_ad",
+      "batch": false,
+      "comment": "A reader of the paper SEES each ad it runs (reader -saw-> ad) -- the ad reaches the readership.",
+      "match": [
+        [
+          "reader",
+          "reads",
+          "paper"
+        ],
+        [
+          "paper",
+          "runs",
+          "ad"
+        ]
+      ],
+      "where": {
+        "type": "Not",
+        "arg": {
+          "type": "Exists",
+          "source": {
+            "type": "Neighbours",
+            "node": {
+              "type": "Var",
+              "name": "reader"
+            },
+            "edge_type": "saw"
+          },
+          "var_name": "x",
+          "predicate": {
+            "type": "Eq",
+            "a": {
+              "type": "Var",
+              "name": "x"
+            },
+            "b": {
+              "type": "Var",
+              "name": "ad"
+            }
+          }
+        }
+      },
+      "effects": [
+        [
+          "add_edge",
+          "reader",
+          "saw",
+          "ad"
+        ]
+      ]
+    },
+    {
+      "name": "na_advertiser_capture",
+      "batch": false,
+      "comment": "AD-SUPPORT IS A CAPTURE VECTOR: a story that DAMAGES a MAJOR advertiser (whose ad_spend >= paper.capture_threshold) is SUPPRESSED -- the ad-supported paper will not bite the hand that feeds it. A story damaging a NON-advertiser or a MINOR one (spend below threshold) prints freely. This is the ad-supported analogue of patron capture (np_capture_suppresses), keyed to advertisers instead of a single bankroller.",
+      "match": [
+        [
+          "paper",
+          "runs",
+          "ad"
+        ],
+        [
+          "ad",
+          "by",
+          "advertiser"
+        ],
+        [
+          "story",
+          "damages",
+          "advertiser"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "advertiser"
+                  },
+                  "key": "ad_spend"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "paper"
+                  },
+                  "key": "capture_threshold"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "story"
+                    },
+                    "key": "suppressed"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              },
+              "b": {
+                "type": "Lit",
+                "value": 1.0
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "story",
+          "suppressed",
+          1.0
+        ]
+      ]
+    }
+  ]
+}

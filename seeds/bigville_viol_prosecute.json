@@ -1,0 +1,676 @@
+{
+ "id": "bigville_viol_prosecute",
+ "version": "1.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "BIGVILLE R15 (block 263000) -- PROSECUTION THROUGH THE CORRUPTIBLE COUNCIL (R9 / 247). bv_prosecute files a proven case with the council; bv_council_convict / bv_council_acquit adjudicate over the backing-graph (Sum of vote over SEATED CouncilMembers > 0 -> a Conviction) -- John's seat is a bloc that can BLOCK a true prosecution (vote=-1) or PUSH a false one (vote=+1); ablate his seat (is_seated=0) and the outcome flips (a clean structural counterfactual). bv_warn / bv_punish sanction by AMOUNT magnitude (warn if amount<=warn_threshold else punish) -- magnitude, not the trigger, sets the severity. A Sanction is a graph record (censure), NOT a reward/punishment token on a person. ZERO new Rust.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "bv_prosecute",
+   "batch": false,
+   "match": [
+    [
+     "con",
+     "investigates",
+     "case"
+    ],
+    [
+     "con",
+     "files_with",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "proven"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "case"
+         },
+         "key": "prosecuted"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "pros",
+     "Prosecution",
+     {
+      "about": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "case"
+        },
+        "key": "aggressor"
+       }
+      },
+      "amount": {
+       "__term__": {
+        "type": "Plus",
+        "items": [
+         {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "case"
+          },
+          "key": "amount"
+         },
+         {
+          "type": "Lit",
+          "value": 0.0
+         }
+        ]
+       }
+      },
+      "adjudicated": 0.0,
+      "convicted": 0.0,
+      "sanctioned": 0.0
+     }
+    ],
+    [
+     "add_edge",
+     "pros",
+     "at_council",
+     "council"
+    ],
+    [
+     "set_attr",
+     "case",
+     "prosecuted",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_council_convict",
+   "batch": false,
+   "match": [
+    [
+     "pros",
+     "at_council",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "adjudicated"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Sum",
+       "source": {
+        "type": "NodesOfType",
+        "node_type": "CouncilMember"
+       },
+       "var_name": "cm",
+       "value": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Eq",
+         "a": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "cm"
+            },
+            "key": "is_seated"
+           },
+           {
+            "type": "Lit",
+            "value": 0.0
+           }
+          ]
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        },
+        "then": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "cm"
+           },
+           "key": "vote"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        "other": {
+         "type": "Lit",
+         "value": 0.0
+        }
+       }
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "conv",
+     "Conviction",
+     {
+      "about": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "pros"
+        },
+        "key": "about"
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "pros",
+     "conviction",
+     "conv"
+    ],
+    [
+     "set_attr",
+     "pros",
+     "convicted",
+     1.0
+    ],
+    [
+     "set_attr",
+     "pros",
+     "adjudicated",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_council_acquit",
+   "batch": false,
+   "match": [
+    [
+     "pros",
+     "at_council",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "adjudicated"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Lte",
+      "a": {
+       "type": "Sum",
+       "source": {
+        "type": "NodesOfType",
+        "node_type": "CouncilMember"
+       },
+       "var_name": "cm",
+       "value": {
+        "type": "IfThenElse",
+        "cond": {
+         "type": "Eq",
+         "a": {
+          "type": "Plus",
+          "items": [
+           {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "cm"
+            },
+            "key": "is_seated"
+           },
+           {
+            "type": "Lit",
+            "value": 0.0
+           }
+          ]
+         },
+         "b": {
+          "type": "Lit",
+          "value": 1.0
+         }
+        },
+        "then": {
+         "type": "Plus",
+         "items": [
+          {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "cm"
+           },
+           "key": "vote"
+          },
+          {
+           "type": "Lit",
+           "value": 0.0
+          }
+         ]
+        },
+        "other": {
+         "type": "Lit",
+         "value": 0.0
+        }
+       }
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "pros",
+     "convicted",
+     0.0
+    ],
+    [
+     "set_attr",
+     "pros",
+     "acquitted",
+     1.0
+    ],
+    [
+     "set_attr",
+     "pros",
+     "adjudicated",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_warn",
+   "batch": false,
+   "match": [
+    [
+     "pros",
+     "at_council",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "convicted"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "sanctioned"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Lte",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "amount"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "council"
+         },
+         "key": "warn_threshold"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "s",
+     "Sanction",
+     {
+      "kind": 1.0,
+      "about": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "pros"
+        },
+        "key": "about"
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "pros",
+     "sanction",
+     "s"
+    ],
+    [
+     "set_attr",
+     "pros",
+     "sanction_kind",
+     1.0
+    ],
+    [
+     "set_attr",
+     "pros",
+     "sanctioned",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "bv_punish",
+   "batch": false,
+   "match": [
+    [
+     "pros",
+     "at_council",
+     "council"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "convicted"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "sanctioned"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Lit",
+       "value": 0.0
+      }
+     },
+     {
+      "type": "Gt",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "pros"
+         },
+         "key": "amount"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      },
+      "b": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "council"
+         },
+         "key": "warn_threshold"
+        },
+        {
+         "type": "Lit",
+         "value": 0.0
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "add_node",
+     "s",
+     "Sanction",
+     {
+      "kind": 2.0,
+      "about": {
+       "__term__": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "pros"
+        },
+        "key": "about"
+       }
+      }
+     }
+    ],
+    [
+     "add_edge",
+     "pros",
+     "sanction",
+     "s"
+    ],
+    [
+     "set_attr",
+     "pros",
+     "sanction_kind",
+     2.0
+    ],
+    [
+     "set_attr",
+     "pros",
+     "sanctioned",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

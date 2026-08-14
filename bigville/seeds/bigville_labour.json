@@ -1,0 +1,60 @@
+{
+  "id": "bigville_labour",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville production-economy R4 (block 303000): LABOUR MOBILITY with role-identity as the switching FRICTION (the Roy occupational-choice model; the self-balancing loop). A Job{trade,revenue,crowd,wage,n_workers} pays wage = revenue - crowd*n_workers, so a trade's per-worker wage FALLS as it gets crowded. A Worker switches to the best-paying job iff (best_wage - current_wage) > role_identity*friction_scale -- owners (high role_identity) are sticky, labourers (low) are mobile. The negative feedback closes: over-supply -> wage down -> workers leave -> supply recovers -> wages equalize. Roles are seeded but NOT fixed; role_identity is only how strongly a resident holds the job.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "lm_wage",
+      "batch": false,
+      "comment": "A job's wage = revenue - crowd * (number of workers in it). n_workers = Count of incoming works_as edges. Crowding lowers the per-worker wage -- the balancing term.",
+      "match": [["town", "has_job", "job"]],
+      "where": {"type": "Lit", "value": true},
+      "effects": [
+        ["set_attr", "job", "n_workers", {"__term__": {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "job"}, "edge_type": "works_as"}}}],
+        ["set_attr", "job", "wage", {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "revenue"}, "b": {"type": "Times", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "job"}, "key": "crowd"},
+          {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "job"}, "edge_type": "works_as"}}
+        ]}}}]
+      ]
+    },
+    {
+      "name": "lm_switch",
+      "batch": false,
+      "comment": "A worker switches from its current job to the BEST-paying alternative job iff the wage gain exceeds its role-identity friction (role_identity * friction_scale). altjob is the best via the Not-Exists-a-better-job guard. Owners (high role_identity) rarely clear the bar; labourers (low) do. One switch moves its works_as edge and its role.",
+      "match": [
+        ["w", "works_as", "curjob"],
+        ["w", "in_town", "town"],
+        ["town", "has_job", "altjob"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Var", "name": "altjob"}, "b": {"type": "Var", "name": "curjob"}}},
+          {"type": "Gt",
+            "a": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "altjob"}, "key": "wage"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "curjob"}, "key": "wage"}},
+            "b": {"type": "Times", "items": [
+              {"type": "Attr", "node": {"type": "Var", "name": "w"}, "key": "role_identity"},
+              {"type": "Attr", "node": {"type": "Var", "name": "town"}, "key": "friction_scale"}
+            ]}},
+          {"type": "Not", "arg": {"type": "Exists",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "town"}, "edge_type": "has_job"},
+            "var_name": "j2",
+            "predicate": {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "j2"}, "key": "wage"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "altjob"}, "key": "wage"}}}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "w"}, "key": "can_switch"}, "b": {"type": "Lit", "value": 1.0}}
+        ]
+      },
+      "comment_turn": "can_switch is per-worker: the adapter gives ONE worker a turn at a time (like the move world's per-mover loop) so wages recompute between moves. Without serialization many workers flip simultaneously on the same wages (a concurrent-switch race) and OSCILLATE; one-at-a-time, labour redistributes gradually to the market-clearing equilibrium. The DECISION to switch is this rule; the adapter only schedules turns.",
+      "effects": [
+        ["del_edge", "w", "works_as", "curjob"],
+        ["add_edge", "w", "works_as", "altjob"],
+        ["set_attr", "w", "role", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "altjob"}, "key": "trade"}}]
+      ]
+    }
+  ]
+}

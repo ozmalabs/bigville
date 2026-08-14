@@ -1,0 +1,699 @@
+{
+  "id": "bigville_bells",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R31 (block 320000): the church BELLS are the clock -- time is NOT forced. Removes the smuggled global clock (town.sunday=1 driving every agent). The church has_bell a Bell; the sexton rings it (one world event, ring_armed). bl_ring emits a BellPeal{hour,kind,call_strength} from the church -- the ONLY time signal, there is no global `now`. bl_hear_awake: an AWAKE resident hears the peal and LEARNS the hour (known_hour=peal.hour) -- the bell tells the time, nobody reads a global clock. bl_wake_rested: an asleep but SUFFICIENTLY RESTED resident WAKES at the bell (asleep->0) and learns the hour; an EXHAUSTED sleeper matches neither -> sleeps through, stays asleep, never learns the time. bl_decide: an awake resident who heard a SERVICE peal CHOOSES whether to answer by a collapse over {go,stay} (attend_sign*(piety*call_strength - worldly_pull)) -- the bell calls, the resident chooses. bl_attend: a 'go' resident joins the congregation. Events are not scripted onto everyone: one who slept through never perceived the call and cannot attend. known_hour is per-resident, set only by hearing a bell (unknown = absence).",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "bl_ring",
+      "batch": false,
+      "comment": "The sexton rings the bell (ring_armed): the church emits one BellPeal -- the town's only time signal.",
+      "match": [
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "has_bell",
+          "bell"
+        ]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Plus",
+          "items": [
+            {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "bell"
+              },
+              "key": "ring_armed"
+            },
+            {
+              "type": "Lit",
+              "value": 0.0
+            }
+          ]
+        },
+        "b": {
+          "type": "Lit",
+          "value": 1.0
+        }
+      },
+      "effects": [
+        [
+          "add_node",
+          "peal",
+          "BellPeal",
+          {
+            "hour": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "bell"
+                    },
+                    "key": "toll_hour"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            },
+            "kind": {
+              "__term__": {
+                "type": "Attr",
+                "node": {
+                  "type": "Var",
+                  "name": "bell"
+                },
+                "key": "toll_kind"
+              }
+            },
+            "call_strength": {
+              "__term__": {
+                "type": "Plus",
+                "items": [
+                  {
+                    "type": "Attr",
+                    "node": {
+                      "type": "Var",
+                      "name": "bell"
+                    },
+                    "key": "call_strength"
+                  },
+                  {
+                    "type": "Lit",
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "church",
+          "peals",
+          "peal"
+        ],
+        [
+          "set_attr",
+          "bell",
+          "ring_armed",
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "bl_hear_awake",
+      "batch": false,
+      "comment": "An AWAKE resident hears the peal and learns the hour from it (no global clock read).",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "asleep"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "heard"
+              },
+              "var_name": "h",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "h"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "peal"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "known_hour",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "peal"
+                  },
+                  "key": "hour"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "r",
+          "heard",
+          "peal"
+        ]
+      ]
+    },
+    {
+      "name": "bl_wake_rested",
+      "batch": false,
+      "comment": "An asleep but sufficiently rested resident WAKES at the bell and learns the hour. An exhausted sleeper (rest<0.5) matches neither hear rule -> sleeps through.",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "asleep"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "rest"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.5
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "heard"
+              },
+              "var_name": "h",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "h"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "peal"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "asleep",
+          0.0
+        ],
+        [
+          "set_attr",
+          "r",
+          "woke_at_bell",
+          1.0
+        ],
+        [
+          "set_attr",
+          "r",
+          "known_hour",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "peal"
+                  },
+                  "key": "hour"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "r",
+          "heard",
+          "peal"
+        ]
+      ]
+    },
+    {
+      "name": "bl_decide",
+      "batch": false,
+      "comment": "An AWAKE resident who heard a SERVICE peal chooses whether to answer, by a collapse over {go,stay}. The bell calls; the resident chooses. Once per peal.",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "r"
+                  },
+                  "key": "asleep"
+                },
+                {
+                  "type": "Lit",
+                  "value": 0.0
+                }
+              ]
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "peal"
+              },
+              "key": "kind"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "service"
+            }
+          },
+          {
+            "type": "Exists",
+            "source": {
+              "type": "Neighbours",
+              "node": {
+                "type": "Var",
+                "name": "r"
+              },
+              "edge_type": "heard"
+            },
+            "var_name": "h",
+            "predicate": {
+              "type": "Eq",
+              "a": {
+                "type": "Var",
+                "name": "h"
+              },
+              "b": {
+                "type": "Var",
+                "name": "peal"
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "decided"
+              },
+              "var_name": "d",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "d"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "peal"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "r",
+          "church_choice",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "NodesOfType",
+                  "node_type": "ChurchChoice"
+                },
+                "var_name": "c",
+                "value": {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Plus",
+                      "items": [
+                        {
+                          "type": "Attr",
+                          "node": {
+                            "type": "Var",
+                            "name": "c"
+                          },
+                          "key": "attend_sign"
+                        },
+                        {
+                          "type": "Lit",
+                          "value": 0.0
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "r"
+                                },
+                                "key": "piety"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Plus",
+                            "items": [
+                              {
+                                "type": "Attr",
+                                "node": {
+                                  "type": "Var",
+                                  "name": "peal"
+                                },
+                                "key": "call_strength"
+                              },
+                              {
+                                "type": "Lit",
+                                "value": 0.0
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Plus",
+                        "items": [
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "r"
+                            },
+                            "key": "worldly_pull"
+                          },
+                          {
+                            "type": "Lit",
+                            "value": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "key": "label"
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "r",
+          "decided",
+          "peal"
+        ]
+      ]
+    },
+    {
+      "name": "bl_attend",
+      "batch": false,
+      "comment": "A resident whose collapse chose 'go' answers the call and joins the congregation.",
+      "match": [
+        [
+          "town",
+          "has_resident",
+          "r"
+        ],
+        [
+          "town",
+          "has_church",
+          "church"
+        ],
+        [
+          "church",
+          "peals",
+          "peal"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "r"
+              },
+              "key": "church_choice"
+            },
+            "b": {
+              "type": "Lit",
+              "value": "go"
+            }
+          },
+          {
+            "type": "Exists",
+            "source": {
+              "type": "Neighbours",
+              "node": {
+                "type": "Var",
+                "name": "r"
+              },
+              "edge_type": "heard"
+            },
+            "var_name": "h",
+            "predicate": {
+              "type": "Eq",
+              "a": {
+                "type": "Var",
+                "name": "h"
+              },
+              "b": {
+                "type": "Var",
+                "name": "peal"
+              }
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Exists",
+              "source": {
+                "type": "Neighbours",
+                "node": {
+                  "type": "Var",
+                  "name": "r"
+                },
+                "edge_type": "attends"
+              },
+              "var_name": "a",
+              "predicate": {
+                "type": "Eq",
+                "a": {
+                  "type": "Var",
+                  "name": "a"
+                },
+                "b": {
+                  "type": "Var",
+                  "name": "peal"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_edge",
+          "r",
+          "attends",
+          "peal"
+        ]
+      ]
+    }
+  ]
+}

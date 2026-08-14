@@ -1,0 +1,321 @@
+{
+  "id": "memory_core",
+  "version": "1.1.0",
+  "depends_on": [],
+  "description": "Legacy message-episode capture and retention as graph data. Version 1.1 marks these records as legacy and defers consolidation/forgetting of episodic_working_memory_v1 traces to the executable replay, semantic-support and reconsolidation mechanisms in episodic_working_memory_core.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "rules": [
+    {
+      "name": "rule_consolidate_episode",
+      "match": [
+        [
+          "agent",
+          "recorded_episode",
+          "ep"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "consolidated",
+              "type": "Attr",
+              "node": {
+                "name": "ep",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": false,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "memory_architecture",
+                "type": "Attr",
+                "node": {
+                  "name": "ep",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": "episodic_working_memory_v1",
+                "type": "Lit"
+              }
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Minus",
+              "a": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "ep",
+                  "type": "Var"
+                }
+              }
+            },
+            "b": {
+              "key": "episode_consolidation_age",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "key": "salience",
+              "type": "Attr",
+              "node": {
+                "name": "ep",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": 1.0,
+              "type": "Lit"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "ep",
+          "consolidated",
+          true
+        ],
+        [
+          "set_attr",
+          "ep",
+          "consolidated_tick",
+          {
+            "__term__": {
+              "key": "tick",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rule_episode_from_message",
+      "match": [
+        [
+          "agent",
+          "participates_in",
+          "ch"
+        ],
+        [
+          "m",
+          "in_channel",
+          "ch"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "TypeOf",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "Agent",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "episode_recorded",
+                "type": "Attr",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": true,
+                "type": "Lit"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "ep",
+          "Episode",
+          {
+            "kind": {
+              "__term__": {
+                "key": "speech_act",
+                "type": "Attr",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            },
+            "tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "m",
+                  "type": "Var"
+                }
+              }
+            },
+            "salience": {
+              "__term__": {
+                "value": 1.0,
+                "type": "Lit"
+              }
+            },
+            "consolidated": false,
+            "memory_architecture": "legacy_message_episode"
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "recorded_episode",
+          "ep"
+        ],
+        [
+          "set_attr",
+          "m",
+          "episode_recorded",
+          true
+        ]
+      ]
+    },
+    {
+      "name": "rule_forget_old_episode",
+      "match": [
+        [
+          "agent",
+          "recorded_episode",
+          "ep"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Gte",
+            "a": {
+              "type": "Minus",
+              "a": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "ep",
+                  "type": "Var"
+                }
+              }
+            },
+            "b": {
+              "type": "Times",
+              "items": [
+                {
+                  "key": "episode_consolidation_age",
+                  "type": "Attr",
+                  "node": {
+                    "name": "agent",
+                    "type": "Var"
+                  }
+                },
+                {
+                  "value": 3,
+                  "type": "Lit"
+                }
+              ]
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "memory_architecture",
+                "type": "Attr",
+                "node": {
+                  "name": "ep",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": "episodic_working_memory_v1",
+                "type": "Lit"
+              }
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "key": "salience",
+              "type": "Attr",
+              "node": {
+                "name": "ep",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": 1.0,
+              "type": "Lit"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "del_node",
+          "ep"
+        ]
+      ]
+    }
+  ]
+}

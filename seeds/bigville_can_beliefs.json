@@ -1,0 +1,74 @@
+{
+  "id": "bigville_can_beliefs",
+  "version": "1.0.0",
+  "depends_on": ["causal_attitude_networks"],
+  "self_load_only": true,
+  "description": "Per-resident Causal Attitude Networks (CAN, seeds/causal_attitude_networks.json) for Bigville residents (seeds/bigville_cast100.json). Declares the Gamma admissibility-grammar productions a resident's personal belief network needs (Resident -has_belief_mt-> Microtheory -has_concept-> Concept -causal_influence-> Concept) plus the DATA (not code) describing the 5-topic Concept template and its structural edge base values, so a builder (worlds/bigville_can_beliefs.py) can mechanically instantiate one independent, individually-parameterized network per resident. Grounded topics only -- no fictional beliefs: trust_mayor/claim_credible mirror seeds/bigville_drama_social.json's bd_villager_backs cred_john/cred_mary formulas (same charm_weight/hostile_weight/claim_weight/cred_on param names cast100 residents already carry); debtor_trustworthy mirrors seeds/bigville_loop_reputation.json's bl_townsfolk_opinion standing-vs-badmouth arithmetic; world_safe/self_worth mirror the prior_world_safe/prior_self_worth foundational IWM priors (Bowlby). See docs/research/engine_substrate/BIGVILLE_CAN_INTEGRATION_PREREG.md and its RESULTS sibling for the full design and the live two-resident measurement. This seed is self_load_only (like bigville_cast100.json/causal_attitude_networks.json's own sibling data) -- it is not swept into a full load_all_seeds boot.",
+  "nodes": [],
+  "edges": [],
+  "productions": [
+    {
+      "src": {"type": "Resident", "var": "r"},
+      "edge_type": "has_belief_mt",
+      "tgt": {"type": "Microtheory", "var": "mt"},
+      "where": null,
+      "weight": {"type": "Lit", "value": 1.0},
+      "provenance": "bigville_can_beliefs"
+    },
+    {
+      "src": {"type": "Microtheory", "var": "mt"},
+      "edge_type": "has_concept",
+      "tgt": {"type": "Concept", "var": "c"},
+      "where": null,
+      "weight": {"type": "Lit", "value": 1.0},
+      "provenance": "bigville_can_beliefs"
+    },
+    {
+      "src": {"type": "Concept", "var": "a"},
+      "edge_type": "causal_influence",
+      "tgt": {"type": "Concept", "var": "b"},
+      "where": null,
+      "weight": {"type": "Lit", "value": 1.0},
+      "provenance": "bigville_can_beliefs"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "resident_belief_topics_template",
+      "definition": "Five Concept names every resident's personal CAN Microtheory instantiates as DISTINCT nodes (can_ops.rs stores sigma/h/identity as attrs ON the Concept node, so genuine per-resident independence requires distinct nodes, not a shared vocabulary): trust_mayor, claim_credible, world_safe, self_worth, debtor_trustworthy.",
+      "why": "Grounded in already-wired Bigville formulas (bd_villager_backs, bl_townsfolk_opinion, the three IWM priors) rather than invented topics -- see this seed's own description and BIGVILLE_CAN_INTEGRATION_PREREG.md sec1.5."
+    },
+    {
+      "name": "trust_mayor",
+      "definition": "Attitude toward the mayor's trustworthiness. h/identity seeded from charm_weight, hostile_weight, prior_others_trust -- the same params bd_villager_backs' cred_john = seen_benevolent*charm_weight - seen_hostile*hostile_weight already reads (seeds/bigville_drama_social.json:538-555).",
+      "why": "Direct reuse of an already-real formula's inputs, not a new invented attitude object."
+    },
+    {
+      "name": "claim_credible",
+      "definition": "Attitude toward the credibility of Mary's accusation against the mayor. h seeded from claim_weight, cred_on, w_supergraph -- mirrors bd_villager_backs' cred_mary = heard_claim*(claim_weight - difficulty_penalty).",
+      "why": "Same reuse discipline as trust_mayor."
+    },
+    {
+      "name": "world_safe",
+      "definition": "Direct CAN-Concept mirror of the prior_world_safe foundational IWM prior (Bowlby). identity_field = 2*(prior_world_safe - 0.5).",
+      "why": "cast100's own _PARAM_SPEC already draws this prior per resident; no invention."
+    },
+    {
+      "name": "self_worth",
+      "definition": "Direct CAN-Concept mirror of prior_self_worth. identity_field = 2*(prior_self_worth - 0.5). Coupled positively to world_safe: Bowlby's IWM theory holds positive self-model and positive other/world-model co-occur in secure attachment.",
+      "why": "Real, literature-grounded coupling (bigville_town_seed.py:60-64's own comment names Bowlby IWM + Erikson setpoints), not invented."
+    },
+    {
+      "name": "debtor_trustworthy",
+      "definition": "Generalized reputation belief -- mirrors bl_townsfolk_opinion's standing-vs-badmouth arithmetic (seeds/bigville_loop_reputation.json:13-232). h seeded from -w_spite and prior_others_trust deviation.",
+      "why": "Reuses the town-wide reputation mechanic's own inputs."
+    },
+    {
+      "name": "resident_belief_structural_edges",
+      "definition": "5 causal_influence edges, same PAIRS for every resident (a sparse template, not a complete graph -- matches bigville_town_seed.py's own documented sparse-relationship philosophy): (trust_mayor,claim_credible,J<0), (trust_mayor,world_safe,J>0), (world_safe,self_worth,J>0), (claim_credible,debtor_trustworthy,J>0), (trust_mayor,debtor_trustworthy,J>0). Each edge's 'true' continuous J is a fixed structural base plus a small per-resident nuance term (from mood_bias/w_supergraph deviation from the population mean), then QUANTIZED to the resident's own effective_bins vocabulary -- the 'quantisation of causal linkage' mechanism already validated in CAN_BELIEF_QUANTIZATION_RESULTS.md, now driven by the real per-resident resolution_bins trait instead of a hand-set experimental condition.",
+      "why": "Concrete builder spec -- see worlds/bigville_can_beliefs.py for the executable version of this same data."
+    }
+  ],
+  "exclusions": [],
+  "rules": []
+}

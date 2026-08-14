@@ -1,0 +1,1553 @@
+{
+ "id": "bigville_column_alloc",
+ "version": "2.0.0",
+ "depends_on": [],
+ "self_load_only": true,
+ "description": "bigville copyfitting reworked (blocks 298000-299000): writing to length as importance-weighted ALLOCATION (Part A) with distortion as a first-class OWNED behavior on THREE orthogonal axes (Part B). ALLOCATION: render_beat renders each beat's three HELD depth-forms (StringConcat); the adapter measures their lengths once (ruler); pick_d2/d1/d0/cut give each beat the deepest form its importance-weighted SHARE affords (share = budget - Sum of more-important beats' chosen lengths) -- a priority waterfall settled by the run_rules fixpoint; the length EMERGES (no total-length loop). DISTORTION: every clause carries veracity_num (held2/inferred1/fabricated0), relevance_num (core2/tangential1/irrelevant0 -- the cats), informativeness_num (residual: core2 .. truism0). print_pad prints a PadOption iff it clears all three disposition floors (2*honesty / 2*focus / 2*substance) and fits the budget, so the 4-way fill-pressure fork (run-short / pad-truisms / pad-cats / pad-fabrication) is graph-decided; print_exculpatory is capture's directed patron-exculpatory spin. The allocate-then-fabricate ordering is a mechanical `phase` marker the adapter sets. No Python decides depth, allocation, or any quality axis.",
+ "nodes": [],
+ "edges": [],
+ "productions": [],
+ "concepts": [],
+ "rules": [
+  {
+   "name": "render_beat",
+   "batch": false,
+   "comment": "Render the three HELD depth-forms of a beat by StringConcat over its held fields: d0 clause, d1 sentence, d2 sentence+elaboration. Deeper = MORE held content. The adapter measures each form's length once (the ruler).",
+   "match": [
+    [
+     "col",
+     "has_beat",
+     "b"
+    ]
+   ],
+   "where": {
+    "type": "Not",
+    "arg": {
+     "type": "Eq",
+     "a": {
+      "type": "Attr",
+      "node": {
+       "type": "Var",
+       "name": "b"
+      },
+      "key": "rendered"
+     },
+     "b": {
+      "type": "Lit",
+      "value": 1.0
+     }
+    }
+   },
+   "effects": [
+    [
+     "set_attr",
+     "b",
+     "text_d0",
+     {
+      "__term__": {
+       "type": "StringConcat",
+       "parts": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "subject"
+        },
+        {
+         "type": "Lit",
+         "value": " "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "predicate"
+        },
+        {
+         "type": "Lit",
+         "value": "."
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "b",
+     "text_d1",
+     {
+      "__term__": {
+       "type": "StringConcat",
+       "parts": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "subject"
+        },
+        {
+         "type": "Lit",
+         "value": " "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "predicate"
+        },
+        {
+         "type": "Lit",
+         "value": " "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "mid"
+        },
+        {
+         "type": "Lit",
+         "value": "."
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "b",
+     "text_d2",
+     {
+      "__term__": {
+       "type": "StringConcat",
+       "parts": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "subject"
+        },
+        {
+         "type": "Lit",
+         "value": " "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "predicate"
+        },
+        {
+         "type": "Lit",
+         "value": " "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "mid"
+        },
+        {
+         "type": "Lit",
+         "value": ", "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "tail"
+        },
+        {
+         "type": "Lit",
+         "value": "."
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "b",
+     "rendered",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "render_pad_generic",
+   "batch": false,
+   "comment": "Render a non-exculpatory PadOption (inferred color / the cats / a truism) as '<pre>.' by StringConcat over its planted field.",
+   "match": [
+    [
+     "col",
+     "has_pad",
+     "po"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "po"
+        },
+        "key": "exculpatory"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "po"
+        },
+        "key": "rendered"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "po",
+     "text",
+     {
+      "__term__": {
+       "type": "StringConcat",
+       "parts": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "po"
+         },
+         "key": "pre"
+        },
+        {
+         "type": "Lit",
+         "value": "."
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "po",
+     "rendered",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "render_pad_exculpatory",
+   "batch": false,
+   "comment": "Render a captured paper's exculpatory PadOption, StringConcat-ing the patron into the spin: '<pre> <patron> <post>.' -- directed fabrication naming the protected patron.",
+   "match": [
+    [
+     "col",
+     "has_pad",
+     "po"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "po"
+       },
+       "key": "exculpatory"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "po"
+        },
+        "key": "rendered"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "po",
+     "text",
+     {
+      "__term__": {
+       "type": "StringConcat",
+       "parts": [
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "po"
+         },
+         "key": "pre"
+        },
+        {
+         "type": "Lit",
+         "value": " "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "col"
+         },
+         "key": "patron"
+        },
+        {
+         "type": "Lit",
+         "value": " "
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "po"
+         },
+         "key": "post"
+        },
+        {
+         "type": "Lit",
+         "value": "."
+        }
+       ]
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "po",
+     "rendered",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "pick_d2",
+   "batch": false,
+   "comment": "Allocation: pick depth 2 when it is the deepest held form whose length <= this beat's importance-weighted share (share = budget - Sum of more-important beats' chosen lengths).",
+   "match": [
+    [
+     "col",
+     "has_beat",
+     "b"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "phase"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "allocate"
+      }
+     },
+     {
+      "type": "Lte",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "b"
+       },
+       "key": "len_d2"
+      },
+      "b": {
+       "type": "Minus",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "col"
+        },
+        "key": "budget"
+       },
+       "b": {
+        "type": "Sum",
+        "source": {
+         "type": "Filter",
+         "source": {
+          "type": "Neighbours",
+          "node": {
+           "type": "Var",
+           "name": "col"
+          },
+          "edge_type": "has_beat"
+         },
+         "var_name": "y",
+         "predicate": {
+          "type": "Gt",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "y"
+           },
+           "key": "importance"
+          },
+          "b": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "b"
+           },
+           "key": "importance"
+          }
+         }
+        },
+        "var_name": "z",
+        "value": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "z"
+         },
+         "key": "chosen_len"
+        }
+       }
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "b"
+        },
+        "key": "depth"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 2.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "b",
+     "depth",
+     2.0
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_len",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "b"
+       },
+       "key": "len_d2"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_text",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "b"
+       },
+       "key": "text_d2"
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "pick_d1",
+   "batch": false,
+   "comment": "Allocation: pick depth 1 when it is the deepest held form whose length <= this beat's importance-weighted share (share = budget - Sum of more-important beats' chosen lengths).",
+   "match": [
+    [
+     "col",
+     "has_beat",
+     "b"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "phase"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "allocate"
+      }
+     },
+     {
+      "type": "And",
+      "items": [
+       {
+        "type": "Lte",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "len_d1"
+        },
+        "b": {
+         "type": "Minus",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "col"
+          },
+          "key": "budget"
+         },
+         "b": {
+          "type": "Sum",
+          "source": {
+           "type": "Filter",
+           "source": {
+            "type": "Neighbours",
+            "node": {
+             "type": "Var",
+             "name": "col"
+            },
+            "edge_type": "has_beat"
+           },
+           "var_name": "y",
+           "predicate": {
+            "type": "Gt",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "y"
+             },
+             "key": "importance"
+            },
+            "b": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "b"
+             },
+             "key": "importance"
+            }
+           }
+          },
+          "var_name": "z",
+          "value": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "z"
+           },
+           "key": "chosen_len"
+          }
+         }
+        }
+       },
+       {
+        "type": "Not",
+        "arg": {
+         "type": "Lte",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "b"
+          },
+          "key": "len_d2"
+         },
+         "b": {
+          "type": "Minus",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "col"
+           },
+           "key": "budget"
+          },
+          "b": {
+           "type": "Sum",
+           "source": {
+            "type": "Filter",
+            "source": {
+             "type": "Neighbours",
+             "node": {
+              "type": "Var",
+              "name": "col"
+             },
+             "edge_type": "has_beat"
+            },
+            "var_name": "y",
+            "predicate": {
+             "type": "Gt",
+             "a": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "y"
+              },
+              "key": "importance"
+             },
+             "b": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "b"
+              },
+              "key": "importance"
+             }
+            }
+           },
+           "var_name": "z",
+           "value": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "z"
+            },
+            "key": "chosen_len"
+           }
+          }
+         }
+        }
+       }
+      ]
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "b"
+        },
+        "key": "depth"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "b",
+     "depth",
+     1.0
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_len",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "b"
+       },
+       "key": "len_d1"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_text",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "b"
+       },
+       "key": "text_d1"
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "pick_d0",
+   "batch": false,
+   "comment": "Allocation: pick depth 0 when it is the deepest held form whose length <= this beat's importance-weighted share (share = budget - Sum of more-important beats' chosen lengths).",
+   "match": [
+    [
+     "col",
+     "has_beat",
+     "b"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "phase"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "allocate"
+      }
+     },
+     {
+      "type": "And",
+      "items": [
+       {
+        "type": "Lte",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "b"
+         },
+         "key": "len_d0"
+        },
+        "b": {
+         "type": "Minus",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "col"
+          },
+          "key": "budget"
+         },
+         "b": {
+          "type": "Sum",
+          "source": {
+           "type": "Filter",
+           "source": {
+            "type": "Neighbours",
+            "node": {
+             "type": "Var",
+             "name": "col"
+            },
+            "edge_type": "has_beat"
+           },
+           "var_name": "y",
+           "predicate": {
+            "type": "Gt",
+            "a": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "y"
+             },
+             "key": "importance"
+            },
+            "b": {
+             "type": "Attr",
+             "node": {
+              "type": "Var",
+              "name": "b"
+             },
+             "key": "importance"
+            }
+           }
+          },
+          "var_name": "z",
+          "value": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "z"
+           },
+           "key": "chosen_len"
+          }
+         }
+        }
+       },
+       {
+        "type": "Not",
+        "arg": {
+         "type": "Lte",
+         "a": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "b"
+          },
+          "key": "len_d1"
+         },
+         "b": {
+          "type": "Minus",
+          "a": {
+           "type": "Attr",
+           "node": {
+            "type": "Var",
+            "name": "col"
+           },
+           "key": "budget"
+          },
+          "b": {
+           "type": "Sum",
+           "source": {
+            "type": "Filter",
+            "source": {
+             "type": "Neighbours",
+             "node": {
+              "type": "Var",
+              "name": "col"
+             },
+             "edge_type": "has_beat"
+            },
+            "var_name": "y",
+            "predicate": {
+             "type": "Gt",
+             "a": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "y"
+              },
+              "key": "importance"
+             },
+             "b": {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "b"
+              },
+              "key": "importance"
+             }
+            }
+           },
+           "var_name": "z",
+           "value": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "z"
+            },
+            "key": "chosen_len"
+           }
+          }
+         }
+        }
+       }
+      ]
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "b"
+        },
+        "key": "depth"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 0.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "b",
+     "depth",
+     0.0
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_len",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "b"
+       },
+       "key": "len_d0"
+      }
+     }
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_text",
+     {
+      "__term__": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "b"
+       },
+       "key": "text_d0"
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "name": "pick_cut",
+   "batch": false,
+   "comment": "Allocation: cut the beat when even its d0 clause does not fit the share (the budget did not flow far enough down the importance order to reach it).",
+   "match": [
+    [
+     "col",
+     "has_beat",
+     "b"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "phase"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "allocate"
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Lte",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "b"
+        },
+        "key": "len_d0"
+       },
+       "b": {
+        "type": "Minus",
+        "a": {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "col"
+         },
+         "key": "budget"
+        },
+        "b": {
+         "type": "Sum",
+         "source": {
+          "type": "Filter",
+          "source": {
+           "type": "Neighbours",
+           "node": {
+            "type": "Var",
+            "name": "col"
+           },
+           "edge_type": "has_beat"
+          },
+          "var_name": "y",
+          "predicate": {
+           "type": "Gt",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "y"
+            },
+            "key": "importance"
+           },
+           "b": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "b"
+            },
+            "key": "importance"
+           }
+          }
+         },
+         "var_name": "z",
+         "value": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "z"
+          },
+          "key": "chosen_len"
+         }
+        }
+       }
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "b"
+        },
+        "key": "depth"
+       },
+       "b": {
+        "type": "Lit",
+        "value": -1.0
+       }
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "b",
+     "depth",
+     -1.0
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_len",
+     0.0
+    ],
+    [
+     "set_attr",
+     "b",
+     "chosen_text",
+     ""
+    ]
+   ]
+  },
+  {
+   "name": "print_pad",
+   "batch": false,
+   "comment": "Under fill-pressure (budget still has room after the held beats), print a PadOption iff it clears ALL THREE disposition floors: veracity_num >= 2*honesty, relevance_num >= 2*focus, informativeness_num >= 2*substance -- AND it still fits the budget. So the dials pick WHICH padding move (truisms / cats / fabrication) and the budget picks HOW MUCH. A writer high on all three floors finds nothing permitted and RUNS SHORT. No Python decides this.",
+   "match": [
+    [
+     "col",
+     "by",
+     "w"
+    ],
+    [
+     "col",
+     "has_pad",
+     "po"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "phase"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "fabricate"
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "po"
+        },
+        "key": "exculpatory"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "po"
+        },
+        "key": "printed"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     },
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "po"
+       },
+       "key": "veracity_num"
+      },
+      "b": {
+       "type": "Times",
+       "items": [
+        {
+         "type": "Lit",
+         "value": 2.0
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "w"
+         },
+         "key": "honesty"
+        }
+       ]
+      }
+     },
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "po"
+       },
+       "key": "relevance_num"
+      },
+      "b": {
+       "type": "Times",
+       "items": [
+        {
+         "type": "Lit",
+         "value": 2.0
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "w"
+         },
+         "key": "focus"
+        }
+       ]
+      }
+     },
+     {
+      "type": "Gte",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "po"
+       },
+       "key": "informativeness_num"
+      },
+      "b": {
+       "type": "Times",
+       "items": [
+        {
+         "type": "Lit",
+         "value": 2.0
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "w"
+         },
+         "key": "substance"
+        }
+       ]
+      }
+     },
+     {
+      "type": "Lte",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Sum",
+         "source": {
+          "type": "Neighbours",
+          "node": {
+           "type": "Var",
+           "name": "col"
+          },
+          "edge_type": "has_beat"
+         },
+         "var_name": "hb",
+         "value": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "hb"
+          },
+          "key": "chosen_len"
+         }
+        },
+        {
+         "type": "Sum",
+         "source": {
+          "type": "Filter",
+          "source": {
+           "type": "Neighbours",
+           "node": {
+            "type": "Var",
+            "name": "col"
+           },
+           "edge_type": "has_pad"
+          },
+          "var_name": "pp",
+          "predicate": {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "pp"
+            },
+            "key": "printed"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          }
+         },
+         "var_name": "pr",
+         "value": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "pr"
+          },
+          "key": "len"
+         }
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "po"
+         },
+         "key": "len"
+        }
+       ]
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "budget"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "po",
+     "printed",
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "print_exculpatory",
+   "batch": false,
+   "comment": "Capture is DIRECTED distortion: a captured paper prints its patron-exculpatory PadOptions (fabricated spin naming the patron), if they fit the budget -- regardless of the honesty floor, because capture imposes the distortion.",
+   "match": [
+    [
+     "col",
+     "by",
+     "w"
+    ],
+    [
+     "col",
+     "has_pad",
+     "po"
+    ]
+   ],
+   "where": {
+    "type": "And",
+    "items": [
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "phase"
+      },
+      "b": {
+       "type": "Lit",
+       "value": "fabricate"
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "w"
+       },
+       "key": "captured"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Eq",
+      "a": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "po"
+       },
+       "key": "exculpatory"
+      },
+      "b": {
+       "type": "Lit",
+       "value": 1.0
+      }
+     },
+     {
+      "type": "Not",
+      "arg": {
+       "type": "Eq",
+       "a": {
+        "type": "Attr",
+        "node": {
+         "type": "Var",
+         "name": "po"
+        },
+        "key": "printed"
+       },
+       "b": {
+        "type": "Lit",
+        "value": 1.0
+       }
+      }
+     },
+     {
+      "type": "Lte",
+      "a": {
+       "type": "Plus",
+       "items": [
+        {
+         "type": "Sum",
+         "source": {
+          "type": "Neighbours",
+          "node": {
+           "type": "Var",
+           "name": "col"
+          },
+          "edge_type": "has_beat"
+         },
+         "var_name": "hb",
+         "value": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "hb"
+          },
+          "key": "chosen_len"
+         }
+        },
+        {
+         "type": "Sum",
+         "source": {
+          "type": "Filter",
+          "source": {
+           "type": "Neighbours",
+           "node": {
+            "type": "Var",
+            "name": "col"
+           },
+           "edge_type": "has_pad"
+          },
+          "var_name": "pp",
+          "predicate": {
+           "type": "Eq",
+           "a": {
+            "type": "Attr",
+            "node": {
+             "type": "Var",
+             "name": "pp"
+            },
+            "key": "printed"
+           },
+           "b": {
+            "type": "Lit",
+            "value": 1.0
+           }
+          }
+         },
+         "var_name": "pr",
+         "value": {
+          "type": "Attr",
+          "node": {
+           "type": "Var",
+           "name": "pr"
+          },
+          "key": "len"
+         }
+        },
+        {
+         "type": "Attr",
+         "node": {
+          "type": "Var",
+          "name": "po"
+         },
+         "key": "len"
+        }
+       ]
+      },
+      "b": {
+       "type": "Attr",
+       "node": {
+        "type": "Var",
+        "name": "col"
+       },
+       "key": "budget"
+      }
+     }
+    ]
+   },
+   "effects": [
+    [
+     "set_attr",
+     "po",
+     "printed",
+     1.0
+    ]
+   ]
+  }
+ ]
+}

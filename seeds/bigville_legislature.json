@@ -1,0 +1,134 @@
+{
+  "id": "bigville_legislature",
+  "version": "1.0.0",
+  "depends_on": [],
+  "self_load_only": true,
+  "description": "bigville R23 (block 310000): the LEGISLATURE + the council's routine acts. Two frequencies. THE NORM (every meeting): the council issues CouncilAct{kind: decision|statement|censure, content, target} that get POSTED to the noticeboard and read; a CENSURE of a named person has a real effect (ca_censure_effect lowers the target's standing). THE RARE ACT: changing a LAW. Laws are named, valued, first-class objects in a law-book (Law{name,value,status}); a Bill{action: enact|amend|repeal, target, new_value} is VOTED on by councillors by bloc interest, PASSES at a threshold, and is APPLIED (amend a value, repeal a law, enact a new one). Laws have REAL effects: an active land_tax law's value is what the treasury charges each resident; repeal it and no tax is taken. The council can change, add, or remove the laws the town runs on -- but mostly it just rules, proclaims, and censures.",
+  "nodes": [],
+  "edges": [],
+  "productions": [],
+  "concepts": [],
+  "rules": [
+    {
+      "name": "leg_vote",
+      "batch": false,
+      "comment": "A councillor votes FOR a pending bill iff it aids their bloc (self-interest): rich councillors back tax cuts / oppose tax rises; poor back relief / tax rises. One vote per councillor per bill (Not-already-voted guard).",
+      "match": [["town", "on_council", "c"], ["town", "has_bill", "bill"]],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "c"}, "key": "bloc"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "aids_bloc"}},
+        {"type": "Not", "arg": {"type": "Exists",
+          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "c"}, "edge_type": "votes_for"},
+          "var_name": "b2",
+          "predicate": {"type": "Eq", "a": {"type": "Var", "name": "b2"}, "b": {"type": "Var", "name": "bill"}}}}
+      ]},
+      "effects": [["add_edge", "c", "votes_for", "bill"]]
+    },
+    {
+      "name": "leg_tally",
+      "batch": false,
+      "comment": "Count the votes cast for a bill: votes_for = number of incoming votes_for edges.",
+      "match": [["town", "has_bill", "bill"]],
+      "where": {"type": "Lit", "value": true},
+      "effects": [["set_attr", "bill", "votes_for", {"__term__": {"type": "Count", "source": {"type": "InNeighbours", "node": {"type": "Var", "name": "bill"}, "edge_type": "votes_for"}}}]]
+    },
+    {
+      "name": "leg_pass",
+      "batch": false,
+      "comment": "A pending bill whose votes reach its threshold PASSES. Below threshold it stays pending (fails silently) and the law is unchanged.",
+      "match": [["town", "has_bill", "bill"]],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "status"}, "b": {"type": "Lit", "value": "pending"}},
+        {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "votes_for"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "threshold"}}
+      ]},
+      "effects": [["set_attr", "bill", "status", "passed"]]
+    },
+    {
+      "name": "leg_amend",
+      "batch": false,
+      "comment": "A passed AMEND bill sets the target law's value to new_value.",
+      "match": [["town", "has_bill", "bill"], ["book", "has_law", "law"]],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "status"}, "b": {"type": "Lit", "value": "passed"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "action"}, "b": {"type": "Lit", "value": "amend"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "law"}, "key": "name"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "target"}}
+      ]},
+      "effects": [
+        ["set_attr", "law", "value", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "new_value"}}],
+        ["set_attr", "bill", "status", "enacted"]
+      ]
+    },
+    {
+      "name": "leg_repeal",
+      "batch": false,
+      "comment": "A passed REPEAL bill marks the target law repealed -- its effects stop firing.",
+      "match": [["town", "has_bill", "bill"], ["book", "has_law", "law"]],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "status"}, "b": {"type": "Lit", "value": "passed"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "action"}, "b": {"type": "Lit", "value": "repeal"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "law"}, "key": "name"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "target"}}
+      ]},
+      "effects": [
+        ["set_attr", "law", "status", "repealed"],
+        ["set_attr", "bill", "status", "enacted"]
+      ]
+    },
+    {
+      "name": "leg_enact",
+      "batch": false,
+      "comment": "A passed ENACT bill mints a NEW law into the book (name=target, value=new_value, active), unless a law of that name already exists.",
+      "match": [["town", "has_bill", "bill"], ["town", "has_book", "book"]],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "status"}, "b": {"type": "Lit", "value": "passed"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "action"}, "b": {"type": "Lit", "value": "enact"}},
+        {"type": "Not", "arg": {"type": "Exists",
+          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "book"}, "edge_type": "has_law"},
+          "var_name": "l2",
+          "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "l2"}, "key": "name"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "target"}}}}
+      ]},
+      "effects": [
+        ["add_node", "newlaw", "Law", {
+          "name": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "target"}},
+          "value": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "bill"}, "key": "new_value"}},
+          "status": "active"}],
+        ["add_edge", "book", "has_law", "newlaw"],
+        ["set_attr", "bill", "status", "enacted"]
+      ]
+    },
+    {
+      "name": "law_tax_charge",
+      "batch": false,
+      "comment": "THE EFFECT that makes a law real: when the treasury is armed for a collection, each resident pays the ACTIVE land_tax law's value into the treasury. A repealed (or absent) land_tax law never matches -> no tax is taken. Amend the value -> the take changes. Per-resident taxed guard so each pays once per collection.",
+      "match": [["town", "has_resident", "r"], ["book", "has_law", "law"], ["town", "has_treasury", "tr"]],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "law"}, "key": "name"}, "b": {"type": "Lit", "value": "land_tax"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "law"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "tr"}, "key": "collecting"}, "b": {"type": "Lit", "value": 1.0}},
+        {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "r"}, "key": "taxed"}, "b": {"type": "Lit", "value": 1.0}}}
+      ]},
+      "effects": [
+        ["set_attr", "r", "coin", {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "r"}, "key": "coin"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "law"}, "key": "value"}}}],
+        ["set_attr", "tr", "collected", {"__term__": {"type": "Plus", "items": [
+          {"type": "Attr", "node": {"type": "Var", "name": "tr"}, "key": "collected"},
+          {"type": "Attr", "node": {"type": "Var", "name": "law"}, "key": "value"}
+        ]}}],
+        ["set_attr", "r", "taxed", 1.0]
+      ]
+    },
+    {
+      "name": "ca_censure_effect",
+      "batch": false,
+      "comment": "THE NORM has teeth too: a POSTED censure naming a person lowers that person's standing in the town (once). Decisions and statements are content the town reads; a censure also bites.",
+      "match": [["town", "has_act", "act"], ["act", "targets", "p"]],
+      "where": {"type": "And", "items": [
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "act"}, "key": "kind"}, "b": {"type": "Lit", "value": "censure"}},
+        {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "act"}, "key": "posted"}, "b": {"type": "Lit", "value": 1.0}},
+        {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "act"}, "key": "applied"}, "b": {"type": "Lit", "value": 1.0}}}
+      ]},
+      "effects": [
+        ["set_attr", "p", "standing", {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "p"}, "key": "standing"}, "b": {"type": "Lit", "value": 1.0}}}],
+        ["set_attr", "act", "applied", 1.0]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3329 @@
+{
+ "depends_on": [],
+ "description": "100-resident bigville cast: jobs/houses/role-identity/drawn-Normal params on the build_town_100 map (blocks 305000-309000). Deterministic in seed=305000.",
+ "id": "bigville_cast100",
+ "map": {
+  "component_size": 1953,
+  "deposits": {
+   "fish": [
+    1,
+    2
+   ],
+   "lumber": [
+    13,
+    3
+   ],
+   "stone": [
+    42,
+    8
+   ]
+  },
+  "h": 40,
+  "w": 52
+ },
+ "residents": [
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    0,
+    6
+   ],
+   "index": 0,
+   "literacy": 1,
+   "name": "Verity Peaseblossom",
+   "params": {
+    "arousal": 0.3482,
+    "charm_weight": 0.4221,
+    "claim_weight": 0.6333,
+    "cred_on": 1.0781,
+    "hostile_weight": 0.5534,
+    "mood_bias": 0.5756,
+    "prior_others_trust": 1.0,
+    "prior_self_worth": 0.4363,
+    "prior_world_safe": 0.5762,
+    "resolution_bins": 8,
+    "valence": -0.7189,
+    "w_spite": 0.2027,
+    "w_supergraph": 0.3944
+   },
+   "role": "labourer",
+   "role_identity": 0.2022,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    0,
+    10
+   ],
+   "index": 1,
+   "literacy": 1,
+   "name": "Ida Ditchwater",
+   "params": {
+    "arousal": 0.3001,
+    "charm_weight": 0.4249,
+    "claim_weight": 0.7952,
+    "cred_on": 0.9301,
+    "hostile_weight": 0.0853,
+    "mood_bias": 0.0845,
+    "prior_others_trust": 0.6002,
+    "prior_self_worth": 0.6502,
+    "prior_world_safe": 0.7025,
+    "resolution_bins": 4,
+    "valence": -0.2021,
+    "w_spite": 0.3047,
+    "w_supergraph": 0.5882
+   },
+   "role": "labourer",
+   "role_identity": 0.2302,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    0,
+    14
+   ],
+   "index": 2,
+   "literacy": 1,
+   "name": "Garnet Hollow",
+   "params": {
+    "arousal": 0.3542,
+    "charm_weight": 0.4026,
+    "claim_weight": 0.5763,
+    "cred_on": 0.9045,
+    "hostile_weight": 0.6626,
+    "mood_bias": 0.2109,
+    "prior_others_trust": 0.6305,
+    "prior_self_worth": 0.7223,
+    "prior_world_safe": 0.578,
+    "resolution_bins": 7,
+    "valence": 0.1469,
+    "w_spite": 0.3344,
+    "w_supergraph": 0.8008
+   },
+   "role": "labourer",
+   "role_identity": 0.1992,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    0,
+    18
+   ],
+   "index": 3,
+   "literacy": 1,
+   "name": "Alby Marsh",
+   "params": {
+    "arousal": 0.522,
+    "charm_weight": 0.365,
+    "claim_weight": 0.338,
+    "cred_on": 0.9472,
+    "hostile_weight": 0.6062,
+    "mood_bias": 0.2005,
+    "prior_others_trust": 0.6522,
+    "prior_self_worth": 0.6593,
+    "prior_world_safe": 0.617,
+    "resolution_bins": 3,
+    "valence": 0.4193,
+    "w_spite": 0.3763,
+    "w_supergraph": 0.4319
+   },
+   "role": "labourer",
+   "role_identity": 0.1228,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    0,
+    22
+   ],
+   "index": 4,
+   "literacy": 1,
+   "name": "Bryony Turnbull",
+   "params": {
+    "arousal": 0.5222,
+    "charm_weight": 0.4709,
+    "claim_weight": 1.3924,
+    "cred_on": 1.1518,
+    "hostile_weight": 0.2211,
+    "mood_bias": 0.0807,
+    "prior_others_trust": 0.5426,
+    "prior_self_worth": 0.5653,
+    "prior_world_safe": 0.5873,
+    "resolution_bins": 3,
+    "valence": 0.1617,
+    "w_spite": 0.0,
+    "w_supergraph": 0.3908
+   },
+   "role": "labourer",
+   "role_identity": 0.1122,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    0,
+    26
+   ],
+   "index": 5,
+   "literacy": 0,
+   "name": "Barnaby Furlong",
+   "params": {
+    "arousal": 0.2838,
+    "charm_weight": 0.3098,
+    "claim_weight": 0.9776,
+    "cred_on": 1.1533,
+    "hostile_weight": 0.8899,
+    "mood_bias": 0.4504,
+    "prior_others_trust": 0.8458,
+    "prior_self_worth": 0.5657,
+    "prior_world_safe": 0.7292,
+    "resolution_bins": 2,
+    "valence": -0.1356,
+    "w_spite": 0.4088,
+    "w_supergraph": 0.3177
+   },
+   "role": "labourer",
+   "role_identity": 0.2446,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    0,
+    30
+   ],
+   "index": 6,
+   "literacy": 1,
+   "name": "Thaddeus Ramskin",
+   "params": {
+    "arousal": 0.3314,
+    "charm_weight": 0.5602,
+    "claim_weight": 0.9894,
+    "cred_on": 1.2263,
+    "hostile_weight": 0.3784,
+    "mood_bias": 0.2569,
+    "prior_others_trust": 0.4816,
+    "prior_self_worth": 0.3397,
+    "prior_world_safe": 0.445,
+    "resolution_bins": 2,
+    "valence": -0.0191,
+    "w_spite": 0.2836,
+    "w_supergraph": 0.6137
+   },
+   "role": "labourer",
+   "role_identity": 0.1513,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    0,
+    34
+   ],
+   "index": 7,
+   "literacy": 0,
+   "name": "Cuthbert Wold",
+   "params": {
+    "arousal": 0.4715,
+    "charm_weight": 0.5614,
+    "claim_weight": 0.6448,
+    "cred_on": 1.0081,
+    "hostile_weight": 0.4429,
+    "mood_bias": 0.4141,
+    "prior_others_trust": 0.5066,
+    "prior_self_worth": 1.0,
+    "prior_world_safe": 0.5102,
+    "resolution_bins": 6,
+    "valence": -0.2766,
+    "w_spite": 0.1472,
+    "w_supergraph": 0.2468
+   },
+   "role": "labourer",
+   "role_identity": 0.2819,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    1,
+    5
+   ],
+   "index": 8,
+   "literacy": 1,
+   "name": "Wat Bracken",
+   "params": {
+    "arousal": 0.4413,
+    "charm_weight": 0.4511,
+    "claim_weight": 1.3876,
+    "cred_on": 0.9085,
+    "hostile_weight": 0.3801,
+    "mood_bias": 0.3437,
+    "prior_others_trust": 0.8187,
+    "prior_self_worth": 0.7486,
+    "prior_world_safe": 0.6125,
+    "resolution_bins": 6,
+    "valence": -0.2487,
+    "w_spite": 0.0,
+    "w_supergraph": 0.4735
+   },
+   "role": "labourer",
+   "role_identity": 0.2805,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    7
+   ],
+   "index": 9,
+   "literacy": 0,
+   "name": "Gristle Bracken",
+   "params": {
+    "arousal": 0.1143,
+    "charm_weight": 0.4576,
+    "claim_weight": 1.8534,
+    "cred_on": 0.8939,
+    "hostile_weight": 0.1607,
+    "mood_bias": 0.3,
+    "prior_others_trust": 0.3348,
+    "prior_self_worth": 0.5398,
+    "prior_world_safe": 0.8058,
+    "resolution_bins": 3,
+    "valence": 0.0986,
+    "w_spite": 0.0822,
+    "w_supergraph": 0.4394
+   },
+   "role": "labourer",
+   "role_identity": 0.1212,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    9
+   ],
+   "index": 10,
+   "literacy": 1,
+   "name": "Rosamund Haywain",
+   "params": {
+    "arousal": 0.6303,
+    "charm_weight": 0.4248,
+    "claim_weight": 1.0772,
+    "cred_on": 0.924,
+    "hostile_weight": 0.4047,
+    "mood_bias": 0.0981,
+    "prior_others_trust": 0.6842,
+    "prior_self_worth": 0.4346,
+    "prior_world_safe": 0.9091,
+    "resolution_bins": 6,
+    "valence": 0.342,
+    "w_spite": 0.015,
+    "w_supergraph": 0.1962
+   },
+   "role": "labourer",
+   "role_identity": 0.1803,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    1,
+    11
+   ],
+   "index": 11,
+   "literacy": 1,
+   "name": "Bartholomew Quirke",
+   "params": {
+    "arousal": 0.2632,
+    "charm_weight": 0.8237,
+    "claim_weight": 1.3544,
+    "cred_on": 0.9819,
+    "hostile_weight": 0.1957,
+    "mood_bias": 0.0346,
+    "prior_others_trust": 0.556,
+    "prior_self_worth": 0.7623,
+    "prior_world_safe": 0.7693,
+    "resolution_bins": 11,
+    "valence": 0.2317,
+    "w_spite": 0.0409,
+    "w_supergraph": 0.1263
+   },
+   "role": "labourer",
+   "role_identity": 0.2129,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "rich",
+   "group": "low",
+   "home_cell": [
+    1,
+    13
+   ],
+   "index": 12,
+   "literacy": 1,
+   "name": "Lemuel Bindle",
+   "params": {
+    "arousal": 0.5356,
+    "charm_weight": 0.3332,
+    "claim_weight": 0.0987,
+    "cred_on": 1.3538,
+    "hostile_weight": 0.2695,
+    "mood_bias": 0.0679,
+    "prior_others_trust": 0.5385,
+    "prior_self_worth": 0.7803,
+    "prior_world_safe": 0.6425,
+    "resolution_bins": 4,
+    "valence": -0.4695,
+    "w_spite": 0.3201,
+    "w_supergraph": 0.3832
+   },
+   "role": "labourer",
+   "role_identity": 0.2458,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    15
+   ],
+   "index": 13,
+   "literacy": 1,
+   "name": "Phineas Jubbins",
+   "params": {
+    "arousal": 0.0064,
+    "charm_weight": 0.6262,
+    "claim_weight": 1.2829,
+    "cred_on": 1.0903,
+    "hostile_weight": 0.6653,
+    "mood_bias": 0.6747,
+    "prior_others_trust": 0.4379,
+    "prior_self_worth": 0.8789,
+    "prior_world_safe": 0.8398,
+    "resolution_bins": 3,
+    "valence": -0.3117,
+    "w_spite": 0.0,
+    "w_supergraph": 0.3239
+   },
+   "role": "labourer",
+   "role_identity": 0.2516,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    17
+   ],
+   "index": 14,
+   "literacy": 1,
+   "name": "Radella Peaseblossom",
+   "params": {
+    "arousal": 0.4552,
+    "charm_weight": 0.4114,
+    "claim_weight": 1.3352,
+    "cred_on": 1.0788,
+    "hostile_weight": 0.8592,
+    "mood_bias": 0.1245,
+    "prior_others_trust": 0.7226,
+    "prior_self_worth": 0.695,
+    "prior_world_safe": 0.8556,
+    "resolution_bins": 8,
+    "valence": -0.3013,
+    "w_spite": 0.0453,
+    "w_supergraph": 0.2806
+   },
+   "role": "labourer",
+   "role_identity": 0.2159,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    19
+   ],
+   "index": 15,
+   "literacy": 1,
+   "name": "Cask Thistlewood",
+   "params": {
+    "arousal": 0.3483,
+    "charm_weight": 0.2033,
+    "claim_weight": 0.9457,
+    "cred_on": 0.9726,
+    "hostile_weight": 0.1208,
+    "mood_bias": 0.1083,
+    "prior_others_trust": 0.7256,
+    "prior_self_worth": 0.6351,
+    "prior_world_safe": 0.6432,
+    "resolution_bins": 6,
+    "valence": -0.3252,
+    "w_spite": 0.4887,
+    "w_supergraph": 0.4603
+   },
+   "role": "labourer",
+   "role_identity": 0.2335,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    21
+   ],
+   "index": 16,
+   "literacy": 0,
+   "name": "Hogget Jubbins",
+   "params": {
+    "arousal": 0.2103,
+    "charm_weight": 0.1802,
+    "claim_weight": 1.0464,
+    "cred_on": 0.7219,
+    "hostile_weight": 0.4425,
+    "mood_bias": 0.4036,
+    "prior_others_trust": 0.6905,
+    "prior_self_worth": 0.6391,
+    "prior_world_safe": 0.6465,
+    "resolution_bins": 7,
+    "valence": 0.7399,
+    "w_spite": 0.3012,
+    "w_supergraph": 0.6979
+   },
+   "role": "labourer",
+   "role_identity": 0.2319,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    23
+   ],
+   "index": 17,
+   "literacy": 1,
+   "name": "Henrietta Jubbins",
+   "params": {
+    "arousal": 0.6879,
+    "charm_weight": 0.2844,
+    "claim_weight": 0.6286,
+    "cred_on": 1.3986,
+    "hostile_weight": 0.6364,
+    "mood_bias": 0.5687,
+    "prior_others_trust": 0.5357,
+    "prior_self_worth": 0.4064,
+    "prior_world_safe": 0.5692,
+    "resolution_bins": 3,
+    "valence": 0.0094,
+    "w_spite": 0.4553,
+    "w_supergraph": 0.3227
+   },
+   "role": "labourer",
+   "role_identity": 0.251,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    25
+   ],
+   "index": 18,
+   "literacy": 1,
+   "name": "Prosper Tallowick",
+   "params": {
+    "arousal": 0.3686,
+    "charm_weight": 0.439,
+    "claim_weight": 0.8328,
+    "cred_on": 1.4044,
+    "hostile_weight": 0.9924,
+    "mood_bias": 0.8177,
+    "prior_others_trust": 0.6659,
+    "prior_self_worth": 0.2207,
+    "prior_world_safe": 0.5163,
+    "resolution_bins": 3,
+    "valence": -0.3025,
+    "w_spite": 0.1001,
+    "w_supergraph": 0.4158
+   },
+   "role": "labourer",
+   "role_identity": 0.2175,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    1,
+    27
+   ],
+   "index": 19,
+   "literacy": 1,
+   "name": "Godfrey Norbisham",
+   "params": {
+    "arousal": 0.4263,
+    "charm_weight": 0.517,
+    "claim_weight": 0.7699,
+    "cred_on": 1.0066,
+    "hostile_weight": 0.5017,
+    "mood_bias": 0.2279,
+    "prior_others_trust": 0.4531,
+    "prior_self_worth": 0.4825,
+    "prior_world_safe": 0.5189,
+    "resolution_bins": 3,
+    "valence": -0.3271,
+    "w_spite": 0.1878,
+    "w_supergraph": 0.4867
+   },
+   "role": "labourer",
+   "role_identity": 0.1845,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    1,
+    29
+   ],
+   "index": 20,
+   "literacy": 0,
+   "name": "Silas Kettle",
+   "params": {
+    "arousal": 0.6001,
+    "charm_weight": 0.7045,
+    "claim_weight": 0.5415,
+    "cred_on": 1.4862,
+    "hostile_weight": 0.76,
+    "mood_bias": 0.3518,
+    "prior_others_trust": 0.461,
+    "prior_self_worth": 0.3464,
+    "prior_world_safe": 0.5429,
+    "resolution_bins": 5,
+    "valence": 0.1188,
+    "w_spite": 0.2295,
+    "w_supergraph": 0.5369
+   },
+   "role": "labourer",
+   "role_identity": 0.2548,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    31
+   ],
+   "index": 21,
+   "literacy": 1,
+   "name": "Phineas Underhill",
+   "params": {
+    "arousal": 0.1892,
+    "charm_weight": 0.4183,
+    "claim_weight": 1.2346,
+    "cred_on": 1.1055,
+    "hostile_weight": 0.6714,
+    "mood_bias": 0.0638,
+    "prior_others_trust": 0.5542,
+    "prior_self_worth": 0.9091,
+    "prior_world_safe": 0.5213,
+    "resolution_bins": 11,
+    "valence": 0.1193,
+    "w_spite": 0.1551,
+    "w_supergraph": 0.6009
+   },
+   "role": "labourer",
+   "role_identity": 0.3158,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    1,
+    33
+   ],
+   "index": 22,
+   "literacy": 1,
+   "name": "Bettony Rundle",
+   "params": {
+    "arousal": 0.5508,
+    "charm_weight": 0.8302,
+    "claim_weight": 1.3121,
+    "cred_on": 0.708,
+    "hostile_weight": 0.4781,
+    "mood_bias": 0.305,
+    "prior_others_trust": 0.5445,
+    "prior_self_worth": 0.719,
+    "prior_world_safe": 0.1589,
+    "resolution_bins": 10,
+    "valence": -0.5003,
+    "w_spite": 0.3697,
+    "w_supergraph": 0.5492
+   },
+   "role": "labourer",
+   "role_identity": 0.2725,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    1,
+    35
+   ],
+   "index": 23,
+   "literacy": 0,
+   "name": "Wat Nettle",
+   "params": {
+    "arousal": 0.131,
+    "charm_weight": 0.521,
+    "claim_weight": 0.5731,
+    "cred_on": 1.316,
+    "hostile_weight": 0.0,
+    "mood_bias": 0.0951,
+    "prior_others_trust": 0.3466,
+    "prior_self_worth": 0.3653,
+    "prior_world_safe": 0.6296,
+    "resolution_bins": 4,
+    "valence": 0.41,
+    "w_spite": 0.1524,
+    "w_supergraph": 0.7766
+   },
+   "role": "labourer",
+   "role_identity": 0.333,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    7
+   ],
+   "index": 24,
+   "literacy": 1,
+   "name": "Cobweb Furlong",
+   "params": {
+    "arousal": 0.4782,
+    "charm_weight": 0.5585,
+    "claim_weight": 0.9056,
+    "cred_on": 0.899,
+    "hostile_weight": 0.4112,
+    "mood_bias": 0.6975,
+    "prior_others_trust": 0.6627,
+    "prior_self_worth": 0.213,
+    "prior_world_safe": 0.4826,
+    "resolution_bins": 2,
+    "valence": -0.02,
+    "w_spite": 0.0499,
+    "w_supergraph": 0.3618
+   },
+   "role": "labourer",
+   "role_identity": 0.1762,
+   "workplace_cell": [
+    24,
+    13
+   ],
+   "workplace_kind": "market"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    9
+   ],
+   "index": 25,
+   "literacy": 1,
+   "name": "Peony Hobb",
+   "params": {
+    "arousal": 0.5375,
+    "charm_weight": 0.2158,
+    "claim_weight": 1.012,
+    "cred_on": 1.2158,
+    "hostile_weight": 0.2781,
+    "mood_bias": 0.6277,
+    "prior_others_trust": 0.5635,
+    "prior_self_worth": 0.3087,
+    "prior_world_safe": 0.7485,
+    "resolution_bins": 9,
+    "valence": 0.0291,
+    "w_spite": 0.26,
+    "w_supergraph": 0.5307
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.203,
+   "workplace_cell": [
+    36,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    11
+   ],
+   "index": 26,
+   "literacy": 0,
+   "name": "Corvin Kindle",
+   "params": {
+    "arousal": 0.3131,
+    "charm_weight": 0.5798,
+    "claim_weight": 0.9525,
+    "cred_on": 1.0426,
+    "hostile_weight": 0.3295,
+    "mood_bias": 0.2864,
+    "prior_others_trust": 0.7646,
+    "prior_self_worth": 0.5633,
+    "prior_world_safe": 0.8303,
+    "resolution_bins": 9,
+    "valence": 0.0314,
+    "w_spite": 0.1251,
+    "w_supergraph": 0.1957
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.2822,
+   "workplace_cell": [
+    39,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    13
+   ],
+   "index": 27,
+   "literacy": 1,
+   "name": "Lavinia Grubb",
+   "params": {
+    "arousal": 0.2365,
+    "charm_weight": 0.4089,
+    "claim_weight": 1.3055,
+    "cred_on": 1.2081,
+    "hostile_weight": 0.4493,
+    "mood_bias": 0.3721,
+    "prior_others_trust": 0.2479,
+    "prior_self_worth": 0.2748,
+    "prior_world_safe": 1.0,
+    "resolution_bins": 3,
+    "valence": -0.0923,
+    "w_spite": 0.2483,
+    "w_supergraph": 0.5206
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.2065,
+   "workplace_cell": [
+    42,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "rich",
+   "group": "low",
+   "home_cell": [
+    2,
+    15
+   ],
+   "index": 28,
+   "literacy": 1,
+   "name": "Keturah Marsh",
+   "params": {
+    "arousal": 0.6366,
+    "charm_weight": 0.6906,
+    "claim_weight": 1.4411,
+    "cred_on": 1.0699,
+    "hostile_weight": 0.5261,
+    "mood_bias": 0.0973,
+    "prior_others_trust": 0.4304,
+    "prior_self_worth": 0.4564,
+    "prior_world_safe": 0.6615,
+    "resolution_bins": 2,
+    "valence": -0.129,
+    "w_spite": 0.1128,
+    "w_supergraph": 0.2632
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.2713,
+   "workplace_cell": [
+    45,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    17
+   ],
+   "index": 29,
+   "literacy": 0,
+   "name": "Alby Harkness",
+   "params": {
+    "arousal": 0.8503,
+    "charm_weight": 0.6585,
+    "claim_weight": 1.4945,
+    "cred_on": 0.9422,
+    "hostile_weight": 0.6293,
+    "mood_bias": 0.3457,
+    "prior_others_trust": 0.9221,
+    "prior_self_worth": 0.5901,
+    "prior_world_safe": 0.8156,
+    "resolution_bins": 4,
+    "valence": -0.077,
+    "w_spite": 0.3925,
+    "w_supergraph": 0.4807
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.2512,
+   "workplace_cell": [
+    36,
+    32
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    2,
+    19
+   ],
+   "index": 30,
+   "literacy": 1,
+   "name": "Vernon Lorric",
+   "params": {
+    "arousal": 0.5005,
+    "charm_weight": 0.4011,
+    "claim_weight": 1.0766,
+    "cred_on": 1.1877,
+    "hostile_weight": 0.4603,
+    "mood_bias": 0.4125,
+    "prior_others_trust": 0.8542,
+    "prior_self_worth": 0.5629,
+    "prior_world_safe": 0.2315,
+    "resolution_bins": 2,
+    "valence": 0.6009,
+    "w_spite": 0.1161,
+    "w_supergraph": 0.5619
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.2052,
+   "workplace_cell": [
+    39,
+    31
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    21
+   ],
+   "index": 31,
+   "literacy": 1,
+   "name": "Millicent Vellum",
+   "params": {
+    "arousal": 0.593,
+    "charm_weight": 0.787,
+    "claim_weight": 0.6824,
+    "cred_on": 0.7564,
+    "hostile_weight": 0.6008,
+    "mood_bias": 0.4547,
+    "prior_others_trust": 0.7131,
+    "prior_self_worth": 0.3238,
+    "prior_world_safe": 0.3311,
+    "resolution_bins": 2,
+    "valence": -0.2483,
+    "w_spite": 0.3181,
+    "w_supergraph": 0.624
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.1564,
+   "workplace_cell": [
+    42,
+    32
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    23
+   ],
+   "index": 32,
+   "literacy": 1,
+   "name": "Mordecai Oakes",
+   "params": {
+    "arousal": 0.6694,
+    "charm_weight": 0.5161,
+    "claim_weight": 0.7508,
+    "cred_on": 1.0661,
+    "hostile_weight": 0.6043,
+    "mood_bias": 0.7673,
+    "prior_others_trust": 0.1722,
+    "prior_self_worth": 0.6786,
+    "prior_world_safe": 0.5766,
+    "resolution_bins": 2,
+    "valence": 0.357,
+    "w_spite": 0.254,
+    "w_supergraph": 0.6512
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.1565,
+   "workplace_cell": [
+    45,
+    31
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    25
+   ],
+   "index": 33,
+   "literacy": 1,
+   "name": "Erasmus Inkpen",
+   "params": {
+    "arousal": 0.3304,
+    "charm_weight": 0.4033,
+    "claim_weight": 0.8866,
+    "cred_on": 0.9484,
+    "hostile_weight": 0.1326,
+    "mood_bias": 0.407,
+    "prior_others_trust": 0.4264,
+    "prior_self_worth": 0.6765,
+    "prior_world_safe": 0.7245,
+    "resolution_bins": 4,
+    "valence": -0.013,
+    "w_spite": 0.1936,
+    "w_supergraph": 0.6459
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.3137,
+   "workplace_cell": [
+    36,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    27
+   ],
+   "index": 34,
+   "literacy": 1,
+   "name": "Erasmus Ottermole",
+   "params": {
+    "arousal": 0.595,
+    "charm_weight": 0.6617,
+    "claim_weight": 0.9896,
+    "cred_on": 0.9485,
+    "hostile_weight": 0.6544,
+    "mood_bias": 0.3449,
+    "prior_others_trust": 0.4384,
+    "prior_self_worth": 0.6943,
+    "prior_world_safe": 0.1234,
+    "resolution_bins": 3,
+    "valence": -0.2504,
+    "w_spite": 0.3156,
+    "w_supergraph": 0.7755
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.3054,
+   "workplace_cell": [
+    39,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    29
+   ],
+   "index": 35,
+   "literacy": 0,
+   "name": "Constance Ottermole",
+   "params": {
+    "arousal": 0.3742,
+    "charm_weight": 0.284,
+    "claim_weight": 0.9007,
+    "cred_on": 1.2626,
+    "hostile_weight": 0.1406,
+    "mood_bias": 0.1684,
+    "prior_others_trust": 0.8153,
+    "prior_self_worth": 0.626,
+    "prior_world_safe": 0.2774,
+    "resolution_bins": 2,
+    "valence": 0.22,
+    "w_spite": 0.0,
+    "w_supergraph": 0.6497
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.2366,
+   "workplace_cell": [
+    42,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    31
+   ],
+   "index": 36,
+   "literacy": 1,
+   "name": "Thaddeus Furlong",
+   "params": {
+    "arousal": 0.6441,
+    "charm_weight": 0.3815,
+    "claim_weight": 0.8701,
+    "cred_on": 1.1141,
+    "hostile_weight": 0.4821,
+    "mood_bias": 0.4172,
+    "prior_others_trust": 0.4277,
+    "prior_self_worth": 0.3484,
+    "prior_world_safe": 0.5849,
+    "resolution_bins": 5,
+    "valence": -0.333,
+    "w_spite": 0.2799,
+    "w_supergraph": 0.5998
+   },
+   "role": "farm_labourer",
+   "role_identity": 0.2323,
+   "workplace_cell": [
+    45,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    2,
+    33
+   ],
+   "index": 37,
+   "literacy": 1,
+   "name": "Ephraim Larkspur",
+   "params": {
+    "arousal": 0.6179,
+    "charm_weight": 0.3513,
+    "claim_weight": 0.897,
+    "cred_on": 1.0942,
+    "hostile_weight": 0.3514,
+    "mood_bias": 0.0933,
+    "prior_others_trust": 0.5425,
+    "prior_self_worth": 0.7078,
+    "prior_world_safe": 0.5531,
+    "resolution_bins": 5,
+    "valence": 0.1263,
+    "w_spite": 0.1926,
+    "w_supergraph": 0.1069
+   },
+   "role": "fisher",
+   "role_identity": 0.2908,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    2,
+    35
+   ],
+   "index": 38,
+   "literacy": 1,
+   "name": "Godfrey Tremble",
+   "params": {
+    "arousal": 0.2294,
+    "charm_weight": 0.457,
+    "claim_weight": 1.6255,
+    "cred_on": 1.2546,
+    "hostile_weight": 0.6832,
+    "mood_bias": 0.3605,
+    "prior_others_trust": 0.4165,
+    "prior_self_worth": 0.7609,
+    "prior_world_safe": 0.5473,
+    "resolution_bins": 4,
+    "valence": 0.2749,
+    "w_spite": 0.0488,
+    "w_supergraph": 0.3436
+   },
+   "role": "fisher",
+   "role_identity": 0.2813,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    7
+   ],
+   "index": 39,
+   "literacy": 1,
+   "name": "Thaddeus Puddifoot",
+   "params": {
+    "arousal": 0.3473,
+    "charm_weight": 0.0,
+    "claim_weight": 0.4689,
+    "cred_on": 1.0704,
+    "hostile_weight": 0.1986,
+    "mood_bias": 0.0322,
+    "prior_others_trust": 0.6036,
+    "prior_self_worth": 0.609,
+    "prior_world_safe": 0.8024,
+    "resolution_bins": 7,
+    "valence": 0.3072,
+    "w_spite": 0.067,
+    "w_supergraph": 0.7902
+   },
+   "role": "fisher",
+   "role_identity": 0.3509,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    9
+   ],
+   "index": 40,
+   "literacy": 1,
+   "name": "Radella Gorse",
+   "params": {
+    "arousal": 0.4521,
+    "charm_weight": 0.801,
+    "claim_weight": 1.1676,
+    "cred_on": 0.9025,
+    "hostile_weight": 0.2135,
+    "mood_bias": 0.1429,
+    "prior_others_trust": 0.7372,
+    "prior_self_worth": 0.6599,
+    "prior_world_safe": 0.1079,
+    "resolution_bins": 9,
+    "valence": -0.499,
+    "w_spite": 0.0,
+    "w_supergraph": 0.5407
+   },
+   "role": "fisher",
+   "role_identity": 0.2924,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    3,
+    11
+   ],
+   "index": 41,
+   "literacy": 1,
+   "name": "Bartholomew Tremble",
+   "params": {
+    "arousal": 0.1568,
+    "charm_weight": 0.3339,
+    "claim_weight": 1.0649,
+    "cred_on": 0.7196,
+    "hostile_weight": 0.2889,
+    "mood_bias": 0.0073,
+    "prior_others_trust": 0.7941,
+    "prior_self_worth": 0.5892,
+    "prior_world_safe": 0.5599,
+    "resolution_bins": 3,
+    "valence": -0.1766,
+    "w_spite": 0.0,
+    "w_supergraph": 0.0812
+   },
+   "role": "fisher",
+   "role_identity": 0.4446,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    13
+   ],
+   "index": 42,
+   "literacy": 1,
+   "name": "Adelina Gorse",
+   "params": {
+    "arousal": 0.1951,
+    "charm_weight": 0.6194,
+    "claim_weight": 0.8365,
+    "cred_on": 1.1242,
+    "hostile_weight": 0.2957,
+    "mood_bias": 0.2625,
+    "prior_others_trust": 0.511,
+    "prior_self_worth": 0.7328,
+    "prior_world_safe": 0.5833,
+    "resolution_bins": 4,
+    "valence": 0.4846,
+    "w_spite": 0.1872,
+    "w_supergraph": 0.7881
+   },
+   "role": "fisher",
+   "role_identity": 0.3844,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    3,
+    15
+   ],
+   "index": 43,
+   "literacy": 1,
+   "name": "Jem Grubb",
+   "params": {
+    "arousal": 0.4994,
+    "charm_weight": 0.3267,
+    "claim_weight": 1.5217,
+    "cred_on": 0.5152,
+    "hostile_weight": 0.2839,
+    "mood_bias": 0.2645,
+    "prior_others_trust": 0.8104,
+    "prior_self_worth": 0.7238,
+    "prior_world_safe": 0.6021,
+    "resolution_bins": 3,
+    "valence": -0.2907,
+    "w_spite": 0.171,
+    "w_supergraph": 0.4594
+   },
+   "role": "fisher",
+   "role_identity": 0.2359,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    17
+   ],
+   "index": 44,
+   "literacy": 0,
+   "name": "Mordecai Hobb",
+   "params": {
+    "arousal": 0.4254,
+    "charm_weight": 0.6481,
+    "claim_weight": 0.9344,
+    "cred_on": 1.0113,
+    "hostile_weight": 0.1718,
+    "mood_bias": 0.4908,
+    "prior_others_trust": 0.3671,
+    "prior_self_worth": 0.6082,
+    "prior_world_safe": 0.8841,
+    "resolution_bins": 3,
+    "valence": 0.1679,
+    "w_spite": 0.1361,
+    "w_supergraph": 0.7182
+   },
+   "role": "fisher",
+   "role_identity": 0.3137,
+   "workplace_cell": [
+    1,
+    2
+   ],
+   "workplace_kind": "fish"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    19
+   ],
+   "index": 45,
+   "literacy": 1,
+   "name": "Winifred Ottermole",
+   "params": {
+    "arousal": 0.3347,
+    "charm_weight": 0.336,
+    "claim_weight": 1.3819,
+    "cred_on": 1.1777,
+    "hostile_weight": 0.7999,
+    "mood_bias": 0.5102,
+    "prior_others_trust": 0.3392,
+    "prior_self_worth": 0.2655,
+    "prior_world_safe": 0.5909,
+    "resolution_bins": 6,
+    "valence": -0.169,
+    "w_spite": 0.1578,
+    "w_supergraph": 0.6438
+   },
+   "role": "forester",
+   "role_identity": 0.2831,
+   "workplace_cell": [
+    13,
+    3
+   ],
+   "workplace_kind": "lumber"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    21
+   ],
+   "index": 46,
+   "literacy": 1,
+   "name": "Henrietta Sedge",
+   "params": {
+    "arousal": 0.4522,
+    "charm_weight": 0.8505,
+    "claim_weight": 0.2916,
+    "cred_on": 1.1494,
+    "hostile_weight": 0.0,
+    "mood_bias": 0.3511,
+    "prior_others_trust": 0.748,
+    "prior_self_worth": 0.2994,
+    "prior_world_safe": 0.6863,
+    "resolution_bins": 3,
+    "valence": 0.0777,
+    "w_spite": 0.0,
+    "w_supergraph": 0.5926
+   },
+   "role": "forester",
+   "role_identity": 0.276,
+   "workplace_cell": [
+    13,
+    3
+   ],
+   "workplace_kind": "lumber"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    23
+   ],
+   "index": 47,
+   "literacy": 1,
+   "name": "Elowen Peaseblossom",
+   "params": {
+    "arousal": 0.5209,
+    "charm_weight": 0.5962,
+    "claim_weight": 0.6571,
+    "cred_on": 0.8609,
+    "hostile_weight": 0.404,
+    "mood_bias": 0.2402,
+    "prior_others_trust": 0.6428,
+    "prior_self_worth": 0.4277,
+    "prior_world_safe": 0.7822,
+    "resolution_bins": 5,
+    "valence": 0.3491,
+    "w_spite": 0.0,
+    "w_supergraph": 0.5821
+   },
+   "role": "forester",
+   "role_identity": 0.3718,
+   "workplace_cell": [
+    13,
+    3
+   ],
+   "workplace_kind": "lumber"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    25
+   ],
+   "index": 48,
+   "literacy": 0,
+   "name": "Mordecai Tremble",
+   "params": {
+    "arousal": 0.1913,
+    "charm_weight": 0.3453,
+    "claim_weight": 0.8347,
+    "cred_on": 1.0523,
+    "hostile_weight": 0.5016,
+    "mood_bias": 0.2127,
+    "prior_others_trust": 0.5997,
+    "prior_self_worth": 0.672,
+    "prior_world_safe": 0.9675,
+    "resolution_bins": 2,
+    "valence": 0.2588,
+    "w_spite": 0.1959,
+    "w_supergraph": 0.3174
+   },
+   "role": "forester",
+   "role_identity": 0.2879,
+   "workplace_cell": [
+    13,
+    3
+   ],
+   "workplace_kind": "lumber"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    27
+   ],
+   "index": 49,
+   "literacy": 0,
+   "name": "Barnaby Rushton",
+   "params": {
+    "arousal": 0.7176,
+    "charm_weight": 0.6006,
+    "claim_weight": 1.1726,
+    "cred_on": 0.7977,
+    "hostile_weight": 0.4241,
+    "mood_bias": 0.3363,
+    "prior_others_trust": 0.6091,
+    "prior_self_worth": 0.4596,
+    "prior_world_safe": 0.3931,
+    "resolution_bins": 4,
+    "valence": -0.3088,
+    "w_spite": 0.0397,
+    "w_supergraph": 0.588
+   },
+   "role": "forester",
+   "role_identity": 0.2403,
+   "workplace_cell": [
+    13,
+    3
+   ],
+   "workplace_kind": "lumber"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    29
+   ],
+   "index": 50,
+   "literacy": 0,
+   "name": "Jem Cobb",
+   "params": {
+    "arousal": 0.5427,
+    "charm_weight": 0.6326,
+    "claim_weight": 1.031,
+    "cred_on": 1.2703,
+    "hostile_weight": 0.4281,
+    "mood_bias": 0.3392,
+    "prior_others_trust": 0.3693,
+    "prior_self_worth": 0.668,
+    "prior_world_safe": 0.298,
+    "resolution_bins": 3,
+    "valence": 0.1167,
+    "w_spite": 0.2435,
+    "w_supergraph": 0.432
+   },
+   "role": "forester",
+   "role_identity": 0.2333,
+   "workplace_cell": [
+    13,
+    3
+   ],
+   "workplace_kind": "lumber"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    3,
+    31
+   ],
+   "index": 51,
+   "literacy": 1,
+   "name": "Isolde Everdew",
+   "params": {
+    "arousal": 0.7583,
+    "charm_weight": 0.8278,
+    "claim_weight": 1.304,
+    "cred_on": 1.1027,
+    "hostile_weight": 0.0359,
+    "mood_bias": 0.5284,
+    "prior_others_trust": 0.6204,
+    "prior_self_worth": 0.6241,
+    "prior_world_safe": 0.5356,
+    "resolution_bins": 2,
+    "valence": 0.2625,
+    "w_spite": 0.1129,
+    "w_supergraph": 0.2798
+   },
+   "role": "quarrier",
+   "role_identity": 0.3537,
+   "workplace_cell": [
+    42,
+    8
+   ],
+   "workplace_kind": "stone"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    3,
+    33
+   ],
+   "index": 52,
+   "literacy": 0,
+   "name": "Henrietta Everdew",
+   "params": {
+    "arousal": 0.2827,
+    "charm_weight": 0.5518,
+    "claim_weight": 0.8894,
+    "cred_on": 1.2472,
+    "hostile_weight": 0.2559,
+    "mood_bias": 0.2455,
+    "prior_others_trust": 0.6046,
+    "prior_self_worth": 0.9257,
+    "prior_world_safe": 0.8105,
+    "resolution_bins": 8,
+    "valence": -0.253,
+    "w_spite": 0.0,
+    "w_supergraph": 0.631
+   },
+   "role": "quarrier",
+   "role_identity": 0.2087,
+   "workplace_cell": [
+    42,
+    8
+   ],
+   "workplace_kind": "stone"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    3,
+    35
+   ],
+   "index": 53,
+   "literacy": 1,
+   "name": "Drusilla Ottermole",
+   "params": {
+    "arousal": 0.3981,
+    "charm_weight": 0.3696,
+    "claim_weight": 1.0007,
+    "cred_on": 1.1347,
+    "hostile_weight": 0.3431,
+    "mood_bias": 0.4557,
+    "prior_others_trust": 0.6029,
+    "prior_self_worth": 0.2982,
+    "prior_world_safe": 0.5214,
+    "resolution_bins": 4,
+    "valence": 0.3128,
+    "w_spite": 0.1369,
+    "w_supergraph": 0.4238
+   },
+   "role": "quarrier",
+   "role_identity": 0.3686,
+   "workplace_cell": [
+    42,
+    8
+   ],
+   "workplace_kind": "stone"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    4,
+    1
+   ],
+   "index": 54,
+   "literacy": 1,
+   "name": "Corvin Cobb",
+   "params": {
+    "arousal": 0.5043,
+    "charm_weight": 0.2419,
+    "claim_weight": 1.2813,
+    "cred_on": 1.0542,
+    "hostile_weight": 0.3112,
+    "mood_bias": 0.5236,
+    "prior_others_trust": 0.6946,
+    "prior_self_worth": 0.8652,
+    "prior_world_safe": 0.6692,
+    "resolution_bins": 2,
+    "valence": -0.032,
+    "w_spite": 0.0,
+    "w_supergraph": 0.3799
+   },
+   "role": "quarrier",
+   "role_identity": 0.2839,
+   "workplace_cell": [
+    42,
+    8
+   ],
+   "workplace_kind": "stone"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    4,
+    7
+   ],
+   "index": 55,
+   "literacy": 1,
+   "name": "Lemuel Bramble",
+   "params": {
+    "arousal": 0.5089,
+    "charm_weight": 0.0553,
+    "claim_weight": 1.4202,
+    "cred_on": 1.276,
+    "hostile_weight": 0.1207,
+    "mood_bias": 0.1641,
+    "prior_others_trust": 0.768,
+    "prior_self_worth": 0.4435,
+    "prior_world_safe": 0.4771,
+    "resolution_bins": 7,
+    "valence": -0.0093,
+    "w_spite": 0.1327,
+    "w_supergraph": 0.4355
+   },
+   "role": "quarrier",
+   "role_identity": 0.257,
+   "workplace_cell": [
+    42,
+    8
+   ],
+   "workplace_kind": "stone"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    4,
+    8
+   ],
+   "index": 56,
+   "literacy": 0,
+   "name": "Ida Codling",
+   "params": {
+    "arousal": 0.5044,
+    "charm_weight": 0.7449,
+    "claim_weight": 1.2041,
+    "cred_on": 1.2238,
+    "hostile_weight": 0.2681,
+    "mood_bias": 0.0964,
+    "prior_others_trust": 0.5694,
+    "prior_self_worth": 0.5699,
+    "prior_world_safe": 0.5306,
+    "resolution_bins": 2,
+    "valence": -0.0526,
+    "w_spite": 0.0174,
+    "w_supergraph": 0.4448
+   },
+   "role": "servant",
+   "role_identity": 0.2394,
+   "workplace_cell": [
+    40,
+    29
+   ],
+   "workplace_kind": "manor"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    4,
+    9
+   ],
+   "index": 57,
+   "literacy": 1,
+   "name": "Lavinia Rundle",
+   "params": {
+    "arousal": 0.8422,
+    "charm_weight": 0.6069,
+    "claim_weight": 0.63,
+    "cred_on": 1.2135,
+    "hostile_weight": 0.5541,
+    "mood_bias": 0.2983,
+    "prior_others_trust": 0.5262,
+    "prior_self_worth": 0.6101,
+    "prior_world_safe": 0.4576,
+    "resolution_bins": 9,
+    "valence": 0.0395,
+    "w_spite": 0.2839,
+    "w_supergraph": 0.3369
+   },
+   "role": "servant",
+   "role_identity": 0.1432,
+   "workplace_cell": [
+    40,
+    29
+   ],
+   "workplace_kind": "manor"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    4,
+    11
+   ],
+   "index": 58,
+   "literacy": 1,
+   "name": "Ida Sedge",
+   "params": {
+    "arousal": 0.3493,
+    "charm_weight": 0.3278,
+    "claim_weight": 1.1446,
+    "cred_on": 1.3703,
+    "hostile_weight": 0.614,
+    "mood_bias": 0.1234,
+    "prior_others_trust": 0.7163,
+    "prior_self_worth": 0.336,
+    "prior_world_safe": 0.3242,
+    "resolution_bins": 11,
+    "valence": -0.1595,
+    "w_spite": 0.1268,
+    "w_supergraph": 0.6364
+   },
+   "role": "servant",
+   "role_identity": 0.2329,
+   "workplace_cell": [
+    40,
+    29
+   ],
+   "workplace_kind": "manor"
+  },
+  {
+   "class": "middle",
+   "group": "low",
+   "home_cell": [
+    4,
+    12
+   ],
+   "index": 59,
+   "literacy": 1,
+   "name": "Septimus Underhill",
+   "params": {
+    "arousal": 0.0,
+    "charm_weight": 0.0401,
+    "claim_weight": 1.7344,
+    "cred_on": 1.0352,
+    "hostile_weight": 0.4151,
+    "mood_bias": -0.0383,
+    "prior_others_trust": 0.5368,
+    "prior_self_worth": 0.7536,
+    "prior_world_safe": 0.2224,
+    "resolution_bins": 9,
+    "valence": -0.1346,
+    "w_spite": 0.2288,
+    "w_supergraph": 0.5342
+   },
+   "role": "servant",
+   "role_identity": 0.2796,
+   "workplace_cell": [
+    40,
+    29
+   ],
+   "workplace_kind": "manor"
+  },
+  {
+   "class": "poor",
+   "group": "low",
+   "home_cell": [
+    4,
+    13
+   ],
+   "index": 60,
+   "literacy": 0,
+   "name": "Prosper Grubb",
+   "params": {
+    "arousal": 0.6455,
+    "charm_weight": 0.3229,
+    "claim_weight": 1.1013,
+    "cred_on": 0.902,
+    "hostile_weight": 0.6094,
+    "mood_bias": 0.1423,
+    "prior_others_trust": 0.643,
+    "prior_self_worth": 0.3821,
+    "prior_world_safe": 0.6174,
+    "resolution_bins": 6,
+    "valence": -0.0165,
+    "w_spite": 0.1578,
+    "w_supergraph": 0.0
+   },
+   "role": "servant",
+   "role_identity": 0.1734,
+   "workplace_cell": [
+    40,
+    29
+   ],
+   "workplace_kind": "manor"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    15
+   ],
+   "index": 61,
+   "literacy": 1,
+   "name": "Effie Wormwood",
+   "params": {
+    "arousal": 0.7848,
+    "charm_weight": 0.5346,
+    "claim_weight": 0.9273,
+    "cred_on": 1.3071,
+    "hostile_weight": 0.4958,
+    "mood_bias": 0.264,
+    "prior_others_trust": 0.5195,
+    "prior_self_worth": 0.4233,
+    "prior_world_safe": 0.4722,
+    "resolution_bins": 5,
+    "valence": 0.0369,
+    "w_spite": 0.201,
+    "w_supergraph": 0.4892
+   },
+   "role": "farmer",
+   "role_identity": 0.5848,
+   "workplace_cell": [
+    36,
+    32
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "middle",
+   "home_cell": [
+    4,
+    16
+   ],
+   "index": 62,
+   "literacy": 1,
+   "name": "Bettony Bindle",
+   "params": {
+    "arousal": 0.0336,
+    "charm_weight": 0.9165,
+    "claim_weight": 0.9968,
+    "cred_on": 0.8146,
+    "hostile_weight": 0.2502,
+    "mood_bias": 0.4293,
+    "prior_others_trust": 0.3738,
+    "prior_self_worth": 0.5209,
+    "prior_world_safe": 0.3867,
+    "resolution_bins": 4,
+    "valence": 0.3809,
+    "w_spite": 0.1401,
+    "w_supergraph": 0.6922
+   },
+   "role": "farmer",
+   "role_identity": 0.594,
+   "workplace_cell": [
+    39,
+    31
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "rich",
+   "group": "middle",
+   "home_cell": [
+    4,
+    17
+   ],
+   "index": 63,
+   "literacy": 1,
+   "name": "Henrietta Nettle",
+   "params": {
+    "arousal": 0.1688,
+    "charm_weight": 0.6955,
+    "claim_weight": 1.4725,
+    "cred_on": 1.2414,
+    "hostile_weight": 0.2501,
+    "mood_bias": 0.2157,
+    "prior_others_trust": 0.8297,
+    "prior_self_worth": 0.5338,
+    "prior_world_safe": 0.7431,
+    "resolution_bins": 3,
+    "valence": 0.7203,
+    "w_spite": 0.3578,
+    "w_supergraph": 0.4703
+   },
+   "role": "farmer",
+   "role_identity": 0.6587,
+   "workplace_cell": [
+    42,
+    32
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    19
+   ],
+   "index": 64,
+   "literacy": 1,
+   "name": "Garnet Inkpen",
+   "params": {
+    "arousal": 0.2749,
+    "charm_weight": 0.3472,
+    "claim_weight": 1.231,
+    "cred_on": 0.8789,
+    "hostile_weight": 0.3684,
+    "mood_bias": -0.0372,
+    "prior_others_trust": 0.6167,
+    "prior_self_worth": 0.5782,
+    "prior_world_safe": 0.8317,
+    "resolution_bins": 3,
+    "valence": 0.2805,
+    "w_spite": 0.257,
+    "w_supergraph": 0.3696
+   },
+   "role": "farmer",
+   "role_identity": 0.6118,
+   "workplace_cell": [
+    45,
+    31
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    20
+   ],
+   "index": 65,
+   "literacy": 1,
+   "name": "Radella Ramskin",
+   "params": {
+    "arousal": 0.2736,
+    "charm_weight": 0.6918,
+    "claim_weight": 1.3103,
+    "cred_on": 0.7194,
+    "hostile_weight": 0.1256,
+    "mood_bias": 0.3936,
+    "prior_others_trust": 0.5728,
+    "prior_self_worth": 0.5866,
+    "prior_world_safe": 0.9474,
+    "resolution_bins": 3,
+    "valence": 0.2876,
+    "w_spite": 0.4667,
+    "w_supergraph": 0.0126
+   },
+   "role": "farmer",
+   "role_identity": 0.563,
+   "workplace_cell": [
+    36,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    21
+   ],
+   "index": 66,
+   "literacy": 1,
+   "name": "Prudence Gorse",
+   "params": {
+    "arousal": 0.4972,
+    "charm_weight": 0.6643,
+    "claim_weight": 1.7365,
+    "cred_on": 0.9507,
+    "hostile_weight": 0.4419,
+    "mood_bias": 0.5932,
+    "prior_others_trust": 0.3056,
+    "prior_self_worth": 0.215,
+    "prior_world_safe": 0.6148,
+    "resolution_bins": 3,
+    "valence": -0.2295,
+    "w_spite": 0.0,
+    "w_supergraph": 0.2756
+   },
+   "role": "farmer",
+   "role_identity": 0.5358,
+   "workplace_cell": [
+    39,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "middle",
+   "home_cell": [
+    4,
+    23
+   ],
+   "index": 67,
+   "literacy": 0,
+   "name": "Horace Yarrow",
+   "params": {
+    "arousal": 0.4683,
+    "charm_weight": 0.7521,
+    "claim_weight": 1.3125,
+    "cred_on": 0.9471,
+    "hostile_weight": 0.2983,
+    "mood_bias": 0.466,
+    "prior_others_trust": 0.384,
+    "prior_self_worth": 0.2551,
+    "prior_world_safe": 0.8824,
+    "resolution_bins": 4,
+    "valence": -0.1385,
+    "w_spite": 0.0,
+    "w_supergraph": 0.2006
+   },
+   "role": "farmer",
+   "role_identity": 0.6316,
+   "workplace_cell": [
+    42,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    24
+   ],
+   "index": 68,
+   "literacy": 0,
+   "name": "Drusilla Underhill",
+   "params": {
+    "arousal": 0.3364,
+    "charm_weight": 0.3027,
+    "claim_weight": 0.8241,
+    "cred_on": 0.9174,
+    "hostile_weight": 0.1344,
+    "mood_bias": 0.2235,
+    "prior_others_trust": 0.6052,
+    "prior_self_worth": 0.5332,
+    "prior_world_safe": 0.4755,
+    "resolution_bins": 4,
+    "valence": 0.5057,
+    "w_spite": 0.0,
+    "w_supergraph": 0.3477
+   },
+   "role": "farmer",
+   "role_identity": 0.6933,
+   "workplace_cell": [
+    45,
+    25
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "middle",
+   "home_cell": [
+    4,
+    25
+   ],
+   "index": 69,
+   "literacy": 1,
+   "name": "Ferdinand Wormwood",
+   "params": {
+    "arousal": 0.6231,
+    "charm_weight": 0.8974,
+    "claim_weight": 1.0393,
+    "cred_on": 0.9077,
+    "hostile_weight": 0.7662,
+    "mood_bias": 0.5803,
+    "prior_others_trust": 0.4364,
+    "prior_self_worth": 0.4106,
+    "prior_world_safe": 0.6505,
+    "resolution_bins": 3,
+    "valence": 0.2634,
+    "w_spite": 0.146,
+    "w_supergraph": 0.4537
+   },
+   "role": "farmer",
+   "role_identity": 0.4314,
+   "workplace_cell": [
+    36,
+    32
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "poor",
+   "group": "middle",
+   "home_cell": [
+    4,
+    27
+   ],
+   "index": 70,
+   "literacy": 1,
+   "name": "Adelina Sputterfield",
+   "params": {
+    "arousal": 0.6532,
+    "charm_weight": 0.3731,
+    "claim_weight": 0.7167,
+    "cred_on": 1.1911,
+    "hostile_weight": 0.3215,
+    "mood_bias": 0.5078,
+    "prior_others_trust": 0.3346,
+    "prior_self_worth": 0.6277,
+    "prior_world_safe": 0.5932,
+    "resolution_bins": 2,
+    "valence": -0.082,
+    "w_spite": 0.2233,
+    "w_supergraph": 0.1469
+   },
+   "role": "farmer",
+   "role_identity": 0.5918,
+   "workplace_cell": [
+    39,
+    31
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    28
+   ],
+   "index": 71,
+   "literacy": 1,
+   "name": "Henrietta Peaseblossom",
+   "params": {
+    "arousal": 0.4661,
+    "charm_weight": 0.3951,
+    "claim_weight": 0.2383,
+    "cred_on": 0.6192,
+    "hostile_weight": 0.6387,
+    "mood_bias": 0.4522,
+    "prior_others_trust": 0.4702,
+    "prior_self_worth": 0.7951,
+    "prior_world_safe": 0.6825,
+    "resolution_bins": 4,
+    "valence": -0.004,
+    "w_spite": 0.2006,
+    "w_supergraph": 0.101
+   },
+   "role": "farmer",
+   "role_identity": 0.6253,
+   "workplace_cell": [
+    42,
+    32
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    29
+   ],
+   "index": 72,
+   "literacy": 1,
+   "name": "Ottoline Frittle",
+   "params": {
+    "arousal": 0.3983,
+    "charm_weight": 1.0,
+    "claim_weight": 0.9932,
+    "cred_on": 1.0517,
+    "hostile_weight": 0.6712,
+    "mood_bias": 0.1635,
+    "prior_others_trust": 0.3602,
+    "prior_self_worth": 0.5162,
+    "prior_world_safe": 0.8895,
+    "resolution_bins": 6,
+    "valence": -0.165,
+    "w_spite": 0.0,
+    "w_supergraph": 0.6234
+   },
+   "role": "farmer",
+   "role_identity": 0.6851,
+   "workplace_cell": [
+    45,
+    31
+   ],
+   "workplace_kind": "farm"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    31
+   ],
+   "index": 73,
+   "literacy": 1,
+   "name": "Agnes Wick",
+   "params": {
+    "arousal": 0.1858,
+    "charm_weight": 0.4355,
+    "claim_weight": 1.0946,
+    "cred_on": 0.9951,
+    "hostile_weight": 0.5782,
+    "mood_bias": 0.2936,
+    "prior_others_trust": 0.2795,
+    "prior_self_worth": 0.9839,
+    "prior_world_safe": 0.3227,
+    "resolution_bins": 2,
+    "valence": -0.0089,
+    "w_spite": 0.0,
+    "w_supergraph": 0.3494
+   },
+   "role": "teacher",
+   "role_identity": 0.7715,
+   "workplace_cell": [
+    16,
+    24
+   ],
+   "workplace_kind": "school"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    32
+   ],
+   "index": 74,
+   "literacy": 1,
+   "name": "Lettice Sallow",
+   "params": {
+    "arousal": 0.3595,
+    "charm_weight": 0.4662,
+    "claim_weight": 1.0395,
+    "cred_on": 0.8504,
+    "hostile_weight": 0.4779,
+    "mood_bias": -0.1389,
+    "prior_others_trust": 0.5794,
+    "prior_self_worth": 0.8212,
+    "prior_world_safe": 0.6392,
+    "resolution_bins": 3,
+    "valence": 0.0824,
+    "w_spite": 0.1566,
+    "w_supergraph": 0.8159
+   },
+   "role": "teacher",
+   "role_identity": 0.4284,
+   "workplace_cell": [
+    16,
+    24
+   ],
+   "workplace_kind": "school"
+  },
+  {
+   "class": "poor",
+   "group": "middle",
+   "home_cell": [
+    4,
+    33
+   ],
+   "index": 75,
+   "literacy": 1,
+   "name": "Tobias Jubbins",
+   "params": {
+    "arousal": 0.4997,
+    "charm_weight": 0.5214,
+    "claim_weight": 0.7103,
+    "cred_on": 0.8862,
+    "hostile_weight": 0.379,
+    "mood_bias": 0.4662,
+    "prior_others_trust": 0.4379,
+    "prior_self_worth": 0.5458,
+    "prior_world_safe": 0.4742,
+    "resolution_bins": 3,
+    "valence": 0.129,
+    "w_spite": 0.0808,
+    "w_supergraph": 0.4097
+   },
+   "role": "reporter",
+   "role_identity": 0.6324,
+   "workplace_cell": [
+    28,
+    13
+   ],
+   "workplace_kind": "press"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    35
+   ],
+   "index": 76,
+   "literacy": 1,
+   "name": "Horace Nubbins",
+   "params": {
+    "arousal": 0.203,
+    "charm_weight": 0.5554,
+    "claim_weight": 0.987,
+    "cred_on": 1.0999,
+    "hostile_weight": 0.3057,
+    "mood_bias": 0.1473,
+    "prior_others_trust": 0.412,
+    "prior_self_worth": 0.4573,
+    "prior_world_safe": 0.939,
+    "resolution_bins": 2,
+    "valence": -0.1087,
+    "w_spite": 0.0873,
+    "w_supergraph": 0.6704
+   },
+   "role": "clerk",
+   "role_identity": 0.6342,
+   "workplace_cell": [
+    22,
+    13
+   ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "class": "rich",
+   "group": "middle",
+   "home_cell": [
+    4,
+    36
+   ],
+   "index": 77,
+   "literacy": 1,
+   "name": "Peony Tremble",
+   "params": {
+    "arousal": 0.5399,
+    "charm_weight": 0.5629,
+    "claim_weight": 0.6822,
+    "cred_on": 1.0677,
+    "hostile_weight": 0.5804,
+    "mood_bias": 0.3058,
+    "prior_others_trust": 0.2537,
+    "prior_self_worth": 0.8371,
+    "prior_world_safe": 0.3724,
+    "resolution_bins": 3,
+    "valence": -0.0896,
+    "w_spite": 0.0683,
+    "w_supergraph": 0.6177
+   },
+   "role": "clerk",
+   "role_identity": 0.5551,
+   "workplace_cell": [
+    22,
+    13
+   ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    37
+   ],
+   "index": 78,
+   "literacy": 1,
+   "name": "Obadiah Sedge",
+   "params": {
+    "arousal": 0.6044,
+    "charm_weight": 0.3607,
+    "claim_weight": 0.7292,
+    "cred_on": 0.9507,
+    "hostile_weight": 0.1804,
+    "mood_bias": 0.4874,
+    "prior_others_trust": 0.4225,
+    "prior_self_worth": 0.467,
+    "prior_world_safe": 0.6881,
+    "resolution_bins": 3,
+    "valence": 0.4119,
+    "w_spite": 0.0,
+    "w_supergraph": 0.5126
+   },
+   "role": "councillor",
+   "role_identity": 0.5513,
+   "workplace_cell": [
+    22,
+    13
+   ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "class": "rich",
+   "group": "middle",
+   "home_cell": [
+    4,
+    38
+   ],
+   "index": 79,
+   "literacy": 1,
+   "name": "Jerusha Thistlewood",
+   "params": {
+    "arousal": 0.6465,
+    "charm_weight": 0.705,
+    "claim_weight": 1.0304,
+    "cred_on": 0.9312,
+    "hostile_weight": 0.4936,
+    "mood_bias": 0.1444,
+    "prior_others_trust": 0.6828,
+    "prior_self_worth": 0.5361,
+    "prior_world_safe": 0.6374,
+    "resolution_bins": 10,
+    "valence": -0.1366,
+    "w_spite": 0.0437,
+    "w_supergraph": 0.4272
+   },
+   "role": "councillor",
+   "role_identity": 0.5148,
+   "workplace_cell": [
+    22,
+    13
+   ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    5,
+    0
+   ],
+   "index": 80,
+   "literacy": 1,
+   "name": "Jem Vellum",
+   "params": {
+    "arousal": 0.6877,
+    "charm_weight": 0.5452,
+    "claim_weight": 1.0151,
+    "cred_on": 0.7786,
+    "hostile_weight": 0.2972,
+    "mood_bias": 0.5042,
+    "prior_others_trust": 0.2032,
+    "prior_self_worth": 0.5701,
+    "prior_world_safe": 0.8567,
+    "resolution_bins": 3,
+    "valence": -0.0609,
+    "w_spite": 0.0739,
+    "w_supergraph": 0.7
+   },
+   "role": "councillor",
+   "role_identity": 0.6461,
+   "workplace_cell": [
+    22,
+    13
+   ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    5,
+    39
+   ],
+   "index": 81,
+   "literacy": 1,
+   "name": "Godfrey Ashby",
+   "params": {
+    "arousal": 0.3245,
+    "charm_weight": 0.6033,
+    "claim_weight": 0.595,
+    "cred_on": 0.8574,
+    "hostile_weight": 0.6597,
+    "mood_bias": 0.6315,
+    "prior_others_trust": 0.4746,
+    "prior_self_worth": 0.63,
+    "prior_world_safe": 0.7767,
+    "resolution_bins": 4,
+    "valence": 0.1998,
+    "w_spite": 0.0,
+    "w_supergraph": 0.3777
+   },
+   "role": "councillor",
+   "role_identity": 0.5588,
+   "workplace_cell": [
+    22,
+    13
+   ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    6,
+    1
+   ],
+   "index": 82,
+   "literacy": 1,
+   "name": "Verity Ottermole",
+   "params": {
+    "arousal": 0.3466,
+    "charm_weight": 0.2296,
+    "claim_weight": 0.7384,
+    "cred_on": 0.9767,
+    "hostile_weight": 0.6228,
+    "mood_bias": 0.6802,
+    "prior_others_trust": 0.3643,
+    "prior_self_worth": 0.6765,
+    "prior_world_safe": 0.3176,
+    "resolution_bins": 6,
+    "valence": -0.0445,
+    "w_spite": 0.0,
+    "w_supergraph": 0.5469
+   },
+   "role": "miller",
+   "role_identity": 0.5083,
+   "workplace_cell": [
+    12,
+    12
+   ],
+   "workplace_kind": "mill"
+  },
+  {
+   "class": "poor",
+   "group": "middle",
+   "home_cell": [
+    6,
+    7
+   ],
+   "index": 83,
+   "literacy": 1,
+   "name": "Elowen Puddifoot",
+   "params": {
+    "arousal": 0.4023,
+    "charm_weight": 0.4807,
+    "claim_weight": 1.508,
+    "cred_on": 0.9455,
+    "hostile_weight": 0.5325,
+    "mood_bias": 0.7403,
+    "prior_others_trust": 0.9897,
+    "prior_self_worth": 0.2742,
+    "prior_world_safe": 0.4482,
+    "resolution_bins": 10,
+    "valence": 0.1683,
+    "w_spite": 0.0086,
+    "w_supergraph": 0.5741
+   },
+   "role": "constable",
+   "role_identity": 0.5706,
+   "workplace_cell": [
+    20,
+    25
+   ],
+   "workplace_kind": "watch"
+  },
+  {
+   "class": "poor",
+   "group": "middle",
+   "home_cell": [
+    6,
+    8
+   ],
+   "index": 84,
+   "literacy": 0,
+   "name": "Corvin Inkpen",
+   "params": {
+    "arousal": 0.4564,
+    "charm_weight": 0.5504,
+    "claim_weight": 1.1426,
+    "cred_on": 1.0092,
+    "hostile_weight": 0.0,
+    "mood_bias": 0.3468,
+    "prior_others_trust": 0.6714,
+    "prior_self_worth": 0.697,
+    "prior_world_safe": 0.9511,
+    "resolution_bins": 3,
+    "valence": -0.4734,
+    "w_spite": 0.0,
+    "w_supergraph": 0.0785
+   },
+   "role": "midwife",
+   "role_identity": 0.6442,
+   "workplace_cell": [
+    16,
+    20
+   ],
+   "workplace_kind": "surgery"
+  },
+  {
+   "class": "middle",
+   "group": "high",
+   "home_cell": [
+    6,
+    9
+   ],
+   "index": 85,
+   "literacy": 1,
+   "name": "Doreen Ferrety",
+   "params": {
+    "arousal": 0.3997,
+    "charm_weight": 0.747,
+    "claim_weight": 1.1694,
+    "cred_on": 1.1606,
+    "hostile_weight": 0.3602,
+    "mood_bias": 0.3049,
+    "prior_others_trust": 0.6174,
+    "prior_self_worth": 0.5513,
+    "prior_world_safe": 0.5309,
+    "resolution_bins": 9,
+    "valence": -0.7218,
+    "w_spite": 0.2985,
+    "w_supergraph": 0.9114
+   },
+   "role": "fishmonger",
+   "role_identity": 0.9414,
+   "workplace_cell": [
+    10,
+    8
+   ],
+   "workplace_kind": "fishmonger"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    11
+   ],
+   "index": 86,
+   "literacy": 1,
+   "name": "Ignatius Kettle",
+   "params": {
+    "arousal": 0.5479,
+    "charm_weight": 0.0667,
+    "claim_weight": 0.7188,
+    "cred_on": 1.1612,
+    "hostile_weight": 0.3138,
+    "mood_bias": 0.4363,
+    "prior_others_trust": 0.7847,
+    "prior_self_worth": 1.0,
+    "prior_world_safe": 1.0,
+    "resolution_bins": 6,
+    "valence": -0.2876,
+    "w_spite": 0.0364,
+    "w_supergraph": 0.4787
+   },
+   "role": "fishmonger",
+   "role_identity": 0.9683,
+   "workplace_cell": [
+    10,
+    8
+   ],
+   "workplace_kind": "fishmonger"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    12
+   ],
+   "index": 87,
+   "literacy": 1,
+   "name": "Ida Hobb",
+   "params": {
+    "arousal": 0.0,
+    "charm_weight": 0.1329,
+    "claim_weight": 1.1621,
+    "cred_on": 1.255,
+    "hostile_weight": 0.5157,
+    "mood_bias": 0.3362,
+    "prior_others_trust": 0.9759,
+    "prior_self_worth": 0.8262,
+    "prior_world_safe": 0.6165,
+    "resolution_bins": 2,
+    "valence": 0.2537,
+    "w_spite": 0.2127,
+    "w_supergraph": 0.6134
+   },
+   "role": "carpenter",
+   "role_identity": 0.8244,
+   "workplace_cell": [
+    34,
+    8
+   ],
+   "workplace_kind": "carpenter"
+  },
+  {
+   "class": "middle",
+   "group": "high",
+   "home_cell": [
+    6,
+    13
+   ],
+   "index": 88,
+   "literacy": 0,
+   "name": "Quentin Codling",
+   "params": {
+    "arousal": 0.1727,
+    "charm_weight": 0.5706,
+    "claim_weight": 1.0635,
+    "cred_on": 1.0818,
+    "hostile_weight": 0.3364,
+    "mood_bias": 0.3688,
+    "prior_others_trust": 0.4075,
+    "prior_self_worth": 0.8847,
+    "prior_world_safe": 0.6974,
+    "resolution_bins": 2,
+    "valence": -0.1677,
+    "w_spite": 0.4559,
+    "w_supergraph": 0.8902
+   },
+   "role": "carpenter",
+   "role_identity": 0.9496,
+   "workplace_cell": [
+    34,
+    8
+   ],
+   "workplace_kind": "carpenter"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    15
+   ],
+   "index": 89,
+   "literacy": 1,
+   "name": "Willa Jubbins",
+   "params": {
+    "arousal": 0.4275,
+    "charm_weight": 0.5258,
+    "claim_weight": 0.987,
+    "cred_on": 1.0621,
+    "hostile_weight": 0.6654,
+    "mood_bias": -0.0066,
+    "prior_others_trust": 0.6103,
+    "prior_self_worth": 0.8662,
+    "prior_world_safe": 0.7399,
+    "resolution_bins": 4,
+    "valence": 0.1479,
+    "w_spite": 0.1974,
+    "w_supergraph": 0.299
+   },
+   "role": "mason",
+   "role_identity": 0.931,
+   "workplace_cell": [
+    45,
+    15
+   ],
+   "workplace_kind": "mason"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    16
+   ],
+   "index": 90,
+   "literacy": 1,
+   "name": "Effie Larkspur",
+   "params": {
+    "arousal": 0.5614,
+    "charm_weight": 0.5357,
+    "claim_weight": 1.231,
+    "cred_on": 1.1532,
+    "hostile_weight": 0.0722,
+    "mood_bias": 0.5311,
+    "prior_others_trust": 0.4857,
+    "prior_self_worth": 0.5047,
+    "prior_world_safe": 0.6683,
+    "resolution_bins": 3,
+    "valence": -0.2812,
+    "w_spite": 0.3089,
+    "w_supergraph": 0.4409
+   },
+   "role": "mason",
+   "role_identity": 0.8595,
+   "workplace_cell": [
+    45,
+    15
+   ],
+   "workplace_kind": "mason"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    17
+   ],
+   "index": 91,
+   "literacy": 1,
+   "name": "Marjorie Dough",
+   "params": {
+    "arousal": 0.3214,
+    "charm_weight": 0.2092,
+    "claim_weight": 0.9066,
+    "cred_on": 1.2675,
+    "hostile_weight": 0.1932,
+    "mood_bias": 0.0963,
+    "prior_others_trust": 0.7762,
+    "prior_self_worth": 0.6955,
+    "prior_world_safe": 0.4997,
+    "resolution_bins": 3,
+    "valence": 0.1404,
+    "w_spite": 0.0881,
+    "w_supergraph": 0.7919
+   },
+   "role": "baker",
+   "role_identity": 0.9183,
+   "workplace_cell": [
+    28,
+    24
+   ],
+   "workplace_kind": "bakery"
+  },
+  {
+   "class": "middle",
+   "group": "high",
+   "home_cell": [
+    6,
+    19
+   ],
+   "index": 92,
+   "literacy": 1,
+   "name": "Adelina Norbisham",
+   "params": {
+    "arousal": 0.4933,
+    "charm_weight": 0.3448,
+    "claim_weight": 0.7431,
+    "cred_on": 0.668,
+    "hostile_weight": 0.3963,
+    "mood_bias": 0.3317,
+    "prior_others_trust": 0.8667,
+    "prior_self_worth": 0.6074,
+    "prior_world_safe": 0.8897,
+    "resolution_bins": 4,
+    "valence": -0.0945,
+    "w_spite": 0.2081,
+    "w_supergraph": 0.5761
+   },
+   "role": "baker",
+   "role_identity": 0.9121,
+   "workplace_cell": [
+    28,
+    24
+   ],
+   "workplace_kind": "bakery"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    20
+   ],
+   "index": 93,
+   "literacy": 1,
+   "name": "Alby Frittle",
+   "params": {
+    "arousal": 0.0,
+    "charm_weight": 0.5504,
+    "claim_weight": 1.3076,
+    "cred_on": 1.1206,
+    "hostile_weight": 0.2738,
+    "mood_bias": 0.0258,
+    "prior_others_trust": 0.3575,
+    "prior_self_worth": 0.5214,
+    "prior_world_safe": 0.669,
+    "resolution_bins": 2,
+    "valence": 0.1391,
+    "w_spite": 0.3125,
+    "w_supergraph": 0.4798
+   },
+   "role": "innkeeper",
+   "role_identity": 0.8678,
+   "workplace_cell": [
+    30,
+    20
+   ],
+   "workplace_kind": "inn"
+  },
+  {
+   "class": "middle",
+   "group": "high",
+   "home_cell": [
+    6,
+    21
+   ],
+   "index": 94,
+   "literacy": 1,
+   "name": "Kester Furlong",
+   "params": {
+    "arousal": 0.4413,
+    "charm_weight": 0.7278,
+    "claim_weight": 1.1755,
+    "cred_on": 0.9519,
+    "hostile_weight": 0.418,
+    "mood_bias": 0.5109,
+    "prior_others_trust": 0.6332,
+    "prior_self_worth": 1.0,
+    "prior_world_safe": 0.743,
+    "resolution_bins": 4,
+    "valence": 0.2182,
+    "w_spite": 0.0,
+    "w_supergraph": 0.8265
+   },
+   "role": "landlord",
+   "role_identity": 0.8897,
+   "workplace_cell": [
+    34,
+    17
+   ],
+   "workplace_kind": "estate"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    23
+   ],
+   "index": 95,
+   "literacy": 1,
+   "name": "Scrooge",
+   "params": {
+    "arousal": 0.0,
+    "charm_weight": 0.3867,
+    "claim_weight": 1.0926,
+    "cred_on": 0.6488,
+    "hostile_weight": 0.5866,
+    "mood_bias": 0.2067,
+    "prior_others_trust": 0.8616,
+    "prior_self_worth": 0.6326,
+    "prior_world_safe": 0.751,
+    "resolution_bins": 3,
+    "valence": -0.0188,
+    "w_spite": 0.2291,
+    "w_supergraph": 0.5146
+   },
+   "role": "banker",
+   "role_identity": 0.9344,
+   "workplace_cell": [
+    19,
+    13
+   ],
+   "workplace_kind": "bank"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    24
+   ],
+   "index": 96,
+   "literacy": 0,
+   "name": "Jem Sedge",
+   "params": {
+    "arousal": 0.501,
+    "charm_weight": 0.4031,
+    "claim_weight": 0.6654,
+    "cred_on": 1.2114,
+    "hostile_weight": 0.4715,
+    "mood_bias": 0.5282,
+    "prior_others_trust": 0.8716,
+    "prior_self_worth": 0.6671,
+    "prior_world_safe": 0.2238,
+    "resolution_bins": 4,
+    "valence": 0.0324,
+    "w_spite": 0.2915,
+    "w_supergraph": 0.7444
+   },
+   "role": "shopkeeper",
+   "role_identity": 0.9181,
+   "workplace_cell": [
+    22,
+    23
+   ],
+   "workplace_kind": "store"
+  },
+  {
+   "class": "middle",
+   "group": "high",
+   "home_cell": [
+    6,
+    25
+   ],
+   "index": 97,
+   "literacy": 1,
+   "name": "John",
+   "params": {
+    "arousal": 0.0213,
+    "charm_weight": 0.493,
+    "claim_weight": 0.6346,
+    "cred_on": 0.9177,
+    "hostile_weight": 0.5381,
+    "mood_bias": -0.0448,
+    "prior_others_trust": 0.4383,
+    "prior_self_worth": 1.0,
+    "prior_world_safe": 0.7231,
+    "resolution_bins": 3,
+    "valence": -0.1967,
+    "w_spite": 0.2795,
+    "w_supergraph": 0.0
+   },
+   "role": "mayor",
+   "role_identity": 0.9474,
+   "workplace_cell": [
+    22,
+    13
+   ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    27
+   ],
+   "index": 98,
+   "literacy": 1,
+   "name": "Mary",
+   "params": {
+    "arousal": 0.4989,
+    "charm_weight": 0.5764,
+    "claim_weight": 0.7297,
+    "cred_on": 1.1958,
+    "hostile_weight": 0.6973,
+    "mood_bias": 0.3849,
+    "prior_others_trust": 0.5199,
+    "prior_self_worth": 0.6048,
+    "prior_world_safe": 0.1728,
+    "resolution_bins": 4,
+    "valence": 0.6198,
+    "w_spite": 0.0,
+    "w_supergraph": 0.5959
+   },
+   "role": "pastor",
+   "role_identity": 0.8098,
+   "workplace_cell": [
+    31,
+    13
+   ],
+   "workplace_kind": "church"
+  },
+  {
+   "class": "rich",
+   "group": "high",
+   "home_cell": [
+    6,
+    28
+   ],
+   "index": 99,
+   "literacy": 0,
+   "name": "Dunstan Haywain",
+   "params": {
+    "arousal": 0.6504,
+    "charm_weight": 0.6972,
+    "claim_weight": 1.1096,
+    "cred_on": 1.0178,
+    "hostile_weight": 0.3708,
+    "mood_bias": 0.5181,
+    "prior_others_trust": 0.4914,
+    "prior_self_worth": 0.4114,
+    "prior_world_safe": 0.8435,
+    "resolution_bins": 8,
+    "valence": -0.1903,
+    "w_spite": 0.0346,
+    "w_supergraph": 0.6205
+   },
+   "role": "doctor",
+   "role_identity": 0.885,
+   "workplace_cell": [
+    16,
+    20
+   ],
+   "workplace_kind": "surgery"
+  }
+ ],
+ "seed": 305000,
+ "self_load_only": true,
+ "version": "1.0.0"
+}

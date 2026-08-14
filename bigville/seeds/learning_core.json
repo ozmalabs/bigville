@@ -1,0 +1,2330 @@
+{
+  "id": "learning_core",
+  "version": "1.0.0",
+  "depends_on": [],
+  "description": "The agent's causal-inference + implied-rule induction faculty as graph data: salience/screening/intervention predicate Terms, plus the induction pipeline (induce_pattern = AntiUnify, keep-gate = FixedCount/Count thresholds, rule-covers = Covers), attached to agent_root by named edges. Parity-verified (see docs/migration_ledger.md).",
+  "nodes": [
+    {
+      "local_id": 0,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "pair"
+      }
+    },
+    {
+      "local_id": 1,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "co"
+      }
+    },
+    {
+      "local_id": 2,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 3
+      }
+    },
+    {
+      "local_id": 3,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 4,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "pair"
+      }
+    },
+    {
+      "local_id": 5,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "co"
+      }
+    },
+    {
+      "local_id": 6,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "pair"
+      }
+    },
+    {
+      "local_id": 7,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_events"
+      }
+    },
+    {
+      "local_id": 8,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 9,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "pair"
+      }
+    },
+    {
+      "local_id": 10,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_from"
+      }
+    },
+    {
+      "local_id": 11,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "pair"
+      }
+    },
+    {
+      "local_id": 12,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_to"
+      }
+    },
+    {
+      "local_id": 13,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 14,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 15,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2.0
+      }
+    },
+    {
+      "local_id": 16,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 17,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 18,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cond"
+      }
+    },
+    {
+      "local_id": 19,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_cond"
+      }
+    },
+    {
+      "local_id": 20,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 5
+      }
+    },
+    {
+      "local_id": 21,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 22,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cond"
+      }
+    },
+    {
+      "local_id": 23,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "co_cond"
+      }
+    },
+    {
+      "local_id": 24,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cond"
+      }
+    },
+    {
+      "local_id": 25,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_ticks"
+      }
+    },
+    {
+      "local_id": 26,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 27,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cond"
+      }
+    },
+    {
+      "local_id": 28,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_cond"
+      }
+    },
+    {
+      "local_id": 29,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "cond"
+      }
+    },
+    {
+      "local_id": 30,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_y"
+      }
+    },
+    {
+      "local_id": 31,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 32,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 33,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 1.5
+      }
+    },
+    {
+      "local_id": 34,
+      "type": "Term.Lte",
+      "attrs": {}
+    },
+    {
+      "local_id": 35,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 36,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 37,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_with"
+      }
+    },
+    {
+      "local_id": 38,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 5
+      }
+    },
+    {
+      "local_id": 39,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 40,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 41,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_with"
+      }
+    },
+    {
+      "local_id": 42,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 43,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_a"
+      }
+    },
+    {
+      "local_id": 44,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 45,
+      "type": "Term.Lit",
+      "attrs": {
+        "value": 2.0
+      }
+    },
+    {
+      "local_id": 46,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 47,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_y"
+      }
+    },
+    {
+      "local_id": 48,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 49,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_with"
+      }
+    },
+    {
+      "local_id": 50,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 51,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 52,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_ticks"
+      }
+    },
+    {
+      "local_id": 53,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "iv"
+      }
+    },
+    {
+      "local_id": 54,
+      "type": "Term.Attr",
+      "attrs": {
+        "key": "n_a"
+      }
+    },
+    {
+      "local_id": 55,
+      "type": "Term.Minus",
+      "attrs": {}
+    },
+    {
+      "local_id": 56,
+      "type": "Term.Div",
+      "attrs": {}
+    },
+    {
+      "local_id": 57,
+      "type": "Term.Times",
+      "attrs": {}
+    },
+    {
+      "local_id": 58,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 59,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 60,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "insts"
+      }
+    },
+    {
+      "local_id": 61,
+      "type": "Term.AntiUnify",
+      "attrs": {
+        "wild": "·?·"
+      }
+    },
+    {
+      "local_id": 62,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "insts"
+      }
+    },
+    {
+      "local_id": 63,
+      "type": "Term.AntiUnify",
+      "attrs": {
+        "wild": "·?·"
+      }
+    },
+    {
+      "local_id": 64,
+      "type": "Term.FixedCount",
+      "attrs": {
+        "wild": "·?·"
+      }
+    },
+    {
+      "local_id": 65,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "min_fixed"
+      }
+    },
+    {
+      "local_id": 66,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 67,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "insts"
+      }
+    },
+    {
+      "local_id": 68,
+      "type": "Term.Count",
+      "attrs": {}
+    },
+    {
+      "local_id": 69,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "min_support"
+      }
+    },
+    {
+      "local_id": 70,
+      "type": "Term.Gte",
+      "attrs": {}
+    },
+    {
+      "local_id": 71,
+      "type": "Term.And",
+      "attrs": {}
+    },
+    {
+      "local_id": 72,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "pattern"
+      }
+    },
+    {
+      "local_id": 73,
+      "type": "Term.Var",
+      "attrs": {
+        "name": "instance"
+      }
+    },
+    {
+      "local_id": 74,
+      "type": "Term.Covers",
+      "attrs": {
+        "wild": "·?·"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "local": 1
+      },
+      "tgt": {
+        "local": 0
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 1
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 3
+      },
+      "tgt": {
+        "local": 2
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 5
+      },
+      "tgt": {
+        "local": 4
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 7
+      },
+      "tgt": {
+        "local": 6
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 5
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 8
+      },
+      "tgt": {
+        "local": 7
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 10
+      },
+      "tgt": {
+        "local": 9
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 12
+      },
+      "tgt": {
+        "local": 11
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 10
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 13
+      },
+      "tgt": {
+        "local": 12
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 14
+      },
+      "tgt": {
+        "local": 8
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 14
+      },
+      "tgt": {
+        "local": 13
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 14
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 16
+      },
+      "tgt": {
+        "local": 15
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 17
+      },
+      "tgt": {
+        "local": 3
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 17
+      },
+      "tgt": {
+        "local": 16
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 19
+      },
+      "tgt": {
+        "local": 18
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 21
+      },
+      "tgt": {
+        "local": 19
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 21
+      },
+      "tgt": {
+        "local": 20
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 23
+      },
+      "tgt": {
+        "local": 22
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 25
+      },
+      "tgt": {
+        "local": 24
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 23
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 26
+      },
+      "tgt": {
+        "local": 25
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 28
+      },
+      "tgt": {
+        "local": 27
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 30
+      },
+      "tgt": {
+        "local": 29
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 31
+      },
+      "tgt": {
+        "local": 28
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 31
+      },
+      "tgt": {
+        "local": 30
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 32
+      },
+      "tgt": {
+        "local": 26
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 32
+      },
+      "tgt": {
+        "local": 31
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 34
+      },
+      "tgt": {
+        "local": 32
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 34
+      },
+      "tgt": {
+        "local": 33
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 35
+      },
+      "tgt": {
+        "local": 21
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 35
+      },
+      "tgt": {
+        "local": 34
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 37
+      },
+      "tgt": {
+        "local": 36
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 39
+      },
+      "tgt": {
+        "local": 37
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 39
+      },
+      "tgt": {
+        "local": 38
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 41
+      },
+      "tgt": {
+        "local": 40
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 43
+      },
+      "tgt": {
+        "local": 42
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 44
+      },
+      "tgt": {
+        "local": 41
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 44
+      },
+      "tgt": {
+        "local": 43
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 47
+      },
+      "tgt": {
+        "local": 46
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 49
+      },
+      "tgt": {
+        "local": 48
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 50
+      },
+      "tgt": {
+        "local": 47
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 50
+      },
+      "tgt": {
+        "local": 49
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 52
+      },
+      "tgt": {
+        "local": 51
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 54
+      },
+      "tgt": {
+        "local": 53
+      },
+      "type": "child.node",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 55
+      },
+      "tgt": {
+        "local": 52
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 55
+      },
+      "tgt": {
+        "local": 54
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 56
+      },
+      "tgt": {
+        "local": 50
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 56
+      },
+      "tgt": {
+        "local": 55
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 57
+      },
+      "tgt": {
+        "local": 45
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 57
+      },
+      "tgt": {
+        "local": 56
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 58
+      },
+      "tgt": {
+        "local": 44
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 58
+      },
+      "tgt": {
+        "local": 57
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 59
+      },
+      "tgt": {
+        "local": 39
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 59
+      },
+      "tgt": {
+        "local": 58
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 61
+      },
+      "tgt": {
+        "local": 60
+      },
+      "type": "child.values",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 63
+      },
+      "tgt": {
+        "local": 62
+      },
+      "type": "child.values",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 64
+      },
+      "tgt": {
+        "local": 63
+      },
+      "type": "child.pattern",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 66
+      },
+      "tgt": {
+        "local": 64
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 66
+      },
+      "tgt": {
+        "local": 65
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 68
+      },
+      "tgt": {
+        "local": 67
+      },
+      "type": "child.source",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 70
+      },
+      "tgt": {
+        "local": 68
+      },
+      "type": "child.a",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 70
+      },
+      "tgt": {
+        "local": 69
+      },
+      "type": "child.b",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 71
+      },
+      "tgt": {
+        "local": 66
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 0
+      }
+    },
+    {
+      "src": {
+        "local": 71
+      },
+      "tgt": {
+        "local": 70
+      },
+      "type": "child.items",
+      "attrs": {
+        "index": 1
+      }
+    },
+    {
+      "src": {
+        "local": 74
+      },
+      "tgt": {
+        "local": 72
+      },
+      "type": "child.pattern",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "local": 74
+      },
+      "tgt": {
+        "local": 73
+      },
+      "type": "child.instance",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 17
+      },
+      "type": "salience_predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 35
+      },
+      "type": "screening_predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 59
+      },
+      "type": "intervention_predicate",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 61
+      },
+      "type": "induce_pattern_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 71
+      },
+      "type": "induce_keep_gate_term",
+      "attrs": {}
+    },
+    {
+      "src": {
+        "role": "agent_root"
+      },
+      "tgt": {
+        "local": 74
+      },
+      "type": "rule_covers_term",
+      "attrs": {}
+    }
+  ],
+  "productions": [],
+  "rules": [
+    {
+      "name": "rule_cause_selection",
+      "match": [
+        [
+          "agent",
+          "authored_subroutine",
+          "subr"
+        ],
+        [
+          "agent",
+          "select_causes_anchor",
+          "sc"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "constructed_by",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "rule_17b2",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "top_cause_set_done",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": true,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Not",
+            "arg": {
+              "type": "Eq",
+              "a": {
+                "key": "cause_selection_done",
+                "type": "Attr",
+                "node": {
+                  "name": "subr",
+                  "type": "Var"
+                }
+              },
+              "b": {
+                "value": true,
+                "type": "Lit"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "agent",
+          "current_candidate_ivs",
+          {
+            "__term__": {
+              "name": "e_kind",
+              "value": {
+                "key": "top_existential_kind",
+                "type": "Attr",
+                "node": {
+                  "name": "subr",
+                  "type": "Var"
+                }
+              },
+              "type": "Let",
+              "body": {
+                "name": "e_type",
+                "value": {
+                  "key": "top_existential_type",
+                  "type": "Attr",
+                  "node": {
+                    "name": "subr",
+                    "type": "Var"
+                  }
+                },
+                "type": "Let",
+                "body": {
+                  "type": "EvalSubgraph",
+                  "node": {
+                    "type": "Pick",
+                    "source": {
+                      "type": "Neighbours",
+                      "edge_type": "query",
+                      "node": {
+                        "name": "sc",
+                        "type": "Var"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "subr",
+          "cause_selection_done",
+          {
+            "__term__": {
+              "value": true,
+              "type": "Lit"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "rule_hypothesis_mint",
+      "match": [
+        [
+          "agent",
+          "tracks_intervention",
+          "iv"
+        ],
+        [
+          "agent",
+          "hypothesis_test_term_root",
+          "ttroot"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "In",
+            "member": {
+              "name": "iv",
+              "type": "Var"
+            },
+            "container": {
+              "key": "current_candidate_ivs",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "InNeighbours",
+                "edge_type": "tests",
+                "node": {
+                  "name": "iv",
+                  "type": "Var"
+                }
+              }
+            },
+            "b": {
+              "value": 0,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "var_name": "law",
+                "predicate": {
+                  "type": "And",
+                  "items": [
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "action",
+                        "type": "Attr",
+                        "node": {
+                          "name": "law",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "key": "action",
+                        "type": "Attr",
+                        "node": {
+                          "name": "iv",
+                          "type": "Var"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "eff_kind",
+                        "type": "Attr",
+                        "node": {
+                          "name": "law",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "key": "eff_kind",
+                        "type": "Attr",
+                        "node": {
+                          "name": "iv",
+                          "type": "Var"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "eff_type",
+                        "type": "Attr",
+                        "node": {
+                          "name": "law",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "key": "eff_type",
+                        "type": "Attr",
+                        "node": {
+                          "name": "iv",
+                          "type": "Var"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "Neighbours",
+                  "edge_type": "discovered_law",
+                  "node": {
+                    "name": "agent",
+                    "type": "Var"
+                  }
+                }
+              }
+            },
+            "b": {
+              "value": 0,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "var_name": "h",
+                "predicate": {
+                  "type": "Eq",
+                  "a": {
+                    "key": "status",
+                    "type": "Attr",
+                    "node": {
+                      "name": "h",
+                      "type": "Var"
+                    }
+                  },
+                  "b": {
+                    "value": "open",
+                    "type": "Lit"
+                  }
+                },
+                "source": {
+                  "type": "Neighbours",
+                  "edge_type": "hypothesizes",
+                  "node": {
+                    "name": "agent",
+                    "type": "Var"
+                  }
+                }
+              }
+            },
+            "b": {
+              "value": 5,
+              "type": "Lit"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "hyp",
+          "Hypothesis",
+          {
+            "constructed_by": {
+              "__term__": {
+                "value": "rule_17b3b",
+                "type": "Lit"
+              }
+            },
+            "eff_kind": {
+              "__term__": {
+                "key": "eff_kind",
+                "type": "Attr",
+                "node": {
+                  "name": "iv",
+                  "type": "Var"
+                }
+              }
+            },
+            "eff_type": {
+              "__term__": {
+                "key": "eff_type",
+                "type": "Attr",
+                "node": {
+                  "name": "iv",
+                  "type": "Var"
+                }
+              }
+            },
+            "action": {
+              "__term__": {
+                "key": "action",
+                "type": "Attr",
+                "node": {
+                  "name": "iv",
+                  "type": "Var"
+                }
+              }
+            },
+            "status": {
+              "__term__": {
+                "value": "open",
+                "type": "Lit"
+              }
+            },
+            "trials": {
+              "__term__": {
+                "value": 0,
+                "type": "Lit"
+              }
+            },
+            "confirms": {
+              "__term__": {
+                "value": 0,
+                "type": "Lit"
+              }
+            },
+            "formed_tick": {
+              "__term__": {
+                "key": "tick",
+                "type": "Attr",
+                "node": {
+                  "name": "agent",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "hypothesizes",
+          "hyp"
+        ],
+        [
+          "add_edge",
+          "hyp",
+          "tests",
+          "iv"
+        ],
+        [
+          "add_edge",
+          "hyp",
+          "test",
+          "ttroot"
+        ]
+      ]
+    },
+    {
+      "name": "rule_intervention_mint",
+      "match": [
+        [
+          "agent",
+          "tracks_action_count",
+          "ac"
+        ],
+        [
+          "agent",
+          "tracks_action_effect_count",
+          "aec"
+        ],
+        [
+          "agent",
+          "authored_subroutine",
+          "subr"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "constructed_by",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "rule_17b2",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "top_cause_set_done",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": true,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "is_primitive",
+              "type": "Attr",
+              "node": {
+                "name": "ac",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": true,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "key": "taken_count",
+              "type": "Attr",
+              "node": {
+                "name": "ac",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": 0,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "action",
+              "type": "Attr",
+              "node": {
+                "name": "aec",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "name",
+              "type": "Attr",
+              "node": {
+                "name": "ac",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "kind",
+              "type": "Attr",
+              "node": {
+                "name": "aec",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "top_existential_kind",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "type_name",
+              "type": "Attr",
+              "node": {
+                "name": "aec",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "top_existential_type",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Gte",
+            "a": {
+              "key": "co_count",
+              "type": "Attr",
+              "node": {
+                "name": "aec",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": 2,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "var_name": "iv",
+                "predicate": {
+                  "type": "And",
+                  "items": [
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "action",
+                        "type": "Attr",
+                        "node": {
+                          "name": "iv",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "key": "name",
+                        "type": "Attr",
+                        "node": {
+                          "name": "ac",
+                          "type": "Var"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "eff_kind",
+                        "type": "Attr",
+                        "node": {
+                          "name": "iv",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "key": "top_existential_kind",
+                        "type": "Attr",
+                        "node": {
+                          "name": "subr",
+                          "type": "Var"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Eq",
+                      "a": {
+                        "key": "eff_type",
+                        "type": "Attr",
+                        "node": {
+                          "name": "iv",
+                          "type": "Var"
+                        }
+                      },
+                      "b": {
+                        "key": "top_existential_type",
+                        "type": "Attr",
+                        "node": {
+                          "name": "subr",
+                          "type": "Var"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "Neighbours",
+                  "edge_type": "tracks_intervention",
+                  "node": {
+                    "name": "agent",
+                    "type": "Var"
+                  }
+                }
+              }
+            },
+            "b": {
+              "value": 0,
+              "type": "Lit"
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "add_node",
+          "iv",
+          "InterventionStat",
+          {
+            "n_ticks": {
+              "__term__": {
+                "value": 0,
+                "type": "Lit"
+              }
+            },
+            "n_y": {
+              "__term__": {
+                "value": 0,
+                "type": "Lit"
+              }
+            },
+            "n_with": {
+              "__term__": {
+                "value": 0,
+                "type": "Lit"
+              }
+            },
+            "n_a": {
+              "__term__": {
+                "value": 0,
+                "type": "Lit"
+              }
+            },
+            "constructed_by": {
+              "__term__": {
+                "value": "rule_17b3c8",
+                "type": "Lit"
+              }
+            },
+            "eff_kind": {
+              "__term__": {
+                "key": "top_existential_kind",
+                "type": "Attr",
+                "node": {
+                  "name": "subr",
+                  "type": "Var"
+                }
+              }
+            },
+            "eff_type": {
+              "__term__": {
+                "key": "top_existential_type",
+                "type": "Attr",
+                "node": {
+                  "name": "subr",
+                  "type": "Var"
+                }
+              }
+            },
+            "last_synced_tick": {
+              "__term__": {
+                "value": -1000000000,
+                "type": "Lit"
+              }
+            },
+            "action": {
+              "__term__": {
+                "key": "name",
+                "type": "Attr",
+                "node": {
+                  "name": "ac",
+                  "type": "Var"
+                }
+              }
+            }
+          }
+        ],
+        [
+          "add_edge",
+          "agent",
+          "tracks_intervention",
+          "iv"
+        ]
+      ]
+    },
+    {
+      "name": "rule_intervention_sync",
+      "match": [
+        [
+          "agent",
+          "tracks_intervention",
+          "iv"
+        ],
+        [
+          "agent",
+          "authored_subroutine",
+          "subr"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "key": "constructed_by",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": "rule_17b2",
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "top_cause_set_done",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "value": true,
+              "type": "Lit"
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "eff_kind",
+              "type": "Attr",
+              "node": {
+                "name": "iv",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "top_existential_kind",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "key": "eff_type",
+              "type": "Attr",
+              "node": {
+                "name": "iv",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "top_existential_type",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            }
+          },
+          {
+            "type": "Lt",
+            "a": {
+              "key": "last_synced_tick",
+              "type": "Attr",
+              "node": {
+                "name": "iv",
+                "type": "Var"
+              }
+            },
+            "b": {
+              "key": "at_tick",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "iv",
+          "n_with",
+          {
+            "__term__": {
+              "key": "co_count",
+              "type": "Attr",
+              "node": {
+                "type": "Pick",
+                "source": {
+                  "type": "Filter",
+                  "var_name": "aec",
+                  "predicate": {
+                    "type": "And",
+                    "items": [
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "key": "action",
+                          "type": "Attr",
+                          "node": {
+                            "name": "aec",
+                            "type": "Var"
+                          }
+                        },
+                        "b": {
+                          "key": "action",
+                          "type": "Attr",
+                          "node": {
+                            "name": "iv",
+                            "type": "Var"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "key": "kind",
+                          "type": "Attr",
+                          "node": {
+                            "name": "aec",
+                            "type": "Var"
+                          }
+                        },
+                        "b": {
+                          "key": "eff_kind",
+                          "type": "Attr",
+                          "node": {
+                            "name": "iv",
+                            "type": "Var"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "key": "type_name",
+                          "type": "Attr",
+                          "node": {
+                            "name": "aec",
+                            "type": "Var"
+                          }
+                        },
+                        "b": {
+                          "key": "eff_type",
+                          "type": "Attr",
+                          "node": {
+                            "name": "iv",
+                            "type": "Var"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "source": {
+                    "type": "Neighbours",
+                    "edge_type": "tracks_action_effect_count",
+                    "node": {
+                      "name": "agent",
+                      "type": "Var"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "iv",
+          "n_a",
+          {
+            "__term__": {
+              "key": "taken_count",
+              "type": "Attr",
+              "node": {
+                "type": "Pick",
+                "source": {
+                  "type": "Filter",
+                  "var_name": "ac",
+                  "predicate": {
+                    "type": "Eq",
+                    "a": {
+                      "key": "name",
+                      "type": "Attr",
+                      "node": {
+                        "name": "ac",
+                        "type": "Var"
+                      }
+                    },
+                    "b": {
+                      "key": "action",
+                      "type": "Attr",
+                      "node": {
+                        "name": "iv",
+                        "type": "Var"
+                      }
+                    }
+                  },
+                  "source": {
+                    "type": "Neighbours",
+                    "edge_type": "tracks_action_count",
+                    "node": {
+                      "name": "agent",
+                      "type": "Var"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "iv",
+          "n_y",
+          {
+            "__term__": {
+              "key": "decision_count",
+              "type": "Attr",
+              "node": {
+                "type": "Pick",
+                "source": {
+                  "type": "Filter",
+                  "var_name": "oc",
+                  "predicate": {
+                    "type": "And",
+                    "items": [
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "key": "kind",
+                          "type": "Attr",
+                          "node": {
+                            "name": "oc",
+                            "type": "Var"
+                          }
+                        },
+                        "b": {
+                          "key": "eff_kind",
+                          "type": "Attr",
+                          "node": {
+                            "name": "iv",
+                            "type": "Var"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Eq",
+                        "a": {
+                          "key": "type_name",
+                          "type": "Attr",
+                          "node": {
+                            "name": "oc",
+                            "type": "Var"
+                          }
+                        },
+                        "b": {
+                          "key": "eff_type",
+                          "type": "Attr",
+                          "node": {
+                            "name": "iv",
+                            "type": "Var"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "source": {
+                    "type": "Neighbours",
+                    "edge_type": "tracks_outcome_count",
+                    "node": {
+                      "name": "agent",
+                      "type": "Var"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "iv",
+          "n_ticks",
+          {
+            "__term__": {
+              "key": "n_decisions",
+              "type": "Attr",
+              "node": {
+                "name": "agent",
+                "type": "Var"
+              }
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "iv",
+          "last_synced_tick",
+          {
+            "__term__": {
+              "key": "at_tick",
+              "type": "Attr",
+              "node": {
+                "name": "subr",
+                "type": "Var"
+              }
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

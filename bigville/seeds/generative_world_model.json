@@ -1,0 +1,919 @@
+{
+  "id": "generative_world_model",
+  "version": "1.0.0",
+  "depends_on": [],
+  "area": "world_model",
+  "description": "Graph-native generative belief and transition model. Perceived observations and remembered episodes become provenance-explicit belief states. Simulation requests expand learned, action-conditioned transition hypotheses into bounded branching trajectories containing predicted successor belief states, observations, outcomes, features, confidence, and uncertainty. Expansion is deterministic under graph-held rank, horizon, branch, budget, epoch, and deadline guards. Grounded observations produce prediction errors that revise transition confidence; imagined material is never admitted as observation.",
+  "microtheory": {
+    "name": "generative_belief_dynamics",
+    "description": "The agent acts on uncertain beliefs, not direct world state. Transition hypotheses predict successor content conditional on belief and action. Perception corrects those predictions, while remembered and imagined support remain explicitly distinguishable."
+  },
+  "nodes": [
+    {
+      "local_id": 1,
+      "type": "WorldModelPolicy",
+      "attrs": {
+        "name": "core_generative_world_model_policy",
+        "enabled": 1.0,
+        "maximum_horizon": 6.0,
+        "maximum_branching": 2.0,
+        "maximum_budget": 16.0,
+        "transition_learning_rate": 0.2,
+        "minimum_transition_confidence": 0.05,
+        "retention_epochs": 2.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {"role": "agent_root"},
+      "type": "has_world_model_policy",
+      "tgt": {"local": 1},
+      "attrs": {}
+    }
+  ],
+  "productions": [
+    {
+      "provenance": "generative_world_model:agent_policy",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_world_model_policy",
+      "tgt": {"type": "WorldModelPolicy", "var": "policy"}
+    },
+    {
+      "provenance": "generative_world_model:agent_observation",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_world_model_observation",
+      "tgt": {"type": "WorldModelObservation", "var": "observation"}
+    },
+    {
+      "provenance": "generative_world_model:agent_belief",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_belief_state",
+      "tgt": {"type": "BeliefState", "var": "belief"}
+    },
+    {
+      "provenance": "generative_world_model:agent_transition",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_transition_hypothesis",
+      "tgt": {"type": "TransitionHypothesis", "var": "transition"}
+    },
+    {
+      "provenance": "generative_world_model:agent_action",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_world_model_action",
+      "tgt": {"type": "WorldModelAction", "var": "action"}
+    },
+    {
+      "provenance": "generative_world_model:agent_simulation",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_simulation_request",
+      "tgt": {"type": "SimulationRequest", "var": "request"}
+    },
+    {
+      "provenance": "generative_world_model:request_source",
+      "src": {"type": "SimulationRequest", "var": "request"},
+      "edge_type": "has_source_belief",
+      "tgt": {"type": "BeliefState", "var": "belief"}
+    },
+    {
+      "provenance": "generative_world_model:request_action",
+      "src": {"type": "SimulationRequest", "var": "request"},
+      "edge_type": "considers_action",
+      "tgt": {"type": "WorldModelAction", "var": "action"}
+    },
+    {
+      "provenance": "generative_world_model:request_trajectory",
+      "src": {"type": "SimulationRequest", "var": "request"},
+      "edge_type": "has_prediction_trajectory",
+      "tgt": {"type": "PredictionTrajectory", "var": "trajectory"}
+    },
+    {
+      "provenance": "generative_world_model:trajectory_state",
+      "src": {"type": "PredictionTrajectory", "var": "trajectory"},
+      "edge_type": "has_predicted_belief_state",
+      "tgt": {"type": "PredictedBeliefState", "var": "state"}
+    },
+    {
+      "provenance": "generative_world_model:state_successor",
+      "src": {"type": "PredictedBeliefState", "var": "state"},
+      "edge_type": "predicts_successor",
+      "tgt": {"type": "PredictedBeliefState", "var": "successor"}
+    },
+    {
+      "provenance": "generative_world_model:state_observation",
+      "src": {"type": "PredictedBeliefState", "var": "state"},
+      "edge_type": "has_predicted_observation",
+      "tgt": {"type": "PredictedObservation", "var": "observation"}
+    },
+    {
+      "provenance": "generative_world_model:state_outcome",
+      "src": {"type": "PredictedBeliefState", "var": "state"},
+      "edge_type": "has_predicted_outcome",
+      "tgt": {"type": "PredictedOutcome", "var": "outcome"}
+    },
+    {
+      "provenance": "generative_world_model:state_feature",
+      "src": {"type": "PredictedBeliefState", "var": "state"},
+      "edge_type": "has_predicted_feature",
+      "tgt": {"type": "PredictedFeature", "var": "feature"}
+    },
+    {
+      "provenance": "generative_world_model:transition_feature",
+      "src": {"type": "TransitionHypothesis", "var": "transition"},
+      "edge_type": "predicts_feature",
+      "tgt": {"type": "TransitionFeature", "var": "feature"}
+    },
+    {
+      "provenance": "generative_world_model:prediction_error",
+      "src": {"type": "Agent", "var": "agent"},
+      "edge_type": "has_prediction_error",
+      "tgt": {"type": "WorldModelPredictionError", "var": "error"}
+    }
+  ],
+  "rules": [
+    {
+      "name": "world_model_supersede_current_belief_on_fresh_perception",
+      "area": "world_model",
+      "order": 0,
+      "latency_class": "hard_realtime",
+      "comment": "A newer perceived sample closes the previous current belief before the replacement is minted. Memory and imagined states are not mistaken for sensory evidence.",
+      "match": [
+        ["agent", "has_world_model_observation", "observation"],
+        ["agent", "has_belief_state", "belief"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "belief_status"}, "b": {"type": "Lit", "value": "new"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "perceived"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "belief"}, "key": "status"}, "b": {"type": "Lit", "value": "current"}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "belief"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "belief", "status", "superseded"],
+        ["set_attr", "belief", "superseded_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "epoch"}}]
+      ]
+    },
+    {
+      "name": "world_model_integrate_perceived_observation",
+      "area": "world_model",
+      "order": 1,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_world_model_observation", "observation"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "belief_status"}, "b": {"type": "Lit", "value": "new"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "perceived"}}
+        ]
+      },
+      "effects": [
+        ["add_node", "belief", "BeliefState", {
+          "status": "current",
+          "state_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "state_kind"}},
+          "state_summary": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "state_summary"}},
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "epoch"}},
+          "confidence": {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "confidence"}]}]}},
+          "uncertainty": {"__term__": {"type": "Max", "items": [{"type": "Lit", "value": 0.0}, {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "uncertainty"}]}]}},
+          "provenance_kind": "perceived",
+          "observation_status": "observed"
+        }],
+        ["add_edge", "agent", "has_belief_state", "belief", {}],
+        ["add_edge", "belief", "supported_by_observation", "observation", {}],
+        ["set_attr", "observation", "belief_status", "integrated"]
+      ]
+    },
+    {
+      "name": "world_model_reconstruct_remembered_belief",
+      "area": "world_model",
+      "order": 1,
+      "latency_class": "soft_realtime",
+      "comment": "Recall reconstructs a belief with remembered provenance; it does not become the current perceived state.",
+      "match": [
+        ["agent", "has_memory_transient", "recall"],
+        ["request", "has_recall_candidate", "recall"],
+        ["recall", "recalls_episode", "episode"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "retrieval_status"}, "b": {"type": "Lit", "value": "recalled"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "recall"}, "edge_type": "has_reconstructed_belief"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["add_node", "belief", "BeliefState", {
+          "status": "reconstructed",
+          "state_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "state_kind"}},
+          "state_summary": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "state_summary"}},
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "epoch"}},
+          "memory_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "episode"}, "key": "tick"}},
+          "confidence": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "confidence"}},
+          "uncertainty": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "recall"}, "key": "uncertainty"}},
+          "provenance_kind": "remembered",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "agent", "has_belief_state", "belief", {}],
+        ["add_edge", "belief", "reconstructed_from_episode", "episode", {}],
+        ["add_edge", "recall", "has_reconstructed_belief", "belief", {}],
+        ["set_attr", "recall", "belief_reconstruction_status", "completed"]
+      ]
+    },
+    {
+      "name": "world_model_expand_root_action_branch",
+      "area": "world_model_simulation",
+      "order": 10,
+      "latency_class": "soft_realtime",
+      "comment": "One best-supported transition is expanded for each graph-ranked action. The per-branch budget is divided by the maximum branching factor, giving a finite geometric bound even when later states branch again.",
+      "match": [
+        ["agent", "has_world_model_policy", "policy"],
+        ["agent", "has_simulation_request", "request"],
+        ["request", "has_source_belief", "source"],
+        ["request", "considers_action", "action"],
+        ["agent", "has_transition_hypothesis", "transition"],
+        ["request", "validated_by_clock", "clock"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "enabled"}, "b": {"type": "Lit", "value": 1.0}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "deadline_epoch"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "branch_rank"}, "b": {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}]}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "state_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "source_state_kind"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "action_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "action_kind"}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "confidence"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "minimum_transition_confidence"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "transition"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_transition_hypothesis"},
+                "var_name": "candidate_transition",
+                "predicate": {
+                  "type": "And",
+                  "items": [
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_transition"}, "key": "source_state_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "state_kind"}},
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_transition"}, "key": "action_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "action_kind"}}
+                  ]
+                }
+              },
+              "var_name": "ranked_transition",
+              "value": {"type": "Plus", "items": [
+                {"type": "Times", "items": [{"type": "Lit", "value": 1000000.0}, {"type": "Attr", "node": {"type": "Var", "name": "ranked_transition"}, "key": "confidence"}]},
+                {"type": "Minus", "a": {"type": "Lit", "value": 1000.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "ranked_transition"}, "key": "model_rank"}}
+              ]},
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "trajectory", "PredictionTrajectory", {
+          "status": "active",
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed",
+          "source_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "input_epoch"}},
+          "deadline_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "deadline_epoch"}},
+          "root_action_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "action_kind"}}
+        }],
+        ["add_node", "successor", "PredictedBeliefState", {
+          "status": "predicted",
+          "expansion_status": "ready",
+          "state_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "successor_state_kind"}},
+          "state_summary": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "successor_summary"}},
+          "depth": 1.0,
+          "budget_remaining": {"__term__": {
+            "type": "Max",
+            "items": [
+              {"type": "Lit", "value": 0.0},
+              {
+                "type": "Minus",
+                "a": {
+                  "type": "Div",
+                  "a": {"type": "Min", "items": [
+                    {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "budget"},
+                    {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_budget"}
+                  ]},
+                  "b": {"type": "Max", "items": [
+                    {"type": "Lit", "value": 1.0},
+                    {"type": "Min", "items": [
+                      {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"},
+                      {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}
+                    ]}
+                  ]}
+                },
+                "b": {"type": "Lit", "value": 1.0}
+              }
+            ]
+          }},
+          "confidence": {"__term__": {"type": "Times", "items": [{"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "confidence"}, {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "confidence"}]}},
+          "uncertainty": {"__term__": {"type": "Max", "items": [{"type": "Attr", "node": {"type": "Var", "name": "source"}, "key": "uncertainty"}, {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "uncertainty"}]}},
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed",
+          "source_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "input_epoch"}}
+        }],
+        ["add_edge", "request", "has_prediction_trajectory", "trajectory", {}],
+        ["add_edge", "trajectory", "begins_with_action", "action", {}],
+        ["add_edge", "trajectory", "has_predicted_belief_state", "successor", {}],
+        ["add_edge", "successor", "generated_by_transition", "transition", {}],
+        ["add_edge", "successor", "predicted_after_action", "action", {}],
+        ["add_edge", "successor", "predicted_from_belief", "source", {}],
+        ["set_attr", "request", "status", "expanding"]
+      ]
+    },
+    {
+      "name": "world_model_expand_successor_branches",
+      "area": "world_model_simulation",
+      "order": 11,
+      "latency_class": "soft_realtime",
+      "comment": "Every ready leaf expands across the bounded action repertoire from an immutable predicted-state snapshot. Dividing remaining budget by branching prevents exponential violation of the request budget.",
+      "match": [
+        ["agent", "has_world_model_policy", "policy"],
+        ["agent", "has_simulation_request", "request"],
+        ["request", "has_prediction_trajectory", "trajectory"],
+        ["trajectory", "has_predicted_belief_state", "state"],
+        ["request", "considers_action", "action"],
+        ["agent", "has_transition_hypothesis", "transition"],
+        ["request", "validated_by_clock", "clock"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expanding"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "expansion_status"}, "b": {"type": "Lit", "value": "ready"}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "depth"}, "b": {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "horizon"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_horizon"}]}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "budget_remaining"}, "b": {"type": "Max", "items": [{"type": "Lit", "value": 1.0}, {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}]}]}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "deadline_epoch"}},
+          {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "branch_rank"}, "b": {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}]}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "state_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "source_state_kind"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "action_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "action_kind"}},
+          {
+            "type": "Eq",
+            "a": {"type": "Var", "name": "transition"},
+            "b": {
+              "type": "Argmax",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_transition_hypothesis"},
+                "var_name": "candidate_transition",
+                "predicate": {"type": "And", "items": [
+                  {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_transition"}, "key": "source_state_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "state_kind"}},
+                  {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_transition"}, "key": "action_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "action"}, "key": "action_kind"}}
+                ]}
+              },
+              "var_name": "ranked_transition",
+              "value": {"type": "Plus", "items": [
+                {"type": "Times", "items": [{"type": "Lit", "value": 1000000.0}, {"type": "Attr", "node": {"type": "Var", "name": "ranked_transition"}, "key": "confidence"}]},
+                {"type": "Minus", "a": {"type": "Lit", "value": 1000.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "ranked_transition"}, "key": "model_rank"}}
+              ]},
+              "default": {"type": "Lit", "value": null}
+            }
+          }
+        ]
+      },
+      "effects": [
+        ["add_node", "successor", "PredictedBeliefState", {
+          "status": "predicted",
+          "expansion_status": "ready",
+          "state_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "successor_state_kind"}},
+          "state_summary": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "successor_summary"}},
+          "depth": {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "depth"}, {"type": "Lit", "value": 1.0}]}},
+          "budget_remaining": {"__term__": {
+            "type": "Max",
+            "items": [
+              {"type": "Lit", "value": 0.0},
+              {
+                "type": "Minus",
+                "a": {
+                  "type": "Div",
+                  "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "budget_remaining"},
+                  "b": {"type": "Max", "items": [
+                    {"type": "Lit", "value": 1.0},
+                    {"type": "Min", "items": [
+                      {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"},
+                      {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}
+                    ]}
+                  ]}
+                },
+                "b": {"type": "Lit", "value": 1.0}
+              }
+            ]
+          }},
+          "confidence": {"__term__": {"type": "Times", "items": [{"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "confidence"}, {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "confidence"}]}},
+          "uncertainty": {"__term__": {"type": "Max", "items": [{"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "uncertainty"}, {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "uncertainty"}]}},
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed",
+          "source_epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "input_epoch"}}
+        }],
+        ["add_edge", "trajectory", "has_predicted_belief_state", "successor", {}],
+        ["add_edge", "state", "predicts_successor", "successor", {}],
+        ["add_edge", "successor", "generated_by_transition", "transition", {}],
+        ["add_edge", "successor", "predicted_after_action", "action", {}],
+        ["set_attr", "state", "expansion_status", "expanded"]
+      ]
+    },
+    {
+      "name": "world_model_terminalize_bounded_leaf",
+      "area": "world_model_simulation",
+      "order": 12,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_world_model_policy", "policy"],
+        ["agent", "has_simulation_request", "request"],
+        ["request", "has_prediction_trajectory", "trajectory"],
+        ["trajectory", "has_predicted_belief_state", "state"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "expansion_status"}, "b": {"type": "Lit", "value": "ready"}},
+          {"type": "Or", "items": [
+            {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "depth"}, "b": {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "horizon"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_horizon"}]}},
+            {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "budget_remaining"}, "b": {"type": "Max", "items": [{"type": "Lit", "value": 1.0}, {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}]}]}}
+          ]}
+        ]
+      },
+      "effects": [
+        ["set_attr", "state", "expansion_status", "terminal"],
+        ["set_attr", "state", "terminal_reason", "horizon_or_budget"]
+      ]
+    },
+    {
+      "name": "world_model_terminalize_leaf_without_applicable_transition",
+      "area": "world_model_simulation",
+      "order": 12,
+      "latency_class": "hard_realtime",
+      "comment": "A model dead end is a settled terminal prediction, not a permanently ready leaf. Applicability includes source state, confidence, request action snapshot, and branch rank.",
+      "match": [
+        ["agent", "has_world_model_policy", "policy"],
+        ["agent", "has_simulation_request", "request"],
+        ["request", "has_prediction_trajectory", "trajectory"],
+        ["trajectory", "has_predicted_belief_state", "state"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expanding"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "expansion_status"}, "b": {"type": "Lit", "value": "ready"}},
+          {"type": "Lt", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "depth"}, "b": {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "horizon"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_horizon"}]}},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "budget_remaining"}, "b": {"type": "Max", "items": [{"type": "Lit", "value": 1.0}, {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}]}]}},
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Count",
+              "source": {
+                "type": "Filter",
+                "source": {"type": "Neighbours", "node": {"type": "Var", "name": "agent"}, "edge_type": "has_transition_hypothesis"},
+                "var_name": "candidate_transition",
+                "predicate": {
+                  "type": "And",
+                  "items": [
+                    {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_transition"}, "key": "source_state_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "state_kind"}},
+                    {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_transition"}, "key": "confidence"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "minimum_transition_confidence"}},
+                    {
+                      "type": "Gt",
+                      "a": {
+                        "type": "Count",
+                        "source": {
+                          "type": "Filter",
+                          "source": {"type": "Neighbours", "node": {"type": "Var", "name": "request"}, "edge_type": "considers_action"},
+                          "var_name": "candidate_action",
+                          "predicate": {
+                            "type": "And",
+                            "items": [
+                              {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_action"}, "key": "action_kind"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "candidate_transition"}, "key": "action_kind"}},
+                              {"type": "Lte", "a": {"type": "Attr", "node": {"type": "Var", "name": "candidate_action"}, "key": "branch_rank"}, "b": {"type": "Min", "items": [{"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "maximum_branching"}, {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "maximum_branching"}]}}
+                            ]
+                          }
+                        }
+                      },
+                      "b": {"type": "Lit", "value": 0}
+                    }
+                  ]
+                }
+              }
+            },
+            "b": {"type": "Lit", "value": 0}
+          }
+        ]
+      },
+      "effects": [
+        ["set_attr", "state", "expansion_status", "terminal"],
+        ["set_attr", "state", "terminal_reason", "no_applicable_transition"]
+      ]
+    },
+    {
+      "name": "world_model_materialize_predicted_observation",
+      "area": "world_model_simulation",
+      "order": 13,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["trajectory", "has_predicted_belief_state", "state"],
+        ["state", "generated_by_transition", "transition"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "state"}, "edge_type": "has_predicted_observation"}},
+        "b": {"type": "Lit", "value": 0}
+      },
+      "effects": [
+        ["add_node", "observation", "PredictedObservation", {
+          "observation_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "predicted_observation_kind"}},
+          "observation_value": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "predicted_observation_value"}},
+          "confidence": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "confidence"}},
+          "uncertainty": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "uncertainty"}},
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "state", "has_predicted_observation", "observation", {}],
+        ["add_edge", "observation", "generated_by_transition", "transition", {}]
+      ]
+    },
+    {
+      "name": "world_model_materialize_predicted_outcome",
+      "area": "world_model_simulation",
+      "order": 13,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["trajectory", "has_predicted_belief_state", "state"],
+        ["state", "generated_by_transition", "transition"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "state"}, "edge_type": "has_predicted_outcome"}},
+        "b": {"type": "Lit", "value": 0}
+      },
+      "effects": [
+        ["add_node", "outcome", "PredictedOutcome", {
+          "outcome_kind": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "predicted_outcome_kind"}},
+          "outcome_value": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "predicted_outcome_value"}},
+          "confidence": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "confidence"}},
+          "uncertainty": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "uncertainty"}},
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "state", "has_predicted_outcome", "outcome", {}],
+        ["add_edge", "outcome", "generated_by_transition", "transition", {}]
+      ]
+    },
+    {
+      "name": "world_model_copy_transition_feature",
+      "area": "world_model_simulation",
+      "order": 13,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["trajectory", "has_predicted_belief_state", "state"],
+        ["state", "generated_by_transition", "transition"],
+        ["transition", "predicts_feature", "feature"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {
+          "type": "Count",
+          "source": {
+            "type": "Filter",
+            "source": {"type": "Neighbours", "node": {"type": "Var", "name": "state"}, "edge_type": "has_predicted_feature"},
+            "var_name": "existing_feature",
+            "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "existing_feature"}, "key": "feature_key"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "feature"}, "key": "feature_key"}}
+          }
+        },
+        "b": {"type": "Lit", "value": 0}
+      },
+      "effects": [
+        ["add_node", "prediction", "PredictedFeature", {
+          "feature_key": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "feature"}, "key": "feature_key"}},
+          "feature_value": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "feature"}, "key": "feature_value"}},
+          "confidence": {"__term__": {"type": "Times", "items": [{"type": "Attr", "node": {"type": "Var", "name": "state"}, "key": "confidence"}, {"type": "Attr", "node": {"type": "Var", "name": "feature"}, "key": "confidence"}]}},
+          "provenance_kind": "imagined",
+          "observation_status": "not_observed"
+        }],
+        ["add_edge", "state", "has_predicted_feature", "prediction", {}],
+        ["add_edge", "prediction", "copied_from_transition_feature", "feature", {}]
+      ]
+    },
+    {
+      "name": "world_model_complete_settled_request",
+      "area": "world_model_simulation",
+      "order": 14,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_simulation_request", "request"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expanding"}},
+          {"type": "Gt", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "request"}, "edge_type": "has_prediction_trajectory"}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {
+            "type": "Count",
+            "source": {
+              "type": "Filter",
+              "source": {"type": "MapNeighbours", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "request"}, "edge_type": "has_prediction_trajectory"}, "edge_type": "has_predicted_belief_state"},
+              "var_name": "unsettled_state",
+              "predicate": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "unsettled_state"}, "key": "expansion_status"}, "b": {"type": "Lit", "value": "ready"}}
+            }
+          }, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "request", "status", "completed"],
+        ["set_attr", "request", "completion_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "input_epoch"}}]
+      ]
+    },
+    {
+      "name": "world_model_expire_request_at_deadline",
+      "area": "world_model_simulation",
+      "order": 20,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_simulation_request", "request"],
+        ["request", "validated_by_clock", "clock"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "active"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expanding"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "completed"}}
+          ]},
+          {"type": "Gt", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "deadline_epoch"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "request", "status", "expired"],
+        ["set_attr", "request", "terminal_reason", "deadline"],
+        ["set_attr", "request", "cleanup_after_epoch", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, {"type": "Lit", "value": 2.0}]}}]
+      ]
+    },
+    {
+      "name": "world_model_mark_expired_trajectory_stale",
+      "area": "world_model_simulation",
+      "order": 21,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["request", "has_prediction_trajectory", "trajectory"]
+      ],
+      "where": {
+        "type": "Eq",
+        "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"},
+        "b": {"type": "Lit", "value": "expired"}
+      },
+      "effects": [
+        ["set_attr", "trajectory", "status", "stale"]
+      ]
+    },
+    {
+      "name": "world_model_compare_grounded_outcome",
+      "area": "world_model_learning",
+      "order": 30,
+      "latency_class": "hard_realtime",
+      "comment": "Only a perceived observation may score an imagined outcome. The error is graph-held and retains both supports.",
+      "match": [
+        ["agent", "has_world_model_observation", "observation"],
+        ["observation", "confirms_prediction", "prediction"],
+        ["prediction", "generated_by_transition", "transition"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "perceived"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "imagined"}},
+          {"type": "Not", "arg": {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "prediction_comparison_status"}, "b": {"type": "Lit", "value": "compared"}}}
+        ]
+      },
+      "effects": [
+        ["add_node", "error", "WorldModelPredictionError", {
+          "status": "new",
+          "epoch": {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "epoch"}},
+          "signed_error": {"__term__": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "observed_outcome_value"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "outcome_value"}}},
+          "magnitude": {"__term__": {"type": "Abs", "arg": {"type": "Minus", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "observed_outcome_value"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "outcome_value"}}}},
+          "provenance_kind": "prediction_minus_perception"
+        }],
+        ["add_edge", "agent", "has_prediction_error", "error", {}],
+        ["add_edge", "error", "evaluates_transition", "transition", {}],
+        ["add_edge", "error", "compares_observation", "observation", {}],
+        ["add_edge", "error", "compares_prediction", "prediction", {}],
+        ["set_attr", "observation", "prediction_comparison_status", "compared"]
+      ]
+    },
+    {
+      "name": "world_model_revise_transition_confidence",
+      "area": "world_model_learning",
+      "order": 31,
+      "latency_class": "hard_realtime",
+      "comment": "A bounded delta update moves confidence toward one minus normalized absolute prediction error. Epoch marking makes it one-shot at fixed point.",
+      "match": [
+        ["agent", "has_world_model_policy", "policy"],
+        ["agent", "has_prediction_error", "error"],
+        ["error", "evaluates_transition", "transition"],
+        ["error", "compares_observation", "observation"],
+        ["error", "compares_prediction", "prediction"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "status"}, "b": {"type": "Lit", "value": "new"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "observation"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "perceived"}},
+          {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "prediction"}, "key": "provenance_kind"}, "b": {"type": "Lit", "value": "imagined"}}
+        ]
+      },
+      "effects": [
+        ["set_attr", "transition", "confidence", {"__term__": {
+          "type": "Max",
+          "items": [
+            {"type": "Lit", "value": 0.0},
+            {"type": "Min", "items": [
+              {"type": "Lit", "value": 1.0},
+              {"type": "Plus", "items": [
+                {"type": "Times", "items": [
+                  {"type": "Minus", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transition_learning_rate"}},
+                  {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "confidence"}
+                ]},
+                {"type": "Times", "items": [
+                  {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transition_learning_rate"},
+                  {"type": "Minus", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "magnitude"}]}}
+                ]}
+              ]}
+            ]}
+          ]
+        }}],
+        ["set_attr", "transition", "uncertainty", {"__term__": {
+          "type": "Min",
+          "items": [
+            {"type": "Lit", "value": 1.0},
+            {"type": "Plus", "items": [
+              {"type": "Times", "items": [
+                {"type": "Minus", "a": {"type": "Lit", "value": 1.0}, "b": {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transition_learning_rate"}},
+                {"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "uncertainty"}
+              ]},
+              {"type": "Times", "items": [
+                {"type": "Attr", "node": {"type": "Var", "name": "policy"}, "key": "transition_learning_rate"},
+                {"type": "Min", "items": [{"type": "Lit", "value": 1.0}, {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "magnitude"}]}
+              ]}
+            ]}
+          ]
+        }}],
+        ["set_attr", "transition", "last_revision_epoch", {"__term__": {"type": "Attr", "node": {"type": "Var", "name": "error"}, "key": "epoch"}}],
+        ["set_attr", "transition", "revision_count", {"__term__": {"type": "Plus", "items": [{"type": "Attr", "node": {"type": "Var", "name": "transition"}, "key": "revision_count"}, {"type": "Lit", "value": 1.0}]}}],
+        ["set_attr", "error", "status", "integrated"]
+      ]
+    },
+    {
+      "name": "world_model_prune_terminal_predicted_feature",
+      "area": "world_model_simulation",
+      "order": 40,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["request", "validated_by_clock", "clock"],
+        ["request", "has_prediction_trajectory", "trajectory"],
+        ["trajectory", "has_predicted_belief_state", "state"],
+        ["state", "has_predicted_feature", "feature"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "cancelled"}}
+          ]},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cleanup_after_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_node", "feature"]
+      ]
+    },
+    {
+      "name": "world_model_prune_terminal_predicted_observation",
+      "area": "world_model_simulation",
+      "order": 40,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["request", "validated_by_clock", "clock"],
+        ["request", "has_prediction_trajectory", "trajectory"],
+        ["trajectory", "has_predicted_belief_state", "state"],
+        ["state", "has_predicted_observation", "observation"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "cancelled"}}
+          ]},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cleanup_after_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_node", "observation"]
+      ]
+    },
+    {
+      "name": "world_model_prune_terminal_predicted_outcome",
+      "area": "world_model_simulation",
+      "order": 40,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["request", "validated_by_clock", "clock"],
+        ["request", "has_prediction_trajectory", "trajectory"],
+        ["trajectory", "has_predicted_belief_state", "state"],
+        ["state", "has_predicted_outcome", "outcome"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "cancelled"}}
+          ]},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cleanup_after_epoch"}}
+        ]
+      },
+      "effects": [
+        ["del_node", "outcome"]
+      ]
+    },
+    {
+      "name": "world_model_prune_terminal_predicted_state",
+      "area": "world_model_simulation",
+      "order": 41,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["request", "validated_by_clock", "clock"],
+        ["request", "has_prediction_trajectory", "trajectory"],
+        ["trajectory", "has_predicted_belief_state", "state"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "cancelled"}}
+          ]},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cleanup_after_epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "state"}, "edge_type": "has_predicted_feature"}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "state"}, "edge_type": "has_predicted_observation"}}, "b": {"type": "Lit", "value": 0}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "state"}, "edge_type": "has_predicted_outcome"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["del_node", "state"]
+      ]
+    },
+    {
+      "name": "world_model_prune_terminal_trajectory",
+      "area": "world_model_simulation",
+      "order": 42,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["request", "validated_by_clock", "clock"],
+        ["request", "has_prediction_trajectory", "trajectory"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "cancelled"}}
+          ]},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cleanup_after_epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "trajectory"}, "edge_type": "has_predicted_belief_state"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["del_node", "trajectory"]
+      ]
+    },
+    {
+      "name": "world_model_prune_terminal_request",
+      "area": "world_model_simulation",
+      "order": 43,
+      "latency_class": "hard_realtime",
+      "match": [
+        ["agent", "has_simulation_request", "request"],
+        ["request", "validated_by_clock", "clock"]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {"type": "Or", "items": [
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "expired"}},
+            {"type": "Eq", "a": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "status"}, "b": {"type": "Lit", "value": "cancelled"}}
+          ]},
+          {"type": "Gte", "a": {"type": "Attr", "node": {"type": "Var", "name": "clock"}, "key": "epoch"}, "b": {"type": "Attr", "node": {"type": "Var", "name": "request"}, "key": "cleanup_after_epoch"}},
+          {"type": "Eq", "a": {"type": "Count", "source": {"type": "Neighbours", "node": {"type": "Var", "name": "request"}, "edge_type": "has_prediction_trajectory"}}, "b": {"type": "Lit", "value": 0}}
+        ]
+      },
+      "effects": [
+        ["del_node", "request"]
+      ]
+    }
+  ]
+}
