@@ -37,6 +37,12 @@ action buttons to submit a major action, or speak to another resident;
 autonomous deterministic residents take their own backend decisions on the
 same turn.
 
+### Screenshots
+
+![Bigville village overview](docs/screenshots/bigville-overview.png)
+
+![Bigville after a turn, with resident speech in the event log](docs/screenshots/bigville-after-turn.png)
+
 ## Cognition backends
 
 `DeterministicBackend` is the cheap, repeatable game backend. `LLMBackend` is a
