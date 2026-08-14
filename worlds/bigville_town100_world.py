@@ -213,6 +213,29 @@ def _largest_component(grid):
     return best
 
 
+def _largest_surface_component(grid, surfaces):
+    """Return the largest 4-connected component of a named road surface."""
+    seen, best = set(), set()
+    H, W = len(grid), len(grid[0])
+    for sy in range(H):
+        for sx in range(W):
+            if grid[sy][sx] not in surfaces or (sx, sy) in seen:
+                continue
+            comp, stack = set(), [(sx, sy)]
+            seen.add((sx, sy))
+            while stack:
+                cx, cy = stack.pop()
+                comp.add((cx, cy))
+                for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                    if (0 <= nx < W and 0 <= ny < H and grid[ny][nx] in surfaces
+                            and (nx, ny) not in seen):
+                        seen.add((nx, ny))
+                        stack.append((nx, ny))
+            if len(comp) > len(best):
+                best = comp
+    return best
+
+
 def _adj_road(grid, x, y):
     for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
         if 0 <= nx < len(grid[0]) and 0 <= ny < len(grid) and grid[ny][nx] in (PATH, SQUARE):
@@ -238,13 +261,18 @@ def _windy_horizontal(grid, target_y, phase):
     offsets = (-1, 0, 1, 2, 1, 0, -1, -2)
     route, y = {}, target_y
     for x in range(1, len(grid[0]) - 1):
+        previous_y = y
         desired = target_y + offsets[((x // 3) + phase) % len(offsets)]
         if desired > y:
             y += 1
         elif desired < y:
             y -= 1
         y = max(1, min(len(grid) - 2, y))
-        _carve_path(grid, x, y)
+        # A bend must contain an orthogonal elbow.  Without this, a one-cell
+        # drift from (x-1, previous_y) to (x, y) touches only at a corner and
+        # breaks both walking connectivity and the rendered path continuity.
+        for corner_y in range(min(previous_y, y), max(previous_y, y) + 1):
+            _carve_path(grid, x, corner_y)
         route[x] = y
     return route
 
@@ -254,13 +282,15 @@ def _windy_vertical(grid, target_x, phase):
     offsets = (1, 0, -1, -2, -1, 0, 1, 2)
     route, x = {}, target_x
     for y in range(1, len(grid) - 1):
+        previous_x = x
         desired = target_x + offsets[((y // 3) + phase) % len(offsets)]
         if desired > x:
             x += 1
         elif desired < x:
             x -= 1
         x = max(1, min(len(grid[0]) - 2, x))
-        _carve_path(grid, x, y)
+        for corner_x in range(min(previous_x, x), max(previous_x, x) + 1):
+            _carve_path(grid, corner_x, y)
         route[y] = x
     return route
 
@@ -334,10 +364,20 @@ def build_town_100(seed=SEED_DEFAULT):
         if grid[ty][tx] == GRASS:
             grid[ty][tx] = TREE
 
+    # A resource body can interrupt a route at the edge of the map.  Keep the
+    # intentional road network as one 4-connected surface and discard only
+    # isolated stubs; this prevents diagonal-only or floating path fragments.
+    road = _largest_surface_component(grid, {PATH, SQUARE})
+    for y, row in enumerate(grid):
+        for x, tile in enumerate(row):
+            if tile == PATH and (x, y) not in road:
+                grid[y][x] = GRASS
+
     comp = _largest_component(grid)
 
     # --- deposits: a walkable comp cell adjacent to each body -------------------
-    layout = {"w": W, "h": H, "deposits": {}, "work": {}, "farms": [], "homes": []}
+    layout = {"w": W, "h": H, "deposits": {}, "work": {}, "farms": [], "homes": [],
+              "square": {"x": 18, "y": 15, "w": 11, "h": 7, "center": (23, 18)}}
     ordered = sorted(comp)
     for kind, tile in _BODY_TILE.items():
         cell = next(c for c in ordered if _adj_body(grid, c[0], c[1], tile))

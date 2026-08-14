@@ -445,18 +445,39 @@ class BigvilleWorld:
         # as every other village activity.
         self._square = self.eng.add_node("Square", {"name": "town square"})
         self._noticeboard = self.eng.add_node("Noticeboard", {"name": "town noticeboard"})
+        self._square_fixtures = {}
         self.eng.add_edge_unchecked(self._town, "has_square", self._square)
         self.eng.add_edge_unchecked(self._square, "has_board", self._noticeboard)
         square_cell = self._map_layout.get("work", {}).get("market") if self._map_layout else None
         if square_cell in self._map_cells:
             self.eng.add_edge_unchecked(self._square, "at_cell", self._map_cells[square_cell])
             self.eng.add_edge_unchecked(self._noticeboard, "at_cell", self._map_cells[square_cell])
+        self._install_square_fixtures()
 
         # The canonical store is also a physical place on the integrated map.
         market = self._map_layout.get("work", {}).get("market") if self._map_layout else None
         if market in self._map_cells:
             self.eng.add_edge_unchecked(self._store, "at_cell", self._map_cells[market])
         self._seed_written_documents()
+
+    def _install_square_fixtures(self):
+        """Install the market and civic fixtures at the scenario's square."""
+        square = self._map_layout.get("square", {}) if self._map_layout else {}
+        center = tuple(square.get("center", ()))
+        if len(center) != 2:
+            return
+        for fixture in E.TOWN_SQUARE_FIXTURES:
+            offset = fixture.get("offset", (0, 0))
+            cell = (int(center[0]) + int(offset[0]), int(center[1]) + int(offset[1]))
+            node = self.eng.add_node("SquareFixture", {
+                "name": fixture["name"], "kind": fixture["kind"],
+                "goods": tuple(fixture.get("goods", ())),
+                "x": float(cell[0]), "y": float(cell[1]),
+            })
+            self.eng.add_edge_unchecked(self._square, "has_fixture", node)
+            if cell in self._map_cells:
+                self.eng.add_edge_unchecked(node, "at_cell", self._map_cells[cell])
+            self._square_fixtures[fixture["name"]] = node
 
     def _run(self):
         before = {kind: float(self.eng.node(node)["attrs"].get("qty", 0.0))
@@ -4776,7 +4797,15 @@ class BigvilleWorld:
             footprint = tuple(footprint) if len(footprint) == 2 else (3, 3)
             buildings.append({"id": kind, "type": kind, "position": position,
                               "x": x, "y": y, "w": int(footprint[0]), "h": int(footprint[1]),
-                              "name": kind.title()})
+                              "name": spec.get("display_name", kind.title())})
+        square = self._map_layout.get("square", {}) if self._map_layout else {}
+        square_fixtures = []
+        for name, node in getattr(self, "_square_fixtures", {}).items():
+            attrs = self.eng.node(node)["attrs"]
+            square_fixtures.append({"id": name, "name": name,
+                                    "kind": attrs.get("kind", "fixture"),
+                                    "goods": list(attrs.get("goods", ())),
+                                    "x": int(attrs.get("x", 0)), "y": int(attrs.get("y", 0))})
         events = []
         for key, node in list(self._events.items())[-event_tail if event_tail else None:]:
             events.append({"id": key, **dict(self.eng.node(node)["attrs"])})
@@ -4791,6 +4820,7 @@ class BigvilleWorld:
                 "map": {"width": map_width, "height": map_height, "w": map_width, "h": map_height,
                         "seed": map_seed,
                         "terrain_movement": self.terrain_movement_rules(),
+                        "square": dict(square), "square_fixtures": square_fixtures,
                         "grid": self._map_grid, "tiles": self._map_grid,
                         "buildings": buildings},
                 "residents": actors,

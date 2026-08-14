@@ -1146,6 +1146,18 @@ def test_canonical_world_imports_the_map_cast_and_resource_sites():
     assert w.eng.node(w._actors["John"])["attrs"]["resolution_bins"] >= 2
 
 
+def test_civic_buildings_and_town_square_fixtures_are_seeded_into_the_map():
+    w = World.from_town100()
+    assert w.building_position("church") in w._map_cells
+    assert w.building_position("watchhouse") in w._map_cells
+    state = w.export_state()
+    assert {building["name"] for building in state["map"]["buildings"] if building["type"] in {"church", "watchhouse"}} == {
+        "Church", "Police Station"
+    }
+    kinds = {fixture["kind"] for fixture in state["map"]["square_fixtures"]}
+    assert {"market_stall", "noticeboard", "well", "bench"} <= kinds
+
+
 def test_map_entities_have_home_work_land_and_building_anchors():
     w = World.from_town100()
     # The expanded road network is intentionally gently winding, so the deterministic home
@@ -1179,6 +1191,23 @@ def test_weighted_travel_prefers_the_seeded_fast_surface_when_available():
     assert w.travel_time(start, destination) <= w.distance(start, destination)
     move_options = [option for option in w.actor_affordances("John") if option["action"] == "move"]
     assert move_options and all("terrain_speed" in option for option in move_options)
+
+
+def test_winding_paths_are_orthogonally_continuous_through_corners():
+    w = World.from_town100()
+    path_cells = {
+        (x, y) for y, row in enumerate(w._map_grid) for x, tile in enumerate(row)
+        if tile in {1, 4}  # PATH and the walkable central SQUARE
+    }
+    start = next(iter(path_cells))
+    seen, frontier = {start}, [start]
+    while frontier:
+        x, y = frontier.pop()
+        for neighbour in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if neighbour in path_cells and neighbour not in seen:
+                seen.add(neighbour)
+                frontier.append(neighbour)
+    assert seen == path_cells
 
 
 def test_building_projects_consume_physical_materials_and_mint_a_place():

@@ -520,13 +520,27 @@ BUILDINGS = {
                     "rooms": ["smoke_room"]},
     "townhall":    {"staff_role": "mayor", "provides": "governance", "sheltered": True,
                     "rooms": ["council_room", "records_room"]},
+    "church":      {"staff_role": "pastor", "provides": "worship", "sheltered": True,
+                    "display_name": "Church", "rooms": ["nave", "vestry"]},
     "watchhouse":  {"staff_role": "constable", "provides": "constable", "sheltered": True,
-                    "rooms": ["watch_room", "lockup"]},
+                    "display_name": "Police Station", "rooms": ["watch_room", "lockup"]},
     "records_office": {"staff_role": "clerk", "provides": "land_registry", "sheltered": True,
                        "rooms": ["land_register", "deed_archive", "public_counter"]},
     "scriptorium": {"staff_role": "scribe",    "provides": "scribe",    "sheltered": True,  "rooms": ["deskroom"]},
     "shambles":    {"staff_role": "butcher",   "provides": "butcher",   "sheltered": False, "rooms": ["killing_floor"]},
 }
+
+# Fixtures are physical square contents, not decorative background pixels. Their offsets are
+# interpreted relative to the scenario's declared square bounds and exported to any client.
+TOWN_SQUARE_FIXTURES = [
+    {"name": "north_market_stall", "kind": "market_stall", "offset": [-4, -2], "goods": ["bread", "grain"]},
+    {"name": "east_market_stall", "kind": "market_stall", "offset": [1, -2], "goods": ["fish", "cheese"]},
+    {"name": "west_market_stall", "kind": "market_stall", "offset": [-1, 1], "goods": ["cloth", "tools"]},
+    {"name": "town_noticeboard", "kind": "noticeboard", "offset": [-5, 0], "goods": []},
+    {"name": "public_well", "kind": "well", "offset": [4, 0], "goods": ["water"]},
+    {"name": "south_bench_west", "kind": "bench", "offset": [-3, 2], "goods": []},
+    {"name": "south_bench_east", "kind": "bench", "offset": [2, 2], "goods": []},
+]
 
 # Construction is separate from the catalogue of places already present when the town is
 # founded.  A project can create another instance of any catalogue building (a second granary,

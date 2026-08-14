@@ -271,6 +271,7 @@ class BigvilleScene extends Phaser.Scene {
     const height = map.height * TILE * DISPLAY_SCALE;
     this.drawCanonicalMap(map);
     this.drawTerrainProps(map);
+    this.drawSquareFixtures(map);
     const allResidents = snapshot.world.residents || [];
     this.playerId = snapshot.player;
     const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
@@ -580,6 +581,50 @@ class BigvilleScene extends Phaser.Scene {
           // without making the walkable route ambiguous.
           addProp(roll % 2 ? 'barrel' : 'bench', x, y, 1.15);
         }
+      }
+    }
+  }
+
+  drawSquareFixtures(map) {
+    const fixtures = map.square_fixtures || [];
+    if (!fixtures.length) return;
+    const parts = this.assetManifest?.buildings?.parts || {};
+    const props = this.styleManifest?.props?.sprites || this.assetManifest?.terrain?.props || {};
+    const addPart = (name, x, y, depth, tint = null) => {
+      if (parts[name] === undefined) return;
+      const sprite = this.add.sprite(this.cellX(x), this.cellY(y) - 4 * DISPLAY_SCALE,
+        'building_parts', parts[name]).setScale(DISPLAY_SCALE)
+        .setDepth(this.depthAt(x, y, depth));
+      if (tint !== null) sprite.setTint(tint);
+      this.objects.push(sprite);
+    };
+    const addProp = (name, x, y, depth = 2.4) => {
+      if (props[name] === undefined) return;
+      const sprite = this.add.sprite(this.cellX(x), this.cellY(y) - 6 * DISPLAY_SCALE,
+        'props', props[name]).setScale(DISPLAY_SCALE)
+        .setDepth(this.depthAt(x, y, depth));
+      this.objects.push(sprite);
+    };
+    for (const fixture of fixtures) {
+      const x = Number(fixture.x || 0);
+      const y = Number(fixture.y || 0);
+      if (fixture.kind === 'market_stall') {
+        const colour = fixture.goods?.includes('bread') ? 0xc9854f
+          : fixture.goods?.includes('fish') ? 0x6388a7 : 0xb56f88;
+        // Two-cell canopy and counter: a stall reads as a little civic object
+        // while remaining assembled from the same reusable building vocabulary.
+        addPart('roof_edge', x, y, 2.2, colour);
+        addPart('roof_edge', x + 1, y, 2.2, colour);
+        addPart('counter', x, y + 1, 2.3, 0xa66d43);
+        addPart('counter', x + 1, y + 1, 2.3, 0xa66d43);
+        addPart('sign', x + 1, y + 1, 2.5, 0xf0c36b);
+      } else if (fixture.kind === 'noticeboard') {
+        addPart('sign', x, y, 2.5, 0xd7a45c);
+      } else if (fixture.kind === 'well') {
+        addPart('counter', x, y, 2.4, 0x7499a0);
+        addPart('rug', x, y, 2.5, 0x8fb8b5);
+      } else if (fixture.kind === 'bench') {
+        addProp('bench', x, y);
       }
     }
   }
