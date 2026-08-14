@@ -46,6 +46,8 @@ same turn.
 
 ![Bigville village overview](docs/screenshots/bigville-overview.png)
 
+![Bigville close-up at 200% zoom](docs/screenshots/bigville-detail.png)
+
 ![Bigville after a turn, with resident speech in the event log](docs/screenshots/bigville-after-turn.png)
 
 ![Animated Bigville simulation](docs/screenshots/bigville-simulation.gif)
