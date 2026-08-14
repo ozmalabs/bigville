@@ -33,6 +33,7 @@ def test_game_assets_are_present():
                          "assets/style_water_ground.png", "assets/style_soil_ground.png",
                          "assets/style_stone_ground.png", "assets/style_material_edges.png",
                          "assets/style_large_props.png", "assets/style_buildings.png",
+                         "assets/style_large_buildings.png", "assets/style_large_cutaways.png",
                          "assets/style_square_fixtures.png",
                          "assets/style_cutaway_atlas_source.png", "assets/style_cutaways.png",
                          "assets/style_character_walk_atlas_source.png", "assets/style_characters.png",
@@ -96,6 +97,11 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert {"tree", "bush"} <= set(style["large_props"]["sprites"])
     assert style["buildings"]["file"] == "style_buildings.png"
     assert style["cutaways"]["file"] == "style_cutaways.png"
+    assert style["large_buildings"]["file"] == "style_large_buildings.png"
+    assert style["large_buildings"]["frame"] == 128
+    assert set(style["large_buildings"]["sprites"]) == {"townhall", "church"}
+    assert style["large_cutaways"]["file"] == "style_large_cutaways.png"
+    assert style["large_cutaways"]["frame"] == 128
     assert set(entities.BUILDINGS) <= set(style["cutaways"]["sprites"])
     assert style["characters"]["file"] == "style_characters.png"
     assert style["characters"]["frame"] == 32

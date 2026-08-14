@@ -453,6 +453,22 @@
       "scriptorium": 35
     }
   },
+  "large_buildings": {
+    "file": "style_large_buildings.png",
+    "frame": 128,
+    "sprites": {
+      "townhall": 0,
+      "church": 1
+    }
+  },
+  "large_cutaways": {
+    "file": "style_large_cutaways.png",
+    "frame": 128,
+    "sprites": {
+      "townhall": 0,
+      "church": 1
+    }
+  },
   "characters": {
     "file": "style_characters.png",
     "frame": 32,

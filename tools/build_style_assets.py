@@ -17,6 +17,7 @@ ASSETS = ROOT / "bigville" / "game" / "assets"
 TILE = 16
 ART_TILE = 32  # displayed terrain cell; authored at facade resolution rather than enlarged from 16px
 BUILDING = 96
+LARGE_BUILDING = 128
 CHARACTER = 32
 HELD_ITEM = 16
 
@@ -509,6 +510,38 @@ def build_cutaways(manifest: dict, cutaway_sheet: Image.Image) -> dict:
     return sprites
 
 
+def build_large_civic_buildings(buildings_sheet: Image.Image) -> dict[str, int]:
+    """Build the larger 4x4 civic facades used by the town hall and church."""
+    cells = [grid_cell(buildings_sheet, 3, 2, i) for i in range(6)]
+    sheet = Image.new("RGBA", (LARGE_BUILDING * 2, LARGE_BUILDING), (0, 0, 0, 0))
+    sprites = {"townhall": 0, "church": 1}
+    for name, source_index in (("townhall", 0), ("church", 1)):
+        frame = fit_sprite(cells[source_index], (LARGE_BUILDING, LARGE_BUILDING), pad=3, bottom=True)
+        if name == "church":
+            draw = ImageDraw.Draw(frame)
+            dark = (47, 38, 34, 255)
+            stone = (220, 198, 151, 255)
+            draw.rectangle((63, 1, 66, 23), fill=dark)
+            draw.rectangle((64, 2, 65, 22), fill=stone)
+            draw.rectangle((57, 9, 72, 14), fill=dark)
+            draw.rectangle((59, 10, 70, 12), fill=stone)
+        sheet.alpha_composite(frame, (sprites[name] * LARGE_BUILDING, 0))
+    sheet.save(ASSETS / "style_large_buildings.png")
+    return sprites
+
+
+def build_large_civic_cutaways(cutaway_sheet: Image.Image) -> dict[str, int]:
+    """Build roof-off interiors at the same 4x4 scale as civic facades."""
+    cells = [grid_cell(cutaway_sheet, 3, 2, i) for i in range(6)]
+    sheet = Image.new("RGBA", (LARGE_BUILDING * 2, LARGE_BUILDING), (0, 0, 0, 0))
+    sprites = {"townhall": 0, "church": 1}
+    for name, source_index in (("townhall", 0), ("church", 1)):
+        frame = fit_sprite(cells[source_index], (LARGE_BUILDING, LARGE_BUILDING), pad=3, bottom=True)
+        sheet.alpha_composite(frame, (sprites[name] * LARGE_BUILDING, 0))
+    sheet.save(ASSETS / "style_large_cutaways.png")
+    return sprites
+
+
 CHARACTER_COLORS = [
     (116, 145, 73), (205, 151, 55), (119, 101, 157), (104, 151, 75),
     (105, 113, 124), (183, 91, 70), (85, 119, 168), (61, 91, 145),
@@ -672,6 +705,8 @@ def main() -> None:
     prop_sprites = build_props(terrain)
     sprites = build_buildings(manifest, buildings)
     cutaway_sprites = build_cutaways(manifest, cutaways)
+    large_building_sprites = build_large_civic_buildings(buildings)
+    large_cutaway_sprites = build_large_civic_cutaways(cutaways)
     build_characters(manifest, characters)
     held_item_sprites = build_held_items(manifest, held_items)
     square_fixture_sprites = build_square_fixtures()
@@ -707,6 +742,10 @@ def main() -> None:
                       "sprites": sprites},
         "cutaways": {"file": "style_cutaways.png", "frame": BUILDING,
                      "sprites": cutaway_sprites},
+        "large_buildings": {"file": "style_large_buildings.png", "frame": LARGE_BUILDING,
+                            "sprites": large_building_sprites},
+        "large_cutaways": {"file": "style_large_cutaways.png", "frame": LARGE_BUILDING,
+                           "sprites": large_cutaway_sprites},
         "characters": {"file": "style_characters.png", "frame": CHARACTER,
                        "cols": 3, "rows_per_variant": 4,
                        "variants": manifest["character_variants"]["variants"]},
@@ -719,7 +758,7 @@ def main() -> None:
     print("wrote style_tiles.png style_ground.png style_path_ground.png style_water_ground.png "
         "style_soil_ground.png style_stone_ground.png style_material_edges.png "
           "style_path_tiles.png style_props.png style_large_props.png style_buildings.png "
-          "style_square_fixtures.png "
+          "style_large_buildings.png style_large_cutaways.png style_square_fixtures.png "
           "style_manifest.json")
 
 

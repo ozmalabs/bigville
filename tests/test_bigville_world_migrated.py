@@ -1156,6 +1156,9 @@ def test_civic_buildings_and_town_square_fixtures_are_seeded_into_the_map():
     }
     kinds = {fixture["kind"] for fixture in state["map"]["square_fixtures"]}
     assert {"market_stall", "noticeboard", "well", "bench"} <= kinds
+    buildings = {building["type"]: building for building in state["map"]["buildings"]}
+    assert (buildings["townhall"]["w"], buildings["townhall"]["h"]) == (4, 4)
+    assert (buildings["church"]["w"], buildings["church"]["h"]) == (4, 4)
 
 
 def test_physical_building_footprints_do_not_overlap():

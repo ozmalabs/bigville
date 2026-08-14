@@ -219,6 +219,8 @@ class BigvilleScene extends Phaser.Scene {
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('style_buildings', 'assets/style_buildings.png', {frameWidth: 96, frameHeight: 96});
     this.load.spritesheet('style_cutaways', 'assets/style_cutaways.png', {frameWidth: 96, frameHeight: 96});
+    this.load.spritesheet('style_large_buildings', 'assets/style_large_buildings.png', {frameWidth: 128, frameHeight: 128});
+    this.load.spritesheet('style_large_cutaways', 'assets/style_large_cutaways.png', {frameWidth: 128, frameHeight: 128});
     this.load.spritesheet('building_interiors', 'assets/building_interiors.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
@@ -663,6 +665,17 @@ class BigvilleScene extends Phaser.Scene {
     const manifest = this.assetManifest?.buildings || {};
     const frame = (manifest.sprites || {})[building.type]
       ?? BUILDING_FRAMES[building.type] ?? BUILDING_FRAMES.house;
+
+    const largeManifest = roofOn ? this.styleManifest?.large_buildings : this.styleManifest?.large_cutaways;
+    const largeFrame = largeManifest?.sprites?.[building.type];
+    if (width === 4 && height === 4 && largeFrame !== undefined) {
+      const sprite = this.add.sprite(px + width * cellWidth / 2,
+        py + height * cellWidth / 2,
+        roofOn ? 'style_large_buildings' : 'style_large_cutaways', largeFrame)
+        .setDepth(this.depthAt(x + width / 2, y + height, 20));
+      this.objects.push(sprite);
+      return;
+    }
 
     // Preserve the authored 3x3 institution art while allowing arbitrary
     // footprints to fall back to the composable part vocabulary.

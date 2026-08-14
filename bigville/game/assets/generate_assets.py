@@ -1028,6 +1028,8 @@ def main():
             "material_edge_atlas": "style_material_edges.png",
             "path_tile_atlas": "style_path_tiles.png",
             "square_fixture_atlas": "style_square_fixtures.png",
+            "large_building_atlas": "style_large_buildings.png",
+            "large_cutaway_atlas": "style_large_cutaways.png",
             "manifest": "style_manifest.json",
             "builder": "tools/build_style_assets.py",
             "runtime_note": "the original village scene is reference-only; clients assemble masked material fields, transparent transitions, props, and facades",
