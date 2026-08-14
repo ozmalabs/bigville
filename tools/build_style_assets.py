@@ -253,19 +253,36 @@ def build_buildings(manifest: dict, buildings_sheet: Image.Image) -> dict:
     return sprites
 
 
+def build_cutaways(manifest: dict, cutaway_sheet: Image.Image) -> dict:
+    """Build roof-off companions with the same footprint and facade scale."""
+    cells = [grid_cell(cutaway_sheet, 3, 2, i) for i in range(6)]
+    names = list(manifest["buildings"]["sprites"])
+    sheet = Image.new("RGBA", (BUILDING * len(names), BUILDING), (0, 0, 0, 0))
+    sprites = {}
+    for i, name in enumerate(names):
+        frame = fit_sprite(cells[i % len(cells)], (BUILDING, BUILDING), pad=2, bottom=True)
+        sheet.alpha_composite(frame, (i * BUILDING, 0))
+        sprites[name] = i
+    sheet.save(ASSETS / "style_cutaways.png")
+    return sprites
+
+
 def main() -> None:
     manifest = json.loads((ASSETS / "manifest.json").read_text())
     terrain = Image.open(ASSETS / "style_terrain_atlas_source.png")
     buildings = Image.open(ASSETS / "style_building_atlas_source.png")
+    cutaways = Image.open(ASSETS / "style_cutaway_atlas_source.png")
     old_tiles = Image.open(ASSETS / "tileset.png")
     reference = Image.open(ASSETS / "style_source_village.png").convert("RGB")
     path_variants = build_tiles(manifest, terrain, reference, old_tiles)
     prop_sprites = build_props(terrain)
     sprites = build_buildings(manifest, buildings)
+    cutaway_sprites = build_cutaways(manifest, cutaways)
     out_manifest = {
         "source": "style_source_village.png",
         "terrain_source": "style_terrain_atlas_source.png",
         "building_source": "style_building_atlas_source.png",
+        "cutaway_source": "style_cutaway_atlas_source.png",
         "tiles": {"file": "style_tiles.png", "frame": TILE,
                   "tiles": manifest["tileset"]["tiles"]},
         "path_variants": path_variants,
@@ -274,6 +291,8 @@ def main() -> None:
                         "sprites": {"tree": 0, "bush": 1}},
         "buildings": {"file": "style_buildings.png", "frame": BUILDING,
                       "sprites": sprites},
+        "cutaways": {"file": "style_cutaways.png", "frame": BUILDING,
+                     "sprites": cutaway_sprites},
     }
     (ASSETS / "style_manifest.json").write_text(json.dumps(out_manifest, indent=2) + "\n")
     print("wrote style_tiles.png style_props.png style_large_props.png style_buildings.png style_manifest.json")

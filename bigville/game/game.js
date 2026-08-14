@@ -207,6 +207,7 @@ class BigvilleScene extends Phaser.Scene {
     this.load.spritesheet('large_props', 'assets/style_large_props.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('style_buildings', 'assets/style_buildings.png', {frameWidth: 96, frameHeight: 96});
+    this.load.spritesheet('style_cutaways', 'assets/style_cutaways.png', {frameWidth: 96, frameHeight: 96});
     this.load.spritesheet('building_interiors', 'assets/building_interiors.png', {frameWidth: 48, frameHeight: 48});
     this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
@@ -470,6 +471,14 @@ class BigvilleScene extends Phaser.Scene {
       if (roofOn && styleFrame !== undefined) {
         const sprite = this.add.sprite(px + width * cellWidth / 2,
           py + height * cellWidth / 2, 'style_buildings', styleFrame)
+          .setDepth(this.depthAt(x + width / 2, y + height, 20));
+        this.objects.push(sprite);
+        return;
+      }
+      const cutawayFrame = this.styleManifest?.cutaways?.sprites?.[building.type];
+      if (!roofOn && cutawayFrame !== undefined) {
+        const sprite = this.add.sprite(px + width * cellWidth / 2,
+          py + height * cellWidth / 2, 'style_cutaways', cutawayFrame)
           .setDepth(this.depthAt(x + width / 2, y + height, 20));
         this.objects.push(sprite);
         return;

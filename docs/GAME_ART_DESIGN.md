@@ -81,7 +81,9 @@ paths, water edges, and prop placement. It is never used as a runtime
 backdrop. The terrain and building source sheets are converted by
 `tools/build_style_assets.py` into assembled runtime atlases:
 `style_tiles.png`, `style_props.png`, `style_large_props.png`, and
-`style_buildings.png`, described by `style_manifest.json`. This keeps the
+`style_buildings.png`, plus the matching roof-off `style_cutaways.png`,
+described by `style_manifest.json`. Cutaways retain the facade, foundation,
+door, and exterior trim while exposing the furnished room. This keeps the
 original visual language while allowing every scenario to provide a different
 map and building arrangement. `stardew_like_art_direction.png`,
 `pixel_art_art_direction.png`, and `terrain_art_direction.png` remain useful

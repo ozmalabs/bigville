@@ -75,7 +75,9 @@ the original village rendering is preserved as a reference at
 [`bigville/game/assets/style_source_village.png`](bigville/game/assets/style_source_village.png),
 but it is not drawn as a backdrop. `tools/build_style_assets.py` turns the
 reference language into assembled terrain, transitions, props, and building
-facades, so scenarios can use different maps with the same cosy visual style.
+facades. It also includes matching roof-off cutaway facades with furnished
+interiors, so scenarios can use different maps with the same cosy visual style
+without falling back to a separate interior art language.
 
 ## Cognition backends
 
