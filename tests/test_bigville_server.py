@@ -49,6 +49,12 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert manifest["style_assets"]["source_reference"] == "style_source_village.png"
     style = json.loads((GAME_ROOT / "assets/style_manifest.json").read_text())
     assert style["tiles"]["file"] == "style_tiles.png"
+    assert len(style["path_variants"]) == 16
+    assert all(len(frames) == 3 for frames in style["path_variants"].values())
+    from PIL import Image
+    tiles = Image.open(GAME_ROOT / "assets/style_tiles.png").convert("RGBA")
+    assert all(tiles.crop((frame * 16, 0, frame * 16 + 16, 16)).getbbox()
+               for frames in style["path_variants"].values() for frame in frames)
     assert {"tree", "bush"} <= set(style["large_props"]["sprites"])
     assert style["buildings"]["file"] == "style_buildings.png"
     assert len(manifest["terrain"]["transition_masks"]["path"]) == 16

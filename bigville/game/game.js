@@ -320,7 +320,13 @@ class BigvilleScene extends Phaser.Scene {
       (same(x, y + 1, value) ? 4 : 0) |
       (same(x - 1, y, value) ? 8 : 0);
     if (tile === 1) {
-      const frame = transitions.path?.[String(mask(1))];
+      const pathMask = mask(1);
+      const variants = this.styleManifest?.path_variants?.[String(pathMask)];
+      if (variants?.length) {
+        const variant = Math.abs((Number(x) * 92837111 + Number(y) * 689287499) % variants.length);
+        return variants[variant];
+      }
+      const frame = transitions.path?.[String(pathMask)];
       if (frame !== undefined) return frame;
     } else if (tile === 6) {
       const frame = transitions.water?.[String(mask(6))];

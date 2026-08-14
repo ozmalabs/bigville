@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "bigville" / "game" / "assets"
@@ -94,22 +94,41 @@ def opaque_tile(image: Image.Image) -> Image.Image:
     return out.convert("RGB")
 
 
-def path_transition(grass: Image.Image, path: Image.Image, mask: int) -> Image.Image:
-    """Blend a path into grass using the existing N/E/S/W mask convention."""
+def path_transition(grass: Image.Image, path: Image.Image, mask: int,
+                    variant: int = 0) -> Image.Image:
+    """Blend an organic path edge into grass using N/E/S/W connectivity."""
     out = grass.copy()
     shape = Image.new("L", (TILE, TILE), 0)
     draw = ImageDraw.Draw(shape)
     draw.rectangle((4, 4, 11, 11), fill=255)
+    offset = ((mask * 3 + variant * 5) % 3) - 1
     if mask & 1:
-        draw.rectangle((4, 0, 11, 7), fill=255)
+        draw.polygon(((5 + offset, 0), (10 + offset, 0), (11, 8), (4, 8)), fill=255)
     if mask & 2:
-        draw.rectangle((8, 4, 15, 11), fill=255)
+        draw.polygon(((8, 4), (15, 5 + offset), (15, 10 + offset), (8, 11)), fill=255)
     if mask & 4:
-        draw.rectangle((4, 8, 11, 15), fill=255)
+        draw.polygon(((4, 8), (11, 8), (10 + offset, 15), (5 + offset, 15)), fill=255)
     if mask & 8:
-        draw.rectangle((0, 4, 7, 11), fill=255)
+        draw.polygon(((0, 5 + offset), (8, 4), (8, 11), (0, 10 + offset)), fill=255)
     out.paste(path, (0, 0), shape)
     return out
+
+
+def orient_path(path: Image.Image, mask: int, variant: int) -> Image.Image:
+    """Give a connected path the texture direction implied by its mask."""
+    horizontal = mask in (2, 8, 10)
+    if mask in (3, 12):
+        horizontal = variant == 1
+    elif mask in (6, 9):
+        horizontal = variant == 0
+    frame = path.transpose(Image.Transpose.ROTATE_90) if horizontal else path.copy()
+    # Mirroring changes the placement of stones and highlights without
+    # changing the road connection, keeping long runs from looking stamped.
+    if variant == 1:
+        frame = ImageOps.mirror(frame) if horizontal else ImageOps.flip(frame)
+    elif variant == 2:
+        frame = frame.transpose(Image.Transpose.ROTATE_180)
+    return frame
 
 
 def water_transition(water: Image.Image, shoreline: Image.Image, mask: int) -> Image.Image:
@@ -136,7 +155,7 @@ def water_transition(water: Image.Image, shoreline: Image.Image, mask: int) -> I
 
 
 def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
-                old_tiles: Image.Image) -> None:
+                old_tiles: Image.Image) -> dict[str, list[int]]:
     # The order is deliberately documented here: it is the semantic index of
     # the generated sheet, not a fragile crop coordinate in the old backdrop.
     # 0 grass, 1 alternate grass, 2 path, 3 path transition, 4 stone square,
@@ -167,7 +186,14 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
     }
     old = old_tiles.convert("RGBA")
     names = manifest["tileset"]["tiles"]
-    sheet = Image.new("RGBA", (TILE * len(names), TILE), (0, 0, 0, 0))
+    path_variants: dict[str, list[int]] = {}
+    first_extra = len(names)
+    for mask in range(16):
+        path_variants[str(mask)] = [first_extra + mask * 3,
+                                    first_extra + mask * 3 + 1,
+                                    first_extra + mask * 3 + 2]
+    total_frames = first_extra + 16 * 3
+    sheet = Image.new("RGBA", (TILE * total_frames, TILE), (0, 0, 0, 0))
     for i, name in enumerate(names):
         if name.startswith("path_transition_"):
             frame = path_transition(base[0], base[2], int(name[-2:]))
@@ -179,10 +205,17 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
                 x = names[name] * TILE
                 frame = old.crop((x, 0, x + TILE, TILE)).convert("RGB")
         sheet.paste(frame.convert("RGBA"), (i * TILE, 0))
+    for mask in range(16):
+        for variant in range(3):
+            frame = path_transition(
+                base[0], orient_path(base[2], mask, variant), mask, variant)
+            index = path_variants[str(mask)][variant]
+            sheet.paste(frame.convert("RGBA"), (index * TILE, 0))
     sheet.save(ASSETS / "style_tiles.png")
+    return path_variants
 
 
-def build_props(terrain: Image.Image) -> None:
+def build_props(terrain: Image.Image) -> dict[str, int]:
     cells = [grid_cell(terrain, 4, 4, i) for i in range(16)]
     # props.png is a 16px sheet used for small dressing; make the art legible
     # at the renderer's 2x display scale.  Large trees/bushes get their own
@@ -193,16 +226,15 @@ def build_props(terrain: Image.Image) -> None:
         props.alpha_composite(fit_sprite(cells[source_index], (TILE, TILE), pad=0),
                               (i * TILE, 0))
     props.save(ASSETS / "style_props.png")
+    large = Image.new("RGBA", (32 * 2, 32), (0, 0, 0, 0))
+    large.alpha_composite(fit_sprite(cells[10], (32, 32), pad=0, bottom=True), (0, 0))
+    large.alpha_composite(fit_sprite(cells[9], (32, 32), pad=0, bottom=True), (32, 0))
+    large.save(ASSETS / "style_large_props.png")
     return {
         "tree": 0, "flower_clump": 1, "bush": 2, "grass_tuft": 3,
         "stone": 4, "mushroom": 5, "reed": 6, "log": 7,
         "barrel": 8, "bench": 9, "stump": 10,
     }
-
-    large = Image.new("RGBA", (32 * 2, 32), (0, 0, 0, 0))
-    large.alpha_composite(fit_sprite(cells[10], (32, 32), pad=0, bottom=True), (0, 0))
-    large.alpha_composite(fit_sprite(cells[9], (32, 32), pad=0, bottom=True), (32, 0))
-    large.save(ASSETS / "style_large_props.png")
 
 
 def build_buildings(manifest: dict, buildings_sheet: Image.Image) -> dict:
@@ -227,7 +259,7 @@ def main() -> None:
     buildings = Image.open(ASSETS / "style_building_atlas_source.png")
     old_tiles = Image.open(ASSETS / "tileset.png")
     reference = Image.open(ASSETS / "style_source_village.png").convert("RGB")
-    build_tiles(manifest, terrain, reference, old_tiles)
+    path_variants = build_tiles(manifest, terrain, reference, old_tiles)
     prop_sprites = build_props(terrain)
     sprites = build_buildings(manifest, buildings)
     out_manifest = {
@@ -236,6 +268,7 @@ def main() -> None:
         "building_source": "style_building_atlas_source.png",
         "tiles": {"file": "style_tiles.png", "frame": TILE,
                   "tiles": manifest["tileset"]["tiles"]},
+        "path_variants": path_variants,
         "props": {"file": "style_props.png", "frame": TILE, "sprites": prop_sprites},
         "large_props": {"file": "style_large_props.png", "frame": 32,
                         "sprites": {"tree": 0, "bush": 1}},
