@@ -16,10 +16,10 @@ game = create_game(player="Ada", default_backend="cheap")
 state = game.step()
 ```
 
-The current export keeps the Ocelot substrate as an explicit dependency. The
-Bigville world, data, seed manifests, backend protocol, persistence model, and
-tests are in this repository; the Rust substrate runtime is built from
-`ozmalabs/ocelot` by the package dependency.
+Bigville is standalone: its graph runtime, world mechanics, seed data, backend
+protocol, persistence model, and tests are all in this repository. Cognition
+providers may be embedded, remote, deterministic, human-driven, or backed by
+another project; none is required to run the simulation.
 
 ## Development
 

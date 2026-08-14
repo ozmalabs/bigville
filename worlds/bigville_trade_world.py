@@ -16,16 +16,7 @@ state.
 """
 from __future__ import annotations
 
-import os
-import sys
-
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if os.path.join(_ROOT, "runners", "dsl", "python") not in sys.path:
-    sys.path.insert(0, os.path.join(_ROOT, "runners", "dsl", "python"))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
-
-from substrate.seed_loader import manifest_for                   # noqa: E402
+from bigville.runtime import manifest_for
 from worlds.bigville_resource_world import BigvilleResourceWorld  # noqa: E402
 
 

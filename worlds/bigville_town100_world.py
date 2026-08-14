@@ -20,7 +20,7 @@ WHAT THIS DELIVERS (BIGVILLE_CAST100_PREREG.md)
     economy adapter (imported, not copied), and mints the 100 ``Resident`` nodes
     with ``home_at`` / ``works_at`` edges to nav cells.
 
-ARCHITECTURE-RULE COMPLIANCE (experiments/gamma-substrate/CLAUDE.md)
+ARCHITECTURE-RULE COMPLIANCE (standalone Bigville architecture notes)
 -------------------------------------------------------------------
 Pure SEED-BUILDER + WORLD-ADAPTER work: the cast and the map are graph DATA
 (nodes/edges/tiles). There is NO agent decision logic here -- no rule engine, no
@@ -110,7 +110,7 @@ _PARAM_SPEC = {
 }
 
 # ---- trait-level causal-belief RESOLUTION (bin COUNT), MIXTURE draw -------
-# Grounded in docs/research/engine_substrate/
+# Grounded in docs/research/Bigville graph runtime/
 # CAUSAL_GRANULARITY_POPULATION_DISTRIBUTION_RESEARCH.md sec7 point 4 + sec8:
 # "do not expect, or design around, a single unimodal population curve" --
 # the real CRT literature (Frederick 2005 combined N=3428; Stieger & Reips

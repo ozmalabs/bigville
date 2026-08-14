@@ -1,4 +1,9 @@
-"""Ocelot backend adapter for the canonical Bigville world."""
+"""Optional graph-cognition adapter.
+
+The name is retained as a compatibility label for callers that select an
+Ocelot-style backend.  This package does not import or bundle Ocelot; an
+external provider can replace this adapter through the backend factory API.
+"""
 from __future__ import annotations
 
 from ..character import CharacterDefinition, HeldState

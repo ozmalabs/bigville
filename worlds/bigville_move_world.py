@@ -11,15 +11,15 @@ line-of-sight to John's enclosed office begins witnessing the scheme it could no
 see from its seed position, and the proven 245 witness->credibility rule
 (bd_villager_backs) flips its backing. Perception becomes DYNAMIC.
 
-ARCHITECTURE-RULE COMPLIANCE (experiments/gamma-substrate/CLAUDE.md)
+ARCHITECTURE-RULE COMPLIANCE (standalone Bigville architecture notes)
 -------------------------------------------------------------------
 This is a WORLD ADAPTER. It subclasses the scaffold (BigvilleSimWorld) by IMPORT,
 edits no tracked file, and holds NO agent decision:
 
-  * Movement runs in an ISOLATED movement substrate (`substrate_rs.Substrate`)
+  * Movement runs in an isolated Bigville graph layer
     loading two new SEED manifests (bigville_move_nav / bigville_move_energy).
     EVERY movement decision is a RULE there:
-      - `mv_relax`      : the BELLMAN flood (a rule; run_rules fixpoint = BFS
+      - `mv_relax`      : the BELLMAN flood (a rule; settle fixpoint = BFS
                           distance-to-goal field over the walkable map-belief).
       - `mv_pick_hop`   : THE movement decision (an Argmin rule descending the
                           gdist gradient to an adjacent walkable cell).
@@ -35,23 +35,13 @@ edits no tracked file, and holds NO agent decision:
     "for each villager" loops; the direction, the how-many, and the stop-at-goal
     are all rule verdicts. No `if`/`else` over agent state selects a move.
 
-Isolation (movement substrate separate from the drama substrate) means the nav/
+Isolation between navigation and social graph layers means the nav/
 energy fixpoint never cross-fires the drama rules; the ONLY bridge is `self.pos`.
 No new Rust: both seeds compose existing DSL Terms.
 """
 from __future__ import annotations
 
-import os
-import sys
-
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if os.path.join(_ROOT, "runners", "dsl", "python") not in sys.path:
-    sys.path.insert(0, os.path.join(_ROOT, "runners", "dsl", "python"))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
-
-import substrate_rs                                        # noqa: E402
-from substrate.seed_loader import manifest_for             # noqa: E402
+from bigville.runtime import BigvilleGraph, manifest_for
 from worlds.bigville_sim_world import BigvilleSimWorld, SOLID  # noqa: E402
 
 BIG = 1000000.0
@@ -67,8 +57,8 @@ ENERGY_DEFAULTS = dict(
 class BigvilleMoveWorld(BigvilleSimWorld):
     def __init__(self, **kw):
         super().__init__(**kw)
-        # ---- the ISOLATED movement substrate + its two seed manifests --------
-        self.eng = substrate_rs.Substrate()._inner
+        # ---- the ISOLATED movement graph + its two seed manifests --------
+        self.eng = BigvilleGraph()
         self.eng.load_seed_manifest(manifest_for("bigville_move_nav"), None)
         self.eng.load_seed_manifest(manifest_for("bigville_move_energy"), None)
         # block 292000: FRONTIER-INCREMENTAL predicate retraction for the
@@ -79,7 +69,7 @@ class BigvilleMoveWorld(BigvilleSimWorld):
         # the flood (mv_relax is driven by the gdist writes it reads), but the
         # hop loop kicks `mv_pick_hop` with a `has_next` write it does NOT read;
         # that kick only lands under the default BLANKET dirtier. So the flag is
-        # armed around the flood run_rules and disarmed before the hop loop. A
+        # armed around the flood settle and disarmed before the hop loop. A
         # droppable, byte-identical perf mirror (gate: the gdist field is
         # bit-identical off vs on; the unsound arm diverges; mv_pick_hop — an
         # Argmin over Neighbours reading gdist off-frontier — is engine-excluded
@@ -159,7 +149,7 @@ class BigvilleMoveWorld(BigvilleSimWorld):
             ga = self.eng.node(gs[0])["attrs"]
             goal_key = (int(ga["cx"]), int(ga["cy"]))
         # Arm frontier-incremental retraction JUST for the flood: the gdist
-        # field-clear / restore writes and the flood's run_rules. Disarmed in
+        # field-clear / restore writes and the flood's settle. Disarmed in
         # `finally` so the hop loop's `has_next` kick keeps the blanket dirtier.
         if self._use_pred_retract:
             self.eng.set_predicate_retraction(True)
@@ -170,11 +160,11 @@ class BigvilleMoveWorld(BigvilleSimWorld):
                 for nid, gd in cached.items():        # RESTORE the static-map field
                     self.eng.set_attr(nid, "gdist", gd)
             else:
-                for nid in self._cell_at.values():    # clear -> run_rules floods it
+                for nid in self._cell_at.values():    # clear -> settle floods it
                     self.eng.set_attr(nid, "gdist", BIG)
                 self._floods += 1
             self._field_owner = goal_key
-        self._cost_steps += self.eng.run_rules(1000000)  # seed goal + flood + budget
+        self._cost_steps += self.eng.settle(1000000)  # seed goal + flood + budget
         if self._use_field_cache and goal_key is not None \
                 and goal_key not in self._field_cache:
             self._field_cache[goal_key] = {              # snapshot for reuse
@@ -203,14 +193,14 @@ class BigvilleMoveWorld(BigvilleSimWorld):
         traj = []
         for _ in range(budget):
             self.eng.set_attr(m, "has_next", 0.0)
-            self._cost_steps += self.eng.run_rules(1000000)   # mv_pick_hop decides
+            self._cost_steps += self.eng.settle(1000000)   # mv_pick_hop decides
             a = self.eng.node(m)["attrs"]
             if a.get("has_next", 0.0) != 1.0:
                 break                                          # at goal / unreachable
             dest = (int(a["next_cx"]), int(a["next_cy"]))
             self._apply_hop(name, m, dest)
             self.eng.set_attr(m, "do_deplete", 1.0)
-            self._cost_steps += self.eng.run_rules(1000000)   # mv_deplete spends energy
+            self._cost_steps += self.eng.settle(1000000)   # mv_deplete spends energy
             traj.append(dest)
         return traj
 

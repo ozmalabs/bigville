@@ -10,11 +10,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.24",
-    "substrate-rs @ git+https://github.com/ozmalabs/ocelot.git@main#subdirectory=runners/dsl",
 ]
 
 [tool.setuptools.packages.find]
-include = ["bigville*", "domains*", "substrate*", "worlds*"]
+include = ["bigville*", "domains*", "worlds*"]
 
 [tool.setuptools.package-data]
 bigville = ["seeds/*.json"]

@@ -20,16 +20,7 @@ publisher), arms the extract act on arrival, and reads state.
 """
 from __future__ import annotations
 
-import os
-import sys
-
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if os.path.join(_ROOT, "runners", "dsl", "python") not in sys.path:
-    sys.path.insert(0, os.path.join(_ROOT, "runners", "dsl", "python"))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
-
-from substrate.seed_loader import manifest_for                   # noqa: E402
+from bigville.runtime import manifest_for
 from worlds.bigville_move_world import BigvilleMoveWorld         # noqa: E402
 
 
@@ -81,7 +72,7 @@ class BigvilleResourceWorld(BigvilleMoveWorld):
     # ---------------------------------------------------------------- tick
     def _run(self):
         self.eng.force_all_dirty()
-        self._cost_steps += self.eng.run_rules(1000000)
+        self._cost_steps += self.eng.settle(1000000)
 
     def step(self, *, move=True):
         """One economic tick: bump the epoch (growback fires once), then shuttle

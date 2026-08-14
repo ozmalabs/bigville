@@ -5,11 +5,11 @@ A MECHANICAL host layer that wraps the PROVEN small-cast political drama (block
 Stardew-style TOP-DOWN GRID world with a PER-AGENT sight/hearing observation
 gate, and DUMPS the graph state each step for a web viewer to read.
 
-ARCHITECTURE-RULE COMPLIANCE (experiments/gamma-substrate/CLAUDE.md)
+ARCHITECTURE-RULE COMPLIANCE (standalone Bigville architecture notes)
 ------------------------------------------------------------------
-This file is a WORLD ADAPTER. It does exactly two things around ``run_rules()``:
+This file is a WORLD ADAPTER. It does exactly two things around ``settle()``:
 
-  * INGEST -- translate the spatial world into substrate observations. The
+  * INGEST -- translate the spatial world into graph observations. The
     grid, the entity positions, and the sight/hearing geometry are MECHANICAL
     I/O (line-of-sight + range + wall-occlusion -- the same "what reaches the
     sensor" translation a camera/eye does). The gate decides only WHAT EACH
@@ -152,7 +152,7 @@ def _line(x0, y0, x1, y1):
 
 class BigvilleSimWorld:
     """The small cast placed SPATIALLY, perceiving the grid through a per-agent
-    sight/hearing gate. Wraps the proven ``BigvilleDramaWorld`` substrate; the
+    sight/hearing gate. Wraps the proven ``BigvilleDramaWorld`` graph; the
     decision rules are untouched -- only the OBSERVATION each agent receives is
     geometry-gated here (mechanical ingest)."""
 
@@ -162,7 +162,7 @@ class BigvilleSimWorld:
         self.H = len(self.grid)
         self.W = len(self.grid[0])
 
-        # the proven substrate + rules (block 245000), unchanged
+        # the proven graph runtime + rules (block 245000), unchanged
         self.d = BigvilleDramaWorld(john_psychopath=john_psychopath,
                                     mary_tom=mary_tom, deception=deception,
                                     indifferent=indifferent)
@@ -290,7 +290,7 @@ class BigvilleSimWorld:
                     self.s.set_attr(v, "heard_claim", a["heard_claim"] + 1.0)
 
         # PHASE A: John decides + states his public face (in-graph).
-        self.inner.run_rules()
+        self.inner.settle()
         held = max(0, int(self.s.node(d.jdec)["attrs"]["chosen_burn"]))
         stated = max(0, int(self.s.node(d.jdec)["attrs"]["stated_benevolent"]))
         un = self.s.add_node("PublicUtterance", {
@@ -348,7 +348,7 @@ class BigvilleSimWorld:
 
         # PHASE C: observers decide, in-graph (Mary infers/goals/claims; villagers
         # back; the REPORTER's stance is decided by the SAME bd_villager_backs rule).
-        self.inner.run_rules()
+        self.inner.settle()
 
         # EMIT the NEWSPAPER: the reporter's decided stance IS the frame (read off
         # backs_mary -- no Python decides it); mint a Newspaper node the reader
@@ -587,7 +587,7 @@ class BigvilleSimWorld:
 
     @classmethod
     def resume(cls, path, **kw):
-        """Rebuild a live sim from a dump: a fresh substrate (SAME seed manifests,
+        """Rebuild a live sim from a dump: a fresh graph (SAME seed manifests,
         so the RULES are present) with the saved graph overlaid, handles rebound by
         name. Demonstrates seed-once -> dump -> resume with the dynamics intact."""
         import json

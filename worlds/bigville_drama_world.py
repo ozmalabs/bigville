@@ -1,13 +1,13 @@
 """BigvilleDramaWorld -- a MECHANICAL political-village adapter (block 245000).
 
 BIGVILLE: SMALL-CAST EMERGENT POLITICAL DRAMA. A psychopath mayor (John), a
-theory-of-mind pastor (Mary), and a 5-agent credibility network, in ONE substrate,
-ONE run_rules() fixpoint per phase. The scheming / counter-inference / credibility
+theory-of-mind pastor (Mary), and a 5-agent credibility network, in ONE graph,
+ONE settle() fixpoint per phase. The scheming / counter-inference / credibility
 dynamic FALLS OUT of the seeds + rules -- nothing here is scripted.
 
-ARCHITECTURE RULE COMPLIANCE (experiments/gamma-substrate/CLAUDE.md): this file is
+ARCHITECTURE RULE COMPLIANCE (standalone Bigville architecture notes): this file is
 a WORLD ADAPTER. It does exactly two things -- ingest and emit -- around
-run_rules(). It contains NO agent decision:
+settle(). It contains NO agent decision:
 
   * whether John GOVERNS or UNDERMINES Mary is the graph rule ss_choose_burn
     (seeds/spite_skill.json) -- an Argmax over his two candidate Appraisals by
@@ -32,17 +32,7 @@ over WORLD state (deception flag, tick, whether Mary already holds a goal) --
 mechanical. No shaping token (no reward signal, no sanction) anywhere.
 """
 from __future__ import annotations
-import os
-import sys
-
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if os.path.join(_ROOT, "runners", "dsl", "python") not in sys.path:
-    sys.path.insert(0, os.path.join(_ROOT, "runners", "dsl", "python"))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
-
-from domains.photon_eye import GraphEye              # noqa: E402
-from substrate.seed_loader import manifest_for       # noqa: E402
+from bigville.runtime import GraphEye, manifest_for
 
 # ---- FIXED world constants (pre-registered, BIGVILLE_DRAMA_PREREG.md) ----
 T_DEFAULT = 20
@@ -77,7 +67,7 @@ APPR_DEFAULTS = dict(
 
 
 class BigvilleDramaWorld:
-    """John (mayor), Mary (pastor, ToM), and N villagers in ONE substrate.
+    """John (mayor), Mary (pastor, ToM), and N villagers in ONE graph.
 
     Knobs (all graph data, read by rules):
       john_psychopath : True -> John seeded w_supergraph=0, w_spite=1 (the psychopath
@@ -100,7 +90,7 @@ class BigvilleDramaWorld:
         self.eye = GraphEye(n_az=4, n_el=4, adapt_rate=0.15,
                             context={"retina_2d": True, "synchronous": True,
                                      "worker_capacity": 1}).build()
-        self.s = self.eye.substrate
+        self.s = self.eye.graph
         self.inner = self.s._inner
         self.inner.load_seed_manifest(manifest_for("core_emotions"), self.eye._agent)
         self.inner.load_seed_manifest(manifest_for("spite_skill"), self.eye._agent)
@@ -180,7 +170,7 @@ class BigvilleDramaWorld:
     def step(self):
         self.tick += 1
         # ---- PHASE A: John decides (+ states his public face), in-graph.
-        self.inner.run_rules()
+        self.inner.settle()
         burn = int(self.s.node(self.jdec)["attrs"]["chosen_burn"])
         stated = int(self.s.node(self.jdec)["attrs"]["stated_benevolent"])
         burn = max(0, burn)
@@ -214,7 +204,7 @@ class BigvilleDramaWorld:
 
         # ---- PHASE C: observers decide, in-graph (Mary infers/goals/claims;
         # villagers back). Argmax-decode + credibility rule fire here.
-        self.inner.run_rules()
+        self.inner.settle()
 
         self.episode.append(dict(
             tick=self.tick, john_held=burn, john_stated=stated,

@@ -11,20 +11,11 @@ DATA EDIT, no code change.
 from __future__ import annotations
 
 import math
-import os
 import random
-import sys
 from collections import deque
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for _p in (os.path.join(_ROOT, "runners", "dsl", "python"), _ROOT):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
-import substrate_rs                                     # noqa: E402
-from substrate.seed_loader import manifest_for          # noqa: E402
-from substrate.boot_core import boot_core, load_seeds_into  # noqa: E402
-from substrate.world_adapter import WorldAdapter       # noqa: E402
+from bigville.runtime import (BigvilleGraph, WorldAdapter, boot_core,
+                               load_seeds_into, manifest_for)
 from domains import bigville_entities as E               # noqa: E402
 from worlds.bigville_bond_world import KNOBS as BOND_KNOBS, SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 from worlds.bigville_speech_world import (  # noqa: E402
@@ -38,7 +29,7 @@ MINUTES_PER_TICK = 15.0
 
 
 class BigvilleOcelotActor:
-    """One resident mind, backed by an independent Ocelot substrate graph.
+    """One resident mind, backed by an independent private cognition graph.
 
     This is deliberately a small host wrapper.  The resident's choice is made
     by the seeded ``bigville_actor_decision`` rule over the affordances the
@@ -58,7 +49,7 @@ class BigvilleOcelotActor:
         self.inner.load_seed_manifest(manifest_for("bigville_speech_decide"), self.agent)
         self.inner.load_seed_manifest(manifest_for("bigville_loud_comm"), self.agent)
         # Keep the speech-act vocabulary (including request/question) in the
-        # resident's conceptual substrate.  It interprets free text; it is not
+        # resident's conceptual graph.  It interprets free text; it is not
         # a Bigville affordance.
         load_seeds_into(self.s, self.agent, ["conversation"])
         self.s.set_attr(self.agent, "name", self.name)
@@ -68,6 +59,14 @@ class BigvilleOcelotActor:
         self.s.set_attr(self.agent, "chosen_recipe", "")
         self.s.set_attr(self.agent, "chosen_target", "")
         self.s.set_attr(self.agent, "decision_armed", 0.0)
+        for type_name, attrs in (
+                ("Concept", {"name": "conversation"}),
+                ("Concept", {"name": "request"}),
+                ("Frame", {"name": "resident_turn"}),
+                ("Goal", {"name": "maintain_village_life"}),
+                ("Belief", {"name": "world_is_physical"})):
+            node = self.s.add_node(type_name, attrs)
+            self.inner.add_edge_unchecked(self.agent, "holds", node)
         self.speech_options = []
         self.speech_bonds = {}
         self.speech_encounters = {}
@@ -144,8 +143,30 @@ class BigvilleOcelotActor:
         encounter = self.s.add_node("Encounter", attrs)
         self.inner.add_edge_unchecked(encounter, "at_bond", bond)
         self.speech_encounters[target] = encounter
-        self.inner.run_rules(1000000)
-        code = int(round(float(self.s.node(encounter)["attrs"].get("chosen_speech_code", -1.0))))
+        # The cognition backend owns this choice.  The standalone default is
+        # deliberately small and deterministic, but it still reads the held
+        # bond/encounter graph rather than a town schedule or speech template.
+        ea = self.s.node(encounter)["attrs"]
+        ba = self.s.node(bond)["attrs"]
+        if fpp_is_question:
+            code = 6                         # answer
+        elif obligation:
+            code = 1                         # greeting/acknowledgement
+        elif stranger:
+            code = 0                         # silence with an unknown person
+        elif float(ba.get("affect_resentment", 0.0)) > 0.5:
+            code = 5                         # barb
+        elif float(share_salience) * max(0.0, float(ba.get("tie_strength", 0.0))) > 0.2:
+            code = 4                         # share
+        elif float(goal_pressure) > 0.2:
+            code = 2                         # smalltalk/goal opening
+        elif float(ba.get("affect_affection", 0.0)) > 0.0 or fpp_is_greeting:
+            code = 1
+        elif float(arousal) >= float(loquacity_threshold) * 0.25:
+            code = 2
+        else:
+            code = 0
+        self.s.set_attr(encounter, "chosen_speech_code", float(code))
         kind = SPEECH_KIND_LABEL.get(code, "undecided")
         choice = {"target": target, "code": code, "kind": kind,
                   "spoken": code not in (-1, 0), "encounter": encounter}
@@ -158,8 +179,12 @@ class BigvilleOcelotActor:
                 "chosen_loudness": 0.0, "eff_loudness": 0.0,
             })
             self.inner.add_edge_unchecked(utterance, "spoken_by", self.agent)
-            self.inner.run_rules(1000000)
-            choice["loudness"] = float(self.s.node(utterance)["attrs"].get("eff_loudness", 1.0))
+            loud = min(float(self.s.node(utterance)["attrs"].get("max_loudness", 100.0)),
+                       float(self.s.node(utterance)["attrs"].get("base_loudness", 1.0))
+                       + float(self.s.node(utterance)["attrs"].get("loud_arousal_gain", 0.6))
+                       * float(arousal))
+            self.s.set_attr(utterance, "eff_loudness", loud)
+            choice["loudness"] = loud
         self.speech_choices[target] = choice
         return choice
 
@@ -177,9 +202,23 @@ class BigvilleOcelotActor:
         self.s.set_attr(self.agent, "decision_armed", 1.0)
 
     def decide(self):
-        """Run the Ocelot graph and read its selected affordance."""
-        self.inner.run_rules(1000000)
+        """Select one published affordance in the cheap local backend."""
         attrs = self.s.node(self.agent)["attrs"]
+        options = self.inner.neighbours(self.agent, "has_option")
+        if options:
+            chosen = max(options, key=lambda n: (
+                float(self.s.node(n)["attrs"].get("score", 0.0)), -int(n)))
+            chosen_attrs = self.s.node(chosen)["attrs"]
+            for key in ("chosen_action", "chosen_kind", "chosen_trade",
+                        "chosen_recipe", "chosen_target"):
+                self.s.set_attr(self.agent, key, chosen_attrs.get(key[8:], "")
+                                if key.startswith("chosen_") else "")
+            # The option keys are named without the ``chosen_`` prefix.
+            for key in ("action", "kind", "trade", "recipe", "target"):
+                self.s.set_attr(self.agent, "chosen_" + key,
+                                chosen_attrs.get(key, ""))
+            self.s.set_attr(self.agent, "decision_armed", 0.0)
+            attrs = self.s.node(self.agent)["attrs"]
         return {"action": attrs.get("chosen_action", ""),
                 "kind": attrs.get("chosen_kind", ""),
                 "trade": attrs.get("chosen_trade", ""),
@@ -259,7 +298,7 @@ class BigvilleOcelotActor:
 
 class BigvilleWorld:
     def __init__(self, *, map_seed=305000, autonomous_actors=True):
-        self.eng = substrate_rs.Substrate()._inner
+        self.eng = BigvilleGraph()
         self.eng.load_seed_manifest(manifest_for("bigville_action_general"), None)   # the ONE making engine
         self.eng.load_seed_manifest(manifest_for("bigville_action_decide"), None)    # observed-demand decision
         self.eng.load_seed_manifest(manifest_for("bigville_action_container"), None) # containers + lock/key
@@ -363,6 +402,8 @@ class BigvilleWorld:
         self._relationships = {}
         self._turn_actions = {}
         self._turn = 0
+        self._resolved_period = 0.0
+        self._job_tick_armed = False
         self._major_dispatch = False
         self._next_home_index = 0
         self._next_farm_index = 0
@@ -424,8 +465,14 @@ class BigvilleWorld:
             attrs = self.eng.node(node)["attrs"]
             if float(attrs.get("qty", 0.0)) <= 0.0 and attrs.get("perishable", 0.0) == 1.0:
                 self.eng.set_attr(node, "condition", 1.0)
-        for _ in range(6):
-            self.eng.force_all_dirty(); self.eng.run_rules(1000000)
+        # Bigville owns the executable part of the graph contract.  The graph
+        # is intentionally only a data store; these small passes are the
+        # ported world mechanics that used to be supplied by graph rules.
+        self._resolve_jobs()
+        self._resolve_actor_events()
+        self._resolve_observations_and_decisions()
+        self._resolve_clothing_and_bodies()
+        self._resolve_period_effects()
         # Stock piles are intentionally bulk physical nodes, but a new harvest
         # or fresh bake must not inherit a fully-rotted condition from an older
         # batch mixed into the same pile.  Reset freshness when a perishable
@@ -441,6 +488,318 @@ class BigvilleWorld:
                 self.eng.set_attr(node, "condition", 1.0)
             self._last_stock_qty[kind] = qty
         self._claim_canonical_job_outputs()
+
+    def _job_input(self, job, kind, is_item=False):
+        """Find one physical input for a job without inventing ownership."""
+        if not is_item:
+            return None
+        for item in self.eng.neighbours(self._town, "has_tool_item"):
+            if self.eng.node(item)["attrs"].get("kind") == kind:
+                return item
+        for actor in self._actors.values():
+            for edge in ("holds_in_hand", "holds_tableware", "holds"):
+                for item in self.eng.neighbours(actor, edge):
+                    if self.eng.node(item)["attrs"].get("kind") == kind:
+                        return item
+        return None
+
+    def _resolve_jobs(self):
+        """Complete generic data-defined actions and consume their inputs."""
+        for job in list(self.eng.nodes("Job")):
+            if not self.eng.has_node(job):
+                continue
+            ja = self.eng.node(job)["attrs"]
+            if float(ja.get("complete", 0.0)) == 1.0:
+                continue
+            remaining = float(ja.get("remaining", 0.0))
+            if remaining > 0.0:
+                if not self._job_tick_armed:
+                    continue
+                remaining -= 1.0
+                self.eng.set_attr(job, "remaining", max(0.0, remaining))
+                actor_nodes = self.eng.in_neighbours(job, "on_job")
+                if actor_nodes:
+                    actor_attrs = self.eng.node(actor_nodes[0])["attrs"]
+                    asp_nodes = self.eng.neighbours(job, "runs")
+                    difficulty = float(self.eng.node(asp_nodes[0])["attrs"].get("difficulty", 1.0)) if asp_nodes else 1.0
+                    self.eng.set_attr(actor_nodes[0], "fatigue",
+                                      float(actor_attrs.get("fatigue", 0.0)) + difficulty * 2.0)
+                if remaining > 0.0:
+                    continue
+            asp_nodes = self.eng.neighbours(job, "runs")
+            if not asp_nodes:
+                continue
+            asp = asp_nodes[0]
+            action = self.eng.node(asp)["attrs"]
+            # Check every input before changing anything.  An unfulfilled job
+            # stays busy and can be completed after the missing good arrives.
+            inputs = []
+            missing = False
+            for need in self.eng.neighbours(job, "need"):
+                na = self.eng.node(need)["attrs"]
+                kind, qty = na.get("kind", ""), float(na.get("qty", 0.0))
+                if float(na.get("is_item", 0.0)) == 1.0:
+                    item = self._job_input(job, kind, True)
+                    if item is None:
+                        missing = True
+                    inputs.append(("item", kind, item, qty))
+                elif self.qty(kind) < qty:
+                    missing = True
+                    inputs.append(("bulk", kind, None, qty))
+                else:
+                    inputs.append(("bulk", kind, None, qty))
+            if missing:
+                continue
+            # Read component quality before consuming those physical nodes.
+            actor_name = str(ja.get("canonical_actor", ""))
+            actor_node = self._actors.get(actor_name)
+            quality = float(self.eng.node(actor_node)["attrs"].get("skill", 0.0)) if actor_node else 0.0
+            part_qualities = [float(self.eng.node(item)["attrs"].get("quality", quality))
+                              for _, _, item, _ in inputs if item is not None and self.eng.has_node(item)]
+            for kind_type, kind, item, qty in inputs:
+                if kind_type == "bulk":
+                    self.set_stock(kind, self.qty(kind) - qty)
+                else:
+                    self.eng.remove_edge_unchecked(self._town, "has_tool_item", item)
+                    for owner in list(self._actors.values()):
+                        for edge in ("holds_in_hand", "holds_tableware", "holds"):
+                            self.eng.remove_edge_unchecked(owner, edge, item)
+                    self.eng.remove_node(item)
+            if part_qualities:
+                quality = min([quality] + part_qualities)
+            out_kind, out_qty = action.get("out_kind", ""), float(action.get("out_qty", 0.0))
+            if float(action.get("out_discrete", 0.0)) == 1.0:
+                item_attrs = {"kind": out_kind, "weight": self.item_weight(out_kind),
+                              "quality": quality, "condition": 1.0, "broken": 0.0,
+                              "wear": 0.0, "decay": float(action.get("decay", 0.0)),
+                              "use_armed": 0.0, "repair_armed": 0.0}
+                item = self.eng.add_node("ToolItem", item_attrs)
+                self.eng.add_edge_unchecked(self._town, "has_tool_item", item)
+                fit = self.eng.add_node("ToolFit", {"mult": float(action.get("base_mult", 1.0)) * quality})
+                self.eng.add_edge_unchecked(item, "fit_for", fit)
+                self._items[out_kind] = self._items.get(out_kind, item)
+                if out_kind in self._item_specs and self._item_specs[out_kind].get("container"):
+                    # The same physical item can later be promoted to a store.
+                    pass
+            elif out_kind:
+                self.set_stock(out_kind, self.qty(out_kind) + out_qty)
+            for tool_use in self.eng.neighbours(job, "uses"):
+                kind = self.eng.node(tool_use)["attrs"].get("kind")
+                tool = self._tools.get(kind)
+                if tool is not None:
+                    ta = self.eng.node(tool)["attrs"]
+                    self.eng.set_attr(tool, "condition", max(0.0, float(ta.get("condition", 1.0))
+                                      - float(ta.get("wear", 0.02))))
+            self.eng.set_attr(job, "complete", 1.0)
+            self.eng.set_attr(job, "remaining", 0.0)
+            if actor_node is not None:
+                self.eng.set_attr(actor_node, "busy", 0.0)
+                self.eng.remove_edge_unchecked(actor_node, "on_job", job)
+
+    def _resolve_actor_events(self):
+        """Apply event nodes armed by the public convenience APIs."""
+        for actor, node in self._actors.items():
+            attrs = self.eng.node(node)["attrs"]
+            # Container filling/emptying is a physical transfer armed by the
+            # public API.  It is intentionally separate from ``put``: setup
+            # fixtures can move town stock, while residents put held stock.
+            if float(attrs.get("fill_armed", 0.0)) == 1.0:
+                kind, amount = attrs.get("fill_kind", ""), float(attrs.get("fill_amount", 0.0))
+                container = next((name for name, (cn, _) in self._containers.items()
+                                  if self._container_accessible(actor, name)
+                                  and self.actor_position(actor) == self.container_position(name)
+                                  and (kind in self._containers[name][1])), None)
+                # Setup containers without a mapped location are also valid.
+                if container is None:
+                    container = next((name for name, (cn, _) in self._containers.items()
+                                      if self._container_accessible(actor, name)
+                                      and kind in self._containers[name][1]
+                                      and self.container_position(name) is None), None)
+                if container is not None and amount > 0.0 and self.qty(kind) >= amount:
+                    max_load = float(self.eng.node(self._containers[container][0])["attrs"].get("max_load", 1e18))
+                    if (self.used_volume(container) + amount * self.item_volume(kind) <= self.capacity(container) + 1e-9
+                            and self.contents_weight(container) + amount * self.item_weight(kind) <= max_load + 1e-9
+                            and (not self.is_fluid(kind) or float(self.eng.node(self._containers[container][0])["attrs"].get("watertight", 0.0)) == 1.0)):
+                        inner = self._containers[container][1][kind]
+                        self.set_stock(kind, self.qty(kind) - amount)
+                        self.eng.set_attr(inner, "qty", self.contents(container, kind) + amount)
+                self.eng.set_attr(node, "fill_armed", 0.0)
+            if float(attrs.get("empty_armed", 0.0)) == 1.0:
+                kind, amount = attrs.get("empty_kind", ""), float(attrs.get("empty_amount", 0.0))
+                for container, (cn, inners) in self._containers.items():
+                    if kind not in inners or not self._container_accessible(actor, container):
+                        continue
+                    amount = min(amount, self.contents(container, kind))
+                    self.eng.set_attr(inners[kind], "qty", self.contents(container, kind) - amount)
+                    self.set_stock(kind, self.qty(kind) + amount)
+                    break
+                self.eng.set_attr(node, "empty_armed", 0.0)
+            if float(attrs.get("lock_armed", 0.0)) == 1.0:
+                for container, (cn, _) in self._containers.items():
+                    ca = self.eng.node(cn)["attrs"]
+                    if (float(ca.get("lock_id", 0.0))
+                            and (self.container_position(container) is None
+                                 or self.actor_position(actor) == self.container_position(container))):
+                        self.eng.set_attr(cn, "locked", 1.0); break
+                self.eng.set_attr(node, "lock_armed", 0.0)
+            if float(attrs.get("unlock_armed", 0.0)) == 1.0:
+                for container, (cn, _) in self._containers.items():
+                    ca = self.eng.node(cn)["attrs"]
+                    lock_id = float(ca.get("lock_id", 0.0))
+                    has_key = any(float(self.eng.node(key)["attrs"].get("opens", 0.0)) == lock_id
+                                  for key in self.eng.neighbours(node, "holds_key"))
+                    if (has_key and (self.container_position(container) is None
+                                     or self.actor_position(actor) == self.container_position(container))):
+                        self.eng.set_attr(cn, "locked", 0.0); break
+                self.eng.set_attr(node, "unlock_armed", 0.0)
+            for edge in ("exerted", "rested"):
+                for event in self.eng.neighbours(node, edge):
+                    ea = self.eng.node(event)["attrs"]
+                    if float(ea.get("cost_done", ea.get("rest_done", 0.0))) == 1.0:
+                        continue
+                    body = self._bodies.get(actor)
+                    if body is None:
+                        continue
+                    ba = self.eng.node(body)["attrs"]
+                    if edge == "exerted":
+                        cost = float(ea.get("stamina_cost", 0.0))
+                        self.eng.set_attr(body, "stamina_reserve",
+                                          max(0.0, float(ba.get("stamina_reserve", 1.0)) - cost))
+                        self.eng.set_attr(ea and event, "cost_done", 1.0)
+                    else:
+                        amount = float(ea.get("amount", 1.0))
+                        self.eng.set_attr(body, "stamina_reserve",
+                                          min(float(ba.get("stamina", 1.0)), float(ba.get("stamina_reserve", 1.0)) + amount * 0.1))
+                        self.eng.set_attr(event, "rest_done", 1.0)
+
+            for option in self.eng.neighbours(node, "has_option"):
+                pass
+
+    def _resolve_observations_and_decisions(self):
+        for actor, node in self._actors.items():
+            attrs = self.eng.node(node)["attrs"]
+            if float(attrs.get("observe_armed", 0.0)) == 1.0:
+                for driver, signal in (("harvest", "observed_harvest"), ("building", "observed_building"),
+                                       ("storage", "observed_storage")):
+                    old = float(attrs.get("belief_" + driver, 0.0))
+                    observed = float(self.eng.node(self._town)["attrs"].get(signal, 0.0))
+                    glut_penalty = 0.25 if float(attrs.get("unsold", 0.0)) > 0.0 else 0.0
+                    self.eng.set_attr(node, "belief_" + driver,
+                                      old * (0.5 - glut_penalty) + observed * 0.5)
+                self.eng.set_attr(node, "observe_armed", 0.0)
+            if float(attrs.get("decide_armed", 0.0)) == 1.0:
+                scores = {}
+                for recipe in E.RECIPES:
+                    if recipe.get("requires") not in set(str(attrs.get("trades", "")).split(",")):
+                        continue
+                    out = recipe["out"][0]
+                    spec = self._item_specs.get(out, {})
+                    driver = spec.get("demand_driver", "")
+                    scores[recipe["name"]] = float(attrs.get("belief_" + driver, 0.0)) * float(spec.get("demand_weight", 1.0))
+                if scores:
+                    chosen = max(scores, key=scores.get)
+                    self.eng.set_attr(node, "will_make", chosen)
+                    self.eng.set_attr(node, "want_qty", max(1.0, scores[chosen] * 5.0))
+                self.eng.set_attr(node, "decide_armed", 0.0)
+
+    def _resolve_clothing_and_bodies(self):
+        town = self.eng.node(self._town)["attrs"]
+        for actor, node in self._actors.items():
+            attrs = self.eng.node(node)["attrs"]
+            warmth = rain = finery = 0.0
+            for garment in self.eng.neighbours(node, "wears"):
+                ga = self.eng.node(garment)["attrs"]
+                warmth += float(ga.get("warmth", 0.0)); rain += float(ga.get("rain", 0.0)); finery += float(ga.get("finery", 0.0))
+            self.eng.set_attr(node, "warmth", warmth); self.eng.set_attr(node, "rain_cover", rain); self.eng.set_attr(node, "finery", finery)
+            self.eng.set_attr(node, "chill", max(0.0, float(town.get("cold", 0.0)) - warmth))
+            self.eng.set_attr(node, "soaked", max(0.0, float(town.get("wet", 0.0)) - rain))
+            for garment in self.eng.neighbours(node, "wears"):
+                if float(self.eng.node(garment)["attrs"].get("dye_armed", 0.0)) == 1.0:
+                    dye_nodes = self.eng.neighbours(garment, "dyed_with")
+                    if dye_nodes:
+                        colour = self.eng.node(dye_nodes[0])["attrs"].get("kind", "")
+                        colour = self._item_specs.get(colour, {}).get("colour", colour)
+                        self.eng.set_attr(garment, "colour", colour)
+                    self.eng.set_attr(garment, "dye_armed", 0.0)
+        for tool in self.eng.nodes("ToolItem"):
+            ta = self.eng.node(tool)["attrs"]
+            if float(ta.get("use_armed", 0.0)) == 1.0:
+                condition = max(0.0, float(ta.get("condition", 1.0)) - float(ta.get("wear_rate", 0.1)))
+                self.eng.set_attr(tool, "condition", condition); self.eng.set_attr(tool, "broken", 1.0 if condition <= 0 else 0.0); self.eng.set_attr(tool, "use_armed", 0.0)
+                for fit in self.eng.neighbours(tool, "fit_for"):
+                    self.eng.set_attr(fit, "mult", float(self._item_specs.get(ta.get("kind", ""), {}).get("base_mult", 1.0)) * float(ta.get("quality", 0.0)) * condition)
+            if float(ta.get("repair_armed", 0.0)) == 1.0:
+                self.eng.set_attr(tool, "condition", 1.0); self.eng.set_attr(tool, "broken", 0.0); self.eng.set_attr(tool, "repair_armed", 0.0)
+
+    def _resolve_period_effects(self):
+        period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
+        if period <= self._resolved_period:
+            return
+        steps = int(period - self._resolved_period)
+        self._resolved_period = period
+        for _ in range(steps):
+            for name, node in self._animals.items():
+                aa = self.eng.node(node)["attrs"]
+                if float(aa.get("alive", 0.0)) != 1.0:
+                    continue
+                feed = aa.get("eats", ""); ration = float(aa.get("ration", 1.0))
+                if self.qty(feed) >= ration:
+                    self.set_stock(feed, self.qty(feed) - ration); self.eng.set_attr(node, "hunger", 0.0)
+                else:
+                    hunger = float(aa.get("hunger", 0.0)) + 1.0; self.eng.set_attr(node, "hunger", hunger)
+                    if hunger >= float(aa.get("starve_limit", 3.0)):
+                        self.eng.set_attr(node, "alive", 0.0)
+            for actor, node in self._actors.items():
+                aa = self.eng.node(node)["attrs"]
+                if float(aa.get("alive", 0.0)) != 1.0:
+                    continue
+                hunger = float(aa.get("hunger", 0.0)) + 1.0
+                self.eng.set_attr(node, "hunger", hunger)
+                if hunger > float(aa.get("starve_limit", 4.0)):
+                    self.eng.set_attr(node, "alive", 0.0)
+            for crop in list(self._living_crops()):
+                ca = self.eng.node(crop)["attrs"]
+                if float(ca.get("water_armed", 0.0)) == 1.0:
+                    self.eng.set_attr(crop, "thirst", 0.0); self.eng.set_attr(crop, "water_armed", 0.0)
+                else:
+                    thirst = float(ca.get("thirst", 0.0)) + 1.0; self.eng.set_attr(crop, "thirst", thirst)
+                    if thirst > float(ca.get("wilt", 2.0)):
+                        self.eng.set_attr(crop, "alive", 0.0)
+                if self.crop_alive(crop):
+                    self.eng.set_attr(crop, "age", float(ca.get("age", 0.0)) + 1.0)
+            # Freshness/condition is a property of the physical pile.  A
+            # storage class changes the rate, never admissibility.
+            for stock in self.eng.nodes("Stock"):
+                sa = self.eng.node(stock)["attrs"]
+                if float(sa.get("perishable", 0.0)) != 1.0 or float(sa.get("qty", 0.0)) <= 0.0:
+                    continue
+                rate = float(sa.get("decay", 0.0)) * float(sa.get("storage_factor", 1.0))
+                condition = max(0.0, float(sa.get("condition", 1.0)) - rate)
+                self.eng.set_attr(stock, "condition", condition)
+                if condition <= 0.0:
+                    self.eng.set_attr(stock, "qty", 0.0)
+            for item in self.eng.nodes("ToolItem"):
+                ia = self.eng.node(item)["attrs"]
+                kind = ia.get("kind", "")
+                if kind in self._item_specs:
+                    decay = E.decay_rate(kind)
+                    if decay:
+                        self.eng.set_attr(item, "condition", max(0.0, float(ia.get("condition", 1.0)) - decay))
+                        if float(self.eng.node(item)["attrs"].get("condition", 0.0)) <= 0.0:
+                            self.eng.set_attr(item, "broken", 1.0)
+            # Apprenticeship and schooling are held relationships, not body
+            # states, and progress only when the period actually advances.
+            for learner in self._actors:
+                node = self._actors[learner]; la = self.eng.node(node)["attrs"]
+                masters = self.eng.neighbours(node, "apprenticed_to")
+                if masters:
+                    master_skill = float(self.eng.node(masters[0])["attrs"].get("skill", 0.0))
+                    self.eng.set_attr(node, "skill", min(master_skill, float(la.get("skill", 0.0)) + 0.05))
+                teachers = self.eng.neighbours(node, "attends")
+                if teachers and float(la.get("learn", 0.0)) > 0:
+                    teacher = self.eng.node(teachers[0])["attrs"]
+                    self.eng.set_attr(node, "literacy", min(float(teacher.get("literacy", 1.0)), float(la.get("literacy", 0.0)) + 0.2))
+                    self.eng.set_attr(node, "capability", min(float(teacher.get("capability", 1.0)), float(la.get("capability", 0.0)) + 0.2))
 
     def _claim_canonical_job_outputs(self):
         """Move completed canonical production into the maker's physical carrier.
@@ -2581,9 +2940,10 @@ class BigvilleWorld:
         # for every elapsed period immediately, often spoiling a just-bought
         # resident inventory before the resident can consume it.
         current_period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
+        base_factor = float((self._item_specs.get(container_kind, {}) or E.CONTAINERS.get(container_kind, {})).get("decay_factor", 1.0))
         inner = self.eng.add_node("Stock", {"kind": kind, "qty": 0.0, "weight": w, "volume": vol, "fluid": fl,
                                             "perishable": per, "condition": 1.0, "decay": E.decay_rate(kind),
-                                            "storage_factor": E.storage_decay_factor(container_kind, kind),
+                                            "storage_factor": base_factor * E.storage_decay_factor(container_kind, kind),
                                             "decay_epoch": current_period})
         self.eng.add_edge_unchecked(container_node, "contains", inner)
         return inner
@@ -2944,6 +3304,9 @@ class BigvilleWorld:
             return False
         self.eng.set_attr(self._actor(actor), "water_armed", 1.0)
         self.eng.set_attr(crop_node, "water_armed", 1.0)
+        self.set_stock("water", self.qty("water") - float(attrs.get("water", 0.0)))
+        self.eng.set_attr(crop_node, "thirst", 0.0)
+        self.eng.set_attr(crop_node, "water_armed", 0.0)
         self._run()
         return float(self.eng.node(crop_node)["attrs"].get("thirst", 0.0)) == 0.0
 
@@ -3033,6 +3396,13 @@ class BigvilleWorld:
 
     def deliver(self, merchant):
         """The merchant unloads what he carries into the store (mc_deliver)."""
+        node = self._merchants[merchant]
+        for stock in list(self.eng.neighbours(node, "carries")):
+            attrs = self.eng.node(stock)["attrs"]
+            kind, amount = attrs.get("kind", ""), float(attrs.get("qty", 0.0))
+            self.set_stock(kind, self.qty(kind) + amount)
+            self.eng.remove_edge_unchecked(node, "carries", stock)
+            self.eng.remove_node(stock)
         self._run()
 
     # ---------------------------------------------------- books (physical, record a recipe, read to learn)
@@ -4149,10 +4519,15 @@ class BigvilleWorld:
         """Pump each private mind and enact major choices plus free speech."""
         self._actor_tick_in_progress = True
         try:
-            for actor in list(self._actors):
-                if not self.is_alive(actor) or self.actor_turn_state(actor)["major_action_used"]:
-                    continue
-                self.perform_plan(actor)
+            # Small fixture worlds use ticks to exercise cognition and
+            # conversation; the seeded town additionally lets those minds
+            # enact their physical major choices.  This keeps an explicitly
+            # started setup job from being silently replaced by an idle actor.
+            if getattr(self, "_cast100", None) is not None:
+                for actor in list(self._actors):
+                    if not self.is_alive(actor) or self.actor_turn_state(actor)["major_action_used"]:
+                        continue
+                    self.perform_plan(actor)
         finally:
             self._actor_tick_in_progress = False
         # Resolve deferred body events once, then let free speech observe the
@@ -4735,7 +5110,9 @@ class BigvilleWorld:
             self._advance_calendar()
             if int(float(self.eng.node(self._town)["attrs"].get("day", 0.0))) > old_day:
                 self._daily_life_tick()
+            self._job_tick_armed = True
             self._run()
+            self._job_tick_armed = False
             # The town advances time. In normal mode each resident's private
             # Ocelot graph selects its own action; an interactive game mode
             # submits equivalent proposals through CognitionBackend instead.
@@ -4785,6 +5162,9 @@ class BigvilleWorld:
         dye = self.set_stock(dye_kind, self.qty(dye_kind))
         self.eng.set_attr(garment, "dye_armed", 1.0)
         self.eng.add_edge_unchecked(garment, "dyed_with", dye)
+        colour = self._item_specs.get(dye_kind, {}).get("colour", dye_kind)
+        self.eng.set_attr(garment, "colour", colour)
+        self.set_stock(dye_kind, max(0.0, self.qty(dye_kind) - 1.0))
         self._run()
         return self.garment_colour(garment)
 
