@@ -90,4 +90,6 @@ map and building arrangement. `stardew_like_art_direction.png`,
 art-direction studies. Resident sprites use the same rule: the generated
 `style_characters.png` atlas contains 32px full-body directional idle and walk
 frames, while role/age variants retain their existing manifest indices and
-clothing palette cues.
+clothing palette cues. `style_held_items.png` supplies recognizable 16px
+hand-held silhouettes, positioned relative to the animated actor rather than
+the map cell.

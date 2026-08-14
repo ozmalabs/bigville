@@ -80,6 +80,8 @@ interiors, so scenarios can use different maps with the same cosy visual style
 without falling back to a separate interior art language. Residents use a
 32px directional walk-cycle atlas with idle, step-A, and step-B frames, so
 movement is rendered as a short physical walk between simulation cells.
+Common hand-held objects use a separate detailed atlas and are anchored to the
+walking hand rather than floating at a fixed map offset.
 
 ## Cognition backends
 

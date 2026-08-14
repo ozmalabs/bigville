@@ -17,6 +17,7 @@ ASSETS = ROOT / "bigville" / "game" / "assets"
 TILE = 16
 BUILDING = 96
 CHARACTER = 32
+HELD_ITEM = 16
 
 MAGENTA = (255, 0, 255)
 
@@ -310,12 +311,33 @@ def build_characters(manifest: dict, character_sheet: Image.Image) -> None:
     sheet.save(ASSETS / "style_characters.png")
 
 
+HELD_ITEM_NAMES = [
+    "wooden_mug", "wooden_bowl", "wooden_ladle", "wooden_serving_spoon",
+    "wooden_dipper", "pick", "axe", "hoe", "bread", "basket", "book",
+    "hammer", "milk_pail", "shears", "fishing_rod", "parcel",
+]
+
+
+def build_held_items(manifest: dict, item_sheet: Image.Image) -> dict[str, int]:
+    """Build recognizable small hand-held art for common carried objects."""
+    cells = [grid_cell(item_sheet, 4, 4, i) for i in range(16)]
+    sheet = Image.new("RGBA", (HELD_ITEM * len(HELD_ITEM_NAMES), HELD_ITEM), (0, 0, 0, 0))
+    sprites = {}
+    for index, name in enumerate(HELD_ITEM_NAMES):
+        frame = fit_sprite(cells[index], (HELD_ITEM, HELD_ITEM), pad=0, bottom=False)
+        sheet.alpha_composite(frame, (index * HELD_ITEM, 0))
+        sprites[name] = index
+    sheet.save(ASSETS / "style_held_items.png")
+    return sprites
+
+
 def main() -> None:
     manifest = json.loads((ASSETS / "manifest.json").read_text())
     terrain = Image.open(ASSETS / "style_terrain_atlas_source.png")
     buildings = Image.open(ASSETS / "style_building_atlas_source.png")
     cutaways = Image.open(ASSETS / "style_cutaway_atlas_source.png")
     characters = Image.open(ASSETS / "style_character_walk_atlas_source.png")
+    held_items = Image.open(ASSETS / "style_held_items_atlas_source.png")
     old_tiles = Image.open(ASSETS / "tileset.png")
     reference = Image.open(ASSETS / "style_source_village.png").convert("RGB")
     path_variants = build_tiles(manifest, terrain, reference, old_tiles)
@@ -323,12 +345,14 @@ def main() -> None:
     sprites = build_buildings(manifest, buildings)
     cutaway_sprites = build_cutaways(manifest, cutaways)
     build_characters(manifest, characters)
+    held_item_sprites = build_held_items(manifest, held_items)
     out_manifest = {
         "source": "style_source_village.png",
         "terrain_source": "style_terrain_atlas_source.png",
         "building_source": "style_building_atlas_source.png",
         "cutaway_source": "style_cutaway_atlas_source.png",
         "character_source": "style_character_walk_atlas_source.png",
+        "held_item_source": "style_held_items_atlas_source.png",
         "tiles": {"file": "style_tiles.png", "frame": TILE,
                   "tiles": manifest["tileset"]["tiles"]},
         "path_variants": path_variants,
@@ -342,6 +366,8 @@ def main() -> None:
         "characters": {"file": "style_characters.png", "frame": CHARACTER,
                        "cols": 3, "rows_per_variant": 4,
                        "variants": manifest["character_variants"]["variants"]},
+        "held_items": {"file": "style_held_items.png", "frame": HELD_ITEM,
+                       "sprites": held_item_sprites},
     }
     (ASSETS / "style_manifest.json").write_text(json.dumps(out_manifest, indent=2) + "\n")
     print("wrote style_tiles.png style_props.png style_large_props.png style_buildings.png style_manifest.json")

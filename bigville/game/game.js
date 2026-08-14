@@ -212,6 +212,7 @@ class BigvilleScene extends Phaser.Scene {
     this.load.spritesheet('building_parts', 'assets/building_parts.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('items', 'assets/items.png', {frameWidth: TILE, frameHeight: TILE});
+    this.load.spritesheet('held_items', 'assets/style_held_items.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('characters', 'assets/style_characters.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('actions', 'assets/actions.png', {frameWidth: 16, frameHeight: 16});
   }
@@ -284,13 +285,14 @@ class BigvilleScene extends Phaser.Scene {
       const frame = this.residentFrame(resident, 0, direction);
       const moving = Number(previousPosition[0]) !== Number(pos[0]) ||
         Number(previousPosition[1]) !== Number(pos[1]);
+      const actorScale = 1;
       const sprite = this.add.sprite(this.cellX(previousPosition[0]), this.cellY(previousPosition[1]), 'characters', frame)
-        .setScale(1).setDepth(this.depthAt(pos[0], pos[1], 30));
+        .setScale(actorScale).setDepth(this.depthAt(pos[0], pos[1], 30));
       sprite.setInteractive({useHandCursor: true});
       sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
-      if (resident.id === snapshot.player) sprite.setScale(DISPLAY_SCALE * 1.45).setTint(0xffe1a8);
+      if (resident.id === snapshot.player) sprite.setTint(0xffe1a8);
       this.objects.push(sprite);
-      this.drawResidentItems(resident, pos);
+      this.drawResidentItems(resident, pos, sprite, direction);
       if (moving) this.animateWalking(sprite, resident, direction, pos);
       if (resident.id === snapshot.player && !this.hasCentered) {
         this.cameras.main.centerOn(this.cellX(pos[0]), this.cellY(pos[1]));
@@ -343,6 +345,12 @@ class BigvilleScene extends Phaser.Scene {
         const phase = Math.min(frames.length - 1,
           Math.floor(t.progress * frames.length));
         sprite.setFrame(frames[phase]);
+        const overlay = sprite.getData('heldOverlay');
+        const offset = sprite.getData('heldOffset');
+        if (overlay && offset) {
+          overlay.x = sprite.x + offset.x;
+          overlay.y = sprite.y + offset.y;
+        }
       },
       onComplete: () => sprite.setFrame(base),
     });
@@ -591,7 +599,7 @@ class BigvilleScene extends Phaser.Scene {
     sprite.on('pointerdown', () => { selectedResidentId = resident.id; renderSidebar(); });
     if (resident.id === this.playerId) sprite.setTint(0xffe1a8);
     this.objects.push(sprite);
-    this.drawResidentItems(resident, [x + cellX, y + cellY]);
+    this.drawResidentItems(resident, [x + cellX, y + cellY], sprite, 0);
   }
 
   residentFrame(resident, frame = 0, direction = 0) {
@@ -599,25 +607,31 @@ class BigvilleScene extends Phaser.Scene {
     return (ROLE_VARIANTS[role] ?? 0) * 12 + direction * 3 + frame;
   }
 
-  drawResidentItems(resident, pos) {
+  drawResidentItems(resident, pos, actorSprite = null, direction = 0) {
     const hand = (resident.held_items || []).find((item) => item.location === 'hand')
       || (resident.held_items || [])[0];
-    const worn = resident.worn || [];
-    const drawItem = (item, x, y, scale = 0.85) => {
+    const actorScale = actorSprite?.scaleX || 1;
+    const drawItem = (item, x, y, scale = 0.68) => {
       const frame = itemIcon(item.kind);
-      if (!frame) return;
-      const sprite = this.add.sprite(x, y, 'items', frame.frame).setScale(scale * DISPLAY_SCALE)
+      const heldFrame = this.styleManifest?.held_items?.sprites?.[item.kind];
+      if (!frame && heldFrame === undefined) return;
+      const texture = heldFrame === undefined ? 'items' : 'held_items';
+      const textureFrame = heldFrame === undefined ? frame.frame : heldFrame;
+      const sprite = this.add.sprite(x, y, texture, textureFrame).setScale(scale)
         .setDepth(this.depthAt(pos[0], pos[1], 35));
       this.objects.push(sprite);
+      return sprite;
     };
-    if (hand) drawItem(hand, this.cellX(pos[0]) + 7 * DISPLAY_SCALE,
-      this.cellY(pos[1]) - 9 * DISPLAY_SCALE);
-    // Keep clothing readable without replacing the role/age body variant.
-    worn.slice(0, 2).forEach((kind, index) => {
-      const hat = /hat|bonnet|hood|cap/.test(kind);
-      drawItem({kind}, this.cellX(pos[0]) + (hat ? 0 : -5 + index * 10) * DISPLAY_SCALE,
-               this.cellY(pos[1]) - (hat ? 9 : -1) * DISPLAY_SCALE, 0.55);
-    });
+    if (!hand) return;
+    const handX = direction === 2 ? -10 : direction === 3 ? 10 : direction === 1 ? -7 : 7;
+    const handY = direction === 1 ? 2 : 5;
+    const overlay = drawItem(hand,
+      (actorSprite?.x || this.cellX(pos[0])) + handX * actorScale,
+      (actorSprite?.y || this.cellY(pos[1])) + handY * actorScale);
+    if (actorSprite && overlay) {
+      actorSprite.setData('heldOverlay', overlay);
+      actorSprite.setData('heldOffset', {x: handX * actorScale, y: handY * actorScale});
+    }
   }
 
   distanceTo(a, b) {

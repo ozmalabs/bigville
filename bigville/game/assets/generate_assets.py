@@ -1024,6 +1024,7 @@ def main():
             "building_source": "style_building_atlas_source.png",
             "cutaway_source": "style_cutaway_atlas_source.png",
             "character_source": "style_character_walk_atlas_source.png",
+            "held_item_source": "style_held_items_atlas_source.png",
             "manifest": "style_manifest.json",
             "builder": "tools/build_style_assets.py",
             "runtime_note": "the original village scene is reference-only; clients assemble transparent props, facades, and opaque terrain frames",

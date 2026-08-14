@@ -4,6 +4,7 @@
   "building_source": "style_building_atlas_source.png",
   "cutaway_source": "style_cutaway_atlas_source.png",
   "character_source": "style_character_walk_atlas_source.png",
+  "held_item_source": "style_held_items_atlas_source.png",
   "tiles": {
     "file": "style_tiles.png",
     "frame": 16,
@@ -411,6 +412,28 @@
           "right": 3
         }
       }
+    }
+  },
+  "held_items": {
+    "file": "style_held_items.png",
+    "frame": 16,
+    "sprites": {
+      "wooden_mug": 0,
+      "wooden_bowl": 1,
+      "wooden_ladle": 2,
+      "wooden_serving_spoon": 3,
+      "wooden_dipper": 4,
+      "pick": 5,
+      "axe": 6,
+      "hoe": 7,
+      "bread": 8,
+      "basket": 9,
+      "book": 10,
+      "hammer": 11,
+      "milk_pail": 12,
+      "shears": 13,
+      "fishing_rod": 14,
+      "parcel": 15
     }
   }
 }

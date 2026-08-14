@@ -31,6 +31,7 @@ def test_game_assets_are_present():
                          "assets/style_large_props.png", "assets/style_buildings.png",
                          "assets/style_cutaway_atlas_source.png", "assets/style_cutaways.png",
                          "assets/style_character_walk_atlas_source.png", "assets/style_characters.png",
+                         "assets/style_held_items_atlas_source.png", "assets/style_held_items.png",
                          "assets/style_manifest.json"):
             assert (GAME_ROOT / filename).is_file(), filename
 
@@ -51,6 +52,7 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert manifest["style_assets"]["source_reference"] == "style_source_village.png"
     assert manifest["style_assets"]["cutaway_source"] == "style_cutaway_atlas_source.png"
     assert manifest["style_assets"]["character_source"] == "style_character_walk_atlas_source.png"
+    assert manifest["style_assets"]["held_item_source"] == "style_held_items_atlas_source.png"
     style = json.loads((GAME_ROOT / "assets/style_manifest.json").read_text())
     assert style["tiles"]["file"] == "style_tiles.png"
     assert len(style["path_variants"]) == 16
@@ -65,6 +67,8 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert set(entities.BUILDINGS) <= set(style["cutaways"]["sprites"])
     assert style["characters"]["file"] == "style_characters.png"
     assert style["characters"]["frame"] == 32
+    assert style["held_items"]["file"] == "style_held_items.png"
+    assert {"wooden_mug", "pick", "bread"} <= set(style["held_items"]["sprites"])
     assert len(manifest["terrain"]["transition_masks"]["path"]) == 16
     assert len(manifest["terrain"]["transition_masks"]["water"]) == 16
     assert {"tree", "flower_clump", "bush", "reed", "bench"} <= set(manifest["terrain"]["props"])
