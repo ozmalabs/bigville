@@ -138,19 +138,26 @@ class BigvilleScene extends Phaser.Scene {
       .setDisplaySize(width, height).setDepth(0);
     this.objects.push(backdrop);
     const allResidents = snapshot.world.residents || [];
+    this.playerId = snapshot.player;
     const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
     const occupiedResidents = this.drawOccupiedInteriors(map.buildings || [], allResidents);
-    const visibleResidents = allResidents.filter((resident) => {
+    const outsideResidents = allResidents.filter((resident) => {
       if (occupiedResidents.has(resident.id)) return false;
       if (resident.id === snapshot.player || !playerResident) return true;
       return Math.abs((resident.x || 0) - (playerResident.x || 0)) <= 5 &&
         Math.abs((resident.y || 0) - (playerResident.y || 0)) <= 5;
     });
+    const nearby = outsideResidents
+      .filter((resident) => resident.id !== snapshot.player)
+      .sort((a, b) => this.distanceTo(a, playerResident) - this.distanceTo(b, playerResident))
+      .slice(0, 5);
+    const visibleResidents = [
+      ...(playerResident && !occupiedResidents.has(playerResident.id) ? [playerResident] : []),
+      ...nearby,
+    ];
     for (const resident of visibleResidents) {
       const pos = resident.position || [0, 0];
-      const role = String(resident.role || '').toLowerCase();
-      const variant = ROLE_VARIANTS[role] ?? 0;
-      const frame = variant * 12; // first (down/idle) frame for the role variant
+      const frame = this.residentFrame(resident);
       const sprite = this.add.sprite(pos[0] * TILE + 8, pos[1] * TILE + 8, 'characters', frame).setDepth(3);
       if (resident.id === snapshot.player) sprite.setScale(1.45).setTint(0xffe1a8);
       this.objects.push(sprite);
@@ -180,6 +187,7 @@ class BigvilleScene extends Phaser.Scene {
     for (const building of spots.values()) {
       const [x, y] = building.position;
       const occupants = residents.filter((resident) => {
+        if (inside.has(resident.id)) return false;
         const rx = Number(resident.x ?? resident.position?.[0] ?? -999);
         const ry = Number(resident.y ?? resident.position?.[1] ?? -999);
         return rx >= x && rx < x + (building.w || 3) &&
@@ -194,8 +202,26 @@ class BigvilleScene extends Phaser.Scene {
       const room = this.add.image(px + 24, py + 24, 'open_room')
         .setDisplaySize(48, 48).setDepth(2);
       this.objects.push(room);
+      occupants.forEach((resident, index) => {
+        const localX = px + 15 + (index % 2) * 18;
+        const localY = py + 21 + Math.floor(index / 2) * 12;
+        const sprite = this.add.sprite(localX, localY, 'characters', this.residentFrame(resident))
+          .setScale(1.15).setDepth(3);
+        if (resident.id === this.playerId) sprite.setTint(0xffe1a8);
+        this.objects.push(sprite);
+      });
     }
     return inside;
+  }
+
+  residentFrame(resident) {
+    const role = String(resident.role || '').toLowerCase();
+    return (ROLE_VARIANTS[role] ?? 0) * 12;
+  }
+
+  distanceTo(a, b) {
+    if (!a || !b) return 0;
+    return Math.abs((a.x || 0) - (b.x || 0)) + Math.abs((a.y || 0) - (b.y || 0));
   }
 
 }
