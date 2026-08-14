@@ -207,7 +207,6 @@ class BigvilleScene extends Phaser.Scene {
     // grid.  They remove the one-texture-square-per-cell look without making
     // the art responsible for map topology or collision.
     this.load.image('material_ground', 'assets/style_ground.png');
-    this.load.image('material_path', 'assets/style_path_ground.png');
     this.load.image('material_water', 'assets/style_water_ground.png');
     this.load.image('material_soil', 'assets/style_soil_ground.png');
     this.load.image('material_stone', 'assets/style_stone_ground.png');
@@ -421,8 +420,10 @@ class BigvilleScene extends Phaser.Scene {
     const width = (map.width || grid[0]?.length || 0) * TILE * DISPLAY_SCALE;
     const height = (map.height || grid.length || 0) * TILE * DISPLAY_SCALE;
     const fields = [
-      ['ground', (tile) => tile === 0 || tile === 7],
-      ['path', (tile) => tile === 1],
+      // Paths are included in the grass base because their transition frames
+      // are transparent outside the dirt footprint. This is what gives every
+      // path edge something to blend into, including corners and endpoints.
+      ['ground', (tile) => tile === 0 || tile === 1 || tile === 7],
       ['water', (tile) => tile === 6],
       ['soil', (tile) => tile === 5],
       ['stone', (tile) => tile === 2 || tile === 3 || tile === 4],

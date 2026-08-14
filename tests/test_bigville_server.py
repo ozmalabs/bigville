@@ -68,6 +68,13 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     tiles = Image.open(GAME_ROOT / "assets/style_tiles.png").convert("RGBA")
     assert all(tiles.crop((frame * 16, 0, frame * 16 + 16, 16)).getbbox()
                for frames in style["path_variants"].values() for frame in frames)
+    # Path frames are interfaces, not opaque replacement tiles: each cardinal
+    # edge reaches the neighbour only when that bit is connected.
+    for mask, frames in style["path_variants"].items():
+        frame = tiles.crop((frames[0] * 16, 0, frames[0] * 16 + 16, 16))
+        edge_points = {1: (8, 0), 2: (15, 8), 4: (8, 15), 8: (0, 8)}
+        for bit, point in edge_points.items():
+            assert bool(frame.getpixel(point)[3]) == bool(int(mask) & bit)
     assert {"tree", "bush"} <= set(style["large_props"]["sprites"])
     assert style["buildings"]["file"] == "style_buildings.png"
     assert style["cutaways"]["file"] == "style_cutaways.png"

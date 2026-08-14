@@ -82,8 +82,10 @@ backdrop. The terrain and building source sheets are converted by
 `tools/build_style_assets.py` into assembled runtime material fields and
 atlases. The larger `style_*_ground.png` fields are masked to the map's
 authoritative cells, while `style_tiles.png` supplies topology-dependent
-transitions and overlays. Grass, paths, water, soil, and stone therefore keep
-their material continuity without making the map grid disappear. Props,
+transitions and overlays. Paths are transparent interfaces over the grass
+field: connected edges reach their neighbours and disconnected edges retain a
+grass shoulder. Grass, water, soil, and stone therefore keep their material
+continuity without making the map grid disappear. Props,
 `style_large_props.png`, and `style_buildings.png`, plus the matching roof-off
 `style_cutaways.png`, are described by `style_manifest.json`. Cutaways retain the facade, foundation,
 door, and exterior trim while exposing the furnished room. This keeps the

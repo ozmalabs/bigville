@@ -190,25 +190,31 @@ def material_field(kind: str, size: int = 128) -> Image.Image:
     return out
 
 
-def path_transition(grass: Image.Image, path: Image.Image, mask: int,
-                    variant: int = 0) -> Image.Image:
-    """Blend an organic path edge into grass using N/E/S/W connectivity."""
+def path_transition(path: Image.Image, mask: int, variant: int = 0) -> Image.Image:
+    """Draw a dirt interface whose shape follows N/E/S/W connectivity.
+
+    Grass is deliberately absent from this frame.  The map's grass field is
+    underneath it; this overlay only paints the dirt footprint, allowing every
+    disconnected edge to remain an organic grass-to-path boundary.
+    """
     # Paths are overlays now.  The larger grass/path material fields underneath
     # provide the continuous ground, so each transition must not stamp a
     # second square of grass over its neighbours.
     out = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
     shape = Image.new("L", (TILE, TILE), 0)
     draw = ImageDraw.Draw(shape)
-    draw.rectangle((4, 4, 11, 11), fill=255)
+    # A road occupies most of its cell, but keeps a small irregular grass
+    # shoulder wherever it does not continue into a neighbour.
+    draw.rectangle((2, 2, 13, 13), fill=255)
     offset = ((mask * 3 + variant * 5) % 3) - 1
     if mask & 1:
-        draw.polygon(((5 + offset, 0), (10 + offset, 0), (11, 8), (4, 8)), fill=255)
+        draw.polygon(((3 + offset, 0), (12 + offset, 0), (13, 7), (2, 7)), fill=255)
     if mask & 2:
-        draw.polygon(((8, 4), (15, 5 + offset), (15, 10 + offset), (8, 11)), fill=255)
+        draw.polygon(((9, 2), (15, 3 + offset), (15, 12 + offset), (9, 13)), fill=255)
     if mask & 4:
-        draw.polygon(((4, 8), (11, 8), (10 + offset, 15), (5 + offset, 15)), fill=255)
+        draw.polygon(((2, 9), (13, 9), (12 + offset, 15), (3 + offset, 15)), fill=255)
     if mask & 8:
-        draw.polygon(((0, 5 + offset), (8, 4), (8, 11), (0, 10 + offset)), fill=255)
+        draw.polygon(((0, 3 + offset), (7, 2), (7, 13), (0, 12 + offset)), fill=255)
     out.paste(path.convert("RGBA"), (0, 0), shape)
     return out
 
@@ -280,6 +286,7 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
     }
     for name, texture in material_files.items():
         texture.save(ASSETS / f"style_{name}.png")
+    path_surface = material_field("path", size=TILE)
     semantic = {
         "grass": base[0], "grass_alt": base[1], "path": base[2],
         "dirt": base[2], "square": base[4], "floor": base[4],
@@ -304,7 +311,7 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
     sheet = Image.new("RGBA", (TILE * total_frames, TILE), (0, 0, 0, 0))
     for i, name in enumerate(names):
         if name.startswith("path_transition_"):
-            frame = path_transition(base[0], base[2], int(name[-2:]))
+            frame = path_transition(path_surface, int(name[-2:]))
         elif name.startswith("water_transition_"):
             frame = water_transition(base[6], base[7], int(name[-2:]))
         else:
@@ -316,7 +323,7 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
     for mask in range(16):
         for variant in range(3):
             frame = path_transition(
-                base[0], orient_path(base[2], mask, variant), mask, variant)
+                orient_path(path_surface, mask, variant), mask, variant)
             index = path_variants[str(mask)][variant]
             sheet.paste(frame.convert("RGBA"), (index * TILE, 0))
     sheet.save(ASSETS / "style_tiles.png")
