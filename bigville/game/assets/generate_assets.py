@@ -122,6 +122,35 @@ PAL = {
 }
 
 T = 16  # tile size
+ISO_W, ISO_H = 24, 12  # 2:1 dimetric ground diamond for one map cell
+
+
+def project_diamond(src):
+    """Project a square source frame onto a 2:1 dimetric diamond.
+
+    The simulation still speaks in square cells. These parallel art frames
+    only change the screen projection: source pixels are sampled through the
+    inverse diamond transform, keeping the asset generator deterministic and
+    avoiding a second set of hand-authored world coordinates.
+    """
+    out_w = max(1, src.w * ISO_W // T)
+    out_h = max(1, src.h * ISO_H // T)
+    out = Img(out_w, out_h)
+    half_w, half_h = out_w / 2.0, out_h / 2.0
+    for y in range(out_h):
+        for x in range(out_w):
+            nx = (x + 0.5 - half_w) / half_w
+            ny = (y + 0.5 - half_h) / half_h
+            if abs(nx) + abs(ny) > 1.0:
+                continue
+            u = (nx + ny) * 0.5 + 0.5
+            v = (ny - nx) * 0.5 + 0.5
+            sx = min(src.w - 1, max(0, int(u * src.w)))
+            sy = min(src.h - 1, max(0, int(v * src.h)))
+            i = (sy * src.w + sx) * 4
+            if src.px[i + 3]:
+                out.set(x, y, src.px[i:i + 4])
+    return out
 
 # ----------------------------------------------------------------------------
 # terrain tiles
@@ -893,6 +922,13 @@ def main():
         tindex[name] = i
     write_png(tsheet, os.path.join(HERE, "tileset.png"))
 
+    # Parallel dimetric terrain sheet. Frame indices intentionally match the
+    # square atlas, so clients can switch projection without changing map data.
+    iso_tsheet = Img(ISO_W * len(TILES), ISO_H)
+    for i, (_name, im) in enumerate(TILES):
+        iso_tsheet.blit(project_diamond(im), i * ISO_W, 0)
+    write_png(iso_tsheet, os.path.join(HERE, "tileset_iso.png"))
+
     # Transparent life props are kept in their own atlas so terrain remains
     # data-driven: a scenario can place or omit them without repainting the
     # underlying map tiles.
@@ -919,12 +955,22 @@ def main():
         bindex[name] = i
     write_png(bsheet, os.path.join(HERE, "buildings.png"))
 
+    iso_bsheet = Img(B * ISO_W // T * len(blds), B * ISO_H // T)
+    for i, (_name, im) in enumerate(blds):
+        iso_bsheet.blit(project_diamond(im), i * (B * ISO_W // T), 0)
+    write_png(iso_bsheet, os.path.join(HERE, "buildings_iso.png"))
+
     parts_sheet = Img(T * len(BUILDING_PART_NAMES), T)
     part_index = {}
     for i, name in enumerate(BUILDING_PART_NAMES):
         parts_sheet.blit(building_part(name), i * T, 0)
         part_index[name] = i
     write_png(parts_sheet, os.path.join(HERE, "building_parts.png"))
+
+    iso_parts_sheet = Img(ISO_W * len(BUILDING_PART_NAMES), ISO_H)
+    for i, name in enumerate(BUILDING_PART_NAMES):
+        iso_parts_sheet.blit(project_diamond(building_part(name)), i * ISO_W, 0)
+    write_png(iso_parts_sheet, os.path.join(HERE, "building_parts_iso.png"))
 
     badges_sheet = Img(T * len(blds), T)
     badge_index = {}
@@ -939,6 +985,12 @@ def main():
     for i, (name, _im) in enumerate(blds):
         isheet_buildings.blit(_house_interior(name), i * B, 0)
     write_png(isheet_buildings, os.path.join(HERE, "building_interiors.png"))
+
+    iso_isheet_buildings = Img(B * ISO_W // T * len(blds), B * ISO_H // T)
+    for i, (name, _im) in enumerate(blds):
+        iso_isheet_buildings.blit(project_diamond(_house_interior(name)),
+                                  i * (B * ISO_W // T), 0)
+    write_png(iso_isheet_buildings, os.path.join(HERE, "building_interiors_iso.png"))
 
     # Every canonical item gets a stable icon coordinate.  The atlas is a grid
     # so clients can request icons by name without requiring one file per item.
@@ -960,13 +1012,18 @@ def main():
             "zoom_range": [0.75, 3.0],
             "anchor": "cell_center_feet_or_building_center",
             "nearest_neighbour": True,
+            "projection": "dimetric_2_to_1",
+            "dimetric_ground_frame": [ISO_W, ISO_H],
+            "screen_axes": {"east": [ISO_W // 2, ISO_H // 2],
+                            "south": [-ISO_W // 2, ISO_H // 2]},
         },
         "palette": "warm cozy (Stardew-esque): greens/browns/soft blues",
         "style_reference": "pixel_art_art_direction.png",
         "tint_note": "characters.png bodies are drawn LIGHT; recolour at runtime "
                      "by MULTIPLY-compositing the resident's class/role colour.",
         "tileset": {
-            "file": "tileset.png", "tile": T, "count": len(TILES),
+            "file": "tileset.png", "tile": T, "iso_file": "tileset_iso.png",
+            "iso_tile": [ISO_W, ISO_H], "count": len(TILES),
             "layout": "horizontal strip; frame index = column",
             "tiles": tindex,
         },
@@ -992,10 +1049,14 @@ def main():
         "buildings": {
             "file": "buildings.png", "frame": B, "count": len(blds),
             "interior_file": "building_interiors.png",
-            "roof_states": {"on": "buildings.png", "off": "building_interiors.png"},
+            "iso_file": "buildings_iso.png", "iso_frame": [B * ISO_W // T, B * ISO_H // T],
+            "iso_interior_file": "building_interiors_iso.png",
+            "roof_states": {"on": "buildings.png", "off": "building_interiors.png",
+                             "iso_on": "buildings_iso.png", "iso_off": "building_interiors_iso.png"},
             "layout": "horizontal strip; frame index = column",
             "sprites": bindex,
             "parts_file": "building_parts.png", "parts_frame": T,
+            "iso_parts_file": "building_parts_iso.png", "iso_parts_frame": [ISO_W, ISO_H],
             "parts": part_index,
             "badges_file": "building_badges.png", "badges_frame": T,
             "badges": badge_index,
@@ -1039,7 +1100,7 @@ def main():
     }
     with open(os.path.join(HERE, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
-    print("wrote tileset.png props.png characters.png character_variants.png actions.png items.png buildings.png manifest.json")
+    print("wrote tileset.png tileset_iso.png props.png characters.png character_variants.png actions.png items.png buildings.png buildings_iso.png building_parts_iso.png manifest.json")
     print("tiles:", list(tindex), "\nbuildings:", list(bindex), "\nitems:", len(iindex),
           "\nactions:", ACTION_NAMES, "\ncharacter variants:", CHAR_VARIANTS)
 

@@ -8,7 +8,9 @@ asset manifest.
 ## World units
 
 - One map cell is one walkable world square, approximately one metre.
-- The logical terrain grid is 16x16 pixels per cell.
+- The logical terrain grid is 16x16 pixels per cell. The playable renderer
+  presents those cells as 24x12 2:1 dimetric diamonds; simulation coordinates
+  remain square-grid coordinates.
 - A resident occupies one cell, with their feet anchored at the cell centre's
   lower edge. A held item shares that anchor and is drawn as a separate layer.
 - A standard building occupies 3x3 cells and is therefore 48x48 logical
@@ -20,14 +22,19 @@ asset manifest.
 
 ## Camera and zoom
 
-- The base viewport is 52x40 cells (832x640 logical pixels), but the world
-  dimensions come from the scenario's exported map.
+- The base viewport is 832x640 logical pixels. Because cells are projected
+  into diamonds, the exact visible cell count varies with camera position,
+  zoom, and map orientation; world dimensions always come from the scenario's
+  exported map.
 - The camera is pixel-art nearest-neighbour at all zoom levels.
 - Supported zoom is 0.75x through 3x. 1x is the inspection baseline, 2x is
   the close interaction view, and 3x is for checking inventory, clothing,
   tools, and room contents.
 - Camera movement operates in world pixels, not CSS pixels. The viewport may
   show more or less of a scenario without changing simulation coordinates.
+- The screen projection is `screen_x = (x-y)*12` and
+  `screen_y = (x+y)*6`, with depth ordered by `x+y`. Buildings and people
+  remain upright screen sprites anchored to the projected ground footprint.
 
 ## Asset layers
 

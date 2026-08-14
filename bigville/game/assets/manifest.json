@@ -15,7 +15,22 @@
       3.0
     ],
     "anchor": "cell_center_feet_or_building_center",
-    "nearest_neighbour": true
+    "nearest_neighbour": true,
+    "projection": "dimetric_2_to_1",
+    "dimetric_ground_frame": [
+      24,
+      12
+    ],
+    "screen_axes": {
+      "east": [
+        12,
+        6
+      ],
+      "south": [
+        -12,
+        6
+      ]
+    }
   },
   "palette": "warm cozy (Stardew-esque): greens/browns/soft blues",
   "style_reference": "pixel_art_art_direction.png",
@@ -23,6 +38,11 @@
   "tileset": {
     "file": "tileset.png",
     "tile": 16,
+    "iso_file": "tileset_iso.png",
+    "iso_tile": [
+      24,
+      12
+    ],
     "count": 60,
     "layout": "horizontal strip; frame index = column",
     "tiles": {
@@ -171,9 +191,17 @@
     "frame": 48,
     "count": 36,
     "interior_file": "building_interiors.png",
+    "iso_file": "buildings_iso.png",
+    "iso_frame": [
+      72,
+      36
+    ],
+    "iso_interior_file": "building_interiors_iso.png",
     "roof_states": {
       "on": "buildings.png",
-      "off": "building_interiors.png"
+      "off": "building_interiors.png",
+      "iso_on": "buildings_iso.png",
+      "iso_off": "building_interiors_iso.png"
     },
     "layout": "horizontal strip; frame index = column",
     "sprites": {
@@ -216,6 +244,11 @@
     },
     "parts_file": "building_parts.png",
     "parts_frame": 16,
+    "iso_parts_file": "building_parts_iso.png",
+    "iso_parts_frame": [
+      24,
+      12
+    ],
     "parts": {
       "floor": 0,
       "wall": 1,
