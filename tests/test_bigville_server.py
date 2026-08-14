@@ -28,10 +28,12 @@ def test_game_assets_are_present():
                          "assets/style_terrain_atlas_source.png",
                          "assets/style_building_atlas_source.png",
                          "assets/style_tiles.png", "assets/style_props.png",
+                         "assets/style_path_tiles.png",
                          "assets/style_ground.png", "assets/style_path_ground.png",
                          "assets/style_water_ground.png", "assets/style_soil_ground.png",
                          "assets/style_stone_ground.png", "assets/style_material_edges.png",
                          "assets/style_large_props.png", "assets/style_buildings.png",
+                         "assets/style_square_fixtures.png",
                          "assets/style_cutaway_atlas_source.png", "assets/style_cutaways.png",
                          "assets/style_character_walk_atlas_source.png", "assets/style_characters.png",
                          "assets/style_held_items_atlas_source.png", "assets/style_held_items.png",
@@ -59,7 +61,7 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     style = json.loads((GAME_ROOT / "assets/style_manifest.json").read_text())
     from PIL import Image
     assert style["tiles"]["file"] == "style_tiles.png"
-    assert style["materials"]["texture_scale"] == 2
+    assert style["materials"]["texture_scale"] == 1
     assert set(style["materials"]["fields"]) == {"ground", "path", "water", "soil", "stone"}
     assert all((GAME_ROOT / "assets" / filename).is_file()
                for filename in style["materials"]["fields"].values())
@@ -68,7 +70,10 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert all(set(directions) == {"n", "e", "s", "w"}
                for directions in style["material_edges"]["targets"].values())
     edge_sheet = Image.open(GAME_ROOT / "assets/style_material_edges.png").convert("RGBA")
-    assert all(len(frames) == 3 and all(edge_sheet.crop((frame * 16, 0, frame * 16 + 16, 16)).getbbox()
+    edge_frame = style["material_edges"]["frame"]
+    assert edge_frame == 32
+    assert all(len(frames) == 3 and all(edge_sheet.crop((frame * edge_frame, 0,
+                                                         frame * edge_frame + edge_frame, edge_frame)).getbbox()
                                          for frame in frames)
                for directions in style["material_edges"]["targets"].values()
                for frames in directions.values())
@@ -77,6 +82,10 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     tiles = Image.open(GAME_ROOT / "assets/style_tiles.png").convert("RGBA")
     assert all(tiles.crop((frame * 16, 0, frame * 16 + 16, 16)).getbbox()
                for frames in style["path_variants"].values() for frame in frames)
+    path_tiles = Image.open(GAME_ROOT / "assets/style_path_tiles.png").convert("RGBA")
+    assert style["path_tiles"]["frame"] == 32
+    assert all(path_tiles.crop((frame * 32, 0, frame * 32 + 32, 32)).getbbox()
+               for frames in style["path_tiles"]["variants"].values() for frame in frames)
     # Path frames are interfaces, not opaque replacement tiles: each cardinal
     # edge reaches the neighbour only when that bit is connected.
     for mask, frames in style["path_variants"].items():
@@ -92,6 +101,10 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert style["characters"]["frame"] == 32
     assert style["held_items"]["file"] == "style_held_items.png"
     assert {"wooden_mug", "pick", "bread"} <= set(style["held_items"]["sprites"])
+    assert style["square_fixtures"]["file"] == "style_square_fixtures.png"
+    assert style["square_fixtures"]["frame"] == 32
+    assert {"market_stall_bread", "market_stall_fish", "market_stall_cloth",
+            "noticeboard", "well", "bench"} <= set(style["square_fixtures"]["sprites"])
     assert len(manifest["terrain"]["transition_masks"]["path"]) == 16
     assert len(manifest["terrain"]["transition_masks"]["water"]) == 16
     assert {"tree", "flower_clump", "bush", "reed", "bench"} <= set(manifest["terrain"]["props"])

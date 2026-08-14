@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw, ImageOps
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "bigville" / "game" / "assets"
 TILE = 16
+ART_TILE = 32  # displayed terrain cell; authored at facade resolution rather than enlarged from 16px
 BUILDING = 96
 CHARACTER = 32
 HELD_ITEM = 16
@@ -97,7 +98,7 @@ def opaque_tile(image: Image.Image) -> Image.Image:
 
 
 def material_texture(frames: list[Image.Image], choices: list[int], blocks: int = 8,
-                     seed: int = 17) -> Image.Image:
+                     seed: int = 17, block_size: int = TILE) -> Image.Image:
     """Make a larger, varied material field from small pixel-art samples.
 
     The simulation still addresses terrain one logical cell at a time, but a
@@ -105,7 +106,7 @@ def material_texture(frames: list[Image.Image], choices: list[int], blocks: int 
     per cell.  Mirrored samples keep the pixel language intact while breaking
     the obvious checkerboard rhythm at normal zoom.
     """
-    size = TILE * blocks
+    size = block_size * blocks
     out = Image.new("RGB", (size, size))
     for row in range(blocks):
         for col in range(blocks):
@@ -118,11 +119,11 @@ def material_texture(frames: list[Image.Image], choices: list[int], blocks: int 
                 frame = ImageOps.flip(frame)
             elif transform == 3:
                 frame = frame.transpose(Image.Transpose.ROTATE_180)
-            out.paste(frame, (col * TILE, row * TILE))
+            out.paste(frame, (col * block_size, row * block_size))
     return out
 
 
-def material_field(kind: str, size: int = 128) -> Image.Image:
+def material_field(kind: str, size: int = ART_TILE * 8) -> Image.Image:
     """Paint a larger pixel-art material without logical-cell borders.
 
     Some source tiles intentionally contain a little scene dressing (lilypads,
@@ -190,7 +191,7 @@ def material_field(kind: str, size: int = 128) -> Image.Image:
     return out
 
 
-def build_material_edges(surfaces: dict[str, Image.Image]) -> dict[str, dict[str, list[int]]]:
+def build_material_edges(surfaces: dict[str, Image.Image], tile_size: int = ART_TILE) -> dict[str, dict[str, list[int]]]:
     """Build irregular pixel-art interfaces for every broad material.
 
     The map still decides where each material cell is.  These transparent
@@ -200,7 +201,7 @@ def build_material_edges(surfaces: dict[str, Image.Image]) -> dict[str, dict[str
     names = ["grass", "stone", "soil", "water"]
     directions = ["n", "e", "s", "w"]
     variants = 3
-    sheet = Image.new("RGBA", (TILE * len(names) * len(directions) * variants, TILE),
+    sheet = Image.new("RGBA", (tile_size * len(names) * len(directions) * variants, tile_size),
                       (0, 0, 0, 0))
     mapping: dict[str, dict[str, list[int]]] = {}
 
@@ -210,10 +211,10 @@ def build_material_edges(surfaces: dict[str, Image.Image]) -> dict[str, dict[str
         return (value ^ (value >> 16)) & 0x7fffffff
 
     frame_index = 0
-    grass_edge = Image.new("RGB", (TILE, TILE), (82, 102, 34))
+    grass_edge = Image.new("RGB", (tile_size, tile_size), (82, 102, 34))
     grass_pixels = grass_edge.load()
-    for y in range(TILE):
-        for x in range(TILE):
+    for y in range(tile_size):
+        for x in range(tile_size):
             value = number(x, y, 71) % 10
             if value < 2:
                 grass_pixels[x, y] = (112, 128, 42)
@@ -225,16 +226,13 @@ def build_material_edges(surfaces: dict[str, Image.Image]) -> dict[str, dict[str
         for direction_index, direction in enumerate(directions):
             mapping[target][direction] = []
             for variant in range(variants):
-                edge = Image.new("L", (TILE, TILE), 0)
-                for y in range(TILE):
-                    for x in range(TILE):
-                        across = {"n": y, "e": TILE - 1 - x,
-                                  "s": TILE - 1 - y, "w": x}[direction]
+                edge = Image.new("L", (tile_size, tile_size), 0)
+                for y in range(tile_size):
+                    for x in range(tile_size):
+                        across = {"n": y, "e": tile_size - 1 - x,
+                                  "s": tile_size - 1 - y, "w": x}[direction]
                         along = x if direction in ("n", "s") else y
-                        # Keep the interface to a one- or two-pixel lip at
-                        # logical resolution. At 2x display scale it softens
-                        # the seam without becoming a second terrain band.
-                        boundary = 1 + ((along * 7 + variant * 5 + target_index * 3) % 2)
+                        boundary = 2 + ((along * 7 + variant * 5 + target_index * 3) % 3)
                         if across <= boundary:
                             if target == "grass" and number(x, y, variant + target_index * 11) % 3:
                                 continue
@@ -243,16 +241,17 @@ def build_material_edges(surfaces: dict[str, Image.Image]) -> dict[str, dict[str
                             if across > 0 and number(x, y, variant + target_index * 11) % 7 == 0:
                                 continue
                             edge.putpixel((x, y), 255)
-                frame = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
+                frame = Image.new("RGBA", (tile_size, tile_size), (0, 0, 0, 0))
                 frame.paste(surfaces[target].convert("RGBA"), (0, 0), edge)
-                sheet.paste(frame, (frame_index * TILE, 0), frame)
+                sheet.paste(frame, (frame_index * tile_size, 0), frame)
                 mapping[target][direction].append(frame_index)
                 frame_index += 1
     sheet.save(ASSETS / "style_material_edges.png")
     return mapping
 
 
-def path_transition(path: Image.Image, mask: int, variant: int = 0) -> Image.Image:
+def path_transition(path: Image.Image, mask: int, variant: int = 0,
+                    tile_size: int = TILE) -> Image.Image:
     """Draw a dirt interface whose shape follows N/E/S/W connectivity.
 
     Grass is deliberately absent from this frame.  The map's grass field is
@@ -262,9 +261,18 @@ def path_transition(path: Image.Image, mask: int, variant: int = 0) -> Image.Ima
     # Paths are overlays now.  The larger grass/path material fields underneath
     # provide the continuous ground, so each transition must not stamp a
     # second square of grass over its neighbours.
-    out = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
-    shape = Image.new("L", (TILE, TILE), 0)
+    out = Image.new("RGBA", (tile_size, tile_size), (0, 0, 0, 0))
+    shape = Image.new("L", (tile_size, tile_size), 0)
     draw = ImageDraw.Draw(shape)
+    scale = tile_size / TILE
+    def sx(value):
+        return round(value * scale)
+    def rect(box, fill=255):
+        x0, y0, x1, y1 = box
+        draw.rectangle((sx(x0), sx(y0), min(tile_size - 1, sx(x1 + 1) - 1),
+                        min(tile_size - 1, sx(y1 + 1) - 1)), fill=fill)
+    def polygon(points, fill=255):
+        draw.polygon([(sx(x), sx(y)) for x, y in points], fill=fill)
     # The centreline moves by a couple of logical pixels between variants;
     # adjacent cells still connect at their shared edge, but long runs no
     # longer read as a ruler-straight grid road.
@@ -280,24 +288,24 @@ def path_transition(path: Image.Image, mask: int, variant: int = 0) -> Image.Ima
     top, bottom = max(1, 2 + dy), min(14, 13 + dy)
     # A road occupies most of its cell, but keeps a small irregular grass
     # shoulder wherever it does not continue into a neighbour.
-    draw.rectangle((left, top, right, bottom), fill=255)
+    rect((left, top, right, bottom))
     offset = ((mask * 3 + variant * 5) % 3) - 1
     if mask & 1:
-        draw.polygon(((left + 1 + offset, 0), (right - 1 + offset, 0),
-                      (right, top), (left, top)), fill=255)
-        draw.rectangle((0, 0, 15, 3), fill=255)
+        polygon(((left + 1 + offset, 0), (right - 1 + offset, 0),
+                 (right, top), (left, top)))
+        rect((0, 0, 15, 3))
     if mask & 2:
-        draw.polygon(((right, top), (15, top + 1 + offset),
-                      (15, bottom - 1 + offset), (right, bottom)), fill=255)
-        draw.rectangle((12, 0, 15, 15), fill=255)
+        polygon(((right, top), (15, top + 1 + offset),
+                 (15, bottom - 1 + offset), (right, bottom)))
+        rect((12, 0, 15, 15))
     if mask & 4:
-        draw.polygon(((left, bottom), (right, bottom),
-                      (right - 1 + offset, 15), (left + 1 + offset, 15)), fill=255)
-        draw.rectangle((0, 12, 15, 15), fill=255)
+        polygon(((left, bottom), (right, bottom),
+                 (right - 1 + offset, 15), (left + 1 + offset, 15)))
+        rect((0, 12, 15, 15))
     if mask & 8:
-        draw.polygon(((0, top + 1 + offset), (left, top),
-                      (left, bottom), (0, bottom - 1 + offset)), fill=255)
-        draw.rectangle((0, 0, 3, 15), fill=255)
+        polygon(((0, top + 1 + offset), (left, top),
+                 (left, bottom), (0, bottom - 1 + offset)))
+        rect((0, 0, 3, 15))
     out.paste(path.convert("RGBA"), (0, 0), shape)
     return out
 
@@ -360,8 +368,10 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
         (TILE, TILE), Image.Resampling.NEAREST).convert("RGB")
     base[1] = reference.crop((340, 20, 372, 52)).resize(
         (TILE, TILE), Image.Resampling.NEAREST).convert("RGB")
+    ground_base = [frame.resize((ART_TILE, ART_TILE), Image.Resampling.NEAREST)
+                   for frame in base]
     material_files = {
-        "ground": material_texture(base, [0, 1], seed=11),
+        "ground": material_texture(ground_base, [0, 1], seed=11, block_size=ART_TILE),
         "path_ground": material_field("path"),
         "water_ground": material_field("water"),
         "soil_ground": material_field("soil"),
@@ -371,11 +381,23 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
         texture.save(ASSETS / f"style_{name}.png")
     path_surface = material_field("path", size=TILE)
     material_edges = build_material_edges({
-        "grass": material_texture(base, [0, 1], blocks=1, seed=61),
-        "stone": material_field("stone", size=TILE),
-        "soil": material_field("soil", size=TILE),
-        "water": material_field("water", size=TILE),
+        "grass": material_texture(ground_base, [0, 1], blocks=1, seed=61, block_size=ART_TILE),
+        "stone": material_field("stone", size=ART_TILE),
+        "soil": material_field("soil", size=ART_TILE),
+        "water": material_field("water", size=ART_TILE),
     })
+    path_surface_hi = material_field("path", size=ART_TILE)
+    path_tiles: dict[str, list[int]] = {
+        str(mask): [mask * 3, mask * 3 + 1, mask * 3 + 2]
+        for mask in range(16)
+    }
+    path_sheet = Image.new("RGBA", (ART_TILE * 16 * 3, ART_TILE), (0, 0, 0, 0))
+    for mask in range(16):
+        for variant in range(3):
+            frame = path_transition(orient_path(path_surface_hi, mask, variant), mask, variant,
+                                    tile_size=ART_TILE)
+            path_sheet.paste(frame, (path_tiles[str(mask)][variant] * ART_TILE, 0))
+    path_sheet.save(ASSETS / "style_path_tiles.png")
     semantic = {
         "grass": base[0], "grass_alt": base[1], "path": base[2],
         "dirt": base[2], "square": base[4], "floor": base[4],
@@ -416,7 +438,7 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
             index = path_variants[str(mask)][variant]
             sheet.paste(frame.convert("RGBA"), (index * TILE, 0))
     sheet.save(ASSETS / "style_tiles.png")
-    return path_variants, material_edges
+    return path_variants, path_tiles, material_edges
 
 
 def build_props(terrain: Image.Image) -> dict[str, int]:
@@ -520,6 +542,94 @@ HELD_ITEM_NAMES = [
 ]
 
 
+SQUARE_FIXTURE = 32
+SQUARE_FIXTURE_NAMES = [
+    "market_stall_bread", "market_stall_fish", "market_stall_cloth",
+    "noticeboard", "well", "bench",
+]
+
+
+def build_square_fixtures() -> dict[str, int]:
+    """Build correctly scaled, transparent pixel-art objects for the town square.
+
+    These are world fixtures rather than 16px interior parts. Every frame is one displayed map
+    cell (32px after the renderer's 2x terrain scale), with its feet on the cell baseline.
+    """
+    sheet = Image.new("RGBA", (SQUARE_FIXTURE * len(SQUARE_FIXTURE_NAMES), SQUARE_FIXTURE), (0, 0, 0, 0))
+    sprites: dict[str, int] = {}
+    dark = (67, 48, 43, 255)
+    wood = (126, 77, 46, 255)
+    wood_light = (181, 118, 62, 255)
+    cream = (242, 202, 128, 255)
+
+    def stall(colour: tuple[int, int, int, int], goods: tuple[int, int, int, int]):
+        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        # canopy with scalloped lower edge
+        draw.rectangle((3, 4, 28, 7), fill=dark)
+        draw.rectangle((4, 7, 27, 12), fill=colour)
+        for x in (4, 10, 16, 22):
+            draw.rectangle((x, 7, min(27, x + 2), 12), fill=cream)
+            draw.polygon(((x, 12), (min(27, x + 4), 12),
+                          (min(27, x + 2), 15), (x + 1, 14)), fill=colour)
+        # posts, counter, and two visible baskets/crates
+        draw.rectangle((6, 12, 8, 25), fill=dark)
+        draw.rectangle((24, 12, 26, 25), fill=dark)
+        draw.rectangle((5, 20, 27, 25), fill=dark)
+        draw.rectangle((7, 19, 25, 22), fill=wood_light)
+        draw.rectangle((8, 23, 12, 27), fill=goods)
+        draw.rectangle((20, 23, 24, 27), fill=goods)
+        draw.line((8, 23, 12, 27), fill=wood)
+        draw.line((12, 23, 8, 27), fill=wood)
+        draw.line((20, 23, 24, 27), fill=wood)
+        draw.line((24, 23, 20, 27), fill=wood)
+        return image
+
+    def noticeboard():
+        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((14, 16, 17, 29), fill=dark)
+        draw.rectangle((5, 5, 26, 19), fill=dark)
+        draw.rectangle((7, 7, 24, 17), fill=wood_light)
+        draw.rectangle((9, 9, 14, 14), fill=(246, 225, 168, 255))
+        draw.rectangle((16, 10, 22, 15), fill=(224, 191, 126, 255))
+        draw.point((10, 10), fill=(177, 69, 56, 255))
+        return image
+
+    def well():
+        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        draw.ellipse((3, 15, 28, 29), fill=dark)
+        draw.ellipse((5, 13, 26, 25), fill=(118, 133, 126, 255))
+        draw.ellipse((9, 16, 22, 22), fill=(48, 91, 101, 255))
+        draw.rectangle((7, 13, 24, 16), fill=(174, 171, 139, 255))
+        draw.rectangle((8, 8, 10, 16), fill=wood)
+        draw.rectangle((22, 8, 24, 16), fill=wood)
+        draw.rectangle((8, 6, 24, 9), fill=dark)
+        draw.line((15, 9, 15, 16), fill=wood_light, width=2)
+        return image
+
+    def bench():
+        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((4, 13, 27, 17), fill=dark)
+        draw.rectangle((5, 12, 26, 14), fill=wood_light)
+        draw.rectangle((6, 20, 25, 23), fill=wood)
+        draw.rectangle((8, 17, 10, 24), fill=dark)
+        draw.rectangle((22, 17, 24, 24), fill=dark)
+        return image
+
+    images = [stall((181, 77, 65, 255), (202, 150, 71, 255)),
+              stall((76, 123, 148, 255), (189, 149, 80, 255)),
+              stall((169, 89, 124, 255), (103, 137, 80, 255)),
+              noticeboard(), well(), bench()]
+    for index, (name, image) in enumerate(zip(SQUARE_FIXTURE_NAMES, images)):
+        sheet.alpha_composite(image, (index * SQUARE_FIXTURE, 0))
+        sprites[name] = index
+    sheet.save(ASSETS / "style_square_fixtures.png")
+    return sprites
+
+
 def build_held_items(manifest: dict, item_sheet: Image.Image) -> dict[str, int]:
     """Build recognizable small hand-held art for common carried objects."""
     cells = [grid_cell(item_sheet, 4, 4, i) for i in range(16)]
@@ -542,12 +652,13 @@ def main() -> None:
     held_items = Image.open(ASSETS / "style_held_items_atlas_source.png")
     old_tiles = Image.open(ASSETS / "tileset.png")
     reference = Image.open(ASSETS / "style_source_village.png").convert("RGB")
-    path_variants, material_edges = build_tiles(manifest, terrain, reference, old_tiles)
+    path_variants, path_tiles, material_edges = build_tiles(manifest, terrain, reference, old_tiles)
     prop_sprites = build_props(terrain)
     sprites = build_buildings(manifest, buildings)
     cutaway_sprites = build_cutaways(manifest, cutaways)
     build_characters(manifest, characters)
     held_item_sprites = build_held_items(manifest, held_items)
+    square_fixture_sprites = build_square_fixtures()
     out_manifest = {
         "source": "style_source_village.png",
         "terrain_source": "style_terrain_atlas_source.png",
@@ -559,7 +670,7 @@ def main() -> None:
                   "tiles": manifest["tileset"]["tiles"]},
         "materials": {
             "logical_tile": TILE,
-            "texture_scale": 2,
+            "texture_scale": 1,
             "fields": {
                 "ground": "style_ground.png",
                 "path": "style_path_ground.png",
@@ -568,9 +679,11 @@ def main() -> None:
                 "stone": "style_stone_ground.png",
             },
         },
-        "material_edges": {"file": "style_material_edges.png", "frame": TILE,
+        "material_edges": {"file": "style_material_edges.png", "frame": ART_TILE,
                            "targets": material_edges},
         "path_variants": path_variants,
+        "path_tiles": {"file": "style_path_tiles.png", "frame": ART_TILE,
+                        "variants": path_tiles},
         "props": {"file": "style_props.png", "frame": TILE, "sprites": prop_sprites},
         "large_props": {"file": "style_large_props.png", "frame": 32,
                         "sprites": {"tree": 0, "bush": 1}},
@@ -583,11 +696,15 @@ def main() -> None:
                        "variants": manifest["character_variants"]["variants"]},
         "held_items": {"file": "style_held_items.png", "frame": HELD_ITEM,
                        "sprites": held_item_sprites},
+        "square_fixtures": {"file": "style_square_fixtures.png", "frame": SQUARE_FIXTURE,
+                             "sprites": square_fixture_sprites},
     }
     (ASSETS / "style_manifest.json").write_text(json.dumps(out_manifest, indent=2) + "\n")
     print("wrote style_tiles.png style_ground.png style_path_ground.png style_water_ground.png "
-          "style_soil_ground.png style_stone_ground.png style_material_edges.png "
-          "style_props.png style_large_props.png style_buildings.png style_manifest.json")
+        "style_soil_ground.png style_stone_ground.png style_material_edges.png "
+          "style_path_tiles.png style_props.png style_large_props.png style_buildings.png "
+          "style_square_fixtures.png "
+          "style_manifest.json")
 
 
 if __name__ == "__main__":

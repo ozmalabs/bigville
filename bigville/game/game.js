@@ -211,7 +211,9 @@ class BigvilleScene extends Phaser.Scene {
     this.load.image('material_soil', 'assets/style_soil_ground.png');
     this.load.image('material_stone', 'assets/style_stone_ground.png');
     this.load.spritesheet('material_edges', 'assets/style_material_edges.png',
-      {frameWidth: TILE, frameHeight: TILE});
+      {frameWidth: 32, frameHeight: 32});
+    this.load.spritesheet('path_tiles', 'assets/style_path_tiles.png',
+      {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('props', 'assets/style_props.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('large_props', 'assets/style_large_props.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
@@ -222,6 +224,7 @@ class BigvilleScene extends Phaser.Scene {
     this.load.spritesheet('building_badges', 'assets/building_badges.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('items', 'assets/items.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('held_items', 'assets/style_held_items.png', {frameWidth: TILE, frameHeight: TILE});
+    this.load.spritesheet('square_fixtures', 'assets/style_square_fixtures.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('characters', 'assets/style_characters.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('actions', 'assets/actions.png', {frameWidth: 16, frameHeight: 16});
   }
@@ -390,6 +393,11 @@ class BigvilleScene extends Phaser.Scene {
       // this only considered another path cell, the transparent shoulder
       // would reveal grass between a path and stone/soil/water.
       const pathMask = this.pathInterfaceMask(grid, x, y);
+      const highResVariants = this.styleManifest?.path_tiles?.variants?.[String(pathMask)];
+      if (highResVariants?.length) {
+        const variant = Math.abs((Number(x) * 92837111 + Number(y) * 689287499) % highResVariants.length);
+        return {texture: 'path_tiles', frame: highResVariants[variant]};
+      }
       const variants = this.styleManifest?.path_variants?.[String(pathMask)];
       if (variants?.length) {
         const variant = Math.abs((Number(x) * 92837111 + Number(y) * 689287499) % variants.length);
@@ -425,8 +433,10 @@ class BigvilleScene extends Phaser.Scene {
         // edges and non-material overlays remain individual grid sprites.
         if (tile === 0 || tile === 2 || tile === 3 || tile === 4 || tile === 5 || tile === 7) continue;
         if (tile === 6 && this.neighbourMask(grid, x, y, 6) === 15) continue;
-        const frame = this.terrainFrame(tile, x, y, grid);
-        const sprite = this.add.sprite(this.cellX(x), this.cellY(y), 'tileset', frame)
+        const rendered = this.terrainFrame(tile, x, y, grid);
+        const texture = rendered?.texture || 'tileset';
+        const frame = rendered?.frame ?? rendered;
+        const sprite = this.add.sprite(this.cellX(x), this.cellY(y), texture, frame)
           .setScale(DISPLAY_SCALE).setDepth(this.depthAt(x, y, 0));
         this.objects.push(sprite);
       }
@@ -500,7 +510,7 @@ class BigvilleScene extends Phaser.Scene {
       if (!frames?.length) return;
       const variant = Math.abs((Number(x) * 92837111 + Number(y) * 689287499) % frames.length);
       const sprite = this.add.sprite(this.cellX(x), this.cellY(y), 'material_edges', frames[variant])
-        .setScale(DISPLAY_SCALE).setDepth(-40);
+        .setScale(1).setDepth(-40);
       this.objects.push(sprite);
     };
     for (let y = 0; y < grid.length; y++) {
@@ -588,44 +598,22 @@ class BigvilleScene extends Phaser.Scene {
   drawSquareFixtures(map) {
     const fixtures = map.square_fixtures || [];
     if (!fixtures.length) return;
-    const parts = this.assetManifest?.buildings?.parts || {};
-    const props = this.styleManifest?.props?.sprites || this.assetManifest?.terrain?.props || {};
-    const addPart = (name, x, y, depth, tint = null) => {
-      if (parts[name] === undefined) return;
-      const sprite = this.add.sprite(this.cellX(x), this.cellY(y) - 4 * DISPLAY_SCALE,
-        'building_parts', parts[name]).setScale(DISPLAY_SCALE)
-        .setDepth(this.depthAt(x, y, depth));
-      if (tint !== null) sprite.setTint(tint);
-      this.objects.push(sprite);
-    };
-    const addProp = (name, x, y, depth = 2.4) => {
-      if (props[name] === undefined) return;
-      const sprite = this.add.sprite(this.cellX(x), this.cellY(y) - 6 * DISPLAY_SCALE,
-        'props', props[name]).setScale(DISPLAY_SCALE)
-        .setDepth(this.depthAt(x, y, depth));
-      this.objects.push(sprite);
-    };
+    const sprites = this.styleManifest?.square_fixtures?.sprites || {};
     for (const fixture of fixtures) {
       const x = Number(fixture.x || 0);
       const y = Number(fixture.y || 0);
+      let spriteName = fixture.kind;
       if (fixture.kind === 'market_stall') {
-        const colour = fixture.goods?.includes('bread') ? 0xc9854f
-          : fixture.goods?.includes('fish') ? 0x6388a7 : 0xb56f88;
-        // Two-cell canopy and counter: a stall reads as a little civic object
-        // while remaining assembled from the same reusable building vocabulary.
-        addPart('roof_edge', x, y, 2.2, colour);
-        addPart('roof_edge', x + 1, y, 2.2, colour);
-        addPart('counter', x, y + 1, 2.3, 0xa66d43);
-        addPart('counter', x + 1, y + 1, 2.3, 0xa66d43);
-        addPart('sign', x + 1, y + 1, 2.5, 0xf0c36b);
-      } else if (fixture.kind === 'noticeboard') {
-        addPart('sign', x, y, 2.5, 0xd7a45c);
-      } else if (fixture.kind === 'well') {
-        addPart('counter', x, y, 2.4, 0x7499a0);
-        addPart('rug', x, y, 2.5, 0x8fb8b5);
-      } else if (fixture.kind === 'bench') {
-        addProp('bench', x, y);
+        spriteName = fixture.goods?.includes('bread') ? 'market_stall_bread'
+          : fixture.goods?.includes('fish') ? 'market_stall_fish' : 'market_stall_cloth';
       }
+      const frame = sprites[spriteName];
+      if (frame === undefined) continue;
+      // The dedicated atlas is authored at the renderer's displayed cell size:
+      // one frame is one 32px world cell, so there is no 16px-part upscaling.
+      const sprite = this.add.sprite(this.cellX(x), this.cellY(y), 'square_fixtures', frame)
+        .setDepth(this.depthAt(x, y, 2.6));
+      this.objects.push(sprite);
     }
   }
 

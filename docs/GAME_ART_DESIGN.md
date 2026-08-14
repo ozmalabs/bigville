@@ -10,6 +10,11 @@ asset manifest.
 - One map cell is one walkable world square, approximately one metre.
 - The logical terrain grid is 16x16 pixels per cell and is displayed at 2x for
   readable pixel-art silhouettes.
+- Broad ground materials, path transitions, and material boundaries are
+  authored directly at the 32px displayed-cell resolution; they are not
+  enlarged 16px tiles. This keeps terrain detail at the same visual scale as
+  the 96px three-cell building facades while preserving the 16px simulation
+  grid.
 - A resident occupies one cell, with their feet anchored at the cell centre's
   lower edge. A held item shares that anchor and is drawn as a separate layer.
 - A standard building occupies 3x3 cells and is therefore 48x48 logical
@@ -37,8 +42,9 @@ asset manifest.
 
 Every rendered object has an explicit layer and state:
 
-1. terrain tile (`16x16`, scenario grid), including cardinally masked
-   path/shore transitions so corners and junctions are not forced to be square
+1. terrain field and topology overlay (`32x32` displayed cell, 16x16 scenario
+   grid), including cardinally masked path/shore transitions so corners and
+   junctions are not forced to be square
 2. small world prop or animal (`16x16` or an integer multiple), placed as a
    transparent overlay so flowers, verges, reeds, benches, and work details
    can vary independently of the map geometry
