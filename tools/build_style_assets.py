@@ -96,10 +96,107 @@ def opaque_tile(image: Image.Image) -> Image.Image:
     return out.convert("RGB")
 
 
+def material_texture(frames: list[Image.Image], choices: list[int], blocks: int = 8,
+                     seed: int = 17) -> Image.Image:
+    """Make a larger, varied material field from small pixel-art samples.
+
+    The simulation still addresses terrain one logical cell at a time, but a
+    material is rendered as a field rather than as one visibly repeated square
+    per cell.  Mirrored samples keep the pixel language intact while breaking
+    the obvious checkerboard rhythm at normal zoom.
+    """
+    size = TILE * blocks
+    out = Image.new("RGB", (size, size))
+    for row in range(blocks):
+        for col in range(blocks):
+            index = (col * 13 + row * 29 + seed) % len(choices)
+            frame = frames[choices[index]].convert("RGB")
+            transform = (col * 3 + row * 5 + seed) % 4
+            if transform == 1:
+                frame = ImageOps.mirror(frame)
+            elif transform == 2:
+                frame = ImageOps.flip(frame)
+            elif transform == 3:
+                frame = frame.transpose(Image.Transpose.ROTATE_180)
+            out.paste(frame, (col * TILE, row * TILE))
+    return out
+
+
+def material_field(kind: str, size: int = 128) -> Image.Image:
+    """Paint a larger pixel-art material without logical-cell borders.
+
+    Some source tiles intentionally contain a little scene dressing (lilypads,
+    paving seams, or crop rows).  Repeating those tiles as a field would just
+    move the square problem to a larger scale, so the broad materials get a
+    sparse, deterministic pixel treatment in the same palette instead.
+    """
+    palettes = {
+        "path": [(224, 160, 64), (235, 172, 78), (204, 137, 48), (171, 108, 31)],
+        "water": [(16, 96, 112), (24, 106, 124), (36, 121, 139), (65, 145, 155)],
+        "soil": [(96, 48, 16), (111, 57, 18), (132, 70, 22), (77, 42, 17)],
+        "stone": [(160, 128, 96), (178, 145, 108), (139, 108, 80), (196, 165, 123)],
+    }
+    colors = palettes[kind]
+    out = Image.new("RGB", (size, size), colors[0])
+    draw = ImageDraw.Draw(out)
+
+    def number(x: int, y: int, salt: int = 0) -> int:
+        value = (x * 374761393 + y * 668265263 + salt * 1442695041) & 0xffffffff
+        value = ((value ^ (value >> 13)) * 1274126177) & 0xffffffff
+        return (value ^ (value >> 16)) & 0x7fffffff
+
+    for y in range(size):
+        for x in range(size):
+            value = number(x, y, len(kind)) % 100
+            if value < 12:
+                out.putpixel((x, y), colors[1])
+            elif value < 18:
+                out.putpixel((x, y), colors[2])
+            elif value < 21:
+                out.putpixel((x, y), colors[3])
+
+    if kind == "water":
+        for y in range(4, size, 9):
+            for x in range((y * 3) % 13 - 8, size, 25):
+                if number(x, y, 5) % 3:
+                    draw.line((x, y, x + 5, y - 1), fill=colors[3], width=1)
+                    draw.point((x + 6, y), fill=colors[1])
+    elif kind == "soil":
+        for y in range(5, size, 7):
+            for x in range((y * 5) % 11 - 5, size, 23):
+                draw.line((x, y, x + 8, y), fill=colors[3], width=1)
+    elif kind == "path":
+        for i in range(36):
+            x = number(i, 7, 3) % size
+            y = number(i, 19, 7) % size
+            draw.point((x, y), fill=colors[3])
+            if number(i, 29, 11) % 2:
+                draw.point((min(size - 1, x + 1), y), fill=colors[2])
+    elif kind == "stone":
+        # Irregular paving stones are deliberately larger and offset from the
+        # simulation grid, so a paved square is still readable as a surface,
+        # not as a set of map cells.
+        for i in range(32):
+            x = number(i, 2, 13) % size
+            y = number(i, 31, 17) % size
+            w = 7 + number(i, 41, 19) % 11
+            h = 5 + number(i, 53, 23) % 8
+            shade = colors[1 + number(i, 67, 29) % 3]
+            points = [(x, y + 1), (x + 2, y), (x + w - 2, y),
+                      (x + w, y + 2), (x + w - 1, y + h),
+                      (x + 2, y + h - 1), (x, y + h - 2)]
+            draw.polygon(points, fill=shade)
+            draw.line((x + 1, y + h, x + w - 2, y + h), fill=colors[2], width=1)
+    return out
+
+
 def path_transition(grass: Image.Image, path: Image.Image, mask: int,
                     variant: int = 0) -> Image.Image:
     """Blend an organic path edge into grass using N/E/S/W connectivity."""
-    out = grass.copy()
+    # Paths are overlays now.  The larger grass/path material fields underneath
+    # provide the continuous ground, so each transition must not stamp a
+    # second square of grass over its neighbours.
+    out = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
     shape = Image.new("L", (TILE, TILE), 0)
     draw = ImageDraw.Draw(shape)
     draw.rectangle((4, 4, 11, 11), fill=255)
@@ -112,7 +209,7 @@ def path_transition(grass: Image.Image, path: Image.Image, mask: int,
         draw.polygon(((4, 8), (11, 8), (10 + offset, 15), (5 + offset, 15)), fill=255)
     if mask & 8:
         draw.polygon(((0, 5 + offset), (8, 4), (8, 11), (0, 10 + offset)), fill=255)
-    out.paste(path, (0, 0), shape)
+    out.paste(path.convert("RGBA"), (0, 0), shape)
     return out
 
 
@@ -136,7 +233,7 @@ def orient_path(path: Image.Image, mask: int, variant: int) -> Image.Image:
 def water_transition(water: Image.Image, shoreline: Image.Image, mask: int) -> Image.Image:
     """Keep open water open and add shoreline only at exposed edges."""
     if mask == 15:
-        return water.copy()
+        return Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
     if mask == 0:
         return shoreline.copy()
     shape = Image.new("L", (TILE, TILE), 0)
@@ -151,8 +248,8 @@ def water_transition(water: Image.Image, shoreline: Image.Image, mask: int) -> I
         draw.rectangle((0, 10, 15, 15), fill=255)
     if not mask & 8:
         draw.rectangle((0, 0, 5, 15), fill=255)
-    out = water.copy()
-    out.paste(shoreline, (0, 0), shape)
+    out = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
+    out.paste(shoreline.convert("RGBA"), (0, 0), shape)
     return out
 
 
@@ -174,6 +271,15 @@ def build_tiles(manifest: dict, terrain: Image.Image, reference: Image.Image,
         (TILE, TILE), Image.Resampling.NEAREST).convert("RGB")
     base[1] = reference.crop((340, 20, 372, 52)).resize(
         (TILE, TILE), Image.Resampling.NEAREST).convert("RGB")
+    material_files = {
+        "ground": material_texture(base, [0, 1], seed=11),
+        "path_ground": material_field("path"),
+        "water_ground": material_field("water"),
+        "soil_ground": material_field("soil"),
+        "stone_ground": material_field("stone"),
+    }
+    for name, texture in material_files.items():
+        texture.save(ASSETS / f"style_{name}.png")
     semantic = {
         "grass": base[0], "grass_alt": base[1], "path": base[2],
         "dirt": base[2], "square": base[4], "floor": base[4],
@@ -355,6 +461,17 @@ def main() -> None:
         "held_item_source": "style_held_items_atlas_source.png",
         "tiles": {"file": "style_tiles.png", "frame": TILE,
                   "tiles": manifest["tileset"]["tiles"]},
+        "materials": {
+            "logical_tile": TILE,
+            "texture_scale": 2,
+            "fields": {
+                "ground": "style_ground.png",
+                "path": "style_path_ground.png",
+                "water": "style_water_ground.png",
+                "soil": "style_soil_ground.png",
+                "stone": "style_stone_ground.png",
+            },
+        },
         "path_variants": path_variants,
         "props": {"file": "style_props.png", "frame": TILE, "sprites": prop_sprites},
         "large_props": {"file": "style_large_props.png", "frame": 32,
@@ -370,7 +487,9 @@ def main() -> None:
                        "sprites": held_item_sprites},
     }
     (ASSETS / "style_manifest.json").write_text(json.dumps(out_manifest, indent=2) + "\n")
-    print("wrote style_tiles.png style_props.png style_large_props.png style_buildings.png style_manifest.json")
+    print("wrote style_tiles.png style_ground.png style_path_ground.png style_water_ground.png "
+          "style_soil_ground.png style_stone_ground.png style_props.png style_large_props.png "
+          "style_buildings.png style_manifest.json")
 
 
 if __name__ == "__main__":

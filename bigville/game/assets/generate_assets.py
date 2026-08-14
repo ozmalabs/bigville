@@ -1027,7 +1027,7 @@ def main():
             "held_item_source": "style_held_items_atlas_source.png",
             "manifest": "style_manifest.json",
             "builder": "tools/build_style_assets.py",
-            "runtime_note": "the original village scene is reference-only; clients assemble transparent props, facades, and opaque terrain frames",
+            "runtime_note": "the original village scene is reference-only; clients assemble masked material fields, transparent transitions, props, and facades",
         },
         "rendering": {
             "projection": "square_cells_3q_top_down",

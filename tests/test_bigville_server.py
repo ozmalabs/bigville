@@ -28,6 +28,9 @@ def test_game_assets_are_present():
                          "assets/style_terrain_atlas_source.png",
                          "assets/style_building_atlas_source.png",
                          "assets/style_tiles.png", "assets/style_props.png",
+                         "assets/style_ground.png", "assets/style_path_ground.png",
+                         "assets/style_water_ground.png", "assets/style_soil_ground.png",
+                         "assets/style_stone_ground.png",
                          "assets/style_large_props.png", "assets/style_buildings.png",
                          "assets/style_cutaway_atlas_source.png", "assets/style_cutaways.png",
                          "assets/style_character_walk_atlas_source.png", "assets/style_characters.png",
@@ -55,6 +58,10 @@ def test_asset_manifest_covers_entity_items_and_modular_buildings():
     assert manifest["style_assets"]["held_item_source"] == "style_held_items_atlas_source.png"
     style = json.loads((GAME_ROOT / "assets/style_manifest.json").read_text())
     assert style["tiles"]["file"] == "style_tiles.png"
+    assert style["materials"]["texture_scale"] == 2
+    assert set(style["materials"]["fields"]) == {"ground", "path", "water", "soil", "stone"}
+    assert all((GAME_ROOT / "assets" / filename).is_file()
+               for filename in style["materials"]["fields"].values())
     assert len(style["path_variants"]) == 16
     assert all(len(frames) == 3 for frames in style["path_variants"].values())
     from PIL import Image

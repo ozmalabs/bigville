@@ -203,6 +203,14 @@ class BigvilleScene extends Phaser.Scene {
     // These are style-matched frames extracted from the original village art;
     // the map still chooses and assembles them from its own grid.
     this.load.spritesheet('tileset', 'assets/style_tiles.png', {frameWidth: TILE, frameHeight: TILE});
+    // Material fields are larger repeating textures masked to the canonical
+    // grid.  They remove the one-texture-square-per-cell look without making
+    // the art responsible for map topology or collision.
+    this.load.image('material_ground', 'assets/style_ground.png');
+    this.load.image('material_path', 'assets/style_path_ground.png');
+    this.load.image('material_water', 'assets/style_water_ground.png');
+    this.load.image('material_soil', 'assets/style_soil_ground.png');
+    this.load.image('material_stone', 'assets/style_stone_ground.png');
     this.load.spritesheet('props', 'assets/style_props.png', {frameWidth: TILE, frameHeight: TILE});
     this.load.spritesheet('large_props', 'assets/style_large_props.png', {frameWidth: 32, frameHeight: 32});
     this.load.spritesheet('buildings', 'assets/buildings.png', {frameWidth: 48, frameHeight: 48});
@@ -386,14 +394,63 @@ class BigvilleScene extends Phaser.Scene {
 
   drawCanonicalMap(map) {
     const grid = map.grid || [];
+    this.drawMaterialFields(map);
     for (let y = 0; y < grid.length; y++) {
       for (let x = 0; x < (grid[y] || []).length; x++) {
         const tile = grid[y][x];
+        // These materials are continuous fields.  Only topology-dependent
+        // edges and non-material overlays remain individual grid sprites.
+        if (tile === 0 || tile === 2 || tile === 3 || tile === 4 || tile === 5 || tile === 7) continue;
+        if (tile === 6 && this.neighbourMask(grid, x, y, 6) === 15) continue;
         const frame = this.terrainFrame(tile, x, y, grid);
         const sprite = this.add.sprite(this.cellX(x), this.cellY(y), 'tileset', frame)
           .setScale(DISPLAY_SCALE).setDepth(this.depthAt(x, y, 0));
         this.objects.push(sprite);
       }
+    }
+  }
+
+  neighbourMask(grid, x, y, value) {
+    const same = (nx, ny) => grid[ny]?.[nx] === value;
+    return (same(x, y - 1) ? 1 : 0) | (same(x + 1, y) ? 2 : 0) |
+      (same(x, y + 1) ? 4 : 0) | (same(x - 1, y) ? 8 : 0);
+  }
+
+  drawMaterialFields(map) {
+    const grid = map.grid || [];
+    const width = (map.width || grid[0]?.length || 0) * TILE * DISPLAY_SCALE;
+    const height = (map.height || grid.length || 0) * TILE * DISPLAY_SCALE;
+    const fields = [
+      ['ground', (tile) => tile === 0 || tile === 7],
+      ['path', (tile) => tile === 1],
+      ['water', (tile) => tile === 6],
+      ['soil', (tile) => tile === 5],
+      ['stone', (tile) => tile === 2 || tile === 3 || tile === 4],
+    ];
+    const materialScale = Number(this.styleManifest?.materials?.texture_scale || DISPLAY_SCALE);
+    for (const [name, predicate] of fields) {
+      const texture = `material_${name}`;
+      if (!this.textures.exists(texture)) continue;
+      const maskShape = this.make.graphics({x: 0, y: 0, add: true});
+      maskShape.fillStyle(0xffffff, 1);
+      let hasCells = false;
+      for (let y = 0; y < grid.length; y++) {
+        for (let x = 0; x < (grid[y] || []).length; x++) {
+          if (!predicate(grid[y][x])) continue;
+          hasCells = true;
+          maskShape.fillRect(x * TILE * DISPLAY_SCALE, y * TILE * DISPLAY_SCALE,
+            TILE * DISPLAY_SCALE, TILE * DISPLAY_SCALE);
+        }
+      }
+      if (!hasCells) {
+        maskShape.destroy();
+        continue;
+      }
+      const field = this.add.tileSprite(width / 2, height / 2, width, height, texture)
+        .setOrigin(0.5).setTileScale(materialScale).setDepth(-50);
+      field.setMask(maskShape.createGeometryMask());
+      maskShape.setVisible(false);
+      this.objects.push(field, maskShape);
     }
   }
 

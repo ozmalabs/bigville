@@ -71,6 +71,17 @@
       "water_transition_15": 59
     }
   },
+  "materials": {
+    "logical_tile": 16,
+    "texture_scale": 2,
+    "fields": {
+      "ground": "style_ground.png",
+      "path": "style_path_ground.png",
+      "water": "style_water_ground.png",
+      "soil": "style_soil_ground.png",
+      "stone": "style_stone_ground.png"
+    }
+  },
   "path_variants": {
     "0": [
       60,

@@ -74,8 +74,10 @@ The current art direction board is included at
 the original village rendering is preserved as a reference at
 [`bigville/game/assets/style_source_village.png`](bigville/game/assets/style_source_village.png),
 but it is not drawn as a backdrop. `tools/build_style_assets.py` turns the
-reference language into assembled terrain, transitions, props, and building
-facades. It also includes matching roof-off cutaway facades with furnished
+reference language into assembled material fields, terrain transitions, props,
+and building facades. Material fields are masked to the canonical map cells, so
+grass, paths, water, soil, and stone read as continuous ground instead of a
+checkerboard of independently stamped squares. It also includes matching roof-off cutaway facades with furnished
 interiors, so scenarios can use different maps with the same cosy visual style
 without falling back to a separate interior art language. Residents use a
 32px directional walk-cycle atlas with idle, step-A, and step-B frames, so
