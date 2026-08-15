@@ -1,4 +1,5 @@
 from .cheap import CheapBackend, DeterministicBackend, NPCGoal
+from .animal import AnimalNPCBackend
 from .conversation import ConversationMessage, TemplateConversationInterface
 from .human import HumanBackend
 from .llm import LLMBackend, LLMProvider
@@ -11,6 +12,7 @@ __all__ = [
     "ActorContext",
     "ActorContinuation",
     "ActorResponse",
+    "AnimalNPCBackend",
     "CheapBackend",
     "DeterministicBackend",
     "NPCGoal",

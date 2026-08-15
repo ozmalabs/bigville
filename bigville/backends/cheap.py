@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 
 from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
+from .psi_can import CANWeightModel
 
 
 @dataclass
@@ -40,18 +41,29 @@ class DeterministicBackend:
         self.current_goal: NPCGoal | None = None
         self.last_speech_turn = -100
         self.time_band = "morning"
+        self.model = CANWeightModel()
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self._update_goals(context)
         options = [o for o in context.affordances
                    if o.get("action") not in {"rest", ""}]
-        choice = max(options, key=lambda option: self._choice_key(option, context), default=None)
+        # PSI/CAN weights the already-admissible options.  The durable goal
+        # state remains useful as a modest task salience bonus, but it never
+        # bypasses world legality.
+        weighted_options = []
+        for option in options:
+            candidate = dict(option)
+            candidate["score"] = (float(candidate.get("score", 0.0))
+                                   + self._goal_bonus(candidate)
+                                   + (3.0 if candidate.get("path_preferred") else 0.0))
+            weighted_options.append(candidate)
+        choice = self.model.choose(context, weighted_options)
         if choice is None:
             rest = next((o for o in context.affordances
                          if o.get("action") == "rest"), None)
             energy = float(context.observations.get("energy", 100.0))
             if rest is not None and energy < self.rest_energy_threshold:
-                choice = rest
+                choice = self.model.choose(context, [rest])
         if choice is None:
             # A blank response is a valid NPC observation turn.  In particular,
             # do not submit a rest plan that the world will correctly reject
@@ -69,7 +81,7 @@ class DeterministicBackend:
             continuation = ActorContinuation(destination=choice["destination"])
         return ActorResponse(
             major_action=ProposedAction(str(choice["action"]), params,
-                                        f"npc_goal:{self.current_goal.kind if self.current_goal else 'observe'}"),
+                            "cheap_psi_can"),
             utterances=self._speech(context),
             continuation=continuation,
         )
@@ -148,6 +160,18 @@ class DeterministicBackend:
                 str(option.get("target", "")),
                 str(option.get("kind", "")))
 
+    def _goal_bonus(self, option):
+        if self.current_goal is None:
+            return 0.0
+        actions = {
+            "eat": {"eat"}, "recover": {"rest"},
+            "care_for_animals": {"tend_animals", "milk", "shear"},
+            "tend_farm": {"harvest", "sow", "water"},
+            "work": {"work", "sell_labor"}, "travel": {"move"},
+            "rest": {"rest"},
+        }
+        return 30.0 if option.get("action") in actions.get(self.current_goal.kind, set()) else 0.0
+
     def _speech(self, context: ActorContext) -> list[dict]:
         """Choose occasional structured speech to a person in the observation."""
         nearby = context.observations.get("nearby_residents", []) or []
@@ -186,7 +210,8 @@ class DeterministicBackend:
                 "supports_free_text": self.supports_free_text,
                 "requires_conversational_interface": self.requires_conversational_interface,
             }, "time_band": self.time_band,
-                      "last_speech_turn": self.last_speech_turn},
+                      "last_speech_turn": self.last_speech_turn,
+                      "decision_model": "psi_can_weighted"},
         )
 
 

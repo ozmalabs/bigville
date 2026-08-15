@@ -156,11 +156,11 @@ class BigvilleOcelotActor:
         elif stranger:
             code = 0                         # silence with an unknown person
         elif float(ba.get("affect_resentment", 0.0)) > 0.5:
-            code = 5                         # barb
+            code = 3                         # barb
         elif float(share_salience) * max(0.0, float(ba.get("tie_strength", 0.0))) > 0.2:
-            code = 4                         # share
+            code = 5                         # share
         elif float(goal_pressure) > 0.2:
-            code = 2                         # smalltalk/goal opening
+            code = 7                         # request/goal opening
         elif float(ba.get("affect_affection", 0.0)) > 0.0 or fpp_is_greeting:
             code = 1
         elif float(arousal) >= float(loquacity_threshold) * 0.25:
@@ -336,6 +336,12 @@ class BigvilleWorld:
         self._households = {}
         self._infrastructure = {}
         self._animals = {}
+        self._animal_minds = {}
+        self._animal_decisions = {}
+        self._animal_targets = {}
+        self._fences = {}
+        self._enclosures = {}
+        self._enclosure_cells = {}
         self._crops = {}
         self._land = {}
         self._water_sources = {}
@@ -389,6 +395,7 @@ class BigvilleWorld:
         self._illnesses = {}
         self._births = []
         self._deaths = []
+        self._alive_snapshot = {}
         self._report_history = []
         self._journals = {}
         self._rng = random.Random(int(map_seed))
@@ -516,6 +523,7 @@ class BigvilleWorld:
                 self.eng.set_attr(node, "condition", 1.0)
             self._last_stock_qty[kind] = qty
         self._claim_canonical_job_outputs()
+        self._record_unlogged_deaths()
 
     def _job_input(self, job, kind, is_item=False):
         """Find one physical input for a job without inventing ownership."""
@@ -1127,6 +1135,11 @@ class BigvilleWorld:
             "animals": len(self._animals),
             "animals_with_grazing_land": sum(bool(list(self.eng.neighbours(a, "grazes_on")))
                                               for a in self._animals.values()),
+            "enclosures": len(self._enclosures),
+            "fences": len(self._fences),
+            "animals_in_enclosures": sum(bool(list(self.eng.neighbours(a, "kept_in")))
+                                          for a in self._animals.values()),
+            "intact_enclosures": sum(self.enclosure_intact(name) for name in self._enclosures),
             "deposits": len(self._resource_deposits), "shops": len(self._shops),
             "storage_containers": sum(
                 1 for name, (node, _) in self._containers.items()
@@ -1411,6 +1424,12 @@ class BigvilleWorld:
         if pasture_cell is not None:
             self.add_land("village_pasture", use="pasture", soil="loam", area=4.0,
                           cell=pasture_cell)
+            px, py = pasture_cell
+            pasture_cells = [(x, y) for y in range(py - 2, py + 3)
+                             for x in range(px - 2, px + 3)
+                             if (x, y) in self._map_cells]
+            self.add_enclosure("village_paddock", pasture_cells,
+                               kind="paddock", gates=((px, py - 2),))
         clerks = [name for name, node in self._actors.items()
                   if self.eng.node(node)["attrs"].get("role") == "clerk"]
         if clerks and farmers:
@@ -1450,9 +1469,10 @@ class BigvilleWorld:
                            cell=self._anchor_for_building("kitchen"))
         if farmers:
             farm_household = self._t100_households[farmers[0]["name"]]
-            for index, species in enumerate(("cow", "chicken", "pig", "sheep", "horse", "bee")):
+            for index, species in enumerate(("cow", "chicken", "pig", "sheep", "horse", "bee", "dog")):
                 self.add_animal(f"{species}_{index}", species, cell=pasture_cell,
-                                household=farm_household, land="village_pasture")
+                                household=farm_household, land="village_pasture",
+                                enclosure="village_paddock")
         for kind, qty in E.STARTING_STOCK.items():
             self.set_stock(kind, qty)
         # The reserve is physical stock, but food intended for sale must be
@@ -1650,6 +1670,14 @@ class BigvilleWorld:
         self._events[f"event:{len(self._events) + 1}"] = event
         if observer is not None:
             self.eng.add_edge_unchecked(self._actors[observer], "observed_event", event)
+        return event
+
+    def observe_event(self, observer, event):
+        """Give one resident an explicit observation of an existing event."""
+        self._actor(observer)
+        if event not in self._events.values():
+            raise KeyError("unknown world event")
+        self.eng.add_edge_unchecked(self._actors[observer], "observed_event", event)
         return event
 
     def event_data(self, event):
@@ -3158,15 +3186,128 @@ class BigvilleWorld:
 
     def max_load(self, carrier): return round(float(self.eng.node(self._containers[carrier][0])["attrs"]["max_load"]), 4)
 
-    # ---------------------------------------------------- animals (from the ANIMALS data) + carts/horses
-    def add_animal(self, name, species, *, cell=None, household=None, land=None):
+    # ---------------------------------------------------- fences, enclosures, and animal NPCs
+    def add_fence(self, name, *, cell=None, kind="wooden_fence", enclosure=None,
+                  gate=False):
+        spec = E.FENCE_TYPES[kind]
+        node = self.eng.add_node("Fence", {
+            "name": str(name), "kind": str(kind), "material": spec.get("material", ""),
+            "durability": float(spec.get("durability", 1.0)), "condition": 1.0,
+            "animal_barrier": 0.0 if gate or not spec.get("animal_barrier", True) else 1.0,
+            "gate": 1.0 if gate else 0.0,
+        })
+        self.eng.add_edge_unchecked(self._town, "has_fence", node)
+        self._fences[str(name)] = node
+        if cell is not None:
+            self._attach_at_cell(node, tuple(cell))
+        if enclosure is not None:
+            if enclosure not in self._enclosures:
+                raise KeyError(f"unknown enclosure: {enclosure}")
+            self.eng.add_edge_unchecked(node, "bounds", self._enclosures[enclosure])
+        return node
+
+    def add_enclosure(self, name, cells, *, kind="paddock", fence_kind=None, gates=()):
+        spec = E.ENCLOSURE_TYPES[kind]
+        selected = {tuple(cell) for cell in cells if tuple(cell) in self._map_cells}
+        if not selected:
+            raise ValueError("an enclosure needs at least one walkable cell")
+        node = self.eng.add_node("Enclosure", {
+            "name": str(name), "kind": str(kind), "purpose": spec.get("purpose", ""),
+            "fence_kind": fence_kind or spec.get("fence", "wooden_fence"),
+            "area": float(len(selected)),
+        })
+        self.eng.add_edge_unchecked(self._town, "has_enclosure", node)
+        self._enclosures[str(name)] = node
+        self._enclosure_cells[str(name)] = selected
+        gate_cells = {tuple(cell) for cell in gates}
+        for cell in sorted(selected):
+            self.eng.add_edge_unchecked(node, "contains_cell", self._map_cells[cell])
+        for x, y in sorted(selected):
+            boundary = any((x + dx, y + dy) not in selected
+                           for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            if boundary:
+                fence_name = f"{name}:fence:{x}:{y}"
+                self.add_fence(fence_name, cell=(x, y),
+                               kind="gate" if (x, y) in gate_cells else (fence_kind or spec.get("fence", "wooden_fence")),
+                               enclosure=name, gate=(x, y) in gate_cells)
+        return node
+
+    def enclosures(self):
+        return set(self._enclosures)
+
+    def enclosure_cells(self, name):
+        return set(self._enclosure_cells[name])
+
+    def animal_position(self, name):
+        return self.map_position_node(self._animals[name])
+
+    def animal_enclosure(self, name):
+        enclosures = list(self.eng.neighbours(self._animals[name], "kept_in"))
+        for enclosure_name, node in self._enclosures.items():
+            if node in enclosures:
+                return enclosure_name
+        return None
+
+    def fence_intact(self, name):
+        attrs = self.eng.node(self._fences[name])["attrs"]
+        return float(attrs.get("condition", 1.0)) > 0.0 or bool(attrs.get("gate", 0.0))
+
+    def enclosure_intact(self, name):
+        return all(self.fence_intact(fence_name)
+                   for fence_name, fence_node in self._fences.items()
+                   if self.eng.has_edge(fence_node, "bounds", self._enclosures[name]))
+
+    def break_fence(self, name):
+        self.eng.set_attr(self._fences[name], "condition", 0.0)
+        return True
+
+    def repair_fence(self, name):
+        self.eng.set_attr(self._fences[name], "condition", 1.0)
+        return True
+
+    def _animal_allowed_cell(self, name, cell):
+        enclosure = self.animal_enclosure(name)
+        return (enclosure is None or not self.enclosure_intact(enclosure)
+                or tuple(cell) in self._enclosure_cells.get(enclosure, set()))
+
+    def _move_animal_to(self, name, cell):
+        cell = tuple(cell)
+        if cell not in self._map_cells or not self._animal_allowed_cell(name, cell):
+            return self.animal_position(name)
+        node = self._animals[name]
+        old = self.animal_position(name)
+        if old in self._map_cells:
+            self.eng.remove_edge_unchecked(node, "at_cell", self._map_cells[old])
+        self._attach_at_cell(node, cell)
+        self.eng.set_attr(node, "last_npc_action", "move")
+        return cell
+
+    def _animal_step_toward(self, name, destination):
+        current = self.animal_position(name)
+        if current is None or destination not in self._map_cells:
+            return current
+        candidates = [(current[0] + 1, current[1]), (current[0] - 1, current[1]),
+                      (current[0], current[1] + 1), (current[0], current[1] - 1)]
+        viable = [cell for cell in candidates
+                  if cell in self._map_cells and self._animal_allowed_cell(name, cell)]
+        if not viable:
+            return current
+        return self._move_animal_to(name, min(
+            viable, key=lambda cell: self.distance(cell, destination)
+            if self.distance(cell, destination) is not None else 10**9))
+
+    def _animal_setup(self, species):
+        return dict(getattr(E, "ANIMAL_NPC_SETUP", {}).get(species, {}))
+
+    def add_animal(self, name, species, *, cell=None, household=None, land=None, enclosure=None):
         spec = E.ANIMALS[species]
         a = self.eng.add_node("Animal", {"name": name, "species": species, "role": spec.get("role", ""),
                                          "pull": float(spec.get("pull", 0.0)), "alive": 1.0,
                                          "matures": float(spec.get("matures", 0)), "lifespan": float(spec.get("lifespan", 0)),
                                          # feeding state (data-driven): what it eats, how much, and its starve limit
                                          "hunger": 0.0, "hunger_epoch": 0.0, "eats": spec.get("eats", ""),
-                                         "ration": float(spec.get("ration", 1)), "starve_limit": float(spec.get("starve_limit", 3))})
+                                         "ration": float(spec.get("ration", 1)), "starve_limit": float(spec.get("starve_limit", 3)),
+                                         "last_npc_action": "", "npc_model": "psi_can_weighted"})
         self.eng.add_edge_unchecked(self._town, "has_animal", a)
         self._animals = getattr(self, "_animals", {}); self._animals[name] = a
         if cell is None and household in self._household_cells:
@@ -3177,7 +3318,108 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._households[household], "keeps_animal", a)
         if land in self._land:
             self.eng.add_edge_unchecked(a, "grazes_on", self._land[land])
+        if enclosure is not None:
+            if enclosure not in self._enclosures:
+                raise KeyError(f"unknown enclosure: {enclosure}")
+            self.eng.add_edge_unchecked(a, "kept_in", self._enclosures[enclosure])
+        from bigville.backends.animal import AnimalNPCBackend
+        self._animal_minds[name] = AnimalNPCBackend(name, species, self._animal_setup(species))
+        self._animal_decisions[name] = {}
+        self._animal_targets[name] = {}
         return a
+
+    def animal_affordances(self, name):
+        if name not in self._animals:
+            raise KeyError(f"unknown animal: {name}")
+        attrs = self.eng.node(self._animals[name])["attrs"]
+        if float(attrs.get("alive", 0.0)) != 1.0:
+            return [{"action": "stay", "score": 0.0, "concepts": ["security"]}]
+        setup = self._animal_setup(attrs.get("species", ""))
+        position = self.animal_position(name)
+        enclosure = self.animal_enclosure(name)
+        allowed = self._enclosure_cells.get(enclosure, set()) if enclosure else set(self._map_cells)
+        options = []
+        if position not in allowed and allowed:
+            target = min(allowed, key=lambda cell: self.distance(position, cell)
+                         if self.distance(position, cell) is not None else 10**9)
+            options.append({"action": "move", "target": target, "score": 48.0,
+                            "concepts": ["security", "survival"]})
+        if float(attrs.get("hunger", 0.0)) > 0.0 and self.qty(attrs.get("eats", "")) >= float(attrs.get("ration", 1.0)):
+            options.append({"action": "eat", "kind": attrs.get("eats", ""), "score": 40.0,
+                            "concepts": ["survival"]})
+        if attrs.get("species") in {"cow", "sheep", "pig", "horse"} and position in allowed:
+            options.append({"action": "graze", "score": 22.0,
+                            "concepts": ["survival", "comfort"]})
+        if attrs.get("species") == "dog":
+            targets = []
+            for target, target_node in self._animals.items():
+                target_attrs = self.eng.node(target_node)["attrs"]
+                if (target != name and float(target_attrs.get("alive", 0.0)) == 1.0
+                        and target_attrs.get("species") in setup.get("preferred_targets", ())):
+                    targets.append((target, self.animal_position(target)))
+            targets.sort(key=lambda pair: pair[0])
+            if targets and targets[0][1] is not None:
+                target, target_pos = targets[0]
+                target_enclosure = self.animal_enclosure(target)
+                escaped = (target_enclosure and self.enclosure_intact(target_enclosure)
+                           and target_pos not in self._enclosure_cells.get(target_enclosure, set()))
+                options.append({"action": "herd", "target": target,
+                                "score": 65.0 if escaped else 31.0,
+                                "concepts": ["duty", "care"]})
+        options.append({"action": "stay", "score": 0.0, "concepts": ["security", "comfort"]})
+        self._animal_targets[name] = {str(option.get("target")): option.get("target")
+                                      for option in options if option.get("target") is not None}
+        return options
+
+    def _herd(self, dog, target):
+        dog_position = self.animal_position(dog)
+        target_position = self.animal_position(target)
+        if dog_position is None or target_position is None:
+            return False
+        if dog_position != target_position:
+            self._animal_step_toward(dog, target_position)
+            return True
+        enclosure = self.animal_enclosure(target) or self.animal_enclosure(dog)
+        if not enclosure:
+            return False
+        allowed = self._enclosure_cells[enclosure]
+        if target_position in allowed:
+            return False
+        destination = min(allowed, key=lambda cell: self.distance(target_position, cell)
+                          if self.distance(target_position, cell) is not None else 10**9)
+        self._move_animal_to(target, destination)
+        self.eng.add_edge_unchecked(self._animals[dog], "herded", self._animals[target])
+        return True
+
+    def animal_tick(self):
+        """Run one species-configured animal decision per living animal."""
+        from bigville.backends.protocol import ActorContext
+        for name, node in self._animals.items():
+            if not self.animal_alive(name):
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            mind = self._animal_minds.get(name)
+            if mind is None:
+                continue
+            context = ActorContext(
+                mind.character, int(self._turn),
+                {"hunger": float(attrs.get("hunger", 0.0)),
+                 "insecurity": 1.0 if not self._animal_allowed_cell(name, self.animal_position(name)) else 0.0,
+                 "social_pressure": 0.0, "arousal": 0.4},
+                self.animal_affordances(name))
+            response = mind.decide(context)
+            choice = dict(mind.last_choice)
+            self._animal_decisions[name] = choice
+            plan = response.major_action
+            self.eng.set_attr(node, "last_npc_action", plan.action if plan else "stay")
+            if plan is None:
+                continue
+            target = plan.params.get("target")
+            if plan.action == "move" and target is not None:
+                self._animal_step_toward(name, tuple(target))
+            elif plan.action == "herd" and target in self._animals:
+                self._herd(name, target)
+        return {name: dict(choice) for name, choice in self._animal_decisions.items()}
 
     def _husbandry_yield(self, actor, animal, task):
         """Perform one data-defined animal-care yield with a period cooldown."""
@@ -3812,6 +4054,7 @@ class BigvilleWorld:
                                         "major_action_kind": "", "last_major_action": "",
                                         # residents get hungry, eat food, and starve without it
                                         "hunger": 0.0, "hunger_epoch": 0.0, "alive": 1.0, "starve_limit": 4.0,
+                                        "death_event": -1.0, "death_recorded": 0.0,
                                         "eat_armed": 0.0,
                                         "appr_epoch": 0.0,   # apprenticeship: skill grows under a master
                                         # reading/writing + general capability (class-graded; raised at school)
@@ -3827,6 +4070,7 @@ class BigvilleWorld:
                                         "lock_armed": 0.0, "unlock_armed": 0.0})
         self.eng.add_edge_unchecked(self._town, "has_actor", a)
         self._actors[name] = a
+        self._alive_snapshot[name] = True
         body = self.eng.add_node("Body", {
             "health": 1.0, "mood": 0.5, "satiety": 0.0,
             "last_food": -1.0, "food_run": 0.0,
@@ -4192,14 +4436,45 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._actors[father], "parent_of", child)
         return child
 
+    def _death_cause(self, attrs):
+        cause = attrs.get("death_cause") or attrs.get("last_cause")
+        if cause:
+            return str(cause)
+        if float(attrs.get("hunger", 0.0)) >= float(attrs.get("starve_limit", 4.0)):
+            return "starvation"
+        return "unknown"
+
+    def _record_death_event(self, actor, *, cause="unknown"):
+        """Record a death as a world event without distributing knowledge."""
+        node = self._actors[actor]
+        attrs = self.eng.node(node)["attrs"]
+        if float(attrs.get("death_recorded", 0.0)) == 1.0:
+            return attrs.get("death_event", -1.0)
+        event = self.create_event("death", subject=actor,
+                                  detail=f"{actor} died ({cause}).", public=False)
+        self.eng.set_attr(node, "death_event", float(event.value))
+        self.eng.set_attr(node, "death_recorded", 1.0)
+        self._deaths.append({"actor": actor, "day": self.calendar()["day"],
+                             "cause": str(cause), "event": str(event)})
+        self._alive_snapshot[actor] = False
+        return event
+
+    def _record_unlogged_deaths(self):
+        """Bridge physical death transitions into explicit world events."""
+        for actor, node in self._actors.items():
+            attrs = self.eng.node(node)["attrs"]
+            alive = float(attrs.get("alive", 1.0)) == 1.0
+            if self._alive_snapshot.get(actor, alive) and not alive:
+                self._record_death_event(actor, cause=self._death_cause(attrs))
+            self._alive_snapshot[actor] = alive
+
     def record_death(self, actor, *, cause="unknown"):
         node = self._actors[actor]
         if float(self.eng.node(node)["attrs"].get("alive", 1.0)) != 1.0:
             return False
         self.eng.set_attr(node, "alive", 0.0)
         self.eng.set_attr(node, "health", "dead")
-        event = self.create_event("death", subject=actor, detail=f"{actor} died ({cause}).", public=True)
-        self._deaths.append({"actor": actor, "day": self.calendar()["day"], "cause": cause, "event": str(event)})
+        self._record_death_event(actor, cause=cause)
         return True
 
     def _daily_life_tick(self):
@@ -4773,6 +5048,22 @@ class BigvilleWorld:
             return {"news": {"of": {"village": {"weather": weather}}}}
         if kind == "answer":
             return {"acknowledgement": {"of": str(target)}}
+        if kind == "request":
+            return {"request": {"of": str(target)}}
+        if kind == "offer":
+            return {"offer": {"to": str(target)}}
+        if kind == "question":
+            return {"question": {"of": str(target)}}
+        if kind == "thanks":
+            return {"thanks": {"to": str(target)}}
+        if kind == "apology":
+            return {"apology": {"to": str(target)}}
+        if kind == "farewell":
+            return {"farewell": {"to": str(target)}}
+        if kind == "complaint":
+            return {"complaint": {"to": str(target)}}
+        if kind == "promise":
+            return {"promise": {"to": str(target)}}
         return None
 
     def _spontaneous_speech_tick(self):
@@ -4892,7 +5183,17 @@ class BigvilleWorld:
                 "residents": actors,
                 "stocks": {kind: self.qty(kind) for kind in sorted(self._stock) if kind != "none"},
                 "animals": [{"id": name, **dict(self.eng.node(node)["attrs"]),
-                             "position": self.map_position_node(node)} for name, node in self._animals.items()],
+                             "position": self.map_position_node(node),
+                             "enclosure": self.animal_enclosure(name),
+                             "npc_decision": dict(self._animal_decisions.get(name, {}))}
+                            for name, node in self._animals.items()],
+                "fences": [{"id": name, **dict(self.eng.node(node)["attrs"]),
+                            "position": self.map_position_node(node)}
+                           for name, node in self._fences.items()],
+                "enclosures": [{"id": name, **dict(self.eng.node(node)["attrs"]),
+                                "cells": sorted(self._enclosure_cells.get(name, ())),
+                                "intact": self.enclosure_intact(name)}
+                               for name, node in self._enclosures.items()],
                 "laws": [dict(v) for v in self._law_specs.values()],
                 "policies": [dict(v) for v in self._policy_specs.values()],
                 "documents": [{"kind": kind, "name": name} for kind, name in self._documents],
@@ -5349,6 +5650,7 @@ class BigvilleWorld:
             self._job_tick_armed = True
             self._run()
             self._job_tick_armed = False
+            self.animal_tick()
             # The town advances time. In normal mode each resident's private
             # Ocelot graph selects its own action; an interactive game mode
             # submits equivalent proposals through CognitionBackend instead.

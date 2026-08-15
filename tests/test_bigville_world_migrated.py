@@ -1256,7 +1256,7 @@ def test_seeded_town_sanity_report_catches_routes_and_provisioning_without_mutat
     report = w.sanity_report()
     assert report["population"] == 100 and report["alive"] == 100
     assert report["map_connected"] and not report["unreachable_residents"]
-    assert report["animals"] == report["animals_with_grazing_land"] == 6
+    assert report["animals"] == report["animals_with_grazing_land"] == 7
     assert report["crops"] == 8 and report["storage_containers"] == 3
     assert report["written_documents"] == len(E.POLICIES) + len(E.LAWS) + len(E.CHARTERS)
     assert report["registered_land"] == report["land"] and not report["unregistered_land"]

@@ -5,16 +5,29 @@ from bigville.runtime import BigvilleGraph
 from worlds.bigville_bond_world import BigvilleBondWorld
 
 SPEECH_MENU = [
-    dict(name="stay_silent", kind_code=0.0), dict(name="greeting", kind_code=1.0),
-    dict(name="smalltalk", kind_code=2.0), dict(name="barb", kind_code=3.0),
-    dict(name="hedged", kind_code=4.0), dict(name="share", kind_code=5.0),
-    dict(name="answer", kind_code=6.0),
+    dict(name="stay_silent", kind_code=0.0, is_silence=1.0, talk_aff=0.0, base_value=0.0),
+    dict(name="greeting", kind_code=1.0, talk_aff=1.0, base_value=0.3),
+    dict(name="smalltalk", kind_code=2.0, talk_aff=1.0, base_value=0.5),
+    dict(name="barb", kind_code=3.0, talk_aff=1.0, base_value=0.2),
+    dict(name="hedged", kind_code=4.0, talk_aff=1.0, base_value=0.2),
+    dict(name="share", kind_code=5.0, talk_aff=1.0, base_value=0.2),
+    dict(name="answer", kind_code=6.0, talk_aff=1.0, base_value=0.3),
+    dict(name="request", kind_code=7.0, talk_aff=1.0, base_value=0.12),
+    dict(name="offer", kind_code=8.0, talk_aff=1.0, base_value=0.12),
+    dict(name="question", kind_code=9.0, talk_aff=1.0, base_value=0.10),
+    dict(name="thanks", kind_code=10.0, talk_aff=1.0, base_value=0.08),
+    dict(name="apology", kind_code=11.0, talk_aff=1.0, base_value=0.06),
+    dict(name="farewell", kind_code=12.0, talk_aff=1.0, base_value=0.05),
+    dict(name="complaint", kind_code=13.0, talk_aff=1.0, base_value=0.08),
+    dict(name="promise", kind_code=14.0, talk_aff=1.0, base_value=0.05),
 ]
 _OPT_KEYS = ("kind_code", "is_silence", "talk_aff", "base_value", "warm_aff",
              "hostile_aff", "hedge_aff", "confide_aff", "greet_answer_aff",
              "q_answer_aff", "goal_aff", "face_cost")
 KIND_LABEL = {0: "stay_silent", 1: "greeting", 2: "smalltalk", 3: "barb",
-              4: "hedged", 5: "share", 6: "answer"}
+              4: "hedged", 5: "share", 6: "answer", 7: "request",
+              8: "offer", 9: "question", 10: "thanks", 11: "apology",
+              12: "farewell", 13: "complaint", 14: "promise"}
 ENCOUNTER_DEFAULTS = dict(occasion=1.0, obligation=0.0, fpp_is_greeting=0.0,
     fpp_is_question=0.0, share_salience=0.0, goal_pressure=0.0,
     speaker_arousal=0.0, stranger=0.0, face_weight=0.3,
@@ -86,7 +99,7 @@ class BigvilleSpeechWorld:
         elif float(attrs.get("share_salience", 0.0)) * float(bond.get("tie_strength", 0.0)) >= 2.0:
             kind = "share"
         elif attrs.get("goal_pressure", 0.0):
-            kind = "smalltalk"
+            kind = "request"
         elif float(bond.get("affect_affection", 0.0)) >= 1.0:
             kind = "greeting"
         elif float(attrs.get("loquacity_threshold", 1.0)) <= 0.2:

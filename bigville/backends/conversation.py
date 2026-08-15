@@ -42,7 +42,7 @@ DEFAULT_TEMPLATES = {
     "request": "request {request}",
     "question": "question {question}",
     "answer": "answer {answer}",
-    "offer": "offer {item} {quantity}",
+    "offer": "offer {item} to {recipient}",
     "purchase": "purchase {quantity} {item} from {seller}",
     "give": "give {quantity} {item} to {recipient}",
     "put": "put {item} in {container}",
@@ -50,6 +50,11 @@ DEFAULT_TEMPLATES = {
     "decline": "decline {thing}",
     "warning": "warning {target}",
     "share": "share {news}",
+    "thanks": "thank {target}",
+    "apology": "apologize to {target} for {reason}",
+    "farewell": "farewell to {target}",
+    "complaint": "complain to {target} about {subject}",
+    "promise": "promise {commitment} to {target}",
 }
 
 

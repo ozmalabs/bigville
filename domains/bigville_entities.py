@@ -897,6 +897,46 @@ ANIMALS = {
     "bee":     {"gives": {"honey": 3, "wax": 1}, "eats": "nectar", "matures": 1, "lifespan": 36, "role": "pollination"},
 }
 
+# Species-specific inputs for the inexpensive animal cognition backend.  These
+# are preferences and identity, not permissions: the world still publishes
+# admissible animal actions and enforces movement and feeding.
+ANIMAL_NPC_SETUP = {
+    "pig": {"role": "livestock", "drives": ("survival", "comfort"),
+            "personality": {"mood_bias": 0.20, "prior_world_safe": 0.65}},
+    "cow": {"role": "grazing_livestock", "drives": ("survival", "comfort"),
+            "personality": {"mood_bias": 0.25, "prior_world_safe": 0.70}},
+    "chicken": {"role": "poultry", "drives": ("survival", "security"),
+                "personality": {"mood_bias": 0.10, "prior_world_safe": 0.55}},
+    "horse": {"role": "draught", "drives": ("survival", "security", "duty"),
+              "personality": {"mood_bias": 0.05, "prior_world_safe": 0.45}},
+    "dog": {"role": "herding_dog", "drives": ("care", "duty", "security"),
+            "preferred_targets": ("cow", "sheep", "pig"),
+            "personality": {"mood_bias": 0.15, "role_identity": 0.85,
+                            "prior_world_safe": 0.55}},
+    "cat": {"role": "working_cat", "drives": ("survival", "security"),
+            "personality": {"mood_bias": 0.30, "prior_world_safe": 0.50}},
+    "sheep": {"role": "grazing_livestock", "drives": ("survival", "security"),
+              "personality": {"mood_bias": 0.15, "prior_world_safe": 0.65}},
+    "bee": {"role": "pollinator", "drives": ("duty", "survival"),
+            "personality": {"mood_bias": 0.05, "role_identity": 0.75,
+                            "prior_world_safe": 0.60}},
+}
+
+# Fences and enclosures are physical map entities.  They do not impose a
+# storage or ownership policy; they only constrain animal movement while intact.
+FENCE_TYPES = {
+    "wooden_fence": {"material": "timber", "durability": 1.0, "animal_barrier": True},
+    "hedge": {"material": "living_plant", "durability": 0.8, "animal_barrier": True},
+    "stone_wall": {"material": "stone", "durability": 1.4, "animal_barrier": True},
+    "gate": {"material": "timber", "durability": 1.0, "animal_barrier": False},
+}
+
+ENCLOSURE_TYPES = {
+    "paddock": {"purpose": "livestock", "fence": "wooden_fence"},
+    "yard": {"purpose": "working_animals", "fence": "wooden_fence"},
+    "orchard": {"purpose": "crops", "fence": "hedge"},
+}
+
 ANIMAL_HUSBANDRY = {
     "milk": {"species": "cow", "product": "milk", "cooldown": 1,
              "roles": ["farmer", "dairymaid", "animal_keeper"]},

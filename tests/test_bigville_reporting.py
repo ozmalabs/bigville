@@ -39,7 +39,7 @@ def test_report_covers_physical_economy_and_recorded_social_activity():
     assert economy["storage"]
     assert economy["land"]
     assert economy["living_animals"]
-    assert report["ecology"]["animals"]["alive"] == 6
+    assert report["ecology"]["animals"]["alive"] == 7
     assert report["social"]["relationships"]["directed_bonds"] == 1
     assert report["social"]["conversation"]["utterances"] == 1
     assert report["social"]["conversation"]["speakers"] == 1
