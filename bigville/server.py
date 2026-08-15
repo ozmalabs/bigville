@@ -47,6 +47,10 @@ class GameService:
             }
         return snapshot
 
+    def report(self) -> dict[str, Any]:
+        """Return the simulation report without requiring a game turn."""
+        return self.game.world.report()
+
     def turn(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Submit one human response and advance the shared turn."""
         response = ActorResponse.from_dict(payload)
@@ -95,6 +99,8 @@ class BigvilleHandler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.OK, {"ok": True, "schema": "bigville/api/1"})
         elif parsed.path == "/api/state":
             self._json(HTTPStatus.OK, self.service.state())
+        elif parsed.path == "/api/report":
+            self._json(HTTPStatus.OK, self.service.report())
         else:
             self._static(parsed.path)
 

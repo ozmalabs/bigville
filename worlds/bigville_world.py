@@ -389,6 +389,7 @@ class BigvilleWorld:
         self._illnesses = {}
         self._births = []
         self._deaths = []
+        self._report_history = []
         self._journals = {}
         self._rng = random.Random(int(map_seed))
         # Unified social graph.  These are world-mediated records; beliefs,
@@ -1142,6 +1143,20 @@ class BigvilleWorld:
             "essential_recipe_gaps": essential_recipe_gaps,
             "errors": errors, "warnings": warnings,
         }
+
+    def report(self, *, sample_size=30, seed=None):
+        """Return the current exact census, economy, and social report."""
+        from bigville.reporting import SimulationReporter
+        return SimulationReporter(self).report(sample_size=sample_size, seed=seed)
+
+    def record_report_snapshot(self, *, label=None, sample_size=30, seed=None):
+        """Record a read-only time-series snapshot for later comparison."""
+        from bigville.reporting import SimulationReporter
+        return SimulationReporter(self).record_snapshot(label=label, sample_size=sample_size, seed=seed)
+
+    def report_history(self):
+        from bigville.reporting import SimulationReporter
+        return SimulationReporter(self).history()
 
     def distance(self, a, b):
         """Shortest walkable-cell distance; map distance is a world fact, not a preference."""
@@ -3399,6 +3414,8 @@ class BigvilleWorld:
         """
         if not getattr(self, "_cast100", None):
             raise ValueError("run_village requires BigvilleWorld.from_town100()")
+        if periods and not self._report_history:
+            self.record_report_snapshot(label="initial")
         for _ in range(int(periods)):
             # First let the world advance: crops grow, livestock metabolise,
             # residents become hungry, and spoilage is applied. Residents do
@@ -3412,6 +3429,7 @@ class BigvilleWorld:
             self._cleanup_village_transients()
             if int(self.calendar()["day"]) % 7 == 0:
                 self._publish_village_weekly()
+            self.record_report_snapshot(label=f"clock:{int(self.calendar()['clock'])}")
         return self.sanity_report()
 
     def pass_period(self, n=1):
@@ -4886,7 +4904,8 @@ class BigvilleWorld:
                 "proposals": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._proposals.items()],
                 "cases": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._cases.items()],
                 "births": list(self._births), "deaths": list(self._deaths),
-                "sanity": self.sanity_report()}
+                "sanity": self.sanity_report(),
+                "report": self.report(), "report_history": self.report_history()}
 
     # ---------------------------------------------------- turns and action budgets
     def _claim_major_action(self, actor, kind):

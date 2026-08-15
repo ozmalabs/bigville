@@ -16,6 +16,21 @@ game = create_game(player="Ada", default_backend="cheap")
 state = game.step()
 ```
 
+The simulation also exposes a read-only statistical report. It contains an
+exact census and physical/economic/social measurements, plus a deterministic
+simple-random sample estimate with finite-population standard errors:
+
+```python
+report = game.world.report(sample_size=30, seed=7)
+print(report["population"]["alive"])
+print(report["economy"]["transactions"])
+print(report["social"]["conversation"])
+```
+
+`run_village()` records compact period snapshots and deltas in the report's
+`series` field. The same current report is available to clients at
+`GET /api/report`; it does not advance the simulation or create world facts.
+
 Bigville is standalone: its graph runtime, world mechanics, seed data, backend
 protocol, persistence model, and tests are all in this repository. Cognition
 providers may be embedded, remote, deterministic, human-driven, or backed by
