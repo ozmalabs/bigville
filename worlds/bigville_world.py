@@ -10,13 +10,16 @@ DATA EDIT, no code change.
 """
 from __future__ import annotations
 
+import json
 import math
 import random
 import heapq
 from collections import deque
+from pathlib import Path
 
 from bigville.runtime import (BigvilleGraph, WorldAdapter, boot_core,
                                load_seeds_into, manifest_for)
+from bigville.scenarios import load_scenario
 from domains import bigville_entities as E               # noqa: E402
 from worlds.bigville_bond_world import KNOBS as BOND_KNOBS, SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 from worlds.bigville_speech_world import (  # noqa: E402
@@ -27,6 +30,38 @@ from worlds.bigville_speech_world import (  # noqa: E402
 )
 
 MINUTES_PER_TICK = 15.0
+
+# How strongly a held tie_strength lowers the bar to initiate smalltalk --
+# effective_threshold = loquacity_threshold / (1.0 + ACCOMMODATION_GAIN *
+# tie_strength), the same multiplicative-coupling shape decide_speech
+# already uses for share_salience * tie_strength.  Pilot-measured (not
+# guessed), isolating just this mechanism (a resident population with
+# arousal ~ Uniform(0,1), loquacity_threshold=1.0, tie_strength=3.0 vs.
+# 0.0): gain=0.5 already separates the two conditions (75.9% vs 90.0%
+# smalltalk-clearing rate); gain=2.0 widens that to 75.9% vs 95.9% (+20pp)
+# without saturating to a trivial 100%, so the effect stays measurable
+# rather than maxed out.  See the Rung 2 report for the important caveat:
+# in the live decide_speech branch ladder, any relationship carrying
+# positive strength (via set_relationship) also sets affect_affection > 0,
+# which already wins the branch ABOVE this one (greeting) -- this gain is
+# real and correctly wired, but the branch it feeds is only reached when
+# tie_strength is nonzero without a coexisting positive affect_affection.
+ACCOMMODATION_GAIN = 2.0
+
+# seeds/bigville_townspeople_50.json's 22 relationship triples name six edge
+# kinds; set_relationship only distinguishes "feud" (routes to resentment,
+# not affection) from everything else (routes to affection/tie_strength).
+# rival_of maps to feud with a NEGATIVE strength so it reads as a real
+# rivalry (affect_resentment rises, tie_strength/affection stay at zero);
+# every other kind is a positive tie, graded by how close the label reads.
+TOWNSPEOPLE_50_RELATIONSHIP_KIND = {
+    "rival_of": ("feud", -0.8),
+    "friend_of": ("friend", 0.9),
+    "spouse_of": ("friend", 1.0),
+    "parent_of": ("friend", 1.0),
+    "allied_with": ("friend", 0.7),
+    "charmed": ("friend", 0.5),
+}
 
 
 class BigvilleOcelotActor:
@@ -76,6 +111,7 @@ class BigvilleOcelotActor:
         # given event -- common ground is per-dyad (Clark & Brennan 1991),
         # so retelling a DIFFERENT listener the same news stays undamped.
         self.told_events = {}
+        self._read_documents = {}
         # Second-hand events this resident has been told about, distinct
         # from first-hand ``observed_event`` edges: {event: {"day_heard",
         # "strength"}}.  Strength compounds multiplicatively across hops
@@ -160,6 +196,12 @@ class BigvilleOcelotActor:
         # bond/encounter graph rather than a town schedule or speech template.
         ea = self.s.node(encounter)["attrs"]
         ba = self.s.node(bond)["attrs"]
+        tie_strength = max(0.0, float(ba.get("tie_strength", 0.0)))
+        # Accommodation: the closer the held tie, the lower the bar to open
+        # smalltalk unprompted -- the same multiplicative-coupling shape as
+        # share_salience * tie_strength just above, one new knob
+        # (ACCOMMODATION_GAIN), zero new state.
+        effective_threshold = float(loquacity_threshold) / (1.0 + ACCOMMODATION_GAIN * tie_strength)
         if fpp_is_question:
             code = 6                         # answer
         elif obligation:
@@ -168,13 +210,19 @@ class BigvilleOcelotActor:
             code = 0                         # silence with an unknown person
         elif float(ba.get("affect_resentment", 0.0)) > 0.5:
             code = 3                         # barb
-        elif float(share_salience) * max(0.0, float(ba.get("tie_strength", 0.0))) > 0.2:
+        elif float(share_salience) * tie_strength > 0.2:
             code = 5                         # share
         elif float(goal_pressure) > 0.2:
             code = 7                         # request/goal opening
-        elif float(ba.get("affect_affection", 0.0)) > 0.0 or fpp_is_greeting:
+        elif fpp_is_greeting or (float(ba.get("affect_affection", 0.0)) > 0.0
+                                  and self.speech_choices.get(target, {}).get("kind") != "greeting"):
+            # A held friendship is a standing REASON to greet, not a standing
+            # INSTRUCTION to greet every single encounter -- once this pair's
+            # last exchange was itself a greeting, affection alone no longer
+            # outranks the accommodation-gated smalltalk branch below, so a
+            # bonded pair can actually reach it instead of greeting forever.
             code = 1
-        elif float(arousal) >= float(loquacity_threshold) * 0.25:
+        elif float(arousal) >= effective_threshold * 0.25:
             code = 2
         else:
             code = 0
@@ -213,9 +261,49 @@ class BigvilleOcelotActor:
             self.s.set_attr(self.agent, key, value)
         self.s.set_attr(self.agent, "decision_armed", 1.0)
 
+    def ingest_document(self, text, *, name="physically_read_document"):
+        """Store a physical reading without claiming comprehension.
+
+        This is the dependency-free fallback.  A real Ocelot provider replaces
+        this method and returns evidence from its own comprehension graph.  A
+        document node alone is deliberately not an ``Understanding``.
+        """
+        text = str(text or "")
+        if not text:
+            return None
+        key = (str(name), text)
+        if key in self._read_documents:
+            return self._read_documents[key]
+        document = self.s.add_node("Document", {
+            "name": str(name),
+            "source": "physical_object",
+            "text": text,
+            "status": "stored_not_understood",
+        })
+        residual = self.s.add_node("ComprehensionResidual", {
+            "kind": "physical_prose",
+            "source": str(name),
+            "status": "not_understood",
+            "reason": "no cognition provider is attached",
+        })
+        self.inner.add_edge_unchecked(self.agent, "read", document)
+        self.inner.add_edge_unchecked(self.agent, "holds", residual)
+        result = {"status": "not_understood", "document": document,
+                  "residual": residual, "reason": "no cognition provider is attached"}
+        self._read_documents[key] = result
+        return result
+
+    def has_read_document(self, text, *, name="physically_read_document"):
+        return (str(name), str(text or "")) in self._read_documents
+
+    def ingest_rulebook(self, text):
+        """Compatibility alias for callers that know the document's role."""
+        return self.ingest_document(text, name="physically_read_rulebook")
+
     def decide(self):
         """Select one published affordance in the cheap local backend."""
         attrs = self.s.node(self.agent)["attrs"]
+        chosen_attrs = None
         options = self.inner.neighbours(self.agent, "has_option")
         if options:
             chosen = max(options, key=lambda n: (
@@ -231,11 +319,17 @@ class BigvilleOcelotActor:
                                 chosen_attrs.get(key, ""))
             self.s.set_attr(self.agent, "decision_armed", 0.0)
             attrs = self.s.node(self.agent)["attrs"]
-        return {"action": attrs.get("chosen_action", ""),
-                "kind": attrs.get("chosen_kind", ""),
-                "trade": attrs.get("chosen_trade", ""),
-                "recipe": attrs.get("chosen_recipe", ""),
-                "target": attrs.get("chosen_target", "")}
+        # Preserve every affordance parameter.  The cognition backend must
+        # be able to return a concrete object/property/recipient selected
+        # from the world publication; reducing it to a fixed vocabulary would
+        # turn an Ocelot decision back into a harness-side guess.
+        result = dict(chosen_attrs or {})
+        result.update({"action": attrs.get("chosen_action", ""),
+                       "kind": attrs.get("chosen_kind", ""),
+                       "trade": attrs.get("chosen_trade", ""),
+                       "recipe": attrs.get("chosen_recipe", ""),
+                       "target": attrs.get("chosen_target", "")})
+        return result
 
     def goal_utterance(self, target, meaning, *, priority=1.0):
         """Turn a held communicative goal into produced surface text.
@@ -293,7 +387,7 @@ class BigvilleOcelotActor:
             "identity": {"name": self.name},
             "personality": self._state_value(action_attrs),
             "memories": typed_nodes(("Memory", "JournalEntry", "Fact")),
-            "held_frames": typed_nodes(("Frame", "Microtheory", "Concept")),
+            "held_frames": typed_nodes(("Frame", "Microtheory", "Concept", "Document", "Understanding", "ComprehensionResidual")),
             "concepts": typed_nodes(("Concept", "Sign")),
             "goals": typed_nodes(("Goal", "CommunicativeGoal", "LifeGoal")),
             "beliefs": typed_nodes(("Belief", "Fact", "Interlocutor")),
@@ -309,7 +403,20 @@ class BigvilleOcelotActor:
 
 
 class BigvilleWorld:
-    def __init__(self, *, map_seed=305000, autonomous_actors=True):
+    def __init__(self, *, map_seed=305000, autonomous_actors=True, scenario=None,
+                 cognition_factory=None):
+        scenario_definition = load_scenario(scenario) if scenario is not None else None
+        self._scenario_data = scenario_definition.to_dict() if scenario_definition else {
+            "id": "bigville", "name": "Bigville", "metadata": {"domain": "village"}}
+        # Optional external cognition seam.  Bigville remains installable
+        # without Ocelot; an Ocelot host supplies a callable name -> mind.
+        self._cognition_factory = cognition_factory
+        self._scenario_actor_backends = {
+            str(actor.get("name")): str(actor.get("backend"))
+            for actor in self._scenario_data.get("actors", [])
+            if actor.get("name") and actor.get("backend")
+        }
+        self._scenario_character_data = {}
         self.eng = BigvilleGraph()
         self.eng.load_seed_manifest(manifest_for("bigville_action_general"), None)   # the ONE making engine
         self.eng.load_seed_manifest(manifest_for("bigville_action_decide"), None)    # observed-demand decision
@@ -325,13 +432,16 @@ class BigvilleWorld:
         # and carrying must feed Effort into bd_exert_cost rather than invent
         # a second Agent-level energy ledger.
         self.eng.load_seed_manifest(manifest_for("bigville_body"), None)
-        self._town = self.eng.add_node("Town", {"name": "Bigville", "clock": 0.0, "period": 0.0,
+        for seed_id in self._scenario_data.get("seeds", []):
+            self.eng.load_seed_manifest(manifest_for(str(seed_id)), None)
+        initial = dict(self._scenario_data.get("initial", {}))
+        self._town = self.eng.add_node("Town", {"name": self._scenario_data.get("name", "Bigville"), "clock": 0.0, "period": 0.0,
                                                 "day": 0.0, "hour": 6.0, "week": 0.0, "year": 1.0,
                                                 "season": "spring", "observed_harvest": 0.0,
                                                 "observed_building": 0.0, "observed_storage": 0.0,
                                                 "weather": "clear", "rain": 0.0,
                                                 "temperature": 15.0, "cold": 0.0, "wet": 0.0,
-                                                "firewood_demand": 1.0})   # the weather clothes protect against
+                                                "firewood_demand": 1.0, **initial})   # the weather clothes protect against
         self._store = self.eng.add_node("Store", {"name": "store"})           # holds Stock NODES, no commodity floats
         self.eng.add_edge_unchecked(self._town, "has_store", self._store)
         self._stock = {}; self._last_stock_qty = {}
@@ -364,6 +474,13 @@ class BigvilleWorld:
         self._map_grid = None
         self._map_layout = None
         self._map_affordances = {}
+        # Scenario-authored physical objects are deliberately neutral. The
+        # world does not know whether a box and its contents are Monopoly,
+        # another game, or unrelated objects; interpretation and use stay in
+        # participants' held frames.
+        self._physical_objects = {}
+        self._physical_object_aliases = {}
+        self._physical_object_locations = {}
         self._actor_cells = {}
         self._actor_positions = {}
         self._actor_goals = {}
@@ -429,13 +546,14 @@ class BigvilleWorld:
         self._major_dispatch = False
         self._next_home_index = 0
         self._next_farm_index = 0
-        self._policy_specs = {p["name"]: p for p in E.POLICIES}
-        self._law_specs = {p["name"]: p for p in E.LAWS}
-        self._charter_specs = {p["name"]: p for p in E.CHARTERS}
+        self._policy_specs = self._scenario_table("policies", E.POLICIES)
+        self._law_specs = self._scenario_table("laws", E.LAWS)
+        self._charter_specs = self._scenario_table("charters", E.CHARTERS)
         self._item_specs = dict(E.ITEMS)   # runtime item registry (data + runtime-added)
         self._tool_kinds = set()
         self.set_stock("none", 1e9)
-        self._install_map(map_seed)
+        self._install_map(map_seed, self._scenario_data.get("map") or None)
+        self._install_physical_objects()
         for kind, spec in E.ITEMS.items():
             self._install_item(kind, spec)
         for r in E.RECIPES:
@@ -458,8 +576,16 @@ class BigvilleWorld:
         # Building anchors are physical sites, not just labels. Keep each
         # authored footprint clear so adjacent facades cannot overlap.
         self._building_sites = {}
-        for kind, spec in E.BUILDINGS.items():           # install the town's buildings from the data
-            self._install_building(kind, spec)
+        scenario_buildings = self._scenario_data.get("buildings")
+        if scenario_buildings is None:
+            scenario_buildings = [{"kind": kind, "spec": spec}
+                                  for kind, spec in E.BUILDINGS.items()]
+        for building in scenario_buildings:
+            kind = str(building.get("kind", "place"))
+            spec = dict(E.BUILDINGS.get(kind, {}))
+            spec.update(dict(building.get("spec", {})))
+            self._install_building(kind, spec, key=building.get("name"),
+                                   cell=building.get("cell"))
 
         # The square and its board are ordinary world entities, not a second
         # noticeboard world.  Their location is an affordance on the imported
@@ -481,6 +607,208 @@ class BigvilleWorld:
         if market in self._map_cells:
             self.eng.add_edge_unchecked(self._store, "at_cell", self._map_cells[market])
         self._seed_written_documents()
+        for kind, quantity in self._scenario_data.get("stocks", {}).items():
+            self.set_stock(str(kind), float(quantity))
+
+    def _scenario_table(self, key, default):
+        """Select named seeded concepts or accept inline concept bundles."""
+        requested = self._scenario_data.get(key)
+        if requested is None:
+            return {item["name"]: item for item in default}
+        by_name = {item["name"]: item for item in default}
+        result = {}
+        for item in requested:
+            if isinstance(item, str) and item in by_name:
+                result[item] = dict(by_name[item])
+            elif isinstance(item, dict) and item.get("name"):
+                result[str(item["name"])] = dict(item)
+        return result
+
+    def _install_physical_objects(self):
+        """Install neutral scenario objects without assigning them a game.
+
+        This is ordinary world inventory: a container may hold arbitrary
+        objects, and nothing here knows what any collection is for. A held
+        cognition frame may interpret the objects as a board game, tools,
+        theatre props, or something else entirely.
+        """
+        for spec in self._scenario_data.get("physical_objects", ()):
+            if not isinstance(spec, dict):
+                continue
+            object_id = str(spec.get("id", spec.get("name", "object")))
+            quantity = max(1, int(spec.get("quantity", 1)))
+            names = list(spec.get("names", ()))
+            if names:
+                quantity = len(names)
+            for index in range(quantity):
+                suffix = names[index] if names else f"{object_id}:{index + 1}"
+                node_id = str(names[index] if names else
+                              (object_id if quantity == 1 else suffix))
+                if node_id in self._physical_objects:
+                    node_id = f"{object_id}:{index + 1}"
+                attrs = {key: value for key, value in spec.items()
+                         if key not in {"id", "name", "names", "quantity", "contains", "text_file"}}
+                attrs.update({"object_id": node_id,
+                              "name": names[index] if names else spec.get("name", object_id),
+                              "kind": str(spec.get("kind", "object")),
+                              "location": str(spec.get("location", "world"))})
+                node = self.eng.add_node("PhysicalObject", attrs)
+                self._physical_objects[node_id] = node
+                if index == 0:
+                    self._physical_object_aliases[object_id] = node_id
+                self._physical_object_locations[node_id] = attrs["location"]
+                container_id = spec.get("contains")
+                container_key = self._physical_object_aliases.get(str(container_id), str(container_id))
+                if container_id and container_key in self._physical_objects:
+                    container = self._physical_objects[container_key]
+                    self.eng.add_edge_unchecked(container, "contains_object", node)
+                    self._physical_object_locations[node_id] = container_key
+                    self.eng.set_attr(node, "location", container_key)
+
+    def resolve_physical_object_id(self, object_id):
+        """Resolve an authored object id to its concrete physical instance."""
+        key = str(object_id)
+        return self._physical_object_aliases.get(key, key)
+
+    def physical_objects(self):
+        """Return neutral physical object records for observation/debugging."""
+        return [{"id": object_id, **dict(self.eng.node(node)["attrs"])}
+                for object_id, node in self._physical_objects.items()
+                if self.eng.has_node(node)]
+
+    def _physical_object_accessible(self, actor, location, seen=()):
+        location = str(location)
+        if location == actor or location in {"table", "world"}:
+            return True
+        if location in seen or location not in self._physical_objects:
+            return False
+        container_attrs = self.eng.node(self._physical_objects[location])["attrs"]
+        if "open" in container_attrs and not bool(container_attrs.get("open")):
+            return False
+        parent = self._physical_object_locations.get(location)
+        return parent is not None and self._physical_object_accessible(
+            actor, parent, seen + (location,))
+
+    def physical_object_observations(self, actor):
+        """Return the physical objects visible from an actor's location."""
+        if actor not in self._actors:
+            return []
+        return [item for item in self.physical_objects()
+                if self._physical_object_accessible(actor, item.get("location", "world"))]
+
+    def move_physical_object(self, object_id, location):
+        """Move an ordinary object; no game-specific admissibility is applied."""
+        object_id = str(object_id)
+        object_id = self.resolve_physical_object_id(object_id)
+        if object_id not in self._physical_objects:
+            return False
+        node = self._physical_objects[object_id]
+        old_location = self._physical_object_locations.get(object_id)
+        if old_location in self._physical_objects:
+            old_node = self._physical_objects[old_location]
+            self.eng.remove_edge_unchecked(old_node, "contains_object", node)
+        elif old_location in self._actors:
+            self.eng.remove_edge_unchecked(self._actors[old_location],
+                                           "holds_object", node)
+        destination = self.resolve_physical_object_id(location)
+        self._physical_object_locations[object_id] = str(destination)
+        self.eng.set_attr(node, "location", str(destination))
+        if str(destination) in self._physical_objects:
+            self.eng.add_edge_unchecked(self._physical_objects[str(destination)],
+                                        "contains_object", node)
+        elif str(destination) in self._actors:
+            self.eng.add_edge_unchecked(self._actors[str(destination)],
+                                        "holds_object", node)
+        return True
+
+    def physical_object_affordances(self, actor, destinations=None):
+        """Return generic ways for an actor to move accessible objects.
+
+        This is intentionally a physical API, not an inventory for a
+        particular activity.  The world exposes objects, their locations, and
+        possible destinations; it does not label any movement as a purchase,
+        trade, turn, payment, or other domain action.  A held frame may give
+        these operations meaning later.
+
+        ``table`` and ``world`` are shared physical locations, so objects
+        there are observable to every actor.  Objects held by an actor are
+        also observable to that actor.  Other shared locations can be passed
+        explicitly through ``destinations`` without adding semantics to the
+        world.
+        """
+        if actor not in self._actors:
+            return []
+        if destinations is None:
+            destinations = [name for name in self._actors if name != actor]
+            destinations += ["table", "world"]
+            # A destination is another actor or an authored physical
+            # container.  Ordinary objects remain movable, but the world
+            # does not manufacture a pairwise destination for every object
+            # in the room (which would turn a modest tabletop into a huge
+            # Cartesian product).
+            destinations += [item["id"] for item in self.physical_objects()
+                             if item.get("kind") in {"box", "tray", "container"}
+                             or item.get("container")]
+        destinations = [str(destination) for destination in destinations]
+
+        options = []
+        for item in self.physical_objects():
+            location = str(item.get("location", "world"))
+            if not self._physical_object_accessible(actor, location):
+                continue
+            for destination in destinations:
+                if destination == location:
+                    continue
+                options.append({
+                    "action": "move_object",
+                    "object_id": item["id"],
+                    "destination": destination,
+                    "object": item.get("name", item["id"]),
+                    "kind": item.get("kind", "object"),
+                    "source": location,
+                })
+            attrs = self.eng.node(self._physical_objects[item["id"]])["attrs"]
+            if (item.get("kind") in {"box", "container", "tray"}
+                    and "open" in attrs and not bool(attrs.get("open"))):
+                options.append({
+                    "action": "open_object",
+                    "object_id": item["id"],
+                    "object": item.get("name", item["id"]),
+                    "kind": item.get("kind", "object"),
+                    "source": location,
+                    "score": 1.0,
+                })
+        return options
+
+    def open_physical_object_as_actor(self, actor, object_id):
+        """Open an authored physical container without interpreting contents."""
+        if actor not in self._actors:
+            return False
+        object_id = self.resolve_physical_object_id(object_id)
+        if object_id not in self._physical_objects:
+            return False
+        if not self._physical_object_accessible(
+                actor, self._physical_object_locations.get(object_id, "world")):
+            return False
+        node = self._physical_objects[object_id]
+        attrs = self.eng.node(node)["attrs"]
+        if "open" not in attrs:
+            return False
+        self.eng.set_attr(node, "open", True)
+        return True
+
+    def move_physical_object_as_actor(self, actor, object_id, destination):
+        """Apply one neutral object-movement proposal from an actor.
+
+        Access policy is deliberately minimal here.  A scenario may model
+        access through its own held concepts or a richer physical interface;
+        this primitive only validates that the proposer is an actor and then
+        moves the ordinary object.  In particular, it never interprets the
+        destination as ownership or the movement as a transaction.
+        """
+        if actor not in self._actors:
+            return False
+        return self.move_physical_object(object_id, destination)
 
     def _install_square_fixtures(self):
         """Install the market and civic fixtures at the scenario's square."""
@@ -841,12 +1169,32 @@ class BigvilleWorld:
                 masters = self.eng.neighbours(node, "apprenticed_to")
                 if masters:
                     master_skill = float(self.eng.node(masters[0])["attrs"].get("skill", 0.0))
-                    self.eng.set_attr(node, "skill", min(master_skill, float(la.get("skill", 0.0)) + 0.05))
+                    old_skill = float(la.get("skill", 0.0))
+                    new_skill = min(master_skill, old_skill + 0.05)
+                    self.eng.set_attr(node, "skill", new_skill)
+                    # A first-person, self-observed learning event -- mirrors
+                    # injure's own one-line create_event pattern, but closes
+                    # the gap injure/_record_death_event leave open (neither
+                    # passes observer=actor): the learner is their own
+                    # witness to their own progress.  Guarded on an actual
+                    # increase so a capped apprentice (skill == master_skill)
+                    # does not mint an event every period for no real change.
+                    if new_skill > old_skill:
+                        trade = str(la.get("trade", "") or la.get("role", ""))
+                        self.create_event("learned_skill", subject=learner,
+                                          detail=f"{learner} grew more skilled at {trade}.",
+                                          observer=learner, severity=0.15)
                 teachers = self.eng.neighbours(node, "attends")
                 if teachers and float(la.get("learn", 0.0)) > 0:
                     teacher = self.eng.node(teachers[0])["attrs"]
-                    self.eng.set_attr(node, "literacy", min(float(teacher.get("literacy", 1.0)), float(la.get("literacy", 0.0)) + 0.2))
+                    old_literacy = float(la.get("literacy", 0.0))
+                    new_literacy = min(float(teacher.get("literacy", 1.0)), old_literacy + 0.2)
+                    self.eng.set_attr(node, "literacy", new_literacy)
                     self.eng.set_attr(node, "capability", min(float(teacher.get("capability", 1.0)), float(la.get("capability", 0.0)) + 0.2))
+                    if new_literacy > old_literacy:
+                        self.create_event("learned_lesson", subject=learner,
+                                          detail=f"{learner} learned to read a little better.",
+                                          observer=learner, severity=0.15)
 
     def _claim_canonical_job_outputs(self):
         """Move completed canonical production into the maker's physical carrier.
@@ -934,13 +1282,36 @@ class BigvilleWorld:
                 self._documents[(kind, name)] = doc
 
     # ---------------------------------------------------- integrated map and spatial affordances
-    def _install_map(self, seed):
-        """Install the 100-world geography as canonical Map/Cell graph data."""
+    def _install_map(self, seed, scenario_map=None):
+        """Install canonical Map/Cell data from the village or a scenario map."""
         from worlds.bigville_town100_world import build_town_100
         from worlds.bigville_sim_world import SOLID as SOLID_TILES, TILE_NAME
-        grid, affordances, layout = build_town_100(seed)
+        if scenario_map is None:
+            grid, affordances, layout = build_town_100(seed)
+        else:
+            terrain_codes = {"grass": 0, "path": 1, "wall": 2, "floor": 3,
+                             "square": 4, "tree": 5, "water": 6}
+            source_grid = scenario_map.get("grid", [])
+            grid = []
+            for row in source_grid:
+                converted = []
+                for tile in row:
+                    if isinstance(tile, str):
+                        converted.append(terrain_codes.get(tile, 0))
+                    else:
+                        converted.append(int(tile))
+                if converted:
+                    grid.append(converted)
+            if not grid or any(len(row) != len(grid[0]) for row in grid):
+                raise ValueError("scenario map grid must be a non-empty rectangular matrix")
+            layout = dict(scenario_map.get("layout", {}))
+            layout.setdefault("w", len(grid[0]))
+            layout.setdefault("h", len(grid))
+            layout.setdefault("work", {})
+            layout.setdefault("homes", [])
+            affordances = [dict(affordance) for affordance in scenario_map.get("affordances", [])]
         self._map_grid, self._map_layout = grid, layout
-        self._map_node = self.eng.add_node("Map", {"name": "Bigville map", "seed": float(seed),
+        self._map_node = self.eng.add_node("Map", {"name": f"{self._scenario_data.get('name', 'Bigville')} map", "seed": float(seed),
                                                      "width": float(layout["w"]), "height": float(layout["h"])})
         self.eng.add_edge_unchecked(self._town, "has_map", self._map_node)
         solid = set(SOLID_TILES)
@@ -1361,10 +1732,77 @@ class BigvilleWorld:
         return self._actor_positions.get(actor)
 
     @classmethod
-    def from_town100(cls, seed=305000, *, autonomous_actors=True):
+    def from_town100(cls, seed=305000, *, autonomous_actors=True,
+                     cognition_factory=None):
         """Build the canonical world with the expanded map and seeded 100-person cast."""
-        world = cls(map_seed=seed, autonomous_actors=autonomous_actors)
+        world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
+                    cognition_factory=cognition_factory)
         world.populate_town100(seed=seed)
+        return world
+
+    @classmethod
+    def from_scenario(cls, scenario, *, seed=305000, autonomous_actors=True,
+                      cognition_factory=None):
+        """Build any compact or large scenario from data.
+
+        Actor cognition remains a game/backend concern; this method only
+        installs the physical world and the scenario's initial actors.
+        """
+        definition = load_scenario(scenario)
+        world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
+                    scenario=definition, cognition_factory=cognition_factory)
+        for actor in definition.actors:
+            data = dict(actor)
+            name = data.pop("name")
+            backend = data.pop("backend", None)
+            world._scenario_character_data[name] = {
+                "identity": dict(data.get("identity", {})),
+                "personality": dict(data.get("personality", {})),
+                "memories": list(data.get("memories", [])),
+                "held_frames": list(data.get("held_frames", data.get("frames", []))),
+            }
+            supported = {
+                "role", "skill", "station", "literacy", "capability", "learn",
+                "home_cell", "work_cell", "klass", "age", "life_stage",
+                "role_identity", "group", "traits", "trades",
+            }
+            kwargs = {key: data[key] for key in supported if key in data}
+            kwargs.setdefault("role", "resident")
+            world.add_actor(name, **kwargs)
+            if backend:
+                world._scenario_actor_backends[name] = str(backend)
+        return world
+
+    @classmethod
+    def from_townspeople_50(cls, *, seed=305000, autonomous_actors=True,
+                            cognition_factory=None):
+        """Build the hand-authored 50-resident register, relationships included.
+
+        ``seeds/bigville_townspeople_50.json`` carries a 50-entry ``inhabitants``
+        list AND a 22-edge ``relationships`` list ({src, edge, tgt} triples), but
+        (checked directly, not assumed) nothing in this repo instantiates either
+        into a live world -- no scenario file references it, ``from_scenario``
+        reads ``scenarios/*.json`` not ``seeds/*.json``, and this JSON's own id
+        is not even loaded via ``load_seed_manifest`` (that call only records a
+        provenance string; see ``bigville.runtime``).  This is that missing
+        construction path: it turns the already-authored cast and relationship
+        list into ``add_actor``/``set_relationship`` calls, mechanically, one
+        time, at town construction.
+        """
+        path = (Path(__file__).resolve().parent.parent
+               / "seeds" / "bigville_townspeople_50.json")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
+                    cognition_factory=cognition_factory)
+        for inhabitant in data["inhabitants"]:
+            world.add_actor(str(inhabitant["name"]), role=str(inhabitant.get("role", "resident")))
+        for edge in data["relationships"]:
+            src, tgt = str(edge["src"]), str(edge["tgt"])
+            if src not in world._actors or tgt not in world._actors:
+                continue
+            kind, strength = TOWNSPEOPLE_50_RELATIONSHIP_KIND.get(
+                str(edge["edge"]), ("acquaintance", 0.5))
+            world.set_relationship(src, tgt, kind=kind, strength=strength)
         return world
 
     def populate_town100(self, *, seed=305000):
@@ -1509,6 +1947,44 @@ class BigvilleWorld:
         # node is an independently watered and harvested unit.
         self._seed_village_crops(target=80)
         return cast
+
+    def seed_workplace_relationships(self, *, strength=0.4):
+        """Sparse, deterministic pre-existing colleague ties for the town100 cast.
+
+        town100 has no shared-household grouping to key off (each resident's
+        ``home_cell`` is unique -- ``bigville_town100_world.py`` draws one home
+        per index from a >=100-plot pool, so "household-proximate" collapses to
+        "workplace-proximate" for this cast specifically).  Workplace CELL
+        (not just workplace *kind*: many farm/market roles share a kind across
+        several physical cells) is the real proximity signal.  A naive
+        all-pairs pass would be a bad shape here -- 25 labourers share one
+        market cell, which is a 300-edge clique for one profession alone.
+        Instead each resident is linked to exactly one neighbour within their
+        own workplace-cell group, in a ring (wrapping), mutually -- matching
+        the repo's own precedent for pre-existing history
+        (``bigville_sim_world.py``: "Sparse ties only ... NOT an all-pairs
+        graph"). This is opt-in, not called from ``populate_town100``/
+        ``from_town100`` -- ``test_bigville_reporting.py`` asserts an EXACT
+        ``directed_bonds`` count against a bare ``from_town100()`` town, so
+        auto-wiring this would silently change that baseline.
+        """
+        cast = getattr(self, "_cast100", None)
+        if not cast:
+            return 0
+        by_cell = {}
+        for record in cast["residents"]:
+            by_cell.setdefault(tuple(record["workplace_cell"]), []).append(record["name"])
+        minted = 0
+        for names in by_cell.values():
+            if len(names) < 2:
+                continue
+            for i, name in enumerate(names):
+                colleague = names[(i + 1) % len(names)]
+                if colleague == name or (name, colleague) in self._relationships:
+                    continue
+                self.set_relationship(name, colleague, kind="friend", strength=strength, mutual=True)
+                minted += 1
+        return minted
 
     # ---------------------------------------------------- install the data as graph nodes
     def _install_item(self, kind, spec):
@@ -2612,6 +3088,12 @@ class BigvilleWorld:
         self.eng.set_attr(self._shops[trade], "coin", float(shop.get("coin", 0.0)) - price)
         self.set_coin(seller, self.coin(seller) + price)
         self._record_transaction("sale", seller, trade, kind, amount, price)
+        # A self-observed trade-completion event -- same pattern as
+        # produce_run above, sized to the sale's own coin value rather than
+        # a fixed severity so a bigger sale is a mildly bigger piece of news.
+        self.create_event("sold_goods", subject=seller,
+                          detail=f"{seller} sold {kind} at the {trade}.",
+                          observer=seller, severity=min(0.5, 0.05 + price * 0.01))
         return True
 
     def sell_labor(self, actor, trade, wage=2.0):
@@ -4090,7 +4572,9 @@ class BigvilleWorld:
             "stats_dirty": 0.0, "stamina_reserve": 1.0})
         self.eng.add_edge_unchecked(a, "has_body", body)
         self._bodies[name] = body
-        self._actor_minds[name] = BigvilleOcelotActor(name)
+        self._actor_minds[name] = (
+            self._cognition_factory(name) if self._cognition_factory is not None
+            else BigvilleOcelotActor(name))
         self._actor_decisions[name] = {"action": "", "kind": "", "trade": "", "recipe": "", "target": ""}
         self._actor_targets[name] = {}
         # Food is held by residents, never implicitly by the town on their
@@ -4273,20 +4757,28 @@ class BigvilleWorld:
         self._conversation_adapter = adapter
 
     def speak(self, speaker, target=None, content="", *, loudness=1.0,
-              conversation=None, message=None):
+              conversation=None, message=None, raw_data=None,
+              backend_owned=False, delivery_metadata=None):
         """Create a communication event without touching the major-action budget.
 
-        A game-session conversation adapter may additionally render a
-        structured message for a recipient whose cognition backend cannot
-        consume free text. It does not expose ``ask`` as a world action.
+        ``content`` and ``raw_data`` are supplied by the cognition provider.
+        The latter is opaque to the world: it is retained for accounting and
+        made available to the recipient's cognition, but never rendered into
+        replacement text or interpreted as a world action.  Legacy callers may
+        still pass ``message``; the host adapter can support that older input
+        shape without affecting backend-owned speech.
         """
         self._actor(speaker)
         if target is not None:
             self._actor(target)
             conversation = conversation or self._conversation(speaker, target)
         speech_meta = {}
-        if self._conversation_adapter is not None:
-            speech_meta = dict(self._conversation_adapter(speaker, target, content, message) or {})
+        backend_speech = backend_owned or raw_data is not None
+        if self._conversation_adapter is not None and not backend_speech:
+            # Keep the four-argument legacy adapter contract intact.  Complete
+            # backend-owned speech never enters this compatibility renderer.
+            speech_meta = dict(self._conversation_adapter(
+                speaker, target, content, message) or {})
             content = speech_meta.pop("content", content)
         conv = conversation
         attrs = {
@@ -4294,6 +4786,15 @@ class BigvilleWorld:
             "speaker": speaker, "target": target or "", "turn": float(self._turn),
             "heard": 1.0 if target is None or self.actor_position(speaker) == self.actor_position(target) else 0.0,
         }
+        if backend_speech:
+            attrs["speech_origin"] = "backend"
+            attrs["communication_mode"] = "free_text"
+        if raw_data is not None:
+            # Store the provider payload exactly as data.  No world rule reads
+            # its internal keys; reports and cognition adapters may inspect it.
+            attrs["raw_data"] = raw_data
+        if delivery_metadata:
+            attrs.update(dict(delivery_metadata))
         attrs.update(speech_meta)
         utterance = self.eng.add_node("Utterance", attrs)
         self.eng.add_edge_unchecked(self._actor(speaker), "spoke", utterance)
@@ -4305,6 +4806,32 @@ class BigvilleWorld:
                 self.eng.add_edge_unchecked(self._actor(target), "heard", utterance)
         self._utterances[len(self._utterances) + 1] = utterance
         return utterance
+
+    def heard_utterances(self, actor, *, limit=20):
+        """Return recent speech delivered to ``actor`` as cognition input.
+
+        This is deliberately a projection of communication records, not a
+        semantic interpretation by the world.  A backend receives the exact
+        text and opaque provider payload that were delivered to it.
+        """
+        self._actor(actor)
+        records = []
+        for node in self._utterances.values():
+            attrs = self.eng.node(node)["attrs"]
+            target = str(attrs.get("target", ""))
+            heard = bool(float(attrs.get("heard", 0.0)))
+            if not heard or (target not in {"", str(actor)}):
+                continue
+            records.append({
+                "speaker": attrs.get("speaker", ""),
+                "target": attrs.get("target", ""),
+                "text": attrs.get("content", ""),
+                "raw_data": attrs.get("raw_data"),
+                "raw_understanding": attrs.get("raw_understanding"),
+                "turn": attrs.get("turn", 0.0),
+                "loudness": attrs.get("loudness", 1.0),
+            })
+        return records[-int(limit):]
 
     def utter(self, speaker, content, *, target=None, loudness=1.0):
         return self.speak(speaker, target, content, loudness=loudness)
@@ -5009,9 +5536,15 @@ class BigvilleWorld:
         return False
 
     def resolve_actor_turn(self):
-        """Settle deferred physical effects and publish free speech once."""
+        """Settle deferred physical effects and publish autonomous speech.
+
+        Interactive ``BigvilleGame`` sessions set ``_autonomous_actors`` false
+        and route every actor through its selected backend.  In that mode the
+        world must not create an extra cognition pass or an unowned utterance.
+        """
         self._run()
-        self._spontaneous_speech_tick()
+        if self._autonomous_actors:
+            self._spontaneous_speech_tick()
 
     def _ocelot_actor_tick(self):
         """Pump each private mind and enact major choices plus free speech."""
@@ -5119,18 +5652,33 @@ class BigvilleWorld:
         mind.heard_events[event] = {"day_heard": day,
                                     "strength": source_trust * speaker_confidence}
 
-    def _speech_goal(self, target, kind, event=None):
+    def _speech_goal(self, target, kind, event=None, speaker=None):
         """Build a grounded communicative meaning for a speech occasion.
 
         Ocelot selects the occasion.  This bridge contributes only concepts
         already available in the town observation; ``WorldAdapter`` owns the
         graph-resident goal, rendering, and addressee uptake.
+
+        ``speaker`` is optional context threaded through by the callers that
+        already hold it, mirroring how ``target`` is passed: it lets
+        ``smalltalk`` draw on the speaker's own trade (idiolect) instead of
+        always defaulting to weather, and lets ``share`` mark whether the
+        news is about the speaker themselves (first-person) rather than a
+        third party.  Callers that omit it keep the prior, unconditional
+        behaviour exactly (no ``self`` key on the meaning, weather-only
+        smalltalk) -- this is additive context, not a new required input.
         """
         town = self.eng.node(self._town)["attrs"]
         weather = str(town.get("weather", "clear"))
         if kind == "greeting":
             return {"greeting": {"of": str(target)}}
         if kind == "smalltalk":
+            trade = ""
+            if speaker is not None and speaker in self._actors:
+                sa = self.eng.node(self._actors[speaker])["attrs"]
+                trade = str(sa.get("trade", "") or sa.get("role", ""))
+            if trade:
+                return {"topic": {"of": trade}}
             return {"weather": {"of": weather}}
         if kind == "barb":
             return {"warning": {"of": str(target)}}
@@ -5139,9 +5687,12 @@ class BigvilleWorld:
         if kind == "share":
             if event is not None:
                 ea = self.eng.node(event)["attrs"]
-                return {"news": {"of": {"kind": str(ea.get("kind", "")),
-                                        "subject": str(ea.get("subject", "")),
-                                        "detail": str(ea.get("detail", ""))}}}
+                subject = str(ea.get("subject", ""))
+                payload = {"kind": str(ea.get("kind", "")), "subject": subject,
+                          "detail": str(ea.get("detail", ""))}
+                if speaker is not None:
+                    payload["self"] = (subject == str(speaker))
+                return {"news": {"of": payload}}
             return {"news": {"of": {"village": {"weather": weather}}}}
         if kind == "answer":
             return {"acknowledgement": {"of": str(target)}}
@@ -5162,6 +5713,47 @@ class BigvilleWorld:
         if kind == "promise":
             return {"promise": {"to": str(target)}}
         return None
+
+    def resident_speech_proposal(self, speaker, target=None):
+        """Ask the resident's Ocelot cognition for one owned speech proposal.
+
+        This is the backend bridge used by interactive sessions.  The private
+        mind chooses whether and how to speak, produces the surface text, and
+        returns its own opaque meaning payload.  The world does not render the
+        meaning and does not infer an action from it.
+        """
+        self._actor(speaker)
+        if target is None:
+            position = self.actor_position(speaker)
+            candidates = [name for name in self._actors
+                          if name != speaker and self.is_alive(name)
+                          and self.actor_position(name) == position]
+            target = sorted(candidates)[0] if candidates else None
+        if target is None or target not in self._actors or not self.is_alive(target):
+            return None
+        share_salience, share_event = self._speech_share_event(speaker, target)
+        attrs = self.eng.node(self._actors[speaker])["attrs"]
+        choice = self._actor_minds[speaker].decide_speech(
+            target, relationship=self._speech_relationship(speaker, target),
+            stranger=False, share_salience=share_salience,
+            arousal=float(attrs.get("arousal", 0.4)),
+            loquacity_threshold=float(attrs.get("loquacity_threshold", 1.0)))
+        if not choice["spoken"]:
+            return None
+        event = share_event if choice["kind"] == "share" else None
+        meaning = self._speech_goal(target, choice["kind"], event=event, speaker=speaker)
+        if meaning is None:
+            return None
+        text = self._actor_minds[speaker].goal_utterance(target, meaning)
+        if not text:
+            return None
+        return {
+            "target": target,
+            "text": str(text),
+            "raw": {"act": choice["kind"], "target": str(target),
+                    "meaning": meaning},
+            "loudness": max(1.0, choice.get("loudness", 1.0)),
+        }
 
     def _spontaneous_speech_tick(self):
         """Publish co-presence encounters and let each resident decide freely."""
@@ -5189,18 +5781,21 @@ class BigvilleWorld:
                 if not choice["spoken"]:
                     continue
                 event = share_event if choice["kind"] == "share" else None
-                meaning = self._speech_goal(target, choice["kind"], event=event)
+                meaning = self._speech_goal(target, choice["kind"], event=event, speaker=speaker)
                 if meaning is None:
                     continue
                 content = self._actor_minds[speaker].goal_utterance(target, meaning)
                 if not content:
                     continue
+                # The private Ocelot voice produced both representations.  A
+                # world record stores them; it does not template or translate
+                # the meaning after cognition has returned.
                 utterance = self.speak(
                     speaker, target, content,
                     loudness=max(1.0, choice.get("loudness", 1.0)),
-                    message={"act": choice["kind"], "slots": {
-                        "target": str(target), "meaning": meaning,
-                    }})
+                    raw_data={"act": choice["kind"], "target": str(target),
+                              "meaning": meaning},
+                    backend_owned=True)
                 heard = bool(self.eng.node(utterance)["attrs"].get("heard", 0.0))
                 self._speech_events.append({
                     "turn": int(self._turn), "speaker": speaker, "target": target,
@@ -5275,7 +5870,12 @@ class BigvilleWorld:
         map_width = len(self._map_grid[0]) if self._map_grid else 0
         map_height = len(self._map_grid or [])
         map_seed = self.eng.node(self._map_node)["attrs"].get("seed", 0.0) if self._map_node else 0.0
-        return {"schema": "townview/1", "clock": dict(self.calendar()),
+        return {"schema": "townview/1", "scenario": {
+                    "id": self._scenario_data.get("id", "bigville"),
+                    "name": self._scenario_data.get("name", "Bigville"),
+                    "metadata": dict(self._scenario_data.get("metadata", {})),
+                },
+                "clock": dict(self.calendar()),
                 "weather": {k: town.get(k) for k in ("rain", "temperature", "firewood_demand")},
                 "map": {"width": map_width, "height": map_height, "w": map_width, "h": map_height,
                         "seed": map_seed,
@@ -5283,6 +5883,7 @@ class BigvilleWorld:
                         "square": dict(square), "square_fixtures": square_fixtures,
                         "grid": self._map_grid, "tiles": self._map_grid,
                         "buildings": buildings},
+                "physical_objects": self.physical_objects(),
                 "residents": actors,
                 "stocks": {kind: self.qty(kind) for kind in sorted(self._stock) if kind != "none"},
                 "animals": [{"id": name, **dict(self.eng.node(node)["attrs"]),
@@ -5363,6 +5964,13 @@ class BigvilleWorld:
                     or not self._claim_major_action(actor, "move")):
                 return False
             return self.move_actor(actor, destination)
+        if action == "move_object":
+            object_id = kwargs.get("object_id", kwargs.get("item", args[0] if args else None))
+            destination = kwargs.get("destination", kwargs.get("target", args[1] if len(args) > 1 else None))
+            if (object_id is None or destination is None
+                    or not self._claim_major_action(actor, "move_object")):
+                return False
+            return self.move_physical_object_as_actor(actor, object_id, destination)
         if action == "give":
             recipient = kwargs.get("recipient", kwargs.get("target", args[0] if args else None))
             kind = kwargs.get("kind", args[1] if len(args) > 1 else None)
@@ -5663,6 +6271,14 @@ class BigvilleWorld:
             self.do(maker, self.will_make(maker))
             made += len(list(self.eng.neighbours(self._town, "has_tool_item"))) - before
         self._made[maker] += made
+        if made > 0:
+            # A self-observed production event, mirroring injure's own
+            # one-line create_event pattern with observer=actor -- the maker
+            # is their own witness to their own completed work.
+            recipe = str(self.will_make(maker))
+            self.create_event("produced_goods", subject=maker,
+                              detail=f"{maker} finished making {made} {recipe}.",
+                              observer=maker, severity=0.1)
         return made
 
     def sell(self, maker, n):

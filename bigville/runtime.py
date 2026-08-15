@@ -235,15 +235,35 @@ def _realize_meaning(value):
             kind = str(payload.get("kind", ""))
             subject = str(payload.get("subject", ""))
             detail = str(payload.get("detail", "")).strip()
+            # First-person self-experience (rung 1c) renders as "I ..."
+            # instead of the third-party "I heard that ..." gossip form --
+            # both draw on the same event content, only the person differs.
+            is_self = bool(payload.get("self", False))
             if kind and subject:
                 if detail:
                     detail = detail.rstrip(".")
+                    if is_self and detail.startswith(subject):
+                        return f"I{detail[len(subject):]}."
                     return f"I heard that {detail}."
                 verb = {"injury": "was injured", "death": "died"}.get(kind, f"was involved in {kind}")
+                if is_self:
+                    return f"I {verb}."
                 return f"I heard that {subject} {verb}."
             if "village" in payload:
                 return f"I heard that {_realize_meaning(payload['village'])}"
         return f"I heard about {_natural_value(payload)}."
+    if key == "topic":
+        payload = child.get("of") if isinstance(child, dict) else child
+        trade = str(payload).lower()
+        phrases = {
+            "smith": "The forge has been busy this week.",
+            "baker": "The ovens have been going since dawn.",
+            "farmer": "The fields need rain, if you ask me.",
+            "fisher": "The catch has been thin off the point.",
+            "carpenter": "There is always more wood to plane.",
+        }
+        return phrases.get(trade, f"There is always more work in {trade}." if trade
+                            else "Nothing much to report.")
     if key == "weather":
         payload = child.get("of") if isinstance(child, dict) else child
         weather = str(payload).lower()
