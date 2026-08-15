@@ -27,9 +27,9 @@ def test_human_backend_waits_then_advances_with_free_speech():
     assert not world.actor_turn_state("Ada")["major_action_used"]
     contents = [world.eng.node(u)["attrs"]["content"]
                 for u in world.conversation_between("Ada", "Ben")]
-    assert "inform Hello there." in contents
+    assert "Hello there." in contents
     templated = next(world.eng.node(u)["attrs"] for u in world.conversation_between("Ada", "Ben")
-                     if world.eng.node(u)["attrs"]["content"] == "inform Hello there.")
+                     if world.eng.node(u)["attrs"]["content"] == "Hello there.")
     assert templated["communication_mode"] == "templated"
     assert templated["conversation"]["act"] == "inform"
 
@@ -62,7 +62,7 @@ def test_structured_purchase_is_rendered_for_templated_recipient():
     game.step()
     utterance = world.conversation_between("Ada", "Ben")[0]
     attrs = world.eng.node(utterance)["attrs"]
-    assert attrs["content"] == "purchase 2 bread from Ben"
+    assert attrs["content"] == "Could I buy 2 bread from Ben?"
     assert attrs["communication_mode"] == "templated"
 
 

@@ -82,9 +82,9 @@ def test_speech_menu_and_templated_fallback_cover_new_acts():
     world.encounter("Ada", "Ben", goal_pressure=1.0)
     assert world.decide("Ada", "Ben") == "request"
     assert TemplateConversationInterface().render(
-        ConversationMessage("offer", {"item": "bread", "recipient": "Ben"})) == "offer bread to Ben"
+        ConversationMessage("offer", {"item": "bread", "recipient": "Ben"})) == "I can offer bread to Ben."
     assert TemplateConversationInterface().render(
-        ConversationMessage("apology", {"target": "Ben", "reason": "the delay"})) == "apologize to Ben for the delay"
+        ConversationMessage("apology", {"target": "Ben", "reason": "the delay"})) == "I am sorry, Ben, about the delay."
 
 
 def test_standalone_goal_renderer_produces_surface_speech_not_graph_keys():
@@ -95,3 +95,13 @@ def test_standalone_goal_renderer_produces_surface_speech_not_graph_keys():
     }}})
     assert content == "I heard that Garnet was injured (a fall)."
     assert "news of" not in content
+
+
+def test_templated_recipient_gets_natural_rendering_of_structured_meanings():
+    interface = TemplateConversationInterface()
+    assert interface.render(ConversationMessage(
+        "smalltalk", {"target": "Ben", "meaning": {"weather": {"of": "clear"}}}
+    )) == "The sky is clear today."
+    assert interface.render(ConversationMessage(
+        "question", {"question": "how was your day"}
+    )) == "how was your day?"

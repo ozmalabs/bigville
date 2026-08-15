@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from ..runtime import _realize_meaning
+
 
 @dataclass
 class ConversationMessage:
@@ -37,24 +39,24 @@ class ConversationMessage:
 
 
 DEFAULT_TEMPLATES = {
-    "greeting": "greeting {target}",
-    "inform": "inform {content}",
-    "request": "request {request}",
-    "question": "question {question}",
-    "answer": "answer {answer}",
-    "offer": "offer {item} to {recipient}",
-    "purchase": "purchase {quantity} {item} from {seller}",
-    "give": "give {quantity} {item} to {recipient}",
-    "put": "put {item} in {container}",
-    "accept": "accept {thing}",
-    "decline": "decline {thing}",
-    "warning": "warning {target}",
-    "share": "share {news}",
-    "thanks": "thank {target}",
-    "apology": "apologize to {target} for {reason}",
-    "farewell": "farewell to {target}",
-    "complaint": "complain to {target} about {subject}",
-    "promise": "promise {commitment} to {target}",
+    "greeting": "Hello, {target}.",
+    "inform": "{content}",
+    "request": "Could you {request}?",
+    "question": "{question}",
+    "answer": "{answer}",
+    "offer": "I can offer {item} to {recipient}.",
+    "purchase": "Could I buy {quantity} {item} from {seller}?",
+    "give": "Here is {quantity} {item} for {recipient}.",
+    "put": "I put {item} in {container}.",
+    "accept": "Yes, I accept {thing}.",
+    "decline": "No, I cannot accept {thing}.",
+    "warning": "Be careful, {target}.",
+    "share": "{news}",
+    "thanks": "Thank you, {target}.",
+    "apology": "I am sorry, {target}, about {reason}.",
+    "farewell": "Goodbye, {target}.",
+    "complaint": "I am unhappy about {subject}.",
+    "promise": "I promise to {commitment} for {target}.",
 }
 
 
@@ -73,17 +75,30 @@ class TemplateConversationInterface:
         template = message.template or self.templates.get(message.template_id or message.act)
         values = dict(message.payload)
         values.update(message.slots)
+        # Ocelot-style agents hand the world a structured communicative
+        # meaning alongside the speech act.  A templated recipient cannot
+        # consume free text, but it can still receive that meaning rendered as
+        # ordinary language.  This is especially important for smalltalk and
+        # gossip: ``weather of clear`` is a graph dump, not an utterance.
+        if not message.template and not message.template_id and "meaning" in values:
+            return _realize_meaning(values["meaning"])
         if template is not None:
             try:
-                return template.format(**_format_values(values), act=message.act)
+                rendered = template.format(**_format_values(values), act=message.act)
+                template_key = message.template_id or message.act
+                is_default_template = (
+                    message.template is None
+                    and template_key in DEFAULT_TEMPLATES
+                    and self.templates.get(template_key) == DEFAULT_TEMPLATES[template_key]
+                )
+                return _finish_sentence(rendered, message.act) if is_default_template else rendered
             except (KeyError, IndexError, ValueError):
                 # A custom backend may omit a slot. Preserve the meaning rather
                 # than dropping the utterance or raising into the world loop.
                 pass
-        parts = [message.act]
-        for key in sorted(values):
-            parts.append(f"{key}={_format_value(values[key])}")
-        return " ".join(parts)
+        if message.act == "smalltalk" and "weather" in values:
+            return _realize_meaning({"weather": {"of": values["weather"]}})
+        return _realize_meaning({message.act: values})
 
     def envelope(self, message: ConversationMessage, *, original_content="") -> dict:
         rendered = self.render(message)
@@ -106,3 +121,13 @@ def _format_value(value: Any) -> str:
 
 def _format_values(values: dict[str, Any]) -> dict[str, str]:
     return {key: _format_value(value) for key, value in values.items()}
+
+
+def _finish_sentence(value: str, act: str) -> str:
+    """Avoid doubled punctuation while keeping custom templates untouched in meaning."""
+    value = str(value).strip()
+    if not value:
+        return value
+    if value[-1] in ".!?":
+        return value
+    return value + ("?" if act in {"question", "request", "purchase"} else ".")
