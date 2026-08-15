@@ -72,6 +72,10 @@ class BigvilleOcelotActor:
         self.speech_bonds = {}
         self.speech_encounters = {}
         self.speech_choices = {}
+        # How many times THIS resident has told a given listener about a
+        # given event -- common ground is per-dyad (Clark & Brennan 1991),
+        # so retelling a DIFFERENT listener the same news stays undamped.
+        self.told_events = {}
         # The speech decision above selects an occasion/kind.  The actual
         # utterance is produced by the existing goal-driven communicative
         # faculty, which renders a structured meaning from its graph-resident
@@ -5027,25 +5031,38 @@ class BigvilleWorld:
             return None
         return dict(self.eng.node(relationship)["attrs"])
 
-    def _speech_share_event(self, speaker):
-        """The speaker's most salient recent observation, and its salience.
+    def _speech_share_event(self, speaker, listener):
+        """The speaker's most salient recent observation FOR THIS LISTENER,
+        and its (possibly retelling-damped) salience.
 
         Salience is gated the same way Rime (2009) found emotionally
         significant experiences get shared: recently (age <= 1 day) and
         roughly in proportion to severity, floored so any recent event is at
-        least mildly worth mentioning.  Returns ``(0.0, None)`` when the
-        speaker has observed nothing recent -- the ``share`` speech option
-        then loses its Argmax term and cannot be chosen, exactly as it
-        should when there is nothing to share.
+        least mildly worth mentioning. It is then damped by how many times
+        THIS listener has already heard it -- common ground is per-dyad
+        (Clark & Brennan 1991), so a fresh listener always sees the
+        undamped salience even after many retellings to someone else.  The
+        damping rate itself scales toward 1 (slower decline) as severity
+        rises, matching Rime's own finding that a more intense episode's
+        sharing declines more slowly, not faster -- high-salience news gets
+        retold MORE before tapering, not deduplicated harder.  Returns
+        ``(0.0, None)`` when nothing recent and un-exhausted remains -- the
+        ``share`` speech option then loses its Argmax term and cannot be
+        chosen, exactly as it should when there is nothing left to share.
         """
         day = float(self.eng.node(self._town)["attrs"].get("day", 0.0))
+        mind = self._actor_minds[speaker]
         best_salience, best_event = 0.0, None
         for event in self.eng.neighbours(self._actors[speaker], "observed_event"):
             attrs = self.eng.node(event)["attrs"]
             age = day - float(attrs.get("day", day))
             if age < 0.0 or age > 1.0:
                 continue
-            salience = max(0.25, float(attrs.get("severity", 0.0)))
+            severity = float(attrs.get("severity", 0.0))
+            base_salience = max(0.25, severity)
+            retold = mind.told_events.get((listener, event), 0)
+            retell_decay = min(0.95, 0.3 + severity)
+            salience = base_salience * (retell_decay ** retold)
             if salience > best_salience:
                 best_salience, best_event = salience, event
         return best_salience, best_event
@@ -5134,7 +5151,7 @@ class BigvilleWorld:
             # crowd changing conversational partners without a world schedule.
             speaker, target = self._rng.sample(present, 2)
             for speaker, target in ((speaker, target), (target, speaker)):
-                share_salience, share_event = self._speech_share_event(speaker)
+                share_salience, share_event = self._speech_share_event(speaker, target)
                 choice = self._actor_minds[speaker].decide_speech(
                     target, relationship=self._speech_relationship(speaker, target),
                     stranger=False, share_salience=share_salience,
@@ -5163,6 +5180,8 @@ class BigvilleWorld:
                 })
                 if choice["kind"] == "share" and heard and event is not None:
                     self._hear_gossip(target, speaker, event)
+                    told = self._actor_minds[speaker].told_events
+                    told[(target, event)] = told.get((target, event), 0) + 1
 
     def speech_choices(self, actor):
         """Read the resident's latest graph-native speech choices."""
