@@ -676,7 +676,7 @@ def test_purchase_is_preceded_by_a_free_market_utterance():
     ]
     assert len(purchase_utterances) == 1
     speech = w.eng.node(purchase_utterances[0])["attrs"]
-    assert speech["content"] == "purchase of bread from Baker"
+    assert speech["content"] == "Could I buy some bread from Baker?"
     assert w.actor_turn_state("Tom")["major_action_used"]
     transaction = next(node for node in w._transactions.values()
                        if w.eng.node(node)["attrs"].get("kind") == "purchase")

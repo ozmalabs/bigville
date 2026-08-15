@@ -175,7 +175,14 @@ def load_seeds_into(graph, agent, seed_ids: Iterable[str]):
 
 
 class WorldAdapter:
-    """Minimal graph-backed communicative goal adapter."""
+    """Graph-backed communicative goal adapter with a small surface realizer.
+
+    Bigville cannot bundle Ocelot's substrate, but it must still turn the
+    structured meanings produced by its cognition boundary into speech.  The
+    old implementation used ``key of key of value`` as a debug dump.  This
+    adapter keeps the meaning graph-friendly while using a deterministic
+    lexical/grammatical realization for the common village speech acts.
+    """
 
     def __init__(self, seeds=()):
         self.s = BigvilleGraph()
@@ -194,20 +201,118 @@ class WorldAdapter:
         if not self._goals:
             return []
         meaning, _meta = self._goals.pop(0)
-        return [_meaning_text(meaning)]
+        return [self.utterance_for(meaning)]
+
+    def utterance_for(self, meaning):
+        """Render a held communicative meaning as ordinary resident speech.
+
+        This is deliberately meaning-driven rather than a world-level speech
+        template: the world supplies a semantic goal, and this layer chooses
+        a natural surface form without exposing graph field names to the
+        listener.  Unknown meanings retain a readable semantic fallback so a
+        new concept does not regress to a structural debug string.
+        """
+        return _realize_meaning(meaning)
 
 
 def _meaning_text(value):
+    """Compatibility name for callers of the old structural renderer."""
+    return _realize_meaning(value)
+
+
+def _realize_meaning(value):
+    """Small dependency-free lexical realization for common goal meanings."""
+    if not isinstance(value, dict) or not value:
+        return str(value)
+    if len(value) != 1:
+        return " ".join(_realize_meaning({key: child}) for key, child in value.items())
+
+    key, child = next(iter(value.items()))
+    key = str(key)
+    if key == "news":
+        payload = child.get("of") if isinstance(child, dict) else child
+        if isinstance(payload, dict):
+            kind = str(payload.get("kind", ""))
+            subject = str(payload.get("subject", ""))
+            detail = str(payload.get("detail", "")).strip()
+            if kind and subject:
+                if detail:
+                    detail = detail.rstrip(".")
+                    return f"I heard that {detail}."
+                verb = {"injury": "was injured", "death": "died"}.get(kind, f"was involved in {kind}")
+                return f"I heard that {subject} {verb}."
+            if "village" in payload:
+                return f"I heard that {_realize_meaning(payload['village'])}"
+        return f"I heard about {_natural_value(payload)}."
+    if key == "weather":
+        payload = child.get("of") if isinstance(child, dict) else child
+        weather = str(payload).lower()
+        phrases = {
+            "rain": "It is raining today.", "storm": "There is a storm coming.",
+            "dry": "It is dry today.", "clear": "The sky is clear today.",
+            "frost": "There is a frost this morning.",
+        }
+        return phrases.get(weather, f"The weather is {weather} today.")
+    if key == "greeting":
+        return f"Hello, {_target(child)}."
+    if key == "warning":
+        return f"Be careful, {_target(child)}."
+    if key == "uncertainty":
+        payload = child.get("of") if isinstance(child, dict) else child
+        return f"I am not sure about {_natural_value(payload)}."
+    if key in {"acknowledgement", "answer"}:
+        return "Yes, I understand."
+    if key == "request":
+        return "Could you help me with that?"
+    if key == "offer":
+        return "I can help with that."
+    if key == "question":
+        return "How are things?"
+    if key == "thanks":
+        return "Thank you."
+    if key == "apology":
+        return "I am sorry."
+    if key == "farewell":
+        return "Goodbye for now."
+    if key == "complaint":
+        return "I am worried about this."
+    if key == "promise":
+        return "I promise I will help."
+    if key == "purchase":
+        return _realize_purchase(child)
+    if key == "inform":
+        payload = child.get("of") if isinstance(child, dict) else child
+        return f"I wanted to tell you that {_natural_value(payload)}."
+    return f"I wanted to tell you about {_natural_value(child)}."
+
+
+def _target(value):
+    if isinstance(value, dict):
+        value = value.get("of", value.get("to", value))
+    return str(value)
+
+
+def _natural_value(value):
     if isinstance(value, dict):
         if len(value) == 1:
             key, child = next(iter(value.items()))
-            if isinstance(child, dict) and "of" in child:
-                return f"{key} of {_meaning_text(child['of'])}"
-            return f"{key} {_meaning_text(child)}" if child not in ({}, None) else str(key)
-        return " ".join(f"{key} {_meaning_text(child)}" for key, child in value.items())
+            return f"{key} {_natural_value(child)}"
+        return ", ".join(f"{key} {_natural_value(child)}" for key, child in value.items()
+                          if key != "occasion")
     if isinstance(value, (list, tuple, set, frozenset)):
-        return ", ".join(_meaning_text(v) for v in value)
+        return ", ".join(_natural_value(item) for item in value)
     return str(value)
+
+
+def _realize_purchase(value):
+    payload = value.get("of", value) if isinstance(value, dict) else value
+    if isinstance(payload, dict) and payload:
+        item, item_data = next(iter(payload.items()))
+        seller = item_data.get("from") if isinstance(item_data, dict) else None
+        if seller:
+            return f"Could I buy some {item} from {seller}?"
+        return f"Could I buy some {item}?"
+    return "Could I buy that?"
 
 
 def _json_value(value):

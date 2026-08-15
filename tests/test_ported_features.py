@@ -3,6 +3,7 @@
 from bigville.backends import ActorContext, CheapBackend
 from bigville.backends.conversation import ConversationMessage, TemplateConversationInterface
 from bigville.character import CharacterDefinition
+from bigville.runtime import WorldAdapter
 from worlds.bigville_speech_world import BigvilleSpeechWorld, SPEECH_MENU
 from worlds.bigville_world import BigvilleWorld
 
@@ -84,3 +85,13 @@ def test_speech_menu_and_templated_fallback_cover_new_acts():
         ConversationMessage("offer", {"item": "bread", "recipient": "Ben"})) == "offer bread to Ben"
     assert TemplateConversationInterface().render(
         ConversationMessage("apology", {"target": "Ben", "reason": "the delay"})) == "apologize to Ben for the delay"
+
+
+def test_standalone_goal_renderer_produces_surface_speech_not_graph_keys():
+    voice = WorldAdapter()
+    assert voice.utterance_for({"weather": {"of": "rain"}}) == "It is raining today."
+    content = voice.utterance_for({"news": {"of": {
+        "kind": "injury", "subject": "Garnet", "detail": "Garnet was injured (a fall)."
+    }}})
+    assert content == "I heard that Garnet was injured (a fall)."
+    assert "news of" not in content
