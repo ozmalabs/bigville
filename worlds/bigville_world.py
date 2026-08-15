@@ -76,6 +76,13 @@ class BigvilleOcelotActor:
         # given event -- common ground is per-dyad (Clark & Brennan 1991),
         # so retelling a DIFFERENT listener the same news stays undamped.
         self.told_events = {}
+        # Second-hand events this resident has been told about, distinct
+        # from first-hand ``observed_event`` edges: {event: {"day_heard",
+        # "strength"}}.  Strength compounds multiplicatively across hops
+        # (DeGroot 1974) -- a three-hop rumor's strength is the PRODUCT of
+        # three trust terms, degrading the way a real rumor's credibility
+        # does, without any global broadcast.
+        self.heard_events = {}
         # The speech decision above selects an occasion/kind.  The actual
         # utterance is produced by the existing goal-driven communicative
         # faculty, which renders a structured meaning from its graph-resident
@@ -5045,21 +5052,30 @@ class BigvilleWorld:
         damping rate itself scales toward 1 (slower decline) as severity
         rises, matching Rime's own finding that a more intense episode's
         sharing declines more slowly, not faster -- high-salience news gets
-        retold MORE before tapering, not deduplicated harder.  Returns
-        ``(0.0, None)`` when nothing recent and un-exhausted remains -- the
-        ``share`` speech option then loses its Argmax term and cannot be
-        chosen, exactly as it should when there is nothing left to share.
+        retold MORE before tapering, not deduplicated harder.
+
+        Candidates come from BOTH first-hand ``observed_event`` (full
+        strength) and second-hand ``heard_events`` (DeGroot-compounded
+        strength, age measured from when THIS speaker heard it, not the
+        event's own day -- news is fresh to the teller even if the event
+        happened earlier).  Returns ``(0.0, None)`` when nothing recent and
+        un-exhausted remains -- the ``share`` speech option then loses its
+        Argmax term and cannot be chosen, exactly as it should when there is
+        nothing left to share.
         """
         day = float(self.eng.node(self._town)["attrs"].get("day", 0.0))
         mind = self._actor_minds[speaker]
+        candidates = [(event, float(self.eng.node(event)["attrs"].get("day", day)), 1.0)
+                      for event in self.eng.neighbours(self._actors[speaker], "observed_event")]
+        candidates += [(event, held["day_heard"], held["strength"])
+                       for event, held in mind.heard_events.items()]
         best_salience, best_event = 0.0, None
-        for event in self.eng.neighbours(self._actors[speaker], "observed_event"):
-            attrs = self.eng.node(event)["attrs"]
-            age = day - float(attrs.get("day", day))
+        for event, origin_day, strength in candidates:
+            age = day - origin_day
             if age < 0.0 or age > 1.0:
                 continue
-            severity = float(attrs.get("severity", 0.0))
-            base_salience = max(0.25, severity)
+            severity = float(self.eng.node(event)["attrs"].get("severity", 0.0))
+            base_salience = max(0.25, severity) * strength
             retold = mind.told_events.get((listener, event), 0)
             retell_decay = min(0.95, 0.3 + severity)
             salience = base_salience * (retell_decay ** retold)
@@ -5068,17 +5084,26 @@ class BigvilleWorld:
         return best_salience, best_event
 
     def _hear_gossip(self, listener, speaker, event):
-        """Fold a heard ``share`` into the listener's own held belief.
+        """Fold a heard ``share`` into the listener's own held belief, and
+        give the listener their own second-hand standing to re-tell it.
 
         Mirrors ``BigvilleBondWorld.hear_gossip`` plus its ``tick()``
         gossip-application step: gossip is evidence weighted by the
         source's trustworthiness, never ground truth, so a listener who
         distrusts the speaker barely moves; one who trusts them moves more.
+        The trust weight is further discounted by the SPEAKER's own
+        confidence in the story -- 1.0 if they witnessed it, their own
+        inherited ``heard_events`` strength if they only heard it too -- so
+        a multi-hop chain's influence compounds MULTIPLICATIVELY (DeGroot
+        1974), the way a real rumor's credibility degrades hop by hop.
         """
         subject = str(self.eng.node(event)["attrs"].get("subject", ""))
         if not subject or subject == listener or subject not in self._actors:
             return
         mind = self._actor_minds[listener]
+        speaker_mind = self._actor_minds[speaker]
+        speaker_confidence = (1.0 if event in self.eng.neighbours(self._actors[speaker], "observed_event")
+                              else speaker_mind.heard_events.get(event, {}).get("strength", 1.0))
         source_bond = mind._speech_bond(speaker)
         source_trust = float(mind.s.node(source_bond)["attrs"].get("belief_trust", 0.0))
         about_bond = mind._speech_bond(subject)
@@ -5086,10 +5111,13 @@ class BigvilleWorld:
         # is a magnitude of harm, so the reported content is negative news
         # about its subject until a signed-valence event field exists.
         content_valence = -float(self.eng.node(event)["attrs"].get("severity", 0.0))
-        weight = BOND_KNOBS["gossip_weight"] * source_trust
+        weight = BOND_KNOBS["gossip_weight"] * source_trust * speaker_confidence
         attrs = mind.s.node(about_bond)["attrs"]
         mind.s.set_attr(about_bond, "belief_trust",
                         float(attrs.get("belief_trust", 0.0)) + content_valence * weight)
+        day = float(self.eng.node(self._town)["attrs"].get("day", 0.0))
+        mind.heard_events[event] = {"day_heard": day,
+                                    "strength": source_trust * speaker_confidence}
 
     def _speech_goal(self, target, kind, event=None):
         """Build a grounded communicative meaning for a speech occasion.

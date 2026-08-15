@@ -190,3 +190,70 @@ def test_hearing_a_share_increments_the_speakers_told_count_for_that_listener():
         w._spontaneous_speech_tick()
     told = w._actor_minds["Anselm"].told_events.get(("Bryony", event), 0)
     assert told > 0, "at least one heard share should have incremented the retelling count"
+
+
+# --------------------------------------------------- G5: second-hand spread through the network
+def test_hearing_gossip_gives_the_listener_standing_to_retell_it():
+    w = _town()
+    event = w.injure("Colm", severity=0.4, cause="a fall")
+    w.observe_event("Anselm", event)                          # Anselm is first-hand
+    bmind = w._actor_minds["Bryony"]
+    src = bmind._speech_bond("Anselm")
+    bmind.s.set_attr(src, "belief_trust", 0.8)
+    w._hear_gossip("Bryony", "Anselm", event)
+    assert event in bmind.heard_events
+    salience, won = w._speech_share_event("Bryony", "Dara")   # can Bryony now retell it?
+    assert won == event
+    assert salience > 0.0
+
+
+def test_secondhand_strength_compounds_multiplicatively_across_two_hops():
+    w = _town()
+    event = w.injure("Colm", severity=0.4, cause="a fall")
+    w.observe_event("Anselm", event)
+    bmind = w._actor_minds["Bryony"]
+    bmind.s.set_attr(bmind._speech_bond("Anselm"), "belief_trust", 0.8)
+    w._hear_gossip("Bryony", "Anselm", event)
+    assert bmind.heard_events[event]["strength"] == 0.8       # 1.0 (witnessed) * 0.8
+
+    dmind = w._actor_minds["Dara"]
+    dmind.s.set_attr(dmind._speech_bond("Bryony"), "belief_trust", 0.5)
+    w._hear_gossip("Dara", "Bryony", event)
+    assert abs(dmind.heard_events[event]["strength"] - 0.4) < 1e-9   # 0.8 * 0.5 -- DeGroot compounding
+
+
+def test_a_disconnected_bystander_never_learns_the_event_at_all():
+    w = _town()
+    event = w.injure("Colm", severity=0.9, cause="a fall")
+    w.observe_event("Anselm", event)
+    # Dara has never been co-located with Anselm or anyone who heard him;
+    # spread is bounded by the town's real encounter topology, not a
+    # global broadcast, so Dara's own standing to share it must be zero.
+    salience, won = w._speech_share_event("Dara", "Bryony")
+    assert salience == 0.0 and won is None
+    assert w._actor_minds["Dara"].heard_events == {}
+
+
+def test_secondhand_relay_moves_belief_less_than_a_firsthand_report():
+    w = _town()
+    event = w.injure("Colm", severity=0.4, cause="a fall")
+    w.observe_event("Anselm", event)
+
+    bmind = w._actor_minds["Bryony"]
+    bmind.s.set_attr(bmind._speech_bond("Anselm"), "belief_trust", 1.0)
+    b_subject_bond = bmind._speech_bond("Colm")
+    w._hear_gossip("Bryony", "Anselm", event)          # first-hand relay, full trust
+    b_moved = abs(float(bmind.s.node(b_subject_bond)["attrs"]["belief_trust"]))
+
+    dmind = w._actor_minds["Dara"]
+    dmind.s.set_attr(dmind._speech_bond("Bryony"), "belief_trust", 0.5)   # an imperfect second hop
+    d_subject_bond = dmind._speech_bond("Colm")
+    w._hear_gossip("Dara", "Bryony", event)
+    d_moved = abs(float(dmind.s.node(d_subject_bond)["attrs"]["belief_trust"]))
+
+    assert d_moved < b_moved, (
+        "Bryony fully internalised the story (confidence 1.0, having heard "
+        "it from a fully-trusted first-hand witness), but Dara's own only "
+        "partial trust in Bryony must still discount what Dara ends up "
+        "believing -- an ADDITIONAL hop always adds an ADDITIONAL discount, "
+        "even from a fully-confident teller")
