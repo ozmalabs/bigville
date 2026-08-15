@@ -5027,7 +5027,54 @@ class BigvilleWorld:
             return None
         return dict(self.eng.node(relationship)["attrs"])
 
-    def _speech_goal(self, target, kind):
+    def _speech_share_event(self, speaker):
+        """The speaker's most salient recent observation, and its salience.
+
+        Salience is gated the same way Rime (2009) found emotionally
+        significant experiences get shared: recently (age <= 1 day) and
+        roughly in proportion to severity, floored so any recent event is at
+        least mildly worth mentioning.  Returns ``(0.0, None)`` when the
+        speaker has observed nothing recent -- the ``share`` speech option
+        then loses its Argmax term and cannot be chosen, exactly as it
+        should when there is nothing to share.
+        """
+        day = float(self.eng.node(self._town)["attrs"].get("day", 0.0))
+        best_salience, best_event = 0.0, None
+        for event in self.eng.neighbours(self._actors[speaker], "observed_event"):
+            attrs = self.eng.node(event)["attrs"]
+            age = day - float(attrs.get("day", day))
+            if age < 0.0 or age > 1.0:
+                continue
+            salience = max(0.25, float(attrs.get("severity", 0.0)))
+            if salience > best_salience:
+                best_salience, best_event = salience, event
+        return best_salience, best_event
+
+    def _hear_gossip(self, listener, speaker, event):
+        """Fold a heard ``share`` into the listener's own held belief.
+
+        Mirrors ``BigvilleBondWorld.hear_gossip`` plus its ``tick()``
+        gossip-application step: gossip is evidence weighted by the
+        source's trustworthiness, never ground truth, so a listener who
+        distrusts the speaker barely moves; one who trusts them moves more.
+        """
+        subject = str(self.eng.node(event)["attrs"].get("subject", ""))
+        if not subject or subject == listener or subject not in self._actors:
+            return
+        mind = self._actor_minds[listener]
+        source_bond = mind._speech_bond(speaker)
+        source_trust = float(mind.s.node(source_bond)["attrs"].get("belief_trust", 0.0))
+        about_bond = mind._speech_bond(subject)
+        # Injury/death are the only live event kinds today; their severity
+        # is a magnitude of harm, so the reported content is negative news
+        # about its subject until a signed-valence event field exists.
+        content_valence = -float(self.eng.node(event)["attrs"].get("severity", 0.0))
+        weight = BOND_KNOBS["gossip_weight"] * source_trust
+        attrs = mind.s.node(about_bond)["attrs"]
+        mind.s.set_attr(about_bond, "belief_trust",
+                        float(attrs.get("belief_trust", 0.0)) + content_valence * weight)
+
+    def _speech_goal(self, target, kind, event=None):
         """Build a grounded communicative meaning for a speech occasion.
 
         Ocelot selects the occasion.  This bridge contributes only concepts
@@ -5045,6 +5092,11 @@ class BigvilleWorld:
         if kind == "hedged":
             return {"uncertainty": {"of": "work"}}
         if kind == "share":
+            if event is not None:
+                ea = self.eng.node(event)["attrs"]
+                return {"news": {"of": {"kind": str(ea.get("kind", "")),
+                                        "subject": str(ea.get("subject", "")),
+                                        "detail": str(ea.get("detail", ""))}}}
             return {"news": {"of": {"village": {"weather": weather}}}}
         if kind == "answer":
             return {"acknowledgement": {"of": str(target)}}
@@ -5082,15 +5134,17 @@ class BigvilleWorld:
             # crowd changing conversational partners without a world schedule.
             speaker, target = self._rng.sample(present, 2)
             for speaker, target in ((speaker, target), (target, speaker)):
+                share_salience, share_event = self._speech_share_event(speaker)
                 choice = self._actor_minds[speaker].decide_speech(
                     target, relationship=self._speech_relationship(speaker, target),
-                    stranger=False,
+                    stranger=False, share_salience=share_salience,
                     arousal=float(self.eng.node(self._actors[speaker])["attrs"].get("arousal", 0.4)),
                     loquacity_threshold=float(self.eng.node(self._actors[speaker])["attrs"].get(
                         "loquacity_threshold", 1.0)))
                 if not choice["spoken"]:
                     continue
-                meaning = self._speech_goal(target, choice["kind"])
+                event = share_event if choice["kind"] == "share" else None
+                meaning = self._speech_goal(target, choice["kind"], event=event)
                 if meaning is None:
                     continue
                 content = self._actor_minds[speaker].goal_utterance(target, meaning)
@@ -5102,11 +5156,13 @@ class BigvilleWorld:
                     message={"act": choice["kind"], "slots": {
                         "target": str(target), "meaning": meaning,
                     }})
+                heard = bool(self.eng.node(utterance)["attrs"].get("heard", 0.0))
                 self._speech_events.append({
                     "turn": int(self._turn), "speaker": speaker, "target": target,
-                    "kind": choice["kind"], "content": content,
-                    "heard": bool(self.eng.node(utterance)["attrs"].get("heard", 0.0)),
+                    "kind": choice["kind"], "content": content, "heard": heard,
                 })
+                if choice["kind"] == "share" and heard and event is not None:
+                    self._hear_gossip(target, speaker, event)
 
     def speech_choices(self, actor):
         """Read the resident's latest graph-native speech choices."""
