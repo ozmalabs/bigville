@@ -11,6 +11,7 @@ from .backends import (ActorContext, ActorResponse, CheapBackend, ConversationMe
 from .backends.protocol import ActorContinuation, ProposedAction
 from .backends.protocol import communication_capabilities
 from .character import CharacterDefinition, MemoryRecord
+from worlds.bigville_bond_world import BigvilleBondWorld
 
 
 @dataclass
@@ -182,6 +183,32 @@ class BigvilleGame:
             )
         return characters
 
+    def _relationship_signal(self, actor: str, other: str) -> dict[str, float]:
+        """Mechanical exposure of held relationship state, nothing decided.
+
+        Bigville does not bundle cognition (``backends/ocelot.py``'s own
+        docstring); a real Ocelot-side backend deciding HOW to speak to this
+        interlocutor -- register, style, anything downstream of "how close is
+        this tie" -- needs to know that from bigville, since bigville is the
+        only side holding it.  ``band_code`` is the already-correct,
+        already-tested discrete banding (``BigvilleBondWorld._band_code``,
+        reused verbatim, not reimplemented) an external backend's own
+        quantized-codebook decision can key on directly, matching the
+        "quantised codebook over a quantised set of interlocutors" shape.
+        Absent any ``set_relationship`` call for this pair, both fields read
+        as the honest zero/floor default -- not a fabricated stranger label.
+        """
+        relationship = self.world.relationship(actor, other)
+        if relationship is None:
+            return {"tie_strength": 0.0, "band_code": 0.0}
+        attrs = self.world.eng.node(relationship)["attrs"]
+        strength = float(attrs.get("strength", 0.0))
+        tie_strength = max(0.0, strength)
+        resentment = max(0.0, -strength) if attrs.get("kind") == "feud" else 0.0
+        band_code = BigvilleBondWorld._band_code(
+            {"tie_strength": tie_strength, "affect_resentment": resentment})
+        return {"tie_strength": tie_strength, "band_code": band_code}
+
     def _context(self, actor: str) -> ActorContext:
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
@@ -200,6 +227,7 @@ class BigvilleGame:
                         "id": name, "name": name,
                         "role": other_attrs.get("role", ""),
                         "position": other_position, "distance": distance,
+                        **self._relationship_signal(actor, name),
                     })
         nearby_residents.sort(key=lambda resident: (resident["distance"], resident["id"]))
         observations = {

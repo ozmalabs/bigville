@@ -174,3 +174,43 @@ def test_continuation_replans_when_a_need_crosses_its_threshold():
     game.step()
     assert backend.calls == 2
     assert game.last_responses["Ben"].backend_state["continuation_interrupted"] == "hunger_threshold"
+
+
+def test_nearby_residents_expose_floor_relationship_signal_when_no_bond_set():
+    world, game = _game()
+    ctx = game._context("Ada")
+    nearby = {r["id"]: r for r in ctx.observations["nearby_residents"]}
+    assert nearby["Ben"]["tie_strength"] == 0.0
+    assert nearby["Ben"]["band_code"] == 0.0
+
+
+def test_nearby_residents_expose_held_tie_strength_and_band_code():
+    world, game = _game()
+    world.set_relationship("Ada", "Ben", kind="friend", strength=2.5)
+    ctx = game._context("Ada")
+    nearby = {r["id"]: r for r in ctx.observations["nearby_residents"]}
+    assert nearby["Ben"]["tie_strength"] == 2.5
+    assert nearby["Ben"]["band_code"] == 3.0
+
+
+def test_nearby_residents_band_code_matches_bondworld_banding_directly():
+    from worlds.bigville_bond_world import BigvilleBondWorld
+
+    world, game = _game()
+    world.set_relationship("Ada", "Ben", kind="friend", strength=5.5)
+    ctx = game._context("Ada")
+    nearby = {r["id"]: r for r in ctx.observations["nearby_residents"]}
+    expected = BigvilleBondWorld._band_code(
+        {"tie_strength": 5.5, "affect_resentment": 0.0})
+    assert nearby["Ben"]["band_code"] == expected == 5.0
+
+
+def test_nearby_residents_signal_carries_no_rendered_text():
+    world, game = _game()
+    world.set_relationship("Ada", "Ben", kind="friend", strength=2.5)
+    ctx = game._context("Ada")
+    nearby = {r["id"]: r for r in ctx.observations["nearby_residents"]}
+    assert set(nearby["Ben"]) == {
+        "id", "name", "role", "position", "distance",
+        "tie_strength", "band_code",
+    }
