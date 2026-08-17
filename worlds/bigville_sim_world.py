@@ -196,7 +196,7 @@ class BigvilleSimWorld:
         # what the reporter PERCEIVED through the same occlusion gate + its own
         # charm susceptibility. Posted by the office door so it can investigate.
         self.reporter = self.s.add_node("Villager", {
-            "name": "reporter", "cred_on": 1.0, "charm_weight": 1.0,
+            "name": "reporter", "cred_decide_on": 1.0, "charm_weight": 1.0,
             "claim_weight": float(CLAIM_WEIGHT),
             "difficulty_penalty": float(DIFFICULTY_PENALTY),
             "hostile_weight": float(HOSTILE_WEIGHT),

@@ -1850,6 +1850,23 @@ class BigvilleWorld:
             self.add_household(household, kind=household_kind,
                                home_cell=tuple(record["home_cell"]))
             self._t100_households[record["name"]] = household
+            # AFFECT_COUPLING Phase 5 (TOWN100_DISPOSITION_SWITCHON_PREREG.md,
+            # ocelot repo): _scenario_character_data must be populated BEFORE
+            # add_actor -- add_actor itself reads it (via _cognition_factory's
+            # seed_character(**character_data), see add_actor's own body) to
+            # seed a resident's identity/personality. Previously only
+            # from_scenario() ever populated this dict, so a cast-100
+            # resident's own drawn _PARAM_SPEC params (already flattened onto
+            # this actor's graph node below via `traits=`) never reached an
+            # Ocelot cognition_factory's personality contract at all.
+            # emotional_core_enabled is set EXPLICITLY (not left to seed_
+            # character's own silent 1.0 default) so this is a visible,
+            # deliberate choice, not an accident of omission.
+            self._scenario_character_data[record["name"]] = {
+                "identity": {"role": role, "klass": record["class"],
+                            "group": record["group"]},
+                "personality": {**record["params"], "emotional_core_enabled": 1.0},
+            }
             self.add_actor(record["name"], role=role, skill=0.7,
                            station=station.get(record["group"], "labouring"),
                            literacy=float(record["literacy"]),
@@ -4575,6 +4592,15 @@ class BigvilleWorld:
         self._actor_minds[name] = (
             self._cognition_factory(name) if self._cognition_factory is not None
             else BigvilleOcelotActor(name))
+        # Character identity, memories, personality, and held frame seeds are
+        # resident-owned cognition inputs.  The physical world does not
+        # interpret them; an external cognition provider may opt into the
+        # generic seeding hook when it is available.  The optional method keeps
+        # older/simple providers source-compatible.
+        character_data = self._scenario_character_data.get(name, {})
+        seed_character = getattr(self._actor_minds[name], "seed_character", None)
+        if callable(seed_character) and character_data:
+            seed_character(**character_data)
         self._actor_decisions[name] = {"action": "", "kind": "", "trade": "", "recipe": "", "target": ""}
         self._actor_targets[name] = {}
         # Food is held by residents, never implicitly by the town on their

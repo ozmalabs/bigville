@@ -1,9 +1,9 @@
 {
  "id": "bigville_speech_decide",
- "version": "1.0.0",
+ "version": "1.2.0",
  "depends_on": [],
  "self_load_only": true,
- "description": "BIGVILLE RUNG 2/3 (block 278000) -- EMERGENT SPEECH: the DECISION to speak, not a schedule. An utterance is an EMERGENT ACTION -- at an encounter/trade an agent DECIDES whether/to-whom/what-KIND to speak OR to STAY SILENT by reading its held Bond(A->B) (rung 1) + conversational norms + affect, with NO clock term. sp_choose_utterance EXTENDS af_choose_action into a speech-act Argmax over a GLOBAL SpeechOption menu that INCLUDES stay_silent: value = occasion x relationship x goal x affect_gain - face_cost - civil_inattention, over a per-agent loquacity_threshold. Adjacency (a pending FPP) is the strongest norm term (routes to the matching option -> a greeting begets a greeting). KIND is DERIVED from adjacency then the Bond's relational affect. sp_noticeable_absence mints a LEGIBLE snub node when an obligation goes unmet (non-response is a MOVE, Schegloff). sp_set_chosen_loudness feeds arousal into the LANDED lo_choose_loudness (delivery gate). FALSIFIER: zeroing the coupling gains collapses the decision to ONE fixed kind regardless of Bond = the OLD forced schedule (mirrors af_choose_action's affect_gain). Composes existing DSL Terms only; ZERO new Rust. OFF by default.",
+ "description": "BIGVILLE RUNG 2/3 (block 278000) -- EMERGENT SPEECH: the DECISION to speak, not a schedule. An utterance is an EMERGENT ACTION -- at an encounter/trade an agent DECIDES whether/to-whom/what-KIND to speak OR to STAY SILENT by reading its held Bond(A->B) (rung 1) + conversational norms + affect, with NO clock term. sp_choose_utterance EXTENDS af_choose_action into a speech-act Argmax over a GLOBAL SpeechOption menu that INCLUDES stay_silent: value = occasion x relationship x goal x affect_gain - face_cost - civil_inattention, over a per-agent loquacity_threshold. Adjacency (a pending FPP) is the strongest norm term (routes to the matching option -> a greeting begets a greeting). KIND is DERIVED from adjacency then the Bond's relational affect. sp_noticeable_absence mints a LEGIBLE snub node when an obligation goes unmet (non-response is a MOVE, Schegloff). sp_set_chosen_loudness feeds arousal into the LANDED lo_choose_loudness (delivery gate). FALSIFIER: zeroing the coupling gains collapses the decision to ONE fixed kind regardless of Bond = the OLD forced schedule (mirrors af_choose_action's affect_gain). Composes existing DSL Terms only; ZERO new Rust. OFF by default. v1.1.0 (AFFECT_COUPLING_SHAPE_PREREG.md, ocelot repo): sp_choose_utterance's value formula gains ONE new additive term, P0(opt.affect_bias) -- the disposition/mood-coupled bias a generic seeded rule (ocelot-side seeds/affect_coupling.json) writes onto any affinity-tagged node, SpeechOption included. affect_bias defaults to 0.0 (P0-guarded) so this is byte-identical whenever the coupling is off or unset -- the SAME falsifier discipline this rule's own header already states for its other coupling gains. v1.2.0 (AFFECT_COUPLING_SHAPE_PREREG.md Phase 3, ocelot repo): the old enc.arousal_gain*enc.speaker_arousal*opt.hostile_aff term -- UNDIFFERENTIATED, fired identically regardless of which resident was aroused -- is REMOVED. The arousal_hostile AffectChannel (seeds/affect_coupling.json) now carries this coupling instead, gated by each resident's OWN hostile_gain (a real disposition trait, bigville_town100_world.py _PARAM_SPEC's hostile_weight), so the SAME arousal level no longer produces the SAME hostility bias for every resident.",
  "nodes": [],
  "edges": [],
  "productions": [],
@@ -574,62 +574,6 @@
             ]
            },
            {
-            "type": "Times",
-            "items": [
-             {
-              "type": "Plus",
-              "items": [
-               {
-                "type": "Attr",
-                "node": {
-                 "type": "Var",
-                 "name": "enc"
-                },
-                "key": "arousal_gain"
-               },
-               {
-                "type": "Lit",
-                "value": 0.0
-               }
-              ]
-             },
-             {
-              "type": "Plus",
-              "items": [
-               {
-                "type": "Attr",
-                "node": {
-                 "type": "Var",
-                 "name": "enc"
-                },
-                "key": "speaker_arousal"
-               },
-               {
-                "type": "Lit",
-                "value": 0.0
-               }
-              ]
-             },
-             {
-              "type": "Plus",
-              "items": [
-               {
-                "type": "Attr",
-                "node": {
-                 "type": "Var",
-                 "name": "opt"
-                },
-                "key": "hostile_aff"
-               },
-               {
-                "type": "Lit",
-                "value": 0.0
-               }
-              ]
-             }
-            ]
-           },
-           {
             "type": "Minus",
             "a": {
              "type": "Lit",
@@ -737,6 +681,23 @@
               }
              ]
             }
+           },
+           {
+            "type": "Plus",
+            "items": [
+             {
+              "type": "Attr",
+              "node": {
+               "type": "Var",
+               "name": "opt"
+              },
+              "key": "affect_bias"
+             },
+             {
+              "type": "Lit",
+              "value": 0.0
+             }
+            ]
            }
           ]
          }

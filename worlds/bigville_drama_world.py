@@ -146,7 +146,7 @@ class BigvilleDramaWorld:
         self.villagers = []
         for i in range(N_VILLAGERS):
             v = self.s.add_node("Villager", {
-                "name": "villager_%d" % i, "cred_on": 1.0,
+                "name": "villager_%d" % i, "cred_decide_on": 1.0,
                 "charm_weight": float(CHARM_WEIGHTS[i % len(CHARM_WEIGHTS)]),
                 "claim_weight": float(CLAIM_WEIGHT),
                 "difficulty_penalty": float(DIFFICULTY_PENALTY),

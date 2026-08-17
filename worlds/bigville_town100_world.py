@@ -447,13 +447,20 @@ def build_town_100(seed=SEED_DEFAULT):
 
 
 # ============================================================ cast generator
+# The real precision this whole generator ever commits to for a drawn
+# trait -- named so any downstream consumer (e.g. ocelot's affect-coupling
+# log-weight SCALE derivation) can read the ACTUAL source precision
+# instead of restating "4" as its own separate, driftable literal.
+DRAW_CLIP_DECIMALS = 4
+
+
 def _draw_clip(rng, mean, sd, lo, hi):
     v = float(rng.normal(mean, sd))
     if lo is not None:
         v = max(lo, v)
     if hi is not None:
         v = min(hi, v)
-    return round(v, 4)
+    return round(v, DRAW_CLIP_DECIMALS)
 
 
 def _name_pool(n, rng):
