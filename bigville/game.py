@@ -10,7 +10,7 @@ from .backends import (ActorContext, ActorResponse, CheapBackend, ConversationMe
                        HumanBackend, OcelotBackend, TemplateConversationInterface)
 from .backends.protocol import ActorContinuation, ProposedAction
 from .backends.protocol import communication_capabilities
-from .character import CharacterDefinition, MemoryRecord
+from .character import CharacterDefinition, FrameSeed, MemoryRecord
 from worlds.bigville_bond_world import BigvilleBondWorld
 
 
@@ -168,18 +168,34 @@ class BigvilleGame:
 
     def _characters_from_world(self):
         characters = {}
+        scenario_characters = getattr(self.world, "_scenario_character_data", {})
         for name, node in self.world._actors.items():
             attrs = dict(self.world.eng.node(node)["attrs"])
             identity = {k: attrs.get(k) for k in ("name", "role", "klass", "group", "age", "life_stage")}
             personality = {k: attrs[k] for k in attrs
                            if k.endswith("_weight") or k.startswith("prior_")
-                           or k in {"mood_bias", "arousal", "w_spite", "w_supergraph", "role_identity"}}
+                           or k in {"mood_bias", "arousal", "w_spite", "w_supergraph",
+                                    "role_identity", "cred_on", "valence", "resolution_bins"}}
+            preset = dict(scenario_characters.get(name, {}))
+            identity.update(dict(preset.get("identity", {})))
+            personality.update(dict(preset.get("personality", {})))
+            memories = [MemoryRecord(**memory) if isinstance(memory, dict)
+                        else MemoryRecord(f"memory:{name}:{index + 1}", memory)
+                        for index, memory in enumerate(preset.get("memories", []))]
+            held_frames = []
+            for frame in preset.get("held_frames", []):
+                if isinstance(frame, str):
+                    held_frames.append(FrameSeed(frame))
+                elif isinstance(frame, dict):
+                    held_frames.append(FrameSeed(**frame))
             characters[name] = CharacterDefinition(
                 character_id=name,
                 name=name,
                 identity={k: v for k, v in identity.items() if v not in (None, "")},
                 personality=personality,
-                backend={"kind": "cheap"},
+                memories=memories,
+                held_frames=held_frames,
+                backend={"kind": getattr(self.world, "_scenario_actor_backends", {}).get(name, "cheap")},
             )
         return characters
 
@@ -209,6 +225,22 @@ class BigvilleGame:
             {"tie_strength": tie_strength, "affect_resentment": resentment})
         return {"tie_strength": tie_strength, "band_code": band_code}
 
+    @staticmethod
+    def _shared_bucket_count(actor_attrs, other_attrs) -> int:
+        """Mechanical attr comparison, nothing decided (same boundary as
+        ``_relationship_signal``): how many of role/klass/group this pair
+        already shares. Bigville only counts matches; an external backend
+        decides what a shared bucket is WORTH (mere-exposure/familiarity
+        warmth, Zajonc 1968 -- Tajfel, Billig, Bundy & Flament 1971's
+        minimal-group point that bucket membership alone, no real content,
+        is enough to matter)."""
+        count = 0
+        for key in ("role", "klass", "group"):
+            a, b = actor_attrs.get(key), other_attrs.get(key)
+            if a and b and a == b:
+                count += 1
+        return count
+
     def _context(self, actor: str) -> ActorContext:
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
@@ -226,7 +258,10 @@ class BigvilleGame:
                     nearby_residents.append({
                         "id": name, "name": name,
                         "role": other_attrs.get("role", ""),
+                        "klass": other_attrs.get("klass", ""),
+                        "group": other_attrs.get("group", ""),
                         "position": other_position, "distance": distance,
+                        "shared_bucket_count": self._shared_bucket_count(attrs, other_attrs),
                         **self._relationship_signal(actor, name),
                     })
         nearby_residents.sort(key=lambda resident: (resident["distance"], resident["id"]))
@@ -245,6 +280,10 @@ class BigvilleGame:
             "known_references": sorted(self.world.known_references(actor)),
             "turn_state": self.world.actor_turn_state(actor),
             "nearby_residents": nearby_residents,
+            # Communication is delivered as records.  Cognition may inspect
+            # both the provider's raw payload and the human-facing text; the
+            # world does not interpret either one into an action.
+            "heard_utterances": self.world.heard_utterances(actor),
             "world_frames": {
                 "laws": [dict(v) for v in self.world._law_specs.values()],
                 "policies": [dict(v) for v in self.world._policy_specs.values()],
@@ -261,8 +300,23 @@ class BigvilleGame:
         return ActorContext(character, int(self.world._turn), observations, affordances,
                             recipient_interfaces=recipient_interfaces)
 
-    def _adapt_speech(self, speaker, target, content, message=None):
-        """Choose free text or the structured interface per conversation pair."""
+    def _adapt_speech(self, speaker, target, content, message=None, raw_data=None,
+                      backend_owned=False):
+        """Mediate delivery without rewriting backend-owned speech.
+
+        A proposal carrying ``raw_data`` is already a complete utterance from
+        cognition.  Keep its text and payload intact even when the recipient
+        is a legacy structured-interface backend.  The old template adapter is
+        retained only for pre-envelope callers that submit ``act``/``slots``
+        without backend-owned text.
+        """
+        if backend_owned or raw_data is not None:
+            return {
+                "content": str(content),
+                "raw_data": raw_data,
+                "communication_mode": "free_text",
+                "speech_origin": "backend",
+            }
         source = self.backends.get(speaker)
         recipient = self.backends.get(target) if target is not None else None
         source_caps = communication_capabilities(source) if source is not None else {
@@ -275,6 +329,30 @@ class BigvilleGame:
             return self.conversation_interface.envelope(structured, original_content=content)
         return {"content": str(content), "communication_mode": "free_text",
                 "conversation": structured.to_dict()}
+
+    def _raw_delivery_metadata(self, target):
+        """Describe recipient comprehension without inspecting provider data."""
+        if target is None:
+            return {"raw_understanding": {
+                "status": "not_applicable",
+                "note": "Broadcast speech has no single recipient backend to assess.",
+            }}
+        recipient = self.backends.get(target)
+        if recipient is None:
+            return {"raw_understanding": {
+                "status": "not_assessed",
+                "note": "The recipient backend is not registered with this game session.",
+            }}
+        capabilities = communication_capabilities(recipient)
+        if capabilities.get("understands_raw_speech", False):
+            return {"raw_understanding": {
+                "status": "understood",
+                "note": "The recipient backend declares support for the raw speech payload.",
+            }}
+        return {"raw_understanding": {
+            "status": "not_understood",
+            "note": "The recipient received the exact text but cannot interpret the backend raw payload.",
+        }}
 
     def submit_player_response(self, response: ActorResponse):
         backend = self.backends[self.player]
@@ -289,13 +367,27 @@ class BigvilleGame:
             plan = {"action": proposal.action, **proposal.params}
             ok = bool(self.world.enact_plan(actor, plan))
         for utterance in response.utterances:
+            if hasattr(utterance, "to_dict"):
+                utterance = utterance.to_dict()
+            if not isinstance(utterance, dict):
+                raise TypeError("utterance proposals must be objects")
             target = utterance.get("target")
-            content = utterance.get("content", "")
+            # New backends return their own surface text and opaque raw data.
+            # Presence of the key matters: an empty object is still a valid
+            # provider payload and must not fall through to legacy templating.
+            owns_speech = "text" in utterance or "raw" in utterance or "raw_data" in utterance
+            content = utterance.get("text", utterance.get("content", ""))
             message = utterance.get("message")
-            if message is None and any(key in utterance for key in ("act", "slots", "template", "template_id")):
+            raw_data = utterance.get("raw", utterance.get("raw_data"))
+            if owns_speech:
+                message = None
+            elif message is None and any(key in utterance for key in ("act", "slots", "template", "template_id")):
                 message = utterance
             self.world.free_action(actor, "speak", target=target, content=content,
-                                   loudness=utterance.get("loudness", 1.0), message=message)
+                                   loudness=utterance.get("loudness", 1.0), message=message,
+                                   raw_data=raw_data, backend_owned=owns_speech,
+                                   delivery_metadata=(self._raw_delivery_metadata(target)
+                                                      if owns_speech else None))
         for update in response.memory_updates:
             self.add_memory(actor, update)
         return ok
