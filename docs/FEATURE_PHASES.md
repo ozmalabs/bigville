@@ -535,15 +535,34 @@ of their role's trades as "can_attempt" memories.
    law and each trade's recipes, and flag implausible results (e.g. a law nobody is aware of, a
    trade whose own holders do not understand its core recipes).
 
+6. **Existence and location.** Knowledge also covers WHAT EXISTS and WHERE IT IS -- buildings,
+   workshops, stores and containers, water sources, fields and pasture, deposits and gathering
+   sites, the market and its stalls, other residents' homes and workplaces, animals, and the
+   kinds of goods to be had. These are tracked as their own items, with levels:
+   - **existence** -- unaware / aware it exists (there is a tannery; there is salt to be bought);
+   - **location** -- none / roughly where (a district or landmark: "out past the mill") / exactly
+     where, with a route they know.
+   Derived from implied history and routine: their home and workplace and the routes between,
+   where their job sends them (suppliers, customers, fields, the deposits they work), their
+   household's and kin's places, years in the village, and public spread (everyone knows where
+   the church and the well are). Location knowledge is a held belief and can be wrong or stale --
+   a resident who left five years ago remembers the old stall. Seeded location beliefs record the
+   position believed and when it was learned. After founding the world only publishes what a
+   resident perceives; updating the mental map is the backend's job.
+
 **Acceptance.** Tests show: a baker understands baking and is aware of milling; a former
 apprentice smith who now farms understands basic smithing at a lower degree; an illiterate
 resident is aware of the theft law but does not understand its written text; an incomer of one
-year is unaware of a local custom that a lifelong resident understands; `seed_roles` is gone
-from the pack and replaced by `knowledge` specs; every derived item has a basis.
+year is unaware of a local custom that a lifelong resident understands; a farm labourer knows
+exactly where the fields and the granary are but only roughly where the tannery is; a new incomer
+does not know where the quarry is; a resident seeded with an out-of-date stall location keeps
+that belief until they perceive otherwise; `seed_roles` is gone from the pack and replaced by
+`knowledge` specs; every derived item has a basis.
 
 **Feeds.** Phase 017 generates each resident's knowledge seed from this derivation; Phase 018's
 LLM instructions carry only the resident's derived awareness and understanding (an aware-only item
-is given as a name and gist, never its full content).
+is given as a name and gist, never its full content), and only the places and things they know
+exist, at the precision they know them -- never the world's map.
 
 ---
 
