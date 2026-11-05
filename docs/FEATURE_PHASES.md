@@ -356,6 +356,12 @@ with the switch off; writing rising with it on.
 
 ---
 
+# Run order for the remaining phases (supervisor, 2026-11-05)
+
+013b, 014, 015, 002, 012, 009, 016 (with 003), 019, 017, 018, 004, 005, 006, 007, 008, 010, 011.
+Programme B first so later features write into the pack; 012 and 009 before 019, which derives
+knowledge from skills and kinship; 017-018 after 019, which they generate from.
+
 # Programme B: everything in the data, generated seeds and instructions
 
 **Decision 2026-11-05.** All world content -- laws, institutions, roles, procedures, parameters,
