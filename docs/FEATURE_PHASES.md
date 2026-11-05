@@ -97,8 +97,9 @@ published work affordances match what will run.
 
 ## Phase 003 -- Seed the 100-resident cast from JOBS
 
-**Status:** blocked -- needs the user's decision. Rebuilding the cast changes
-the residents that the seeded-town tests are built on.
+**Status:** ready -- the user approved rebuilding the cast (decision 2026-11-05).
+Changing the residents the seeded-town tests are built on is expected; list
+every changed number.
 
 **Goal.** Replace the hand-written `ROLE_SPEC` counts in
 `worlds/bigville_town100_world.py` with `E.seed_jobs(100)`, mapping each job to
@@ -214,8 +215,56 @@ species where the town has two or more (record the choice).
 
 ## Phase 009 -- Kinship, households, and inheritance
 
-**Status:** blocked -- scope decision: how far kinship goes (spouses and
-children only, or extended family).
+**Status:** ready (decision 2026-11-05: kinship as in the real world -- extended
+family -- but a kin term is a social relation, not only a genealogical one: an
+uncle does not have to be a biological uncle).
+
+**Goal.** Separate the two layers real kinship has:
+1. **Genealogy (world fact):** who bore or fathered whom, and recorded unions.
+   Store as `bore`/`fathered` and `union_with` edges between Agent nodes, with
+   the period of each. These are physical/recorded facts.
+2. **Kin terms (shared frame):** what people call and treat one another. Add to
+   `shared_frames.py`:
+   - `KIN_TERMS`: the extended-family terms (parent, child, sibling, half-sibling,
+     grandparent, grandchild, aunt/uncle, niece/nephew, cousin, spouse, in-laws,
+     step-relations), each with its usual genealogical paths (uncle = parent's
+     brother, or parent's sister's husband), reciprocal term, and generation.
+   - `KIN_ATTRIBUTION`: the ways a term is held WITHOUT the genealogical path --
+     adoption, fostering, godparenthood, step-family, and honorific/fictive kin
+     (a family friend called "uncle") -- and which obligations each carries.
+   - `KIN_OBLIGATIONS`: what a term normally implies (care for children and
+     elders, inheritance claim, hospitality), as frames residents may hold.
+   A resident's kin terms for others are HELD by that resident (seed them as
+   private references from genealogy at founding; later changes belong to the
+   backend). The world never decides who counts as someone's uncle.
+3. **Founding families (population):** in `population.py`, draw household
+   composition for a founding town from real distributions (household size,
+   share of extended-family households, age at first union, children per woman,
+   share living with grandparents) for a pre-industrial English/European village;
+   cite sources (e.g. Laslett / Cambridge Group household studies, Wrigley &
+   Schofield) and mark APPROX where needed. Generate genealogy for the seeded
+   residents (including dead ancestors where needed to link cousins), then seed
+   each resident's held kin terms from it.
+4. **Inheritance:** when a resident dies, publish who the genealogical heirs
+   are under the data's default custom (in `shared_frames.py`, e.g. partible vs
+   primogeniture -- choose one default and make it a data switch) as an
+   observation and as the input to the existing `inheritance` deed type. The
+   world does not transfer property by itself.
+
+**Write scope.** `domains/shared_frames.py`, `domains/population.py`,
+`domains/bigville_entities.py` (self-test checks and a kinship summary in the
+report), `worlds/bigville_world.py`, a new `tests/test_phase009_kinship.py`.
+
+**Acceptance.** Tests show: genealogy recorded at founding; an aunt identified
+by path; a fictive "uncle" held by a resident with no genealogical path; the
+two layers disagreeing without error; heirs published on a death and no
+property moved automatically. The self-test reports household-size and
+extended-family shares against their sources.
+
+**Out of scope.** Courtship and marriage choice (backend); births during the run
+(a later phase).
+
+---
 
 ## Phase 010 -- Death, burial, and the graveyard
 
@@ -231,15 +280,78 @@ household (data, APPROX).
 `worlds/bigville_world.py`, assets (regenerated only), a new
 `tests/test_phase010_burial.py`.
 
-## Phase 011 -- Taxes, wages, and rent
+## Phase 011 -- Fiscal institutions as data
 
-**Status:** blocked -- needs the user's decisions on who levies what.
+**Status:** ready (decision 2026-11-05: the institutions are already designed;
+pull them out of the code into the data).
 
-## Phase 012 -- Learning as observation (boundary follow-up)
+**Goal.** Taxes, rent, mortgages, tithes, wages, and collection are designed as
+graph-rule seeds -- `seeds/bigville_fisc_state.json`, `bigville_clerk_treasurer`,
+`bigville_coll_collect`, `bigville_fin_tenure`, `bigville_labour`,
+`bigville_econloop`, `bigville_school_fund`, `bigville_fisc_church` (mirrored in
+`bigville/seeds/`). The rule engine does not execute seeds (`bigville/runtime.py`
+`settle()` is a no-op), and the world loads none of these. Their parameters and
+structure live in rule bodies and descriptions. Extract them into data:
+- In `shared_frames.py`, `FISCAL_INSTITUTIONS`: one entry per institution
+  (council tax, treasury salaries, rent and tenancy, mortgage, tithe and
+  donation, church stipend and charity, wages, hired collection, school fund),
+  each with who levies and who pays, the base (income, land, rent), the rate in
+  basis points and who sets it, the schedule, what collection physically
+  requires (proximity, a collector), the consequence of non-payment (arrears,
+  eviction, foreclosure, unfunded service), and the seed rule names it came from.
+- In `world_affordances.py`, only the physical parts: purses (treasury, church
+  funds) as containers of coin, and the payment/collection actions as validated
+  transfers. Keep the integer-coin rounding the seeds use
+  (`IDiv(amount*bp+5000, 10000)`), as a helper function.
+- In `worlds/bigville_world.py`, add the transfer actions (`pay_tax`,
+  `pay_rent`, `pay_tithe`, `collect`, ...) following `pay_wage`: each checks
+  physical preconditions (coin held, collector co-located for collection) and
+  records an obligation/arrears fact. Setting rates, deciding to pay, evicting,
+  and graft are agent choices (backend), per the boundary audit: the world
+  records and validates, it does not enforce.
+Leave the seed JSON files untouched; record in the report which rule maps to
+which data entry.
 
-**Status:** blocked -- needs the user's decision between keeping skill practice
-as a physical subsystem (current) or logging practice as an observation for the
-backend to turn into learning.
+**Write scope.** `domains/shared_frames.py`, `domains/world_affordances.py`,
+`domains/bigville_entities.py`, `worlds/bigville_world.py`, a new
+`tests/test_phase011_fiscal.py`.
+
+**Acceptance.** Every rule in the eight seeds is mapped to a data entry or listed
+as backend-owned in the report; tests show a tax paid by a co-located payer, a
+missed rent becoming arrears with no automatic eviction, and the rounding helper
+matching the seeds' formula; self-test checks the new tables.
+
+---
+
+## Phase 012 -- Physical and cognitive skill learning
+
+**Status:** ready (decision 2026-11-05: physical skill learning always remains a
+world subsystem; cognitive skill learning is optional, because it is harder to
+model and because leaving it to the backend stops LLM backends from "cheating"
+by having the world grant understanding).
+
+**Goal.** Split skills by kind of learning:
+- Tag every skill in `shared_frames.SKILLS` with `"learning": "physical"` or
+  `"cognitive"` (the hand and body vs. understanding: e.g. smithing, felling,
+  baking physical; writing, reckoning, law, governance, teaching cognitive;
+  record the classification and borderline cases such as medicine and trading
+  in the report). Do the same for each metaskill.
+- The `practice` subsystem keeps consolidating PHYSICAL skills always.
+- Add a separate physical-subsystem switch `cognitive_practice`, default OFF.
+  When off, completed work still logs practice minutes for cognitive skills,
+  but the world does not change their levels; it publishes the practice as an
+  observation to the actor (so a backend may learn from it). When on, cognitive
+  skills consolidate like physical ones.
+- Aptitude's learning-to-learn gain applies only through skills whose learning
+  the world is modelling.
+
+**Write scope.** `domains/shared_frames.py`, `domains/bigville_entities.py`,
+`worlds/bigville_world.py`, tests that list the subsystem switches (add
+`cognitive_practice`), a new `tests/test_phase012_cognitive_learning.py`.
+
+**Acceptance.** Tests show smithing practice raising smithing with the switch
+off; writing practice leaving writing unchanged and producing an observation
+with the switch off; writing rising with it on.
 
 ---
 
