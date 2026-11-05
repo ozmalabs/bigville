@@ -42,6 +42,9 @@ BUILDING_PROJECTS = _PACK["BUILDING_PROJECTS"]
 RESOURCE_DEPOSITS = _PACK["RESOURCE_DEPOSITS"]
 # Phase 004: the gathering sites a gathering recipe's `gathered_from` names (empty in a pack with none).
 GATHERING_SITES = _PACK["GATHERING_SITES"]
+# Phase 010: what a dead resident leaves (a body on the ground) and what an unburied body does (the
+# graveyard, the body's weight, and the disease risk to its household). Empty in a pack with no graveyard.
+BURIAL = _PACK["BURIAL"]
 # The founding town's map and sites (Phase 016a). Empty in a pack with no founding town.
 FOUNDING_MAP = _PACK["FOUNDING_MAP"]
 FOUNDING_DEPOSITS = _PACK["FOUNDING_DEPOSITS"]

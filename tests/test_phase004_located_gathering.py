@@ -19,7 +19,9 @@ GATHERING_KINDS = ("woodlot", "orchard", "kitchen_garden", "quarry")
 WOODLOT_CELL = (29, 3)              # the woodlot anchor: beside the forest body
 # sha256 of the founding layout without its `sites` key, exported from HEAD 4e9c97d before Phase 004 placed
 # any site. Equal digests show that the new sites move no existing home, workplace, farm, or deposit.
-HEAD_LAYOUT_DIGEST = "e302d08cf52d0e521f008714847b7c81e6e792af2754177fc91c40d4bfcf87ee"
+# Phase 010 added the graveyard to building_sites, so this digest now covers that entry. Without it the
+# layout hashes to the Phase 004 value (tests/test_phase010_burial.py checks that).
+HEAD_LAYOUT_DIGEST = "92051d44d883e78239d86bfb2bb131292de1834fb0417840dd58b3b96a0c4f28"
 WALL = next(code for code, name in TILE_NAME.items() if name == "wall")
 
 

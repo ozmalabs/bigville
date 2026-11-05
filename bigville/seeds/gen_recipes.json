@@ -8,7 +8,7 @@
     "generator": "tools/generate_seeds.py",
     "pack": "bigville",
     "record": null,
-    "sha256": "30ba8616b8b0b4af46668b923736613d83e055e273e05965f29a64eaf3f1a34c",
+    "sha256": "4c734fbc1e7606e6d0f7b496926dfd31f70bcbc2e182b1b5a64d882fe239fe22",
     "tables": [
       "RECIPES"
     ]
@@ -830,6 +830,21 @@
       "body": "difficulty: 0.5; in: [[\"night_soil\", 2], [\"compostable\", 2]]; open: true; time_minutes: 60; tools: [\"spade\"]",
       "head": "make_compost makes compost x3 from a farmer",
       "name": "make_compost_know_how"
+    },
+    {
+      "body": "at_building: graveyard; burial: dig; difficulty: 0.8; in: []; open: true; time_minutes: 180; tools: [\"spade\"]",
+      "head": "dig_grave makes grave_spoil x1 from a labourer",
+      "name": "dig_grave_know_how"
+    },
+    {
+      "body": "at_building: graveyard; burial: bury; difficulty: 0.6; in: [[\"grave_spoil\", 1]]; open: true; time_minutes: 60",
+      "head": "bury makes no product from a labourer",
+      "name": "bury_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"timber\", 3]]; time_minutes: 180; tools: [\"saw\"]",
+      "head": "make_coffin makes coffin x1 from a woodworker",
+      "name": "make_coffin_know_how"
     }
   ],
   "self_load_only": true,

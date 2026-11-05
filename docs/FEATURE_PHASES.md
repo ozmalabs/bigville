@@ -300,7 +300,15 @@ extended-family shares against their sources.
 
 ## Phase 010 -- Death, burial, and the graveyard
 
-**Status:** ready
+**Status:** done (see History). A death leaves a 60 kg corpse item where the resident died (carried
+with pick_up/drop_item). The founding graveyard sits on free grass at (33, 12) with no existing
+placement moved (Phase 004 layout digest updated for the added site only). `dig_grave` (own
+spade, inside the graveyard) and `bury` (open grave, corpse on graveyard ground, one grave_spoil)
+are open recipes; `make_coffin` is a woodworker recipe with no mechanical effect yet. An unburied
+corpse of a household gives its members a 0.05 per dawn fever chance after 3 periods (APPROX)
+through the existing disease mechanism. Assets regenerated with a graveyard sprite (not viewed).
+Open: which corpse bury takes (earliest); corpse decay; place-based risk; backends do not choose
+dig or bury yet.
 
 **Goal.** Residents die (starvation, illness) but nothing follows. Add a
 graveyard building (founding: True, sprite needed -- regenerate assets), a
@@ -711,3 +719,4 @@ exist, at the precision they know them -- never the world's map.
 | 006 Household work choice | done | (this commit) | docs/phases/phase006/PHASE006_REPORT.md -- open-recipe read-offs and HOUSEHOLD_WORK scoring in psi_can; no founding change (no held axes or spades); 514 passed |
 | 007 Balance scenario from the world | done | (this commit) | docs/phases/phase007/PHASE007_REPORT.md -- balance_scenario() from the built town; grain beds 61 -> 80 to match the scenario (barley/oats seed 27/26); 520 passed |
 | 008 Animal life cycle | done | (this commit) | docs/phases/phase008/PHASE008_REPORT.md -- ageing, breeding in shared enclosures when fed, gestation, death at lifespan; pig lifespan 15 -> 180 months; 546 passed |
+| 010 Death, burial, graveyard | done | (this commit) | docs/phases/phase010/PHASE010_REPORT.md -- corpse item on death, graveyard, dig_grave/bury/make_coffin, unburied-body household risk; Phase 004 layout digest updated for the graveyard site; 571 passed |

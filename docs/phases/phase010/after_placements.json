@@ -1,0 +1,1338 @@
+{
+ "actor_positions": {
+  "Adelina Gorse": [
+   3,
+   7
+  ],
+  "Adelina Norbisham": [
+   6,
+   34
+  ],
+  "Adelina Sputterfield": [
+   4,
+   34
+  ],
+  "Agnes Wick": [
+   0,
+   31
+  ],
+  "Alby Frittle": [
+   4,
+   8
+  ],
+  "Alby Harkness": [
+   3,
+   7
+  ],
+  "Alby Marsh": [
+   7,
+   31
+  ],
+  "Barnaby Furlong": [
+   0,
+   20
+  ],
+  "Barnaby Rushton": [
+   1,
+   33
+  ],
+  "Bartholomew Quirke": [
+   4,
+   20
+  ],
+  "Bartholomew Tremble": [
+   6,
+   23
+  ],
+  "Bettony Bindle": [
+   1,
+   33
+  ],
+  "Bettony Rundle": [
+   5,
+   22
+  ],
+  "Bryony Turnbull": [
+   0,
+   32
+  ],
+  "Cask Thistlewood": [
+   1,
+   21
+  ],
+  "Cobweb Furlong": [
+   1,
+   30
+  ],
+  "Constance Ottermole": [
+   5,
+   8
+  ],
+  "Corvin Cobb": [
+   1,
+   10
+  ],
+  "Corvin Inkpen": [
+   3,
+   7
+  ],
+  "Corvin Kindle": [
+   7,
+   23
+  ],
+  "Cuthbert Wold": [
+   6,
+   11
+  ],
+  "Doreen Ferrety": [
+   1,
+   33
+  ],
+  "Drusilla Ottermole": [
+   1,
+   10
+  ],
+  "Drusilla Underhill": [
+   2,
+   33
+  ],
+  "Dunstan Haywain": [
+   3,
+   19
+  ],
+  "Effie Larkspur": [
+   4,
+   8
+  ],
+  "Effie Wormwood": [
+   0,
+   31
+  ],
+  "Elowen Peaseblossom": [
+   5,
+   20
+  ],
+  "Elowen Puddifoot": [
+   3,
+   10
+  ],
+  "Ephraim Larkspur": [
+   0,
+   31
+  ],
+  "Erasmus Inkpen": [
+   6,
+   11
+  ],
+  "Erasmus Ottermole": [
+   1,
+   10
+  ],
+  "Ferdinand Wormwood": [
+   6,
+   31
+  ],
+  "Garnet Hollow": [
+   4,
+   22
+  ],
+  "Garnet Inkpen": [
+   1,
+   19
+  ],
+  "Godfrey Ashby": [
+   6,
+   31
+  ],
+  "Godfrey Norbisham": [
+   1,
+   21
+  ],
+  "Godfrey Tremble": [
+   0,
+   8
+  ],
+  "Gristle Bracken": [
+   4,
+   32
+  ],
+  "Henrietta Everdew": [
+   1,
+   10
+  ],
+  "Henrietta Jubbins": [
+   3,
+   31
+  ],
+  "Henrietta Nettle": [
+   2,
+   31
+  ],
+  "Henrietta Peaseblossom": [
+   3,
+   10
+  ],
+  "Henrietta Sedge": [
+   1,
+   30
+  ],
+  "Hogget Jubbins": [
+   6,
+   11
+  ],
+  "Horace Nubbins": [
+   0,
+   8
+  ],
+  "Horace Yarrow": [
+   1,
+   33
+  ],
+  "Ida Codling": [
+   7,
+   23
+  ],
+  "Ida Ditchwater": [
+   7,
+   9
+  ],
+  "Ida Hobb": [
+   5,
+   10
+  ],
+  "Ida Sedge": [
+   3,
+   22
+  ],
+  "Ignatius Kettle": [
+   0,
+   9
+  ],
+  "Isolde Everdew": [
+   1,
+   10
+  ],
+  "Jem Cobb": [
+   1,
+   30
+  ],
+  "Jem Grubb": [
+   1,
+   33
+  ],
+  "Jem Sedge": [
+   2,
+   9
+  ],
+  "Jem Vellum": [
+   3,
+   10
+  ],
+  "Jerusha Thistlewood": [
+   3,
+   10
+  ],
+  "John": [
+   5,
+   34
+  ],
+  "Kester Furlong": [
+   7,
+   31
+  ],
+  "Keturah Marsh": [
+   2,
+   21
+  ],
+  "Lavinia Grubb": [
+   6,
+   8
+  ],
+  "Lavinia Rundle": [
+   4,
+   22
+  ],
+  "Lemuel Bindle": [
+   0,
+   9
+  ],
+  "Lemuel Bramble": [
+   4,
+   10
+  ],
+  "Lemuel Norbisham": [
+   0,
+   8
+  ],
+  "Lettice Sallow": [
+   0,
+   31
+  ],
+  "Marjorie Dough": [
+   1,
+   7
+  ],
+  "Mary": [
+   3,
+   19
+  ],
+  "Millicent Vellum": [
+   3,
+   7
+  ],
+  "Mordecai Hobb": [
+   4,
+   20
+  ],
+  "Mordecai Oakes": [
+   3,
+   22
+  ],
+  "Mordecai Tremble": [
+   1,
+   21
+  ],
+  "Obadiah Sedge": [
+   6,
+   20
+  ],
+  "Ottoline Frittle": [
+   5,
+   32
+  ],
+  "Peony Hobb": [
+   6,
+   31
+  ],
+  "Peony Tremble": [
+   3,
+   19
+  ],
+  "Phineas Jubbins": [
+   2,
+   33
+  ],
+  "Phineas Underhill": [
+   2,
+   9
+  ],
+  "Prosper Grubb": [
+   2,
+   9
+  ],
+  "Prosper Tallowick": [
+   1,
+   19
+  ],
+  "Prudence Gorse": [
+   1,
+   21
+  ],
+  "Quentin Codling": [
+   2,
+   19
+  ],
+  "Radella Gorse": [
+   4,
+   10
+  ],
+  "Radella Peaseblossom": [
+   2,
+   33
+  ],
+  "Radella Ramskin": [
+   3,
+   22
+  ],
+  "Rosamund Haywain": [
+   4,
+   22
+  ],
+  "Septimus Underhill": [
+   4,
+   10
+  ],
+  "Silas Kettle": [
+   7,
+   11
+  ],
+  "Thaddeus Furlong": [
+   1,
+   33
+  ],
+  "Thaddeus Puddifoot": [
+   7,
+   21
+  ],
+  "Thaddeus Ramskin": [
+   2,
+   9
+  ],
+  "Tobias Jubbins": [
+   3,
+   34
+  ],
+  "Verity Ottermole": [
+   1,
+   19
+  ],
+  "Verity Peaseblossom": [
+   2,
+   7
+  ],
+  "Vernon Lorric": [
+   0,
+   9
+  ],
+  "Wat Bracken": [
+   3,
+   7
+  ],
+  "Wat Nettle": [
+   4,
+   10
+  ],
+  "Willa Jubbins": [
+   0,
+   8
+  ],
+  "Winifred Ottermole": [
+   2,
+   31
+  ]
+ },
+ "animals": {
+  "bee_5": "None",
+  "chicken_1": "None",
+  "cow_0": "None",
+  "dog_6": "None",
+  "horse_4": "None",
+  "pig_2": "None",
+  "sheep_3": "None"
+ },
+ "building_sites": {
+  "bakery": [
+   28,
+   24,
+   3,
+   3
+  ],
+  "church": [
+   25,
+   15,
+   4,
+   4
+  ],
+  "cobbler": [
+   12,
+   20,
+   3,
+   3
+  ],
+  "compost_yard": [
+   35,
+   32,
+   3,
+   3
+  ],
+  "cooperage": [
+   38,
+   9,
+   3,
+   3
+  ],
+  "dairy": [
+   38,
+   25,
+   3,
+   3
+  ],
+  "dyehouse": [
+   28,
+   12,
+   3,
+   3
+  ],
+  "forge": [
+   45,
+   14,
+   3,
+   3
+  ],
+  "granary": [
+   35,
+   25,
+   3,
+   3
+  ],
+  "graveyard": [
+   33,
+   12,
+   4,
+   4
+  ],
+  "inn": [
+   30,
+   20,
+   3,
+   3
+  ],
+  "kitchen": [
+   32,
+   30,
+   3,
+   3
+  ],
+  "latrine": [
+   9,
+   18,
+   3,
+   3
+  ],
+  "mill": [
+   13,
+   12,
+   3,
+   3
+  ],
+  "printshop": [
+   25,
+   10,
+   3,
+   3
+  ],
+  "records_office": [
+   25,
+   7,
+   3,
+   3
+  ],
+  "root_cellar": [
+   42,
+   22,
+   3,
+   3
+  ],
+  "sawpit": [
+   39,
+   6,
+   3,
+   3
+  ],
+  "school": [
+   16,
+   22,
+   3,
+   3
+  ],
+  "scriptorium": [
+   30,
+   8,
+   3,
+   3
+  ],
+  "shambles": [
+   16,
+   8,
+   3,
+   3
+  ],
+  "smokehouse": [
+   42,
+   28,
+   3,
+   3
+  ],
+  "surgery": [
+   16,
+   19,
+   3,
+   3
+  ],
+  "tailorshop": [
+   13,
+   26,
+   3,
+   3
+  ],
+  "tannery": [
+   10,
+   15,
+   3,
+   3
+  ],
+  "townhall": [
+   21,
+   12,
+   4,
+   4
+  ],
+  "watchhouse": [
+   18,
+   28,
+   3,
+   3
+  ],
+  "weavery": [
+   35,
+   28,
+   3,
+   3
+  ],
+  "wellhouse": [
+   16,
+   14,
+   3,
+   3
+  ],
+  "wharf": [
+   1,
+   6,
+   3,
+   3
+  ],
+  "woodshop": [
+   34,
+   8,
+   3,
+   3
+  ]
+ },
+ "deposits": {
+  "fish": [
+   1,
+   2
+  ],
+  "lumber": [
+   7,
+   30
+  ],
+  "stone": [
+   42,
+   8
+  ]
+ },
+ "grid_hash": 2745285,
+ "household_cells": {
+  "household_000": [
+   0,
+   8
+  ],
+  "household_001": [
+   0,
+   9
+  ],
+  "household_002": [
+   0,
+   20
+  ],
+  "household_003": [
+   0,
+   31
+  ],
+  "household_004": [
+   0,
+   32
+  ],
+  "household_005": [
+   1,
+   7
+  ],
+  "household_006": [
+   1,
+   10
+  ],
+  "household_007": [
+   1,
+   19
+  ],
+  "household_008": [
+   1,
+   21
+  ],
+  "household_009": [
+   1,
+   30
+  ],
+  "household_010": [
+   1,
+   33
+  ],
+  "household_011": [
+   2,
+   7
+  ],
+  "household_012": [
+   2,
+   9
+  ],
+  "household_013": [
+   2,
+   19
+  ],
+  "household_014": [
+   2,
+   21
+  ],
+  "household_015": [
+   2,
+   31
+  ],
+  "household_016": [
+   2,
+   33
+  ],
+  "household_017": [
+   3,
+   7
+  ],
+  "household_018": [
+   3,
+   10
+  ],
+  "household_019": [
+   3,
+   19
+  ],
+  "household_020": [
+   3,
+   22
+  ],
+  "household_021": [
+   3,
+   31
+  ],
+  "household_022": [
+   3,
+   34
+  ],
+  "household_023": [
+   4,
+   8
+  ],
+  "household_024": [
+   4,
+   10
+  ],
+  "household_025": [
+   4,
+   20
+  ],
+  "household_026": [
+   4,
+   22
+  ],
+  "household_027": [
+   4,
+   32
+  ],
+  "household_028": [
+   4,
+   34
+  ],
+  "household_029": [
+   5,
+   8
+  ],
+  "household_030": [
+   5,
+   10
+  ],
+  "household_031": [
+   5,
+   20
+  ],
+  "household_032": [
+   5,
+   22
+  ],
+  "household_033": [
+   5,
+   32
+  ],
+  "household_034": [
+   5,
+   34
+  ],
+  "household_035": [
+   6,
+   8
+  ],
+  "household_036": [
+   6,
+   11
+  ],
+  "household_037": [
+   6,
+   20
+  ],
+  "household_038": [
+   6,
+   23
+  ],
+  "household_039": [
+   6,
+   31
+  ],
+  "household_040": [
+   6,
+   34
+  ],
+  "household_041": [
+   7,
+   9
+  ],
+  "household_042": [
+   7,
+   11
+  ],
+  "household_043": [
+   7,
+   21
+  ],
+  "household_044": [
+   7,
+   23
+  ],
+  "household_045": [
+   7,
+   31
+  ]
+ },
+ "infrastructure": [
+  "village_compost",
+  "village_granary",
+  "village_latrine",
+  "village_root_cellar"
+ ],
+ "land_cells": {
+  "farm_plot_00": [
+   36,
+   29
+  ],
+  "farm_plot_01": [
+   39,
+   28
+  ],
+  "farm_plot_02": [
+   43,
+   26
+  ],
+  "farm_plot_03": [
+   45,
+   26
+  ],
+  "farm_plot_04": [
+   36,
+   32
+  ],
+  "farm_plot_05": [
+   39,
+   31
+  ],
+  "farm_plot_06": [
+   42,
+   31
+  ],
+  "farm_plot_07": [
+   45,
+   32
+  ],
+  "village_pasture": [
+   36,
+   29
+  ]
+ },
+ "layout": {
+  "building_sites": {
+   "bakery": [
+    28,
+    24
+   ],
+   "church": [
+    25,
+    12
+   ],
+   "cobbler": [
+    12,
+    20
+   ],
+   "compost_yard": [
+    34,
+    32
+   ],
+   "cooperage": [
+    38,
+    9
+   ],
+   "dairy": [
+    38,
+    25
+   ],
+   "dyehouse": [
+    28,
+    12
+   ],
+   "forge": [
+    45,
+    14
+   ],
+   "granary": [
+    36,
+    26
+   ],
+   "graveyard": [
+    33,
+    12
+   ],
+   "inn": [
+    30,
+    20
+   ],
+   "kitchen": [
+    32,
+    30
+   ],
+   "latrine": [
+    9,
+    18
+   ],
+   "mill": [
+    13,
+    12
+   ],
+   "printshop": [
+    25,
+    10
+   ],
+   "records_office": [
+    25,
+    7
+   ],
+   "root_cellar": [
+    42,
+    22
+   ],
+   "sawpit": [
+    39,
+    6
+   ],
+   "school": [
+    16,
+    22
+   ],
+   "scriptorium": [
+    30,
+    8
+   ],
+   "shambles": [
+    16,
+    8
+   ],
+   "smokehouse": [
+    42,
+    28
+   ],
+   "tailorshop": [
+    13,
+    26
+   ],
+   "tannery": [
+    10,
+    15
+   ],
+   "townhall": [
+    21,
+    12
+   ],
+   "watchhouse": [
+    18,
+    28
+   ],
+   "weavery": [
+    35,
+    28
+   ],
+   "wellhouse": [
+    16,
+    14
+   ],
+   "wharf": [
+    1,
+    6
+   ],
+   "woodshop": [
+    34,
+    8
+   ]
+  },
+  "component_size": 1953,
+  "deposits": {
+   "fish": [
+    1,
+    2
+   ],
+   "lumber": [
+    7,
+    30
+   ],
+   "stone": [
+    42,
+    8
+   ]
+  },
+  "farms": [
+   [
+    36,
+    29
+   ],
+   [
+    39,
+    28
+   ],
+   [
+    43,
+    26
+   ],
+   [
+    45,
+    26
+   ],
+   [
+    36,
+    32
+   ],
+   [
+    39,
+    31
+   ],
+   [
+    42,
+    31
+   ],
+   [
+    45,
+    32
+   ]
+  ],
+  "h": 40,
+  "homes": [
+   [
+    0,
+    8
+   ],
+   [
+    0,
+    9
+   ],
+   [
+    0,
+    20
+   ],
+   [
+    0,
+    31
+   ],
+   [
+    0,
+    32
+   ],
+   [
+    1,
+    7
+   ],
+   [
+    1,
+    10
+   ],
+   [
+    1,
+    19
+   ],
+   [
+    1,
+    21
+   ],
+   [
+    1,
+    30
+   ],
+   [
+    1,
+    33
+   ],
+   [
+    2,
+    7
+   ],
+   [
+    2,
+    9
+   ],
+   [
+    2,
+    19
+   ],
+   [
+    2,
+    21
+   ],
+   [
+    2,
+    31
+   ],
+   [
+    2,
+    33
+   ],
+   [
+    3,
+    7
+   ],
+   [
+    3,
+    10
+   ],
+   [
+    3,
+    19
+   ],
+   [
+    3,
+    22
+   ],
+   [
+    3,
+    31
+   ],
+   [
+    3,
+    34
+   ],
+   [
+    4,
+    8
+   ],
+   [
+    4,
+    10
+   ],
+   [
+    4,
+    20
+   ],
+   [
+    4,
+    22
+   ],
+   [
+    4,
+    32
+   ],
+   [
+    4,
+    34
+   ],
+   [
+    5,
+    8
+   ],
+   [
+    5,
+    10
+   ],
+   [
+    5,
+    20
+   ],
+   [
+    5,
+    22
+   ],
+   [
+    5,
+    32
+   ],
+   [
+    5,
+    34
+   ],
+   [
+    6,
+    8
+   ],
+   [
+    6,
+    11
+   ],
+   [
+    6,
+    20
+   ],
+   [
+    6,
+    23
+   ],
+   [
+    6,
+    31
+   ],
+   [
+    6,
+    34
+   ],
+   [
+    7,
+    9
+   ],
+   [
+    7,
+    11
+   ],
+   [
+    7,
+    21
+   ],
+   [
+    7,
+    23
+   ],
+   [
+    7,
+    31
+   ]
+  ],
+  "square": {
+   "center": [
+    23,
+    18
+   ],
+   "h": 7,
+   "w": 11,
+   "x": 18,
+   "y": 15
+  },
+  "w": 52,
+  "work": {
+   "bakery": [
+    28,
+    24
+   ],
+   "bank": [
+    19,
+    14
+   ],
+   "carpenter": [
+    33,
+    9
+   ],
+   "church": [
+    31,
+    14
+   ],
+   "estate": [
+    36,
+    19
+   ],
+   "fish": [
+    1,
+    2
+   ],
+   "fishmonger": [
+    11,
+    8
+   ],
+   "inn": [
+    30,
+    20
+   ],
+   "lumber": [
+    7,
+    30
+   ],
+   "manor": [
+    41,
+    30
+   ],
+   "market": [
+    22,
+    14
+   ],
+   "mason": [
+    45,
+    14
+   ],
+   "mill": [
+    13,
+    12
+   ],
+   "press": [
+    28,
+    12
+   ],
+   "school": [
+    18,
+    22
+   ],
+   "stone": [
+    42,
+    8
+   ],
+   "store": [
+    23,
+    22
+   ],
+   "surgery": [
+    16,
+    20
+   ],
+   "townhall": [
+    23,
+    14
+   ],
+   "watch": [
+    18,
+    28
+   ]
+  }
+ },
+ "places": {
+  "bakery": "(28, 24)",
+  "church": "(25, 15)",
+  "cobbler": "(12, 20)",
+  "compost_yard": "(35, 32)",
+  "cooperage": "(38, 9)",
+  "dairy": "(38, 25)",
+  "dyehouse": "(28, 12)",
+  "forge": "(45, 14)",
+  "granary": "(35, 25)",
+  "graveyard": "(33, 12)",
+  "inn": "(30, 20)",
+  "kitchen": "(32, 30)",
+  "latrine": "(9, 18)",
+  "mill": "(13, 12)",
+  "printshop": "(25, 10)",
+  "records_office": "(25, 7)",
+  "root_cellar": "(42, 22)",
+  "sawpit": "(39, 6)",
+  "school": "(16, 22)",
+  "scriptorium": "(30, 8)",
+  "shambles": "(16, 8)",
+  "smokehouse": "(42, 28)",
+  "surgery": "(16, 19)",
+  "tailorshop": "(13, 26)",
+  "tannery": "(10, 15)",
+  "townhall": "(21, 12)",
+  "watchhouse": "(18, 28)",
+  "weavery": "(35, 28)",
+  "wellhouse": "(16, 14)",
+  "wharf": "(1, 6)",
+  "woodshop": "(34, 8)"
+ },
+ "shops": [
+  "bakery",
+  "carpenter",
+  "fishmonger",
+  "mason"
+ ]
+}

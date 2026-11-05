@@ -188,6 +188,10 @@
       "shambles": [
         16,
         8
+      ],
+      "graveyard": [
+        33,
+        12
       ]
     },
     "FOUNDING_PLACE_LABELS": {

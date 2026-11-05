@@ -887,6 +887,8 @@ def _sign(im, col, kind):
         im.rect(cx - 6, 27, 12, 4, PAL["trunk"]); im.rect(cx - 3, 23, 6, 5, PAL["floor_b"])
     elif kind == "dye":
         im.rect(cx - 4, 25, 8, 7, PAL["roof_purple"]); im.set(cx, 27, PAL["flower_r"])
+    elif kind == "grave":                    # graveyard: a headstone
+        im.rect(cx - 3, 22, 6, 9, PAL["trim"]); im.rect(cx - 2, 19, 4, 3, PAL["trim"])
 
 
 _BUILDING_BASE = [
@@ -900,14 +902,16 @@ _BUILDING_EXTRA = [
     "granary", "root_cellar", "wellhouse", "latrine", "compost_yard", "smokehouse",
     "records_office", "watchhouse", "kitchen", "dairy", "wharf", "shambles", "dyehouse",
     "cooperage", "woodshop", "sawpit", "tannery", "cobbler", "tailorshop", "weavery",
-    "forge", "bakery", "fishmonger",
+    "forge", "bakery", "fishmonger", "graveyard",
 ]
 _ROOFS = ["roof_red", "roof_blue", "roof_green", "roof_gold", "roof_gray", "roof_purple",
           "roof_teal", "roof_brown"]
+# Phase 010: a graveyard takes the grey roof of the other sombre institutions (surgery, smith, doctor).
+_BUILDING_ROOF = {"graveyard": "roof_gray"}
 BUILDINGS = list(_BUILDING_BASE)
 for _i, _name in enumerate(_BUILDING_EXTRA):
     if _name not in {name for name, _, _ in BUILDINGS}:
-        BUILDINGS.append((_name, _ROOFS[_i % len(_ROOFS)], None))
+        BUILDINGS.append((_name, _BUILDING_ROOF.get(_name, _ROOFS[_i % len(_ROOFS)]), None))
 if E is not None:
     for _i, _name in enumerate(sorted(E.BUILDINGS)):
         if _name not in {name for name, _, _ in BUILDINGS}:
@@ -918,7 +922,7 @@ def build_buildings():
     sign_for = {"granary": "grain", "root_cellar": "root", "wellhouse": "well",
                 "forge": "forge", "dairy": "dairy", "wharf": "fish", "fishmonger": "fish",
                 "watchhouse": "watch", "records_office": "record", "woodshop": "wood",
-                "sawpit": "wood", "dyehouse": "dye", "tannery": "dye"}
+                "sawpit": "wood", "dyehouse": "dye", "tannery": "dye", "graveyard": "grave"}
     out = []
     for name, roof, sign in BUILDINGS:
         im = _house_base(roof)

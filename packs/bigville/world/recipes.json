@@ -6234,6 +6234,109 @@
             }
           ]
         }
+      },
+      {
+        "name": "dig_grave",
+        "requires": "labourer",
+        "open": true,
+        "in": [],
+        "out": [
+          "grave_spoil",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 180,
+        "tools": [
+          "spade"
+        ],
+        "at_building": "graveyard",
+        "burial": "dig",
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "labourer"
+            },
+            {
+              "skill": "fieldwork",
+              "level": 0.0
+            }
+          ]
+        }
+      },
+      {
+        "name": "bury",
+        "requires": "labourer",
+        "open": true,
+        "in": [
+          [
+            "grave_spoil",
+            1
+          ]
+        ],
+        "out": [
+          "",
+          0
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 60,
+        "at_building": "graveyard",
+        "burial": "bury",
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "labourer"
+            },
+            {
+              "skill": "fieldwork",
+              "level": 0.0
+            }
+          ]
+        }
+      },
+      {
+        "name": "make_coffin",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            3
+          ]
+        ],
+        "out": [
+          "coffin",
+          1
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 180,
+        "tools": [
+          "saw"
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       }
     ]
   }

@@ -424,6 +424,55 @@ def _check_gathering_sites(errors, warnings, info):
             errors.append(f"{where}: anchor {anchor} is off the founding map")
 
 
+def _check_burial(errors, warnings, info):
+    """Phase 010: the graveyard, the dig and bury recipes, and the BURIAL rules. A pack with no BURIAL entries
+    has no graveyard and no burial recipe, and this check then has nothing to say."""
+    if not BURIAL:
+        return
+    place = BURIAL.get("place")
+    if place not in BUILDINGS:
+        errors.append(f"BURIAL.place: '{place}' is not a BUILDINGS kind")
+    elif place not in FOUNDING_BUILDING_SITES:
+        errors.append(f"BURIAL.place: '{place}' has no FOUNDING_BUILDING_SITES origin, so it does not stand at founding")
+    for key in ("body_weight",):
+        if float(BURIAL.get(key, 0.0)) <= 0.0:
+            errors.append(f"BURIAL.{key}: must be above zero")
+    if int(BURIAL.get("risk_after_periods", 0)) != BURIAL.get("risk_after_periods", 0) \
+            or int(BURIAL.get("risk_after_periods", 0)) < 1:
+        errors.append("BURIAL.risk_after_periods: must be a whole number of periods, at least 1")
+    if not 0.0 <= float(BURIAL.get("onset_chance", -1.0)) <= 1.0:
+        errors.append("BURIAL.onset_chance: must be between 0 and 1")
+    if BURIAL.get("condition") not in HEALTH_CONDITIONS or BURIAL.get("condition") == "healthy":
+        errors.append(f"BURIAL.condition: '{BURIAL.get('condition')}' is not an illness in HEALTH_CONDITIONS")
+    by_burial = {}
+    for r in RECIPES:
+        if r.get("burial") is None and r.get("at_building") is None:
+            continue
+        where = f"RECIPES[{r['name']}]"
+        if r.get("burial") not in ("dig", "bury"):
+            errors.append(f"{where}.burial: must be 'dig' or 'bury' (got {r.get('burial')!r})")
+            continue
+        by_burial.setdefault(r["burial"], []).append(r["name"])
+        if r.get("at_building") != place:
+            errors.append(f"{where}.at_building: a burial recipe works at '{place}' (got {r.get('at_building')!r})")
+        if not r.get("open"):
+            errors.append(f"{where}: a burial recipe is an open recipe, so anyone may do it")
+    for kind in ("dig", "bury"):
+        if len(by_burial.get(kind, [])) != 1:
+            errors.append(f"BURIAL: exactly one recipe must have burial: '{kind}' "
+                          f"(found {by_burial.get(kind, [])})")
+    for name in by_burial.get("dig", []):
+        r = next(x for x in RECIPES if x["name"] == name)
+        if "spade" not in r.get("tools", []):
+            errors.append(f"RECIPES[{name}]: digging a grave needs a spade")
+    for name in by_burial.get("bury", []):
+        r = next(x for x in RECIPES if x["name"] == name)
+        if not r["in"]:
+            warnings.append(f"RECIPES[{name}]: a burial with no backfill input")
+    info.append(f"BURIAL: graveyard '{place}', body weight {BURIAL.get('body_weight')}, unburied risk after "
+                f"{BURIAL.get('risk_after_periods')} periods at {BURIAL.get('onset_chance')} a dawn")
+
+
 def _check_prompt_instructions(errors, warnings, info):
     """Phase 018: the LLM prompt tables and speech lexicon. Each action has a description, the response
     fields are the ones the backend parses, the selection caps are positive, the standing types and gist
@@ -512,9 +561,14 @@ def check_consistency():
                 ref(kind, f"RECIPES[{name}].in")
             if float(qty) <= 0:
                 errors.append(f"RECIPES[{name}].in: non-positive quantity for '{kind}'")
-        ref(r["out"][0], f"RECIPES[{name}].out")
-        if float(r["out"][1]) <= 0:
-            errors.append(f"RECIPES[{name}].out: non-positive quantity")
+        if r.get("burial") == "bury":
+            # Phase 010: a burial yields no product, so its out row is the empty kind with quantity 0.
+            if list(r["out"]) != ["", 0]:
+                errors.append(f"RECIPES[{name}].out: a burial yields no product, so it must be ['', 0]")
+        else:
+            ref(r["out"][0], f"RECIPES[{name}].out")
+            if float(r["out"][1]) <= 0:
+                errors.append(f"RECIPES[{name}].out: non-positive quantity")
         for tool in r.get("tools", []):
             ref(tool, f"RECIPES[{name}].tools")
         for tool in r.get("method_tools", []):
@@ -531,8 +585,9 @@ def check_consistency():
                 errors.append(f"RECIPES[{name}].seasons: unknown season '{season}'")
         for kind in r.get("byproducts", {}):
             ref(kind, f"RECIPES[{name}].byproducts")
-        if not r["in"] and not r.get("gathered_from"):
-            warnings.append(f"RECIPES[{name}]: has no inputs but does not say where it is gathered_from")
+        if not r["in"] and not r.get("gathered_from") and not r.get("at_building"):
+            warnings.append(f"RECIPES[{name}]: has no inputs but does not say where it is gathered_from "
+                            f"or built")
     for type_name, spec in INPUT_TYPES.items():
         if type_name in items:
             errors.append(f"INPUT_TYPES[{type_name}]: type name collides with an item")
@@ -1117,6 +1172,7 @@ def check_consistency():
     _check_founding_town(errors, warnings, info)
     _check_knowledge(errors, warnings, info)
     _check_gathering_sites(errors, warnings, info)
+    _check_burial(errors, warnings, info)
     _check_prompt_instructions(errors, warnings, info)
     _check_generated_seeds(errors)
     stats = {
@@ -1384,6 +1440,8 @@ def analyse_systems():
     # recipes that cost much more than the cheapest way to make the same thing
     for r in RECIPES:
         out, oq = r["out"]
+        if float(oq) <= 0:
+            continue                        # Phase 010: a burial has no product, so it has no unit cost
         per = _recipe_unit_cost(r)
         ref = reference_value(out)
         if ref > 0 and per > 1.5 * ref and len(_recipes_for(out)) > 1 and not r.get("fallback"):

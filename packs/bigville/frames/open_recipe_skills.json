@@ -17,7 +17,9 @@
       "make_thatch": "fieldwork",
       "spin_thread": "spinning",
       "cut_rags": "tailoring",
-      "bake_bread_at_home": "cooking"
+      "bake_bread_at_home": "cooking",
+      "dig_grave": "fieldwork",
+      "bury": "fieldwork"
     }
   }
 }

@@ -1,0 +1,13 @@
+{
+  "_doc": "BURIAL (Phase 010): what a dead resident leaves and what an unburied body does. A resident's death leaves a corpse (a ToolItem of kind 'corpse') on the cell where they died. A corpse is carried with the ordinary pick_up, move, and drop_item actions, and it weighs body_weight. The graveyard building (BUILDINGS, founding) is the only place a grave can be dug or a body buried: dig_grave (an open recipe that needs the worker's own spade and stands them inside the graveyard) makes one dug grave and grave_spoil; bury (an open recipe, inside the graveyard) takes one grave_spoil as backfill and needs a corpse on the graveyard ground and an open dug grave. The coffin recipe (make_coffin, woodworker) makes a coffin; bury does not use it (no mechanical effect is modelled).\n\nA corpse left unburied for risk_after_periods periods (one period is one day) puts every living member of the dead resident's household at onset_chance per dawn of catching condition (a HEALTH_CONDITIONS key; the onset uses the existing disease mechanism). Before risk_after_periods there is no risk. Burial removes the risk for its household at once.\n\nAll values are APPROX model parameters, not sourced figures: body_weight is about the mass of an adult; risk_after_periods and onset_chance are a design choice (no source was consulted); condition is the existing contagious fever, chosen because no data names a disease caused by bodies. The recipe figures in RECIPES and RECIPE_EXERTION for dig_grave (time 180 minutes, difficulty 0.8, exertion [0.7, 0.2]), bury (time 60 minutes, difficulty 0.6, exertion [0.4, 0.1]), and make_coffin (time 180 minutes, difficulty 1.2, three timber) are APPROX: no source was consulted, and they are sized against the other open and woodwork recipes.",
+  "_types": {},
+  "tables": {
+    "BURIAL": {
+      "place": "graveyard",
+      "body_weight": 60.0,
+      "risk_after_periods": 3,
+      "onset_chance": 0.05,
+      "condition": "fever"
+    }
+  }
+}

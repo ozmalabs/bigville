@@ -464,6 +464,9 @@ class BigvilleWorld:
         # Animal births derive their sexes from this seed (see _give_birth), so births keep no RNG state
         # of their own and never shift `_rng`.
         self._animal_life_seed = int(map_seed)
+        # Burial onset draws (see _burial_roll) are stateless, keyed on this seed, the resident, and the day.
+        self._burial_seed = int(map_seed)
+        self._corpses = {}         # resident name -> the corpse's ToolItem node (Phase 010)
         # Unified social graph.  These are world-mediated records; beliefs,
         # intentions, and relationship models remain on the resident edges and
         # attributes rather than being smuggled into body state.
@@ -986,6 +989,11 @@ class BigvilleWorld:
                         missing = True
                 elif self._worker_tool(job_actor, kind) is None:
                     missing = True
+            # A burial job waits (armed, its inputs kept) until the worker stands in the graveyard and the
+            # bury job's grave and body are still there.
+            if not missing and not (self._at_recipe_building(job_actor, action.get("name", ""))
+                                    and self._burial_ready(action.get("name", ""))):
+                missing = True
             if missing:
                 continue
             # Read component quality before consuming those physical nodes.
@@ -1054,6 +1062,9 @@ class BigvilleWorld:
                     self.eng.set_attr(tool, "condition", condition)
                     if self.eng.node(tool)["type"] == "ToolItem" and condition <= 0.0:
                         self.eng.set_attr(tool, "broken", 1.0)      # a worn-out own tool must be replaced
+            burial = self._recipe_specs.get(action.get("name", ""), {}).get("burial")
+            if burial:
+                self._enact_burial(job_actor, burial)
             self.eng.set_attr(job, "complete", 1.0)
             self.eng.set_attr(job, "remaining", 0.0)
             if actor_node is not None:
@@ -6117,6 +6128,7 @@ class BigvilleWorld:
         self.eng.set_attr(node, "death_recorded", 1.0)
         self._deaths.append({"actor": actor, "day": self.calendar()["day"],
                              "cause": str(cause), "event": str(event)})
+        self._create_corpse(actor)
         self._record_kin_death(actor)
         self._alive_snapshot[actor] = False
         return event
@@ -6138,6 +6150,150 @@ class BigvilleWorld:
         self.eng.set_attr(node, "health", "dead")
         self._record_death_event(actor, cause=cause)
         return True
+
+    # ---------------------------------------------------- bodies, graves, and burial (Phase 010)
+    def _create_corpse(self, actor):
+        """A dead resident leaves a body on the cell where they died: a ToolItem of kind 'corpse', weighing
+        BURIAL.body_weight. Carrying it is the ordinary pick_up/drop_item handling; who moves or buries it
+        is the resident's choice, not the world's. A pack with no BURIAL entries leaves no body."""
+        burial = self.E.BURIAL
+        if not burial or actor in self._corpses:
+            return None
+        attrs = self.eng.node(self._actors[actor])["attrs"]
+        item = self.eng.add_node("ToolItem", {"kind": "corpse", "weight": float(burial["body_weight"]),
+                                              "quality": 1.0, "condition": 1.0, "broken": 0.0, "wear": 0.0,
+                                              "decay": 0.0, "use_armed": 0.0, "repair_armed": 0.0,
+                                              "resident": str(actor),
+                                              "household": str(attrs.get("household") or ""),
+                                              "died_period": self._town_period(), "buried": 0.0})
+        self.eng.add_edge_unchecked(self._town, "has_tool_item", item)
+        cell = self.actor_position(actor)
+        if cell in self._map_cells:
+            self._attach_at_cell(item, cell)
+        self._corpses[actor] = item
+        return item
+
+    def corpse_of(self, actor):
+        """The body node of a dead resident, or None (no body, or the resident is alive)."""
+        return self._corpses.get(actor)
+
+    def corpse_cell(self, actor):
+        """Where a resident's unburied body is: the cell it lies on, or the cell of the one carrying it."""
+        item = self._corpses.get(actor)
+        if item is None or float(self.eng.node(item)["attrs"].get("buried", 0.0)) == 1.0:
+            return None
+        return self._item_cell(item)
+
+    def _corpse_holder(self, item):
+        for actor, node in self._actors.items():
+            for edge in ("holds_in_hand", "holds_tableware", "holds"):
+                if self.eng.has_edge(node, edge, item):
+                    return actor
+        return None
+
+    def _item_cell(self, item):
+        holder = self._corpse_holder(item)
+        if holder is not None:
+            return self.actor_position(holder)
+        cells = list(self.eng.neighbours(item, "at_cell"))
+        return self.map_position_node(cells[0]) if cells else None
+
+    def _graveyard(self):
+        return self.building(self.E.BURIAL["place"]) if self.E.BURIAL else None
+
+    def _open_graves(self):
+        """Dug graves not yet filled, on the graveyard building (a count; dig_grave adds one, bury fills one)."""
+        place = self._graveyard()
+        if place is None:
+            return 0
+        return int(round(float(self.eng.node(place)["attrs"].get("open_graves", 0.0))))
+
+    def _in_graveyard(self, cell):
+        site = self._building_sites.get(self.E.BURIAL["place"]) if self.E.BURIAL else None
+        if cell is None or site is None:
+            return False
+        x, y, w, h = site
+        return x <= cell[0] < x + w and y <= cell[1] < y + h
+
+    def _corpse_for_burial(self):
+        """The unburied body on the graveyard ground (or carried there), earliest death first, or None."""
+        found = []
+        for actor, item in self._corpses.items():
+            a = self.eng.node(item)["attrs"]
+            if float(a.get("buried", 0.0)) != 1.0 and self._in_graveyard(self._item_cell(item)):
+                found.append((float(a.get("died_period", 0.0)), actor, item))
+        return min(found)[2] if found else None
+
+    def _burial_ready(self, recipe_name):
+        """Whether a burial recipe's physical state holds now: digging needs nothing here (its tool and
+        place are checked by _capable and _at_recipe_building); burying needs an open grave and a body in the
+        graveyard. A recipe that is not a burial is always ready."""
+        kind = self._recipe_specs.get(recipe_name, {}).get("burial")
+        if kind == "bury":
+            return self._open_graves() >= 1 and self._corpse_for_burial() is not None
+        return True
+
+    def _at_recipe_building(self, actor, recipe_name):
+        """A recipe with at_building is done inside that building's footprint."""
+        kind = self._recipe_specs.get(recipe_name, {}).get("at_building")
+        if not kind:
+            return True
+        place = self.building(kind)
+        return place is not None and self._inside_building(actor, place)
+
+    def _detach_body(self, item):
+        """Take a body off the ground and out of any hand: it is no longer a physical object on the map."""
+        if self.eng.has_edge(self._town, "has_tool_item", item):
+            self.eng.remove_edge_unchecked(self._town, "has_tool_item", item)
+        self._remove_item_location(item)
+        for actor, node in self._actors.items():
+            for edge in ("holds_in_hand", "holds_tableware", "holds"):
+                if self.eng.has_edge(node, edge, item):
+                    self.eng.remove_edge_unchecked(node, edge, item)
+                    if self._actor_hands.get(actor) == item:
+                        self._actor_hands[actor] = None
+                    self._refresh_carry_state(actor)
+
+    def _enact_burial(self, actor, kind):
+        """The physical effect of a finished burial job: dig adds an open grave, bury fills one with the body
+        on the graveyard ground. The body keeps its node, marked buried, so the record survives."""
+        place = self._graveyard()
+        if place is None:
+            return
+        if kind == "dig":
+            self.eng.set_attr(place, "open_graves", float(self._open_graves() + 1))
+            return
+        if kind == "bury":
+            item = self._corpse_for_burial()
+            if item is None:
+                return
+            a = self.eng.node(item)["attrs"]
+            self._detach_body(item)
+            self.eng.set_attr(item, "buried", 1.0)
+            self.eng.set_attr(item, "buried_period", self._town_period())
+            self.eng.set_attr(place, "open_graves", float(self._open_graves() - 1))
+            name = str(a.get("resident", ""))
+            self.create_event("burial", subject=name, public=True,
+                              detail=f"{name} was buried in the graveyard.")
+
+    def _burial_roll(self, name):
+        """A stateless draw in [0, 1) for one resident on one day (no RNG state is kept on the world)."""
+        day = int(self.calendar()["day"])
+        return random.Random(f"{self._burial_seed}:burial:{name}:{day}").random()
+
+    def burial_risk(self, household):
+        """The chance per dawn that each living member of `household` catches the burial condition. It is
+        zero before BURIAL.risk_after_periods have passed since a household member's unburied death, and
+        zero again once that body is buried. The disease itself uses the ordinary disease mechanism."""
+        if not household or not self.E.BURIAL:
+            return 0.0
+        now = self._town_period()
+        for item in self._corpses.values():
+            a = self.eng.node(item)["attrs"]
+            if (a.get("household") == household and float(a.get("buried", 0.0)) != 1.0
+                    and now - float(a.get("died_period", 0.0)) >= float(self.E.BURIAL["risk_after_periods"])):
+                return float(self.E.BURIAL["onset_chance"])
+        return 0.0
 
     def _daily_life_tick(self):
         """Advance age and mild recovery at dawn; severe outcomes remain explicit actions."""
@@ -6164,6 +6320,11 @@ class BigvilleWorld:
                 self.eng.set_attr(node, "health_value", health)
                 if health <= 0.0:
                     self.record_death(name, cause=str(a.get("disease")))
+            # An unburied body in the household is a health risk: an onset is an ordinary diagnose() of
+            # the burial condition (BURIAL.condition), which the disease rule above then runs.
+            chance = self.burial_risk(a.get("household"))
+            if chance > 0.0 and not a.get("disease") and self._burial_roll(name) < chance:
+                self.diagnose(None, name, str(self.E.BURIAL["condition"]))
             age_stage = next((stage for stage, spec in self.E.LIFE_STAGES.items()
                               if float(spec["age_min"]) <= age <= float(spec["age_max"])), "elder")
             if age_stage != a.get("life_stage"):
@@ -7565,7 +7726,8 @@ class BigvilleWorld:
     def _can_attempt(self, actor, action_name):
         """Whether the actor may start this recipe now: capable (see _capable), and, for a gathering
         recipe, standing on the site of its kind with a batch of stock (see _at_gathering_site)."""
-        return self._capable(actor, action_name) and self._at_gathering_site(actor, action_name)
+        return (self._capable(actor, action_name) and self._at_gathering_site(actor, action_name)
+                and self._at_recipe_building(actor, action_name) and self._burial_ready(action_name))
 
     def _capable(self, actor, action_name):
         """Admissibility depends on mechanical capability, not assumed knowledge: the actor must be

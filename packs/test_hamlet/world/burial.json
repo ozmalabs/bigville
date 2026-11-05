@@ -1,0 +1,7 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 010): BURIAL. Empty: the hamlet has no graveyard building, so no body is buried and no burial risk applies. The table exists only to satisfy the bound name. Entries and their sources are in packs/bigville/world/burial.json.",
+  "_types": {},
+  "tables": {
+    "BURIAL": {}
+  }
+}

@@ -188,9 +188,11 @@ def plan(pack):
     for rec in pack["RECIPES"]:
         name = rec["name"]
         out_kind, out_qty = rec["out"][0], rec["out"][1]
+        made = (f"makes {out_kind} x{out_qty}" if out_kind and float(out_qty) > 0
+                else "makes no product")
         rules.append(_principle(
             f"{name}_know_how",
-            f"{name} makes {out_kind} x{out_qty} from a {rec.get('requires', 'no trade')}",
+            f"{name} {made} from a {rec.get('requires', 'no trade')}",
             _describe(rec, skip=("out", "requires"))))
     add("gen_recipes", ("RECIPES",), pack["RECIPES"], [], rules, "Recipes as know-how.")
 

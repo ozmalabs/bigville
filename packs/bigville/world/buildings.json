@@ -598,6 +598,26 @@
           "after_years": 0,
           "understanding_requires": []
         }
+      },
+      "graveyard": {
+        "staff_role": "",
+        "sheltered": false,
+        "display_name": "Graveyard",
+        "footprint": [
+          4,
+          4
+        ],
+        "rooms": [
+          "burial_ground"
+        ],
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       }
     }
   }

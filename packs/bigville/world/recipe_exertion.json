@@ -19,7 +19,9 @@
       "/split_firewood": "tuple",
       "/make_compost": "tuple",
       "/dig_ore": "tuple",
-      "/lift_saplings": "tuple"
+      "/lift_saplings": "tuple",
+      "/dig_grave": "tuple",
+      "/bury": "tuple"
     }
   },
   "tables": {
@@ -94,6 +96,14 @@
       ],
       "lift_saplings": [
         0.5,
+        0.1
+      ],
+      "dig_grave": [
+        0.7,
+        0.2
+      ],
+      "bury": [
+        0.4,
         0.1
       ]
     }

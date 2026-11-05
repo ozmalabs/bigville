@@ -2024,6 +2024,21 @@
         "wear_rate": 0.25,
         "weight": 0.1,
         "volume": 0.1
+      },
+      "coffin": {
+        "class": "furniture",
+        "material": "wood",
+        "verb": "bury",
+        "base_mult": 1.0,
+        "wear_rate": 0.03,
+        "weight": 20.0,
+        "volume": 2.0
+      },
+      "grave_spoil": {
+        "class": "material",
+        "bulk": true,
+        "weight": 2.0,
+        "volume": 3.0
       }
     }
   }

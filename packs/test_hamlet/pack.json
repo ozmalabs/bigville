@@ -98,6 +98,10 @@
       "file": "world/gathering_sites.json"
     },
     {
+      "name": "BURIAL",
+      "file": "world/burial.json"
+    },
+    {
       "name": "SHOP_CHAINS",
       "file": "world/shop_chains.json"
     },
