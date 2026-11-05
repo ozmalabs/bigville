@@ -1,0 +1,10 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 016a): this pack has no founding town. Every table here is empty, so E.FOUNDING_ROLES is empty and from_town100 refuses the pack. See docs/phases/phase016a/PHASE016A_REPORT.md.",
+  "_types": {},
+  "tables": {
+    "FOUNDING_ROLES": [],
+    "FOUNDING_CLASS": {},
+    "FOUNDING_ANCHOR_NAMES": {},
+    "FOUNDING_DRAW_BOUNDS": {}
+  }
+}

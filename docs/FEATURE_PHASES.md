@@ -501,7 +501,14 @@ runs land registration and a council vote without code changes.
 
 ## Phase 016 -- The founding town as pack data
 
-**Status:** blocked on 013; merge with Phase 003 (seeding the cast from JOBS).
+**Status:** split by the supervisor. **016a done** (see History): the founding town's content
+(roles and counts, class and literacy shares, names, personality ranges, causal-resolution
+mixture, map, workplaces, building sites, labels, aliases, deposit kinds) is pack data; the town
+built from it is digest-identical to before, except that the legacy `BigvilleTown100World`
+adapter now reads lumber regrowth 4.0 from RESOURCE_DEPOSITS (it hard-coded 3.0; accepted).
+`from_town100(data_pack=...)`; test_hamlet has no founding town. **016b ready**: merge with
+Phase 003, seed the cast from JOBS, give founders real ages and drawn households, redraw the
+Phase 009 genealogy from them, and decide `capability`/`skill` in `populate_town100`.
 
 **Goal.** (Also from 013b review: the 100-resident map's site layout, workplace anchors, place
 labels, and fixed deposit kinds become pack data, and `from_town100`/`run_village` take the
@@ -641,3 +648,4 @@ exist, at the precision they know them -- never the world's map.
 | 002 Recipe inputs from own stock | done | (this commit) | docs/phases/phase002/PHASE002_REPORT.md -- draw order own -> accessible container at cell -> store; drawn_from on Need; affordance uses the same planner; 373 passed |
 | 012 Physical and cognitive learning | done | (this commit) | docs/phases/phase012/PHASE012_REPORT.md -- `learning` tag on every skill and metaskill; `cognitive_practice` switch (default off) with a `practice` observation in the actor's context; 378 passed |
 | 009 Kinship, households, inheritance | done | (this commit) | docs/phases/phase009/PHASE009_REPORT.md -- genealogy (bore/fathered/union_with) as world fact, held KinTerm references, KIN_TERMS/ATTRIBUTION/OBLIGATIONS, partible default custom, heirs published on death with no transfer; household draw checked against Laslett; 394 passed |
+| 016a Founding town as pack data | done | (this commit) | docs/phases/phase016a/PHASE016A_REPORT.md -- 14 founding tables (population/founding_*, world/founding_*); town digest identical except legacy adapter lumber growback 3.0 -> 4.0; 397 passed |

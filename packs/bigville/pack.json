@@ -584,6 +584,62 @@
     {
       "name": "HOUSEHOLD_TARGETS",
       "file": "population/household_composition.json"
+    },
+    {
+      "name": "FOUNDING_ROLES",
+      "file": "population/founding_cast.json"
+    },
+    {
+      "name": "FOUNDING_CLASS",
+      "file": "population/founding_cast.json"
+    },
+    {
+      "name": "FOUNDING_ANCHOR_NAMES",
+      "file": "population/founding_cast.json"
+    },
+    {
+      "name": "FOUNDING_DRAW_BOUNDS",
+      "file": "population/founding_cast.json"
+    },
+    {
+      "name": "FOUNDING_FIRST_NAMES",
+      "file": "population/founding_names.json"
+    },
+    {
+      "name": "FOUNDING_LAST_NAMES",
+      "file": "population/founding_names.json"
+    },
+    {
+      "name": "FOUNDING_PERSONALITY",
+      "file": "population/founding_personality.json"
+    },
+    {
+      "name": "FOUNDING_CAUSAL_RESOLUTION",
+      "file": "population/founding_personality.json"
+    },
+    {
+      "name": "FOUNDING_MAP",
+      "file": "world/founding_map.json"
+    },
+    {
+      "name": "FOUNDING_DEPOSITS",
+      "file": "world/founding_map.json"
+    },
+    {
+      "name": "FOUNDING_WORKPLACES",
+      "file": "world/founding_sites.json"
+    },
+    {
+      "name": "FOUNDING_BUILDING_SITES",
+      "file": "world/founding_sites.json"
+    },
+    {
+      "name": "FOUNDING_PLACE_LABELS",
+      "file": "world/founding_sites.json"
+    },
+    {
+      "name": "FOUNDING_ANCHOR_ALIASES",
+      "file": "world/founding_sites.json"
     }
   ]
 }

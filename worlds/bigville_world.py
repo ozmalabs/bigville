@@ -1311,8 +1311,11 @@ class BigvilleWorld:
         """Install canonical Map/Cell data from the village or a scenario map."""
         from worlds.bigville_town100_world import build_town_100
         from worlds.bigville_sim_world import SOLID as SOLID_TILES, TILE_NAME
-        if scenario_map is None:
+        if scenario_map is None and self.E.FOUNDING_MAP:
             grid, affordances, layout = build_town_100(seed, self.E)
+        elif scenario_map is None:
+            # A pack with no founding town has no founding map: no tiles, no sites, no deposits.
+            grid, affordances, layout = [], [], {}
         else:
             terrain_codes = {"grass": 0, "path": 1, "wall": 2, "floor": 3,
                              "square": 4, "tree": 5, "water": 6}
@@ -1339,7 +1342,7 @@ class BigvilleWorld:
             affordances = [dict(affordance) for affordance in scenario_map.get("affordances", [])]
         self._map_grid, self._map_layout = grid, layout
         self._map_node = self.eng.add_node("Map", {"name": f"{self._scenario_data.get('name', 'Bigville')} map", "seed": float(seed),
-                                                     "width": float(layout["w"]), "height": float(layout["h"])})
+                                                     "width": float(layout.get("w", 0)), "height": float(layout.get("h", 0))})
         self.eng.add_edge_unchecked(self._town, "has_map", self._map_node)
         solid = set(SOLID_TILES)
         for y, row in enumerate(grid):
@@ -1377,13 +1380,7 @@ class BigvilleWorld:
     def _anchor_for_building(self, kind):
         work = self._map_layout.get("work", {}) if self._map_layout else {}
         fixed_sites = self._map_layout.get("building_sites", {}) if self._map_layout else {}
-        aliases = {"records_office": "townhall", "watchhouse": "watch", "wellhouse": "market",
-                   "latrine": "market", "compost_yard": "farm", "root_cellar": "farm",
-                   "granary": "farm", "smokehouse": "bakery", "scriptorium": "press",
-                   "shambles": "market", "dyehouse": "press", "cooperage": "carpenter",
-                   "woodshop": "carpenter", "sawpit": "carpenter", "tannery": "market",
-                   "cobbler": "market", "tailorshop": "market", "weavery": "market",
-                   "forge": "mason", "kitchen": "bakery", "dairy": "farm", "wharf": "fish"}
+        aliases = self.E.FOUNDING_ANCHOR_ALIASES
         target = fixed_sites.get(kind) or work.get(kind) or work.get(aliases.get(kind, "")) or work.get("market")
         if isinstance(target, list):
             target = tuple(target)
@@ -1870,10 +1867,12 @@ class BigvilleWorld:
 
     @classmethod
     def from_town100(cls, seed=305000, *, autonomous_actors=False,
-                     cognition_factory=None):
-        """Build the canonical world with the expanded map and seeded 100-person cast."""
+                     cognition_factory=None, data_pack=None):
+        """Build the founding town of a data pack: its map, its seeded cast of residents, and its
+        institutions. The default pack is bigville (the 100-resident town of the canonical world).
+        A pack with no founding town (empty FOUNDING_ROLES) is refused by populate_town100."""
         world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
-                    cognition_factory=cognition_factory)
+                    cognition_factory=cognition_factory, data_pack=data_pack)
         world.populate_town100(seed=seed)
         return world
 
@@ -1985,10 +1984,13 @@ class BigvilleWorld:
         """
         if getattr(self, "_cast100", None) is not None:
             return self._cast100
+        if not self.E.FOUNDING_ROLES or not self.E.FOUNDING_MAP:
+            raise ValueError(f"data pack '{self.data_pack}' has no founding town (FOUNDING_ROLES or "
+                             f"FOUNDING_MAP is empty), so there is no 100-resident town to build")
         from worlds.bigville_town100_world import generate_cast100
 
         layout = self._map_layout
-        cast = generate_cast100(layout, seed)
+        cast = generate_cast100(layout, seed, self.E)
         self._cast100 = cast
         self._t100_households = {}
         self._t100_farms = []
@@ -2004,7 +2006,7 @@ class BigvilleWorld:
                 self.add_shop(trade, tuple(layout["work"][trade]),
                               input_kind=chain["in"], output_kind=chain["out"])
 
-        station = {"low": "labouring", "middle": "middle", "high": "educated"}
+        station = self.E.FOUNDING_CLASS["station_by_group"]
         for record in cast["residents"]:
             idx = int(record["index"])
             role = record["role"]
@@ -2031,7 +2033,7 @@ class BigvilleWorld:
                 "personality": {**record["params"], "emotional_core_enabled": 1.0},
             }
             self.add_actor(record["name"], role=role, skill=0.7,
-                           station=station.get(record["group"], "labouring"),
+                           station=station[record["group"]],
                            literacy=float(record["literacy"]),
                            capability=0.9 if record["literacy"] else 0.55,
                            home_cell=tuple(record["home_cell"]),

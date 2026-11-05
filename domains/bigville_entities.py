@@ -165,6 +165,195 @@ def _item_uses():
     return use
 
 
+def _check_founding_town(errors, warnings, info):
+    """The founding town (Phase 016a): the cast, the map, and the sites that from_town100() builds.
+
+    A pack has all of the required tables or none. A pack with none has no founding town, and the
+    self-test reports that as info. Roles are checked against TRADES, JOBS, and CAST_ROLE_TRADES;
+    a role in none of them is info, because the cast still seeds it (the world gives it no trades).
+    The tile names are those of worlds.bigville_sim_world.TILE_NAME (not imported: this module has
+    no world code).
+    """
+    required = {"FOUNDING_ROLES": FOUNDING_ROLES, "FOUNDING_CLASS": FOUNDING_CLASS,
+                "FOUNDING_FIRST_NAMES": FOUNDING_FIRST_NAMES, "FOUNDING_LAST_NAMES": FOUNDING_LAST_NAMES,
+                "FOUNDING_PERSONALITY": FOUNDING_PERSONALITY,
+                "FOUNDING_CAUSAL_RESOLUTION": FOUNDING_CAUSAL_RESOLUTION,
+                "FOUNDING_DRAW_BOUNDS": FOUNDING_DRAW_BOUNDS, "FOUNDING_MAP": FOUNDING_MAP,
+                "FOUNDING_DEPOSITS": FOUNDING_DEPOSITS, "FOUNDING_WORKPLACES": FOUNDING_WORKPLACES,
+                "FOUNDING_BUILDING_SITES": FOUNDING_BUILDING_SITES,
+                "FOUNDING_PLACE_LABELS": FOUNDING_PLACE_LABELS}
+    empty = sorted(name for name, value in required.items() if not value)
+    if len(empty) == len(required):
+        info.append("FOUNDING TOWN: none (this pack has no founding town; from_town100 refuses it)")
+        return
+    if empty:
+        errors.append(f"FOUNDING TOWN: {', '.join(empty)} empty while the others are filled; "
+                      f"a pack has all of these tables or none")
+        return
+    tile_names = {"grass", "path", "wall", "floor", "square", "tree", "water"}
+    W, H = FOUNDING_MAP.get("width"), FOUNDING_MAP.get("height")
+    if not (isinstance(W, int) and isinstance(H, int) and W >= 3 and H >= 3):
+        errors.append("FOUNDING_MAP: width and height must be whole numbers of at least 3")
+        return
+
+    def inside(x, y):
+        return isinstance(x, int) and isinstance(y, int) and 0 <= x < W and 0 <= y < H
+
+    # --- the cast
+    groups = FOUNDING_CLASS.get("by_group", {})
+    stations = FOUNDING_CLASS.get("station_by_group", {})
+    literacy = FOUNDING_CLASS.get("literacy_by_class", {})
+    residents = 0
+    loose_roles = set()
+    for row in FOUNDING_ROLES:
+        role = row.get("role")
+        where = f"FOUNDING_ROLES[{role}]"
+        if not isinstance(row.get("count"), int) or row["count"] < 1:
+            errors.append(f"{where}.count: must be a whole number of at least 1")
+        else:
+            residents += row["count"]
+        if row.get("group") not in groups:
+            errors.append(f"{where}.group: '{row.get('group')}' has no FOUNDING_CLASS.by_group entry")
+        if row.get("workplace") not in FOUNDING_WORKPLACES and row.get("workplace") not in FOUNDING_DEPOSITS \
+                and row.get("workplace") != "farm":
+            errors.append(f"{where}.workplace: '{row.get('workplace')}' is not a FOUNDING_WORKPLACES key, a "
+                          f"FOUNDING_DEPOSITS kind, or 'farm'")
+        mean, sd = row.get("role_identity_mean"), row.get("role_identity_sd")
+        if not (isinstance(mean, (int, float)) and 0.0 <= mean <= 1.0):
+            errors.append(f"{where}.role_identity_mean: must be between 0 and 1")
+        if not (isinstance(sd, (int, float)) and sd >= 0.0):
+            errors.append(f"{where}.role_identity_sd: must be zero or more")
+        if role not in JOBS and role not in TRADES and role not in CAST_ROLE_TRADES:
+            loose_roles.add(role)
+    if loose_roles:
+        info.append(f"FOUNDING ROLES: {', '.join(sorted(loose_roles))} have no JOBS, TRADES, or "
+                    f"CAST_ROLE_TRADES entry (the cast seeds them, and they get no trades)")
+    info.append(f"FOUNDING TOWN: {residents} residents in {len(FOUNDING_ROLES)} roles on a {W}x{H} map")
+    if residents < 1:
+        errors.append("FOUNDING_ROLES: the cast has no residents")
+    roles = {row.get("role") for row in FOUNDING_ROLES}
+    for group, shares in groups.items():
+        rich, middle = shares.get("rich"), shares.get("middle")
+        if not (isinstance(rich, (int, float)) and isinstance(middle, (int, float))
+                and 0.0 <= rich and 0.0 <= middle and rich + middle <= 1.0):
+            errors.append(f"FOUNDING_CLASS.by_group[{group}]: rich and middle must be shares that sum to at most 1")
+    for klass in ("rich", "middle", "poor"):
+        if not (isinstance(literacy.get(klass), (int, float)) and 0.0 <= literacy[klass] <= 1.0):
+            errors.append(f"FOUNDING_CLASS.literacy_by_class: '{klass}' must be a probability between 0 and 1")
+    for group in {row.get("group") for row in FOUNDING_ROLES}:
+        if group not in stations:
+            errors.append(f"FOUNDING_CLASS.station_by_group: group '{group}' has no station")
+    for group, station in stations.items():
+        if station not in STATION_EDUCATION:
+            errors.append(f"FOUNDING_CLASS.station_by_group[{group}]: '{station}' is not a STATION_EDUCATION key")
+
+    # --- names, anchors, and drawn traits
+    for role in FOUNDING_ANCHOR_NAMES:
+        if role not in roles:
+            errors.append(f"FOUNDING_ANCHOR_NAMES[{role}]: no FOUNDING_ROLES row has that role")
+    anchor_names = list(FOUNDING_ANCHOR_NAMES.values())
+    if len(set(anchor_names)) != len(anchor_names):
+        errors.append("FOUNDING_ANCHOR_NAMES: two roles share a name")
+    anchored_roles = len({role for role in FOUNDING_ANCHOR_NAMES if role in roles})
+    combos = len(FOUNDING_FIRST_NAMES) * len(FOUNDING_LAST_NAMES)
+    # The first resident of each anchor role takes its anchor name; every other resident draws a pool
+    # name, and the pool excludes the anchor names.
+    needed = residents - anchored_roles
+    available = combos - len(anchor_names)
+    if available < needed:
+        errors.append(f"FOUNDING names: {available} names outside the anchors cannot cover the "
+                      f"{needed} residents who draw one")
+    for key, spec in FOUNDING_PERSONALITY.items():
+        if not all(field in spec for field in ("mean", "sd", "lo", "hi")):
+            errors.append(f"FOUNDING_PERSONALITY[{key}]: needs mean, sd, lo, and hi")
+            continue
+        if spec["sd"] < 0:
+            errors.append(f"FOUNDING_PERSONALITY[{key}]: sd must be zero or more")
+        if spec["lo"] is not None and spec["hi"] is not None and spec["lo"] > spec["hi"]:
+            errors.append(f"FOUNDING_PERSONALITY[{key}]: lo is above hi")
+    cause = FOUNDING_CAUSAL_RESOLUTION
+    for part in ("floor", "ceiling"):
+        if not all(field in cause.get(part, {}) for field in ("mean", "sd")):
+            errors.append(f"FOUNDING_CAUSAL_RESOLUTION.{part}: needs mean and sd")
+    if not (0.0 <= cause.get("ceiling_weight", -1) <= 1.0):
+        errors.append("FOUNDING_CAUSAL_RESOLUTION.ceiling_weight: must be between 0 and 1")
+    if not (isinstance(cause.get("lo"), int) and isinstance(cause.get("hi"), int) and 1 <= cause["lo"] <= cause["hi"]):
+        errors.append("FOUNDING_CAUSAL_RESOLUTION: lo and hi must be whole bin counts, 1 <= lo <= hi")
+    bounds = FOUNDING_DRAW_BOUNDS.get("role_identity", {})
+    if not (0.0 <= bounds.get("lo", -1) < bounds.get("hi", -1) <= 1.0):
+        errors.append("FOUNDING_DRAW_BOUNDS.role_identity: needs 0 <= lo < hi <= 1")
+
+    # --- the map and its resource bodies
+    body_tiles = set()
+    for body in FOUNDING_MAP.get("resource_bodies", []):
+        tile = body.get("tile")
+        body_tiles.add(tile)
+        if tile not in tile_names:
+            errors.append(f"FOUNDING_MAP.resource_bodies: tile '{tile}' is not a map tile")
+        x0, y0, x1, y1 = body.get("rect", (0, 0, -1, -1))
+        if not (inside(x0, y0) and inside(x1, y1) and x0 <= x1 and y0 <= y1):
+            errors.append(f"FOUNDING_MAP.resource_bodies[{tile}]: rect {body.get('rect')} is off the map")
+    for kind in FOUNDING_DEPOSITS:
+        if kind not in RESOURCE_DEPOSITS:
+            errors.append(f"FOUNDING_DEPOSITS: '{kind}' is not a RESOURCE_DEPOSITS kind")
+        elif RESOURCE_DEPOSITS[kind]["tile"] not in body_tiles:
+            errors.append(f"FOUNDING_DEPOSITS: '{kind}' sits beside a '{RESOURCE_DEPOSITS[kind]['tile']}' body, "
+                          f"and FOUNDING_MAP has none")
+    if len(set(FOUNDING_DEPOSITS)) != len(FOUNDING_DEPOSITS):
+        errors.append("FOUNDING_DEPOSITS: a kind is listed twice")
+    square = FOUNDING_MAP.get("square", {})
+    if not (inside(square.get("x"), square.get("y")) and inside(square.get("x", 0) + square.get("w", 0) - 1,
+                                                                  square.get("y", 0) + square.get("h", 0) - 1)):
+        errors.append("FOUNDING_MAP.square: the square is off the map")
+    for name in ("road_rows", "road_cols"):
+        for road in FOUNDING_MAP.get(name, []):
+            line = road.get("row" if name == "road_rows" else "col")
+            if not (isinstance(line, int) and (1 <= line <= (H - 2 if name == "road_rows" else W - 2))):
+                errors.append(f"FOUNDING_MAP.{name}: {line} is not an interior line of the map")
+            if not isinstance(road.get("phase"), int):
+                errors.append(f"FOUNDING_MAP.{name}: phase must be a whole number")
+    for name in ("bend_offsets_horizontal", "bend_offsets_vertical"):
+        if not FOUNDING_MAP.get(name):
+            errors.append(f"FOUNDING_MAP.{name}: empty, so the roads cannot bend")
+    if not (isinstance(FOUNDING_MAP.get("bend_run"), int) and FOUNDING_MAP["bend_run"] >= 1):
+        errors.append("FOUNDING_MAP.bend_run: must be a whole number of at least 1")
+    for cell in FOUNDING_MAP.get("scattered_trees", []):
+        if not inside(*cell):
+            errors.append(f"FOUNDING_MAP.scattered_trees: {cell} is off the map")
+    plots = FOUNDING_MAP.get("farm_plots", {})
+    if not (isinstance(plots.get("count"), int) and plots["count"] >= 1
+            and isinstance(plots.get("columns"), int) and plots["columns"] >= 1):
+        errors.append("FOUNDING_MAP.farm_plots: needs a count and a columns value of at least 1")
+    elif not inside(*plots.get("origin", (-1, -1))):
+        errors.append("FOUNDING_MAP.farm_plots: origin is off the map")
+
+    # --- workplaces, buildings, labels, and fallbacks
+    if "market" not in FOUNDING_WORKPLACES:
+        errors.append("FOUNDING_WORKPLACES: no 'market' anchor (the square and the store stand there)")
+    for name, cell in FOUNDING_WORKPLACES.items():
+        if not inside(*cell):
+            errors.append(f"FOUNDING_WORKPLACES[{name}]: {cell} is off the map")
+    for kind, cell in FOUNDING_BUILDING_SITES.items():
+        if kind not in BUILDINGS:
+            errors.append(f"FOUNDING_BUILDING_SITES[{kind}]: not a BUILDINGS kind")
+        if not inside(*cell):
+            errors.append(f"FOUNDING_BUILDING_SITES[{kind}]: {cell} is off the map")
+    for kind, label in FOUNDING_PLACE_LABELS.items():
+        if kind not in FOUNDING_WORKPLACES:
+            errors.append(f"FOUNDING_PLACE_LABELS[{kind}]: not a FOUNDING_WORKPLACES key")
+        if not (isinstance(label, str) and label):
+            errors.append(f"FOUNDING_PLACE_LABELS[{kind}]: needs a label")
+    unresolved = []
+    for kind, target in FOUNDING_ANCHOR_ALIASES.items():
+        if kind not in BUILDINGS:
+            errors.append(f"FOUNDING_ANCHOR_ALIASES[{kind}]: not a BUILDINGS kind")
+        if target not in FOUNDING_WORKPLACES and target not in FOUNDING_DEPOSITS:
+            unresolved.append(f"{kind}->{target}")
+    if unresolved:
+        info.append(f"FOUNDING_ANCHOR_ALIASES: {', '.join(sorted(unresolved))} name no workplace, so those "
+                    f"buildings fall back to the market anchor (as the code did at HEAD)")
+
+
 def check_consistency():
     """Check every cross-reference and production pipeline in the entity data.
 
@@ -744,6 +933,7 @@ def check_consistency():
                 f"have a first cousin, married founders average {kin_shape['mean_children_married']:.1f} children "
                 f"(model shape; see population/household_composition.json)")
 
+    _check_founding_town(errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

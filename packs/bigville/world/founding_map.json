@@ -1,0 +1,140 @@
+{
+  "_doc": "The founding town's map (Phase 016a). Moved from worlds/bigville_town100_world.py.\n\nFOUNDING_MAP: width and height in cells. road_rows and road_cols give each winding road's line and the phase of its meander pattern. bend_offsets_* are the meander offsets and bend_run is the number of cells per pattern step (authored). square is the market square rectangle (x, y, w, h), its centre, and the label of the landmark. resource_bodies are the solid rectangles, given as inclusive corners [x0, y0, x1, y1], with the tile each one is. scattered_trees are single tree cells. farm_plots gives the origin, count, columns, and steps of the field grid. The layout is authored; there is no real-world source.\n\nFOUNDING_DEPOSITS: the resource kinds the founding map places. Each sits on a walkable cell beside the body whose tile RESOURCE_DEPOSITS names for it (world/resource_deposits.json).",
+  "_types": {},
+  "tables": {
+    "FOUNDING_MAP": {
+      "width": 52,
+      "height": 40,
+      "road_rows": [
+        {
+          "row": 9,
+          "phase": 0
+        },
+        {
+          "row": 20,
+          "phase": 1
+        },
+        {
+          "row": 31,
+          "phase": 2
+        }
+      ],
+      "road_cols": [
+        {
+          "col": 11,
+          "phase": 2
+        },
+        {
+          "col": 28,
+          "phase": 3
+        },
+        {
+          "col": 45,
+          "phase": 4
+        }
+      ],
+      "bend_offsets_horizontal": [
+        -1,
+        0,
+        1,
+        2,
+        1,
+        0,
+        -1,
+        -2
+      ],
+      "bend_offsets_vertical": [
+        1,
+        0,
+        -1,
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ],
+      "bend_run": 3,
+      "square": {
+        "x": 18,
+        "y": 15,
+        "w": 11,
+        "h": 7,
+        "center": [
+          23,
+          18
+        ],
+        "label": "Market Square"
+      },
+      "resource_bodies": [
+        {
+          "tile": "water",
+          "rect": [
+            2,
+            2,
+            10,
+            5
+          ]
+        },
+        {
+          "tile": "tree",
+          "rect": [
+            30,
+            2,
+            40,
+            5
+          ]
+        },
+        {
+          "tile": "wall",
+          "rect": [
+            43,
+            8,
+            49,
+            13
+          ]
+        }
+      ],
+      "scattered_trees": [
+        [
+          14,
+          3
+        ],
+        [
+          26,
+          8
+        ],
+        [
+          38,
+          24
+        ],
+        [
+          8,
+          30
+        ],
+        [
+          44,
+          32
+        ],
+        [
+          33,
+          27
+        ]
+      ],
+      "farm_plots": {
+        "origin": [
+          36,
+          26
+        ],
+        "count": 8,
+        "columns": 4,
+        "column_step": 3,
+        "row_step": 6
+      }
+    },
+    "FOUNDING_DEPOSITS": [
+      "fish",
+      "lumber",
+      "stone"
+    ]
+  }
+}

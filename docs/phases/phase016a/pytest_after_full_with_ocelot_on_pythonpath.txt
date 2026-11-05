@@ -1,0 +1,35 @@
+................................s.......................s............... [ 16%]
+........................................................................ [ 33%]
+........................................................................ [ 50%]
+........................................................................ [ 67%]
+....................FF.................................................. [ 84%]
+................................................................         [100%]
+=================================== FAILURES ===================================
+______ test_domains_check_exits_zero_on_the_hamlet_and_prints_its_report _______
+
+    def test_domains_check_exits_zero_on_the_hamlet_and_prints_its_report():
+        proc = subprocess.run([sys.executable, "-m", "domains.check", "--pack", HAMLET],
+                              cwd=_ROOT, capture_output=True, text=True, timeout=600)
+>       assert proc.returncode == 0, proc.stderr
+E       AssertionError: /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13: No module named domains.check
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13', '-m', 'domains.check', '--pack', '...code=1, stdout='', stderr='/home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13: No module named domains.check\n').returncode
+
+tests/test_phase013b_data_pack.py:63: AssertionError
+_________ test_domains_check_default_pack_matches_the_self_test_script _________
+
+    def test_domains_check_default_pack_matches_the_self_test_script():
+        check = subprocess.run([sys.executable, "-m", "domains.check"], cwd=_ROOT,
+                               capture_output=True, text=True, timeout=600)
+        script = subprocess.run([sys.executable, os.path.join("domains", "bigville_entities.py")], cwd=_ROOT,
+                                capture_output=True, text=True, timeout=600)
+>       assert check.returncode == script.returncode == 0
+E       AssertionError: assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13', 'domains/bigville_entities.py'], r...03\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nModuleNotFoundError: No module named \'domains.world_affordances\'\n').returncode
+
+tests/test_phase013b_data_pack.py:73: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_phase013b_data_pack.py::test_domains_check_exits_zero_on_the_hamlet_and_prints_its_report
+FAILED tests/test_phase013b_data_pack.py::test_domains_check_default_pack_matches_the_self_test_script
+2 failed, 420 passed, 2 skipped in 84.45s (0:01:24)

@@ -1,0 +1,93 @@
+{
+  "_doc": "FOUNDING_PERSONALITY: mean, sd, lo, hi of each drawn personality and emotion parameter. lo or hi null means unclipped. The values are authored and have no source (APPROX).\n\nFOUNDING_CAUSAL_RESOLUTION: the trait-level causal-belief resolution (a bin count), a two-component mixture. The floor component is the floor-heavy, naive subgroup and the ceiling component is the ceiling-heavy, exposed subgroup. Sources, as recorded in the code this was moved from: Frederick 2005 (CRT, combined N=3428) and Stieger & Reips 2016 (N=2137). The research basis is docs/research/Bigville graph runtime/CAUSAL_GRANULARITY_POPULATION_DISTRIBUTION_RESEARCH.md sec 7 point 4 and sec 8. floor mean 3.0 sd 1.0 anchors the CRT floor and CAN's coarse condition (3 J values). ceiling mean 7.5 sd 2.0 anchors Miller (1956) and Preston & Colman (2000), whose convergent optimum is 7, reaching toward the past-ceiling band 9-12. ceiling_weight 0.35 lies inside Frederick's 17% combined perfect-score rate and Stieger & Reips' ~33% educated-subgroup rate. lo 2 and hi 12 are the registered range of research sec 8 point 1. See BIGVILLE_CAN_INTEGRATION_PREREG.md sec 3. NOTE: the research and prereg files named in this note are not in this checkout (checked at Phase 016a), so these citations are carried over unverified.",
+  "_types": {},
+  "tables": {
+    "FOUNDING_PERSONALITY": {
+      "charm_weight": {
+        "mean": 0.5,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": 1.0
+      },
+      "w_supergraph": {
+        "mean": 0.5,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": 1.0
+      },
+      "w_spite": {
+        "mean": 0.15,
+        "sd": 0.15,
+        "lo": 0.0,
+        "hi": 1.0
+      },
+      "hostile_weight": {
+        "mean": 0.4,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": 1.0
+      },
+      "mood_bias": {
+        "mean": 0.3,
+        "sd": 0.2,
+        "lo": null,
+        "hi": null
+      },
+      "cred_on": {
+        "mean": 1.0,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": null
+      },
+      "claim_weight": {
+        "mean": 1.0,
+        "sd": 0.3,
+        "lo": 0.0,
+        "hi": null
+      },
+      "prior_world_safe": {
+        "mean": 0.6,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": 1.0
+      },
+      "prior_others_trust": {
+        "mean": 0.6,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": 1.0
+      },
+      "prior_self_worth": {
+        "mean": 0.6,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": 1.0
+      },
+      "valence": {
+        "mean": 0.0,
+        "sd": 0.3,
+        "lo": -1.0,
+        "hi": 1.0
+      },
+      "arousal": {
+        "mean": 0.4,
+        "sd": 0.2,
+        "lo": 0.0,
+        "hi": 1.0
+      }
+    },
+    "FOUNDING_CAUSAL_RESOLUTION": {
+      "floor": {
+        "mean": 3.0,
+        "sd": 1.0
+      },
+      "ceiling": {
+        "mean": 7.5,
+        "sd": 2.0
+      },
+      "ceiling_weight": 0.35,
+      "lo": 2,
+      "hi": 12
+    }
+  }
+}

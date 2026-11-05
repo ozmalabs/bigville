@@ -1,0 +1,53 @@
+bigville entities -- consistency report
+========================================
+items 5  recipes 2 (2 runnable)  buildings 1 (1 at founding)  trades 1
+crops 0  animals 0  containers 0
+items by class: material 5
+
+ERRORS (0)
+  none
+
+WARNINGS (0)
+  none
+
+INFO (5)
+  FOUNDING KIN (100 adults of 30, as the founding cast) (1)
+    - FOUNDING KIN (100 adults of 30, as the founding cast): 100% have a parent on record, 69% are joined by a union, 100% have an aunt or uncle, 60% have a first cousin, married founders average 2.5 children (model shape; see population/household_composition.json)
+  HOUSEHOLDS (2)
+    - HOUSEHOLDS: household size (mean members): sample 4.676 vs 4.750 (tolerance 0.30; Laslett 1969 (Population Studies 23) and Laslett 1972, 4.75; Wrigley and Schofield 1981)
+    - HOUSEHOLDS: extended-family share of households: sample 0.101 vs 0.100 (tolerance 0.03; Laslett 1972, about 10-11% of households with kin)
+  TRADES with no recipe (service or gathering work) (1)
+    - TRADES with no recipe (service or gathering work): 
+  open recipes (anyone capable with the tools) (1)
+    - open recipes (anyone capable with the tools): 
+
+PRODUCTION GRAPH
+  9 nodes, 7 edges -> 9 components; 5 tiers deep; acyclic after condensing loops: True
+  loops (0; a loop is a cycle such as seed -> crop -> seed):
+  deepest items (tier: one chain from raw nature):
+    - bread (tier 4): grain -> flour -> bread
+    - flour (tier 2): grain -> flour
+    - grain (tier 0): grain
+    - water (tier 0): water
+  keystone items (recipes that become unreachable without them):
+    flour 2, bread 1, grain 1, water 1
+
+SYSTEMS (recipes, reference value made per batch, labour minutes per batch)
+  other          2 recipes  value      3.5 (100%)  labour     40
+  strongest couplings (producer -> consumer: weight of inputs crossing):
+
+BALANCE (per period, BALANCE_SCENARIO)
+  note: no balance scenario in this pack (BALANCE_SCENARIO is empty)
+  issues (0):
+    none
+
+JOBS (full-time equivalents needed -> holders seeded; relative weight = share of residents)
+  job              weight             N=100              N=30               N=8
+  baker             0.000       0.00 -> 100       0.00 ->  30       0.00 ->   8
+  N=100: 100 residents, 0 holding several jobs; sustainable start: True
+  N=30: 30 residents, 0 holding several jobs; sustainable start: True
+  N=8: 8 residents, 0 holding several jobs; sustainable start: True
+
+PEOPLE (aptitude, talents, limitations drawn for 10000 adults; target = source rate)
+  age 35: aptitude mean 0.998 (2nd-98th pct 0.69-1.31); 0% have at least one limitation
+  age 75: aptitude mean 0.998 (2nd-98th pct 0.69-1.31); 0% have at least one limitation

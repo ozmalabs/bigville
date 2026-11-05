@@ -1,23 +1,29 @@
-"""BigvilleTown100World -- the 100-resident bigville (blocks 305000-309000):
-a full cast pre-seeded with jobs / houses / role-identity / drawn params, on an
+"""BigvilleTown100World -- the founding town's map and cast: the 100-resident bigville (blocks
+305000-309000), a full cast pre-seeded with jobs / houses / role-identity / drawn params, on an
 EXPANDED map (a bigger grid with houses, workplaces, resource sites and roads).
+
+ALL FOUNDING CONTENT IS DATA (Phase 016a). The pack of the world supplies it:
+  * population/founding_cast.json, founding_names.json, founding_personality.json -- the roles and
+    their counts, class and literacy shares, anchor names, name pools, personality ranges, and the
+    causal-resolution mixture, each with its source or an APPROX mark.
+  * world/founding_map.json, world/founding_sites.json -- the map's roads, resource bodies, square,
+    farm plots, workplace anchors, building sites, place labels, and anchor fallbacks, plus the
+    deposits the map places.
+This module keeps the mechanics only. A pack with no founding town (empty tables) has no map here.
 
 WHAT THIS DELIVERS (BIGVILLE_CAST100_PREREG.md)
 -----------------------------------------------
-  * ``build_town_100(seed)`` -- a NEW map builder (build_town() is UNTOUCHED):
-    a connected PATH road lattice; a WATER lake / FOREST (TREE) patch / QUARRY
-    (WALL) rock face as the three resource bodies; a central market SQUARE; ~20
-    named workplace plots; a farm-plot pool; and >=100 home plots. Homes,
-    workplaces and deposits are all chosen from the SINGLE LARGEST walkable
+  * ``build_town_100(seed, entities)`` -- a map builder (build_town() is UNTOUCHED): a connected PATH
+    road lattice; a WATER lake / FOREST (TREE) patch / QUARRY (WALL) rock face as the three resource
+    bodies; a central market SQUARE; named workplace plots; a farm-plot pool; and one home plot per
+    founding resident. Homes, workplaces and deposits are all chosen from the SINGLE LARGEST walkable
     connected component, so mutual reachability is guaranteed by construction.
-  * ``generate_cast100(layout, seed)`` -- 100 DISTINCT Pratchett-register
-    residents. role_identity is drawn per-resident from Normal(role_mean,role_sd)
-    (owners/tradesmen high & sticky, labourers low & mobile -- R4's switching
-    friction); personality/emotion params are DRAWN from seeded Normals (never
-    cloned); literacy ~ Bernoulli (class-biased); class in {rich,middle,poor}.
-  * ``BigvilleTown100World`` -- boots the town on the new map, mints the three
-    fish/lumber/stone Deposits + the tradesmen Shops + a Store via the R1-R3
-    economy adapter (imported, not copied), and mints the 100 ``Resident`` nodes
+  * ``generate_cast100(layout, seed, entities)`` -- DISTINCT Pratchett-register residents. role_identity
+    is drawn per-resident from Normal(role_mean,role_sd) (owners/tradesmen high & sticky, labourers low
+    & mobile -- R4's switching friction); personality/emotion params are DRAWN from seeded Normals
+    (never cloned); literacy ~ Bernoulli (class-biased); class in {rich,middle,poor}.
+  * ``BigvilleTown100World`` -- boots the town on the new map, mints the deposits, the tradesmen Shops
+    and a Store via the R1-R3 economy adapter (imported, not copied), and mints the ``Resident`` nodes
     with ``home_at`` / ``works_at`` edges to nav cells.
 
 ARCHITECTURE-RULE COMPLIANCE (standalone Bigville architecture notes)
@@ -29,7 +35,7 @@ transform behaviour all lives in the economy's seed rules; this file only mints
 data and reads it back. The expanded map is injected by temporarily rebinding the
 module-level ``build_town`` symbol during super().__init__ (mechanical world setup;
 ``build_town`` itself is never edited), so the whole nav/economy stack builds on
-the 52x40 grid. The small-cast drama nodes coexist harmlessly as separate nodes.
+the founding map. The small-cast drama nodes coexist harmlessly as separate nodes.
 
 Deterministic: every draw comes from ``numpy.default_rng(seed)`` streams.
 No Rust; no .so rebuild.
@@ -50,145 +56,36 @@ if _ROOT not in sys.path:
 
 import worlds.bigville_sim_world as _sim                              # noqa: E402
 from worlds.bigville_sim_world import (                              # noqa: E402
-    GRASS, PATH, WALL, FLOOR, SQUARE, TREE, WATER, SOLID, TILE_NAME)
+    GRASS, PATH, FLOOR, SQUARE, TREE, SOLID, TILE_NAME)
 from worlds.bigville_trade_world import BigvilleTradeWorld           # noqa: E402
 from domains.data_view import entities as _entities_view           # noqa: E402
 from bigville.scenarios import load_scenario                        # noqa: E402
 from worlds.bigville_world import requested_data_pack               # noqa: E402
 
-W100, H100 = 52, 40
 SEED_DEFAULT = 305000
+
+# Names drawn from the seeded permutation before the anchor names are excluded (the cast of 100 needs
+# fewer; the draw size is part of the stream, so it is code, not data).
+NAME_POOL_DRAW = 200
 
 # resource body -> the tile that IS the body (deposit sits on a walkable cell
 # orthogonally adjacent to one of these), from the entity data's RESOURCE_DEPOSITS.
 _TILE_BY_NAME = {name: tile for tile, name in TILE_NAME.items()}
 
 
-_TOWN100_DEPOSITS = ("fish", "lumber", "stone")
+def _body_tile(entities, kind):
+    """The map tile that is the resource body of deposit `kind`, from one pack's RESOURCE_DEPOSITS."""
+    return _TILE_BY_NAME[entities.RESOURCE_DEPOSITS[kind]["tile"]]
 
 
-def _body_tiles(entities):
-    """Resource body kind -> tile, from one pack's RESOURCE_DEPOSITS (the world's view, or the default)."""
-    return {kind: _TILE_BY_NAME[spec["tile"]] for kind, spec in entities.RESOURCE_DEPOSITS.items()}
-
-# ---------------------------------------------------------------- the role model
-# (role, count, group, ri_mean, ri_sd, workplace_kind). Sums to 100.
-ROLE_SPEC = [
-    # LOW / labourers -- mobile, low role-identity (R4 switching friction low)
-    ("labourer",      25, "low",    0.22, 0.06, "market"),
-    ("farm_labourer", 12, "low",    0.20, 0.06, "farm"),
-    ("fisher",         8, "low",    0.28, 0.06, "fish"),
-    ("forester",       6, "low",    0.28, 0.06, "lumber"),
-    ("quarrier",       5, "low",    0.28, 0.06, "stone"),
-    ("servant",        5, "low",    0.25, 0.06, "manor"),
-    # MIDDLE -- neither gate group
-    ("farmer",        12, "middle", 0.60, 0.08, "farm"),
-    ("teacher",        2, "middle", 0.65, 0.07, "school"),
-    ("reporter",       1, "middle", 0.60, 0.07, "press"),
-    ("clerk",          2, "middle", 0.55, 0.07, "townhall"),
-    ("councillor",     4, "middle", 0.62, 0.07, "townhall"),
-    ("miller",         1, "middle", 0.58, 0.07, "mill"),
-    ("constable",      1, "middle", 0.60, 0.07, "watch"),
-    ("midwife",        1, "middle", 0.58, 0.07, "surgery"),
-    # HIGH / owners + tradesmen -- sticky, high role-identity
-    ("fishmonger",     2, "high",   0.88, 0.04, "fishmonger"),
-    ("carpenter",      2, "high",   0.90, 0.04, "carpenter"),
-    ("mason",          2, "high",   0.90, 0.04, "mason"),
-    ("baker",          2, "high",   0.88, 0.04, "bakery"),
-    ("innkeeper",      1, "high",   0.85, 0.04, "inn"),
-    ("landlord",       1, "high",   0.93, 0.03, "estate"),
-    ("banker",         1, "high",   0.93, 0.03, "bank"),
-    ("shopkeeper",     1, "high",   0.90, 0.04, "store"),
-    ("mayor",          1, "high",   0.92, 0.03, "townhall"),
-    ("pastor",         1, "high",   0.82, 0.05, "church"),
-    ("doctor",         1, "high",   0.84, 0.05, "surgery"),
-]
-
-# drawn personality/emotion params: key -> (mean, sd, lo, hi) (lo/hi=None -> unclipped)
-_PARAM_SPEC = {
-    "charm_weight":       (0.50, 0.20, 0.0, 1.0),
-    "w_supergraph":       (0.50, 0.20, 0.0, 1.0),
-    "w_spite":            (0.15, 0.15, 0.0, 1.0),
-    "hostile_weight":     (0.40, 0.20, 0.0, 1.0),
-    "mood_bias":          (0.30, 0.20, None, None),
-    "cred_on":            (1.00, 0.20, 0.0, None),
-    "claim_weight":       (1.00, 0.30, 0.0, None),
-    "prior_world_safe":   (0.60, 0.20, 0.0, 1.0),
-    "prior_others_trust": (0.60, 0.20, 0.0, 1.0),
-    "prior_self_worth":   (0.60, 0.20, 0.0, 1.0),
-    "valence":            (0.00, 0.30, -1.0, 1.0),
-    "arousal":            (0.40, 0.20, 0.0, 1.0),
-}
-
-# ---- trait-level causal-belief RESOLUTION (bin COUNT), MIXTURE draw -------
-# Grounded in docs/research/Bigville graph runtime/
-# CAUSAL_GRANULARITY_POPULATION_DISTRIBUTION_RESEARCH.md sec7 point 4 + sec8:
-# "do not expect, or design around, a single unimodal population curve" --
-# the real CRT literature (Frederick 2005 combined N=3428; Stieger & Reips
-# 2016 N=2137) shows a real population is a MIXTURE of a floor-heavy/naive
-# subgroup and a ceiling-heavy/exposed subgroup, not one bell curve. Draw is
-# a two-component Normal mixture in CONTINUOUS space (the cross-frame
-# generative map, CLAUDE.md "BASE-AS-DIMENSION" frame/continuum invariant),
-# then ROUNDED AND CLAMPED to an integer bin count (the in-frame stored
-# datum -- the draw is a map, the storage is a lattice value, never a raw
-# float). See BIGVILLE_CAN_INTEGRATION_PREREG.md sec3 for the full citation
-# chain behind every constant below.
-_RES_FLOOR_MEAN, _RES_FLOOR_SD = 3.0, 1.0   # anchors CRT floor / CAN's own
-                                             # already-tested "coarse" (3 J
-                                             # values) condition
-_RES_CEIL_MEAN, _RES_CEIL_SD = 7.5, 2.0     # anchors Miller(1956)/Preston &
-                                             # Colman(2000)'s convergent
-                                             # optimum (7), reaching toward
-                                             # the deliberately-past-ceiling
-                                             # 9-12 band
-_RES_CEIL_WEIGHT = 0.35                     # inside Frederick's 17% (combined
-                                             # sample perfect-score rate) and
-                                             # Stieger & Reips' ~33%
-                                             # (educated/exposed subgroup
-                                             # perfect-score rate) bracket
-_RES_LO, _RES_HI = 2, 12                    # research doc sec8 point1's full
-                                             # registered crossover-test range
-
-
-def _draw_resolution_bins(rng):
-    """One resident's trait-level causal-belief resolution (bin COUNT,
-    integer -- the in-frame stored datum). The draw is a two-component
-    mixture in continuous space (the cross-frame generative map); rounding
-    and clamping is the map back onto the in-frame integer lattice."""
-    if rng.random() < _RES_CEIL_WEIGHT:
-        z = rng.normal(_RES_CEIL_MEAN, _RES_CEIL_SD)
-    else:
-        z = rng.normal(_RES_FLOOR_MEAN, _RES_FLOOR_SD)
-    return int(min(_RES_HI, max(_RES_LO, round(z))))
-
-# key roles keep their canonical register identity (coherence with the drama/econ).
-_ANCHOR_NAMES = {"mayor": "John", "pastor": "Mary",
-                 "baker": "Marjorie Dough", "fishmonger": "Doreen Ferrety",
-                 "banker": "Scrooge"}
-
-# Pratchett-register-style name pools (extends bigville_townspeople_30's flavour).
-_FIRST = [
-    "Prudence", "Bram", "Adelina", "Hogget", "Ida", "Erasmus", "Bettony", "Tobias",
-    "Wat", "Cask", "Gristle", "Agnes", "Peony", "Corvin", "Nettie", "Ambrose",
-    "Hesper", "Barnaby", "Ferdinand", "Hannah", "Jem", "Verity", "Mordecai",
-    "Lettice", "Silas", "Wilhelmina", "Cuthbert", "Dorcas", "Ephraim", "Grizelda",
-    "Horace", "Isolde", "Josiah", "Keturah", "Lemuel", "Millicent", "Nathaniel",
-    "Ottoline", "Phineas", "Quentin", "Rosamund", "Septimus", "Tamsin", "Ursula",
-    "Vernon", "Winifred", "Zebediah", "Bartholomew", "Constance", "Drusilla",
-    "Elowen", "Fenwick", "Godfrey", "Henrietta", "Ignatius", "Jerusha", "Kester",
-    "Lavinia", "Merrick", "Obadiah", "Prosper", "Radella", "Sorrel", "Thaddeus",
-    "Willa", "Alby", "Bryony", "Cobweb", "Dunstan", "Effie", "Garnet", "Hopkin",
-]
-_LAST = [
-    "Bracken", "Mudge", "Ditchwater", "Turnbull", "Hollow", "Wick", "Bramble",
-    "Nettle", "Sallow", "Pennyworth", "Ottermole", "Codling", "Hobb", "Grubb",
-    "Wold", "Marsh", "Thistlewood", "Oakes", "Ashby", "Rushton", "Bindle",
-    "Catchpole", "Furlong", "Harkness", "Kettle", "Larkspur", "Mossop", "Nubbins",
-    "Peaseblossom", "Quirke", "Rundle", "Sedge", "Tremble", "Underhill", "Vellum",
-    "Wormwood", "Yarrow", "Cobb", "Dabney", "Everdew", "Frittle", "Gorse",
-    "Haywain", "Inkpen", "Jubbins", "Kindle", "Lorric", "Muckle", "Norbisham",
-    "Puddifoot", "Ramskin", "Sputterfield", "Tallowick", "Wattle", "Brimble",
-]
+def _founding_view(entities, what):
+    """The entity view to build from: the given one, or the default pack's. Raises if the pack has no
+    founding town (its founding tables are empty), because there is no town to build."""
+    view = entities if entities is not None else _entities_view()
+    if not view.FOUNDING_ROLES or not view.FOUNDING_MAP:
+        raise ValueError(f"{what} builds a founding town, and this data pack has none "
+                         f"(FOUNDING_ROLES or FOUNDING_MAP is empty)")
+    return view
 
 
 # ============================================================ map builder
@@ -267,13 +164,13 @@ def _carve_path(grid, x, y):
         grid[y][x] = PATH
 
 
-def _windy_horizontal(grid, target_y, phase):
-    """Carve a gently meandering east/west route and return x->y positions."""
-    offsets = (-1, 0, 1, 2, 1, 0, -1, -2)
+def _windy_horizontal(grid, target_y, phase, offsets, run):
+    """Carve a gently meandering east/west route and return x->y positions. `offsets` is the
+    meander pattern (one step per `run` cells, starting `phase` steps into it)."""
     route, y = {}, target_y
     for x in range(1, len(grid[0]) - 1):
         previous_y = y
-        desired = target_y + offsets[((x // 3) + phase) % len(offsets)]
+        desired = target_y + offsets[((x // run) + phase) % len(offsets)]
         if desired > y:
             y += 1
         elif desired < y:
@@ -288,13 +185,13 @@ def _windy_horizontal(grid, target_y, phase):
     return route
 
 
-def _windy_vertical(grid, target_x, phase):
-    """Carve a gently meandering north/south route and return y->x positions."""
-    offsets = (1, 0, -1, -2, -1, 0, 1, 2)
+def _windy_vertical(grid, target_x, phase, offsets, run):
+    """Carve a gently meandering north/south route and return y->x positions. `offsets` is the
+    meander pattern (one step per `run` cells, starting `phase` steps into it)."""
     route, x = {}, target_x
     for y in range(1, len(grid) - 1):
         previous_x = x
-        desired = target_x + offsets[((y // 3) + phase) % len(offsets)]
+        desired = target_x + offsets[((y // run) + phase) % len(offsets)]
         if desired > x:
             x += 1
         elif desired < x:
@@ -326,50 +223,29 @@ def _nearest(cells, target):
     return min(cells, key=lambda c: (c[0] - tx) ** 2 + (c[1] - ty) ** 2)
 
 
-# workplace name -> (target coordinate) placed coherently around the core.
-_WORK_ANCHORS = {
-    "townhall":   (23, 13), "church": (31, 14), "school": (16, 24),
-    "bank":       (19, 13), "press":  (28, 13), "store":  (23, 23),
-    "inn":        (31, 20), "surgery": (16, 20), "estate": (35, 18),
-    "watch":      (20, 26), "mill":   (12, 12), "bakery": (28, 24),
-    "fishmonger": (11, 8),  "carpenter": (34, 8), "mason": (45, 14),
-    "manor":      (41, 30), "market": (23, 18),
-}
-
-# Physical facades are larger than their service anchor cells. Keep the
-# town's fixed institutions and workshops on separate clear sites so the
-# renderer can show the village as a village rather than a stack of services.
-_BUILDING_SITES = {
-    "forge": (45, 14), "woodshop": (34, 8), "mill": (13, 12),
-    "sawpit": (39, 6), "cooperage": (38, 9), "tannery": (10, 15),
-    "cobbler": (12, 20), "school": (16, 22), "printshop": (25, 10),
-    "weavery": (35, 28), "tailorshop": (13, 26), "inn": (30, 20),
-    "dyehouse": (28, 12), "bakery": (28, 24), "kitchen": (32, 30),
-    "dairy": (38, 25), "wharf": (1, 6), "granary": (36, 26),
-    "root_cellar": (42, 22), "wellhouse": (16, 14), "latrine": (9, 18),
-    "compost_yard": (34, 32), "smokehouse": (42, 28), "townhall": (21, 12),
-    "church": (25, 12), "watchhouse": (18, 28), "records_office": (25, 7),
-    "scriptorium": (30, 8), "shambles": (16, 8),
-}
-
-
 def build_town_100(seed=SEED_DEFAULT, entities=None):
-    """Return (grid, affordances, layout). Deterministic in `seed`. build_town()
-    (the 30x18 town) is untouched -- this is a separate builder."""
-    W, H = W100, H100
+    """Return (grid, affordances, layout). Deterministic in `seed` and in the founding map of
+    `entities` (default: the default pack). build_town() (the 30x18 town) is untouched -- this is a
+    separate builder."""
+    E = _founding_view(entities, "build_town_100")
+    M = E.FOUNDING_MAP
+    W, H = M["width"], M["height"]
+    run = M["bend_run"]
     grid = [[GRASS for _ in range(W)] for _ in range(H)]
 
     # --- connected winding road network ---------------------------------------
     # Keep the roads as a small set of useful village routes rather than a
     # near-grid of surfaced cells. Each run drifts by a few cells and is linked
     # at near-intersections, leaving the surrounding plots and commons legible.
-    hrows = [9, 20, 31]
-    vcols = [11, 28, 45]
+    hrows = [route["row"] for route in M["road_rows"]]
+    vcols = [route["col"] for route in M["road_cols"]]
     horizontal_routes = [
-        _windy_horizontal(grid, y, index % 5) for index, y in enumerate(hrows)
+        _windy_horizontal(grid, route["row"], route["phase"], M["bend_offsets_horizontal"], run)
+        for route in M["road_rows"]
     ]
     vertical_routes = [
-        _windy_vertical(grid, x, (index + 2) % 5) for index, x in enumerate(vcols)
+        _windy_vertical(grid, route["col"], route["phase"], M["bend_offsets_vertical"], run)
+        for route in M["road_cols"]
     ]
     # Link the nearest points around each nominal junction. The junctions are
     # deliberately short doglegs rather than a second rigid lattice.
@@ -379,14 +255,15 @@ def build_town_100(seed=SEED_DEFAULT, entities=None):
                              (vroute[hrow], hrow))
 
     # --- central market square (walkable) --------------------------------------
-    _rect(grid, 18, 15, 28, 21, SQUARE)
+    sq = M["square"]
+    _rect(grid, sq["x"], sq["y"], sq["x"] + sq["w"] - 1, sq["y"] + sq["h"] - 1, SQUARE)
 
-    # --- the three resource bodies (SOLID; deposits sit on walkable edges) ------
-    _rect(grid, 2, 2, 10, 5, WATER)     # lake (north-west)
-    _rect(grid, 30, 2, 40, 5, TREE)     # forest (north-centre/east)
-    _rect(grid, 43, 8, 49, 13, WALL)    # quarry rock face (east)
+    # --- the resource bodies (SOLID; deposits sit on walkable edges) -------------
+    for body in M["resource_bodies"]:
+        x0, y0, x1, y1 = body["rect"]
+        _rect(grid, x0, y0, x1, y1, _TILE_BY_NAME[body["tile"]])
     # a few scattered trees for flavour (occluders; do not disconnect the lattice)
-    for (tx, ty) in [(14, 3), (26, 8), (38, 24), (8, 30), (44, 32), (33, 27)]:
+    for (tx, ty) in M["scattered_trees"]:
         if grid[ty][tx] == GRASS:
             grid[ty][tx] = TREE
 
@@ -403,11 +280,12 @@ def build_town_100(seed=SEED_DEFAULT, entities=None):
 
     # --- deposits: a walkable comp cell adjacent to each body -------------------
     layout = {"w": W, "h": H, "deposits": {}, "work": {}, "farms": [], "homes": [],
-              "building_sites": dict(_BUILDING_SITES),
-              "square": {"x": 18, "y": 15, "w": 11, "h": 7, "center": (23, 18)}}
+              "building_sites": {k: tuple(v) for k, v in E.FOUNDING_BUILDING_SITES.items()},
+              "square": {"x": sq["x"], "y": sq["y"], "w": sq["w"], "h": sq["h"],
+                         "center": tuple(sq["center"])}}
     ordered = sorted(comp)
-    for kind, tile in _body_tiles(entities if entities is not None else _entities_view()).items():
-        cell = next(c for c in ordered if _adj_body(grid, c[0], c[1], tile))
+    for kind in E.FOUNDING_DEPOSITS:
+        cell = next(c for c in ordered if _adj_body(grid, c[0], c[1], _body_tile(E, kind)))
         layout["deposits"][kind] = cell
         layout["work"][kind] = cell            # fisher/forester/quarrier work here
 
@@ -424,32 +302,30 @@ def build_town_100(seed=SEED_DEFAULT, entities=None):
         return c
 
     # named workplaces (near their anchors, coherent core)
-    for name, anchor in _WORK_ANCHORS.items():
-        layout["work"][name] = _take(anchor)
-    # farm plots (south-east fields)
-    for k in range(8):
-        layout["farms"].append(_take((36 + (k % 4) * 3, 26 + (k // 4) * 6)))
-    # 100 homes (residential -- remaining road-adjacent plots, deterministic order)
+    for name, anchor in E.FOUNDING_WORKPLACES.items():
+        layout["work"][name] = _take(tuple(anchor))
+    # farm plots (the founding field grid)
+    fp = M["farm_plots"]
+    for k in range(fp["count"]):
+        layout["farms"].append(_take((fp["origin"][0] + (k % fp["columns"]) * fp["column_step"],
+                                      fp["origin"][1] + (k // fp["columns"]) * fp["row_step"])))
+    # one home per founding resident (residential -- remaining road-adjacent plots, deterministic order)
+    n_homes = sum(int(row["count"]) for row in E.FOUNDING_ROLES)
     home_pool = [c for c in cand if c not in used]
-    assert len(home_pool) >= 100, "not enough home plots: %d" % len(home_pool)
-    for c in home_pool[:100]:
+    if len(home_pool) < n_homes:
+        raise ValueError("not enough home plots: %d for %d residents" % (len(home_pool), n_homes))
+    for c in home_pool[:n_homes]:
         used.add(c)
         grid[c[1]][c[0]] = FLOOR
         layout["homes"].append(c)
 
     # affordances (viewer-facing landmark list)
-    affordances = [{"name": "Market Square", "kind": "square",
-                    "x": layout["work"]["market"][0], "y": layout["work"]["market"][1]}]
-    _KINDNAME = {"townhall": "Town Hall", "church": "Church", "school": "School",
-                 "bank": "Bank", "press": "The Herald", "store": "General Store",
-                 "inn": "The Inn", "surgery": "Surgery", "estate": "Estate Office",
-                 "watch": "Watch House", "mill": "Mill", "bakery": "Bakery",
-                 "fishmonger": "Fishmonger", "carpenter": "Carpenter",
-                 "mason": "Mason", "manor": "Manor"}
-    for kind, label in _KINDNAME.items():
+    market = layout["work"]["market"]
+    affordances = [{"name": sq["label"], "kind": "square", "x": market[0], "y": market[1]}]
+    for kind, label in E.FOUNDING_PLACE_LABELS.items():
         cx, cy = layout["work"][kind]
         affordances.append({"name": label, "kind": kind, "x": cx, "y": cy})
-    for kind in layout["deposits"]:          # the deposits the pack's RESOURCE_DEPOSITS placed
+    for kind in layout["deposits"]:          # the deposits the founding map placed
         cx, cy = layout["deposits"][kind]
         affordances.append({"name": "%s deposit" % kind, "kind": "deposit_%s" % kind,
                             "x": cx, "y": cy})
@@ -465,6 +341,17 @@ def build_town_100(seed=SEED_DEFAULT, entities=None):
 DRAW_CLIP_DECIMALS = 4
 
 
+def _personality_spec(entities=None):
+    """{key: (mean, sd, lo, hi)} from a pack's FOUNDING_PERSONALITY: the tuple shape the cast generator
+    used before Phase 016a. The generator reads the pack table. This view exists for callers that read
+    the private name (the Ocelot adapter's affect-coupling references, and other checkouts)."""
+    E = entities if entities is not None else _entities_view()
+    return {k: (s["mean"], s["sd"], s["lo"], s["hi"]) for k, s in E.FOUNDING_PERSONALITY.items()}
+
+
+_PARAM_SPEC = _personality_spec()     # compatibility view of the default pack
+
+
 def _draw_clip(rng, mean, sd, lo, hi):
     v = float(rng.normal(mean, sd))
     if lo is not None:
@@ -474,14 +361,19 @@ def _draw_clip(rng, mean, sd, lo, hi):
     return round(v, DRAW_CLIP_DECIMALS)
 
 
-def _name_pool(n, rng):
-    """A deterministic pool of `n` DISTINCT Pratchett-register full names."""
+def _name_pool(n, rng, first=None, last=None):
+    """A deterministic pool of `n` DISTINCT full names from the first x last product. The name lists
+    default to the default pack's founding names."""
+    if first is None or last is None:
+        E = _entities_view()
+        first = E.FOUNDING_FIRST_NAMES if first is None else first
+        last = E.FOUNDING_LAST_NAMES if last is None else last
     names, seen = [], set()
-    nl = len(_LAST)
-    order = rng.permutation(len(_FIRST) * nl)   # shuffle the full first x last product
+    nl = len(last)
+    order = rng.permutation(len(first) * nl)   # shuffle the full first x last product
     for idx in order:
         a, b = int(idx) // nl, int(idx) % nl
-        nm = "%s %s" % (_FIRST[a], _LAST[b])
+        nm = "%s %s" % (first[a], last[b])
         if nm not in seen:
             seen.add(nm)
             names.append(nm)
@@ -490,8 +382,27 @@ def _name_pool(n, rng):
     return names
 
 
-def generate_cast100(layout, seed=SEED_DEFAULT):
-    """100 distinct residents as records. Deterministic in `seed`."""
+def _draw_resolution_bins(rng, mixture=None):
+    """One resident's trait-level causal-belief resolution (bin COUNT,
+    integer -- the in-frame stored datum). The draw is a two-component
+    mixture in continuous space (the cross-frame generative map); rounding
+    and clamping is the map back onto the in-frame integer lattice. The
+    mixture's constants and their sources are FOUNDING_CAUSAL_RESOLUTION
+    (population/founding_personality.json); None means the default pack's.
+    """
+    if mixture is None:
+        mixture = _entities_view().FOUNDING_CAUSAL_RESOLUTION
+    if rng.random() < mixture["ceiling_weight"]:
+        z = rng.normal(mixture["ceiling"]["mean"], mixture["ceiling"]["sd"])
+    else:
+        z = rng.normal(mixture["floor"]["mean"], mixture["floor"]["sd"])
+    return int(min(mixture["hi"], max(mixture["lo"], round(z))))
+
+
+def generate_cast100(layout, seed=SEED_DEFAULT, entities=None):
+    """The founding cast as records, one per founding resident (FOUNDING_ROLES). Deterministic in
+    `seed` and in the founding cast of `entities` (default: the default pack)."""
+    E = _founding_view(entities, "generate_cast100")
     rng = np.random.default_rng(seed)
     nrng = np.random.default_rng(seed + 7)     # separate stream for names
     rrng = np.random.default_rng(seed + 13)    # separate stream for the
@@ -504,43 +415,49 @@ def generate_cast100(layout, seed=SEED_DEFAULT):
                                                 # discipline as nrng above
 
     # reserve anchor names; fill the rest from the generated pool
-    reserved = set(_ANCHOR_NAMES.values())
-    pool = [nm for nm in _name_pool(200, nrng) if nm not in reserved]
+    anchor_names = E.FOUNDING_ANCHOR_NAMES
+    reserved = set(anchor_names.values())
+    pool = [nm for nm in _name_pool(NAME_POOL_DRAW, nrng, E.FOUNDING_FIRST_NAMES, E.FOUNDING_LAST_NAMES)
+            if nm not in reserved]
     pi = 0
 
-    _CLASS_BY_GROUP = {  # (rich_p, middle_p) ; poor = remainder
-        "high": (0.65, 0.30), "middle": (0.15, 0.70), "low": (0.02, 0.28)}
-    _LIT_BY_CLASS = {"rich": 0.95, "middle": 0.80, "poor": 0.55}
+    by_group = E.FOUNDING_CLASS["by_group"]          # group -> {rich, middle}; poor is the remainder
+    lit_by_class = E.FOUNDING_CLASS["literacy_by_class"]
+    ri_bounds = E.FOUNDING_DRAW_BOUNDS["role_identity"]
 
     farms = layout["farms"]
     homes = layout["homes"]
     residents = []
     idx = 0
     farm_cursor = 0
-    for role, count, group, ri_mean, ri_sd, wkind in ROLE_SPEC:
-        for _ in range(count):
+    for row in E.FOUNDING_ROLES:
+        role, group, wkind = row["role"], row["group"], row["workplace"]
+        for _ in range(row["count"]):
             # name
-            if role in _ANCHOR_NAMES and _ANCHOR_NAMES[role] not in \
+            if role in anchor_names and anchor_names[role] not in \
                     {r["name"] for r in residents}:
-                name = _ANCHOR_NAMES[role]
+                name = anchor_names[role]
             else:
+                if pi >= len(pool):
+                    raise ValueError("the founding name pool is too small for the cast")
                 name = pool[pi]
                 pi += 1
             # role identity (the R4 switching friction) -- drawn, not cloned
-            ri = _draw_clip(rng, ri_mean, ri_sd, 0.02, 0.98)
+            ri = _draw_clip(rng, row["role_identity_mean"], row["role_identity_sd"],
+                            ri_bounds["lo"], ri_bounds["hi"])
             # class + literacy
             u = float(rng.random())
-            rp, mp = _CLASS_BY_GROUP[group]
+            rp, mp = by_group[group]["rich"], by_group[group]["middle"]
             klass = "rich" if u < rp else ("middle" if u < rp + mp else "poor")
-            literate = 1 if float(rng.random()) < _LIT_BY_CLASS[klass] else 0
+            literate = 1 if float(rng.random()) < lit_by_class[klass] else 0
             # drawn personality/emotion params
-            params = {k: _draw_clip(rng, m, s, lo, hi)
-                      for k, (m, s, lo, hi) in _PARAM_SPEC.items()}
+            params = {k: _draw_clip(rng, s["mean"], s["sd"], s["lo"], s["hi"])
+                      for k, s in E.FOUNDING_PERSONALITY.items()}
             # trait-level causal-belief resolution (bin count) -- a 13th,
             # MIXTURE-drawn param, drawn from its OWN rng stream (rrng, like
             # nrng for names above) so every existing param's value is
             # byte-unchanged on regeneration.
-            params["resolution_bins"] = _draw_resolution_bins(rrng)
+            params["resolution_bins"] = _draw_resolution_bins(rrng, E.FOUNDING_CAUSAL_RESOLUTION)
             # workplace cell
             if wkind == "farm":
                 work = farms[farm_cursor % len(farms)]
@@ -554,7 +471,6 @@ def generate_cast100(layout, seed=SEED_DEFAULT):
                 "home_cell": list(home), "workplace_cell": list(work),
                 "workplace_kind": wkind, "params": params})
             idx += 1
-    assert idx == 100, idx
     return {
         "id": "bigville_cast100", "version": "1.0.0", "self_load_only": True,
         "depends_on": [],
@@ -586,12 +502,6 @@ class BigvilleTown100World(BigvilleTradeWorld):
     """Boots the 100-resident town on the expanded map + mints deposits/shops/
     residents. A world adapter -- data + I/O only, no agent decision."""
 
-    # trade -> (input_kind, output_kind), matching the R2 economy vocabulary.
-    _TRADE_RECIPE = {"fishmonger": ("fish", "fish_ready"),
-                     "carpenter": ("lumber", "furniture"),
-                     "mason": ("stone", "blocks"),
-                     "bakery": ("grain", "bread")}
-
     def __init__(self, seed=SEED_DEFAULT, *, data_pack=None, **kw):
         self.t100_seed = seed
         # The town's entity data comes from one pack (the constructor's data_pack, or the scenario's).
@@ -601,11 +511,14 @@ class BigvilleTown100World(BigvilleTradeWorld):
         scenario_data = load_scenario(scenario).to_dict() if scenario is not None else None
         self.data_pack = requested_data_pack(data_pack, scenario_data)
         self.E = _entities_view(self.data_pack)
-        # The map places these three deposits and the town's fixed workplaces (see build_town_100).
+        if not self.E.FOUNDING_ROLES or not self.E.FOUNDING_MAP:
+            raise ValueError(f"BigvilleTown100World builds a pack's founding town; data pack "
+                             f"'{self.data_pack}' has none (FOUNDING_ROLES or FOUNDING_MAP is empty)")
+        # The map places these deposits and the town's fixed workplaces (see build_town_100).
         # A pack without them cannot host this town.
-        missing = [kind for kind in _TOWN100_DEPOSITS if kind not in self.E.RESOURCE_DEPOSITS]
+        missing = [kind for kind in self.E.FOUNDING_DEPOSITS if kind not in self.E.RESOURCE_DEPOSITS]
         if missing:
-            raise ValueError(f"BigvilleTown100World places the deposits {list(_TOWN100_DEPOSITS)}; "
+            raise ValueError(f"BigvilleTown100World places the deposits {list(self.E.FOUNDING_DEPOSITS)}; "
                              f"data pack '{self.data_pack}' has no {missing}")
         grid, aff, layout = build_town_100(seed, self.E)
         self.t100_layout = layout
@@ -618,17 +531,18 @@ class BigvilleTown100World(BigvilleTradeWorld):
         finally:
             _sim.build_town = _orig
 
-        # --- economy: the three deposits + tradesmen shops + a market store -----
+        # --- economy: the founding deposits + tradesmen shops + a market store -----
         for kind, cell in layout["deposits"].items():
-            self.add_deposit(kind, tuple(cell), stock=60.0, growback=3.0,
-                             capacity=120.0)
-        self.add_store(tuple(layout["work"]["market"]), ["fish", "lumber", "stone"])
-        for trade, (ik, ok) in self._TRADE_RECIPE.items():
+            deposit = self.E.RESOURCE_DEPOSITS[kind]
+            self.add_deposit(kind, tuple(cell), stock=float(deposit["stock"]),
+                             growback=float(deposit["growback"]), capacity=float(deposit["capacity"]))
+        self.add_store(tuple(layout["work"]["market"]), list(self.E.FOUNDING_DEPOSITS))
+        for trade, chain in self.E.SHOP_CHAINS.items():
             self.add_shop(trade, tuple(layout["work"][trade]),
-                          input_kind=ik, output_kind=ok)
+                          input_kind=chain["in"], output_kind=chain["out"])
 
-        # --- the 100 residents (graph data) -------------------------------------
-        self.cast = generate_cast100(layout, seed)
+        # --- the residents (graph data) -------------------------------------------
+        self.cast = generate_cast100(layout, seed, self.E)
         self.residents = {}          # name -> Resident nid
         for r in self.cast["residents"]:
             attrs = {"name": r["name"], "role": r["role"], "group": r["group"],

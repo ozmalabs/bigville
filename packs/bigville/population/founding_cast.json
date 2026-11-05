@@ -1,0 +1,247 @@
+{
+  "_doc": "Founding cast of the 100-resident town (Phase 016a). Moved from worlds/bigville_town100_world.py.\n\nFOUNDING_ROLES: one row per role of the founding cast. The counts sum to the number of residents and of founding homes. count, group, role_identity_mean and role_identity_sd are authored design choices, not census figures (APPROX). workplace is a FOUNDING_WORKPLACES key, a FOUNDING_DEPOSITS kind (fish, lumber, stone), or 'farm' (the founding farm plots). Phase 016b replaces these counts with E.seed_jobs (Phase 003).\n\nFOUNDING_CLASS.by_group: each group's [rich, middle] shares; poor is the remainder (authored, APPROX). literacy_by_class: the chance of literacy by class (authored, APPROX). station_by_group: the STATION_EDUCATION key of each group (as populate_town100 used it).\n\nFOUNDING_ANCHOR_NAMES: role -> the register name of the first resident with that role.\nFOUNDING_DRAW_BOUNDS.role_identity: the clip range of the role-identity draw.",
+  "_types": {},
+  "tables": {
+    "FOUNDING_ROLES": [
+      {
+        "role": "labourer",
+        "count": 25,
+        "group": "low",
+        "role_identity_mean": 0.22,
+        "role_identity_sd": 0.06,
+        "workplace": "market"
+      },
+      {
+        "role": "farm_labourer",
+        "count": 12,
+        "group": "low",
+        "role_identity_mean": 0.2,
+        "role_identity_sd": 0.06,
+        "workplace": "farm"
+      },
+      {
+        "role": "fisher",
+        "count": 8,
+        "group": "low",
+        "role_identity_mean": 0.28,
+        "role_identity_sd": 0.06,
+        "workplace": "fish"
+      },
+      {
+        "role": "forester",
+        "count": 6,
+        "group": "low",
+        "role_identity_mean": 0.28,
+        "role_identity_sd": 0.06,
+        "workplace": "lumber"
+      },
+      {
+        "role": "quarrier",
+        "count": 5,
+        "group": "low",
+        "role_identity_mean": 0.28,
+        "role_identity_sd": 0.06,
+        "workplace": "stone"
+      },
+      {
+        "role": "servant",
+        "count": 5,
+        "group": "low",
+        "role_identity_mean": 0.25,
+        "role_identity_sd": 0.06,
+        "workplace": "manor"
+      },
+      {
+        "role": "farmer",
+        "count": 12,
+        "group": "middle",
+        "role_identity_mean": 0.6,
+        "role_identity_sd": 0.08,
+        "workplace": "farm"
+      },
+      {
+        "role": "teacher",
+        "count": 2,
+        "group": "middle",
+        "role_identity_mean": 0.65,
+        "role_identity_sd": 0.07,
+        "workplace": "school"
+      },
+      {
+        "role": "reporter",
+        "count": 1,
+        "group": "middle",
+        "role_identity_mean": 0.6,
+        "role_identity_sd": 0.07,
+        "workplace": "press"
+      },
+      {
+        "role": "clerk",
+        "count": 2,
+        "group": "middle",
+        "role_identity_mean": 0.55,
+        "role_identity_sd": 0.07,
+        "workplace": "townhall"
+      },
+      {
+        "role": "councillor",
+        "count": 4,
+        "group": "middle",
+        "role_identity_mean": 0.62,
+        "role_identity_sd": 0.07,
+        "workplace": "townhall"
+      },
+      {
+        "role": "miller",
+        "count": 1,
+        "group": "middle",
+        "role_identity_mean": 0.58,
+        "role_identity_sd": 0.07,
+        "workplace": "mill"
+      },
+      {
+        "role": "constable",
+        "count": 1,
+        "group": "middle",
+        "role_identity_mean": 0.6,
+        "role_identity_sd": 0.07,
+        "workplace": "watch"
+      },
+      {
+        "role": "midwife",
+        "count": 1,
+        "group": "middle",
+        "role_identity_mean": 0.58,
+        "role_identity_sd": 0.07,
+        "workplace": "surgery"
+      },
+      {
+        "role": "fishmonger",
+        "count": 2,
+        "group": "high",
+        "role_identity_mean": 0.88,
+        "role_identity_sd": 0.04,
+        "workplace": "fishmonger"
+      },
+      {
+        "role": "carpenter",
+        "count": 2,
+        "group": "high",
+        "role_identity_mean": 0.9,
+        "role_identity_sd": 0.04,
+        "workplace": "carpenter"
+      },
+      {
+        "role": "mason",
+        "count": 2,
+        "group": "high",
+        "role_identity_mean": 0.9,
+        "role_identity_sd": 0.04,
+        "workplace": "mason"
+      },
+      {
+        "role": "baker",
+        "count": 2,
+        "group": "high",
+        "role_identity_mean": 0.88,
+        "role_identity_sd": 0.04,
+        "workplace": "bakery"
+      },
+      {
+        "role": "innkeeper",
+        "count": 1,
+        "group": "high",
+        "role_identity_mean": 0.85,
+        "role_identity_sd": 0.04,
+        "workplace": "inn"
+      },
+      {
+        "role": "landlord",
+        "count": 1,
+        "group": "high",
+        "role_identity_mean": 0.93,
+        "role_identity_sd": 0.03,
+        "workplace": "estate"
+      },
+      {
+        "role": "banker",
+        "count": 1,
+        "group": "high",
+        "role_identity_mean": 0.93,
+        "role_identity_sd": 0.03,
+        "workplace": "bank"
+      },
+      {
+        "role": "shopkeeper",
+        "count": 1,
+        "group": "high",
+        "role_identity_mean": 0.9,
+        "role_identity_sd": 0.04,
+        "workplace": "store"
+      },
+      {
+        "role": "mayor",
+        "count": 1,
+        "group": "high",
+        "role_identity_mean": 0.92,
+        "role_identity_sd": 0.03,
+        "workplace": "townhall"
+      },
+      {
+        "role": "pastor",
+        "count": 1,
+        "group": "high",
+        "role_identity_mean": 0.82,
+        "role_identity_sd": 0.05,
+        "workplace": "church"
+      },
+      {
+        "role": "doctor",
+        "count": 1,
+        "group": "high",
+        "role_identity_mean": 0.84,
+        "role_identity_sd": 0.05,
+        "workplace": "surgery"
+      }
+    ],
+    "FOUNDING_CLASS": {
+      "by_group": {
+        "high": {
+          "rich": 0.65,
+          "middle": 0.3
+        },
+        "middle": {
+          "rich": 0.15,
+          "middle": 0.7
+        },
+        "low": {
+          "rich": 0.02,
+          "middle": 0.28
+        }
+      },
+      "literacy_by_class": {
+        "rich": 0.95,
+        "middle": 0.8,
+        "poor": 0.55
+      },
+      "station_by_group": {
+        "low": "labouring",
+        "middle": "middle",
+        "high": "educated"
+      }
+    },
+    "FOUNDING_ANCHOR_NAMES": {
+      "mayor": "John",
+      "pastor": "Mary",
+      "baker": "Marjorie Dough",
+      "fishmonger": "Doreen Ferrety",
+      "banker": "Scrooge"
+    },
+    "FOUNDING_DRAW_BOUNDS": {
+      "role_identity": {
+        "lo": 0.02,
+        "hi": 0.98
+      }
+    }
+  }
+}

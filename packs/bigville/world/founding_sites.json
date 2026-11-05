@@ -1,0 +1,236 @@
+{
+  "_doc": "Founding workplaces, buildings, labels, and fallbacks (Phase 016a). Moved from worlds/bigville_town100_world.py and worlds/bigville_world.py.\n\nFOUNDING_WORKPLACES: each named workplace's anchor cell [x, y] (authored). The map takes the free road-side plot nearest to each anchor.\nFOUNDING_BUILDING_SITES: the fixed footprint origin [x, y] of each building that stands at founding (authored). Every key is a BUILDINGS kind.\nFOUNDING_PLACE_LABELS: the landmark label of each workplace (authored).\nFOUNDING_ANCHOR_ALIASES: a building with no fixed site anchors at the workplace named here. A target that is not a workplace (e.g. 'farm') falls back to the market, as the code did at HEAD.",
+  "_types": {},
+  "tables": {
+    "FOUNDING_WORKPLACES": {
+      "townhall": [
+        23,
+        13
+      ],
+      "church": [
+        31,
+        14
+      ],
+      "school": [
+        16,
+        24
+      ],
+      "bank": [
+        19,
+        13
+      ],
+      "press": [
+        28,
+        13
+      ],
+      "store": [
+        23,
+        23
+      ],
+      "inn": [
+        31,
+        20
+      ],
+      "surgery": [
+        16,
+        20
+      ],
+      "estate": [
+        35,
+        18
+      ],
+      "watch": [
+        20,
+        26
+      ],
+      "mill": [
+        12,
+        12
+      ],
+      "bakery": [
+        28,
+        24
+      ],
+      "fishmonger": [
+        11,
+        8
+      ],
+      "carpenter": [
+        34,
+        8
+      ],
+      "mason": [
+        45,
+        14
+      ],
+      "manor": [
+        41,
+        30
+      ],
+      "market": [
+        23,
+        18
+      ]
+    },
+    "FOUNDING_BUILDING_SITES": {
+      "forge": [
+        45,
+        14
+      ],
+      "woodshop": [
+        34,
+        8
+      ],
+      "mill": [
+        13,
+        12
+      ],
+      "sawpit": [
+        39,
+        6
+      ],
+      "cooperage": [
+        38,
+        9
+      ],
+      "tannery": [
+        10,
+        15
+      ],
+      "cobbler": [
+        12,
+        20
+      ],
+      "school": [
+        16,
+        22
+      ],
+      "printshop": [
+        25,
+        10
+      ],
+      "weavery": [
+        35,
+        28
+      ],
+      "tailorshop": [
+        13,
+        26
+      ],
+      "inn": [
+        30,
+        20
+      ],
+      "dyehouse": [
+        28,
+        12
+      ],
+      "bakery": [
+        28,
+        24
+      ],
+      "kitchen": [
+        32,
+        30
+      ],
+      "dairy": [
+        38,
+        25
+      ],
+      "wharf": [
+        1,
+        6
+      ],
+      "granary": [
+        36,
+        26
+      ],
+      "root_cellar": [
+        42,
+        22
+      ],
+      "wellhouse": [
+        16,
+        14
+      ],
+      "latrine": [
+        9,
+        18
+      ],
+      "compost_yard": [
+        34,
+        32
+      ],
+      "smokehouse": [
+        42,
+        28
+      ],
+      "townhall": [
+        21,
+        12
+      ],
+      "church": [
+        25,
+        12
+      ],
+      "watchhouse": [
+        18,
+        28
+      ],
+      "records_office": [
+        25,
+        7
+      ],
+      "scriptorium": [
+        30,
+        8
+      ],
+      "shambles": [
+        16,
+        8
+      ]
+    },
+    "FOUNDING_PLACE_LABELS": {
+      "townhall": "Town Hall",
+      "church": "Church",
+      "school": "School",
+      "bank": "Bank",
+      "press": "The Herald",
+      "store": "General Store",
+      "inn": "The Inn",
+      "surgery": "Surgery",
+      "estate": "Estate Office",
+      "watch": "Watch House",
+      "mill": "Mill",
+      "bakery": "Bakery",
+      "fishmonger": "Fishmonger",
+      "carpenter": "Carpenter",
+      "mason": "Mason",
+      "manor": "Manor"
+    },
+    "FOUNDING_ANCHOR_ALIASES": {
+      "records_office": "townhall",
+      "watchhouse": "watch",
+      "wellhouse": "market",
+      "latrine": "market",
+      "compost_yard": "farm",
+      "root_cellar": "farm",
+      "granary": "farm",
+      "smokehouse": "bakery",
+      "scriptorium": "press",
+      "shambles": "market",
+      "dyehouse": "press",
+      "cooperage": "carpenter",
+      "woodshop": "carpenter",
+      "sawpit": "carpenter",
+      "tannery": "market",
+      "cobbler": "market",
+      "tailorshop": "market",
+      "weavery": "market",
+      "forge": "mason",
+      "kitchen": "bakery",
+      "dairy": "farm",
+      "wharf": "fish"
+    }
+  }
+}

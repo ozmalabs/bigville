@@ -1,0 +1,10 @@
+adapter: DIFFERS
+after_three_village_work_ticks: identical
+build_town_100: identical
+cast100_record: identical
+founding_town: identical
+returns_of_three_village_work_ticks: identical
+scenario_character_data: identical
+  adapter/deposits[1]/growback: HEAD=3.0 AFTER=4.0
+HEAD canonical sha256 3e866c0d6804ef1a30cf26325b55c1644f8c7d85a00239fe8c69cfc40fcc0545
+AFTER canonical sha256 eb3c479f1f2683cf63ae51aeba21e6b1fdd4718eb717962da2c9cf8972cc0d3b
