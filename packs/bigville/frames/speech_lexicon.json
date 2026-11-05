@@ -1,0 +1,29 @@
+{
+  "_doc": "Phase 018: the chatter and weather phrases that bigville/runtime.py realises as speech. The phrases are the village's own words, not a source of fact: a resident says them to others.",
+  "_types": {},
+  "tables": {
+    "SPEECH_CHATTER": {
+      "_doc": "Small talk about a trade, keyed by trade name. A trade not listed gets work_template; no trade gets empty.",
+      "phrases": {
+        "smith": "The forge has been busy this week.",
+        "baker": "The ovens have been going since dawn.",
+        "farmer": "The fields need rain, if you ask me.",
+        "fisher": "The catch has been thin off the point.",
+        "carpenter": "There is always more wood to plane."
+      },
+      "work_template": "There is always more work in {trade}.",
+      "empty": "Nothing much to report."
+    },
+    "SPEECH_WEATHER": {
+      "_doc": "Small talk about the weather, keyed by calendar weather. A weather not listed uses template.",
+      "phrases": {
+        "rain": "It is raining today.",
+        "storm": "There is a storm coming.",
+        "dry": "It is dry today.",
+        "clear": "The sky is clear today.",
+        "frost": "There is a frost this morning."
+      },
+      "template": "The weather is {weather} today."
+    }
+  }
+}

@@ -5,27 +5,33 @@
     "FREE_ACTIONS": {
       "speak": {
         "kind": "utterance",
-        "requires_target": false
+        "requires_target": false,
+        "description": "Say something aloud to people nearby. Uses no major action. Give both the text and the raw meaning of each utterance."
       },
       "write_note": {
         "kind": "written_message",
-        "requires_target": false
+        "requires_target": false,
+        "description": "Write a note on material you hold. The note is a physical record that others may read."
       },
       "give_note": {
         "kind": "handoff",
-        "requires_target": true
+        "requires_target": true,
+        "description": "Hand a note you hold to a person in reach."
       },
       "accept": {
         "kind": "consent",
-        "requires_target": true
+        "requires_target": true,
+        "description": "Agree to an offer or request made to you. Uses no major action."
       },
       "decline": {
         "kind": "refusal",
-        "requires_target": true
+        "requires_target": true,
+        "description": "Refuse an offer or request made to you. Uses no major action."
       },
       "reply": {
         "kind": "utterance",
-        "requires_target": true
+        "requires_target": true,
+        "description": "Answer a person who has spoken to you. Uses no major action."
       }
     }
   }

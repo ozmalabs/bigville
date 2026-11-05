@@ -388,6 +388,53 @@ def _check_knowledge(errors, warnings, info):
     knowledge_shares_flags(shares, pack, errors, warnings)
 
 
+def _check_prompt_instructions(errors, warnings, info):
+    """Phase 018: the LLM prompt tables and speech lexicon. Each action has a description, the response
+    fields are the ones the backend parses, the selection caps are positive, the standing types and gist
+    keys name real item types, and the chatter and weather templates keep their placeholder."""
+    # The response keys ActorResponse.from_dict reads (bigville/backends/protocol.py).
+    _RESPONSE_FIELDS = {"major_action", "continuation", "utterances", "memory_updates", "waiting"}
+    for table in ("MAJOR_ACTIONS", "FREE_ACTIONS"):
+        for name, spec in globals()[table].items():
+            if not str(spec.get("description", "")).strip():
+                errors.append(f"{table}[{name}]: no description (the LLM prompt lists it)")
+    premise = WORLD_PREMISE
+    if not str(premise.get("name", "")).strip() or not str(premise.get("premise", "")).strip():
+        errors.append("WORLD_PREMISE: needs a name and a premise")
+    unknown = [f for f in PROMPT_RESPONSE_FIELDS if f not in _RESPONSE_FIELDS]
+    if unknown or not PROMPT_RESPONSE_FIELDS:
+        errors.append(f"PROMPT_RESPONSE_FIELDS: not response fields the backend reads: {unknown}")
+    for name in ("PROMPT_BOUNDARY_RULES", "PROMPT_CONTINUATION_RULES"):
+        if not globals()[name] or not all(str(rule).strip() for rule in globals()[name]):
+            errors.append(f"{name}: needs at least one non-empty rule")
+    caps = {k: v for k, v in PROMPT_SELECTION.items() if not k.startswith("_") and k not in ("standing_types",)}
+    for key, value in caps.items():
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            errors.append(f"PROMPT_SELECTION[{key}]: must be a positive integer, not {value!r}")
+    item_types = {"law", "policy", "charter", "concept", "kin_term", "office", "procedure", "animal",
+                  "good", "recipe", "place", "resident"}
+    for kind in PROMPT_SELECTION.get("standing_types", []):
+        if kind not in item_types:
+            errors.append(f"PROMPT_SELECTION.standing_types: '{kind}' is not a knowledge item type")
+    for kind in sorted(item_types):
+        if kind not in MEMORY_GIST:
+            warnings.append(f"MEMORY_GIST: no gist for item type '{kind}' (the default gist is used)")
+    if "default" not in MEMORY_GIST:
+        errors.append("MEMORY_GIST: needs a 'default' gist")
+    chatter, weather = SPEECH_CHATTER, SPEECH_WEATHER
+    if "{trade}" not in chatter["work_template"]:
+        errors.append("SPEECH_CHATTER.work_template: needs the {trade} placeholder")
+    if "{weather}" not in weather["template"]:
+        errors.append("SPEECH_WEATHER.template: needs the {weather} placeholder")
+    for key in weather["phrases"]:
+        if key not in WEATHER:
+            errors.append(f"SPEECH_WEATHER[{key}]: not a WEATHER name")
+    unused = sorted(key for key in chatter["phrases"] if key not in TRADES)
+    if unused:
+        info.append(f"SPEECH_CHATTER: phrases for names that are not trades in this pack (never used): "
+                    f"{', '.join(unused)}")
+
+
 def _check_generated_seeds(errors):
     """Phase 017: the generated Ocelot seeds in bigville/seeds/ are what the bigville pack produces now.
     Only the canonical pack is checked; a child or test pack has no canonical directory."""
@@ -984,6 +1031,7 @@ def check_consistency():
 
     _check_founding_town(errors, warnings, info)
     _check_knowledge(errors, warnings, info)
+    _check_prompt_instructions(errors, warnings, info)
     _check_generated_seeds(errors)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),

@@ -1,0 +1,4 @@
+town residents=100 memories_total=29455
+Adelina Gorse: memories=339 prompt_bytes=42082 system_bytes=3391 private_bytes=6625 public_bytes=31852
+Ida Sedge: memories=278 prompt_bytes=39711 system_bytes=3391 private_bytes=6624 public_bytes=29482
+Winifred Ottermole: memories=436 prompt_bytes=35538 system_bytes=3391 private_bytes=6033 public_bytes=25900

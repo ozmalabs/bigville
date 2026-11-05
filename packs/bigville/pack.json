@@ -676,6 +676,38 @@
     {
       "name": "FORMER_TRADES",
       "file": "population/history.json"
+    },
+    {
+      "name": "WORLD_PREMISE",
+      "file": "world/llm_instructions.json"
+    },
+    {
+      "name": "PROMPT_BOUNDARY_RULES",
+      "file": "world/llm_instructions.json"
+    },
+    {
+      "name": "PROMPT_CONTINUATION_RULES",
+      "file": "world/llm_instructions.json"
+    },
+    {
+      "name": "PROMPT_RESPONSE_FIELDS",
+      "file": "world/llm_instructions.json"
+    },
+    {
+      "name": "PROMPT_SELECTION",
+      "file": "world/llm_instructions.json"
+    },
+    {
+      "name": "MEMORY_GIST",
+      "file": "world/llm_instructions.json"
+    },
+    {
+      "name": "SPEECH_CHATTER",
+      "file": "frames/speech_lexicon.json"
+    },
+    {
+      "name": "SPEECH_WEATHER",
+      "file": "frames/speech_lexicon.json"
     }
   ]
 }

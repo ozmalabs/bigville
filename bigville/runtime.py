@@ -220,12 +220,24 @@ def _meaning_text(value):
     return _realize_meaning(value)
 
 
-def _realize_meaning(value):
+def _speech_lexicon(lexicon=None):
+    """The chatter and weather phrases (Phase 018: pack tables SPEECH_CHATTER and SPEECH_WEATHER).
+
+    ``lexicon`` is a dict with ``chatter`` and ``weather`` keys, for a caller that holds another pack's
+    phrases. Without it the default bigville pack is read."""
+    if lexicon is not None:
+        return lexicon
+    from domains.pack import load_pack
+    pack = load_pack("bigville")
+    return {"chatter": pack["SPEECH_CHATTER"], "weather": pack["SPEECH_WEATHER"]}
+
+
+def _realize_meaning(value, lexicon=None):
     """Small dependency-free lexical realization for common goal meanings."""
     if not isinstance(value, dict) or not value:
         return str(value)
     if len(value) != 1:
-        return " ".join(_realize_meaning({key: child}) for key, child in value.items())
+        return " ".join(_realize_meaning({key: child}, lexicon) for key, child in value.items())
 
     key, child = next(iter(value.items()))
     key = str(key)
@@ -255,24 +267,19 @@ def _realize_meaning(value):
     if key == "topic":
         payload = child.get("of") if isinstance(child, dict) else child
         trade = str(payload).lower()
-        phrases = {
-            "smith": "The forge has been busy this week.",
-            "baker": "The ovens have been going since dawn.",
-            "farmer": "The fields need rain, if you ask me.",
-            "fisher": "The catch has been thin off the point.",
-            "carpenter": "There is always more wood to plane.",
-        }
-        return phrases.get(trade, f"There is always more work in {trade}." if trade
-                            else "Nothing much to report.")
+        chatter = _speech_lexicon(lexicon)["chatter"]
+        if trade in chatter["phrases"]:
+            return chatter["phrases"][trade]
+        if trade:
+            return chatter["work_template"].format(trade=trade)
+        return chatter["empty"]
     if key == "weather":
         payload = child.get("of") if isinstance(child, dict) else child
         weather = str(payload).lower()
-        phrases = {
-            "rain": "It is raining today.", "storm": "There is a storm coming.",
-            "dry": "It is dry today.", "clear": "The sky is clear today.",
-            "frost": "There is a frost this morning.",
-        }
-        return phrases.get(weather, f"The weather is {weather} today.")
+        forecast = _speech_lexicon(lexicon)["weather"]
+        if weather in forecast["phrases"]:
+            return forecast["phrases"][weather]
+        return forecast["template"].format(weather=weather)
     if key == "greeting":
         return f"Hello, {_target(child)}."
     if key == "warning":

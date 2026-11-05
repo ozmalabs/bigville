@@ -1,0 +1,64 @@
+{
+  "_doc": "Phase 018: the LLM prompt's premise, boundary and continuation rules, response fields, the memory selection rule and its caps (PROMPT_SELECTION, APPROX), and the gist of each kind of item a resident knows only by name (MEMORY_GIST). bigville/backends/prompts.py builds the system text from these.",
+  "_types": {},
+  "tables": {
+    "WORLD_PREMISE": {
+      "name": "Bigville",
+      "premise": "Bigville is a village of about one hundred residents on one shared map. Residents farm, craft, trade, keep households, tend animals, and make and keep village law. The world moves goods and people, validates each proposed action, and records what happens. Residents decide what to do, what to believe, and what to say."
+    },
+    "PROMPT_BOUNDARY_RULES": [
+      "The world validates every proposal and refuses any that is not legal now.",
+      "Never invent an action, item, place, person, law, or transaction. Use only what your private memories and the public observations give you.",
+      "Your private memories are what you hold. A thing you do not hold is not known to you, even if it exists in the village.",
+      "Give every utterance as the exact human-facing text and an opaque raw payload that holds its meaning. The world delivers both and never rewrites one into the other.",
+      "Address people, not shops or buildings.",
+      "Waiting, or saying nothing, is a valid choice.",
+      "Communication is separate from the major action and may be free."
+    ],
+    "PROMPT_CONTINUATION_RULES": [
+      "A continuation may name a physical destination or a repeatable task. You are asked again on arrival or on one of its interrupt_on events.",
+      "Set poll_each_turn to true when you need to decide again every turn."
+    ],
+    "PROMPT_RESPONSE_FIELDS": [
+      "major_action",
+      "continuation",
+      "utterances",
+      "memory_updates",
+      "waiting"
+    ],
+    "PROMPT_SELECTION": {
+      "_doc": "Phase 018 memory selection for the LLM prompt. The private part of a prompt carries the memories a resident holds that the current situation touches, not every memory. Rule: (1) standing understood knowledge (laws, policies, charters, concepts, kin terms, offices, procedures) up to max_standing_understood, in name order; (2) understood items and aware items the situation touches, where an item is touched when its name is a kind in the affordances (kind, recipe, trade, item), a held item or inventory key, a visible physical object kind, a nearby resident's name, or a place within place_radius cells of the actor or at an affordance destination. Understood items up to max_relevant_understood. Aware-only items up to max_relevant_aware, as name and gist only, never their content or basis; (3) the most recent non-derived memories (episodic and scenario memories) up to max_recent_episodic, newest first, each text truncated to max_memory_text characters; (4) held frames up to max_held_frames. The caps are authored design judgement (APPROX), not measured.",
+      "place_radius": 8,
+      "standing_types": [
+        "law",
+        "policy",
+        "charter",
+        "concept",
+        "kin_term",
+        "office",
+        "procedure"
+      ],
+      "max_standing_understood": 40,
+      "max_relevant_understood": 30,
+      "max_relevant_aware": 20,
+      "max_recent_episodic": 12,
+      "max_held_frames": 40,
+      "max_memory_text": 400
+    },
+    "MEMORY_GIST": {
+      "law": "a law of the village",
+      "policy": "a village policy",
+      "charter": "a charter of the village",
+      "concept": "an idea you have heard of",
+      "kin_term": "a kin term",
+      "office": "a village office",
+      "procedure": "a village procedure",
+      "good": "a kind of goods you know of",
+      "recipe": "a kind of work you know of",
+      "place": "a place you know of",
+      "animal": "an animal you know of",
+      "resident": "a neighbour you know by name",
+      "default": "something you know of"
+    }
+  }
+}

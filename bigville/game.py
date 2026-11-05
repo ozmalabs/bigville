@@ -424,6 +424,38 @@ class BigvilleGame:
                 count += 1
         return count
 
+    def _derived_document_frames(self, character, held_laws, held_policies):
+        """The laws and policies a resident is aware of or understands, from their derived knowledge (Phase 019).
+
+        An understood item carries the world's spec with `aware` and the degree `understands`. An aware-only
+        item carries its name and gist, never its spec. A law or policy the explicit `law_knowledge` or
+        `policy_knowledge` memory already carries is not repeated. The world's full law list is not used here:
+        only the items this resident holds, from this resident's memories."""
+        gist = world_entities(self.world).MEMORY_GIST
+        laws, policies = [], []
+        for memory in character.memories:
+            content = memory.content
+            if not isinstance(content, dict) or content.get("source") != "derived" or not content.get("aware"):
+                continue
+            if content.get("type") == "law":
+                specs, held, out = self.world._law_specs, held_laws, laws
+            elif content.get("type") == "policy":
+                specs, held, out = self.world._policy_specs, held_policies, policies
+            else:
+                continue
+            name = str(content.get("name"))
+            if name in held:
+                continue
+            understands = float(content.get("understands", 0.0))
+            if understands > 0 and name in specs:
+                # The spec's `knowledge` block is the world's rule for who understands the law: not resident content.
+                spec = {key: value for key, value in dict(specs[name]).items() if key != "knowledge"}
+                out.append({**spec, "aware": True, "understands": understands})
+            else:
+                out.append({"name": name, "aware": True, "understands": understands,
+                            "gist": gist.get(content["type"], gist["default"])})
+        return laws, policies
+
     def _context(self, actor: str) -> ActorContext:
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
@@ -460,6 +492,10 @@ class BigvilleGame:
                       if name in held_laws]
         known_policies = [dict(spec) for name, spec in self.world._policy_specs.items()
                           if name in held_policies]
+        # Phase 018: derived law and policy knowledge (Phase 019 priors) reaches the frames at the level held.
+        derived_laws, derived_policies = self._derived_document_frames(character, held_laws, held_policies)
+        known_laws += derived_laws
+        known_policies += derived_policies
         read_documents = []
         for (kind, name), document in self.world._documents.items():
             if self.world.eng.has_edge(self.world._actors[actor], "read_document", document):

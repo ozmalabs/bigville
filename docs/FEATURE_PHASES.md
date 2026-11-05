@@ -550,7 +550,13 @@ changes exactly that law's seed; the staleness check catches an unregenerated ed
 
 ## Phase 018 -- Generated LLM instructions
 
-**Status:** blocked on 013.
+**Status:** done (see History). Prompt schema `bigville/prompt/2`; system text, action
+descriptions, rules and response fields from the pack; private part is a bounded selection
+(PROMPT_SELECTION caps, APPROX), about 6 KB for a founder instead of 103-160 KB; derived laws and
+policies reach `world_frames` (understood: spec without its `knowledge` block; aware-only: name and
+gist); chatter and weather phrases in the pack. Open: `PromptBuilder` and speech default to the
+bigville pack (the world does not pass its pack); the public part (about 25-32 KB, mostly
+observations) is not capped; charters do not reach `world_frames`.
 
 **Goal.** `PromptBuilder` builds its system instructions from the pack: the world's premise and
 name, the action vocabulary (`MAJOR_ACTIONS`, `FREE_ACTIONS`, with descriptions added to the
@@ -674,3 +680,4 @@ exist, at the precision they know them -- never the world's map.
 | 016b + 003 Founding cast from JOBS | done | (this commit) | docs/phases/phase016b/PHASE016B_REPORT.md -- seed_jobs(100) cast, drawn ages, 46 households, genealogy from households; households 100 -> 46 in test_bigville_world_migrated; homophily test compares odds; 411 passed |
 | 019 Derived knowledge priors | done | (this commit) | docs/phases/phase019/PHASE019_REPORT.md -- domains/knowledge.py derive_knowledge; knowledge specs replace seed_roles; implied history on its own stream (20 founders gain former-trade levels); awareness/understanding/location memories; 434 passed |
 | 017 Generated Ocelot seeds | done | (this commit) | docs/phases/phase017/PHASE017_REPORT.md -- domains/generated_seeds.py + tools/generate_seeds.py; 22 files in bigville/seeds with generated_from headers; staleness check in the self-test; 447 passed |
+| 018 Generated LLM instructions | done | (this commit) | docs/phases/phase018/PHASE018_REPORT.md -- prompts from the pack, bounded memory selection, derived laws in world_frames, speech lexicon in the pack; prompt schema 1 -> 2 in test_bigville_backends; 464 passed |

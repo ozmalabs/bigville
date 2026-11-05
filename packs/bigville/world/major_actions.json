@@ -4,61 +4,80 @@
   "tables": {
     "MAJOR_ACTIONS": {
       "move": {
-        "kind": "travel"
+        "kind": "travel",
+        "description": "Walk to a destination the affordances offer. Travel takes time and energy, more on rough ground."
       },
       "give": {
-        "kind": "transfer"
+        "kind": "transfer",
+        "description": "Hand a held good to a person in reach who has room to carry it. The world moves the goods. It does not decide whether the handover is a sale."
       },
       "put": {
-        "kind": "placement"
+        "kind": "placement",
+        "description": "Place a held good into a container or onto a surface within reach."
       },
       "pick_up": {
-        "kind": "handling"
+        "kind": "handling",
+        "description": "Take up an item lying within reach, if there is room to carry it."
       },
       "drop": {
-        "kind": "handling"
+        "kind": "handling",
+        "description": "Set a held item down where you stand."
       },
       "sell": {
-        "kind": "exchange"
+        "kind": "exchange",
+        "description": "Retired: the world refuses this action (it returns false). To hand over goods, use give."
       },
       "sell_labor": {
-        "kind": "exchange"
+        "kind": "exchange",
+        "description": "Retired: the world refuses this action (it returns false). Work is done with work."
       },
       "work": {
-        "kind": "production"
+        "kind": "production",
+        "description": "Carry out one recipe at a workplace in reach, using the inputs, tools, and skill the affordance names."
       },
       "eat": {
-        "kind": "consumption"
+        "kind": "consumption",
+        "description": "Eat food you hold or that is at hand, to reduce hunger."
       },
       "water": {
-        "kind": "agriculture"
+        "kind": "agriculture",
+        "description": "Water a field or plot in reach."
       },
       "rest": {
-        "kind": "recovery"
+        "kind": "recovery",
+        "description": "Rest to recover energy."
       },
       "fetch": {
-        "kind": "delegated_task"
+        "kind": "delegated_task",
+        "description": "Fetch an amount of one kind of goods from a source the affordance names, and bring it to you."
       },
       "build": {
-        "kind": "construction"
+        "kind": "construction",
+        "description": "Build or continue a building project at a site in reach."
       },
       "harvest": {
-        "kind": "agriculture"
+        "kind": "agriculture",
+        "description": "Harvest a ready crop from a field in reach."
       },
       "sow": {
-        "kind": "agriculture"
+        "kind": "agriculture",
+        "description": "Sow seed in a prepared field in reach."
       },
       "fertilise": {
-        "kind": "agriculture"
+        "kind": "agriculture",
+        "description": "Spread fertiliser on a field in reach."
       },
       "tend_animals": {
-        "kind": "husbandry"
+        "kind": "husbandry",
+        "description": "Tend an animal or a pen in reach, for the task the affordance names."
       },
       "maintain": {
-        "kind": "maintenance"
+        "kind": "maintenance",
+        "description": "Maintain a building, tool, or fixture in reach."
       },
       "care": {
-        "kind": "care"
+        "kind": "care",
+        "description": "Care for a person or an animal in reach who needs it."
       }
     }
   }
