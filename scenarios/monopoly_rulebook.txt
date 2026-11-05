@@ -1,0 +1,237 @@
+MONOPOLY: RULES FOR THIS TABLE
+
+Purpose and victory
+
+This is a negotiation and property-trading game. Players move around the board,
+buy properties, collect rent, improve complete colour groups, and trade with
+one another. A player who cannot meet a debt is bankrupt and leaves the game.
+The last player who remains solvent wins. The participants must agree on any
+minor question not answered by this rulebook before continuing, and should
+record that agreement for the rest of the game.
+
+Contents
+
+The physical set contains one board, two six-sided dice, eight playing tokens,
+twenty-eight Title Deed cards, sixteen Chance cards, sixteen Community Chest
+cards, thirty-two green houses, twelve red hotels, play money in denominations
+of 1, 5, 10, 20, 50, 100, and 500 dollars, and a bank tray. The bank holds
+the money, Title Deeds, houses, hotels, and cards that are not currently held
+by players. The bank is not a player and cannot go bankrupt. If the bank runs
+out of money, the banker may make more paper money. The number of houses and
+hotels is limited to the pieces in the box.
+
+Preparing the table
+
+Choose one person to be banker. The banker keeps the bank's money separate
+from personal money, pays salaries and awards, sells houses and hotels, holds
+the Title Deeds not owned by players, conducts auctions, and receives taxes,
+fines, interest, and mortgage payments. The banker may also play, but must
+keep the two accounts separate.
+
+Shuffle Chance and Community Chest separately and put each deck face down on
+its marked space. Put the Title Deeds, houses, hotels, bank tray, money, dice,
+and tokens where everyone can reach them. Each player chooses one token and
+places it on GO. The players roll the dice once; the highest result takes the
+first turn, and play proceeds clockwise. Give each player 1500 dollars: two
+500 notes, four 100 notes, one 50 note, one 20 note, two 10 notes, one 5 note,
+and five 1 notes. The remainder stays with the bank.
+
+The board spaces, in order from GO and moving clockwise, are: GO; Mediterranean
+Avenue; Community Chest; Baltic Avenue; Income Tax; Reading Railroad; Oriental
+Avenue; Chance; Vermont Avenue; Electric Company; Connecticut Avenue; Jail;
+St. Charles Place; States Avenue; Virginia Avenue; Pennsylvania Railroad; St.
+James Place; Community Chest; Tennessee Avenue; New York Avenue; Free Parking;
+Kentucky Avenue; Chance; Indiana Avenue; Illinois Avenue; B. & O. Railroad;
+Atlantic Avenue; Ventnor Avenue; Water Works; Marvin Gardens; Go To Jail;
+Pacific Avenue; North Carolina Avenue; Community Chest; Pennsylvania Avenue;
+Short Line; Chance; Park Place; Luxury Tax; Boardwalk.
+
+A turn
+
+On a turn, roll both dice and move the token clockwise by the total. Resolve
+the space where the token stops before the next player begins. If the movement
+passes GO, the player receives 200 dollars from the bank. A player who lands
+exactly on GO also receives 200 dollars. Collect this award only once for one
+complete circuit; do not collect it for being sent directly to a space beyond
+GO unless the movement actually passed GO.
+
+If both dice show the same number, the player has rolled doubles. Resolve the
+move, then roll again and take another turn. After rolling doubles three times
+in succession during one turn, stop immediately and move the token to Jail;
+the third movement is not taken and no extra roll is granted. A player in Jail
+does not receive another turn from doubles until legally released.
+
+Buying and auctioning property
+
+When a player lands on an unowned property, that player may pay the printed
+price to the bank and take the matching Title Deed. If the player declines,
+the banker must auction the property. The auction may start at any price, and
+any player, including the player who declined, may bid. Bids may be increased
+by any amount. The highest bidder pays the bank and receives the deed. The
+banker must hold the auction even when nobody initially wants the property.
+
+When a player lands on a property owned by another player, the owner may claim
+the rent printed by the deed. The owner must ask for rent before the next
+player rolls; if the owner fails to claim it in time, no rent is collected.
+Rent is not collected on a mortgaged property. A player may own property while
+in Jail and may still collect rent, trade, mortgage property, and buy or sell
+buildings when the relevant rules allow it.
+
+Colour groups and rent
+
+The colour groups are Brown: Mediterranean and Baltic; Light Blue: Oriental,
+Vermont, and Connecticut; Pink: St. Charles, States, and Virginia; Orange:
+St. James, Tennessee, and New York; Red: Kentucky, Indiana, and Illinois;
+Yellow: Atlantic, Ventnor, and Marvin Gardens; Green: Pacific, North Carolina,
+and Pennsylvania; Dark Blue: Park Place and Boardwalk.
+
+The purchase price, unimproved rent, and house cost for each coloured property
+are as follows. The five rent values after the house cost are the rent with
+one, two, three, or four houses and with a hotel. A complete colour group with
+no buildings charges double the unimproved rent. Houses must be bought from
+the bank at the listed group cost and all properties in a group must be owned
+before building.
+
+Mediterranean: price 60, rent 2, house cost 50, rents 10/30/90/160/250.
+Baltic: price 60, rent 4, house cost 50, rents 20/60/180/320/450.
+Oriental: price 100, rent 6, house cost 50, rents 30/90/270/400/550.
+Vermont: price 100, rent 6, house cost 50, rents 30/90/270/400/550.
+Connecticut: price 120, rent 8, house cost 50, rents 40/100/300/450/600.
+St. Charles: price 140, rent 10, house cost 100, rents 50/150/450/625/750.
+States: price 140, rent 10, house cost 100, rents 50/150/450/625/750.
+Virginia: price 160, rent 12, house cost 100, rents 60/180/500/700/900.
+St. James: price 180, rent 14, house cost 100, rents 70/200/550/750/950.
+Tennessee: price 180, rent 14, house cost 100, rents 70/200/550/750/950.
+New York: price 200, rent 16, house cost 100, rents 80/220/600/800/1000.
+Kentucky: price 220, rent 18, house cost 150, rents 90/250/700/875/1050.
+Indiana: price 220, rent 18, house cost 150, rents 90/250/700/875/1050.
+Illinois: price 240, rent 20, house cost 150, rents 100/300/750/925/1100.
+Atlantic: price 260, rent 22, house cost 150, rents 110/330/800/975/1150.
+Ventnor: price 260, rent 22, house cost 150, rents 110/330/800/975/1150.
+Marvin Gardens: price 280, rent 24, house cost 150, rents 120/360/850/1025/1200.
+Pacific: price 300, rent 26, house cost 200, rents 130/390/900/1100/1275.
+North Carolina: price 300, rent 26, house cost 200, rents 130/390/900/1100/1275.
+Pennsylvania: price 320, rent 28, house cost 200, rents 150/450/1000/1200/1400.
+Park Place: price 350, rent 35, house cost 200, rents 175/500/1100/1300/1500.
+Boardwalk: price 400, rent 50, house cost 200, rents 200/600/1400/1700/2000.
+
+Railroads and utilities
+
+The four railroads are Reading, Pennsylvania, B. & O., and Short Line. Each
+costs 200 dollars. Rent is 25 dollars when the owner has one railroad, 50 for
+two, 100 for three, and 200 for all four. The two utilities are Electric
+Company and Water Works; each costs 150 dollars. Rent on one utility is four
+times the dice total, and rent on both utilities is ten times the dice total.
+
+Building houses and hotels
+
+After owning a complete colour group, a player may buy houses from the bank
+and place them on its properties. Buildings must be added evenly: a property
+cannot have a second house until every property in the group has one, and no
+property may be more than one house ahead of another in the same group. A
+property may have at most four houses. After four houses on every property in
+the group, the player may exchange four houses on one property for one hotel,
+paying the same group's building cost. A hotel replaces the four houses and
+is the maximum improvement. Buildings may be sold back to the bank for half
+their purchase price, also evenly. A player may not build on a mortgaged
+property or while any property in that colour group is mortgaged. If the bank
+has no house or hotel piece available, wait until a piece is returned; do not
+invent an unlimited supply.
+
+Other spaces
+
+Landing on Chance or Community Chest means draw the top card, read it aloud,
+carry out its instruction immediately, and return it to the bottom of its deck
+unless it is a Get Out of Jail Free card. A player who receives that card may
+keep it, trade it, or use it in place of paying to leave Jail; return it to the
+bottom of the correct deck after use. If a movement card sends a player past
+GO, collect 200 dollars unless the card says otherwise.
+
+Income Tax is paid to the bank as 200 dollars for this game. Luxury Tax is paid
+to the bank as 100 dollars. Free Parking has no reward and no penalty: it is a
+resting space only. Visiting Jail while landing on Jail normally has no effect.
+Go To Jail sends the token directly to Jail, ends the player's turn, and does
+not award 200 dollars for passing GO.
+
+Chance card instructions
+
+Advance to Boardwalk: move there and resolve the space. Advance to Go: move
+to GO and collect 200. Advance to Illinois Avenue: move there, collect 200 if
+passing GO, and resolve the space. Advance to St. Charles Place: move there,
+collect 200 if passing GO, and resolve the space. Advance to the nearest
+Railroad: move to the nearest railroad and resolve it; if unowned it may be
+bought or auctioned, and if owned the rent is doubled for this card movement.
+Advance to the nearest Utility: move to the nearest utility and resolve it;
+if owned, roll the dice and pay ten times that total. Bank pays dividend: take
+50 from the bank. Get Out of Jail Free: keep this card. Go back three spaces:
+move back three and resolve the destination. Go directly to Jail: go directly
+to Jail, receive no 200-dollar award, and end the turn. Make general repairs:
+pay the bank 25 for each house and 100 for each hotel you own. Take a trip to
+Reading Railroad: move there and collect 200 if passing GO. You have been
+elected Chairman: pay each other player 50. Your building loan matures: take
+150. Speeding fine: pay 15. Advance to the nearest Railroad again: use the
+same nearest-railroad instruction, including doubled rent when applicable.
+
+Community Chest card instructions
+
+Advance to Go: move to GO and collect 200. Bank error in your favour: take
+200. Doctor's fees: pay 50. From sale of stock: take 50. Get Out of Jail Free:
+keep the card. Go directly to Jail: go directly to Jail with no 200-dollar
+award and end the turn. Holiday fund matures: take 100. Income tax refund:
+take 20. It is your birthday: collect 10 from each other player. Life
+insurance matures: take 100. Pay hospital fees: pay 100. Pay school fees: pay
+50. Receive consultancy fee: take 25. You are assessed for street repairs:
+pay 40 for each house and 115 for each hotel. You have won second prize: take
+10. Inherit money: take 100.
+
+Jail
+
+A player enters Jail by landing on Go To Jail, drawing a Go directly to Jail
+card, or rolling doubles three times in succession. Place the token on the
+Jail space. To leave, the player may pay a 50-dollar fine before rolling, use
+a Get Out of Jail Free card, or try to roll doubles. If doubles are rolled,
+move by that roll and finish the turn without another roll. If doubles are not
+rolled, try again on the next turn. After the third failed attempt, pay 50 and
+move by the third roll. A player in Jail may still collect rent, trade, buy or
+sell buildings, and mortgage property. Jail ends as soon as the player is
+released; a released player follows the normal movement rules.
+
+Mortgages and trades
+
+A player may mortgage an unimproved property to the bank for the mortgage
+value printed on its deed, normally half its purchase price. No rent is due on
+a mortgaged property. To lift a mortgage, pay the mortgage value plus ten
+percent interest to the bank. A property in a complete colour group may not be
+developed while any property in that group is mortgaged. Before mortgaging a
+property in a developed group, sell all buildings in that group evenly to the
+bank for half price.
+
+Players may negotiate and complete trades at any time between other players'
+turns, and may trade cash, unmortgaged or mortgaged Title Deeds, and Get Out
+of Jail Free cards. Both parties must agree and physically transfer the items.
+Buildings are sold to the bank before a property is traded; buildings are not
+traded directly between players. A mortgaged property transfers with its
+mortgage, and the receiving player must either pay the bank the ten-percent
+interest immediately or leave the mortgage in place and pay the interest when
+lifting it. Future promises are not debts enforced by the rules unless all
+players agree to treat them as ordinary conversation rather than a game asset.
+
+Debts and bankruptcy
+
+When a player owes money, first use cash, then sell buildings to the bank for
+half price, then mortgage or trade eligible assets. If the debt is owed to
+another player, transfer the remaining cash and assets to that creditor. If the
+debt is owed to the bank, return the player's properties to the bank and
+auction them. A player who still cannot pay is bankrupt, removes their token,
+returns any retained cards as required, and takes no further turns. The player
+who receives assets may use them under the normal mortgage and building rules.
+
+Ending the game
+
+Continue taking turns, resolving movement, purchases, rent, cards, taxes,
+trades, buildings, mortgages, and debts. The game ends when all but one player
+has become bankrupt. The remaining solvent player is the winner. Do not end
+the game merely because one player has a large fortune, owns a particular
+colour group, or has completed one circuit. A player may propose a house rule
+or a timed ending, but it is not part of this rulebook unless everyone agrees
+before using it.

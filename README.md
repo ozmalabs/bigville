@@ -127,6 +127,16 @@ construct `BigvilleGame(..., continuations=False)`, for reactive
 decide-every-turn behavior. Replayed actions still pass through the world's
 admissibility and one-major-action rules.
 
+### Real Ocelot integration
+
+Bigville does not bundle the Ocelot substrate. The Ocelot repository provides
+`worlds.bigville_ocelot_adapter.BigvilleOcelotResident`, which can be passed as
+`cognition_factory` (or used through `create_bigville_board_game`). Physical
+`read_object` actions then enter Ocelot's real deep document reader. Bigville
+only records the returned graph evidence; its dependency-free fallback records
+an explicit comprehension residual instead of claiming that stored prose was
+understood.
+
 ## Development
 
 ```bash

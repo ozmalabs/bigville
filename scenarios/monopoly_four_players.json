@@ -1,0 +1,172 @@
+{
+  "id": "monopoly_four_players",
+  "name": "Four Friends at the Monopoly Table",
+  "description": "Four residents share a room with a Monopoly box and may interpret it through their own held rules.",
+  "map": {
+    "grid": [
+      ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "wall", "wall", "wall", "wall", "floor", "wall", "wall", "wall", "wall", "wall"]
+    ],
+    "layout": {"w": 11, "h": 8, "homes": [[2, 2], [8, 2], [2, 5], [8, 5]]},
+    "affordances": [
+      {"name": "Monopoly board", "kind": "board_game", "x": 5, "y": 3}
+    ]
+  },
+  "physical_objects": [
+    {"id": "game_box", "name": "closed cardboard game box", "kind": "box", "quantity": 1, "location": "table", "open": false},
+    {"id": "board", "name": "folding game board", "kind": "board", "quantity": 1, "contains": "game_box"},
+    {"id": "rulebook", "name": "Monopoly rulebook", "kind": "rulebook", "quantity": 1, "contains": "game_box", "text_file": "monopoly_rulebook.txt"},
+    {"id": "property_card", "kind": "property card", "names": [
+      "Mediterranean Avenue", "Baltic Avenue", "Oriental Avenue", "Vermont Avenue", "Connecticut Avenue",
+      "St. Charles Place", "States Avenue", "Virginia Avenue", "St. James Place", "Tennessee Avenue",
+      "New York Avenue", "Kentucky Avenue", "Indiana Avenue", "Illinois Avenue", "Atlantic Avenue",
+      "Ventnor Avenue", "Marvin Gardens", "Pacific Avenue", "North Carolina Avenue", "Pennsylvania Avenue",
+      "Park Place", "Boardwalk", "Reading Railroad", "Pennsylvania Railroad", "B. & O. Railroad",
+      "Short Line", "Electric Company", "Water Works"
+    ], "contains": "game_box"},
+    {"id": "chance_card", "kind": "chance card", "names": [
+      "Advance to Boardwalk", "Advance to Go", "Advance to Illinois Avenue", "Advance to St. Charles Place",
+      "Advance to the nearest Railroad", "Advance to the nearest Utility", "Bank pays you dividend",
+      "Get out of Jail Free", "Go back three spaces", "Go directly to Jail", "Make general repairs",
+      "Take a trip to Reading Railroad", "You have been elected Chairman", "Your building loan matures",
+      "Speeding fine", "Advance to the nearest Railroad again"
+    ], "contains": "game_box"},
+    {"id": "community_chest_card", "kind": "community chest card", "names": [
+      "Advance to Go", "Bank error in your favor", "Doctor's fees", "From sale of stock",
+      "Get out of Jail Free", "Go directly to Jail", "Holiday fund matures", "Income tax refund",
+      "It is your birthday", "Life insurance matures", "Pay hospital fees", "Pay school fees",
+      "Receive consultancy fee", "You are assessed for street repairs", "You have won second prize",
+      "Inherit money"
+    ], "contains": "game_box"},
+    {"id": "banknote_1", "kind": "banknote", "denomination": 1, "quantity": 32, "contains": "game_box"},
+    {"id": "banknote_5", "kind": "banknote", "denomination": 5, "quantity": 32, "contains": "game_box"},
+    {"id": "banknote_10", "kind": "banknote", "denomination": 10, "quantity": 32, "contains": "game_box"},
+    {"id": "banknote_20", "kind": "banknote", "denomination": 20, "quantity": 32, "contains": "game_box"},
+    {"id": "banknote_50", "kind": "banknote", "denomination": 50, "quantity": 32, "contains": "game_box"},
+    {"id": "banknote_100", "kind": "banknote", "denomination": 100, "quantity": 32, "contains": "game_box"},
+    {"id": "banknote_500", "kind": "banknote", "denomination": 500, "quantity": 20, "contains": "game_box"},
+    {"id": "house", "name": "green house", "kind": "house", "quantity": 32, "contains": "game_box"},
+    {"id": "hotel", "name": "red hotel", "kind": "hotel", "quantity": 12, "contains": "game_box"},
+    {"id": "token", "kind": "playing token", "names": [
+      "battleship", "boot", "dog", "thimble", "top hat", "iron", "racecar", "wheelbarrow"
+    ], "contains": "game_box"},
+    {"id": "dice", "name": "six-sided die", "kind": "die", "quantity": 2, "contains": "game_box"},
+    {"id": "bank_tray", "name": "banker's tray", "kind": "tray", "quantity": 1, "contains": "game_box"}
+  ],
+  "buildings": [],
+  "seeds": ["conversation", "conversation_reply"],
+  "actors": [
+    {
+      "name": "Alice", "role": "player", "backend": "cheap", "home_cell": [2, 2],
+      "identity": {"age": 29, "occupation": "architect", "background": "competitive family game nights", "self_description": "I like a plan, but I will take a calculated risk."},
+      "memories": [
+        {"memory_id": "alice:family-loss", "content": "I once lost a long game after trusting a promise that was never written down.", "kind": "episodic", "salience": 0.9},
+        {"memory_id": "alice:good-table", "content": "Cara is the person who made the last game funny when everyone else became tense.", "kind": "social", "salience": 0.7}
+      ],
+      "held_frames": ["conversation", "conversation_reply", "core_emotions", "theory_of_mind", "self_efficacy", "relative_self_worth", "envy", "negotiation", "rulebook_reader"],
+      "personality": {
+        "risk": 0.8, "talkativeness": 0.7, "token_preference": "racecar", "banker_interest": 0.4,
+        "emotional_core_enabled": 1.0, "w_supergraph": 0.8, "mood_bias": 0.2,
+        "self_efficacy_prior": 0.8, "deservingness_prior": 0.2, "prior_world_safe": 0.7,
+        "prior_self_worth": 0.8, "prior_others_trust": 0.35, "charm_weight": 0.8,
+        "hostile_weight": 0.35, "claim_weight": 0.75, "w_spite": 0.2,
+        "emotion": {"params": {"comms_on": 1.0}, "appraisal": {"valued_goal": 1.0, "v_max": 5.0, "was_engaged": 1.0, "residual_prev": 0.0}},
+        "social_dispositions": {
+          "Bob": {"regard": -0.15, "trust": -0.2, "devaluation": 0.1, "resentment_debt": 0.25, "arousal": 0.2},
+          "Cara": {"regard": 0.65, "trust": 0.6, "admiration": 0.7, "gratitude_debt": 0.2, "arousal": 0.35},
+          "Dan": {"regard": 0.2, "trust": 0.1, "arousal": 0.1}
+        }
+      }
+    },
+    {
+      "name": "Bob", "role": "player", "backend": "cheap", "home_cell": [8, 2],
+      "identity": {"age": 41, "occupation": "accountant", "background": "keeps the household budget", "self_description": "If the numbers do not balance, the table is not ready."},
+      "memories": [
+        {"memory_id": "bob:banker", "content": "I have been the banker often enough to know that a small mistake can sour an evening.", "kind": "procedural", "salience": 0.85},
+        {"memory_id": "bob:alice", "content": "Alice is clever and quick, but sometimes moves before everyone has agreed what a rule means.", "kind": "social", "salience": 0.65}
+      ],
+      "held_frames": ["conversation", "conversation_reply", "core_emotions", "theory_of_mind", "self_efficacy", "relative_self_worth", "fairness", "banker_role", "rulebook_reader"],
+      "personality": {
+        "risk": 0.4, "talkativeness": 0.5, "token_preference": "top hat", "banker_interest": 0.8,
+        "emotional_core_enabled": 1.0, "w_supergraph": 0.9, "mood_bias": 0.05,
+        "self_efficacy_prior": 0.7, "deservingness_prior": 0.7, "prior_world_safe": 0.8,
+        "prior_self_worth": 0.65, "prior_others_trust": 0.55, "charm_weight": 0.55,
+        "hostile_weight": 0.25, "claim_weight": 0.9, "w_spite": 0.1,
+        "emotion": {"params": {"comms_on": 1.0}, "appraisal": {"valued_goal": 1.0, "goal_blocked": 1.0, "blocker_present": 1.0, "was_engaged": 1.0, "residual_prev": 2.0}},
+        "social_dispositions": {
+          "Alice": {"regard": 0.1, "trust": -0.1, "devaluation": 0.2, "resentment_debt": 0.15, "arousal": 0.25},
+          "Cara": {"regard": 0.45, "trust": 0.4, "arousal": 0.1},
+          "Dan": {"regard": 0.6, "trust": 0.75, "admiration": 0.55, "gratitude_debt": 0.15, "arousal": 0.15}
+        }
+      }
+    },
+    {
+      "name": "Cara", "role": "player", "backend": "cheap", "home_cell": [2, 5],
+      "identity": {"age": 32, "occupation": "teacher", "background": "runs lively after-school clubs", "self_description": "The best game is the one people still want to talk about tomorrow."},
+      "memories": [
+        {"memory_id": "cara:table", "content": "I once persuaded three reluctant players to keep going by explaining the rule in a new way.", "kind": "episodic", "salience": 0.75},
+        {"memory_id": "cara:dan", "content": "Dan notices when somebody is being left out, even when he says very little.", "kind": "social", "salience": 0.7}
+      ],
+      "held_frames": ["conversation", "conversation_reply", "core_emotions", "theory_of_mind", "self_efficacy", "relative_self_worth", "envy", "mediation", "rulebook_reader"],
+      "personality": {
+        "risk": 0.6, "talkativeness": 0.8, "token_preference": "dog", "banker_interest": 0.6,
+        "emotional_core_enabled": 1.0, "w_supergraph": 0.75, "mood_bias": 0.15,
+        "self_efficacy_prior": 0.65, "deservingness_prior": 0.55, "prior_world_safe": 0.75,
+        "prior_self_worth": 0.7, "prior_others_trust": 0.7, "charm_weight": 0.85,
+        "hostile_weight": 0.15, "claim_weight": 0.6, "w_spite": 0.05,
+        "emotion": {"params": {"comms_on": 1.0}, "appraisal": {"valued_goal": 0.0, "residual_prev": 12.0, "residual": 3.0, "was_engaged": 1.0}},
+        "social_dispositions": {
+          "Alice": {"regard": 0.7, "trust": 0.65, "admiration": 0.8, "gratitude_debt": 0.25, "arousal": 0.2},
+          "Bob": {"regard": 0.35, "trust": 0.4, "arousal": 0.1},
+          "Dan": {"regard": 0.45, "trust": 0.5, "pity": 0.25, "arousal": 0.15}
+        }
+      }
+    },
+    {
+      "name": "Dan", "role": "player", "backend": "cheap", "home_cell": [8, 5],
+      "identity": {"age": 26, "occupation": "mechanic", "background": "usually plays to relax after work", "self_description": "I would rather understand the rules first and surprise everyone later."},
+      "memories": [
+        {"memory_id": "dan:bad-luck", "content": "The last time I played, a lucky early lead made everyone treat me as the threat.", "kind": "episodic", "salience": 0.8},
+        {"memory_id": "dan:bob", "content": "Bob is patient when explaining money and never makes a show of being right.", "kind": "social", "salience": 0.7}
+      ],
+      "held_frames": ["conversation", "conversation_reply", "core_emotions", "theory_of_mind", "self_efficacy", "relative_self_worth", "envy", "risk_management", "rulebook_reader"],
+      "personality": {
+        "risk": 0.3, "talkativeness": 0.4, "token_preference": "battleship", "banker_interest": 0.7,
+        "emotional_core_enabled": 1.0, "w_supergraph": 0.5, "mood_bias": -0.1,
+        "self_efficacy_prior": 0.25, "deservingness_prior": -0.35, "prior_world_safe": 0.45,
+        "prior_self_worth": 0.45, "prior_others_trust": 0.3, "charm_weight": 0.35,
+        "hostile_weight": 0.65, "claim_weight": 0.45, "w_spite": 0.45,
+        "emotion": {"params": {"comms_on": 1.0}, "appraisal": {"valued_goal": 1.0, "threat": 1.0, "threat_c0": 70.0, "threat_half_life": 1.0, "threat_last_refresh": 0.0, "threat_now_epoch": 0.0, "was_engaged": 1.0}},
+        "social_dispositions": {
+          "Alice": {"regard": -0.25, "trust": -0.2, "devaluation": 0.45, "resentment_debt": 0.35, "arousal": 0.4},
+          "Bob": {"regard": 0.5, "trust": 0.6, "admiration": 0.55, "arousal": 0.1},
+          "Cara": {"regard": 0.15, "trust": 0.2, "pity": 0.3, "arousal": 0.2}
+        }
+      }
+    }
+  ],
+  "initial": {"hour": 19.0, "weather": "clear", "temperature": 20.0},
+  "laws": [],
+  "policies": [],
+  "charters": [],
+  "board_game": {
+    "type": "monopoly",
+    "max_turns": 20000,
+    "setup": {
+      "box_object": "game_box",
+      "table_location": "table",
+      "rulebook_kind": "rulebook",
+      "token_kind": "playing token",
+      "banker_required": true,
+      "starting_cash": 1500,
+      "starting_money": {"500": 2, "100": 4, "50": 1, "20": 1, "10": 2, "5": 1, "1": 5}
+    }
+  },
+  "metadata": {"domain": "social_game", "scale": "room", "experiment": "held_monopoly_rules", "state_owner": "participants"}
+}

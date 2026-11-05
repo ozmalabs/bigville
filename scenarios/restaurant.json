@@ -1,0 +1,34 @@
+{
+  "id": "restaurant",
+  "name": "The Lantern Restaurant",
+  "description": "A compact service interaction among a patron, server, and cook.",
+  "map": {
+    "grid": [
+      ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "wall", "wall", "floor", "wall", "wall", "wall", "wall", "wall"]
+    ],
+    "layout": {"w": 9, "h": 7, "homes": [[2, 2], [4, 2], [6, 3]]},
+    "affordances": [
+      {"name": "Lantern Restaurant", "kind": "restaurant", "x": 4, "y": 3}
+    ]
+  },
+  "buildings": [
+    {"kind": "inn", "name": "lantern_restaurant", "cell": [1, 1], "spec": {"footprint": [7, 5], "sheltered": true, "rooms": ["dining_room", "kitchen"]}}
+  ],
+  "seeds": ["conversation", "conversation_reply", "bigville_foodstuff"],
+  "actors": [
+    {"name": "Ruth", "role": "server", "backend": "ocelot", "home_cell": [2, 2]},
+    {"name": "Ivo", "role": "cook", "backend": "cheap", "home_cell": [6, 3]},
+    {"name": "Nell", "role": "patron", "backend": "human", "home_cell": [4, 2]}
+  ],
+  "initial": {"hour": 12.0, "weather": "clear", "temperature": 18.0},
+  "laws": [],
+  "policies": [],
+  "charters": [],
+  "metadata": {"domain": "service_social", "scale": "room", "experiment": "restaurant"}
+}

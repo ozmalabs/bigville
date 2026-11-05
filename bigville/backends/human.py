@@ -12,6 +12,7 @@ class HumanBackend:
     kind = "human"
     communication_mode = "free_text"
     supports_free_text = True
+    understands_raw_speech = True
     requires_conversational_interface = False
 
     def __init__(self, character: CharacterDefinition,
@@ -43,6 +44,7 @@ class HumanBackend:
             backend_state={"queued_responses": len(self._responses), "communication": {
                 "mode": self.communication_mode,
                 "supports_free_text": self.supports_free_text,
+                "understands_raw_speech": self.understands_raw_speech,
                 "requires_conversational_interface": self.requires_conversational_interface,
             }},
         )

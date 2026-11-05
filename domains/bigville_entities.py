@@ -658,6 +658,34 @@ TERRAIN_MOVEMENT = {
 }
 
 
+# ---------------------------------------------------------------- TERRAIN WEAR
+# Ground remembers footfall.  A terrain may declare what repeated traversal turns it INTO
+# (``wears_to``) and what disuse turns it BACK into (``reverts_to``); a terrain with no record
+# here is inert and never changes.  Both directions are the same accumulator: ``wear`` on a map
+# cell runs 0.0 -> 1.0 toward ``wears_to``, and decays toward ``reverts_to`` when nobody walks
+# there.  The cell's movement read-off is interpolated across that accumulator rather than
+# switching at the end, so ground that is part-worn is already part-easier -- which is what lets
+# traffic recruit more traffic instead of nothing happening until a threshold trips.
+#
+# ``passes_to_form`` is how many traversals convert a fresh cell, and ``ticks_to_fade`` how many
+# idle turns undo it.  Stating them as counts rather than per-event deltas keeps this an
+# experiment parameter: a scenario asking "how many crossings make a desire path?" sets the
+# number it is asking about.  ``load_sensitive`` scales a pass by the walker's carried load, so a
+# heavy cart wears ground faster than a child -- omit it and every walker wears alike.
+#
+# A cell keeps the terrain it was SEEDED as and one accumulator over it, so wearing and fading
+# are one quantity read in two directions and a formed path is never confused with a built one.
+# Ground seeded as ``path`` has no record here and so is permanent infrastructure; a path that
+# WORE into existence is only ever the far end of grass's accumulator, and stops being a path the
+# moment the traffic that made it stops.
+TERRAIN_WEAR = {
+    "grass": {"wears_to": "path",  "passes_to_form":  40.0, "ticks_to_fade": 400.0,
+              "load_sensitive": True},
+    "tree":  {"wears_to": "grass", "passes_to_form": 120.0, "ticks_to_fade": 600.0,
+              "load_sensitive": True},
+}
+
+
 # ---------------------------------------------------------------- SHARED REFERENCES
 # A reference is a subject/predicate/object TEMPLATE in the domain data. It is not itself a town fact:
 # when seeded, the world creates a resident-owned fact/reference node. `seed_roles` is an initial

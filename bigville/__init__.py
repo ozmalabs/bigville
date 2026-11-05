@@ -1,9 +1,10 @@
 """Public API for the standalone Bigville simulation."""
 
-from .api import create_game, create_world
+from .api import create_board_game, create_game, create_tabletop_experiment, create_world
 from .character import CharacterDefinition, FrameSeed, MemoryRecord
 from .game import BigvilleGame
 from .reporting import SimulationReporter
+from .scenarios import ScenarioDefinition, list_scenarios, load_scenario
 
 __all__ = [
     "BigvilleGame",
@@ -13,4 +14,9 @@ __all__ = [
     "MemoryRecord",
     "create_game",
     "create_world",
+    "create_board_game",
+    "create_tabletop_experiment",
+    "ScenarioDefinition",
+    "load_scenario",
+    "list_scenarios",
 ]

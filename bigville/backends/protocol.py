@@ -15,6 +15,48 @@ class ProposedAction:
 
 
 @dataclass
+class SpeechProposal:
+    """A backend-owned utterance.
+
+    Cognition owns both representations of speech.  ``raw`` is an opaque,
+    JSON-compatible semantic/accounting payload for other agents and reports;
+    ``text`` is the actual language presented to a person.  The world may
+    deliver, record, and gate the proposal, but must not derive one form from
+    the other.
+
+    ``raw`` is intentionally typed as ``Any``.  Bigville cannot know whether an
+    Ocelot graph projection, an LLM JSON object, or a small NPC's compact code
+    is the useful representation.
+    """
+
+    target: str | None = None
+    text: str = ""
+    raw: Any = None
+    loudness: float = 1.0
+
+    @classmethod
+    def from_value(cls, value: Any) -> "SpeechProposal":
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, dict):
+            return cls(
+                target=value.get("target"),
+                text=str(value.get("text", value.get("content", ""))),
+                raw=value.get("raw", value.get("raw_data")),
+                loudness=float(value.get("loudness", 1.0)),
+            )
+        raise TypeError("utterance must be an object or SpeechProposal")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "target": self.target,
+            "text": self.text,
+            "raw": self.raw,
+            "loudness": self.loudness,
+        }
+
+
+@dataclass
 class ActorContinuation:
     """An optional plan that can run between cognition queries.
 
@@ -82,7 +124,7 @@ class ActorContinuation:
 @dataclass
 class ActorResponse:
     major_action: ProposedAction | None = None
-    utterances: list[dict[str, Any]] = field(default_factory=list)
+    utterances: list[dict[str, Any] | SpeechProposal] = field(default_factory=list)
     memory_updates: list[dict[str, Any]] = field(default_factory=list)
     backend_state: dict[str, Any] = field(default_factory=dict)
     waiting: bool = False
@@ -120,6 +162,7 @@ class CognitionBackend(Protocol):
     kind: str
     communication_mode: str
     supports_free_text: bool
+    understands_raw_speech: bool
     requires_conversational_interface: bool
 
     def decide(self, context: ActorContext) -> ActorResponse:
@@ -137,6 +180,7 @@ def communication_capabilities(backend) -> dict[str, Any]:
     return {
         "mode": mode,
         "supports_free_text": supports,
+        "understands_raw_speech": bool(getattr(backend, "understands_raw_speech", supports)),
         "requires_conversational_interface": bool(
             getattr(backend, "requires_conversational_interface", not supports)),
     }

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from bigville.backends import (ActorContinuation, ActorResponse, DeterministicBackend,
-                               HumanBackend, OcelotBackend, ProposedAction)
+                               HumanBackend, LLMBackend, OcelotBackend, ProposedAction)
 from bigville.character import FrameSeed
 from bigville.backends.conversation import ConversationMessage, TemplateConversationInterface
 from bigville.game import BigvilleGame
@@ -83,6 +83,53 @@ def test_free_text_is_preserved_when_both_recipients_support_it():
     contents = [world.eng.node(u)["attrs"]["content"]
                 for u in world.conversation_between("Ada", "Ben")]
     assert "Hello there." in contents
+
+
+def test_backend_owned_speech_keeps_text_and_opaque_raw_data_for_recipient():
+    world, game = _game()
+    raw = {"topic": "weather", "observation": "clear", "confidence": 0.9}
+    game._apply_response("Ada", ActorResponse(utterances=[{
+        "target": "Ben",
+        "text": "The sky is clear today.",
+        "raw": raw,
+    }]))
+
+    utterance = world.conversation_between("Ada", "Ben")[0]
+    attrs = world.eng.node(utterance)["attrs"]
+    assert attrs["content"] == "The sky is clear today."
+    assert attrs["raw_data"] == raw
+    assert attrs["speech_origin"] == "backend"
+    assert attrs["communication_mode"] == "free_text"
+    assert "conversation" not in attrs
+    assert attrs["raw_understanding"]["status"] == "not_understood"
+    assert "cannot interpret" in attrs["raw_understanding"]["note"]
+
+    heard = game._context("Ben").observations["heard_utterances"]
+    assert heard[-1]["text"] == "The sky is clear today."
+    assert heard[-1]["raw_data"] == raw
+    assert heard[-1]["raw_understanding"]["status"] == "not_understood"
+
+
+def test_llm_backend_speech_is_not_rewritten_for_a_legacy_npc_recipient():
+    world, game = _game()
+
+    class Provider:
+        def complete(self, _prompt):
+            return {"utterances": [{
+                "target": "Ada",
+                "text": "The north field will need water by noon.",
+                "raw": {"topic": "farm", "field": "north", "need": "water"},
+            }]}
+
+    game.set_backend("Ben", LLMBackend(game.characters["Ben"], Provider()))
+    game.submit_player_response(ActorResponse())
+    assert game.step()["status"] == "advanced"
+    utterance = world.conversation_between("Ada", "Ben")[0]
+    attrs = world.eng.node(utterance)["attrs"]
+    assert attrs["content"] == "The north field will need water by noon."
+    assert attrs["raw_data"] == {"topic": "farm", "field": "north", "need": "water"}
+    assert attrs["communication_mode"] == "free_text"
+    assert attrs["raw_understanding"]["status"] == "understood"
 
 
 def test_character_identity_personality_memory_and_frames_are_serializable(tmp_path):
@@ -211,6 +258,54 @@ def test_nearby_residents_signal_carries_no_rendered_text():
     ctx = game._context("Ada")
     nearby = {r["id"]: r for r in ctx.observations["nearby_residents"]}
     assert set(nearby["Ben"]) == {
-        "id", "name", "role", "position", "distance",
-        "tie_strength", "band_code",
+        "id", "name", "role", "klass", "group", "position", "distance",
+        "shared_bucket_count", "tie_strength", "band_code",
     }
+
+
+def test_shared_bucket_count_counts_matching_role_klass_group():
+    world = BigvilleWorld(autonomous_actors=False)
+    world.add_actor("Ada", role="labourer", klass="poor", group="low", home_cell=(1, 1))
+    world.add_actor("Ben", role="labourer", klass="poor", group="high", home_cell=(1, 1))
+    world.add_actor("Cara", role="mayor", klass="rich", group="high", home_cell=(1, 1))
+    game = BigvilleGame(world, player="Ada")
+
+    ctx = game._context("Ada")
+    nearby = {r["id"]: r for r in ctx.observations["nearby_residents"]}
+    assert nearby["Ben"]["shared_bucket_count"] == 2  # role + klass, not group
+    assert nearby["Cara"]["shared_bucket_count"] == 0  # shares nothing
+
+
+def test_shared_bucket_count_zero_when_a_bucket_is_unset():
+    world = BigvilleWorld(autonomous_actors=False)
+    world.add_actor("Ada", role="labourer", home_cell=(1, 1))
+    world.add_actor("Ben", role="labourer", home_cell=(1, 1))
+    game = BigvilleGame(world, player="Ada")
+
+    ctx = game._context("Ada")
+    nearby = {r["id"]: r for r in ctx.observations["nearby_residents"]}
+    # both share role="labourer"; klass/group both empty-string on both sides,
+    # which must NOT count as a "shared" bucket (empty is absence, not a match).
+    assert nearby["Ben"]["shared_bucket_count"] == 1
+
+
+def test_populate_town100_seeds_scenario_character_data_per_resident():
+    """AFFECT_COUPLING Phase 5 (TOWN100_DISPOSITION_SWITCHON_PREREG.md,
+    ocelot repo): populate_town100 must populate _scenario_character_data
+    BEFORE add_actor for every cast-100 resident, so an Ocelot cognition_
+    factory's seed_character actually receives real identity/personality
+    -- previously only from_scenario() ever did this, so a cast-100
+    resident's own drawn _PARAM_SPEC params never reached it at all."""
+    world = BigvilleWorld(autonomous_actors=False)
+    world.populate_town100(seed=305000)
+
+    assert len(world._scenario_character_data) == 100
+    name = next(iter(world._cast100["residents"]))["name"]
+    preset = world._scenario_character_data[name]
+    assert preset["identity"]["role"]
+    assert preset["identity"]["klass"]
+    assert preset["identity"]["group"]
+    for key in ("hostile_weight", "charm_weight", "mood_bias", "arousal",
+                "prior_others_trust", "cred_on", "valence", "resolution_bins"):
+        assert key in preset["personality"], key
+    assert preset["personality"]["emotional_core_enabled"] == 1.0

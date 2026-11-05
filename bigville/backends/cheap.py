@@ -31,6 +31,7 @@ class DeterministicBackend:
     kind = "cheap"
     communication_mode = "templated"
     supports_free_text = False
+    understands_raw_speech = False
     requires_conversational_interface = True
 
     def __init__(self, character: CharacterDefinition):
@@ -72,7 +73,12 @@ class DeterministicBackend:
             return ActorResponse(utterances=self._speech(context))
         self.last_choice = {**dict(choice), "goal": self.current_goal.kind if self.current_goal else "observe",
                             "time_band": self.time_band}
-        params = {k: choice[k] for k in ("kind", "trade", "recipe", "target") if k in choice}
+        # Preserve the complete concrete proposal.  Room-scale scenarios may
+        # expose arbitrary physical object ids and destinations; reducing a
+        # choice to the village vocabulary would make the backend unable to
+        # interact with them.
+        params = {k: value for k, value in choice.items()
+                  if k not in {"action", "score", "legal", "reason"}}
         continuation = None
         if choice.get("action") == "move" and choice.get("destination") is not None:
             # Keep walking to the physical cell without asking the cognition
@@ -208,6 +214,7 @@ class DeterministicBackend:
             backend_state={"communication": {
                 "mode": self.communication_mode,
                 "supports_free_text": self.supports_free_text,
+                "understands_raw_speech": self.understands_raw_speech,
                 "requires_conversational_interface": self.requires_conversational_interface,
             }, "time_band": self.time_band,
                       "last_speech_turn": self.last_speech_turn,

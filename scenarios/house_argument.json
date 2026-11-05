@@ -1,0 +1,32 @@
+{
+  "id": "house_argument",
+  "name": "The Blue House Argument",
+  "description": "A tightly bounded domestic disagreement between two residents.",
+  "map": {
+    "grid": [
+      ["wall", "wall", "wall", "wall", "wall", "wall", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "floor", "floor", "wall"],
+      ["wall", "wall", "wall", "floor", "wall", "wall", "wall"]
+    ],
+    "layout": {"w": 7, "h": 6, "homes": [[2, 2], [4, 2]]},
+    "affordances": [
+      {"name": "Blue House", "kind": "house", "x": 3, "y": 2}
+    ]
+  },
+  "buildings": [
+    {"kind": "inn", "name": "blue_house", "cell": [1, 1], "spec": {"footprint": [5, 4], "sheltered": true, "rooms": ["living_room"]}}
+  ],
+  "seeds": ["conversation", "conversation_reply", "core_emotions"],
+  "actors": [
+    {"name": "Mara", "role": "resident", "backend": "ocelot", "home_cell": [2, 2], "traits": {"loquacity_threshold": 0.2}, "personality": {"patience": 0.2, "directness": 0.9}, "held_frames": ["conversation"]},
+    {"name": "Jon", "role": "resident", "backend": "ocelot", "home_cell": [4, 2], "traits": {"loquacity_threshold": 0.2}, "personality": {"patience": 0.8, "directness": 0.3}, "held_frames": ["conversation"]}
+  ],
+  "initial": {"hour": 20.0, "weather": "rain", "temperature": 9.0},
+  "laws": [],
+  "policies": [],
+  "charters": [],
+  "metadata": {"domain": "domestic_social", "scale": "room", "experiment": "argument"}
+}

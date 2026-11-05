@@ -6,7 +6,7 @@ from .llm import LLMBackend, LLMProvider
 from .prompts import PromptBuilder, PromptRecord, build_prompt
 from .ocelot import OcelotBackend
 from .protocol import (ActorContext, ActorContinuation, ActorResponse, CognitionBackend,
-                       ProposedAction, communication_capabilities)
+                       ProposedAction, SpeechProposal, communication_capabilities)
 
 __all__ = [
     "ActorContext",
@@ -26,6 +26,7 @@ __all__ = [
     "build_prompt",
     "OcelotBackend",
     "ProposedAction",
+    "SpeechProposal",
     "TemplateConversationInterface",
     "communication_capabilities",
 ]

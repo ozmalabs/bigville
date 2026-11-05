@@ -17,9 +17,8 @@ The response schema should remain:
   "major_action": {"action": "...", "params": {"...": "..."}},
   "utterances": [{
     "target": "person-id",
-    "act": "inform",
-    "slots": {"content": "..."},
-    "content": "optional free text"
+    "text": "the exact free text produced by the backend",
+    "raw": {"backend-owned": "opaque meaning/accounting data"}
   }],
   "memory_updates": [],
   "waiting": false
@@ -36,9 +35,16 @@ Communication capabilities remain explicit per actor:
 {
   "mode": "free_text|templated",
   "supports_free_text": true,
+  "understands_raw_speech": true,
   "requires_conversational_interface": false
 }
 ```
+
+Backend-owned speech is always delivered unchanged.  If a rich Ocelot/LLM
+utterance reaches a simpler NPC whose backend does not understand the raw
+payload, the NPC still hears the free text and the world records a
+`raw_understanding.status = "not_understood"` note.  This is a capability
+observation, not an interpretation or rejection of the utterance.
 
 ## 2. Add a prompt builder, not prompt strings in the world
 
@@ -66,8 +72,8 @@ The LLM must be told that:
 - affordances are the available choices for this turn, not suggestions to
   reinterpret;
 - speech addresses people, not buildings or abstract shops;
-- free-text speech must become a templated act/slot message when the recipient
-  requires the conversational interface;
+- every utterance must contain both backend-owned `text` and opaque `raw` data;
+  the world delivers and records both without converting one into the other;
 - asking, accepting, and replying are utterances/free actions, while a major
   physical/economic action is separate;
 - one major action is permitted, but multiple free utterances may be emitted;
@@ -93,9 +99,10 @@ The backend should provide:
 - prompt/response hashes and latency in backend state, never private secrets;
 - no network dependency in the core package import path.
 
-An LLM backend is `free_text` capable by default, but it must still inspect
-`recipient_interfaces` and send structured acts to templated-only recipients.
-The world adapter remains responsible for the final communication envelope.
+An LLM backend is `free_text` capable by default.  Recipient capability markers
+remain available as cognition input, but they do not cause the world to rewrite
+backend-owned speech.  Legacy act/slot responses may still use the compatibility
+conversation interface; new backends should return `text` and `raw` directly.
 
 ## 4. Replace the current cheap policy with a deterministic game backend
 

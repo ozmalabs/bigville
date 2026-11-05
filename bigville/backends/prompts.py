@@ -67,11 +67,16 @@ class PromptBuilder:
             "You are one resident of Bigville. Choose at most one major action "
             "from legal_affordances. Communication is separate and may be free. "
             "The world validates every proposal; never invent an action, item, "
-            "fact, or transaction. You may include an optional continuation with "
-            "a physical destination or repeatable task. Cognition is queried "
-            "again at arrival or for its interrupt_on events; set poll_each_turn "
-            "true when reactive behavior is needed. Return JSON with "
-            "major_action, continuation, utterances, memory_updates, and waiting."
+            "fact, or transaction. For every utterance you choose, generate both "
+            "the exact human-facing free-text `text` and an opaque JSON-compatible "
+            "`raw` payload containing the meaning useful to other cognition and "
+            "accounting. The world will deliver and record both forms and will "
+            "never rewrite raw into text. Address people, not shops or buildings. "
+            "You may include an optional continuation with a physical destination "
+            "or repeatable task. Cognition is queried again at arrival or for its "
+            "interrupt_on events; set poll_each_turn true when reactive behavior "
+            "is needed. Return JSON with major_action, continuation, utterances, "
+            "memory_updates, and waiting."
         )
         return PromptRecord(self.schema, system, {"private": private, "public": public})
 

@@ -248,6 +248,28 @@ class BigvilleOcelotActor:
         self.speech_choices[target] = choice
         return choice
 
+    #: Converts a terrain stamina multiplier into affordance-score units. The one
+    #: scalar in this valuation; the SHAPE around it -- proportional to both the
+    #: terrain's own cost and to how spent the resident is -- is what carries the
+    #: behaviour, and the constant only sets how loudly it speaks.
+    EFFORT_TO_SCORE = 6.0
+
+    def publish_body_state(self, stamina_reserve):
+        """Record the body read-off this resident's valuation reads. Mechanical."""
+        self.s.set_attr(self.agent, "stamina_reserve", float(stamina_reserve))
+
+    def _option_value(self, option_attrs):
+        """Score an option as the world's score less what the route costs THIS body.
+
+        Mirrors `oa_choose_option` in `seeds/bigville_actor_decision.json`, which is
+        the real, graph-native form of this valuation; this Python copy is what runs
+        under the dependency-free local runtime, whose `settle()` is a no-op.
+        """
+        score = float(option_attrs.get("score", 0.0))
+        stamina = float(option_attrs.get("terrain_stamina_multiplier", 0.0) or 0.0)
+        reserve = float(self.s.node(self.agent)["attrs"].get("stamina_reserve", 1.0))
+        return score - self.EFFORT_TO_SCORE * stamina * (1.0 - reserve)
+
     def replace_options(self, options):
         """Publish the current legal affordance set as ordinary mind-graph data."""
         for option in list(self.inner.neighbours(self.agent, "has_option")):
@@ -307,7 +329,7 @@ class BigvilleOcelotActor:
         options = self.inner.neighbours(self.agent, "has_option")
         if options:
             chosen = max(options, key=lambda n: (
-                float(self.s.node(n)["attrs"].get("score", 0.0)), -int(n)))
+                self._option_value(self.s.node(n)["attrs"]), -int(n)))
             chosen_attrs = self.s.node(chosen)["attrs"]
             for key in ("chosen_action", "chosen_kind", "chosen_trade",
                         "chosen_recipe", "chosen_target"):
@@ -469,6 +491,9 @@ class BigvilleWorld:
         self._affordances = {}
         self._observation_schemas = {}
         self._map_cells = {}
+        # Cells crossed during the current turn. Ground that saw traffic this turn does
+        # not also recover this turn; everything else grows back.
+        self._traversed_this_tick = set()
         self._distance_fields = {}
         self._travel_time_fields = {}
         self._map_grid = None
@@ -1322,6 +1347,12 @@ class BigvilleWorld:
                 walkable = tile not in solid
                 cell = self.eng.add_node("MapCell", {"x": float(x), "y": float(y), "tile": float(tile),
                                                       "terrain": terrain,
+                                                      # The terrain this cell was SEEDED as, and how
+                                                      # far footfall has carried it toward the terrain
+                                                      # `TERRAIN_WEAR` says it wears into. `terrain`
+                                                      # above is the read-off of the two.
+                                                      "base_terrain": terrain,
+                                                      "wear": 0.0,
                                                       "speed": float(movement["speed"]),
                                                       "move_time": float(movement["move_time"]),
                                                       "stamina_multiplier": float(movement["stamina_multiplier"]),
@@ -1582,11 +1613,89 @@ class BigvilleWorld:
         if not isinstance(cell, tuple) or cell not in self._map_cells:
             return {"terrain": "unknown", **dict(E.TERRAIN_MOVEMENT["grass"])}
         attrs = self.eng.node(self._map_cells[cell])["attrs"]
-        terrain = str(attrs.get("terrain", "grass"))
-        return {"terrain": terrain,
-                "speed": float(attrs.get("speed", 1.0)),
-                "move_time": float(attrs.get("move_time", 1.0)),
-                "stamina_multiplier": float(attrs.get("stamina_multiplier", 1.0))}
+        base = str(attrs.get("base_terrain", attrs.get("terrain", "grass")))
+        wear = float(attrs.get("wear", 0.0))
+        record = E.TERRAIN_WEAR.get(base)
+        if record is None or wear <= 0.0:
+            terrain = str(attrs.get("terrain", base))
+            return {"terrain": terrain,
+                    "speed": float(attrs.get("speed", 1.0)),
+                    "move_time": float(attrs.get("move_time", 1.0)),
+                    "stamina_multiplier": float(attrs.get("stamina_multiplier", 1.0))}
+        # Part-worn ground is part-easier. Interpolating the movement read-off across
+        # the accumulator -- rather than switching it at the end -- is what lets traffic
+        # recruit traffic: the first crossings make the next ones cheaper.
+        worn = E.TERRAIN_MOVEMENT.get(str(record["wears_to"]), E.TERRAIN_MOVEMENT["grass"])
+        fresh = E.TERRAIN_MOVEMENT.get(base, E.TERRAIN_MOVEMENT["grass"])
+        blend = min(1.0, max(0.0, wear))
+        return {"terrain": str(attrs.get("terrain", base)),
+                "speed": fresh["speed"] + (worn["speed"] - fresh["speed"]) * blend,
+                "move_time": fresh["move_time"] + (worn["move_time"] - fresh["move_time"]) * blend,
+                "stamina_multiplier": (fresh["stamina_multiplier"]
+                                       + (worn["stamina_multiplier"]
+                                          - fresh["stamina_multiplier"]) * blend)}
+
+    # ------------------------------------------------------------- terrain wear
+    def _wear_record(self, cell_node):
+        """The TERRAIN_WEAR record governing this cell, or None if it is inert."""
+        base = str(self.eng.node(cell_node)["attrs"].get("base_terrain", ""))
+        return E.TERRAIN_WEAR.get(base)
+
+    def _advance_wear(self, cell_node, delta):
+        """Move a cell's wear accumulator and republish its terrain read-off."""
+        record = self._wear_record(cell_node)
+        if record is None:
+            return
+        attrs = self.eng.node(cell_node)["attrs"]
+        base = str(attrs.get("base_terrain", "grass"))
+        wear = min(1.0, max(0.0, float(attrs.get("wear", 0.0)) + delta))
+        self.eng.set_attr(cell_node, "wear", wear)
+        # The label flips only at the far end of the accumulator; below that the cell is
+        # still its seeded terrain, merely easier to cross.
+        terrain = str(record["wears_to"]) if wear >= 1.0 else base
+        self.eng.set_attr(cell_node, "terrain", terrain)
+        movement = E.TERRAIN_MOVEMENT.get(terrain, E.TERRAIN_MOVEMENT["grass"])
+        for key in ("speed", "move_time", "stamina_multiplier"):
+            self.eng.set_attr(cell_node, key, float(movement[key]))
+
+    def _wear_cell_by_traversal(self, actor, cell):
+        """One crossing of a cell by one walker."""
+        node = self._map_cells.get(tuple(cell))
+        if node is None:
+            return
+        record = self._wear_record(node)
+        if record is None:
+            return
+        passes = float(record.get("passes_to_form", 0.0))
+        if passes <= 0.0:
+            return
+        load = 1.0
+        if record.get("load_sensitive"):
+            carried = self.eng.node(self._actor(actor))["attrs"].get("carry_ratio", 0.0)
+            load = 1.0 + float(carried or 0.0)
+        self._advance_wear(node, load / passes)
+        self._traversed_this_tick.add(tuple(cell))
+
+    def _terrain_recovery_tick(self):
+        """Ground nobody walked on this turn grows back."""
+        for cell, node in self._map_cells.items():
+            if cell in self._traversed_this_tick:
+                continue
+            record = self._wear_record(node)
+            if record is None:
+                continue
+            if float(self.eng.node(node)["attrs"].get("wear", 0.0)) <= 0.0:
+                continue
+            ticks = float(record.get("ticks_to_fade", 0.0))
+            if ticks > 0.0:
+                self._advance_wear(node, -1.0 / ticks)
+        self._traversed_this_tick = set()
+
+    def terrain_wear(self, cell):
+        """Read-off: how far this cell has been worn toward the terrain it forms."""
+        node = self._map_cells.get(tuple(cell))
+        return 0.0 if node is None else float(
+            self.eng.node(node)["attrs"].get("wear", 0.0))
 
     def travel_time(self, a, b):
         """Terrain-weighted travel time used for route choice.
@@ -1692,6 +1801,9 @@ class BigvilleWorld:
             self.eng.remove_edge_unchecked(self._actors[actor], "at_cell", self._map_cells[old])
         self._attach_at_cell(self._actors[actor], cell)
         self._actor_positions[actor] = tuple(cell)
+        # Footfall is a physical effect of arriving, so it belongs to the single
+        # enactment site rather than to any one caller that happens to move someone.
+        self._wear_cell_by_traversal(actor, cell)
 
     def move_actor(self, actor, destination):
         """Move one resident toward a destination, with load affecting travel."""
@@ -5448,6 +5560,11 @@ class BigvilleWorld:
     def _decide_actor(self, actor):
         """Ask the resident's Ocelot instance to choose from current affordances."""
         mind = self._actor_minds[actor]
+        # Publish the body read-off the resident's own valuation needs. Terrain
+        # cost is published per option; how much that cost BITES depends on how
+        # depleted this particular body is, which is a world fact the mind
+        # cannot observe for itself. Mechanical translation, no decision.
+        mind.publish_body_state(self.stamina_reserve(actor))
         mind.replace_options(self._actor_options(actor))
         choice = mind.decide()
         self._actor_decisions[actor] = dict(choice)
@@ -6403,6 +6520,9 @@ class BigvilleWorld:
                 self._ocelot_actor_tick()
             else:
                 self._run()
+            # Last, so every crossing this turn -- including the autonomous ones
+            # above -- is counted before untrodden ground grows back.
+            self._terrain_recovery_tick()
 
     def run_turns(self, n=1):
         """Advance unified actor turns; an alias with an explicit simulation name."""
