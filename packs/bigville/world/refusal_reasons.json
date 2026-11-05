@@ -18,6 +18,15 @@
       "busy": {
         "description": "You are still in the middle of a timed job. Finish it first; it waits while you are away from the place you started it."
       },
+      "asleep": {
+        "description": "You are asleep. You cannot act until you wake."
+      },
+      "collapsed": {
+        "description": "You have collapsed from exhaustion and are asleep where you fell. You cannot act until you wake, and you wake weaker than a proper sleep leaves you."
+      },
+      "too_tired": {
+        "description": "You are too exhausted to walk. Rest or sleep first."
+      },
       "not_in_reach": {
         "description": "You are not close enough. You must stand on the same cell as the person, object, or place, or one step away."
       },

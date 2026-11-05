@@ -334,7 +334,7 @@ class BigvilleWorld:
 
     def __init__(self, *, map_seed=305000, autonomous_actors=False, scenario=None,
                  cognition_factory=None, physical_subsystems=None,
-                 physical_subsystem_extensions=None, data_pack=None):
+                 physical_subsystem_extensions=None, data_pack=None, exhaustion_slow_on=None):
         scenario_definition = load_scenario(scenario) if scenario is not None else None
         self._scenario_data = scenario_definition.to_dict() if scenario_definition else {
             "id": "bigville", "name": "Bigville", "metadata": {"domain": "village"}}
@@ -352,6 +352,14 @@ class BigvilleWorld:
                 raise ValueError("physical_subsystems may be specified either in the scenario or constructor")
             configured_subsystems = physical_subsystems
         self.physical_subsystems = self._validate_physical_subsystems(configured_subsystems)
+        # Exhaustion slowdown (Phase 024) is the seed's slow_on switch. An explicit constructor value wins,
+        # then the scenario's `exhaustion.slow_on`, then the pack default. Off, there is no slowdown.
+        if exhaustion_slow_on is None:
+            exhaustion_slow_on = (self._scenario_data.get("exhaustion") or {}).get(
+                "slow_on", self.E.EXHAUSTION["slow_on"])
+        if not isinstance(exhaustion_slow_on, bool):
+            raise TypeError("exhaustion slow_on must be a boolean")
+        self.exhaustion_slow_on = exhaustion_slow_on
         # Optional external cognition seam.  Bigville remains installable
         # without Ocelot; an Ocelot host supplies a callable name -> mind.
         self._cognition_factory = cognition_factory
@@ -908,6 +916,7 @@ class BigvilleWorld:
         # ported world mechanics that used to be supplied by graph rules.
         self._resolve_jobs()
         self._resolve_actor_events()
+        self._resolve_sleep()
         self._resolve_clothing_and_bodies()
         self._resolve_period_effects()
         # Stock piles are intentionally bulk physical nodes, but a new harvest
@@ -958,12 +967,19 @@ class BigvilleWorld:
             if remaining > 0.0:
                 if not self._job_tick_armed:
                     continue
-                remaining -= 1.0
-                self.eng.set_attr(job, "remaining", max(0.0, remaining))
-                # The recipe's stamina cost is spread evenly over the ticks of the job (Phase 022).
-                self._spend_job_stamina(job)
-                if remaining > 0.0:
+                # Phase 024: a tired worker advances the job at the movement speed (1, 2/3, 1/3 of a tick),
+                # and a worker too exhausted to walk does not advance it. The stamina is not spent then.
+                speed = self._job_speed(job)
+                if speed <= 0.0:
                     continue
+                remaining -= speed
+                self.eng.set_attr(job, "remaining", max(0.0, remaining))
+                # The recipe's stamina cost is spread evenly over the ticks of the job (Phase 022), and over
+                # the progress it makes (Phase 024): a slowed worker spends less per tick.
+                self._spend_job_stamina(job, share=speed)
+                if remaining > 1e-9:
+                    continue
+                remaining = 0.0
             asp_nodes = self.eng.neighbours(job, "runs")
             if not asp_nodes:
                 continue
@@ -1872,6 +1888,12 @@ class BigvilleWorld:
         current = self._actor_positions.get(actor)
         if current is None or destination not in self._map_cells:
             return None
+        # The band is read before this walker's own effort is spent, so a step is taken at the pace the
+        # resident had when they set off (Phase 024).
+        band = self._exhaustion_band(actor)
+        if band["stopped"]:
+            # Too exhausted to walk (Phase 024): no step, no effort. The walk is refused before this point.
+            return current
         state = self._refresh_carry_state(actor)
         attrs = self.eng.node(self._actor(actor))["attrs"]
         nxt = self._movement_step(current, destination)
@@ -1893,14 +1915,17 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._actor(actor), "exerted", exertion)
             if not self._actor_tick_in_progress:
                 self._run()
-        cooldown = int(round(float(attrs.get("carry_move_cooldown", 0.0))))
-        if cooldown > 0:
-            self.eng.set_attr(self._actor(actor), "carry_move_cooldown", float(cooldown - 1))
+        cooldown = float(attrs.get("carry_move_cooldown", 0.0))
+        if cooldown >= 1.0 - 1e-9:
+            self.eng.set_attr(self._actor(actor), "carry_move_cooldown", cooldown - 1.0)
             return current
         terrain_interval = max(1, int(math.ceil(state["move_interval"] * terrain["move_time"])))
-        if terrain_interval > 1:
-            self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
-                              float(terrain_interval - 1))
+        # Phase 024: a tired walker's interval is multiplied (x1, x1.5 or x3). Waiting ticks accumulate in
+        # the float cooldown, so a step at interval I owes I - 1 waiting ticks. Whole intervals wait exactly
+        # as they did before the factor existed.
+        interval = terrain_interval * band["interval"]
+        self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
+                          cooldown + interval - 1.0 if interval > 1.0 + 1e-9 else 0.0)
         if nxt is not None:
             self._move_actor_to(actor, nxt)
         return self._actor_positions.get(actor)
@@ -5941,6 +5966,10 @@ class BigvilleWorld:
                                         "carried_weight": 0.0, "carry_ratio": 0.0,
                                         "carry_speed": 1.0, "carry_move_energy": 1.0,
                                         "carry_overloaded": 0.0, "carry_move_cooldown": 0.0,
+                                        # Phase 024: sleep and collapse flags, and the exhaustion read-offs
+                                        "asleep": 0.0, "collapsed": 0.0, "sleep_kind": 0.0,
+                                        "slow_on": 1.0 if self.exhaustion_slow_on else 0.0,
+                                        "exhaustion_step": 0.0, "speed_factor": 1.0,
                                         "last_carry_outcome": "", "last_accepted_item": -1.0,
                                         "last_dropped_kind": "", "last_dropped_node": -1.0,
                                         # one major action per actor turn;
@@ -6685,6 +6714,10 @@ class BigvilleWorld:
         if float(attrs.get("alive", 1.0)) != 1.0:
             self._actor_targets[actor] = targets
             return [{"action": "rest", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0}]
+        # Phase 024: a sleeping or collapsed resident has no legal major action until they wake.
+        if self._sleep_code(actor) is not None:
+            self._actor_targets[actor] = targets
+            return []
         # A timed job continues mechanically, but urgent sustenance remains an
         # available actor affordance: a worker may eat or buy food between
         # work pulses.  Recipe-start options are suppressed below while busy.
@@ -7007,6 +7040,12 @@ class BigvilleWorld:
         # enactment will reject as a no-op.
         if self.stamina_reserve(actor) < 0.8:
             options.append({"action": "rest", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
+        # Phase 024: sleep is offered below the rested level. The world publishes the two facts the seed's
+        # sleep decision reads (`lateness` into the night, and `safe`); the backend chooses.
+        if self.stamina_reserve(actor) < float(self.E.EXHAUSTION["rest_cap"]) - 1e-12:
+            facts = self.sleep_facts(actor)
+            options.append({"action": "sleep", "kind": "", "trade": "", "recipe": "", "target": "",
+                            "lateness": facts["lateness"], "safe": facts["safe"], "score": 0.0})
         # Phase 023: a paused timed job is resumed by walking back to its start cell. The return is a legal
         # move; every option is marked while the job waits, so the backend can see the paused state.
         if self.job_paused(actor):
@@ -7016,12 +7055,18 @@ class BigvilleWorld:
                                 "target": target_key(start), "resumes_job": True, "score": 0.0})
             for option in options:
                 option["job_paused"] = True
+        # Phase 024: a resident too exhausted to walk (reserve below e_low) is offered no travel.
+        band = self._exhaustion_band(actor)
+        if band["stopped"]:
+            options = [option for option in options if option.get("action") != "move"]
         # Target keys are intentionally opaque and may be rebuilt on every
         # observation.  Expose the physical destination alongside a movement
         # affordance so a cognition backend can safely retain a route across
         # turns without retaining the world's temporary target map.
         for option in options:
             if option.get("action") == "move":
+                option["speed_factor"] = float(band["speed"])
+                option["exhaustion_step"] = float(band["step"])
                 destination = targets.get(option.get("target"))
                 if isinstance(destination, tuple):
                     option["destination"] = destination
@@ -7147,6 +7192,8 @@ class BigvilleWorld:
             return self.major_action(actor, "eat", **kwargs)
         if action == "work":
             return self.major_action(actor, "start", action_name=plan.get("recipe"))
+        if action == "sleep":
+            return self.major_action(actor, "sleep")
         if action == "move":
             target = plan.get("destination")
             if target is None:
@@ -7561,6 +7608,11 @@ class BigvilleWorld:
         self.rest(actor, amount)
         return True
 
+    def _lie_down_as_major(self, actor):
+        """A sleep is enacted once claimed (Phase 024)."""
+        self._lie_down(actor, collapsed=False)
+        return True
+
     def _refuse(self, code):
         """Name the physical reason the current attempt is refused, and return False.
 
@@ -7578,6 +7630,10 @@ class BigvilleWorld:
         The checks run in the order ``_capable``, ``_can_attempt`` and ``_recipe_tools_usable`` make them."""
         if action_name not in self._actions:
             return "not_known"
+        # Phase 024: a resident who is asleep or collapsed cannot start work.
+        sleep_code = self._sleep_code(actor)
+        if sleep_code is not None:
+            return sleep_code
         # One timed job at a time: a worker who is busy cannot start another (Phase 023).
         if self.busy(actor):
             return "busy"
@@ -7606,14 +7662,21 @@ class BigvilleWorld:
         """Run one major-action attempt and publish its outcome to the actor's own record.
 
         An attempt that runs inside another (``enact_plan`` calls ``major_action``) belongs to the outer
-        attempt, which publishes once. An exception publishes nothing and propagates.
+        attempt, which publishes once. An exception publishes nothing and propagates. A resident who is
+        asleep or collapsed is refused any major action (Phase 024) before the attempt runs.
         """
         if self._outcome_open:
             return run()
         self._outcome_open = True
         self._refusal_code = None
         try:
-            applied = bool(run())
+            gated = isinstance(action, str) and action in self.E.MAJOR_ACTIONS
+            sleep_code = self._sleep_code(actor) if gated else None
+            if sleep_code is not None:
+                applied = False
+                self._refusal_code = sleep_code
+            else:
+                applied = bool(run())
             code = None if applied else (self._refusal_code or "not_possible")
         finally:
             self._outcome_open = False
@@ -7741,6 +7804,8 @@ class BigvilleWorld:
                 return self._refuse("invalid_destination")
             if self.distance(current, destination) is None:
                 return self._refuse("invalid_destination")
+            if self._exhaustion_band(actor)["stopped"]:
+                return self._refuse("too_tired")
             return self._claimed_attempt(actor, "move", lambda: self._walked_toward(actor, destination))
         if action == "move_object":
             object_id = self._as_key(kwargs.get("object_id", kwargs.get("item", args[0] if args else None)))
@@ -7814,6 +7879,11 @@ class BigvilleWorld:
             if amount is None or amount <= 0.0:
                 return self._refuse("malformed")
             return self._claimed_attempt(actor, "rest", lambda: self._rested(actor, amount))
+        if action == "sleep":
+            # Phase 024: sleep is enacted here. Whether to sleep is the backend's decision.
+            if self.stamina_reserve(actor) >= float(self.E.EXHAUSTION["rest_cap"]) - 1e-12:
+                return self._refuse("not_needed")
+            return self._claimed_attempt(actor, "sleep", lambda: self._lie_down_as_major(actor))
         if action == "fetch":
             kind = self._as_key(kwargs.get("kind", args[0] if args else None))
             amount = self._as_amount(kwargs.get("amount", args[1] if len(args) > 1 else 1.0))
@@ -8069,12 +8139,13 @@ class BigvilleWorld:
             jt = self.eng.add_node("ToolUse", {"kind": a["kind"], "met": 0.0})
             self.eng.add_edge_unchecked(job, "uses", jt)
 
-    def _spend_job_stamina(self, job, final=False):
+    def _spend_job_stamina(self, job, final=False, share=1.0):
         """Spend a job's declared stamina through the Effort mechanism movement uses (Phase 022).
 
         Each tick of a timed job spends stamina_total / stamina_ticks; `final` spends whatever is left
-        (all of it for an instant `do`). The Effort is resolved by `_resolve_actor_events`, which also
-        applies the hunger scaling and the reserve floor of 0."""
+        (all of it for an instant `do`). `share` scales a tick's spend by the job's progress that tick
+        (Phase 024: a slowed worker advances less than a tick, so spends less). The Effort is resolved by
+        `_resolve_actor_events`, which also applies the hunger scaling and the reserve floor of 0."""
         ja = self.eng.node(job)["attrs"]
         left = float(ja.get("stamina_left", 0.0))
         if left <= 0.0:
@@ -8083,7 +8154,7 @@ class BigvilleWorld:
         if final or ticks <= 0.0:
             amount = left
         else:
-            amount = min(left, float(ja.get("stamina_total", 0.0)) / ticks)
+            amount = min(left, float(ja.get("stamina_total", 0.0)) / ticks * share)
         self.eng.set_attr(job, "stamina_left", max(0.0, left - amount))
         actor = str(ja.get("canonical_actor", ""))
         if amount <= 0.0 or actor not in self._actors or self._bodies.get(actor) is None:
@@ -8499,6 +8570,9 @@ class BigvilleWorld:
         ja = self.eng.node(job)["attrs"]
         start = ja.get("start_cell")
         actor = str(ja.get("canonical_actor", ""))
+        # Phase 024: a sleeping or collapsed worker is away from the job, so the job pauses the same way.
+        if self._sleep_code(actor) is not None:
+            return True
         if not start or actor not in self._actors:
             return False
         here = self.actor_position(actor)
@@ -8527,6 +8601,181 @@ class BigvilleWorld:
         """Read-off of stamina spent (Phase 022): the same as `exertion`. There is no separate accumulator."""
         return self.exertion(actor)
 
+    # ---------------------------------------------- exhaustion, sleep and collapse (Phase 024)
+    # The seeded rules are bigville_move_energy (mv_energy_budget, mv_deplete) and bigville_time_sleep
+    # (bt_collapse, bt_replenish, bt_wake, bt_decide_sleep). The decision to sleep belongs to the backend;
+    # this block only enacts sleep, collapse and wake, and publishes the facts the seeds name.
+    def _sleep_code(self, actor):
+        """'collapsed' or 'asleep' while the resident is down (refusal reasons), else None."""
+        try:
+            known = actor in self._actors
+        except TypeError:          # an unhashable proposal value is not a resident
+            return None
+        if not known:
+            return None
+        attrs = self.eng.node(self._actors[actor])["attrs"]
+        if float(attrs.get("collapsed", 0.0)) == 1.0:
+            return "collapsed"
+        if float(attrs.get("asleep", 0.0)) == 1.0:
+            return "asleep"
+        return None
+
+    def asleep(self, actor):
+        """True while the resident sleeps, including a collapse (their flag `asleep`)."""
+        return self._sleep_code(actor) is not None
+
+    def collapsed(self, actor):
+        """True while the resident is down from exhaustion (flag `collapsed`). A collapse is also a sleep."""
+        return self._sleep_code(actor) == "collapsed"
+
+    def _exhaustion_band(self, actor):
+        """The resident's exhaustion band, from the reserve (the seed's mv_energy_budget).
+
+        step 0 at or above e_high, 1 at or above e_mid, 2 at or above e_low, 3 below e_low. `speed` is the
+        moves per tick as a share of the full budget (1, 2/3, 1/3, 0, from moves_per_tick). `interval` is
+        the multiplier on the movement interval (1, 1.5, 3). Thresholds are fractions of the body's stamina
+        capacity, so a resident with a larger capacity has larger absolute thresholds. With slow_on off
+        every resident is in band 0."""
+        ex = self.E.EXHAUSTION
+        moves = [float(m) for m in ex["moves_per_tick"]]
+        node = self._actors.get(actor)
+        slow_default = 1.0 if self.exhaustion_slow_on else 0.0
+        slow_on = float(self.eng.node(node)["attrs"].get("slow_on", slow_default)) == 1.0 if node is not None else False
+        if not slow_on:
+            return {"step": 0, "speed": 1.0, "interval": 1.0, "stopped": False}
+        body = self._bodies.get(actor)
+        ba = self.eng.node(body)["attrs"] if body is not None else {}
+        reserve = float(ba.get("stamina_reserve", 1.0))
+        capacity = float(ba.get("stamina", 1.0))
+        step = len(moves) - 1
+        for band, key in enumerate(("e_high", "e_mid", "e_low")):
+            if reserve >= float(ex[key]) * capacity:
+                step = band
+                break
+        speed = moves[step] / moves[0]
+        return {"step": step, "speed": speed,
+                "interval": moves[0] / moves[step] if moves[step] > 0.0 else math.inf,
+                "stopped": moves[step] <= 0.0}
+
+    def _refresh_exhaustion(self, actor):
+        """Publish the band on the actor node: `exhaustion_step` and `speed_factor` (read-offs)."""
+        band = self._exhaustion_band(actor)
+        node = self._actors[actor]
+        attrs = self.eng.node(node)["attrs"]
+        if float(attrs.get("exhaustion_step", -1.0)) != float(band["step"]):
+            self.eng.set_attr(node, "exhaustion_step", float(band["step"]))
+        if float(attrs.get("speed_factor", -1.0)) != float(band["speed"]):
+            self.eng.set_attr(node, "speed_factor", float(band["speed"]))
+
+    def exhaustion_step(self, actor):
+        return int(self._exhaustion_band(actor)["step"])
+
+    def speed_factor(self, actor):
+        return round(float(self._exhaustion_band(actor)["speed"]), 4)
+
+    def _job_speed(self, job):
+        """The speed a timed job advances at: its worker's movement speed (Phase 024 extension)."""
+        actor = str(self.eng.node(job)["attrs"].get("canonical_actor", ""))
+        return self._exhaustion_band(actor)["speed"] if actor in self._actors else 1.0
+
+    def _witnesses(self, actor):
+        """Awake, living residents on the actor's cell. Sight has no range model yet, so a witness must
+        stand on the same cell (Phase 024). Sight does not shorten at night."""
+        here = self.actor_position(actor)
+        if here is None:
+            return []
+        return [other for other in self._actors
+                if other != actor and self.is_alive(other) and self.actor_position(other) == here
+                and self._sleep_code(other) is None]
+
+    def _record_sight(self, actor, kind, witnesses):
+        """A physical event seen by the witnesses. Their concern is theirs to form, not the world's.
+        Nobody's sight, no event: an unseen sleep leaves no town record."""
+        if not witnesses:
+            return None
+        event = self.create_event(kind, subject=actor, detail=f"{actor} {kind}", public=True)
+        for witness in witnesses:
+            self.observe_event(witness, event)
+        return event
+
+    def _lie_down(self, actor, *, collapsed):
+        """Set the resident asleep (a collapse when `collapsed`). Their timed job pauses, through the
+        Phase 023 pause, because `_job_away` counts a sleeper as away."""
+        node = self._actors[actor]
+        self.eng.set_attr(node, "asleep", 1.0)
+        self.eng.set_attr(node, "collapsed", 1.0 if collapsed else 0.0)
+        self.eng.set_attr(node, "sleep_kind", 2.0 if collapsed else 1.0)
+        self._record_sight(actor, "collapse" if collapsed else "sleep", self._witnesses(actor))
+        self._set_job_paused(actor, self.job_paused(actor))
+
+    def _wake(self, actor):
+        node = self._actors[actor]
+        self.eng.set_attr(node, "asleep", 0.0)
+        self.eng.set_attr(node, "collapsed", 0.0)
+        self.eng.set_attr(node, "sleep_kind", 0.0)
+        self._set_job_paused(actor, self.job_paused(actor))
+
+    def _resolve_sleep(self):
+        """Collapse, sleep and wake, once per run (seed bigville_time_sleep).
+
+        An awake resident whose reserve is below e_collapse collapses where they stand. A sleeper regains
+        rest_gain per clock tick up to rest_cap, or collapse_gain up to collapse_cap while collapsed, and
+        wakes at that cap. Regaining happens on clock ticks only (the armed run), not on every run."""
+        ex = self.E.EXHAUSTION
+        for actor, node in self._actors.items():
+            body = self._bodies.get(actor)
+            if body is not None and self.is_alive(actor):
+                ba = self.eng.node(body)["attrs"]
+                reserve = float(ba.get("stamina_reserve", 1.0))
+                code = self._sleep_code(actor)
+                if code is None and reserve < float(ex["e_collapse"]):
+                    self._lie_down(actor, collapsed=True)
+                    code = "collapsed"
+                elif code is not None and self._job_tick_armed:
+                    collapsed = code == "collapsed"
+                    gain = float(ex["collapse_gain" if collapsed else "rest_gain"])
+                    cap = float(ex["collapse_cap" if collapsed else "rest_cap"])
+                    regained = max(reserve, min(cap, reserve + gain))
+                    if regained != reserve:
+                        self.eng.set_attr(body, "stamina_reserve", regained)
+                    if regained >= cap:
+                        self._wake(actor)
+            self._refresh_exhaustion(actor)
+
+    def sleep_facts(self, actor):
+        """The facts the seed says the adapter writes for a sleep decision (Phase 024).
+
+        `lateness`: hours into the night, from the clock (0 before night_start_hour and after night_end_hour).
+        `safe`: the resident stands indoors, at their home or in a sheltered building."""
+        ex = self.E.EXHAUSTION
+        self._actor(actor)
+        hour = self.calendar().get("hour")
+        hour = float(self.E.TIME["start_hour"]) if hour is None else float(hour)
+        start, end = float(ex["night_start_hour"]), float(ex["night_end_hour"])
+        if hour >= start:
+            lateness = hour - start
+        elif hour < end:
+            lateness = hour + 24.0 - start
+        else:
+            lateness = 0.0
+        safe = False
+        here = self.actor_position(actor)
+        if here is not None:
+            home = self._map_cells.get(here)
+            if home is not None and home in self.eng.neighbours(self._actor(actor), "home_at"):
+                safe = True
+            for key in self._places:
+                site = self._building_sites.get(key)
+                if site and self.building_sheltered(key):
+                    x, y, w, h = site[:4]
+                    if x <= here[0] < x + w and y <= here[1] < y + h:
+                        safe = True
+        return {"lateness": round(lateness, 4), "safe": bool(safe)}
+
+    def fatigue(self, actor):
+        """Read-off of stamina spent (Phase 022): the same as `exertion`. There is no separate accumulator."""
+        return self.exertion(actor)
+
     def rest(self, actor, amount=1.0):
         """Rest as a physical body event; it recovers held stamina reserve."""
         self._actor(actor)
@@ -8537,11 +8786,16 @@ class BigvilleWorld:
     def body_state(self, actor):
         body = self._bodies[actor]
         attrs = self.eng.node(body)["attrs"]
+        band = self._exhaustion_band(actor)
         return {"health": round(float(attrs.get("health", 1.0)), 4),
                 "mood": round(float(attrs.get("mood", 0.5)), 4),
                 "strength": round(float(attrs.get("strength", 1.0)), 4),
                 "stamina": round(float(attrs.get("stamina", 1.0)), 4),
-                "stamina_reserve": round(float(attrs.get("stamina_reserve", 1.0)), 4)}
+                "stamina_reserve": round(float(attrs.get("stamina_reserve", 1.0)), 4),
+                # Phase 024 read-offs: the exhaustion step (0 full speed .. 3 too exhausted to walk), the
+                # movement speed it gives (1, 2/3, 1/3, 0), and the sleep flags.
+                "exhaustion_step": int(band["step"]), "speed_factor": round(float(band["speed"]), 4),
+                "asleep": self.asleep(actor), "collapsed": self.collapsed(actor)}
 
     def stamina(self, actor): return self.body_state(actor)["stamina"]
     def stamina_reserve(self, actor): return self.body_state(actor)["stamina_reserve"]

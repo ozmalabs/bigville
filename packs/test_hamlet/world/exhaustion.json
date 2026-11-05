@@ -1,0 +1,26 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 024): EXHAUSTION. Copied from packs/bigville/world/exhaustion.json, so the values keep their citations there.",
+  "_types": {},
+  "tables": {
+    "EXHAUSTION": {
+      "slow_on": true,
+      "e_high": 0.7,
+      "e_mid": 0.4,
+      "e_low": 0.15,
+      "moves_per_tick": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "e_collapse": 0.05,
+      "rest_gain": 0.03,
+      "rest_cap": 1.0,
+      "collapse_gain": 0.02,
+      "collapse_cap": 0.25,
+      "night_start_hour": 21.0,
+      "night_end_hour": 5.0,
+      "rest_recovery_per_unit": 0.1
+    }
+  }
+}

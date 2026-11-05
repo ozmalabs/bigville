@@ -97,6 +97,7 @@ class CANWeightModel:
         "care": ("care", "social"), "sell_labor": ("survival", "social"),
         "graze": ("survival", "comfort"), "herd": ("duty", "care"),
         "stay": ("comfort", "security"), "drink": ("survival",),
+        "sleep": ("comfort", "survival"),
     }
     EDGES = {
         "hunger": {"survival": 1.6, "duty": 0.25},

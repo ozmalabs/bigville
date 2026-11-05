@@ -182,6 +182,10 @@
       "file": "world/carrying.json"
     },
     {
+      "name": "EXHAUSTION",
+      "file": "world/exhaustion.json"
+    },
+    {
       "name": "SEASONS",
       "file": "world/seasons.json"
     },

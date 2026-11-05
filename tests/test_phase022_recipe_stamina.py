@@ -22,7 +22,9 @@ def _recipe_ticks(name):
 
 
 def _smith():
-    w = World()
+    # Built with the Phase 024 slowdown off: these tests predate it and assert full-speed job timing.
+    # The slowdown itself is tested in tests/test_phase024_exhaustion.py.
+    w = World(exhaustion_slow_on=False)
     w.add_tradesperson("Smith", "smith")
     w.set_stock("iron", 10)
     w.set_stock("charcoal", 10)
@@ -85,11 +87,15 @@ def test_the_reserve_never_goes_below_zero():
     w = _smith()
     w.eng.set_attr(w._bodies["Smith"], "stamina_reserve", 0.1)     # less than the plough's 0.4
     w.start("Smith", "forge_plough")
+    collapsed_during_job = False
     for _ in range(_recipe_ticks("forge_plough") + 2):
         _set_hunger(w, "Smith", 0.0)
         w.tick(1)
         assert _reserve(w, "Smith") >= 0.0
-    assert _reserve(w, "Smith") == 0.0 and not w.busy("Smith")
+        collapsed_during_job = collapsed_during_job or w.collapsed("Smith")
+    # Phase 024: below e_collapse (0.05) the worker collapses and sleeps, so a timed job does not drive the
+    # reserve to zero. The job waits while the worker is down. The floor at zero held in the loop above.
+    assert collapsed_during_job
 
     v = _smith()
     v.eng.set_attr(v._bodies["Smith"], "stamina_reserve", 0.1)

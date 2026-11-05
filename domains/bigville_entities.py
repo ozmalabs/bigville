@@ -486,6 +486,42 @@ def _check_refusal_reasons(errors, warnings, info):
         errors.append("REFUSAL_REASONS: needs the 'not_possible' catch-all")
     if isinstance(REFUSAL_LOG_LIMIT, bool) or not isinstance(REFUSAL_LOG_LIMIT, int) or REFUSAL_LOG_LIMIT < 1:
         errors.append(f"REFUSAL_LOG_LIMIT: must be a whole number of at least 1, not {REFUSAL_LOG_LIMIT!r}")
+    for code in ("asleep", "collapsed", "too_tired"):
+        if code not in REFUSAL_REASONS:
+            errors.append(f"REFUSAL_REASONS: needs the exhaustion code {code!r} (Phase 024)")
+
+
+def _check_exhaustion(errors, warnings, info):
+    """Phase 024: the EXHAUSTION table. Reserve bands fall from e_high to e_low, their moves per tick fall
+    from the full budget to zero, and the collapse, sleep and wake thresholds keep their order: a collapse
+    wakes weaker than a proper sleep leaves you, and both wake points sit above the collapse point."""
+    ex = EXHAUSTION
+    fractions = [ex["e_high"], ex["e_mid"], ex["e_low"]]
+    for name, value in (("e_high", ex["e_high"]), ("e_mid", ex["e_mid"]), ("e_low", ex["e_low"]),
+                        ("e_collapse", ex["e_collapse"]), ("rest_cap", ex["rest_cap"]),
+                        ("collapse_cap", ex["collapse_cap"])):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= value <= 1.0:
+            errors.append(f"EXHAUSTION[{name}]: a reserve fraction in [0, 1], not {value!r}")
+    if not fractions[0] > fractions[1] > fractions[2] > 0.0:
+        errors.append(f"EXHAUSTION: e_high > e_mid > e_low > 0 is required, not {fractions}")
+    if not ex["e_low"] > ex["e_collapse"] >= 0.0:
+        errors.append("EXHAUSTION: e_low > e_collapse >= 0 is required (movement stops before a collapse)")
+    if not ex["e_collapse"] < ex["collapse_cap"] < ex["rest_cap"] <= 1.0:
+        errors.append("EXHAUSTION: e_collapse < collapse_cap < rest_cap <= 1 is required")
+    for name in ("rest_gain", "collapse_gain", "rest_recovery_per_unit"):
+        if isinstance(ex[name], bool) or not isinstance(ex[name], (int, float)) or ex[name] <= 0.0:
+            errors.append(f"EXHAUSTION[{name}]: must be a positive number, not {ex[name]!r}")
+    if ex["collapse_gain"] > ex["rest_gain"]:
+        errors.append("EXHAUSTION: collapse_gain must not exceed rest_gain (a collapse sleep is not restorative)")
+    moves = ex["moves_per_tick"]
+    if (len(moves) != 4 or moves[-1] != 0 or any(moves[i] < moves[i + 1] for i in range(3))
+            or moves[0] <= 0 or any(isinstance(m, bool) or not isinstance(m, (int, float)) for m in moves)):
+        errors.append(f"EXHAUSTION[moves_per_tick]: four counts, falling to 0, not {moves!r}")
+    if not isinstance(ex["slow_on"], bool):
+        errors.append(f"EXHAUSTION[slow_on]: a boolean switch, not {ex['slow_on']!r}")
+    hours = (ex["night_start_hour"], ex["night_end_hour"])
+    if not all(0.0 <= float(h) < 24.0 for h in hours):
+        errors.append(f"EXHAUSTION: night hours must lie in [0, 24), not {hours}")
 
 
 def _check_prompt_instructions(errors, warnings, info):
@@ -1271,6 +1307,7 @@ def check_consistency():
     _check_burial(errors, warnings, info)
     _check_prompt_instructions(errors, warnings, info)
     _check_refusal_reasons(errors, warnings, info)
+    _check_exhaustion(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)
     stats = {

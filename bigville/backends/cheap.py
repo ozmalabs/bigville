@@ -48,6 +48,13 @@ class SimplePolicy:
     # Recipe affordances stay physically published; a resident's policy may
     # still decline work that is irrelevant to its scenario task.
     allow_work: bool = True
+    # Sleep (Phase 024). An awake resident whose energy (0-100, the world's read-off) is below this
+    # sleeps when the spot is safe and it is night. A valuation: the seed's sleep_threshold is not set
+    # anywhere in this repository.
+    sleep_energy_threshold: float = 40.0
+    # Below this energy a resident on a safe spot sleeps by day as well, before the body collapses
+    # (collapse is at energy 5, the seed's e_collapse). A valuation, not sourced.
+    collapse_guard_energy: float = 20.0
 
 
 # Scenario actors may name an explicitly registered backend profile. These
@@ -124,7 +131,7 @@ class DeterministicBackend:
             if option.get("action") == "eat" and option.get("kind")
         }
         options = [o for o in context.affordances
-                   if o.get("action") not in {"rest", ""}
+                   if o.get("action") not in {"rest", "", "sleep"}
                    and (self.policy.allow_transfers or o.get("action") != "transfer")
                    and (o.get("stock_source") != "town" or
                         (self.policy.allow_stock_fetches and
@@ -162,8 +169,19 @@ class DeterministicBackend:
         preferred = preferred_tasks.get(role, set())
         # Recovery must compete with ordinary work and travel. Immediate food
         # takes precedence when hungry; otherwise an exhausted body rests.
-        if energy < self.rest_energy_threshold and not (hunger > 0 and
-                any(o.get("action") == "eat" for o in options)):
+        # Sleep (Phase 024) comes first when the spot is safe and the body is low: at night, or when
+        # energy is close to collapse. Otherwise a short awake rest, as before.
+        sleep_reason = None
+        sleep = next((o for o in context.affordances if o.get("action") == "sleep"), None)
+        fed_first = hunger > 0 and any(o.get("action") == "eat" for o in options)
+        if sleep is not None and not fed_first and energy < self.policy.sleep_energy_threshold and bool(sleep.get("safe")):
+            if float(sleep.get("lateness", 0.0)) >= 1.0:
+                sleep_reason = "sleep_at_night"
+            elif energy < self.policy.collapse_guard_energy:
+                sleep_reason = "sleep_before_collapse"
+        if sleep_reason is not None:
+            options = [sleep]
+        elif energy < self.rest_energy_threshold and not fed_first:
             rest = next((o for o in context.affordances if o.get("action") == "rest"), None)
             if rest is not None:
                 options = [rest]
@@ -239,6 +257,8 @@ class DeterministicBackend:
             return ActorResponse(utterances=self._speech(context))
         self.last_choice = {**dict(choice), "goal": self.current_goal.kind if self.current_goal else "observe",
                             "time_band": self.time_band}
+        if sleep_reason is not None:
+            self.last_choice["reason"] = sleep_reason
         # Preserve the complete concrete proposal.  Room-scale scenarios may
         # expose arbitrary physical object ids and destinations; reducing a
         # choice to the village vocabulary would make the backend unable to

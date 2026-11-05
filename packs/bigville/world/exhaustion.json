@@ -1,0 +1,26 @@
+{
+  "_doc": "EXHAUSTION (Phase 024): the reserve thresholds, sleep and collapse rates, and the rest rate of the body. Reserve fractions are of the resident's stamina capacity (body stamina, 1.0 for the founding town). SEEDED values, from seeds/bigville_move_energy.json (v1.1.0, mv_energy_budget) and seeds/bigville_time_sleep.json (bt_collapse, bt_replenish, bt_wake, bt_decide_sleep). The seeds use a 0 to 100 energy scale: e_high 70, e_mid 40, e_low 15 map to the fractions 0.70, 0.40 and 0.15 here. moves_per_tick [3, 2, 1, 0] is the seed's hop budget for the bands at or above e_high, e_mid, e_low, and below e_low; the movement interval is the carry and terrain interval times 3 / moves (x1, x1.5, x3, stopped). slow_on is the seed's falsifier: false gives a flat budget (no slowdown), and a scenario may override it with exhaustion.slow_on. Timed jobs advance at the same speed (an extension, not in the seeds, behind the same switch). NEW, not in the seeds (APPROX): e_collapse (a resident below it falls asleep where they stand), rest_gain and rest_cap (sleep restores rest_gain per 15-minute tick up to rest_cap; 0.03 per tick is about 0.96 over the 32 ticks of an eight-hour sleep), and collapse_gain and collapse_cap (a collapse sleep restores less, up to collapse_cap below rest_cap, so a resident who keeps working falls again). night_start_hour and night_end_hour bound the night for lateness (APPROX; the real sunset is Phase 042). rest_recovery_per_unit is the short awake rest: one rest action restores this much per unit of rest (moved from world_affordances.py; APPROX, the seed bd_rest_recover gives no rate, and one rest action spans one tick).",
+  "_types": {},
+  "tables": {
+    "EXHAUSTION": {
+      "slow_on": true,
+      "e_high": 0.7,
+      "e_mid": 0.4,
+      "e_low": 0.15,
+      "moves_per_tick": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "e_collapse": 0.05,
+      "rest_gain": 0.03,
+      "rest_cap": 1.0,
+      "collapse_gain": 0.02,
+      "collapse_cap": 0.25,
+      "night_start_hour": 21.0,
+      "night_end_hour": 5.0,
+      "rest_recovery_per_unit": 0.1
+    }
+  }
+}

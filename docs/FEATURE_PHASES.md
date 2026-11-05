@@ -953,11 +953,15 @@ If the audit of recipes shows some should run unattended, list them as data for 
 
 ## Phase 024 -- Exhaustion, collapse and sleep
 
-**Status:** ready, after 021 and 022 (decision 2026-11-05: exhaustion makes you slower until you
-fall down). Spec: `seeds/bigville_move_energy.json` (v1.1.0), `bigville_time_sleep.json`,
-`bigville_time_concern.json`. Seed numbers: `e_high` 70, `e_mid` 40, `e_low` 15, `energy_cost`
-8 (per move), 3/2/1/0 moves per tick. Not in the seeds, so new and APPROX: `e_collapse`,
-`rest_gain`, `rest_cap`, `collapse_gain`, `collapse_cap`.
+**Status:** done (see History). EXHAUSTION table (seeded thresholds 0.70/0.40/0.15, hop budget
+3/2/1/0; APPROX e_collapse 0.05, rest_gain 0.03, collapse_gain 0.02, collapse_cap 0.25, night
+21:00-05:00; rest_recovery_per_unit moved here). Walks are x1, x1.5, x3, then refused (`too_tired`);
+timed jobs advance at the same speed (stopped below e_low). Below e_collapse a resident collapses,
+is refused actions (`collapsed`), wakes at collapse_cap and can fall again. `sleep` restores to
+rest_cap (`asleep` refusals); sleep and collapse pause jobs. `lateness` and `safe` published; the
+simple backend sleeps at night or before collapse on a safe spot. `slow_on` switch (constructor or
+scenario). Open: witnesses are same-cell only and no concern is formed; every founder has stamina
+capacity 1.0, so per-resident thresholds do not vary yet.
 
 **Goal.** Port the seeded exhaustion rules, as pack data in a new `EXHAUSTION` table:
 1. **Slowing (`mv_energy_budget`).** The move rate is a graded step function of the reserve.
@@ -1839,3 +1843,4 @@ rearing priors (the backend's); carrying infants.
 | 021 Refusal records and feedback | done | (this commit) | docs/phases/phase021/PHASE021_REPORT.md -- REFUSAL_REASONS table, per-actor refusal log and counts, last outcome in context and prompt, report refusals; 828 passed |
 | 022 Recipe stamina is spent | done | (this commit) | docs/phases/phase022/PHASE022_REPORT.md -- declared recipe stamina charged via Effort, hunger-scaled exertion raises hunger, fatigue a read-off, balance stamina line; 835 passed |
 | 023 Timed jobs occupy the worker | done | (this commit) | docs/phases/phase023/PHASE023_REPORT.md -- busy refusal, jobs pause when the worker leaves the start cell, paused read-offs; 844 passed |
+| 024 Exhaustion, collapse and sleep | done | (this commit) | docs/phases/phase024/PHASE024_REPORT.md -- EXHAUSTION table, graded slowdown, collapse and sleep with refusals and job pause, sleep facts, simple-backend sleep rule; 872 passed |

@@ -21,7 +21,9 @@ def _ticks(name):
 
 
 def _smith():
-    w = World()
+    # Built with the Phase 024 slowdown off: these tests predate it and assert full-speed job timing.
+    # The slowdown itself is tested in tests/test_phase024_exhaustion.py.
+    w = World(exhaustion_slow_on=False)
     w.add_tradesperson("Smith", "smith")
     w.set_stock("iron", 10)
     w.set_stock("charcoal", 10)

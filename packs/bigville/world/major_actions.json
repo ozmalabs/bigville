@@ -47,6 +47,10 @@
         "kind": "recovery",
         "description": "Rest to recover energy."
       },
+      "sleep": {
+        "kind": "recovery",
+        "description": "Lie down and sleep. Sleep restores energy at a steady rate until you are rested, and you cannot act until you wake. You fall asleep where you stand if your energy runs out."
+      },
       "fetch": {
         "kind": "delegated_task",
         "description": "Fetch an amount of one kind of goods from a source the affordance names, and bring it to you."

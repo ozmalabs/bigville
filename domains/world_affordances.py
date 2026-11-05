@@ -130,7 +130,9 @@ RECIPE_EXERTION = _PACK["RECIPE_EXERTION"]
 HUNGER_PER_STAMINA = _PACK["HUNGER_PER_STAMINA"]
 # Stamina one `rest` action restores, per unit of its amount (the port's rate; APPROX, not sourced: the
 # seed bd_rest_recover gives no figure). One rest action spans one clock tick (TIME.minutes_per_tick).
-REST_RECOVERY_PER_UNIT = 0.1
+# The value lives in the EXHAUSTION pack table (Phase 024), with the sleep and slowdown parameters.
+EXHAUSTION = _PACK["EXHAUSTION"]
+REST_RECOVERY_PER_UNIT = EXHAUSTION["rest_recovery_per_unit"]
 ANIMAL_SERVICES = _PACK["ANIMAL_SERVICES"]
 # World mechanics parameters (Phase 014): the clock, the town's starting state, a resident's
 # starting state, care and starvation, default prices, the literacy gate for each written kind,
