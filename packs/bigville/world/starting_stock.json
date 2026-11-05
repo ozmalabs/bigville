@@ -1,5 +1,5 @@
 {
-  "_doc": "Founding provisions for the 100-resident scenario.  These are a finite bridge to the first\nharvest, not an infinite food cheat: residents and livestock still consume the physical stocks,\nand the reserve fails unless the village grows, preserves, trades, or imports replacements.\nEight days of reserve for the 100-person founding cast; the first local\nharvest is intentionally timed to replace this finite bridge.\nseed for every other crop, so each can be sown; harvest seed_return keeps them going",
+  "_doc": "Founding provisions for the 100-resident scenario.  These are a finite bridge to the first\nharvest, not an infinite food cheat: residents and livestock still consume the physical stocks,\nand the reserve fails unless the village grows, preserves, trades, or imports replacements.\nEight days of reserve for the 100-person founding cast; the first local\nharvest is intentionally timed to replace this finite bridge.\nseed for every other crop, so each can be sown; harvest seed_return keeps them going\nGrain seed (Phase 007): barley_seed 27 and oats_seed 26 sow the BALANCE_SCENARIO beds (wheat 27, barley 27, oats 26, the founding beds included); wheat_seed 40 leaves 13 in reserve.",
   "_types": {},
   "tables": {
     "STARTING_STOCK": {
@@ -8,8 +8,8 @@
       "wood": 40.0,
       "salt": 20.0,
       "wheat_seed": 40.0,
-      "barley_seed": 20.0,
-      "oats_seed": 20.0,
+      "barley_seed": 27.0,
+      "oats_seed": 26.0,
       "potato_seed": 20.0,
       "cabbage_seed": 20.0,
       "carrot_seed": 20.0,

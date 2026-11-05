@@ -195,7 +195,12 @@ is low and the actor holds an axe, and `make_compost` when night soil is high.
 
 ## Phase 007 -- Balance scenario from the world
 
-**Status:** ready
+**Status:** done (see History). `BigvilleWorld.balance_scenario()` reports the scenario shape from the
+built town and a test asserts it matches BALANCE_SCENARIO. The executor found the world built 61
+grain beds against the scenario's 80; the supervisor fixed `_seed_village_crops` to sow the
+scenario's beds per crop and raised barley_seed and oats_seed to 27 and 26 (wheat 21/27,
+barley 20/27, oats 20/26 -> 27/27/26). `work_minutes_per_resident` (480) has no source (APPROX);
+`woodland` is not in the table (model default 1.0).
 
 **Goal.** `population.BALANCE_SCENARIO` hand-copies what `populate_town100` builds
 (beds, plots, animals, water sources). Add a world method that reports the same
@@ -699,3 +704,4 @@ exist, at the precision they know them -- never the world's map.
 | 004 Located gathering | done | (this commit) | docs/phases/phase004/PHASE004_REPORT.md -- GATHERING_SITES placed without moving existing sites; site-gated gathering with daily regrowth; 483 passed |
 | 005 Household heating | done | (this commit) | docs/phases/phase005/PHASE005_REPORT.md -- HEATING table, household burn own-store-first, chill when unheated, heating in the balance fuel line; cast gains a forester; 497 passed |
 | 006 Household work choice | done | (this commit) | docs/phases/phase006/PHASE006_REPORT.md -- open-recipe read-offs and HOUSEHOLD_WORK scoring in psi_can; no founding change (no held axes or spades); 514 passed |
+| 007 Balance scenario from the world | done | (this commit) | docs/phases/phase007/PHASE007_REPORT.md -- balance_scenario() from the built town; grain beds 61 -> 80 to match the scenario (barley/oats seed 27/26); 520 passed |

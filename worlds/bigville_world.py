@@ -1953,6 +1953,48 @@ class BigvilleWorld:
             world.set_relationship(src, tgt, kind=kind, strength=strength)
         return world
 
+    def balance_scenario(self):
+        """The BALANCE_SCENARIO shape this built town actually has (Phase 007).
+
+        Every value is read from the world's own state: residents (actors), households, living crop
+        beds by crop kind (all crops, including the one-off garden beds), arable farm plots (count,
+        area, soil), animals by species, pasture area, water sources by kind in the order they were
+        added, and woodland (lumber deposits, one woodlot each). Parameters of the balance model
+        (food_per_resident, work_minutes_per_resident, staple) are not facts of the world and are not
+        reported. Raises ValueError if the arable plots differ in area or soil, since the scenario
+        takes one value for each.
+        """
+        from collections import Counter
+
+        eng = self.eng
+
+        def attrs(node):
+            return eng.node(node)["attrs"]
+
+        plots = [attrs(n) for n in eng.neighbours(self._town, "has_land") if attrs(n).get("use") == "arable"]
+        areas = {round(float(p["area"]), 6) for p in plots}
+        soils = {str(p["soil"]) for p in plots}
+        if len(areas) > 1 or len(soils) > 1:
+            raise ValueError(f"the arable plots differ: areas {sorted(areas)}, soils {sorted(soils)}")
+        beds = Counter(str(attrs(crop)["crop"]) for crop in self._living_crops())
+        animals = Counter(str(attrs(n)["species"]) for n in eng.neighbours(self._town, "has_animal"))
+        pasture = sum(float(attrs(n)["area"]) for n in eng.neighbours(self._town, "has_land")
+                      if attrs(n).get("use") == "pasture")
+        water = [str(attrs(n)["kind"]) for n in eng.neighbours(self._town, "has_water_source")]
+        woodland = sum(1 for n in eng.neighbours(self._town, "has_deposit") if attrs(n).get("kind") == "lumber")
+        return {
+            "residents": len(self._actors),
+            "households": len(eng.neighbours(self._town, "has_household")),
+            "beds": dict(beds),
+            "plots": len(plots),
+            "plot_area": next(iter(areas)) if areas else 0.0,
+            "soil": next(iter(soils)) if soils else "",
+            "animals": dict(animals),
+            "pasture_area": float(pasture),
+            "water_sources": water,
+            "woodland": woodland,
+        }
+
     def seed_residents(self, population, *, prefix=None, capacity_seed=0):
         """Seed `population` founding residents from the data's JOBS (E.seed_jobs).
 
@@ -2144,10 +2186,10 @@ class BigvilleWorld:
             if index < len(self._t100_farms) and farmers:
                 self.sow(farmers[index % len(farmers)]["name"], crop,
                          land=f"farm_plot_{index:02d}")
-        # Expand the founding rotation into physical crop beds.  Beds may
-        # share a mapped parcel; the map locates the field, while each Crop
+        # Expand the founding rotation into the grain beds the balance scenario describes (Phase 007).
+        # Beds may share a mapped parcel; the map locates the field, while each Crop
         # node is an independently watered and harvested unit.
-        self._seed_village_crops(target=80)
+        self._seed_village_crops()
         self._found_kinship(cast["residents"], seed)
         return cast
 
@@ -4566,31 +4608,46 @@ class BigvilleWorld:
                     return name
         return None
 
-    def _seed_village_crops(self, target=80):
-        """Fill the founding fields with enough beds for a 100-person rotation.
+    def _seed_village_crops(self, target=None):
+        """Sow the founding grain beds the pack's balance scenario describes (BALANCE_SCENARIO beds).
 
-        The eight founding crops are intentionally small and readable in the
-        map.  Additional beds are still ordinary Crop nodes on those parcels;
-        they represent cultivated area rather than new map tiles.  Eighty
-        beds uses the founding seed reserve and gives the 100-person cast a
-        plausible working margin after milling and baking losses.
+        The founding crops are intentionally small and readable in the map. Additional beds are
+        still ordinary Crop nodes on those parcels; they represent cultivated area rather than new
+        map tiles. The beds are sown round-robin across crops, skipping a crop once it has its count
+        or its seed runs out, so the town the balance model assumes is the town that is built
+        (Phase 007). `target` caps the total grain beds sown (default: the scenario's total).
         """
         if not self._land:
             return 0
         farmers = self._workers_with_roles(self.E.LABOUR_TASKS["farm"]["worker_roles"], alive_only=False)
         if not farmers:
             return 0
-        crops = ("wheat", "barley", "oats")
+        wanted = {crop: int(n) for crop, n in (self.E.BALANCE_SCENARIO or {}).get("beds", {}).items()}
+        if not wanted:
+            return 0
+        if target is None:
+            target = sum(wanted.values())
+        crops = tuple(wanted)
+        # Beds already sown (the founding crops) count toward each crop's number.
+        sown = {crop: 0 for crop in crops}
+        for node in self._living_crops():
+            kind = str(self.eng.node(node)["attrs"].get("crop", ""))
+            if kind in sown:
+                sown[kind] += 1
         added = 0
         land_names = [name for name in self._land if name.startswith("farm_plot_")]
-        while len(self._living_crops()) < target:
-            crop = crops[added % len(crops)]
-            seed = self.E.CROPS[crop]["seed"]
-            if self.qty(seed) < 1.0:
+        turn = 0
+        while sum(sown.values()) < target:
+            open_crops = [c for c in crops if sown[c] < wanted[c]
+                          and self.qty(self.E.CROPS[c]["seed"]) >= 1.0]
+            if not open_crops:
                 break
+            crop = open_crops[turn % len(open_crops)]
+            turn += 1
             land = land_names[added % len(land_names)]
             if self.sow(farmers[added % len(farmers)], crop, land=land) is None:
                 break
+            sown[crop] += 1
             added += 1
         return added
 
