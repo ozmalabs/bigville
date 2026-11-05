@@ -384,7 +384,7 @@ Survey findings this programme acts on (2026-11-05):
   never consulted by the civic methods.
 
 Order: 013 first (everything else writes into the pack it defines). 014-016 move content.
-017-018 generate seeds and instructions. Phases 002-012 above continue afterwards, writing into
+019 derives what each resident knows. 017-018 generate seeds and instructions from it. Phases 002-012 above continue afterwards, writing into
 the pack.
 
 ## Phase 013 -- Data packs
@@ -482,6 +482,68 @@ the pack. Record the prompt schema version and the pack hash in each prompt reco
 **Acceptance.** Tests show: the system prompt changes when the pack's actions change; a resident
 who has not been seeded a law does not see it; a different pack yields a different premise with
 no code change.
+
+## Phase 019 -- Derived knowledge priors (awareness and understanding)
+
+**Status:** blocked on 013; uses 009 (kinship) and 012 (physical vs cognitive skills) when present.
+
+**Decision 2026-11-05.** What a resident knows at the start is EXTRAPOLATED from their job, their
+implied life history, and their skill levels -- not from hand-listed role names. Knowledge has
+two levels that are tracked separately:
+- **aware of**: they know the thing exists and roughly what it is for (the clerk keeps a land
+  register; there is a law against theft; bread is made from flour; the miller is Bram).
+- **understands**: they can use, follow, explain, or do it (can read and apply the land ordinance;
+  knows how to bake; knows the steps of a council vote).
+Unaware is the default. Understanding implies awareness.
+
+Today's mechanism is crude: each shared concept and law lists `seed_roles` (35 lists in
+`shared_frames.py`), and `bigville/game.py` (~line 280) gives every resident the common recipes
+of their role's trades as "can_attempt" memories.
+
+**Goal.**
+1. **Knowable things in the pack.** Every knowable entry -- recipes, laws, policies, charters,
+   procedures, offices, institutions, shared concepts, kin terms, places, notable residents --
+   carries a `knowledge` spec instead of `seed_roles`:
+   - `topic` tags (agriculture, smithing, land law, civic procedure, health, ...), linked in the
+     pack to skills, clusters, and metaskills;
+   - `public`: how widely awareness spreads among residents simply by living in the village
+     (e.g. the market and the well: everyone; a charter clause: few);
+   - `understanding_requires`: what turns awareness into understanding -- a skill and level, a
+     metaskill, literacy for written law, holding an office, an implied-history event
+     (apprenticeship, schooling, having served on the council).
+2. **Implied history in the population.** For each founding resident, draw a plausible life
+   history consistent with their age, job, station, household, and skills: born locally or
+   incomer (and years in the village), schooling years, apprenticeship(s) and earlier jobs (which
+   leave lower skill levels in those trades), past offices held, and life events (married,
+   widowed, bereaved, served the council). Distributions come from historical sources where
+   available (cite; mark APPROX). History is authored data about the person, consistent with
+   their skills -- skill levels and history are drawn together, not independently.
+3. **Derivation.** A pure function `derive_knowledge(person, pack)` returns
+   `{item: {"aware": bool, "understands": degree 0..1, "basis": [...reasons]}}` from job ->
+   trades -> skills (effective levels, including closeness transfer), metaskills and aptitude,
+   literacy, history, household and kin, and public spread. A recipe the person's skill can
+   attempt is understood to the degree of their working level; recipes in the same cluster or
+   that they buy and use are aware-of; laws are aware-of by public spread and their topics,
+   understood if literacy and relevant office/history allow. Every result carries its basis so a
+   report can say WHY someone knows something.
+4. **Seeding.** At founding the derived priors become the resident's PRIVATE memories (as
+   `bigville/game.py` does for recipe priors today), split into awareness and understanding
+   kinds. Scenario-authored priors still override. The world itself still holds no beliefs, per
+   the boundary audit. After founding, changes in knowledge belong to the backend (and, for
+   physical skills, the practice subsystem).
+5. **Self-test.** Report, for a seeded town, the share of residents aware of / understanding each
+   law and each trade's recipes, and flag implausible results (e.g. a law nobody is aware of, a
+   trade whose own holders do not understand its core recipes).
+
+**Acceptance.** Tests show: a baker understands baking and is aware of milling; a former
+apprentice smith who now farms understands basic smithing at a lower degree; an illiterate
+resident is aware of the theft law but does not understand its written text; an incomer of one
+year is unaware of a local custom that a lifelong resident understands; `seed_roles` is gone
+from the pack and replaced by `knowledge` specs; every derived item has a basis.
+
+**Feeds.** Phase 017 generates each resident's knowledge seed from this derivation; Phase 018's
+LLM instructions carry only the resident's derived awareness and understanding (an aware-only item
+is given as a name and gist, never its full content).
 
 ---
 
