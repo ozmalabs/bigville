@@ -703,6 +703,1090 @@ exist, at the precision they know them -- never the world's map.
 
 ---
 
+# Programme C: time, effort, and consequence
+
+**Decision 2026-11-05 (user).** The town must sustain itself under simple deterministic backends
+before Ocelot and LLM backends are plugged in. A social act (a birthday party) only means
+something if it costs time and energy that would otherwise go to work, so time and effort must be
+real, enforced costs, and a refused action must be visible to the actor that tried it.
+Institutions (prices, laws, opening hours, enforcement) stay with residents, per the boundary
+audit: these phases add physical costs and physical means, never enforcement.
+
+**Seeds are the specification (user, 2026-11-05).** Many rules this programme needs were
+designed earlier as seeds in `seeds/` (blocks R1-R80, written in the project's projected past)
+and never ported. Most are in neither `ENGINE_SEEDS` nor `RESIDENT_SEEDS` in the pack, so
+nothing loads them, and the Python world implements only part of the seeds it does load. Each
+brief cites its seed and ports its rule. Where a brief and its seed differ, the seed wins and
+the report says so. Seed parameters are often set nowhere in this repository (the adapters that
+set them were not kept), so each brief says which numbers come from the seed and which are new
+(APPROX). A feature with no seed at all is marked NEW DESIGN, built behind a switch that
+defaults off, so the user can accept or reject it.
+
+Source: the 2026-11-05 grounding audit of `worlds/bigville_world.py` and `bigville/game.py`,
+and a survey of `seeds/` (184 files; the sections below cite the ones that matter).
+Findings this programme acts on:
+- `RECIPE_EXERTION` declares a stamina cost per recipe, but `_can_attempt` discards it
+  (`strength_needed, _stamina = ...`) and nothing charges it. Stamina falls only through
+  movement `Effort`. Job ticks add a `fatigue` attribute that nothing reads.
+- `busy` hides recipe-start options in `_actor_options` only. `start`, `do` and `_can_attempt`
+  never check it, so a worker can open overlapping jobs or walk away from a running one.
+- Nothing reads `stamina_reserve` as a limit: no action refuses at 0, and it only decides
+  whether `rest` is offered. Stamina recovers only through the `rest` action (0.1 per unit);
+  there is no overnight recovery.
+- The Body seeds (`seeds/bigville_body.json`, `bigville_body_choice.json`) design more than the port
+  kept. `bd_exert_cost` also raises hunger by stamina spent x `HUNGER_PER_STAMINA` (the pack
+  constant exists and nothing reads it). `bd_train_strength` and `bd_train_stamina` build the
+  body with use toward `TRAIN_HEADROOM` (`str_train` and `sta_train` are initialised and never
+  updated, and `str_done`/`sta_done` on `Effort` nodes are never read). `bd_meal_feeds` relieves
+  hunger by the item's `feeds`; the port's `eat` resets hunger to 0. The seeds say an empty
+  reserve means "too tired to work" and that an exhausted walker stops to rest. The engine does
+  not execute seeds, so none of this runs.
+- The slowdown the user remembers is seeded. `bigville_move_energy` makes the move budget a graded
+  step function of energy (3, 2, 1, 0 moves per tick past `e_high` 70, `e_mid` 40, `e_low` 15 of
+  100), scales the spend by 1 + hunger, and slows a laden mover; `worlds/bigville_move_world.py`
+  keeps those defaults. `bigville_time_sleep` adds the sleep decision, an involuntary collapse
+  below `e_collapse`, and non-restorative collapse sleep (`collapse_cap` below `rest_cap`: the
+  spiral). `bigville_time_concern` makes a witnessed collapse concerning. None is in the pack's
+  seed lists. An earlier search of mine by Python names (`stamina_reserve`, `move_interval`)
+  missed all of it.
+- Other designed and unported rules, each cited in the phase that ports it: nutrition, freshness
+  and graded eating (`bigville_nutrition`, `bigville_foodstuff`, `bigville_diet_affect`);
+  loudness as hearing radius and the hear-versus-witness split (`bigville_loud_comm`); taking as
+  a world fact (`bigville_theft` `th_take`); the violent act and death by violence
+  (`bigville_viol_act`, `bigville_viol_kill`); one health variable with age, illness,
+  starvation, exhaustion and violence as routes to death (`bigville_life_health`); lock and key
+  authority and dual-key safes (`bigville_container`, `bigville_coin_safe`); custody
+  (`bigville_jail`); day, night and lamps (`bigville_daynight`); screening, treatment and
+  well-baby care (`bigville_doctor_care`, `bigville_infant_care`); rearing
+  (`bigville_life_rearing`). In the port, injury cannot kill and nothing dies of age. Not
+  seeded, so NEW DESIGN behind switches: weapons, illness onset, conception and birth,
+  and body growth. The world has `birth()` and nothing calls it.
+- Drunkenness was designed and never ported. `seeds/bigville_nutrition.json` (block R41) adds a
+  drink's `alcohol` to the eater's `intoxication`, multiplies it by `sober_rate` each epoch,
+  and raises mood and lowers focus with it. The pack has `ale`, `cider`, `mead` and `beer` as
+  drinks with brewing recipes but no alcohol content, and the world has no intoxication state.
+  The seed's `sober_rate` and gain parameters are set nowhere in this repository. The same seed
+  also designs energy density x variety, protein and deficiency, and taste and spice, none of
+  which exists in the world.
+- Locks and keys exist but no resident can use them. `lock` and `unlock` take no container
+  argument, are not major actions, and have no `_enact_plan` branch. A key is a `holds_key`
+  edge, not a held item, so it cannot be given, dropped, or taken. The town store has no lock
+  at all.
+- `major_action` claims the action slot before `put`, `eat`, `fetch`, `sow`, `water`,
+  `harvest`, `build`, `maintain`, `care`, `tend_animals` and `rest` validate, so a refused
+  attempt still uses the turn. `move`, `give`, `transfer` and `work` pre-check.
+- Malformed proposals raise instead of being refused (`plan["kind"]`, `plan["recipe"]`,
+  the species `assert` in `_husbandry_yield`). `BigvilleGame.step()` ticks the world before
+  applying responses and catches nothing, so an exception leaves a half-applied turn.
+- A refusal is a bool in `game.last_results`, overwritten each step. The world records no
+  event or counter, and `ActorContext` carries no last result, so an LLM resident never
+  learns that an action failed. (`AGENT_BACKENDS_PLAN.md` section 5 gates on "a failed action
+  is observable to the next cognition tick"; `record_action_outcome` reaches Ocelot only.)
+- `_record_transaction` is defined but has no caller anywhere, so `report["economy"]
+  ["transactions"]` is empty by construction. The preregistered evaluation reports transaction
+  counts "even when zero".
+- `BigvilleGame.step()` applies responses in actor insertion order against a pre-tick
+  decision, so the same residents always win a contested last seed or last loaf.
+- `eat` sets hunger to 0 for any food unit; items carry `food: true` and no nutritional value.
+- A broadcast utterance (no target) is heard by every resident at any distance; `loudness`
+  is stored and never read.
+- `take` of held goods always returns False because there is no contested-action model
+  (`SIMPLE_VILLAGE_PACKAGE_12.md` records this as a limitation); `move_object` can take any
+  accessible unattended object with no resistance. There is no restrain or block action, and
+  the town store has no gate (`fetch` checks only location and quantity).
+- `LLMBackend` has no concrete provider, `create_game` does not know the `"llm"` kind, and
+  bad provider output raises out of `decide`.
+
+Checked and fine (no phase): the world RNG state is checkpointed (`world_persistence.py`
+saves and restores `_rng_state`); `complete_request` claims the action slot.
+
+**Order (proposed, for supervisor confirmation).** 020, 021, 025, 026, 037 are independent of
+Programme B and of 012. 022 and 023 follow 012 (both touch job completion and practice
+logging). 024 follows 021 and 022. 032 follows 022. 027 can run any time; 035 follows 027 and
+034. 034 follows 024 and 027. 036 follows 034 and 037. 029 follows 021, 024 and 025; 033 and
+038 follow 029 (038 also 037). 030 follows 021 and is better after 029 (keys become takeable);
+039 follows 030. 028 can run any time. 031 follows 018 and 021. 040 follows 029, 034 and 038. 041 follows 030 and should land before 011, which needs coin
+containers for its treasury and church purses. 042 follows 024 and 028. 043 follows 037;
+044 follows 009, 037 and 043; 045 follows 044. Phase 006 (household work
+choice) should read the stamina reserve and exhaustion state once 022 and 024 land. Every phase
+here changes behaviour the preregistered village evaluation measured, so changed replay digests
+and numbers are listed in the report, and the preregistered documents themselves are not edited.
+
+Decisions recorded 2026-11-05 (user): exhaustion slows you until you fall down (024);
+contested actions resolve in an interrupt style, where the other party gets a reaction turn
+depending on situation, skill, size and ability (029); the town store uses a lock and key (030); drunkenness and nutrition are restored, and the
+features set aside as out of scope are added, ported from their seeds (034-039).
+
+## Phase 020 -- Validate before claiming the action slot; refuse malformed proposals
+
+**Status:** ready
+
+**Goal.** Make `major_action` consistent: every branch runs its physical checks first and
+claims the slot only for an attempt that will be enacted, so a refused attempt costs nothing.
+Make `_enact_plan` and the primitives it calls return False for a proposal with a missing or
+mistyped parameter (no `KeyError`, `TypeError`, or `AssertionError` for backend input), including
+milking or shearing the wrong species. Remove the retired `sell` and `sell_labor` branches from
+`major_action` (they claim the slot and always fail). In `BigvilleGame.step()`, contain a failure while applying
+one actor's response: that actor's result is False, the others still apply, and the turn completes.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, a new
+`tests/test_phase020_validation.py`; your report directory.
+
+**Acceptance.**
+- A test per branch listed above shows a refused attempt leaves `actor_turn_state` unchanged
+  and the same actor can act in the same turn.
+- Tests feed each major action a plan with a missing key, a wrong type, and a nonexistent
+  target, and get False with no exception.
+- A parity test shows that for a seeded village actor, every option from `actor_affordances`
+  can be enacted successfully on a fresh copy of the state (the boundary audit says published
+  options can succeed); any option that cannot is listed in the report with its cause.
+- Existing tests pass, with changed numbers listed.
+
+**Out of scope.** Reasons for refusal and feedback to the actor (Phase 021).
+
+## Phase 021 -- Refusal records and result feedback
+
+**Status:** ready (after 020)
+
+**Goal.** Make refusal visible. Each refusal point in the major-action primitives reports a short
+physical reason code from a fixed table in the pack (for example `slot_used`, `not_in_reach`,
+`out_of_stock`, `no_capacity`, `no_tool`, `unskilled`, `out_of_season`, `container_locked`,
+`malformed`). Then:
+- The world keeps a bounded per-actor log of refused attempts (turn, action, reason) and
+  counters by action and reason, in the typed graph so they checkpoint.
+- `BigvilleGame` exposes `last_rejections` beside `last_results`, persists it in
+  `game_persistence`, and `_context` adds the actor's own last outcome (`applied`, `reason`)
+  to its observations, for every backend. The world publishes only the actor's own attempt;
+  it never tells another resident.
+- `PromptBuilder` includes the last outcome in the turn packet.
+- `reporting.py` adds refusal counts by action and reason.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, `bigville/game_persistence.py`,
+`bigville/backends/protocol.py`, `bigville/backends/prompts.py`, `bigville/reporting.py`,
+pack table for reason codes, a new `tests/test_phase021_refusals.py`.
+
+**Acceptance.** Tests show: a refused fetch at an empty store records `out_of_stock`, appears in
+the next context for that actor and not for a neighbour, survives a checkpoint round trip, and
+shows in the report; a successful action records no refusal. The prompt for a resident with a
+refusal contains it.
+
+**Out of scope.** Backends adapting to refusals (their choice); retry policy (Phase 031).
+
+## Phase 022 -- Recipe stamina is spent
+
+**Status:** ready (after 012)
+
+**Goal.** Charge the stamina cost `RECIPE_EXERTION` already declares. Spend it through the same
+`Effort` mechanism movement uses, spread evenly over the ticks of a timed job (an instant `do`
+charges at completion), for trade and open recipes alike. Retire the unread `fatigue` attribute
+or turn it into a read-off of stamina spent, and record which. Port the hunger cost of
+exertion from `bd_exert_cost`: stamina spent (by recipes and by movement) also raises hunger by
+`HUNGER_PER_STAMINA` per unit. That constant's note assumes a meal relieves about 5 hunger,
+while the port raises hunger 1.0 per period and resets it on eating, so rescale or justify the
+constant and record which. Per `mv_deplete` in `bigville_move_energy`, the stamina a movement
+or recipe spends is also scaled by 1 + hunger (normalised by `starve_limit`; record the
+normalisation), so a hungry worker tires faster. Recovery stays with the `rest`
+action; do not retune it. Add a stamina budget to the balance model: stamina spent per
+resident per period by the town's labour streams against the rest the town can afford, so a
+town whose labour demand exceeds sustainable effort is flagged.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/bigville_entities.py` (balance model and
+self-test), `domains/world_affordances.py` (balance only), a new
+`tests/test_phase022_recipe_stamina.py`; your report directory.
+
+**Acceptance.** Tests show: forging a plough lowers the smith's reserve by its declared cost,
+spread over the job; a light recipe (cost 0) leaves it unchanged; the reserve never goes
+below 0. The self-test balance report includes the stamina line for the 100-resident town; if
+it flags the town as unsustainable, the report states the numbers and does not retune data
+without a decision.
+
+**Out of scope.** What a low reserve prevents or slows (Phase 024).
+
+## Phase 023 -- Timed jobs occupy the worker
+
+**Status:** ready, with a default the user may override (decision 2026-11-05: time is a scarce
+resource; a worker cannot do two things at once).
+
+**Goal.** Make occupation a world rule, not only an affordance filter:
+- `start` and `do` refuse a worker who is already `busy` with a timed job (eating between work
+  pulses stays allowed, as the affordance comments intend).
+- Default for leaving: a timed job advances only on ticks when its worker is at the cell where
+  it started. Moving away pauses it, and it resumes on return; it is not cancelled and its
+  inputs are untouched. Record the final choice in the report.
+- Publish the paused state as a read-off on the actor so backends can see it.
+Existing behaviour that must hold: a job short of inputs or tools stays busy and completes when
+they arrive (Package 7 findings).
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/backends/cheap.py` (read the paused
+read-off only), a new `tests/test_phase023_job_occupancy.py`; your report directory.
+
+**Acceptance.** Tests show: a second `start` while busy is refused; a smith who walks to the
+square leaves the forge job unfinished and it completes after he returns; eating while busy
+still works; the existing job tests pass.
+
+**Out of scope.** Cancelling a job; work that continues unattended (for example an oven load).
+If the audit of recipes shows some should run unattended, list them as data for a later phase.
+
+## Phase 024 -- Exhaustion, collapse and sleep
+
+**Status:** ready, after 021 and 022 (decision 2026-11-05: exhaustion makes you slower until you
+fall down). Spec: `seeds/bigville_move_energy.json` (v1.1.0), `bigville_time_sleep.json`,
+`bigville_time_concern.json`. Seed numbers: `e_high` 70, `e_mid` 40, `e_low` 15, `energy_cost`
+8 (per move), 3/2/1/0 moves per tick. Not in the seeds, so new and APPROX: `e_collapse`,
+`rest_gain`, `rest_cap`, `collapse_gain`, `collapse_cap`.
+
+**Goal.** Port the seeded exhaustion rules, as pack data in a new `EXHAUSTION` table:
+1. **Slowing (`mv_energy_budget`).** The move rate is a graded step function of the reserve.
+   The seed thresholds map to reserve fractions 0.70, 0.40 and 0.15, and its 3/2/1/0 moves per
+   tick map to the rate ratios 1, 2/3, 1/3 and 0, so the movement interval is x1, x1.5, x3, and
+   movement stops below `e_low`. The interval is the one carry load already lengthens
+   (`move_interval`, `carry_move_cooldown`); the effects multiply. Thresholds vary by resident
+   ("per-character"), drawn from the body capacities. A `slow_on` switch (the seed's falsifier,
+   and `energy_cost` 0 for the second control) disables it per scenario.
+2. **Spend (`mv_deplete`).** Hunger-modulated cost is Phase 022's. This phase reads the result.
+3. **Collapse (`bt_collapse`).** When the reserve falls below `e_collapse` while awake the actor
+   collapses, wherever it is. A collapsed actor is asleep and non-restorative: it gains
+   `collapse_gain` per tick up to `collapse_cap`, which is below `rest_cap`, then wakes. It
+   wakes weaker than a proper sleep leaves it, so a resident who keeps working falls again (the
+   seed's spiral). All other major actions are refused meanwhile (reason `collapsed`, Phase 021),
+   timed jobs pause (Phase 023), and the actor cannot react (Phase 029).
+4. **Sleep (`bt_replenish`, `bt_wake`).** A new `sleep` major action sets the actor asleep.
+   Each tick it gains `rest_gain` up to `rest_cap`, then wakes. Other major actions are refused
+   while asleep (reason `asleep`), jobs pause, and the actor cannot react. The decision to sleep
+   or defer (`bt_decide_sleep`: sleep drive against goal urgency, with a `sleep_enabled`
+   ablation) belongs to the backend. The world publishes the facts the seed says the adapter
+   writes mechanically: `lateness` (how far into the night, from the clock) and `safe` (indoors,
+   at a home or shelter). The simple backend gets a deterministic version in `cheap.py`.
+   `rest` stays as the short, awake recovery.
+5. **Witnessed collapse (`bt_concern`).** A collapse or sleep is a physical event observed by
+   residents with sight of the actor. The concern is the observer's (affect), not the world's.
+   Sight does not yet shorten at night (`bigville_daynight`); that is a later phase.
+6. **Read-offs.** The step, the speed factor, and the `asleep` and `collapsed` flags are in body
+   state and in the options. The simple backend rests or sleeps before collapse, and its reason
+   trace shows it.
+7. **Extension (not in the seeds).** Timed jobs also advance at the movement factor, so a tired
+   smith's job takes longer. Record it, behind the same switch.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (new table),
+`domains/bigville_entities.py` (self-test), `bigville/backends/cheap.py`,
+`bigville/backends/psi_can.py`, a new `tests/test_phase024_exhaustion.py`.
+
+**Acceptance.** Tests show: the same walk takes x1, x1.5 and x3 the ticks at reserves above 0.70,
+between 0.40 and 0.70, and between 0.15 and 0.40, and cannot start below 0.15; a resident
+pushed below `e_collapse` collapses, is refused other actions with the reason, wakes without
+input at `collapse_cap`, and falls again if it keeps working; `sleep` restores to `rest_cap`
+and wakes; an asleep or collapsed actor's job pauses; `lateness` and `safe` are published; with
+`slow_on` off there is no slowdown; existing movement and job tests pass.
+
+**Out of scope.** Exhaustion as a route to death (Phase 037 reads the collapsed flag); night
+sight and `lateness` from the real sunset (Phase 042; until then `lateness` comes from the hour).
+
+## Phase 025 -- Fair turn order
+
+**Status:** ready
+
+**Goal.** Residents act in insertion order every turn against decisions made before the tick,
+so the first residents always win contested stock. Apply responses in a deterministic order
+that varies by turn: a permutation derived from the world seed and the turn number, using its
+own generator so the world RNG stream is untouched. Decisions are still taken before the tick.
+
+**Write scope.** `bigville/game.py`, a new `tests/test_phase025_turn_order.py`.
+
+**Acceptance.** Tests show: the same seed gives the same order on replay; over a run where two
+residents repeatedly want the last unit of a stock, each wins about half the time; the world's
+weather and failure stream is unchanged.
+
+**Out of scope.** Simultaneous or negotiated resolution of conflicts.
+
+## Phase 026 -- Observable transfers replace the dead transaction record
+
+**Status:** ready (decision 2026-11-05: the world does not decide what counts as a trade; it
+records physical handovers).
+
+**Goal.** Remove `_record_transaction` and the `Transaction` node (no caller exists). Record
+each completed physical handover (`give`, `transfer`, `fetch`, `put`) as a `Handover` fact:
+turn, from, to (an actor, container or the store), kind, quantity. Bound the history as the
+other turn records are. The report's `economy` section counts handovers by good and by kind of
+endpoint, with coin shown as a good, and makes no claim that any handover was a sale. Rename
+the report key and say so in the README example.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/reporting.py`, `README.md` (the report
+example only), a new `tests/test_phase026_handovers.py`.
+
+**Acceptance.** Tests show a bread-for-coin exchange appears as two unrelated handovers; the
+conservation checks the preregistered evaluation uses still pass; the report carries no
+`transactions` key.
+
+**Out of scope.** Pairing handovers into trades (a reader's interpretation); the preregistered
+documents are not edited.
+
+## Phase 027 -- Food value, freshness and graded eating
+
+**Status:** ready (changes balance numbers; list them). Spec: `seeds/bigville_body.json`
+`bd_meal_feeds`; `seeds/bigville_foodstuff.json` `fs_spoil`, `fs_rot`, `fs_prepare`, `fs_eat`,
+`fs_nofood`. The seed's note assumes a meal relieves about 5 hunger.
+
+**Goal.**
+1. **Meals feed.** `eat` resets hunger to 0 for any food unit. Give each food item a `feeds` value
+   in the pack (a loaf is the current unit: one resident's bread for a period; cite sources or
+   mark APPROX), and relieve hunger by it, clamped at 0. Reconcile the unit with the world's
+   hunger scale (+1.0 per period, starvation at `starve_limit`; the seed assumed about 5 per
+   meal) and let the balance model compute food needs in those units. Keep the one-unit-per-meal
+   rule and the serving-equipment checks.
+2. **Graded eating (`fs_eat`).** Food is not accepted or rejected, it is graded. What a meal
+   gives is its `feeds` x freshness (the pile's `condition`), times a `raw_penalty` from the pack
+   if the food needs preparation and has none. Spoiled food is still eaten, with low value,
+   pleasantness falling with freshness, and illness accruing with (1 - freshness): the harm goes
+   through Phase 037's health routes as `illness` (until then, a published `illness_risk`).
+   Only an empty stock yields nothing (`fs_nofood`).
+3. **Spoiled food stays (`fs_rot`).** `decay` currently sets a stock to 0 at condition 0, so
+   rotten food vanishes. Keep it as spoiled stock that can be eaten (item 2), left, or thrown away
+   by the existing waste and compost path. Record whether a `discard` action is needed.
+4. **Preparation (`fs_prepare`).** Cooking lifts freshness and taste and makes `needs_prep` food
+   edible at full value. The existing recipes already prepare food; read their results.
+Household rationing (`hq_ration`) is the household's choice, so it stays with residents.
+
+**Write scope.** `domains/world_affordances.py`, `domains/bigville_entities.py`, the pack's
+`items.json`, `worlds/bigville_world.py`, `bigville/backends/cheap.py` (read the value only), a
+new `tests/test_phase027_food_value.py`.
+
+**Acceptance.** Tests show: a loaf clears a period's hunger, a single apple only part of it, and
+two apples as much as a loaf; stale bread relieves less than fresh and carries an illness risk;
+raw wheat relieves little; a spoiled pile is not deleted and can be eaten; the self-test checks
+every food item has a value; the balance report's food line is in the new units.
+
+**Out of scope.** Variety, protein and taste (Phase 035); alcohol (Phase 034).
+
+## Phase 028 -- Loudness is hearing range; hearing is not witnessing
+
+**Status:** ready. Spec: `seeds/bigville_loud_comm.json` (a resident seed, so only Ocelot minds
+run it; the Python world has no counterpart). Seed: loudness IS the Chebyshev hearing radius;
+`eff_loudness` is the speaker's chosen loudness clamped to `max_loudness`; content is delivered
+iff `eff_loudness >= dist` and the path is not hear-occluded (`lo_deliver_content`); any witness
+with sight of the speaker (in range, not sight-occluded) observes that a speech act happened,
+whatever the content (`lo_observe_act`, a `CommAct`).
+
+**Goal.** A broadcast reaches every resident at any distance, `loudness` is never read, and a
+targeted utterance needs the same cell. Port the seed's physics into the world:
+1. The speaker chooses the loudness (a backend choice, already a parameter of `speak`); the world
+   clamps it to `max_loudness` from a new pack table.
+2. Content is delivered to every resident, or the target, within the Chebyshev distance
+   `eff_loudness` and not hear-occluded. Use solid map cells and building footprints as
+   occluders; if the map holds no usable occlusion data, record that and use distance alone.
+3. A resident with sight of the speaker (a `sight_range` from the table, not sight-occluded)
+   gets an observation that a speech act occurred, with the speaker and, if visible, the
+   target, and no content. It is published through the existing physical-event machinery.
+4. Delivery is recorded per listener (heard, or only witnessed), replacing the single `heard`
+   flag. Publish to the speaker only what the speaker could perceive.
+5. A `loudness` switch (the seed's falsifier): off gives a flat radius from the table.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py` (the observation only), the pack
+(new hearing table), `domains/bigville_entities.py` (self-test), a new
+`tests/test_phase028_hearing.py`.
+
+**Acceptance.** Tests show: loudness 5 is heard at 5 cells and not at 6; louder carries
+farther; a wall between speaker and listener stops content but not the witnessed act when
+there is sight; a targeted utterance at 3 cells is delivered when loudness is at least 3;
+with the switch off a flat radius applies; existing conversation tests pass with changes listed.
+
+**Out of scope.** Classroom chatter (`bigville_loud_class`, a cognitive effect); speech clarity
+(Phase 036); sight that shortens at night (Phase 042).
+
+## Phase 029 -- Contested actions: reaction turns and taking
+
+**Status:** ready, after 021, 024 and 025 (decision 2026-11-05: contests resolve in an
+interrupt style; depending on the situation and on skill, size and ability, the other party
+gets a reaction turn). `SIMPLE_VILLAGE_PACKAGE_12.md` records that taking held goods is
+unsupported for lack of this mechanism.
+
+**Spec.** `seeds/bigville_theft.json` `th_take`: taking is a world fact, "anyone can physically
+take what another holds; the substrate never forbids it". Recognising it as theft, charging,
+trial, restitution, fines and collection (`th_recognize_theft` through `th_collect`) are the
+residents' institutions and stay with them. The seed takes unconditionally; the contest and
+reaction rules below are the grounded refinement the user decided on.
+
+**Goal.** Give residents the physical means to take what another holds, with the holder able
+to respond. The world attaches no ownership, crime or law to any of it.
+1. **Pack table `CONTEST`.** For each contested action kind: the traits each side contributes
+   (strength, size, relevant skill, stamina reserve, health, life stage, exhaustion factor), the
+   margin bands for outcomes, the effort rule in item 5 (`base_cost`, `grip`, `technique_weight`, `min_efficiency`, `trivial_below`, `slot_above`,
+   `redirect_gap`, `overextend`) and the reaction rules below. Mark numbers APPROX. No randomness: the same state gives the same result. A side's force is
+   its effective strength scaled by size and the exhaustion step factor (Phase 024's 1, 2/3, 1/3, 0); skill enters
+   separately, as item 5 describes.
+2. **Size and skill.** If the pack has no body size, add a `size` trait to the drawn person
+   capacities. The skills list has none for physical contest, so add one, `unarmed`
+   (kind general, `learning: physical` per Phase 012, with the cluster and closeness entries the
+   self-test requires). Its working level comes from `effective_skill` like any other skill.
+   Most residents hold a low level; seed more where it plausibly belongs (the policing job) and
+   leave authored scenario residents free to hold any level (a retired martial artist). Contests
+   log practice minutes, so it trains through the existing practice subsystem.
+3. **Reaction eligibility (the world computes it).** The target gets a reaction turn when it is
+   alive, awake (not asleep or collapsed, Phase 024), and the actor is within reach, and its reaction score meets the
+   attacker's initiative score. The scores come from the situation (was the actor already in
+   the target's last observation or did it approach this turn; is the target busy with a timed
+   job; is it overloaded) and from ability (reserve, exhaustion factor, health, life stage,
+   skill, size). A score short of the attacker's but above a floor gives a late reaction with
+   fewer options and a penalty; below the floor, none.
+4. **The interrupt.** `BigvilleGame` applies the attacker's `take`. The world returns a
+   pending contest with its reaction offer. If a reaction is available the game calls the
+   target's backend through a new optional `react(context)` method on the backend protocol.
+   The reaction context names who is acting, on what, and by what means, and offers only the
+   reaction options: `resist`, `yield` (completes as an ordinary `give`), `evade` (step out of
+   reach; if it succeeds the contest is void), `brace`. A reaction spends the target's major
+   action for the turn only when it takes real effort (item 5's `slot_above`); a trivial one is
+   free, like speech. If the target's action is already used, a costly reaction is a late one. A human
+   target makes the step return `waiting` with the reaction prompt. A backend with no `react`
+   method does not react (recorded in the report, so a missing adapter is visible rather than
+   silently biasing results); the Ocelot and LLM adapters follow separately.
+5. **Resolution and effort.** Skill and force both count, in two separate places.
+   - *Who prevails.* Each side's score is its force times a technique multiplier from its
+     `unarmed` level: `force x (1 + technique_weight x skill)`. A skilled, light resident can
+     beat a stronger clumsy one; between equally unskilled residents the stronger wins. A holder
+     who does not react still holds with a passive grip (`grip` x its force).
+   - *What it costs.* A side pays for the load the opponent puts on it, as a share of its own
+     force, discounted by its own technique:
+     `base_cost x min(1, load / own force) x efficiency(skill)`. The load is the opponent's
+     force actually brought to bear (its passive grip if it is not resisting). Efficiency falls
+     from 1.0 at no skill toward `min_efficiency` at full skill. The same load therefore
+     costs a skilled defender who redirects it little, and an unskilled one the full share. A
+     skilled attacker wastes less effort than a clumsy one.
+   - Two thresholds keep trivial resistance free: a cost share below `trivial_below` is
+     zero stamina, and below `slot_above` the reacting target's major action stays unspent. A
+     six-foot smith swatting off a small child is below both, because the load is small. The
+     same child costs a worn-out smith more, because his force has fallen. A hopeless
+     attacker pays the full capped share and gets nothing; whether to try is the attacker's
+     choice. `yield` brings no load and costs nothing.
+   - *Outcomes.* A decisive attacker margin completes the take, with the same conservation and
+     capacity checks as `give`. A narrow margin makes the goods fall on the cell (the overload
+     drop). Otherwise the holder keeps them. When the holder prevails decisively and its skill
+     exceeds the attacker's by at least `redirect_gap`, the outcome is `redirected`: the
+     attacker's own force carries it off balance, it pays an extra `overextend` share scaled by
+     how hard it committed, and the event is observed. An `injury` field exists in the table at
+     zero.
+   Everyone within reach observes the result as a physical event; nobody else is told.
+6. **First slice.** `take` of held bulk goods, coin and discrete items (including keys,
+   Phase 030). `move_object` of an unattended object is unchanged.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, `bigville/backends/protocol.py`
+(optional `react`), `bigville/backends/cheap.py` (a deterministic reaction policy),
+`bigville/backends/human.py`, the pack (`CONTEST`, body size, the `unarmed` skill in the skills,
+clusters and closeness files), `domains/bigville_entities.py` (self-test), a new `tests/test_phase029_contest.py`.
+
+**Acceptance.** Tests show: between equally unskilled residents a strong rested one takes a
+stack from a weak one and not the reverse; a light resident with high `unarmed` resists a
+heavier unskilled one, prevails, pays little, and the attacker is `redirected` and pays more
+(the numbers are chosen so these hold and listed in the report); the same load costs an
+unskilled defender the full share; an alert target gets a reaction and an unaware or collapsed one does not; `yield`
+equals a `give` with no stamina cost; `evade` out of reach voids the contest; a narrow margin
+drops the goods on the ground; a small child grabbing at a strong smith costs the smith no
+stamina and no action while costing the child all it has, and the same child costs a
+collapsing smith more; two evenly matched residents each spend about the same; a witness in
+reach observes it and one out of reach does not; a backend without `react` is recorded as not reacting; replay is
+deterministic; with no one in reach or no stock, `take` is refused with a reason.
+
+**Out of scope.** Restraint (Phase 033); strikes and injury (Phase 038, which reuses the rule above); intoxication (Phase 034 supplies it
+through effective skill and body state); several people acting together; the Ocelot and LLM `react` adapters.
+
+## Phase 030 -- The town store has a lock and key
+
+**Status:** ready, after 021 and best after 029 (decision 2026-11-05: the town store uses a
+lock and key).
+
+**Spec.** `seeds/bigville_container.json` `ck_lock` and `ck_unlock` (a person holding a key
+that opens the container locks or unlocks it; without the key a locked container stays shut) and
+`seeds/bigville_coin_safe.json` `cs_present`, `cs_open_threshold` (a lock can require
+`keys_required` distinct key-holders; a dual-key safe is separation of duties).
+
+**Goal.** Containers already carry `lock_id` and `locked`, and a key opens a lock whose id it
+matches, but no resident can use any of it, and the store (a `Store` node with bulk `Stock`
+nodes) has no door. Make the store lockable and the machinery usable:
+- **Keys are items.** A key is a discrete item (`opens` = a lock id) held like a tool, so it can
+  be given, transferred, dropped, picked up, and (with Phase 029) taken. Replace the
+  `holds_key` edge, keeping `give_key` as a setup call that creates the item.
+- **Lock and unlock are major actions** on a named container or on the store: the actor must be
+  at its cell and hold the matching key. They are published as options only when physically
+  possible. Remove the argument-less `lock()` and `unlock()` first-match behaviour.
+- **Dual keys.** A lock may carry `keys_required` (default 1). It opens once that many distinct
+  key-holders, each at the lock's cell, have authorised it (per resident, so one person cannot
+  supply two), as `cs_open_threshold` does.
+- **The store gets `lock_id`, `locked` and `keys_required` from pack data.** Founding state is unlocked, so the
+  default town is unchanged; a scenario or pack may found it locked and name the job that
+  holds the key (for example the storekeeper).
+- **One check.** A single `_store_open(actor)` guards every resident-initiated path that
+  reads or writes the town stock: `fetch` from the store, the store tier of recipe inputs,
+  the seed draw in `sow`, `water_crop`, `fertilise`, and deposits. List every such path and its
+  treatment in the report. Non-resident processes (decay, period effects, the founding village
+  policy) are unaffected. A job short of access stays pending, as a job short of an input does.
+
+**Write scope.** `worlds/bigville_world.py`, the pack (store lock data, key item),
+`domains/world_affordances.py`, `domains/bigville_entities.py` (self-test),
+`bigville/backends/cheap.py` (use lock and key when it holds the key; no other policy), a new
+`tests/test_phase030_store_lock.py`.
+
+**Acceptance.** Tests show: a locked store refuses `fetch` without the key and allows it with
+the key; the same for each guarded path; locking and unlocking by a key holder; a key passed
+to another resident opens the store for them; an unlocked store and the 100-resident town
+behave as before; the existing container-lock tests pass.
+
+**Out of scope.** Copying keys and picking locks (not seeded); who may hold the key (residents
+decide); coin kept in a safe (Phase 041); locked doors (Phase 039).
+
+## Phase 031 -- Register and harden the LLM backend
+
+**Status:** blocked on 018 (prompts from the pack) and 021 (last outcome in the turn packet).
+
+**Goal.** Follow `AGENT_BACKENDS_PLAN.md` section 3: register the `"llm"` kind in
+`create_game` through a provider factory (no vendor SDK in core), validate provider output
+against the response schema, allow one repair attempt carrying only the validation errors,
+and return a no-action response after repeated invalid output instead of raising out of
+`decide`. (The plan says to return `waiting`; in `BigvilleGame.step()` that stops the whole
+turn for every resident, so use an idle response and record the divergence.) Record attempts, repair use and failures in backend state, and count
+them in the report beside Phase 021's refusals.
+
+**Write scope.** `bigville/backends/llm.py`, `bigville/api.py`, `bigville/reporting.py`, a new
+`tests/test_phase031_llm_backend.py` using a fake provider.
+
+**Acceptance.** Tests show: `create_game(default_backend="llm", backend_factories=...)` builds
+LLM residents; invalid JSON then valid JSON succeeds on the repair; repeated invalid output
+yields an idle turn and a counted failure; the world never sees an exception.
+
+**Out of scope.** Concrete vendor providers (optional extras per the backends plan).
+
+## Phase 032 -- Use trains the body
+
+**Status:** ready, after 022.
+
+**Goal.** Heavy recipes demand strength above an average body (a plough needs 1.2), and the
+data says only "a strong or trained smith" can do them, but nothing trains anyone: `str_train`
+and `sta_train` are set to 0.0 and never updated. Port `bd_train_strength`,
+`bd_train_stamina` and `bd_effective_stats`: each effort raises trained strength or stamina
+toward base x (1 + `TRAIN_HEADROOM`), closing `TRAIN_RATE` of the remaining gap scaled by
+intensity (diminishing); effective strength and stamina are (base + trained) x health, and the
+reserve is clamped to the effective capacity. Efforts come from movement and, after Phase 022,
+from recipes (a recipe with a strength requirement trains strength). Add a `training`
+physical-subsystem switch, default on, and list the tests that enumerate switches. Record how
+long a labourer takes to reach a recipe's strength requirement.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/bigville_entities.py` (self-test and the
+time-to-train line), tests that list subsystem switches, a new `tests/test_phase032_training.py`.
+
+**Acceptance.** Tests show: repeated forging raises a smith's strength with diminishing gains
+toward the ceiling; an actor with low health has lower effective strength and stamina; a
+resident trained over a season can attempt a recipe that was above them at the start; with the
+switch off nothing changes.
+
+**Out of scope.** Detraining; ageing of stats (a later phase).
+
+## Phase 033 -- Restraint
+
+**Status:** ready, after 029.
+
+**Goal.** Residents need a physical way to stop someone leaving, which is what enforcement
+means once residents decide to attempt it. Using Phase 029's contest and reaction turn, add
+`restrain` (hold a resident in reach), `release`, and `struggle`. While held, the target's
+`move` is refused (reason shown), the holder cannot move without releasing, both can still
+speak, and each tick of holding or struggling costs each side stamina by Phase 029's effort rule
+(holding a child costs a smith nothing; holding a smith costs an unskilled child all it has;
+holding a smith costs a skilled practitioner little). The hold ends on release, when the holder
+collapses or is no longer in reach, or when the target wins a `struggle` contest. Observers
+within reach see it. No arrest, crime or custody concept exists in the world.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, the pack (`CONTEST` rows),
+`bigville/backends/cheap.py` (react and struggle only), a new `tests/test_phase033_restraint.py`.
+
+**Acceptance.** Tests show: a stronger holder restrains a weaker target who cannot walk
+away; the holder tires and the hold fails on collapse; the target frees itself by winning a
+struggle; release lets the target leave; restraining someone out of reach is refused.
+
+**Out of scope.** Doors and confinement (Phase 039); blocking open paths and several people
+acting together (not seeded).
+
+## Phase 034 -- Intoxication
+
+**Status:** ready, after 024 and 027 (decision 2026-11-05: drunkenness existed in the design and
+is restored). Spec: `seeds/bigville_nutrition.json` (block R41) `nu_eat` (`intoxication` += the
+food's `alcohol`), `nu_metabolize` (it is multiplied by `sober_rate` each epoch), `nu_psych`
+(mood rises and focus falls, a Mind rule). The seed's rate and gain values are set nowhere, so
+the rates here are new and marked APPROX.
+
+**Goal.** Make alcohol a physical fact and give the body an intoxication state.
+1. **Data.** Add `alcohol` (strength per serving) to the drink items that have it (`ale`,
+   `cider`, `mead`, `beer`; cite historical small-ale, cider and mead strengths or mark APPROX),
+   and an `INTOXICATION` pack table: `sober_per_tick`, the band thresholds (sober, tipsy, drunk,
+   stupefied), the effect rates below, and `pass_out` and `wake_below`. The self-test checks
+   that every item with `alcohol` is a drink and that each brewing recipe's output carries it.
+2. **State.** `intoxication` lives on the Body node. Eating a drink (the existing `eat`, with its
+   mug and dipper checks) adds the item's alcohol divided by a body-size factor, so a lighter
+   body is affected more. It uses the `size` trait Phase 029 adds (whichever phase lands first
+   adds it, and the report says which). It wears off each tick by `sober_per_tick` (the seed's
+   multiplicative `sober_rate`, rescaled from its epoch to ticks, or linear if the report argues
+   for it). It runs only when the `metabolism` subsystem is on.
+3. **Physical effects, as world rules.** Coordination and focus fall with intoxication: working
+   skill levels drop by a rate x intoxication, physical skills at the coordination rate and
+   cognitive skills at the focus rate (Phase 012's `learning` tags choose which). Apply it
+   through the existing limitation path in `effective_skill`, extended with a term from current
+   body state, so recipe skill gates and quality, practice learning, and contests all see it with
+   no new mechanism. Above `stagger_above` movement slows by the same speed factor Phase 024
+   uses (the factors multiply). Reaction scores (Phase 029) fall. At `pass_out` the actor
+   passes out into Phase 024's asleep state (reason `passed_out`) and wakes unaided once
+   intoxication falls below `wake_below`.
+4. **No effect on choices.** The world does not change mood, judgement, speech or what a
+   resident decides to do. It publishes `intoxication` and its band in body state and in the
+   options. The simple backends read it as policy (a drunk resident leans toward social options
+   and away from effortful or exacting ones, shown in the reason trace); `PromptBuilder` gives an
+   LLM resident its band as felt body state, not as rules; Ocelot reads the body read-off.
+5. **Report.** Counts of residents by band per period and alcohol consumed.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (table),
+`domains/shared_frames.py` (the body-state term in `effective_skill` only), the pack (items and
+new table file), `domains/bigville_entities.py` (self-test), `bigville/backends/cheap.py`,
+`bigville/backends/psi_can.py`, `bigville/backends/prompts.py`, `bigville/reporting.py`, a new
+`tests/test_phase034_intoxication.py`.
+
+**Acceptance.** Tests show: a mug of ale raises intoxication by its alcohol, more for a lighter
+body; it wears off over the table's duration; bread and water leave it unchanged; a smith drunk
+past the threshold fails a recipe whose skill gate he passes sober and passes it again once
+sober; the same walk takes longer when staggering; at `pass_out` the actor is refused actions
+with the reason shown and wakes without input; with `metabolism` off nothing changes; the simple
+backend's reason trace shows an intoxicated resident preferring a social option; and, if
+Phase 029 is committed, an unskilled drunk loses a contest he wins sober.
+
+**Out of scope.** Hangover, tolerance, dependence, poisoning and speech clarity (Phase 036).
+Selling and licensing of drink are not world features: prices, licences and opening hours are
+what residents do with these physical facts.
+
+## Phase 035 -- Nutrition: variety, protein and taste
+
+**Status:** ready, after 027 and 034 (decision 2026-11-05: nutrition is restored). Spec:
+`seeds/bigville_nutrition.json` `nu_eat`, `nu_metabolize`, `nu_deficiency`, `nu_psych` and
+`seeds/bigville_diet_affect.json` `af_meal_mood`. The seeds name the quantities and leave every
+rate unset (`protein_decay`, `monotony_decay`, `pleasure_decay`, the protein need, the spice
+bonus, the deficiency rates), so the numbers are new and marked APPROX with nutrition sources.
+
+**Goal.**
+1. **Food codebook.** Each food in the pack gets `energy` (density, its `feeds` from Phase 027),
+   `protein` and `taste`; drinks keep `alcohol` (Phase 034).
+2. **Body state.** `monotony` (specific satiety, per food kind), `protein_store`, `deficiency`
+   and `meal_pleasure`, beside `intoxication`.
+3. **Eating (`nu_eat`).** Energy gained is density x variety, `feeds x (1 - monotony)`, so
+   a diet of one food yields less each time. Protein adds to the store. Monotony rises when a
+   food repeats. Meal pleasure is the food's taste, plus a bonus if the meal is spiced and a spice
+   unit is in stock, which is consumed. The bonus is decoupled from the energy monotony: a
+   boring meal, spiced, is still enjoyable.
+4. **Per period (`nu_metabolize`, `nu_deficiency`).** Protein, monotony and pleasure decay.
+   While the protein store is below the need, deficiency accrues; a sufficient diet recovers it.
+5. **Mood (`af_meal_mood`).** Each meal moves the body's `mood` toward its satisfaction,
+   `mood += (satisfaction - mood) x 0.4`, so a monotonous diet sinks mood over days and variety
+   holds it. The seed leaves `meal_satisfaction` (a sensory-specific-satiety model) to the
+   adapter; define it from taste and monotony, cite the research, and record the form.
+6. **Mind effects stay with the backend.** `nu_psych` is a Mind rule: mood and focus shaped by
+   intoxication, pleasure and deficiency. The world publishes `intoxication`, `deficiency`,
+   `meal_pleasure` and `monotony` as read-offs. Simple backends and PromptBuilder use them.
+7. The balance model includes protein supply against need, so a town without enough protein is
+   flagged.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py`,
+`domains/bigville_entities.py` (self-test and balance), the pack (`items.json`, new constants),
+`bigville/backends/cheap.py`, `bigville/backends/psi_can.py`, `bigville/backends/prompts.py`,
+`bigville/reporting.py`, a new `tests/test_phase035_nutrition.py`.
+
+**Acceptance.** Tests show: eating bread every meal raises monotony and lowers energy per meal, a
+varied diet does not; a protein-poor diet accrues deficiency that a protein-rich one recovers;
+spice raises pleasure, consumes a unit and rescues a monotonous diet's pleasure; mood sinks over
+days on one food and holds on a varied diet; the read-offs appear in the options; the self-test
+checks every food has the codebook fields; the balance report flags a protein shortfall.
+
+**Out of scope.** Household rationing (the household's choice); taste preferences and cooking
+quality beyond Phase 027.
+
+## Phase 036 -- Alcohol's longer effects
+
+**Status:** ready, after 034 and 037 (decision 2026-11-05: the features set aside in 034 are
+added). Seeded: dependence as a coping spiral in `seeds/bigville_affect_decide.json`
+`af_choose_action` (grief shifts the choice from work toward withdraw, then drink, then snap) and
+`bigville_affect_spiral.json` (`af_outcome_drink`: income down and wellbeing down;
+`af_hardship_grief` closes the loop). NEW DESIGN, not seeded: tolerance, withdrawal and craving,
+hangover, poisoning, and speech clarity. The unseeded parts sit behind an
+`alcohol_aftereffects` switch, default off, so they can be accepted or dropped.
+
+**Goal.**
+1. **Dependence (seeded).** The choice to drink as coping is the backend's (it is a Mind rule, and
+   the affect seeds are not loaded). The world side already follows from earlier phases: drinking
+   uses the action slot (less work, less income), impairs skill (034), and costs stamina and
+   health (below). The simple backend gets an optional deterministic coping policy, default
+   off, driven by whatever distress read-off exists. The brief lists which read-offs a backend
+   needs for it.
+2. **Tolerance, withdrawal (NEW).** A body `tolerance` rises with repeated intoxication and
+   falls when sober, scaling down the effect of a dose. A body `craving` rises after dependence
+   forms and sober time passes, and is relieved by drinking; withdrawal is a published stamina
+   and skill penalty while craving is high. All three are pack data.
+3. **Hangover (NEW).** When intoxication falls from a high level, a `hangover` penalty to
+   stamina recovery and working skill lasts for a table-set number of ticks.
+4. **Poisoning (NEW).** Intoxication above `poison_above` is an acute harm each period through
+   Phase 037 with cause `intoxication`; it can kill, and `pass_out` (Phase 034) happens first.
+5. **Speech clarity (NEW).** Each utterance carries a `clarity` from 0 to 1, set by the speaker's
+   intoxication (and, with Phase 028, by distance against loudness). The text is delivered
+   unchanged. How a listener treats low clarity is its cognition, and `PromptBuilder` may note
+   it. The world never rewrites speech.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (table),
+`domains/bigville_entities.py` (self-test), `bigville/backends/cheap.py`,
+`bigville/backends/prompts.py`, `bigville/reporting.py`, a new
+`tests/test_phase036_alcohol_aftereffects.py`.
+
+**Acceptance.** Tests show, with the switch on: the same dose affects a tolerant resident less
+and tolerance fades; a dependent resident gets withdrawal penalties and drinking relieves them;
+a hangover follows a heavy night and then ends; a lethal dose harms through the health routes,
+the death cause reads `intoxication`, and an ordinary dose does not; an utterance by a drunk has
+lower clarity and identical text; with the switch off nothing changes.
+
+**Out of scope.** Selling and licensing of drink (residents' institutions); the affect seeds'
+choice rules (the backend's).
+
+## Phase 037 -- One health, several routes to death
+
+**Status:** ready (independent of Programme B). Spec: `seeds/bigville_life_health.json`
+`bl_age`, `bl_acute`, `bl_recover`, `bl_death`: health is one variable with two timescales, a
+chronic decline with age and acute drops tagged with a cause (illness, injury, starvation,
+exhaustion; violence is the fifth, via `bigville_viol_kill`), recoverable by care, rest and
+treatment up to `max_health`; death is health at or below 0, and the cause is the last tag. The
+seed's `age_rate`, `illness_amount` and `care_amount` are set by the adapter, so the figures are
+new and marked APPROX with demographic sources. `bigville_doctor_care` and `bigville_infant_care`
+make care and fees residents' business and are not part of this phase.
+
+**Goal.** In the port, health is `health_value` and death comes from separate paths: starvation
+kills at a hunger threshold, only disease can reduce health to death, injury cannot kill, and
+nothing dies of age. Replace that with the seeded model:
+1. A single `harm(actor, amount, cause)` entry point sets the acute drop and the cause tag.
+   `injure`, disease, starvation, exhaustion and (later) violence, poisoning and spoiled food use
+   it.
+2. Chronic decline: a per-life-stage `age_rate` in the pack lowers health each day for elders
+   (and infants carry a `fragility` multiplier on acute harm, as `bi_onset` does).
+3. Starvation: hunger beyond `starve_limit` becomes acute harm each period at `starve_harm`. The
+   default is large enough that the existing timelines hold, and it is softenable.
+4. Recovery (`bl_recover`) by care, rest and treatment, capped at `max_health`.
+5. Death at health <= 0 records the cause (age, illness, injury, starvation, exhaustion,
+   violence, intoxication) in the death record and event, and `death_by_violence`-style tags
+   are readable.
+6. Exhaustion: the collapsed flag from Phase 024 is the exhaustion route. Define the rule
+   (for example repeated collapse without recovery within a window harms), mark it APPROX, and
+   record it.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py`,
+`domains/bigville_entities.py` (self-test), the pack (health table), `bigville/reporting.py`
+(deaths by cause), a new `tests/test_phase037_health_routes.py`.
+
+**Acceptance.** Tests show: a large enough injury kills and records `injury`; an elder past the
+table's age decline dies of age after enough days while a young adult does not; starvation
+timelines in the existing tests are unchanged; care and rest recover health up to the cap;
+every death has a cause; the report counts deaths by cause.
+
+**Out of scope.** Fees and who pays (residents' institutions); screening, treatment and
+well-baby effects (Phase 043); births (Phases 044 and 045).
+
+## Phase 038 -- Strikes and injury
+
+**Status:** ready, after 029 and 037 (decision 2026-11-05: strikes and injury are added). Spec:
+`seeds/bigville_viol_act.json` (`bv_trigger`, `bv_refrain`, `bv_harm_victim`,
+`bv_cost_aggressor`) and `bigville_viol_kill.json`. The act is a `ViolentAct{amount, cost}`: it
+lowers the victim's health by `amount`, lowers the aggressor's stamina by `cost`, and is gated on
+the aggressor's stamina being at least `attack_cost`. The decision to commit it
+(`snap_pressure + w_spite x spite_gain + hunger x desperation_gain` against a threshold) is
+the resident's. Evidence, prosecution and sentencing (`bigville_viol_evidence`,
+`bigville_viol_prosecute`) are the residents' institutions.
+
+**Goal.** Add a `strike` major action by an actor on a resident within reach, reusing Phase 029's
+force, technique, efficiency, reaction turn and `redirected` rules:
+1. The harm `amount` and the attacker's `cost` come from the contest, so a strong skilled
+   attacker does more harm, an unprepared target takes it in full, a braced or skilled one takes
+   less, and a skilled defender can redirect it. A drunk, tired or collapsed attacker is worse
+   (Phases 034, 024). The attacker needs at least `attack_cost` stamina; otherwise the strike is
+   refused with that reason.
+2. A landed strike calls Phase 037's `harm(victim, amount, "violence")`, and a death by it is
+   recorded as violence. A redirected strike leaves the attacker off balance and may harm it
+   (`redirect_harm`, a table field, default small).
+3. Strikes are observed by everyone with sight of the actor, as physical events. Nothing records
+   an offence, a crime or a witness's judgement.
+4. The decision is the backend's. The simple backend gets the seeded trigger as an optional
+   policy, default off, using the personality weights that already exist.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, the pack (`CONTEST` strike rows),
+`bigville/backends/cheap.py` (react and the optional trigger), a new `tests/test_phase038_strikes.py`.
+
+**Acceptance.** Tests show: a strike lowers the victim's health and the attacker's stamina; a
+strike below `attack_cost` is refused; a skilled defender redirects an unskilled drunk attacker,
+who pays more and may be hurt; a lethal strike kills with cause `violence`; a witness in sight
+observes it and one out of sight does not; replay is deterministic.
+
+**Out of scope.** Weapons (Phase 040); prosecution and evidence (residents' institutions);
+group violence.
+
+## Phase 039 -- Doors and confinement
+
+**Status:** ready, after 030, and a survey first. Spec: `seeds/bigville_jail.json` (custody is an
+institution's roll: a charge's `jail_term`, `sentence_remaining`, served a day at a time by the
+curfew bell, released at 0, "the FULL term, no early release") and the lock and key rules of
+Phase 030. The roll, the sentence and the release are the residents' institution. What the
+world supplies is the physical fact that a locked room holds whoever is inside.
+
+**Goal.** The executor first reports how buildings, entrances and interiors are modelled
+(footprints, entrance cells, interior cells). If each building has an entrance cell on the map
+graph, make a door a property of that cell:
+1. A door carries `lock_id`, `locked` and `keys_required`, and uses Phase 030's lock and unlock
+   actions.
+2. Movement into or out of a locked door cell is refused without the key (reason
+   `door_locked`). A resident inside a building whose only door is locked cannot leave.
+3. A jail is an ordinary building (a kind in the pack) with a lockable door. Who holds the key and
+   who is inside are residents' business.
+If interiors are not cells, or entrances are not on the graph, stop and report the options
+(for example giving a building a single entrance cell) rather than inventing a model.
+
+**Write scope.** `worlds/bigville_world.py`, the pack (building kinds, door data),
+`domains/bigville_entities.py` (self-test), a new `tests/test_phase039_doors.py`.
+
+**Acceptance.** Tests show: a resident inside a locked building cannot leave, unlocking with the
+key lets them, a resident outside cannot enter without it, a dual-key door needs two key-holders,
+and an unlocked building behaves as before.
+
+**Out of scope.** Jail records, sentences, bell-driven serving and release (the institution);
+windows, digging and escape; night sight and lamps (Phase 042).
+
+## Phase 040 -- Weapons
+
+**Status:** ready, after 029, 034 and 038 (decision 2026-11-05: weapons are added). NEW DESIGN:
+no seed defines a weapon. The word "armed" in `bigville_theft` `th_take` and elsewhere is a rule's
+trigger flag (`*_armed`), not a weapon. The existing tools (`knife`, `axe`, `hammer`, `pick`,
+`scythe`) carry a `verb` (cut, chop, strike, mine, reap), so they are already the natural
+improvised weapons. Behind a `weapons` switch, default off.
+
+**Goal.**
+1. **Data.** An optional `weapon` row on an item: `force` (added to the wielder's force),
+   `harm` (multiplier on strike harm), `reach` (1 or 2 cells), `skill`, `wear_per_use`. A
+   pack table `IMPROVISED` gives the tools above a weaker row (poor fit, high wear). Add a few
+   purpose-made items with woodworker or smith recipes (a cudgel, a quarterstaff, a spear; cite
+   or mark APPROX), and a physical skill `arms` (kind general, learning physical, clustered with
+   `unarmed`), with the cluster and closeness entries the self-test needs.
+2. **Wielding.** A weapon counts only when held in hand (`holds_in_hand`). One in a pack does not.
+3. **Effect.** In contests (Phase 029) the wielder's force rises by `force` and the technique
+   uses `arms`; in strikes (Phase 038) harm is multiplied by `harm`. Reach lets a wielder
+   open a contest from 2 cells, so the target's reaction window is shorter. A weapon wears with
+   use and breaks at 0 (the tool-wear path, `bigville_tool_wear`).
+4. **Disarming.** A `redirected` outcome (Phase 029) with a large skill gap drops the
+   attacker's weapon on the cell, and `take` from a hand is an ordinary contest.
+5. Wielded weapons are visible to residents with sight, as held tools already are. New items
+   need sprites (regenerate assets). Owning or carrying a weapon is not an offence: law is the
+   residents'.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py`,
+`domains/shared_frames.py` (skill), `domains/bigville_entities.py` (self-test), the pack (items,
+recipes, skills), assets (regenerated only), `bigville/backends/cheap.py` (use a held weapon in
+contests and strikes; no other policy), a new `tests/test_phase040_weapons.py`.
+
+**Acceptance.** Tests show: a held cudgel adds force and one in a pack does not; a knife strike
+harms more than an unarmed one; the weapon wears and breaks; a skilled unarmed defender
+disarms an unskilled attacker; a spear opens a contest from 2 cells; with the switch off nothing
+changes; the asset manifest test passes after regeneration.
+
+**Out of scope.** Armour; ranged weapons; trade in weapons (residents).
+
+## Phase 041 -- Physical coin and safes
+
+**Status:** ready, after 030 (decision 2026-11-05: added). Spec:
+`seeds/bigville_coin_safe.json` v1.1.0 (block R47): coins are physical and must be stored, in a
+safe behind keys. `cs_present`, `cs_open_threshold` (opens at `keys_required` distinct
+authorisers, a dual-key safe is separation of duties), `cs_withdraw` and `cs_deposit` (conserved,
+capped at what the safe or purse holds), `cs_denied` (a closed safe refuses). Phase 011 builds
+treasury and church purses and needs this first.
+
+**Goal.** Coin is a number on the resident (`coin`) and can only move by `give`. Make it
+storable:
+1. A lockable container may hold `coin` (a safe, a strongbox, a purse), added to a container's
+   `holds` list in the pack. `put` and `fetch` move coin between a resident and an accessible
+   container, conserved and capped by what is held or stored. A closed or locked container
+   refuses (reason `container_locked`); Phase 030's keys, authorisation and `keys_required` apply.
+2. The resident's own `coin` stays their purse. Stored coin is not carried: it does not count
+   toward their holdings, and it does not move when they do.
+3. An optional `coin_weight` (default 0, APPROX) makes a large purse heavier through the existing
+   carry model.
+4. Reports and the evaluation's conservation checks count stored coin, so the coin total holds.
+5. Taking a purse from a resident is Phase 029's contest on `coin`.
+
+**Write scope.** `worlds/bigville_world.py`, the pack (container kinds, `coin_weight`),
+`domains/bigville_entities.py` (self-test), `bigville/reporting.py`, a new
+`tests/test_phase041_coin_safe.py`.
+
+**Acceptance.** Tests show: coin deposited in an open safe leaves the resident and is withdrawn
+whole; a closed safe refuses both; a dual-key safe opens only with two distinct key-holders; coin
+is conserved across every move; the existing coin and transfer tests pass.
+
+**Out of scope.** Interest, lending and banks (`bigville_fin_bank`, residents' institutions);
+counterfeiting.
+
+## Phase 042 -- Day, night and lamps
+
+**Status:** ready, after 024 and 028 (decision 2026-11-05: added). Spec:
+`seeds/bigville_daynight.json` (block R59): daylight length is astronomical, a function of
+latitude and day of year; `moon_illum` is the synodic cycle over sim-days; `is_night` compares
+the hour with the calculated sunrise and sunset; `light_level` is moonlight x (1 - cloud) at
+night and sunlight x (1 - cloud) by day; an outdoor, unsheltered resident at a place with no lit
+lamp `sees_dark` when `light_level` is below `see_threshold`; a lit lamp lets you see; the
+lamplighter (a council office) lights the lamps at night and douses them by day. The seed notes
+a hook: you cannot work a field you cannot see. The world has an hour of day and weather but no
+sun, moon, cloud or lamp, and the town square has no lamp fixtures.
+
+**Goal.**
+1. **Sky.** The pack gets `latitude` and the moon's synodic period (APPROX, astronomy). Each
+   tick computes sunrise, sunset, `is_night`, `moon_illum` and `light_level`. Add a `cloud` value to
+   each weather type.
+2. **Seeing (`dn_perceive`, `dn_lamp_saves`).** `sees_dark` per resident, as above. A resident
+   indoors (inside a building's footprint) does not.
+3. **Lamps.** Street lamps are fixtures at map cells, each with `lit`, a fuel reservoir and a burn
+   rate, filled from `oil` stock. `light` and `douse` are major actions at the lamp's cell. The
+   lamplighter job is a resident role: the world gives the lamp and the actions and lights nothing
+   itself. Add lamp oil to the balance model and a lamplighter to the jobs table (a `lamplighter`
+   task in `LABOUR_TASKS`).
+4. **Consequences.** Sight range for witnessing (Phase 028, and `bigville_time_concern`, which
+   notes sight is "short at night") shortens in the dark. Outdoor work (field work, gathering,
+   outdoor building) is refused in the dark (reason `too_dark`), the seed's hook.
+5. **Lateness.** Phase 024's `lateness` read-off now derives from the real sunset.
+6. **Extensions (not in the seed, flagged).** A lit carried light (a `candle`, which exists, or a
+   new `lantern`) lets its holder see and burns fuel or wax. Travel in the dark is slowed by a
+   table factor (APPROX), default 1.0 to match the seed.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (sky, lamp and light
+tables), `domains/bigville_entities.py` (self-test and balance), the pack (fixtures, jobs, items),
+assets (regenerated only, for lamps and the lantern), `bigville/backends/cheap.py` (use the
+light and douse actions only if the resident is the lamplighter), a new
+`tests/test_phase042_daynight.py`.
+
+**Acceptance.** Tests show: daylight is longer in summer than winter at the pack's latitude;
+a clear full-moon night is bright enough to see and a new-moon or overcast one is not; an
+outdoor resident sees in the dark beside a lit lamp and not beside an unlit one; lamps burn oil and
+go out when it runs out; field work is refused in the dark with the reason shown and allowed at
+dawn; witnessing range shortens at night; the balance report includes lamp oil.
+
+**Out of scope.** Moon phase effects other than light; astronomy beyond the formulae; bells and
+the curfew (`bigville_bells`, residents' institution).
+
+## Phase 043 -- Screening, treatment, well-baby care and illness
+
+**Status:** ready, after 037 (decision 2026-11-05: added). Spec: `seeds/bigville_doctor_care.json`
+(`bd_checkup`, `bd_treat`, `bd_onset`, `bd_recover`) and `seeds/bigville_infant_care.json`
+(`bi_wellbaby`, `bi_onset`). The effective acute drop is `disease_base + (screened ? 0 :
+progression) - (treated ? treat_relief : 0)`; treated patients heal fast and untreated ones at
+`natural_care`; an infant takes `disease_base + (well_baby ? 0 : infant_fragility)`. The
+seeds' fees, `funds` and affordability gate (a coin test; `public_health` paid by the treasury)
+are the residents' institutions and are not world rules here: a doctor decides whether to treat,
+and a fee is an ordinary handover. Their parameters are set by the adapter and so are new,
+APPROX. NEW DESIGN, behind an `illness` switch, default off: the seeds leave illness onset
+(`disease_armed`) to the adapter and the port has none (only `diagnose`).
+
+**Goal.**
+1. **Screening, treatment, well-baby.** `checkup` (a preventive visit sets `screened`), `treat`
+   (sets `treated`, consumes `medicine`) and `well_baby_visit` (sets `well_baby` for an infant) are
+   major actions by a resident with the medical skill, co-located with the patient. They use
+   the effective-drop and recovery rules above through Phase 037's `harm` and recovery.
+   The flags lapse after a table-set number of periods.
+2. **Illness onset (NEW).** A pack table of diseases (seasonal rate, life-stage fragility,
+   severity; cite parish-register mortality sources or mark APPROX) raises illness through
+   `harm(..., "illness")`, using a dedicated seeded stream so the world RNG is not disturbed.
+3. **Read-offs.** `screened`, `treated`, `well_baby` and `illness` are in body state so any
+   backend can see them.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (disease and care
+tables), `domains/bigville_entities.py` (self-test), `bigville/backends/cheap.py` (a doctor or
+midwife offers care when asked; no other policy), a new `tests/test_phase043_care.py`.
+
+**Acceptance.** Tests show: an unscreened patient's illness drops health more than a screened
+one's; a treated patient recovers faster; an unvisited infant takes the fragility penalty and a
+seen one does not; treatment consumes medicine and needs the doctor in reach; with the switch off
+no illness arrives; with it on, onset is deterministic for a seed.
+
+**Out of scope.** Fees, funding and public health programmes (residents' institutions);
+epidemic spread between residents (a later phase).
+
+## Phase 044 -- Pregnancy and birth
+
+**Status:** ready, after 009, 037 and 043 (decision 2026-11-05: births are added). NEW DESIGN:
+no seed covers conception, pregnancy or birth. `birth()` exists on the world and nothing calls
+it. Seeded neighbours: `bigville_life_inheritance` (death passes the estate), `bigville_will`,
+`bigville_infant_care` (infant fragility). Behind a `births` switch, default off, so a scenario
+can keep a fixed population.
+
+**Goal.**
+1. **Fertility.** A pack table gives age-specific marital fecundability for a pre-industrial
+   English village (Wrigley and Schofield, Henry's natural-fertility schedules; mark APPROX where
+   needed). Each period, each fertile woman in a recorded union (Phase 009's `union_with`)
+   may conceive, drawn from a dedicated seeded stream. Courtship and union choice are the
+   residents' (Phase 009).
+2. **Pregnancy.** A `pregnant` body state with a due day (gestation about 270 days, cited),
+   published as a read-off. It raises food need (the life-stage multiplier) and lowers work
+   capacity late in term (a table `pregnancy_load`), and carries a delivery risk.
+3. **Birth.** At term a birth event calls `birth()`: the newborn is a new resident with a name
+   from the pack's name pool, genealogy edges (Phase 009's `bore` and `fathered`), the
+   mother's household, and a starting stock of body traits. Maternal and infant mortality are
+   table risks through Phase 037's `harm`, lowered by a midwife in reach (`midwifery` skill).
+   Stillbirth is a recorded outcome.
+4. **The game side.** `BigvilleGame` gains `add_resident`, which builds the newborn's
+   character and attaches a dependent backend that proposes nothing until the child reaches
+   an age where it acts (Phase 045). Persistence (`game_persistence`) carries the new residents.
+5. **Estates and heirs.** The existing heirs observation (Phase 009) now fires for real deaths;
+   estate transfer stays the residents' choice, per `bigville_will`.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, `bigville/game_persistence.py`,
+`domains/population.py` and the pack (fertility, names, risks), `domains/bigville_entities.py`
+(self-test: a long-run town stays within a plausible growth band), a new
+`tests/test_phase044_births.py`.
+
+**Acceptance.** Tests show: with the switch off the population is fixed; with it on, a
+fertile united woman conceives at the table rate over many seeds, carries to the due day, and
+delivers a newborn with genealogy and household; a midwife in reach lowers the mortality;
+deterministic for a seed; a checkpoint round trip keeps a pregnancy and a newborn; the self-test
+reports the births per woman and the 100-resident town's growth against its source.
+
+**Out of scope.** Contraception, courtship, adoption (a kin-term matter, Phase 009); twins and
+multiple births beyond a table rate.
+
+## Phase 045 -- Infants, dependants and coming of age
+
+**Status:** ready, after 044 (decision 2026-11-05: added). Spec: the data `LIFE_STAGES` (age
+bands with `work_fraction`, `care` and `food`), `seeds/bigville_infant_care.json` (fragility),
+`seeds/bigville_life_rearing.json` `bl_come_of_age` (a resident, Mind-side rule: nurture, the net
+of regulated and neglected care, shapes the adult priors and flags `adult`). The prior-shaping
+is the backend's. Body growth is NEW DESIGN.
+
+**Goal.**
+1. **Dependants act only as they can.** An infant proposes nothing and is refused any major
+   action (reason `infant`); a child acts at its `work_fraction`, which scales the force and
+   job rate it brings. Their `food` fraction scales hunger relief needed, and `care` is the
+   attention they need.
+2. **Care is physical presence.** A dependant's `care` need is met by a caregiver in reach and
+   awake; a dependant neglected for a table-set number of ticks takes harm through Phase 037
+   (cause `neglect`, or starvation if unfed). The world publishes `care_received` over childhood
+   as a read-off. Turning it into adult priors is the backend's, as `bl_come_of_age` does.
+3. **Growth (NEW).** Base strength and stamina rise along a table curve from the infant value to
+   the drawn adult value across the life stages, so a child is weaker and tires sooner. Training
+   (Phase 032) builds on the current base.
+4. **Coming of age.** Crossing the adult threshold sets the `adult` flag, allows the full
+   action set, and publishes an observation. It changes no beliefs.
+5. **Where an infant is.** The executor first records how a dependant moves. The default is that an
+   infant stays where it is placed and its household's caregivers must be in reach to care for it;
+   carrying is a later phase.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, `domains/world_affordances.py`
+(growth curve, care table), `domains/bigville_entities.py` (self-test), `bigville/backends/cheap.py`
+(a caregiver's dependant policy, default on for parents), a new `tests/test_phase045_dependants.py`.
+
+**Acceptance.** Tests show: an infant is refused actions with the reason; an unattended infant
+is harmed after the table's span and an attended one is not; a child's force and job rate scale
+with its stage and rise with age; coming of age sets the flag once; a caregiver's policy feeds and
+tends its infant in the simple village without help.
+
+**Out of scope.** Schooling and apprenticeship (existing relations, Phase 012); the Mind-side
+rearing priors (the backend's); carrying infants.
+
+---
+
 ## History
 
 | Phase | Status | Commit | Report |
