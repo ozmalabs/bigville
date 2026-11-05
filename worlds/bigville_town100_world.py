@@ -52,13 +52,15 @@ import worlds.bigville_sim_world as _sim                              # noqa: E4
 from worlds.bigville_sim_world import (                              # noqa: E402
     GRASS, PATH, WALL, FLOOR, SQUARE, TREE, WATER, SOLID, TILE_NAME)
 from worlds.bigville_trade_world import BigvilleTradeWorld           # noqa: E402
+from domains import bigville_entities as E                          # noqa: E402
 
 W100, H100 = 52, 40
 SEED_DEFAULT = 305000
 
 # resource body -> the tile that IS the body (deposit sits on a walkable cell
-# orthogonally adjacent to one of these).
-_BODY_TILE = {"fish": WATER, "lumber": TREE, "stone": WALL}
+# orthogonally adjacent to one of these), from the entity data's RESOURCE_DEPOSITS.
+_TILE_BY_NAME = {name: tile for tile, name in TILE_NAME.items()}
+_BODY_TILE = {kind: _TILE_BY_NAME[spec["tile"]] for kind, spec in E.RESOURCE_DEPOSITS.items()}
 
 # ---------------------------------------------------------------- the role model
 # (role, count, group, ri_mean, ri_sd, workplace_kind). Sums to 100.

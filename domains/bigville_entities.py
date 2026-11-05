@@ -14,44 +14,45 @@ from __future__ import annotations
 # materials are bulk (measured piles); tools are discrete, made, and wear.
 ITEMS = {
     # --- materials (bulk piles) ---
-    "wood":     {"class": "material", "bulk": True},
+    "wood":     {"class": "material", "bulk": True, "fuel": 1.0},   # `fuel` = heat per unit (INPUT_TYPES)
     "timber":   {"class": "material", "bulk": True, "weight": 2.0, "volume": 3.0},  # bulky
-    "log":      {"class": "material", "bulk": True},
     "ore":      {"class": "material", "bulk": True},
     "iron":     {"class": "material", "bulk": True, "weight": 3.0, "volume": 0.5},   # dense: heavy, small
-    "charcoal": {"class": "material", "bulk": True, "weight": 0.5, "volume": 1.0},
-    "smoke":    {"class": "material", "bulk": True},   # the pyrolysis byproduct (conserved, not vanished)
+    "charcoal": {"class": "material", "bulk": True, "weight": 0.5, "volume": 1.0, "fuel": 3.0},  # burns hottest
     "grain":    {"class": "material", "bulk": True},
     "flour":    {"class": "material", "bulk": True},
     "coin":     {"class": "material", "bulk": True},
     # ecological cycles and maintenance materials
-    "straw":    {"class": "material", "bulk": True, "weight": 0.2, "volume": 2.0},
+    "straw":    {"class": "material", "bulk": True, "weight": 0.2, "volume": 2.0, "fuel": 0.3, "compostable": 1.0},
     "thatch":   {"class": "material", "bulk": True, "weight": 0.3, "volume": 2.0},
-    "peat":     {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0},
-    "dung":     {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0},
-    "manure":   {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0},
-    "compost":  {"class": "material", "bulk": True, "weight": 0.6, "volume": 1.0},
+    "peat":     {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0, "fuel": 1.5},
+    "dung":     {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0, "fuel": 0.6, "nitrogen": 0.4},  # dried: burn it or spread it
+    "manure":   {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0, "nitrogen": 0.5},  # `nitrogen` = N per unit spread
+    "compost":  {"class": "material", "bulk": True, "weight": 0.6, "volume": 1.0, "nitrogen": 0.6},
+    "night_soil": {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0},   # latrine waste; must be composted before use
+    "ash":      {"class": "material", "bulk": True, "weight": 0.3, "volume": 0.5, "compostable": 1.0},  # left by burning fuel
     "medicine": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2, "imported": True},
     "nectar":   {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
-    "wax":      {"class": "material", "bulk": True, "weight": 0.8, "volume": 0.7},
-    "wheat_seed": {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
-    "barley_seed": {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
-    "oats_seed": {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
-    "rye_seed": {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
-    "cabbage_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "carrot_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "onion_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "potato_seed": {"class": "material", "bulk": True, "weight": 0.3, "volume": 0.4},
-    "turnip_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "bean_seed": {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
-    "pea_seed": {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
-    "leek_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "parsnip_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "beet_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "garlic_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "lettuce_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "cucumber_seed": {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2},
-    "lentil_seed": {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
+    "wax":      {"class": "material", "bulk": True, "weight": 0.8, "volume": 0.7, "candle_fat": 1.0},
+    # --- crop seeds (one entry per crop in CROPS; `seed: True` marks sowable stock) ---
+    "wheat_seed":    {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "barley_seed":   {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "oats_seed":     {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "rye_seed":      {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "cabbage_seed":  {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "carrot_seed":   {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "onion_seed":    {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "potato_seed":   {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "turnip_seed":   {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "bean_seed":     {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "pea_seed":      {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "leek_seed":     {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "parsnip_seed":  {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "beet_seed":     {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "garlic_seed":   {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "lettuce_seed":  {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "cucumber_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "lentil_seed":   {"class": "material", "bulk": True, "seed": True, "weight": 0.2, "volume": 0.3},
     # --- tools (discrete; verb + fitness + wear + make time/effort; composite = head+handle) ---
     "knife":  {"class": "tool", "material": "metal", "verb": "cut",    "base_mult": 1.6, "wear_rate": 0.10, "make_minutes": 90,  "make_effort": 1.2, "composite": False, "demand_driver": "general", "demand_weight": 0, "base_demand": 2},
     "nails":  {"class": "tool", "material": "metal", "verb": "fasten", "base_mult": 0.8, "wear_rate": 0.05, "make_minutes": 10,  "make_effort": 1.2, "composite": False, "discrete": False, "demand_driver": "building", "demand_weight": 2, "base_demand": 1},  # a batch good (bulk), not an individually-worn tool
@@ -91,16 +92,16 @@ ITEMS = {
     "lentil":   {"class": "material", "bulk": True, "weight": 0.3, "volume": 0.4},
     "honey":    {"class": "material", "bulk": True, "weight": 1.0, "volume": 0.7, "food": True, "decay": 0.01},
     "cream":    {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "decay": 0.04},
-    "lard":     {"class": "material", "bulk": True, "weight": 1.0, "volume": 0.8, "food": True, "decay": 0.04},
+    "lard":     {"class": "material", "bulk": True, "weight": 1.0, "volume": 0.8, "food": True, "decay": 0.04, "candle_fat": 1.0},
     "vinegar":  {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0},
     "yeast":    {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.3},
     "sugar":    {"class": "material", "bulk": True, "imported": True, "weight": 1.0, "volume": 0.8},
     "mustard":  {"class": "material", "bulk": True, "weight": 0.4, "volume": 0.4, "food": True},
-    "mutton":  {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True},
-    "fish":    {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0, "food": True},
-    "bacon":   {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "decay": 0.03},
+    "mutton":  {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "leaves_scraps": 0.20},
+    "fish":    {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0, "food": True, "leaves_scraps": 0.30},
+    "bacon":   {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "leaves_scraps": 0.10, "decay": 0.03},
     "sausage": {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "decay": 0.04},
-    "ham":     {"class": "material", "bulk": True, "weight": 1.2, "volume": 1.0, "food": True, "decay": 0.03},
+    "ham":     {"class": "material", "bulk": True, "weight": 1.2, "volume": 1.0, "food": True, "leaves_scraps": 0.15, "decay": 0.03},
     "pepper":   {"class": "material", "bulk": True, "imported": True, "weight": 0.5, "volume": 0.3},
     "cinnamon": {"class": "material", "bulk": True, "imported": True, "weight": 0.3, "volume": 0.3},
     "ginger":   {"class": "material", "bulk": True, "imported": True, "weight": 0.4, "volume": 0.3},
@@ -156,21 +157,8 @@ ITEMS = {
     "cider":          {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0, "food": True, "prepared": True, "food_group": "drink", "decay": 0.02},
     "mead":           {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0, "food": True, "prepared": True, "food_group": "drink", "decay": 0.015},
     "book":    {"class": "good", "material": "paper", "verb": "read", "base_mult": 1.0, "wear_rate": 0.02, "weight": 1.0, "volume": 0.5},
-    "newspaper": {"class": "material", "bulk": True, "material": "paper", "weight": 0.1, "volume": 0.2},
-    "printing_press": {"class": "tool", "material": "metal", "verb": "print", "base_mult": 1.0, "wear_rate": 0.01, "make_minutes": 0, "make_effort": 0, "composite": False, "demand_driver": "general", "demand_weight": 0, "base_demand": 0},
-    # --- crop seeds ---
-    "wheat_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "barley_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "oats_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "rye_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "cabbage_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "carrot_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "onion_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "potato_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "turnip_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "bean_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "pea_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
-    "leek_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "newspaper": {"class": "material", "bulk": True, "material": "paper", "weight": 0.1, "volume": 0.2, "readable": True},
+    "printing_press": {"class": "tool", "material": "metal", "verb": "print", "base_mult": 1.0, "wear_rate": 0.01, "make_minutes": 0, "make_effort": 0, "composite": False, "demand_driver": "general", "demand_weight": 0, "base_demand": 0, "imported": True},  # a machine bought in from outside
     # --- trade materials (bulk) ---
     "hide":    {"class": "material", "bulk": True},
     "leather": {"class": "material", "bulk": True},
@@ -180,26 +168,28 @@ ITEMS = {
     "stave":   {"class": "material", "bulk": True},
     # --- fluids (need a watertight container) ---
     "water":   {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0},
-    "ale":     {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0},
+    "ale":     {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0, "food": True, "prepared": True, "food_group": "drink", "decay": 0.02},
     "oil":     {"class": "material", "bulk": True, "fluid": True, "weight": 0.9, "volume": 1.0},
     "milk":    {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0, "food": True},
     # --- animal products + feed (bulk) ---
-    "pork":    {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True},
-    "beef":    {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True},
-    "poultry": {"class": "material", "bulk": True, "weight": 0.5, "volume": 1.0, "food": True},
+    "pork":    {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "leaves_scraps": 0.20},
+    "beef":    {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "leaves_scraps": 0.20},
+    "poultry": {"class": "material", "bulk": True, "weight": 0.5, "volume": 1.0, "food": True, "leaves_scraps": 0.30},
     "eggs":    {"class": "material", "bulk": True, "weight": 0.1, "volume": 0.2, "food": True},
     "hay":     {"class": "material", "bulk": True, "weight": 0.3, "volume": 3.0},
     "grass":   {"class": "material", "bulk": True, "weight": 0.2, "volume": 2.0},
-    "scraps":  {"class": "material", "bulk": True, "weight": 0.5, "volume": 1.0},
+    # generic kitchen scraps (peelings, crusts, mixed leavings): animal feed, not people food.
+    # Meat/fish leavings are separate "<kind>_scraps" items, minted below from `leaves_scraps`.
+    "scraps":  {"class": "material", "bulk": True, "weight": 0.5, "volume": 1.0, "scraps": True, "compostable": 1.0},
     "rag":     {"class": "material", "bulk": True, "weight": 0.3, "volume": 1.0},
     "soot":    {"class": "material", "bulk": True, "weight": 0.2, "volume": 0.5},
     # --- imported goods (from OUTSIDE bigville -- acquired by trade, not made locally) ---
     "ink":    {"class": "material", "bulk": True, "imported": True, "weight": 1.0, "volume": 0.5},
     "paper":  {"class": "material", "bulk": True, "imported": True, "weight": 0.2, "volume": 0.5},
-    "dye":    {"class": "material", "bulk": True, "imported": True, "weight": 1.0, "volume": 0.5},
-    "madder": {"class": "material", "bulk": True, "imported": True, "colour": "red",    "weight": 1.0, "volume": 0.5},
-    "woad":   {"class": "material", "bulk": True, "imported": True, "colour": "blue",   "weight": 1.0, "volume": 0.5},
-    "weld":   {"class": "material", "bulk": True, "imported": True, "colour": "yellow", "weight": 1.0, "volume": 0.5},
+    "dye":    {"class": "material", "bulk": True, "imported": True, "dyestuff": 1.0, "weight": 1.0, "volume": 0.5},
+    "madder": {"class": "material", "bulk": True, "imported": True, "dyestuff": 1.0, "colour": "red",    "weight": 1.0, "volume": 0.5},
+    "woad":   {"class": "material", "bulk": True, "imported": True, "dyestuff": 1.0, "colour": "blue",   "weight": 1.0, "volume": 0.5},
+    "weld":   {"class": "material", "bulk": True, "imported": True, "dyestuff": 1.0, "colour": "yellow", "weight": 1.0, "volume": 0.5},
     "silk":   {"class": "material", "bulk": True, "imported": True, "weight": 0.5, "volume": 0.3},
     "velvet": {"class": "material", "bulk": True, "imported": True, "weight": 1.0, "volume": 0.5},
     "fur":    {"class": "material", "bulk": True, "imported": True, "weight": 2.0, "volume": 1.0},
@@ -249,7 +239,138 @@ ITEMS = {
     "wooden_serving_spoon":   {"class": "good", "material": "wood",  "verb": "serve", "base_mult": 0.8, "wear_rate": 0.05, "utensil": "serving_spoon"},
     "metal_serving_spoon":    {"class": "good", "material": "metal", "verb": "serve", "base_mult": 1.1, "wear_rate": 0.03, "utensil": "serving_spoon"},
     "wooden_dipper":          {"class": "good", "material": "wood",  "verb": "serve", "base_mult": 0.8, "wear_rate": 0.05, "utensil": "dipper"},
+    # --- extracted resources and the simple shop chains (RESOURCE_DEPOSITS / SHOP_CHAINS below) ---
+    "stone":      {"class": "material", "bulk": True, "material": "stone", "weight": 2.5, "volume": 1.0},
+    "lumber":     {"class": "material", "bulk": True, "material": "wood",  "weight": 1.5, "volume": 2.0},  # felled wood from a deposit
+    "blocks":     {"class": "material", "bulk": True, "material": "stone", "weight": 2.5, "volume": 1.0},  # dressed stone (mason)
+    "furniture":  {"class": "material", "bulk": True, "material": "wood",  "weight": 2.0, "volume": 3.0},  # generic carpenter output
+    "fish_ready": {"class": "material", "bulk": True, "weight": 0.8, "volume": 1.0},                      # fishmonger's dressed fish
+    # --- trade tools and workshop equipment named by RECIPES / TRADES. The world provides one
+    # instance of each recipe tool at founding; these rows give them physical and price data.
+    "hammer":       {"class": "tool", "material": "metal", "verb": "strike", "base_mult": 1.0, "wear_rate": 0.02, "weight": 1.0, "volume": 0.3},
+    "saw":          {"class": "tool", "material": "metal", "verb": "saw",    "base_mult": 1.0, "wear_rate": 0.03, "weight": 1.0, "volume": 0.5},
+    "adze":         {"class": "tool", "material": "metal", "verb": "shape",  "base_mult": 1.0, "wear_rate": 0.03, "weight": 1.0, "volume": 0.4},
+    "awl":          {"class": "tool", "material": "metal", "verb": "pierce", "base_mult": 1.0, "wear_rate": 0.02, "weight": 0.1, "volume": 0.1},
+    "needle":       {"class": "tool", "material": "metal", "verb": "sew",    "base_mult": 1.0, "wear_rate": 0.02, "weight": 0.05, "volume": 0.05},
+    "cleaver":      {"class": "tool", "material": "metal", "verb": "cleave", "base_mult": 1.0, "wear_rate": 0.03, "weight": 0.8, "volume": 0.3},
+    "quill":        {"class": "tool", "material": "feather", "verb": "write", "base_mult": 1.0, "wear_rate": 0.05, "weight": 0.02, "volume": 0.05},
+    "net":          {"class": "tool", "material": "cloth", "verb": "fish",   "base_mult": 1.0, "wear_rate": 0.05, "weight": 2.0, "volume": 2.0},
+    "board":        {"class": "tool", "material": "wood",  "verb": "knead",  "base_mult": 1.0, "wear_rate": 0.02, "weight": 1.0, "volume": 1.0},
+    "drying_rack":  {"class": "tool", "material": "wood",  "verb": "dry",    "base_mult": 1.0, "wear_rate": 0.02, "weight": 3.0, "volume": 4.0},
+    "smoking_rack": {"class": "tool", "material": "wood",  "verb": "smoke",  "base_mult": 1.0, "wear_rate": 0.03, "weight": 3.0, "volume": 4.0},
+    "churn":        {"class": "tool", "material": "wood",  "verb": "churn",  "base_mult": 1.0, "wear_rate": 0.02, "weight": 4.0, "volume": 3.0},
+    "press":        {"class": "tool", "material": "wood",  "verb": "press",  "base_mult": 1.0, "wear_rate": 0.02, "weight": 10.0, "volume": 6.0},
+    "mash_tun":     {"class": "tool", "material": "wood",  "verb": "mash",   "base_mult": 1.0, "wear_rate": 0.02, "weight": 15.0, "volume": 20.0},
+    "dye_vat":      {"class": "tool", "material": "wood",  "verb": "dye",    "base_mult": 1.0, "wear_rate": 0.02, "weight": 15.0, "volume": 20.0},
+    # cooking equipment (PREPARATION_EQUIPMENT); the pot's capacity matches CONTAINERS["pot"]
+    "pot":     {"class": "tool", "material": "metal", "verb": "boil",  "base_mult": 1.0, "wear_rate": 0.02, "weight": 2.0, "volume": 8.0,
+                "container": True, "capacity": 8.0, "lockable": False, "watertight": True},
+    "pan":     {"class": "tool", "material": "metal", "verb": "fry",   "base_mult": 1.0, "wear_rate": 0.02, "weight": 1.5, "volume": 1.0},
+    "griddle": {"class": "tool", "material": "metal", "verb": "fry",   "base_mult": 1.0, "wear_rate": 0.02, "weight": 3.0, "volume": 1.5},
+    "spit":    {"class": "tool", "material": "metal", "verb": "roast", "base_mult": 1.0, "wear_rate": 0.02, "weight": 2.0, "volume": 1.5},
+    "oven":    {"class": "furniture", "material": "stone", "verb": "bake", "base_mult": 1.0, "wear_rate": 0.01, "weight": 200.0, "volume": 20.0},
+    # --- crops and their seed added to close the brewing, linen, oil, and condiment chains ---
+    "hops_seed":    {"class": "material", "bulk": True, "seed": True, "weight": 0.1, "volume": 0.2},
+    "linseed":      {"class": "material", "bulk": True, "seed": True, "weight": 0.2, "volume": 0.2},  # flax seed: sown, or pressed for oil
+    "mustard_seed": {"class": "material", "bulk": True, "seed": True, "weight": 0.2, "volume": 0.2},  # sown, or ground into mustard
+    "flax":         {"class": "material", "bulk": True, "weight": 0.4, "volume": 2.0},
+    "malt":         {"class": "material", "bulk": True, "weight": 0.6, "volume": 1.0},   # sprouted, kilned barley
+    "feather":      {"class": "material", "bulk": True, "weight": 0.02, "volume": 0.2},
+    "sapling":      {"class": "material", "bulk": True, "weight": 0.5, "volume": 1.0},   # lifted from the woodlot; planted as hedge
+    # --- prepared foods and goods that use otherwise-idle ingredients ---
+    "beer":       {"class": "material", "bulk": True, "fluid": True, "weight": 1.0, "volume": 1.0, "food": True, "prepared": True, "food_group": "drink", "decay": 0.015},
+    "salad":      {"class": "material", "bulk": True, "weight": 0.4, "volume": 0.8, "food": True, "prepared": True, "food_group": "vegetable", "decay": 0.3},
+    "pea_soup":   {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0, "food": True, "prepared": True, "food_group": "legume"},
+    "spice_cake": {"class": "material", "bulk": True, "weight": 0.6, "volume": 0.9, "food": True, "prepared": True, "food_group": "sweet", "decay": 0.02},
+    "candle":     {"class": "good", "material": "wax", "verb": "light", "base_mult": 1.0, "wear_rate": 0.25, "weight": 0.1, "volume": 0.1},
 }
+
+# ---------------------------------------------------------------- SCRAPS (a modifier)
+# Scraps are a MODIFIER on a food, not one shared pile: eating a unit of a food with
+# `leaves_scraps` leaves that fraction behind as "<food>_scraps" (pork -> pork_scraps). Each scrap
+# item derives its values from its source -- lighter, cheaper, and quicker to spoil -- and is still
+# food, so it can be fed to animals that eat scraps (pigs, dogs) or eaten by people who cannot
+# afford better. Generic "scraps" (kitchen leavings) remains animal feed only.
+SCRAP_WEIGHT_FACTOR = 0.5      # scraps are bone, rind, skin: half the weight per unit of the cut
+SCRAP_SCARCITY_FACTOR = 0.15   # and worth a small fraction of it
+SCRAP_DECAY = 0.35             # scraps spoil faster than any whole food (perishable class is 0.25)
+
+
+def scrap_kind(kind):
+    """The scrap item a food leaves, or None if eating it leaves nothing."""
+    return f"{kind}_scraps" if ITEMS.get(kind, {}).get("leaves_scraps") else None
+
+
+for _kind, _spec in list(ITEMS.items()):
+    if _spec.get("leaves_scraps"):
+        ITEMS[f"{_kind}_scraps"] = {
+            "class": "material", "bulk": True, "food": True, "scraps": True, "scraps_of": _kind,
+            "food_group": "scraps", "fare": "poor", "compostable": 1.0,
+            "weight": round(float(_spec.get("weight", 1.0)) * SCRAP_WEIGHT_FACTOR, 3),
+            "volume": float(_spec.get("volume", 1.0)), "decay": SCRAP_DECAY,
+        }
+
+
+def feed_kinds(eats):
+    """Every stock kind an animal with diet `eats` will accept, in the order it eats them.
+
+    A diet of "scraps" accepts generic kitchen scraps first, then any food's scraps."""
+    if eats != "scraps":
+        return (eats,)
+    return ("scraps",) + tuple(sorted(k for k, s in ITEMS.items() if s.get("scraps_of")))
+
+
+# ---------------------------------------------------------------- TYPED INPUT SLOTS
+# A recipe input normally names one item kind (`["charcoal", 1]` -- a smith needs charcoal and
+# nothing else will do). An input may instead name a TYPE from this table (`["fuel", 1]`): the slot
+# accepts any item carrying the type's `tag`, and the quantity is measured in the tag's units. A
+# member with tag value v supplies v units per item, so 1 fuel is 1 wood, or 1/3 charcoal, or ~3.3
+# straw. A slot may be filled from several members; the cheapest per unit (by reference value) burns
+# first, so a cook reaches for straw and dung before the smith's charcoal. Type names must not
+# collide with item names. `byproducts` are left per unit of the slot consumed (burning leaves ash).
+INPUT_TYPES = {
+    "fuel":        {"tag": "fuel",        "measure": "heat",
+                    "byproducts": {"ash": 0.2, "soot": 0.05}},
+    "fertiliser":  {"tag": "nitrogen",    "measure": "nitrogen"},
+    "compostable": {"tag": "compostable", "measure": "units"},
+    "dyestuff":    {"tag": "dyestuff",    "measure": "units"},
+    "candle_fat":  {"tag": "candle_fat",  "measure": "units"},
+}
+
+
+def is_input_type(kind):
+    """True if a recipe input names a type slot rather than an item."""
+    return kind in INPUT_TYPES and kind not in ITEMS
+
+
+def type_members(type_name):
+    """((kind, units_per_item), ...) that fill a type slot, cheapest per unit first."""
+    tag = INPUT_TYPES[type_name]["tag"]
+    members = [(k, float(s[tag])) for k, s in ITEMS.items() if float(s.get(tag, 0.0) or 0.0) > 0.0]
+    return tuple(sorted(members, key=lambda kv: (reference_value(kv[0]) / kv[1], kv[0])))
+
+
+def type_plan(type_name, qty, available):
+    """How to fill `qty` units of a type slot from stock: [(kind, amount), ...], or None if short.
+
+    `available(kind)` returns the quantity on hand. The plan takes from the cheapest member first and
+    only moves to the next when that one is exhausted."""
+    remaining, plan = float(qty), []
+    for kind, units in type_members(type_name):
+        if remaining <= 1e-9:
+            break
+        have = float(available(kind))
+        if have <= 0.0:
+            continue
+        take = min(have, remaining / units)
+        plan.append((kind, round(take, 6)))
+        remaining -= take * units
+    return plan if remaining <= 1e-6 else None
+
+
+def type_byproducts(type_name, qty):
+    """{kind: amount} left behind by consuming `qty` units of a type slot."""
+    return {k: float(v) * float(qty) for k, v in INPUT_TYPES[type_name].get("byproducts", {}).items()}
 
 # ---------------------------------------------------------------- CONTAINERS
 # vessels with a capacity; some lockable (a safe is a lockable container). A container is a peer
@@ -263,7 +384,8 @@ CONTAINERS = {
     "safe":   {"capacity": 200.0, "lockable": True},
     "larder":      {"capacity": 100.0, "lockable": False, "decay_factor": 0.3,
                     "storage_class": "cool_food", "mismatch_decay_factor": 2.0,
-                    "preferred_contents": ["bread", "milk", "butter", "cheese", "cream", "fish", "meat"]},
+                    "preferred_contents": ["bread", "milk", "butter", "cheese", "cream", "fish",
+                                           "pork", "beef", "mutton", "poultry", "bacon", "ham", "sausage"]},
     # Long-term stores are deliberately distinct from ordinary containers. Their decay factors are
     # multipliers on the normal decay rate, so a dry, well-built granary preserves a harvest across
     # seasons without making food immortal. `preferred_contents` is an affinity, not a whitelist:
@@ -351,21 +473,32 @@ HEATED_FOOD_RECIPES = frozenset({
     "make_bean_stew", "make_lentil_stew", "make_fish_stew", "make_sausage_stew", "make_bacon_eggs",
     "roast_poultry", "roast_fish", "stuffed_cabbage", "make_omelette", "make_fish_pie",
     "make_meat_pie", "make_shepherds_pie", "make_cheese_pie", "bake_cake", "bake_honey_cake",
-    "make_pudding", "brew_ale", "brew_cider", "brew_mead",
+    "make_pudding", "brew_ale", "brew_cider", "brew_mead", "bake_bread_at_home",
+    "make_fruit_pie", "make_yogurt", "make_fruit_jam", "make_pea_soup", "bake_spice_cake", "brew_beer",
+    "render_lard",
 })
+
+# Every heated dish burns fuel: the loop below adds a `["fuel", n]` typed input to each recipe in
+# HEATED_FOOD_RECIPES (1 unit of heat unless listed here). Non-food heat work (dyeing, smoking,
+# malting, candle-making) names its fuel input directly in the recipe row.
+FUEL_PER_BATCH = {"brew_ale": 2, "brew_beer": 2, "brew_cider": 2, "brew_mead": 2,
+                  "bake_bread": 6, "bake_bread_at_home": 1}   # 0.1 heat/loaf in an oven, 0.33 at home
 
 # ---------------------------------------------------------------- RECIPES
 # how things are made / combined: inputs -> output, with difficulty and make-time. `requires` is the
-# trade/role. Inputs and tools are deliberately variable-length. Serving vessels and utensils belong
+# trade/role. `fallback: True` marks a deliberately costlier way to make something (home baking) that
+# people use when the efficient maker is missing. `open: True` marks household work ANYONE may do -- no trade needed -- provided they are
+# strong and skilled enough (RECIPE_EXERTION, MIN_SKILL) and hold the recipe's tools themselves (a
+# trade recipe uses its workshop's kit instead). Everyone else buys the result, or is given it. `byproducts` ({kind: qty}) are left per batch alongside the output (milling leaves bran). Inputs and tools are deliberately variable-length. Serving vessels and utensils belong
 # to FOOD_SERVICE below: they are needed when food is consumed, not when the batch is cooked.
 RECIPES = [
-    {"name": "saw_planks",    "requires": "sawyer",     "in": [["log", 1]],                  "out": ["timber", 2],   "difficulty": 0.8, "time_minutes": 20},
+    {"name": "saw_planks",    "requires": "sawyer",     "in": [["lumber", 1]],               "out": ["timber", 2],   "difficulty": 0.8, "time_minutes": 20},
     {"name": "burn_charcoal", "requires": "collier",    "in": [["wood", 4]],                 "out": ["charcoal", 1], "difficulty": 2.0, "time_minutes": 60},
     {"name": "smelt_iron",    "requires": "smith",      "in": [["ore", 2], ["charcoal", 1]], "out": ["iron", 1],     "difficulty": 3.0, "time_minutes": 90},
     {"name": "forge_nails",   "requires": "smith",      "in": [["iron", 1], ["charcoal", 1]],"out": ["nails", 5],    "difficulty": 1.5, "time_minutes": 10, "tools": ["hammer"]},
     {"name": "forge_knife",   "requires": "smith",      "in": [["iron", 1], ["charcoal", 1]],"out": ["knife", 1],    "difficulty": 2.0, "time_minutes": 90, "tools": ["hammer"]},
     {"name": "carve_rake",    "requires": "woodworker", "in": [["timber", 1]],               "out": ["rake", 1],     "difficulty": 0.7, "time_minutes": 60},
-    {"name": "grind_flour",   "requires": "miller",     "in": [["grain", 3]],                "out": ["flour", 2],    "difficulty": 1.0, "time_minutes": 30},
+    {"name": "grind_flour",   "requires": "miller",     "in": [["grain", 30]],               "out": ["flour", 20],   "difficulty": 1.0, "time_minutes": 45, "byproducts": {"scraps": 10}},  # a water-mill run; bran
     {"name": "forge_pick_head",   "requires": "smith",      "in": [["iron", 1], ["charcoal", 1]],"out": ["pick_head", 1],  "difficulty": 1.3, "time_minutes": 120, "tools": ["hammer"]},
     {"name": "carve_pick_handle", "requires": "woodworker", "in": [["timber", 1]],               "out": ["pick_handle", 1],"difficulty": 0.7, "time_minutes": 60},
     # ASSEMBLE = an action on two ITEM inputs (a head + a handle) using a hammer -- not special
@@ -410,20 +543,25 @@ RECIPES = [
     {"name": "forge_metal_serving_spoon",   "requires": "smith",      "in": [["iron", 1], ["charcoal", 1]], "out": ["metal_serving_spoon", 1],   "difficulty": 1.2, "time_minutes": 50, "tools": ["hammer"]},
     {"name": "carve_wooden_dipper",         "requires": "woodworker", "in": [["timber", 1]],               "out": ["wooden_dipper", 1],         "difficulty": 0.7, "time_minutes": 40, "tools": ["knife"]},
     {"name": "brew_ale",     "requires": "brewer",     "in": [["grain", 3], ["water", 4]],  "out": ["ale", 5],     "difficulty": 2.0, "time_minutes": 480, "tools": ["mash_tun"]},
-    {"name": "dye_cloth",    "requires": "dyer",       "in": [["cloth", 1], ["dye", 1]],    "out": ["coloured_cloth", 1], "difficulty": 1.0, "time_minutes": 120, "tools": ["dye_vat"]},
+    {"name": "dye_cloth",    "requires": "dyer",       "in": [["cloth", 1], ["dyestuff", 1], ["fuel", 1]],    "out": ["coloured_cloth", 1], "difficulty": 1.0, "time_minutes": 120, "tools": ["dye_vat"]},
     # recipes that EXIST but are not COMMONLY KNOWN in bigville (common: False -> must be taught or read to be made here)
     {"name": "make_paper",   "requires": "papermaker", "in": [["rag", 3], ["water", 2]],    "out": ["paper", 5],   "difficulty": 2.0, "time_minutes": 240, "tools": ["press"], "common": False},
     {"name": "print_newspaper", "requires": "printer",   "in": [["paper", 1], ["ink", 1]],   "out": ["newspaper", 20], "difficulty": 1.2, "time_minutes": 60, "tools": ["printing_press"]},
     {"name": "make_sandwich", "requires": "cook",     "in": [["ham", 1], ["bread", 1]],   "out": ["sandwich", 1], "difficulty": 0.5, "time_minutes": 10},
     {"name": "make_ink",     "requires": "inkmaker",   "in": [["soot", 1], ["oil", 1]],     "out": ["ink", 3],     "difficulty": 1.5, "time_minutes": 120, "common": False},
     # --- food / cooking ---
-    {"name": "bake_bread",   "requires": "baker",     "in": [["flour", 2], ["water", 1]],                          "out": ["bread", 3],   "difficulty": 1.5, "time_minutes": 120, "tools": ["oven"]},
+    # A bakery oven load: one firing bakes ~60 loaves (a loaf is one resident's bread for a period) in
+    # about two hours of the baker's work, on far less fuel per loaf than a household hearth -- so one
+    # baker feeds a couple of hundred people, as village bakers did. Baking at home is open to anyone
+    # but costs much more time and fuel per loaf.
+    {"name": "bake_bread",   "requires": "baker",     "in": [["flour", 40], ["water", 20]],                        "out": ["bread", 60],  "difficulty": 1.5, "time_minutes": 120, "tools": ["oven"]},
+    {"name": "bake_bread_at_home", "requires": "cook", "open": True, "fallback": True, "in": [["flour", 2], ["water", 1]],          "out": ["bread", 3],   "difficulty": 1.0, "time_minutes": 90},
     {"name": "make_pottage", "requires": "cook",      "in": [["oats", 1], ["water", 2], ["cabbage", 1]],           "out": ["pottage", 3], "difficulty": 1.0, "time_minutes": 90,  "tools": ["pot"]},
     {"name": "make_stew",    "requires": "cook",      "in": [["beef", 1], ["carrot", 1], ["onion", 1], ["water", 2]],"out": ["stew", 3],   "difficulty": 1.5, "time_minutes": 150, "tools": ["pot"]},
     {"name": "roast_meat",   "requires": "cook",      "in": [["pork", 1], ["salt", 1]],                            "out": ["roast", 1],   "difficulty": 1.5, "time_minutes": 120, "tools": ["spit"]},
     {"name": "make_pie",     "requires": "baker",     "in": [["flour", 2], ["beef", 1], ["onion", 1]],             "out": ["pie", 1],     "difficulty": 2.0, "time_minutes": 150, "tools": ["oven"]},
     {"name": "churn_butter", "requires": "dairymaid", "in": [["milk", 4]],                                         "out": ["butter", 1],  "difficulty": 1.0, "time_minutes": 60,  "tools": ["churn"]},
-    {"name": "make_cheese",  "requires": "dairymaid", "in": [["milk", 6], ["salt", 1]],                            "out": ["cheese", 2],  "difficulty": 1.5, "time_minutes": 240, "tools": ["press"]},
+    {"name": "make_cheese",  "requires": "dairymaid", "in": [["milk", 6], ["salt", 1]],                            "out": ["cheese", 2],  "difficulty": 1.5, "time_minutes": 240, "tools": ["press"], "byproducts": {"scraps": 2}},  # whey
     {"name": "salt_pork",    "requires": "cook",      "in": [["pork", 2], ["salt", 1]],                            "out": ["bacon", 2],   "difficulty": 1.0, "time_minutes": 60},
     # --- expanded staple foods ---
     {"name": "make_gruel",       "requires": "cook",  "in": [["grain", 1], ["water", 2]],                         "out": ["gruel", 3],       "difficulty": 0.6, "time_minutes": 45,  "tools": ["pot"]},
@@ -464,10 +602,81 @@ RECIPES = [
     {"name": "dry_fruit",             "requires": "cook", "in": [["apple", 3]],                                          "out": ["dried_fruit", 2],   "difficulty": 0.7, "time_minutes": 180, "tools": ["drying_rack"]},
     {"name": "make_fruit_jam",        "requires": "cook", "in": [["berry", 3], ["sugar", 1]],                          "out": ["fruit_jam", 3],     "difficulty": 1.1, "time_minutes": 90,  "tools": ["pot"]},
     {"name": "salt_fish",             "requires": "cook", "in": [["fish", 2], ["salt", 1]],                             "out": ["salt_fish", 2],     "difficulty": 0.9, "time_minutes": 75,  "tools": ["barrel"]},
-    {"name": "smoke_fish",            "requires": "cook", "in": [["fish", 2], ["salt", 1], ["smoke", 1]],              "out": ["smoked_fish", 2],   "difficulty": 1.2, "time_minutes": 150, "tools": ["smokehouse"]},
+    {"name": "smoke_fish",            "requires": "cook", "in": [["fish", 2], ["salt", 1], ["fuel", 1]],               "out": ["smoked_fish", 2],   "difficulty": 1.2, "time_minutes": 150, "tools": ["smoking_rack"]},
     {"name": "brew_cider",            "requires": "brewer", "in": [["apple", 4], ["water", 2]],                        "out": ["cider", 5],         "difficulty": 1.8, "time_minutes": 360, "tools": ["mash_tun"]},
     {"name": "brew_mead",             "requires": "brewer", "in": [["honey", 2], ["water", 2]],                        "out": ["mead", 4],          "difficulty": 2.0, "time_minutes": 360, "tools": ["mash_tun"]},
     {"name": "bind_book",    "requires": "scribe",    "in": [["paper", 3], ["ink", 1]],                            "out": ["book", 1],    "difficulty": 1.5, "time_minutes": 180, "tools": ["quill"]},
+    # --- forestry and gathering. A recipe with no inputs is labour on the land: `gathered_from` names
+    # where it is done, and `seasons` limits when (both are data; the world checks the season). ---
+    {"name": "split_firewood",  "requires": "forester", "open": True, "in": [["lumber", 1]], "out": ["wood", 4],     "difficulty": 0.8, "time_minutes": 40, "tools": ["axe"]},
+    {"name": "lift_saplings",   "requires": "forester", "open": True, "in": [], "out": ["sapling", 3],  "difficulty": 0.6, "time_minutes": 60,  "gathered_from": "woodlot", "seasons": ["winter", "spring"]},
+    {"name": "gather_berries",  "requires": "forester", "open": True, "in": [], "out": ["berry", 4],    "difficulty": 0.4, "time_minutes": 90,  "gathered_from": "woodlot", "seasons": ["summer"]},
+    {"name": "gather_mushrooms","requires": "forester", "open": True, "in": [], "out": ["mushroom", 3], "difficulty": 0.6, "time_minutes": 90,  "gathered_from": "woodlot", "seasons": ["autumn"]},
+    {"name": "pick_apples",     "requires": "farmer", "open": True,   "in": [], "out": ["apple", 6],    "difficulty": 0.4, "time_minutes": 90,  "gathered_from": "orchard", "seasons": ["autumn"]},
+    {"name": "pick_pears",      "requires": "farmer", "open": True,   "in": [], "out": ["pear", 5],     "difficulty": 0.4, "time_minutes": 90,  "gathered_from": "orchard", "seasons": ["autumn"]},
+    {"name": "pick_plums",      "requires": "farmer", "open": True,   "in": [], "out": ["plum", 5],     "difficulty": 0.4, "time_minutes": 90,  "gathered_from": "orchard", "seasons": ["summer"]},
+    {"name": "cut_sage",        "requires": "farmer", "open": True,   "in": [], "out": ["sage", 2],     "difficulty": 0.3, "time_minutes": 30,  "gathered_from": "kitchen_garden", "seasons": ["spring", "summer"]},
+    {"name": "cut_thyme",       "requires": "farmer", "open": True,   "in": [], "out": ["thyme", 2],    "difficulty": 0.3, "time_minutes": 30,  "gathered_from": "kitchen_garden", "seasons": ["spring", "summer"]},
+    {"name": "cut_parsley",     "requires": "farmer", "open": True,   "in": [], "out": ["parsley", 2],  "difficulty": 0.3, "time_minutes": 30,  "gathered_from": "kitchen_garden", "seasons": ["spring", "summer"]},
+    {"name": "dig_ore",         "requires": "quarrier", "in": [], "out": ["ore", 2],      "difficulty": 1.5, "time_minutes": 120, "gathered_from": "quarry", "tools": ["pick"]},
+    # --- the smith's tools and cooking metal (smithing heat is charcoal specifically, not any fuel) ---
+    {"name": "forge_hammer",  "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["hammer", 1],  "difficulty": 1.5, "time_minutes": 90,  "tools": ["hammer"]},
+    {"name": "forge_saw",     "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["saw", 1],     "difficulty": 2.0, "time_minutes": 120, "tools": ["hammer"]},
+    {"name": "forge_adze",    "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["adze", 1],    "difficulty": 1.6, "time_minutes": 100, "tools": ["hammer"]},
+    {"name": "forge_awl",     "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["awl", 1],     "difficulty": 0.8, "time_minutes": 30,  "tools": ["hammer"]},
+    {"name": "forge_needle",  "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["needle", 1],  "difficulty": 1.2, "time_minutes": 40,  "tools": ["hammer"]},
+    {"name": "forge_cleaver", "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["cleaver", 1], "difficulty": 1.5, "time_minutes": 90,  "tools": ["hammer"]},
+    {"name": "forge_spade",   "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["spade", 1],   "difficulty": 1.4, "time_minutes": 120, "tools": ["hammer"]},
+    {"name": "forge_axe",     "requires": "smith", "in": [["iron", 2], ["charcoal", 1]], "out": ["axe", 1],     "difficulty": 2.0, "time_minutes": 150, "tools": ["hammer"]},
+    {"name": "forge_hinge",   "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["hinge", 1],   "difficulty": 1.0, "time_minutes": 45,  "tools": ["hammer"]},
+    {"name": "forge_pot",     "requires": "smith", "in": [["iron", 2], ["charcoal", 1]], "out": ["pot", 1],     "difficulty": 1.8, "time_minutes": 120, "tools": ["hammer"]},
+    {"name": "forge_pan",     "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["pan", 1],     "difficulty": 1.4, "time_minutes": 90,  "tools": ["hammer"]},
+    {"name": "forge_griddle", "requires": "smith", "in": [["iron", 2], ["charcoal", 1]], "out": ["griddle", 1], "difficulty": 1.4, "time_minutes": 90,  "tools": ["hammer"]},
+    {"name": "forge_spit",    "requires": "smith", "in": [["iron", 1], ["charcoal", 1]], "out": ["spit", 1],    "difficulty": 1.0, "time_minutes": 60,  "tools": ["hammer"]},
+    # --- woodwork, cooperage, masonry: workshop equipment and the oven ---
+    {"name": "make_stool",        "requires": "woodworker", "in": [["timber", 1]], "out": ["stool", 1],        "difficulty": 0.7, "time_minutes": 60,  "tools": ["saw"]},
+    {"name": "make_board",        "requires": "woodworker", "in": [["timber", 1]], "out": ["board", 1],        "difficulty": 0.4, "time_minutes": 30,  "tools": ["saw"]},
+    {"name": "make_drying_rack",  "requires": "woodworker", "in": [["timber", 2]], "out": ["drying_rack", 1],  "difficulty": 0.8, "time_minutes": 90,  "tools": ["saw"]},
+    {"name": "make_smoking_rack", "requires": "woodworker", "in": [["timber", 2]], "out": ["smoking_rack", 1], "difficulty": 0.8, "time_minutes": 90,  "tools": ["saw"]},
+    {"name": "make_press",        "requires": "woodworker", "in": [["timber", 4], ["nails", 4]], "out": ["press", 1], "difficulty": 2.0, "time_minutes": 240, "tools": ["saw"]},
+    {"name": "make_bucket",       "requires": "cooper", "in": [["stave", 3]],  "out": ["bucket", 1],   "difficulty": 1.0, "time_minutes": 60,  "tools": ["adze"]},
+    {"name": "make_churn",        "requires": "cooper", "in": [["stave", 4]],  "out": ["churn", 1],    "difficulty": 1.2, "time_minutes": 90,  "tools": ["adze"]},
+    {"name": "make_mash_tun",     "requires": "cooper", "in": [["stave", 10]], "out": ["mash_tun", 1], "difficulty": 2.2, "time_minutes": 240, "tools": ["adze"]},
+    {"name": "make_dye_vat",      "requires": "cooper", "in": [["stave", 8]],  "out": ["dye_vat", 1],  "difficulty": 2.0, "time_minutes": 200, "tools": ["adze"]},
+    {"name": "dress_stone",       "requires": "mason",  "in": [["stone", 1]],  "out": ["blocks", 1],   "difficulty": 1.0, "time_minutes": 45,  "tools": ["hammer"]},
+    {"name": "build_oven",        "requires": "mason",  "in": [["blocks", 8]], "out": ["oven", 1],     "difficulty": 2.0, "time_minutes": 480, "tools": ["hammer"]},
+    # --- fibre: spinning, linen, nets, shirts, boots, rags, quills ---
+    {"name": "spin_thread",  "requires": "weaver", "open": True,  "in": [["wool", 1]],               "out": ["thread", 2], "difficulty": 0.8, "time_minutes": 90},
+    {"name": "spin_linen",   "requires": "weaver",  "in": [["flax", 3]],               "out": ["linen", 1],  "difficulty": 1.6, "time_minutes": 240, "tools": ["loom"]},
+    {"name": "knit_net",     "requires": "weaver",  "in": [["thread", 4]],             "out": ["net", 1],    "difficulty": 1.2, "time_minutes": 180},
+    {"name": "sew_shirt",    "requires": "tailor",  "in": [["linen", 2], ["thread", 1]], "out": ["shirt", 1], "difficulty": 1.0, "time_minutes": 90,  "tools": ["needle"]},
+    {"name": "cut_rags",     "requires": "tailor", "open": True,  "in": [["cloth", 1]],              "out": ["rag", 6],    "difficulty": 0.2, "time_minutes": 15},
+    {"name": "make_boots",   "requires": "cobbler", "in": [["leather", 2]],            "out": ["boots", 1],  "difficulty": 1.8, "time_minutes": 180, "tools": ["awl"]},
+    {"name": "cut_quill",    "requires": "scribe",  "in": [["feather", 1]],            "out": ["quill", 1],  "difficulty": 0.5, "time_minutes": 15,  "tools": ["knife"]},
+    # --- butchery and dairy ---
+    {"name": "cure_ham",     "requires": "butcher",   "in": [["pork", 3], ["salt", 1]],                 "out": ["ham", 2],     "difficulty": 1.2, "time_minutes": 90,  "tools": ["cleaver"]},
+    {"name": "make_sausage", "requires": "butcher",   "in": [["pork", 2], ["salt", 1], ["sage", 0.5], ["pepper", 0.5]], "out": ["sausage", 3], "difficulty": 1.3, "time_minutes": 90, "tools": ["cleaver"]},
+    {"name": "render_lard",  "requires": "butcher",   "in": [["pork", 2], ["fuel", 1]],                 "out": ["lard", 1],    "difficulty": 0.8, "time_minutes": 90,  "tools": ["pot"]},
+    {"name": "skim_cream",   "requires": "dairymaid", "in": [["milk", 3]],                              "out": ["cream", 1],   "difficulty": 0.4, "time_minutes": 30},
+    # --- brewing, milling, condiments ---
+    {"name": "malt_barley",     "requires": "brewer", "in": [["barley", 3], ["water", 1], ["fuel", 1]], "out": ["malt", 3],  "difficulty": 1.4, "time_minutes": 240},
+    {"name": "brew_beer",       "requires": "brewer", "in": [["malt", 3], ["hops", 1], ["water", 4], ["yeast", 1]], "out": ["beer", 5], "difficulty": 2.2, "time_minutes": 480, "tools": ["mash_tun"]},
+    {"name": "propagate_yeast", "requires": "brewer", "in": [["grain", 1], ["water", 1]],              "out": ["yeast", 2],   "difficulty": 0.8, "time_minutes": 60},
+    {"name": "make_vinegar",    "requires": "brewer", "in": [["cider", 2]],                            "out": ["vinegar", 2], "difficulty": 0.6, "time_minutes": 120, "tools": ["barrel"]},
+    {"name": "grind_rye",       "requires": "miller", "in": [["rye", 30]],                             "out": ["flour", 20],  "difficulty": 1.0, "time_minutes": 45, "byproducts": {"scraps": 10}},
+    {"name": "press_linseed_oil", "requires": "miller", "in": [["linseed", 3]],                        "out": ["oil", 1],     "difficulty": 1.2, "time_minutes": 60,  "tools": ["press"]},
+    {"name": "make_mustard",    "requires": "cook",   "in": [["mustard_seed", 2], ["vinegar", 1]],     "out": ["mustard", 2], "difficulty": 0.6, "time_minutes": 30},
+    # --- dishes that use otherwise-idle produce and spices ---
+    {"name": "make_salad",      "requires": "cook",  "in": [["lettuce", 2], ["cucumber", 1], ["parsley", 1]], "out": ["salad", 3], "difficulty": 0.4, "time_minutes": 15},
+    {"name": "make_pea_soup",   "requires": "cook",  "in": [["pea", 2], ["onion", 1], ["water", 2]],   "out": ["pea_soup", 4], "difficulty": 0.9, "time_minutes": 100, "tools": ["pot"]},
+    {"name": "pickle_beets",    "requires": "cook",  "in": [["beet", 2], ["vinegar", 1], ["salt", 1]], "out": ["pickles", 3],  "difficulty": 1.0, "time_minutes": 90,  "tools": ["barrel"]},
+    {"name": "bake_spice_cake", "requires": "baker", "in": [["flour", 2], ["honey", 1], ["eggs", 1], ["cinnamon", 0.5], ["ginger", 0.5], ["nutmeg", 0.5]], "out": ["spice_cake", 3], "difficulty": 2.2, "time_minutes": 150, "tools": ["oven"]},
+    # --- household goods and soil: candles (wax or tallow), thatch, compost ---
+    {"name": "make_candles",  "requires": "chandler", "in": [["candle_fat", 1], ["thread", 0.5], ["fuel", 0.5]], "out": ["candle", 1], "difficulty": 0.8, "time_minutes": 60, "tools": ["pot"]},
+    {"name": "make_thatch",   "requires": "farmer", "open": True,   "in": [["straw", 4]],                       "out": ["thatch", 2],  "difficulty": 0.6, "time_minutes": 60},
+    # Human waste is composted before it goes on a field; the compost heap also takes any scraps,
+    # straw, or ash (the `compostable` type).
+    {"name": "make_compost",  "requires": "farmer", "open": True,   "in": [["night_soil", 2], ["compostable", 2]], "out": ["compost", 3], "difficulty": 0.5, "time_minutes": 60, "tools": ["spade"]},
 ]
 
 # Attach the abstract requirement to the dish rows without baking a particular appliance into the
@@ -483,6 +692,8 @@ for _recipe in RECIPES:
                     _methods.append(_method)
         _recipe["preparation"] = {"requires": list(PREPARATION_REQUIREMENTS),
                                    "methods": _methods or list(PREPARATION_METHODS)}
+        if not any(_kind == "fuel" for _kind, _ in _recipe["in"]):
+            _recipe["in"] = list(_recipe["in"]) + [["fuel", FUEL_PER_BATCH.get(_recipe["name"], 1)]]
         if "tools" in _recipe:
             _recipe["method_tools"] = _recipe.pop("tools")
 
@@ -530,14 +741,32 @@ BUILDINGS = {
                        "rooms": ["land_register", "deed_archive", "public_counter"]},
     "scriptorium": {"staff_role": "scribe",    "provides": "scribe",    "sheltered": True,  "rooms": ["deskroom"]},
     "shambles":    {"staff_role": "butcher",   "provides": "butcher",   "sheltered": False, "rooms": ["killing_floor"]},
+    "surgery":     {"staff_role": "doctor",    "provides": "care",      "sheltered": True,
+                    "display_name": "Surgery", "rooms": ["consulting_room", "sickroom", "lying_in_room"]},
+    # Catalogue buildings that are NOT standing when the town is founded (`founding: False`). They
+    # are valid places -- a trade can name them and a BUILDING_PROJECT can raise them -- but the
+    # founding town does not contain them (see founding_buildings()).
+    "charcoal_hearth": {"staff_role": "collier", "provides": "collier", "sheltered": False,
+                        "rooms": ["clamp_floor"], "founding": False},
+    "papermill":   {"staff_role": "papermaker", "provides": "papermaker", "sheltered": True,
+                    "rooms": ["vat_room", "drying_loft"], "founding": False},
+    "inkhouse":    {"staff_role": "inkmaker",   "provides": "inkmaker",   "sheltered": True,
+                    "rooms": ["mixing_room"], "founding": False},
+    "house":       {"staff_role": "", "sheltered": True, "rooms": ["living_room", "hearth"], "founding": False},
+    "barn":        {"staff_role": "", "sheltered": True, "rooms": ["stall", "hayloft"], "founding": False},
 }
+
+
+def founding_buildings():
+    """The catalogue buildings standing when the town is founded (everything not `founding: False`)."""
+    return {kind: spec for kind, spec in BUILDINGS.items() if spec.get("founding", True)}
 
 # Fixtures are physical square contents, not decorative background pixels. Their offsets are
 # interpreted relative to the scenario's declared square bounds and exported to any client.
 TOWN_SQUARE_FIXTURES = [
     {"name": "north_market_stall", "kind": "market_stall", "offset": [-4, -2], "goods": ["bread", "grain"]},
     {"name": "east_market_stall", "kind": "market_stall", "offset": [1, -2], "goods": ["fish", "cheese"]},
-    {"name": "west_market_stall", "kind": "market_stall", "offset": [-1, 1], "goods": ["cloth", "tools"]},
+    {"name": "west_market_stall", "kind": "market_stall", "offset": [-1, 1], "goods": ["cloth", "knife", "spade"]},
     {"name": "town_noticeboard", "kind": "noticeboard", "offset": [-5, 0], "goods": []},
     {"name": "public_well", "kind": "well", "offset": [4, 0], "goods": ["water"]},
     {"name": "south_bench_west", "kind": "bench", "offset": [-3, 2], "goods": []},
@@ -545,14 +774,13 @@ TOWN_SQUARE_FIXTURES = [
 ]
 
 # Construction is separate from the catalogue of places already present when the town is
-# founded.  A project can create another instance of any catalogue building (a second granary,
-# a new house, a barn, a bridge, and so on) without teaching the world a special-case builder.
+# founded.  A project creates another instance of a catalogue building (a second granary, a new
+# house, a barn); the building's staff, shelter, and rooms come from BUILDINGS, and the project
+# adds only what raising it costs.
 BUILDING_PROJECTS = {
-    "house": {"building": "house", "staff_role": "", "sheltered": True,
-              "rooms": ["living_room", "hearth"], "inputs": {"timber": 12, "thatch": 8},
+    "house": {"building": "house", "inputs": {"timber": 12, "thatch": 8},
               "labour": 10.0, "affordance": "shelter"},
-    "barn": {"building": "barn", "staff_role": "", "sheltered": True,
-             "rooms": ["stall", "hayloft"], "inputs": {"timber": 18, "thatch": 12},
+    "barn": {"building": "barn", "inputs": {"timber": 18, "thatch": 12},
              "labour": 14.0, "affordance": "house_livestock"},
     "granary": {"building": "granary", "inputs": {"timber": 20, "thatch": 15},
                 "labour": 18.0, "affordance": "store_dry_food"},
@@ -560,6 +788,30 @@ BUILDING_PROJECTS = {
                     "labour": 16.0, "affordance": "store_root_crops"},
     "wellhouse": {"building": "wellhouse", "inputs": {"stone": 12, "timber": 6},
                   "labour": 12.0, "affordance": "draw_water"},
+    "charcoal_hearth": {"building": "charcoal_hearth", "inputs": {"stone": 6, "timber": 4},
+                        "labour": 6.0, "affordance": "burn_charcoal"},
+    "papermill": {"building": "papermill", "inputs": {"timber": 16, "stone": 10},
+                  "labour": 16.0, "affordance": "make_paper"},
+    "inkhouse": {"building": "inkhouse", "inputs": {"timber": 10, "stone": 4},
+                 "labour": 8.0, "affordance": "make_ink"},
+}
+
+# Renewable natural-resource deposits a map can place. `tile` names the map tile that IS the
+# resource body (the deposit sits on a walkable cell beside it); stock/growback/capacity seed the
+# world's ResourceDeposit node. The kind is also the item extracted (ITEMS).
+RESOURCE_DEPOSITS = {
+    "fish":   {"tile": "water", "stock": 60.0, "growback": 3.0, "capacity": 120.0, "minutes_per_unit": 30},
+    "lumber": {"tile": "tree",  "stock": 60.0, "growback": 4.0, "capacity": 120.0, "minutes_per_unit": 40},
+    "stone":  {"tile": "wall",  "stock": 60.0, "growback": 3.0, "capacity": 120.0, "minutes_per_unit": 40},
+}
+
+# The one-input shop chains the cast's shopkeeping trades run (deliver input -> work -> sell output).
+# The map's `work` sites name where each shop stands; a trade with no work site gets no shop.
+SHOP_CHAINS = {
+    "fishmonger": {"in": "fish",   "out": "fish_ready"},
+    "carpenter":  {"in": "lumber", "out": "furniture"},
+    "mason":      {"in": "stone",  "out": "blocks"},
+    "bakery":     {"in": "grain",  "out": "bread"},
 }
 
 
@@ -597,11 +849,30 @@ TRADES = {
     "constable":  {"building": "watchhouse", "tools": [], "base_skill": 0.7},
     "clerk":      {"building": "townhall", "tools": ["quill"], "base_skill": 0.7, "literacy": 0.9, "capability": 0.9},
     "councillor": {"building": "townhall", "tools": [], "base_skill": 0.6, "literacy": 0.8, "capability": 0.8},
-    "midwife":    {"building": "dairy", "tools": [], "base_skill": 0.7, "literacy": 0.7, "capability": 0.8},
-    "doctor":     {"building": "dairy", "tools": [], "base_skill": 0.8, "literacy": 0.9, "capability": 0.9},
+    "midwife":    {"building": "surgery", "tools": [], "base_skill": 0.7, "literacy": 0.7, "capability": 0.8},
+    "doctor":     {"building": "surgery", "tools": [], "base_skill": 0.8, "literacy": 0.9, "capability": 0.9},
     "scribe":     {"building": "scriptorium", "tools": ["quill"], "base_skill": 0.7, "literacy": 0.9, "capability": 0.9},
     "teacher":    {"building": "school",       "tools": [],        "base_skill": 0.7, "literacy": 0.95, "capability": 0.95},
     "butcher":    {"building": "shambles",     "tools": ["cleaver"], "base_skill": 0.6},
+    # Occupations of the cast whose work is outdoors or not tied to a catalogue building.
+    # `building: None` + `site` names the map work-site kind instead.
+    "farmer":        {"building": None, "site": "farm",    "tools": ["spade", "plough"], "base_skill": 0.7},
+    "shepherd":      {"building": None, "site": "pasture", "tools": [],         "base_skill": 0.6},
+    "animal_keeper": {"building": None, "site": "pasture", "tools": [],         "base_skill": 0.6},
+    "labourer":      {"building": None, "site": "market",  "tools": [],         "base_skill": 0.5},
+    "forester":      {"building": None, "site": "lumber",  "tools": ["axe"],    "base_skill": 0.6},
+    "quarrier":      {"building": None, "site": "stone",   "tools": ["pick"],   "base_skill": 0.6},
+    "mason":         {"building": None, "site": "mason",   "tools": ["hammer"], "base_skill": 0.7},
+    "servant":       {"building": None, "site": "manor",   "tools": [],         "base_skill": 0.5},
+    "merchant":      {"building": None, "site": "market",  "tools": [],         "base_skill": 0.7, "literacy": 0.8, "capability": 0.8},
+    "innkeeper":     {"building": "inn",      "tools": ["mash_tun"], "base_skill": 0.7},
+    "pastor":        {"building": "church",   "tools": [],  "base_skill": 0.7, "literacy": 0.9, "capability": 0.9},
+    "lawyer":        {"building": "townhall", "tools": ["quill"], "base_skill": 0.7, "literacy": 0.95, "capability": 0.9},
+    "reporter":      {"building": "printshop", "tools": ["quill"], "base_skill": 0.6, "literacy": 0.9, "capability": 0.8},
+    "shopkeeper":    {"building": None, "site": "store",  "tools": [], "base_skill": 0.7, "literacy": 0.8, "capability": 0.8},
+    "banker":        {"building": None, "site": "bank",   "tools": [], "base_skill": 0.7, "literacy": 0.95, "capability": 0.9},
+    "landlord":      {"building": None, "site": "estate", "tools": [], "base_skill": 0.7, "literacy": 0.9, "capability": 0.9},
+    "chandler":      {"building": None, "site": "market", "tools": ["pot"], "base_skill": 0.6},
 }
 
 
@@ -915,15 +1186,21 @@ def shared_concepts_for(role, present_roles=None):
 # livestock + working animals as DATA. `gives` maps a product -> yield; `eats` is the feed; matures
 # and lifespan are in the sim's months; a draught animal has a `pull` (the weight it can haul).
 ANIMALS = {
-    "pig":     {"gives": {"pork": 40, "hide": 2},            "eats": "scraps", "matures": 6,  "lifespan": 15,  "role": "meat", "ration": 2, "starve_limit": 3},
-    "cow":     {"gives": {"milk": 3, "beef": 200, "hide": 5},"eats": "grass",  "matures": 24, "lifespan": 240, "role": "dairy", "ration": 4, "starve_limit": 3},
-    "chicken": {"gives": {"eggs": 1, "poultry": 2},          "eats": "grain",  "matures": 5,  "lifespan": 96,  "role": "eggs", "ration": 1, "starve_limit": 4},
-    "horse":   {"gives": {"labour": 1},                      "eats": "hay",    "matures": 36, "lifespan": 360, "role": "draught", "ration": 3, "starve_limit": 3, "pull": 500.0},
-    "dog":     {"gives": {"herding": 1},                     "eats": "meat",   "matures": 12, "lifespan": 180, "role": "working", "ration": 1, "starve_limit": 5, "ration": 1, "starve_limit": 5},
-    "cat":     {"gives": {"ratting": 1},                     "eats": "milk",   "matures": 8,  "lifespan": 180, "role": "working"},
-    "sheep":   {"gives": {"wool": 4, "mutton": 60}, "eats": "grass", "matures": 12, "lifespan": 120, "role": "wool"},
-    "bee":     {"gives": {"honey": 3, "wax": 1}, "eats": "nectar", "matures": 1, "lifespan": 36, "role": "pollination"},
+    "pig":     {"gives": {"pork": 40, "hide": 2},            "eats": "scraps", "matures": 6,  "lifespan": 15,  "role": "meat", "ration": 2, "starve_limit": 3, "manure": 0.8, "care_minutes": 15},
+    "cow":     {"gives": {"milk": 3, "beef": 200, "hide": 5},"eats": "grass",  "matures": 24, "lifespan": 240, "role": "dairy", "ration": 4, "starve_limit": 3, "manure": 2.0, "care_minutes": 45},
+    "chicken": {"gives": {"eggs": 1, "poultry": 2, "feather": 2}, "eats": "grain", "matures": 5, "lifespan": 96, "role": "eggs", "ration": 1, "starve_limit": 4, "manure": 0.1, "care_minutes": 10},
+    "horse":   {"gives": {"labour": 1},                      "eats": "hay",    "matures": 36, "lifespan": 360, "role": "draught", "ration": 3, "starve_limit": 3, "pull": 500.0, "manure": 1.5, "care_minutes": 30},
+    "dog":     {"gives": {"herding": 1},                     "eats": "scraps", "matures": 12, "lifespan": 180, "role": "working", "ration": 1, "starve_limit": 5, "care_minutes": 5},
+    "cat":     {"gives": {"ratting": 1},                     "eats": "milk",   "matures": 8,  "lifespan": 180, "role": "working", "ration": 1, "starve_limit": 3, "care_minutes": 0},
+    "sheep":   {"gives": {"wool": 4, "mutton": 60}, "eats": "grass", "matures": 12, "lifespan": 120, "role": "wool", "ration": 1, "starve_limit": 3, "manure": 0.6, "care_minutes": 10},
+    "bee":     {"gives": {"honey": 3, "wax": 1}, "eats": "nectar", "matures": 1, "lifespan": 36, "role": "pollination", "ration": 1, "starve_limit": 3, "care_minutes": 5},
 }
+
+# `care_minutes` is the daily husbandry one animal takes (feeding, mucking out, milking).
+# `manure` is what a FED animal leaves per period (collected into the store as `manure`). `gives`
+# lists everything an animal can yield; SLAUGHTER_PRODUCTS are the ones taken only by killing it.
+SLAUGHTER_PRODUCTS = frozenset({"pork", "beef", "mutton", "poultry", "fish", "ham", "bacon",
+                                "sausage", "hide", "feather"})
 
 # Species-specific inputs for the inexpensive animal cognition backend.  These
 # are preferences and identity, not permissions: the world still publishes
@@ -954,7 +1231,7 @@ ANIMAL_NPC_SETUP = {
 # storage or ownership policy; they only constrain animal movement while intact.
 FENCE_TYPES = {
     "wooden_fence": {"material": "timber", "durability": 1.0, "animal_barrier": True},
-    "hedge": {"material": "living_plant", "durability": 0.8, "animal_barrier": True},
+    "hedge": {"material": "sapling", "durability": 0.8, "animal_barrier": True},
     "stone_wall": {"material": "stone", "durability": 1.4, "animal_barrier": True},
     "gate": {"material": "timber", "durability": 1.0, "animal_barrier": False},
 }
@@ -970,31 +1247,75 @@ ANIMAL_HUSBANDRY = {
              "roles": ["farmer", "dairymaid", "animal_keeper"]},
     "shear": {"species": "sheep", "product": "wool", "cooldown": 12,
               "roles": ["farmer", "shepherd", "animal_keeper"]},
+    "collect_eggs": {"species": "chicken", "product": "eggs", "cooldown": 1,
+                     "roles": ["farmer", "farm_labourer", "animal_keeper"]},
 }
 
 
 # ---------------------------------------------------------------- CROPS
 # every crop is SOWN from its seed, GROWS over `grow_periods` (each period it must be WATERED or it
 # builds thirst and WILTS past `wilt`), and when mature is HARVESTED for `yield` of its product.
+#   nitrogen    -- soil nitrogen a bed draws from its land parcel each period it grows. The harvest
+#                  scales with how much of that demand the soil met (see NITROGEN["yield_floor"]).
+#   fixes       -- nitrogen a legume returns to the parcel each period (bacteria in its root nodules).
+#   byproducts  -- other harvest per bed (straw from cereals), scaled like the yield.
+#   seed_return -- seed saved back from the harvest (default 1), which is what makes a crop renewable.
+_CEREAL = {"nitrogen": 0.06, "byproducts": {"straw": 3}, "seed_return": 1.5}
 CROPS = {
-    "wheat":   {"seed": "wheat_seed",   "harvest": "grain",   "grow_periods": 4, "water": 2, "yield": 8,  "wilt": 2, "season": "spring"},
-    "barley":  {"seed": "barley_seed",  "harvest": "barley",  "grow_periods": 4, "water": 2, "yield": 8,  "wilt": 2, "season": "spring"},
-    "oats":    {"seed": "oats_seed",    "harvest": "oats",    "grow_periods": 3, "water": 2, "yield": 7,  "wilt": 2, "season": "spring"},
-    "rye":     {"seed": "rye_seed",     "harvest": "rye",     "grow_periods": 4, "water": 1, "yield": 7,  "wilt": 3, "season": "autumn"},
-    "cabbage": {"seed": "cabbage_seed", "harvest": "cabbage", "grow_periods": 3, "water": 3, "yield": 6,  "wilt": 2, "season": "spring"},
-    "carrot":  {"seed": "carrot_seed",  "harvest": "carrot",  "grow_periods": 3, "water": 2, "yield": 10, "wilt": 2, "season": "spring"},
-    "onion":   {"seed": "onion_seed",   "harvest": "onion",   "grow_periods": 3, "water": 2, "yield": 9,  "wilt": 2, "season": "spring"},
-    "potato":  {"seed": "potato_seed",  "harvest": "potato",  "grow_periods": 4, "water": 2, "yield": 12, "wilt": 2, "season": "spring"},
-    "turnip":  {"seed": "turnip_seed",  "harvest": "turnip",  "grow_periods": 2, "water": 2, "yield": 8,  "wilt": 2, "season": "autumn"},
-    "bean":    {"seed": "bean_seed",    "harvest": "bean",    "grow_periods": 3, "water": 2, "yield": 7,  "wilt": 2, "season": "spring"},
-    "pea":     {"seed": "pea_seed",     "harvest": "pea",     "grow_periods": 3, "water": 2, "yield": 7,  "wilt": 2, "season": "spring"},
-    "leek":    {"seed": "leek_seed",    "harvest": "leek",    "grow_periods": 4, "water": 2, "yield": 6,  "wilt": 2, "season": "autumn"},
-    "parsnip": {"seed": "parsnip_seed", "harvest": "parsnip", "grow_periods": 4, "water": 2, "yield": 6, "wilt": 2, "season": "autumn"},
-    "beet":    {"seed": "beet_seed",    "harvest": "beet",    "grow_periods": 3, "water": 2, "yield": 8, "wilt": 2, "season": "autumn"},
-    "garlic":  {"seed": "garlic_seed",  "harvest": "garlic",  "grow_periods": 4, "water": 1, "yield": 8, "wilt": 3, "season": "autumn"},
-    "lettuce": {"seed": "lettuce_seed", "harvest": "lettuce", "grow_periods": 2, "water": 3, "yield": 8, "wilt": 1, "season": "spring"},
-    "cucumber": {"seed": "cucumber_seed", "harvest": "cucumber", "grow_periods": 3, "water": 3, "yield": 8, "wilt": 1, "season": "summer"},
-    "lentil":  {"seed": "lentil_seed",  "harvest": "lentil",  "grow_periods": 3, "water": 2, "yield": 7, "wilt": 2, "season": "spring"},
+    "wheat":   {"seed": "wheat_seed",   "harvest": "grain",   "grow_periods": 4, "water": 2, "yield": 8,  "wilt": 2, "season": "spring", **_CEREAL},
+    "barley":  {"seed": "barley_seed",  "harvest": "barley",  "grow_periods": 4, "water": 2, "yield": 8,  "wilt": 2, "season": "spring", **_CEREAL},
+    "oats":    {"seed": "oats_seed",    "harvest": "oats",    "grow_periods": 3, "water": 2, "yield": 7,  "wilt": 2, "season": "spring", **_CEREAL},
+    "rye":     {"seed": "rye_seed",     "harvest": "rye",     "grow_periods": 4, "water": 1, "yield": 7,  "wilt": 3, "season": "autumn", **_CEREAL},
+    "cabbage": {"seed": "cabbage_seed", "harvest": "cabbage", "grow_periods": 3, "water": 3, "yield": 6,  "wilt": 2, "season": "spring", "nitrogen": 0.08},
+    "carrot":  {"seed": "carrot_seed",  "harvest": "carrot",  "grow_periods": 3, "water": 2, "yield": 10, "wilt": 2, "season": "spring", "nitrogen": 0.04},
+    "onion":   {"seed": "onion_seed",   "harvest": "onion",   "grow_periods": 3, "water": 2, "yield": 9,  "wilt": 2, "season": "spring", "nitrogen": 0.04},
+    "potato":  {"seed": "potato_seed",  "harvest": "potato",  "grow_periods": 4, "water": 2, "yield": 12, "wilt": 2, "season": "spring", "nitrogen": 0.06},
+    "turnip":  {"seed": "turnip_seed",  "harvest": "turnip",  "grow_periods": 2, "water": 2, "yield": 8,  "wilt": 2, "season": "autumn", "nitrogen": 0.04},
+    "bean":    {"seed": "bean_seed",    "harvest": "bean",    "grow_periods": 3, "water": 2, "yield": 7,  "wilt": 2, "season": "spring", "nitrogen": 0.02, "fixes": 0.08},
+    "pea":     {"seed": "pea_seed",     "harvest": "pea",     "grow_periods": 3, "water": 2, "yield": 7,  "wilt": 2, "season": "spring", "nitrogen": 0.02, "fixes": 0.08},
+    "leek":    {"seed": "leek_seed",    "harvest": "leek",    "grow_periods": 4, "water": 2, "yield": 6,  "wilt": 2, "season": "autumn", "nitrogen": 0.04},
+    "parsnip": {"seed": "parsnip_seed", "harvest": "parsnip", "grow_periods": 4, "water": 2, "yield": 6,  "wilt": 2, "season": "autumn", "nitrogen": 0.04},
+    "beet":    {"seed": "beet_seed",    "harvest": "beet",    "grow_periods": 3, "water": 2, "yield": 8,  "wilt": 2, "season": "autumn", "nitrogen": 0.05},
+    "garlic":  {"seed": "garlic_seed",  "harvest": "garlic",  "grow_periods": 4, "water": 1, "yield": 8,  "wilt": 3, "season": "autumn", "nitrogen": 0.03},
+    "lettuce": {"seed": "lettuce_seed", "harvest": "lettuce", "grow_periods": 2, "water": 3, "yield": 8,  "wilt": 1, "season": "spring", "nitrogen": 0.03},
+    "cucumber": {"seed": "cucumber_seed", "harvest": "cucumber", "grow_periods": 3, "water": 3, "yield": 8, "wilt": 1, "season": "summer", "nitrogen": 0.05},
+    "lentil":  {"seed": "lentil_seed",  "harvest": "lentil",  "grow_periods": 3, "water": 2, "yield": 7,  "wilt": 2, "season": "spring", "nitrogen": 0.02, "fixes": 0.08},
+    "hops":    {"seed": "hops_seed",    "harvest": "hops",    "grow_periods": 4, "water": 2, "yield": 5,  "wilt": 2, "season": "spring", "nitrogen": 0.06},
+    "flax":    {"seed": "linseed",      "harvest": "flax",    "grow_periods": 3, "water": 2, "yield": 6,  "wilt": 2, "season": "spring", "nitrogen": 0.03, "seed_return": 3},
+    "mustard": {"seed": "mustard_seed", "harvest": "mustard_seed", "grow_periods": 2, "water": 2, "yield": 4, "wilt": 2, "season": "spring", "nitrogen": 0.04},
+}
+
+for _spec in CROPS.values():          # a harvest saves back a little more seed than it took
+    _spec.setdefault("seed_return", 1.25)
+
+# Minutes of field work per crop bed: sowing and harvesting once per crop, watering every period,
+# and one fertilise action (spreading NITROGEN["fertilise_amount"] on a plot).
+FIELD_WORK = {"sow": 20, "water": 10, "harvest": 30, "fertilise": 30}
+
+# Which crops a farmer sows on an arable plot: the main rotation normally, and a nitrogen-fixing
+# restorative crop when the plot's nitrogen has fallen below NITROGEN["restore_below"] of capacity.
+ARABLE_ROTATION = {"main": ("wheat", "barley", "oats"), "restorative": ("bean", "pea", "lentil")}
+
+# ---------------------------------------------------------------- THE NITROGEN CYCLE
+# Each land parcel holds soil nitrogen (`nitrogen` on the Land node), in units per unit of area:
+#   in:   SOILS[...]["nitrogen"] at the start; `mineralisation` each period (organic matter slowly
+#         releasing N, plus rain); legume `fixes`; and fertiliser a farmer spreads (any item with a
+#         `nitrogen` tag -- manure, compost, dung -- via the `fertilise` action).
+#   out:  each growing bed's `nitrogen` demand (carried off in the harvest), and `leaching` -- a
+#         fraction of the parcel's N lost each period, scaled by the soil's drainage.
+#   loop: people eat the harvest -> night soil at the latrine -> composted (make_compost) -> spread;
+#         livestock eat pasture -> manure -> spread; burnt fuel -> ash -> compost.
+# A bed whose demand was fully met yields its full `yield`; one that got none yields `yield_floor`
+# of it. Beds not on a land parcel (small test fixtures) are unaffected.
+NITROGEN = {
+    "capacity_per_area": 12.0,
+    "mineralisation_per_area": 0.10,
+    "leaching": 0.01,
+    "yield_floor": 0.30,
+    "fertiliser_type": "fertiliser",     # the INPUT_TYPES slot the fertilise action draws on
+    "fertilise_amount": 2.0,             # nitrogen spread per fertilise action
+    "fertilise_below": 0.60,             # farmers offer to fertilise a plot below this fraction of capacity
+    "restore_below": 0.40,               # ...and sow a restorative legume below this fraction
 }
 
 # Founding provisions for the 100-resident scenario.  These are a finite bridge to the first
@@ -1020,6 +1341,10 @@ STARTING_STOCK = {
     "grain": 40.0,
     "scraps": 40.0,
     "nectar": 40.0,
+    # seed for every other crop, so each can be sown; harvest seed_return keeps them going
+    "rye_seed": 10.0, "turnip_seed": 10.0, "pea_seed": 20.0, "leek_seed": 10.0, "parsnip_seed": 10.0,
+    "beet_seed": 10.0, "garlic_seed": 10.0, "lettuce_seed": 10.0, "cucumber_seed": 10.0,
+    "lentil_seed": 10.0, "hops_seed": 10.0, "linseed": 10.0, "mustard_seed": 10.0,
 }
 
 STARTING_CROPS = ("wheat", "barley", "oats", "cabbage", "potato", "carrot", "onion", "bean")
@@ -1031,7 +1356,7 @@ CAST_ROLE_TRADES = {
     "farm_labourer": ("farmer",),
     "farmer": ("farmer", "cook"),
     "fishmonger": ("fisher",),
-    "forester": ("collier",),
+    "forester": ("forester", "collier"),
 }
 
 # ---------------------------------------------------------------------------
@@ -1074,6 +1399,8 @@ MAJOR_ACTIONS = {
     "fetch": {"kind": "delegated_task"},
     "build": {"kind": "construction"},
     "harvest": {"kind": "agriculture"},
+    "sow": {"kind": "agriculture"},
+    "fertilise": {"kind": "agriculture"},
     "tend_animals": {"kind": "husbandry"},
     "maintain": {"kind": "maintenance"},
     "care": {"kind": "care"},
@@ -1110,6 +1437,9 @@ WEATHER = {
     "wet": {"rain": 1.0, "temperature": 0.2, "firewood_demand": 1.2},
     "frost": {"rain": 0.0, "temperature": 0.0, "firewood_demand": 1.7},
     "wind": {"rain": 0.2, "temperature": 0.3, "firewood_demand": 1.1},
+    "cool": {"rain": 0.2, "temperature": 0.4, "firewood_demand": 1.0},
+    "mild": {"rain": 0.3, "temperature": 0.55, "firewood_demand": 0.85},
+    "hot": {"rain": 0.0, "temperature": 0.95, "firewood_demand": 0.6},
 }
 
 WATER_SOURCES = {
@@ -1127,10 +1457,10 @@ FUEL_SOURCES = {
 }
 
 SOILS = {
-    "loam": {"fertility": 0.85, "water_retention": 0.75, "drainage": 0.65, "erosion": 0.10},
-    "clay": {"fertility": 0.75, "water_retention": 0.90, "drainage": 0.30, "erosion": 0.08},
-    "sand": {"fertility": 0.35, "water_retention": 0.25, "drainage": 0.95, "erosion": 0.25},
-    "chalk": {"fertility": 0.55, "water_retention": 0.45, "drainage": 0.80, "erosion": 0.15},
+    "loam": {"fertility": 0.85, "water_retention": 0.75, "drainage": 0.65, "erosion": 0.10, "nitrogen": 8.0},
+    "clay": {"fertility": 0.75, "water_retention": 0.90, "drainage": 0.30, "erosion": 0.08, "nitrogen": 7.0},
+    "sand": {"fertility": 0.35, "water_retention": 0.25, "drainage": 0.95, "erosion": 0.25, "nitrogen": 3.0},
+    "chalk": {"fertility": 0.55, "water_retention": 0.45, "drainage": 0.80, "erosion": 0.15, "nitrogen": 5.0},
 }
 
 LAND_USES = {
@@ -1147,11 +1477,16 @@ LAND_USES = {
 # stocks; livestock still consumes them through the generic animal rules.
 PASTURE_YIELDS = {"grass": 2.0, "hay": 1.0, "nectar": 1.0}
 
+# Where each waste stream goes. `output` is the stock it becomes at its `treatment` place; the
+# compost heap (make_compost) then turns night soil, scraps, and ash into compost for the fields.
+# `per_resident` is the night soil one living resident leaves per period (kept only while a latrine
+# stands; without one it is lost, and with it the nitrogen).
 WASTE_CYCLES = {
-    "human_waste": {"source": "household", "treatment": "latrine", "output": "compost", "risk": 0.8},
+    "human_waste": {"source": "household", "treatment": "latrine", "output": "night_soil", "risk": 0.8,
+                    "per_resident": 0.2},
     "animal_manure": {"source": "livestock", "treatment": "compost_yard", "output": "manure", "risk": 0.4},
     "kitchen_scraps": {"source": "kitchen", "treatment": "compost_yard", "output": "compost", "risk": 0.2},
-    "ash": {"source": "hearth", "treatment": "ash_pit", "output": "soil_amendment", "risk": 0.1},
+    "ash": {"source": "hearth", "treatment": "compost_yard", "output": "ash", "risk": 0.1},
 }
 
 HOUSEHOLDS = {
@@ -1268,6 +1603,7 @@ def adjectival(kind):
     if mat == "metal" or kind in ("iron", "ore", "nails", "steel"): return "metal"
     if mat == "cloth" or kind in ("wool", "cloth", "thread"): return "textile"
     if mat == "leather" or kind in ("leather", "hide"): return "leather"
+    if mat == "stone" or kind in ("stone", "blocks"): return "stone"
     if mat == "wood" or cls == "furniture" or kind in ("timber", "wood", "log", "stave"): return "wood"
     return "durable"
 
@@ -1394,7 +1730,7 @@ def recipe_to_actionspec(r):
     remain representable to newer generic consumers.
     """
     ins = r["in"]
-    in1 = ins[0]
+    in1 = ins[0] if ins else ["none", 0]            # gathering recipes have no inputs
     in2 = ins[1] if len(ins) > 1 else ["none", 0]
     return {"name": r["name"], "requires": r["requires"],
             "inputs": [[kind, float(qty)] for kind, qty in ins],
@@ -1417,11 +1753,11 @@ def recipe_to_actionspec(r):
 # anchored on coin = 1.0: abundant local stuff << 1; imported luxuries and spices >> 1.
 SCARCITY = {
     # near-free local by-products / gathered
-    "smoke": 0.02, "soot": 0.05, "scraps": 0.05, "grass": 0.05, "water": 0.05, "rag": 0.1, "hay": 0.1,
+    "soot": 0.05, "ash": 0.05, "night_soil": 0.02, "scraps": 0.05, "grass": 0.05, "water": 0.05, "rag": 0.1, "hay": 0.1,
     "thatch": 0.2, "peat": 0.3, "dung": 0.05, "manure": 0.05, "compost": 0.1,
     "medicine": 6.0, "nectar": 0.2, "wax": 1.0,
     # abundant local raw
-    "wood": 0.3, "log": 0.5, "ore": 0.6, "grain": 0.5, "straw": 0.2,
+    "wood": 0.3, "ore": 0.6, "grain": 0.5, "straw": 0.2,
     # farm crops (a unit of harvest)
     "barley": 0.5, "oats": 0.5, "rye": 0.5, "hops": 1.5,
     "cabbage": 0.4, "carrot": 0.4, "onion": 0.4, "potato": 0.3, "turnip": 0.3, "bean": 0.4,
@@ -1434,6 +1770,9 @@ SCARCITY = {
     "carrot_seed": 0.5, "onion_seed": 0.5, "potato_seed": 0.5, "turnip_seed": 0.5, "bean_seed": 0.5,
     "pea_seed": 0.5, "leek_seed": 0.5, "parsnip_seed": 0.5, "beet_seed": 0.5,
     "garlic_seed": 0.5, "lettuce_seed": 0.5, "cucumber_seed": 0.5, "lentil_seed": 0.5,
+    "hops_seed": 0.8, "linseed": 0.5, "mustard_seed": 0.8,
+    # new raw produce and by-products
+    "flax": 0.6, "feather": 0.1, "sapling": 0.3,
     # animal yield
     "milk": 0.6, "eggs": 0.6, "wool": 1.0, "hide": 1.2,
     # meat + cured meat (a beast's-worth of labour behind it)
@@ -1449,7 +1788,17 @@ SCARCITY = {
     # finished goods bought in ready-made (no local recipe) -- moderately dear
     "hinge": 3.0, "bucket": 3.0, "shirt": 4.0, "stool": 4.0, "spade": 6.0, "boots": 6.0, "axe": 8.0,
     "printing_press": 15.0,   # an expensive machine, bought in
+    # extracted resources + the shop-chain outputs
+    "stone": 0.4, "lumber": 0.5, "blocks": 1.0, "furniture": 4.0, "fish_ready": 1.8,
+    # trade tools and workshop equipment (no local recipe yet -- priced as bought-in)
+    "hammer": 4.0, "saw": 5.0, "adze": 4.0, "awl": 1.5, "needle": 0.5, "cleaver": 4.0, "quill": 0.3,
+    "net": 3.0, "board": 1.0, "drying_rack": 2.0, "smoking_rack": 2.5, "churn": 3.0, "press": 8.0,
+    "mash_tun": 8.0, "dye_vat": 6.0, "pot": 4.0, "pan": 3.0, "griddle": 3.5, "spit": 3.0, "oven": 20.0,
 }
+# scraps are priced as a cheap fraction of the food they were left from
+for _kind, _spec in ITEMS.items():
+    if _spec.get("scraps_of"):
+        SCARCITY.setdefault(_kind, round(SCARCITY.get(_spec["scraps_of"], 1.0) * SCRAP_SCARCITY_FACTOR, 4))
 
 
 # ---------------------------------------------------------------------------
@@ -1544,7 +1893,10 @@ def _value_parts(kind, _seen=frozenset()):
         outq = float(r["out"][1]) or 1.0
         mat, lab = 0.0, float(r.get("time_minutes", 0.0))
         for ik, iq in r["in"]:
-            m, l = _value_parts(ik, _seen | {kind})
+            if is_input_type(ik):                     # a type slot costs its cheapest member per unit
+                m, l = _type_value_parts(ik, _seen | {kind})
+            else:
+                m, l = _value_parts(ik, _seen | {kind})
             mat += m * float(iq)
             lab += l * float(iq)
         mat, lab = mat / outq, lab / outq
@@ -1552,6 +1904,21 @@ def _value_parts(kind, _seen=frozenset()):
         if best is None or val < best[2]:
             best = (mat, lab, val)
     return (best[0], best[1])
+
+
+def _type_value_parts(type_name, _seen=frozenset()):
+    """(material, labour) for ONE unit of a type slot: the cheapest member, per unit it supplies."""
+    tag = INPUT_TYPES[type_name]["tag"]
+    best = None
+    for kind, spec in ITEMS.items():
+        units = float(spec.get(tag, 0.0) or 0.0)
+        if units <= 0.0 or kind in _seen:
+            continue
+        m, l = _value_parts(kind, _seen)
+        m, l = m / units, l / units
+        if best is None or m + l * LABOUR_RATE < best[0] + best[1] * LABOUR_RATE:
+            best = (m, l)
+    return best or (1.0, 0.0)
 
 
 def material_value(kind):
@@ -1807,6 +2174,9 @@ RECIPE_EXERTION = {
     "smelt_iron": (0.90, 0.15), "forge_knife": (0.90, 0.15), "forge_nails": (0.90, 0.15),
     "forge_pick_head": (0.90, 0.15), "make_bed": (0.95, 0.20), "make_table": (0.95, 0.20),
     "rive_staves": (0.85, 0.15), "burn_charcoal": (0.80, 0.20), "saw_planks": (0.85, 0.15),
+    # open household work: a frail body cannot split logs or dig a compost heap
+    "split_firewood": (0.75, 0.20), "make_compost": (0.60, 0.15), "dig_ore": (0.90, 0.25),
+    "lift_saplings": (0.50, 0.10),
 }
 
 
@@ -1845,3 +2215,1171 @@ def larder_for_wealth(coin, *, per_coin=0.5, floor=1.0, cap=20.0):
 # (stamina_cost ~0.4) adds ~0.4 hunger against a meal that relieves ~5, so hard work needs more food over a
 # day, not instantly. Raises the SAME hunger_level the sustenance drive reads; EATING (not buying) relieves it.
 HUNGER_PER_STAMINA = 1.0
+
+
+# ---------------------------------------------------------------------------
+# CONSISTENCY CHECK -- does the data hang together?
+# ---------------------------------------------------------------------------
+# A pure function over the tables above (no world, no engine). It reports three severities:
+#   errors   -- a dangling reference: a table names a kind/recipe/trade/building that does not exist.
+#   warnings -- a completeness gap: an item nothing produces, an item nothing uses, a recipe whose
+#               inputs can never be obtained, a crop whose seed cannot be replaced, ...
+#   info     -- facts worth knowing that are not defects (counts, construction-only trades, ...).
+# Run `python3 domains/bigville_entities.py` for the printed report (exit status 1 on errors). It also
+# prints analyse_systems(): the production DAG, item/system weights, and the per-period balance.
+# Scope: this sees only the data. Behaviour that lives in world code (e.g. reading a newspaper, the
+# butcher's slaughter list, set_coin) is invisible here, so a "never used" item may still be used there.
+
+# Gives that are services an animal performs rather than goods it yields.
+ANIMAL_SERVICES = frozenset({"labour", "herding", "ratting"})
+
+
+def _item_sources():
+    """kind -> sorted list of the ways it comes into existence (not counting recipes)."""
+    src = {}
+
+    def add(kind, how):
+        src.setdefault(kind, set()).add(how)
+
+    for kind, spec in ITEMS.items():
+        if spec.get("imported"):
+            add(kind, "import")
+        if spec.get("scraps_of"):
+            add(kind, f"eating {spec['scraps_of']}")
+    for crop, spec in CROPS.items():
+        add(spec["harvest"], f"crop {crop}")
+        for kind in spec.get("byproducts", {}):
+            add(kind, f"byproduct of {crop}")
+        if float(spec.get("seed_return", 1.0)) > 0.0:
+            add(spec["seed"], f"harvest of {crop}")
+    for species, spec in ANIMALS.items():
+        for product in spec.get("gives", {}):
+            add(product, f"animal {species}")
+        if float(spec.get("manure", 0.0)) > 0.0:
+            add("manure", f"animal {species}")
+    for r in RECIPES:
+        for kind in r.get("byproducts", {}):
+            add(kind, f"byproduct of {r['name']}")
+        for kind, _ in r["in"]:
+            if is_input_type(kind):
+                for left in INPUT_TYPES[kind].get("byproducts", {}):
+                    add(left, f"burning {kind} in {r['name']}")
+    for kind in STARTING_STOCK:
+        add(kind, "starting stock")
+    for kind in RESOURCE_DEPOSITS:
+        add(kind, "deposit")
+    for trade, chain in SHOP_CHAINS.items():
+        add(chain["out"], f"shop {trade}")
+    for kind in PASTURE_YIELDS:
+        add(kind, "pasture")
+    for name, spec in FUEL_SOURCES.items():
+        add(spec["fuel"], f"fuel source {name}")
+    if WATER_SOURCES:
+        add("water", "water source")
+    for name, spec in WASTE_CYCLES.items():
+        add(spec["output"], f"waste cycle {name}")
+    add("coin", "currency")
+    return src
+
+
+def _item_uses():
+    """kind -> set of the ways it is consumed or used."""
+    use = {}
+
+    def add(kind, how):
+        use.setdefault(kind, set()).add(how)
+
+    for r in RECIPES:
+        for kind, _ in r["in"]:
+            if is_input_type(kind):
+                for member, _units in type_members(kind):
+                    add(member, f"{kind} for {r['name']}")
+            else:
+                add(kind, f"input to {r['name']}")
+        for tool in r.get("tools", []) + r.get("method_tools", []):
+            add(tool, f"tool for {r['name']}")
+    for member, _units in type_members(NITROGEN["fertiliser_type"]):
+        add(member, "spread on fields (fertilise)")
+    for name, spec in FENCE_TYPES.items():
+        add(spec["material"], f"builds {name}")
+    for trade, spec in TRADES.items():
+        for tool in spec.get("tools", []):
+            add(tool, f"tool of {trade}")
+    for species, spec in ANIMALS.items():
+        for kind in feed_kinds(spec.get("eats", "")):
+            add(kind, f"feed for {species}")
+    for crop, spec in CROPS.items():
+        add(spec["seed"], f"sown for {crop}")
+    for name, spec in BUILDING_PROJECTS.items():
+        for kind in spec.get("inputs", {}):
+            add(kind, f"builds {name}")
+    for name, spec in INFRASTRUCTURE.items():
+        for kind in spec.get("maintenance", []):
+            add(kind, f"maintains {name}")
+    for trade, chain in SHOP_CHAINS.items():
+        add(chain["in"], f"shop {trade}")
+        add(chain["out"], f"sold by {trade}")
+    for name, spec in LABOUR_TASKS.items():
+        for kind in spec.get("inputs", []):
+            if kind in ITEMS:
+                add(kind, f"labour task {name}")
+    for name, spec in FUEL_SOURCES.items():
+        add(spec["fuel"], "fuel")
+    for kind in SERVING_EQUIPMENT:
+        add(kind, "serving equipment")
+    for spec in SERVING_UTENSILS.values():
+        for kind in spec["alternatives"]:
+            add(kind, "serving utensil")
+    for spec in CONTAINERS.values():
+        for kind in spec.get("alternatives", []):
+            add(kind, "serving vessel")
+    for kind, spec in ITEMS.items():
+        if spec.get("food"):
+            add(kind, "eaten")
+        if spec.get("garment"):
+            add(kind, "worn")
+        if spec.get("container"):
+            add(kind, "holds goods")
+        if spec.get("class") in ("tool", "good", "furniture") and spec.get("verb"):
+            add(kind, f"used to {spec['verb']}")
+        if spec.get("class") == "component":
+            add(kind, f"part of {spec.get('for')}")
+        if spec.get("readable"):
+            add(kind, "read")
+    add("coin", "currency")
+    return use
+
+
+def check_consistency():
+    """Check every cross-reference and production pipeline in the entity data.
+
+    Returns ``{"errors": [...], "warnings": [...], "info": [...], "stats": {...}}``. Each message is
+    a plain string naming the table and the offending entry.
+    """
+    errors, warnings, info = [], [], []
+    items = set(ITEMS)
+    recipes = {r["name"]: r for r in RECIPES}
+    known_places = set(BUILDINGS)
+
+    def ref(kind, where):
+        if kind not in items:
+            errors.append(f"{where}: '{kind}' is not an item")
+
+    # -- recipes ----------------------------------------------------------------
+    seen = set()
+    for r in RECIPES:
+        name = r["name"]
+        if name in seen:
+            errors.append(f"RECIPES: duplicate recipe name '{name}'")
+        seen.add(name)
+        if r.get("requires") not in TRADES:
+            errors.append(f"RECIPES[{name}]: requires unknown trade '{r.get('requires')}'")
+        for kind, qty in r["in"]:
+            if is_input_type(kind):
+                if not type_members(kind):
+                    errors.append(f"RECIPES[{name}].in: type slot '{kind}' has no member items")
+            else:
+                ref(kind, f"RECIPES[{name}].in")
+            if float(qty) <= 0:
+                errors.append(f"RECIPES[{name}].in: non-positive quantity for '{kind}'")
+        ref(r["out"][0], f"RECIPES[{name}].out")
+        if float(r["out"][1]) <= 0:
+            errors.append(f"RECIPES[{name}].out: non-positive quantity")
+        for tool in r.get("tools", []):
+            ref(tool, f"RECIPES[{name}].tools")
+        for tool in r.get("method_tools", []):
+            if tool not in items and tool not in PREPARATION_EQUIPMENT:
+                errors.append(f"RECIPES[{name}].method_tools: '{tool}' is neither an item nor equipment")
+        hard_equipment = sorted(set(r.get("tools", [])) & set(PREPARATION_EQUIPMENT))
+        if hard_equipment and name not in HEATED_FOOD_RECIPES and ITEMS.get(r["out"][0], {}).get("food"):
+            warnings.append(f"RECIPES[{name}]: hard-requires cooking equipment {hard_equipment} but is not "
+                            f"in HEATED_FOOD_RECIPES (so any heat+containment method is not accepted)")
+        if r["out"][0] in [k for k, _ in r["in"]]:
+            warnings.append(f"RECIPES[{name}]: output '{r['out'][0]}' is also an input")
+        for season in r.get("seasons", []):
+            if season not in SEASONS:
+                errors.append(f"RECIPES[{name}].seasons: unknown season '{season}'")
+        for kind in r.get("byproducts", {}):
+            ref(kind, f"RECIPES[{name}].byproducts")
+        if not r["in"] and not r.get("gathered_from"):
+            warnings.append(f"RECIPES[{name}]: has no inputs but does not say where it is gathered_from")
+    for type_name, spec in INPUT_TYPES.items():
+        if type_name in items:
+            errors.append(f"INPUT_TYPES[{type_name}]: type name collides with an item")
+        for kind in spec.get("byproducts", {}):
+            ref(kind, f"INPUT_TYPES[{type_name}].byproducts")
+    for table, keys in (("MIN_SKILL", MIN_SKILL), ("RECIPE_EXERTION", RECIPE_EXERTION),
+                        ("HEATED_FOOD_RECIPES", HEATED_FOOD_RECIPES)):
+        for name in keys:
+            if name not in recipes:
+                errors.append(f"{table}: '{name}' is not a recipe")
+
+    # -- items ------------------------------------------------------------------
+    for kind, spec in ITEMS.items():
+        if spec.get("class") == "component":
+            if spec.get("for") not in items:
+                errors.append(f"ITEMS[{kind}]: component for unknown item '{spec.get('for')}'")
+        if spec.get("scraps_of") and spec["scraps_of"] not in items:
+            errors.append(f"ITEMS[{kind}]: scraps of unknown item '{spec['scraps_of']}'")
+        if kind.endswith("_seed") and not spec.get("seed"):
+            warnings.append(f"ITEMS[{kind}]: looks like a seed but lacks seed: True")
+        if spec.get("seed") and not any(c["seed"] == kind for c in CROPS.values()):
+            warnings.append(f"ITEMS[{kind}]: seed for no crop")
+        if spec.get("container") and float(spec.get("capacity", 0.0)) <= 0:
+            errors.append(f"ITEMS[{kind}]: container without a positive capacity")
+    for kind in SCARCITY:
+        ref(kind, "SCARCITY")
+    for kind in STARTING_STOCK:
+        ref(kind, "STARTING_STOCK")
+
+    # -- containers and food service --------------------------------------------
+    for name, spec in CONTAINERS.items():
+        for kind in spec.get("preferred_contents", []):
+            ref(kind, f"CONTAINERS[{name}].preferred_contents")
+        for kind in spec.get("alternatives", []):
+            ref(kind, f"CONTAINERS[{name}].alternatives")
+        if name in ITEMS and ITEMS[name].get("capacity") not in (None, spec.get("capacity")):
+            errors.append(f"CONTAINERS[{name}]: capacity {spec.get('capacity')} disagrees with "
+                          f"ITEMS[{name}] capacity {ITEMS[name].get('capacity')}")
+    for name, spec in SERVING_UTENSILS.items():
+        for kind in spec["alternatives"]:
+            ref(kind, f"SERVING_UTENSILS[{name}]")
+    for kind in SERVING_EQUIPMENT:
+        ref(kind, "SERVING_EQUIPMENT")
+    for kind in sorted(SOUP_FOODS | DRINK_FOODS):
+        ref(kind, "SOUP_FOODS/DRINK_FOODS")
+        if kind in items and not ITEMS[kind].get("food"):
+            errors.append(f"SOUP_FOODS/DRINK_FOODS: '{kind}' is served as food but ITEMS[{kind}] lacks food: True")
+    for name, spec in PREPARATION_METHODS.items():
+        for eq in spec["equipment"]:
+            if eq not in PREPARATION_EQUIPMENT:
+                errors.append(f"PREPARATION_METHODS[{name}]: unknown equipment '{eq}'")
+
+    # -- trades, buildings, construction ----------------------------------------
+    for trade, spec in TRADES.items():
+        building = spec.get("building")
+        if building is None:
+            if not spec.get("site"):
+                errors.append(f"TRADES[{trade}]: no building and no site")
+        elif building not in known_places:
+            errors.append(f"TRADES[{trade}]: unknown building '{building}'")
+        elif not BUILDINGS[building].get("founding", True):
+            info.append(f"TRADES[{trade}]: works at '{building}', which must be built first")
+        for tool in spec.get("tools", []):
+            ref(tool, f"TRADES[{trade}].tools")
+    for role, trades in CAST_ROLE_TRADES.items():
+        for trade in trades:
+            if trade not in TRADES:
+                errors.append(f"CAST_ROLE_TRADES[{role}]: unknown trade '{trade}'")
+    for name, spec in BUILDING_PROJECTS.items():
+        if spec.get("building") not in known_places:
+            errors.append(f"BUILDING_PROJECTS[{name}]: unknown building '{spec.get('building')}'")
+        for kind in spec.get("inputs", {}):
+            ref(kind, f"BUILDING_PROJECTS[{name}].inputs")
+    for name, spec in INFRASTRUCTURE.items():
+        for kind in spec.get("maintenance", []):
+            ref(kind, f"INFRASTRUCTURE[{name}].maintenance")
+    for name, spec in BUILDINGS.items():
+        if not spec.get("founding", True) and not any(
+                p.get("building") == name for p in BUILDING_PROJECTS.values()):
+            warnings.append(f"BUILDINGS[{name}]: not standing at founding and no BUILDING_PROJECT raises it")
+    trades_with_recipes = {r["requires"] for r in RECIPES}
+    service = sorted(t for t in TRADES if t not in trades_with_recipes)
+    info.append(f"TRADES with no recipe (service or gathering work): {', '.join(service)}")
+    for fixture in TOWN_SQUARE_FIXTURES:
+        for kind in fixture.get("goods", []):
+            if kind not in items:
+                warnings.append(f"TOWN_SQUARE_FIXTURES[{fixture['name']}]: goods label '{kind}' is not an item")
+
+    # -- animals, crops, land ----------------------------------------------------
+    for species, spec in ANIMALS.items():
+        for field in ("eats", "ration", "starve_limit", "matures", "lifespan", "role"):
+            if field not in spec:
+                errors.append(f"ANIMALS[{species}]: missing '{field}'")
+        for product in spec.get("gives", {}):
+            if product not in items and product not in ANIMAL_SERVICES:
+                errors.append(f"ANIMALS[{species}].gives: '{product}' is neither an item nor a service")
+        for kind in feed_kinds(spec.get("eats", "")):
+            ref(kind, f"ANIMALS[{species}].eats")
+    for species in ANIMAL_NPC_SETUP:
+        if species not in ANIMALS:
+            errors.append(f"ANIMAL_NPC_SETUP: unknown species '{species}'")
+    for task, spec in ANIMAL_HUSBANDRY.items():
+        if spec["species"] not in ANIMALS:
+            errors.append(f"ANIMAL_HUSBANDRY[{task}]: unknown species '{spec['species']}'")
+        elif spec["product"] not in ANIMALS[spec["species"]].get("gives", {}):
+            errors.append(f"ANIMAL_HUSBANDRY[{task}]: {spec['species']} does not give '{spec['product']}'")
+    for crop, spec in CROPS.items():
+        ref(spec["seed"], f"CROPS[{crop}].seed")
+        ref(spec["harvest"], f"CROPS[{crop}].harvest")
+        if spec.get("season") not in SEASONS:
+            errors.append(f"CROPS[{crop}]: unknown season '{spec.get('season')}'")
+        for kind in spec.get("byproducts", {}):
+            ref(kind, f"CROPS[{crop}].byproducts")
+        if "nitrogen" not in spec:
+            warnings.append(f"CROPS[{crop}]: no nitrogen demand -- it never draws on the soil")
+    for crop in STARTING_CROPS:
+        if crop not in CROPS:
+            errors.append(f"STARTING_CROPS: unknown crop '{crop}'")
+    for group, crops in ARABLE_ROTATION.items():
+        for crop in crops:
+            if crop not in CROPS:
+                errors.append(f"ARABLE_ROTATION[{group}]: unknown crop '{crop}'")
+            elif group == "restorative" and float(CROPS[crop].get("fixes", 0.0)) <= 0.0:
+                errors.append(f"ARABLE_ROTATION[restorative]: '{crop}' does not fix nitrogen")
+    for soil, spec in SOILS.items():
+        if "nitrogen" not in spec:
+            errors.append(f"SOILS[{soil}]: no starting nitrogen")
+    if NITROGEN["fertiliser_type"] not in INPUT_TYPES:
+        errors.append(f"NITROGEN: fertiliser_type '{NITROGEN['fertiliser_type']}' is not an INPUT_TYPE")
+    for kind in SLAUGHTER_PRODUCTS:
+        ref(kind, "SLAUGHTER_PRODUCTS")
+    _flows, _notes, streams = _balance_flows()
+    covered = {}
+    for job, spec in JOBS.items():
+        for trade in spec["trades"]:
+            if trade not in TRADES:
+                errors.append(f"JOBS[{job}]: unknown trade '{trade}'")
+        for tool in spec.get("tools", []):
+            ref(tool, f"JOBS[{job}].tools")
+        for stream, share in spec.get("duties", {}).items():
+            if stream not in streams:
+                errors.append(f"JOBS[{job}].duties: unknown work stream '{stream}'")
+            covered[stream] = covered.get(stream, 0.0) + float(share)
+    for stream in streams:
+        if abs(covered.get(stream, 0.0) - 1.0) > 1e-6:
+            errors.append(f"JOBS: work stream '{stream}' is {covered.get(stream, 0.0):.0%} covered by job duties")
+    if sum(1 for spec in JOBS.values() if spec.get("spare")) != 1:
+        errors.append("JOBS: exactly one job must take the spare residents (spare: True)")
+    open_recipes = sorted(r["name"] for r in RECIPES if r.get("open"))
+    info.append(f"open recipes (anyone capable with the tools): {', '.join(open_recipes)}")
+    for name, spec in WASTE_CYCLES.items():
+        ref(spec["output"], f"WASTE_CYCLES[{name}].output")
+        if spec["treatment"] not in BUILDINGS and spec["treatment"] not in INFRASTRUCTURE:
+            errors.append(f"WASTE_CYCLES[{name}]: unknown treatment place '{spec['treatment']}'")
+    for kind in PASTURE_YIELDS:
+        ref(kind, "PASTURE_YIELDS")
+    for name, spec in FENCE_TYPES.items():
+        if spec["material"] not in items:
+            warnings.append(f"FENCE_TYPES[{name}]: material '{spec['material']}' is not an item")
+    for name, spec in ENCLOSURE_TYPES.items():
+        if spec["fence"] not in FENCE_TYPES:
+            errors.append(f"ENCLOSURE_TYPES[{name}]: unknown fence '{spec['fence']}'")
+    for kind in RESOURCE_DEPOSITS:
+        ref(kind, "RESOURCE_DEPOSITS")
+    for trade, chain in SHOP_CHAINS.items():
+        ref(chain["in"], f"SHOP_CHAINS[{trade}].in")
+        ref(chain["out"], f"SHOP_CHAINS[{trade}].out")
+    for name, spec in FUEL_SOURCES.items():
+        ref(spec["fuel"], f"FUEL_SOURCES[{name}]")
+    for name, spec in SEASONS.items():
+        for w in spec["weather"]:
+            if w not in WEATHER:
+                errors.append(f"SEASONS[{name}]: unknown weather '{w}'")
+
+    # -- pipelines: sources, sinks, reachability ---------------------------------
+    sources = _item_sources()
+    made_by = {}
+    for r in RECIPES:
+        made_by.setdefault(r["out"][0], []).append(r["name"])
+    uses = _item_uses()
+    no_source = sorted(k for k in items if k not in sources and k not in made_by
+                       and ITEMS[k].get("class") == "material")
+    for kind in no_source:
+        warnings.append(f"PIPELINE no source: '{kind}' (no recipe, crop, animal, deposit, import, "
+                        f"or starting stock)")
+    not_made = sorted(k for k in items if k not in sources and k not in made_by
+                      and ITEMS[k].get("class") != "material")
+    founding_tools = {t for r in RECIPES for t in r.get("tools", [])}
+    for kind in not_made:
+        if kind in founding_tools:
+            warnings.append(f"PIPELINE cannot be made: {ITEMS[kind].get('class')} '{kind}' "
+                            f"(one is provided at founding; it cannot be replaced)")
+        else:
+            warnings.append(f"PIPELINE cannot be made: {ITEMS[kind].get('class')} '{kind}' "
+                            f"(not made, imported, or provided)")
+    for kind in sorted(items - set(uses)):
+        warnings.append(f"PIPELINE never used: '{kind}'")
+
+    # Which recipes can run without someone stocking their inputs by hand (a test or scenario
+    # set_stock)? Start from everything with a non-recipe source, plus the tools the
+    # world provides at founding, then repeatedly add the outputs of recipes whose inputs are all
+    # obtainable, until nothing changes.
+    obtainable = set(sources) | founding_tools
+
+    def can_get(kind):
+        if is_input_type(kind):
+            return any(member in obtainable for member, _ in type_members(kind))
+        return kind in obtainable
+
+    runnable = set()
+    changed = True
+    while changed:
+        changed = False
+        for r in RECIPES:
+            if r["name"] in runnable:
+                continue
+            if all(can_get(k) for k, _ in r["in"]):
+                runnable.add(r["name"])
+                obtainable.add(r["out"][0])
+                changed = True
+    for r in RECIPES:
+        if r["name"] not in runnable:
+            missing = sorted(k for k, _ in r["in"] if not can_get(k))
+            warnings.append(f"PIPELINE recipe unreachable from natural sources: '{r['name']}' -- "
+                            f"no source for {', '.join(missing)}")
+
+    # Seeds: a crop is only sustainable if its seed can be replaced after the first sowing.
+    # Its own harvest cannot supply the first sowing, so a crop also needs some other first source.
+    for crop, spec in CROPS.items():
+        seed_src = sources.get(spec["seed"], set()) | ({"recipe"} if spec["seed"] in made_by else set())
+        first = seed_src - {f"harvest of {crop}"}
+        if not first:
+            warnings.append(f"PIPELINE crop: '{crop}' can never be sown -- no first source of '{spec['seed']}'")
+        if float(spec.get("seed_return", 1.0)) <= 0.0:
+            warnings.append(f"PIPELINE crop: '{crop}' is not renewable -- its harvest returns no '{spec['seed']}'")
+
+    stats = {
+        "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
+        "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),
+        "trades": len(TRADES), "crops": len(CROPS), "animals": len(ANIMALS),
+        "containers": len(CONTAINERS),
+        "items_by_class": {c: sum(1 for s in ITEMS.values() if s.get("class") == c)
+                           for c in sorted({s.get("class", "?") for s in ITEMS.values()})},
+    }
+    return {"errors": errors, "warnings": warnings, "info": info, "stats": stats}
+
+
+# ---------------------------------------------------------------------------
+# PRODUCTION GRAPH, SYSTEMS, AND BALANCE
+# ---------------------------------------------------------------------------
+# The production graph links every item to the recipes and natural processes (crops, animals,
+# deposits, imports, residents, fertilising) that consume and make it. Its cycles (seed -> crop ->
+# seed, the nitrogen loop, tools that make tools) are collapsed into strongly connected components,
+# leaving a DAG whose depth ("tier") says how many production steps an item sits above raw nature.
+# The balance model runs the founding town's per-period flows (BALANCE_SCENARIO) through that graph
+# and flags systems that cannot sustain themselves.
+
+# Which economic system each trade's recipes belong to (used for the system weights and coupling).
+SYSTEM_OF_TRADE = {
+    "farmer": "agriculture", "forester": "forestry", "collier": "fuel",
+    "sawyer": "timber", "woodworker": "timber", "cooper": "timber",
+    "smith": "metal", "quarrier": "stone", "mason": "stone",
+    "miller": "food", "baker": "food", "cook": "food", "dairymaid": "food", "butcher": "food",
+    "brewer": "drink", "tanner": "textiles", "cobbler": "textiles", "weaver": "textiles",
+    "tailor": "textiles", "dyer": "textiles", "papermaker": "writing", "printer": "writing",
+    "inkmaker": "writing", "scribe": "writing", "chandler": "household",
+}
+
+# The founding town the balance model assumes. These mirror what worlds/bigville_world.py builds
+# for the 100-resident scenario (populate_town100 / _seed_village_crops): keep them in step.
+BALANCE_SCENARIO = {
+    "residents": 100,
+    "food_per_resident": 1.0,                 # food units eaten per resident per period
+    "staple": "bake_bread",                   # the recipe most food is assumed to come through
+    "beds": {"wheat": 27, "barley": 27, "oats": 26},
+    "plots": 8, "plot_area": 1.0, "soil": "loam",
+    "animals": {"cow": 1, "chicken": 1, "pig": 1, "sheep": 1, "horse": 1, "bee": 1, "dog": 1},
+    "pasture_area": 4.0,
+    "water_sources": ["well", "spring", "spring", "stream"],
+    "work_minutes_per_resident": 8 * 60,      # a working day per period
+}
+
+_PSEUDO = {"soil_nitrogen", "food"}           # graph nodes that are not items
+
+
+def _processes():
+    """Natural and institutional flows, as recipe-shaped rows: {name, system, in, out}."""
+    procs = []
+    for crop, spec in CROPS.items():
+        outs = [[spec["harvest"], spec["yield"]]] + [[k, q] for k, q in spec.get("byproducts", {}).items()]
+        outs.append([spec["seed"], float(spec.get("seed_return", 1.0))])
+        ins = [[spec["seed"], 1]]
+        grow = float(spec["grow_periods"])
+        if spec.get("nitrogen"):
+            ins.append(["soil_nitrogen", float(spec["nitrogen"]) * grow])
+        if spec.get("fixes"):
+            outs.append(["soil_nitrogen", float(spec["fixes"]) * grow])
+        procs.append({"name": f"crop:{crop}", "system": "agriculture", "in": ins, "out": outs})
+    for species, spec in ANIMALS.items():
+        outs = [[k, q] for k, q in spec.get("gives", {}).items() if k in ITEMS]
+        if spec.get("manure"):
+            outs.append(["manure", spec["manure"]])
+        procs.append({"name": f"animal:{species}", "system": "husbandry",
+                      "in": [[k, spec.get("ration", 1)] for k in feed_kinds(spec["eats"])[:1]], "out": outs})
+    for kind, spec in RESOURCE_DEPOSITS.items():
+        procs.append({"name": f"deposit:{kind}", "system": "extraction", "in": [], "out": [[kind, spec["growback"]]]})
+    for kind, spec in PASTURE_YIELDS.items():
+        procs.append({"name": f"pasture:{kind}", "system": "husbandry", "in": [], "out": [[kind, spec]]})
+    for kind, spec in ITEMS.items():
+        if spec.get("imported"):
+            procs.append({"name": f"import:{kind}", "system": "trade", "in": [["coin", scarcity(kind)]], "out": [[kind, 1]]})
+    procs.append({"name": "residents", "system": "household", "in": [["food", 1]],
+                  "out": [[WASTE_CYCLES["human_waste"]["output"], WASTE_CYCLES["human_waste"]["per_resident"]]]})
+    procs.append({"name": "fertilise", "system": "agriculture",
+                  "in": [[NITROGEN["fertiliser_type"], 1]], "out": [["soil_nitrogen", 1]]})
+    return procs
+
+
+def build_production_graph():
+    """{node: set(successors)} over item/type/recipe/process nodes, plus each node's kind label."""
+    succ, kind_of = {}, {}
+
+    def node(name, label):
+        succ.setdefault(name, set())
+        kind_of[name] = label
+        return name
+
+    def item_node(kind):
+        if is_input_type(kind):
+            t = node(f"type:{kind}", "type")
+            for member, _ in type_members(kind):
+                succ[node(f"item:{member}", "item")].add(t)
+            return t
+        if kind == "food":
+            t = node("type:food", "type")
+            for k, s in ITEMS.items():
+                if s.get("food"):
+                    succ[node(f"item:{k}", "item")].add(t)
+            return t
+        return node(f"item:{kind}", "pseudo" if kind in _PSEUDO else "item")
+
+    # recipe rows carry one [kind, qty] output; normalise to the process shape (a list of outputs)
+    rows = [dict(r, system=SYSTEM_OF_TRADE.get(r["requires"], "other"), name=f"recipe:{r['name']}",
+                 out=[r["out"]] + [[k, q] for k, q in r.get("byproducts", {}).items()])
+            for r in RECIPES] + _processes()
+    for r in rows:
+        step = node(r["name"], "recipe" if r["name"].startswith("recipe:") else "process")
+        for kind, _ in r["in"]:
+            succ[item_node(kind)].add(step)
+        for kind, _ in r["out"]:
+            succ[step].add(item_node(kind))
+        for kind, _ in r["in"]:
+            if is_input_type(kind):
+                for left in INPUT_TYPES[kind].get("byproducts", {}):
+                    succ[step].add(item_node(left))
+    return succ, kind_of, rows
+
+
+def _strongly_connected(succ):
+    """Tarjan's algorithm (iterative). Returns a list of components (sets of nodes)."""
+    index, low, on, stack, comps, counter = {}, {}, set(), [], [], [0]
+    for root in sorted(succ):
+        if root in index:
+            continue
+        work = [(root, iter(sorted(succ[root])))]
+        index[root] = low[root] = counter[0]; counter[0] += 1
+        stack.append(root); on.add(root)
+        while work:
+            v, children = work[-1]
+            advanced = False
+            for w in children:
+                if w not in index:
+                    index[w] = low[w] = counter[0]; counter[0] += 1
+                    stack.append(w); on.add(w)
+                    work.append((w, iter(sorted(succ.get(w, ())))))
+                    advanced = True
+                    break
+                if w in on:
+                    low[v] = min(low[v], index[w])
+            if advanced:
+                continue
+            work.pop()
+            if work:
+                low[work[-1][0]] = min(low[work[-1][0]], low[v])
+            if low[v] == index[v]:
+                comp = set()
+                while True:
+                    w = stack.pop(); on.discard(w); comp.add(w)
+                    if w == v:
+                        break
+                comps.append(comp)
+    return comps
+
+
+def _tag_yield(kind, tag, _memo=None, _seen=frozenset()):
+    """Best units of `tag` (e.g. 'fuel', 'nitrogen', 'food') one unit of `kind` can become, following
+    recipes forward. An upper bound: other inputs a recipe needs are assumed available."""
+    _memo = {} if _memo is None else _memo
+    if (kind, tag) in _memo:
+        return _memo[(kind, tag)]
+    spec = ITEMS.get(kind, {})
+    best = (1.0 if spec.get("food") else 0.0) if tag == "food" else float(spec.get(tag, 0.0) or 0.0)
+    if kind not in _seen:
+        for r in RECIPES:
+            for ik, iq in r["in"]:
+                if ik == kind and float(iq) > 0:
+                    out, oq = r["out"]
+                    best = max(best, float(oq) / float(iq) * _tag_yield(out, tag, _memo, _seen | {kind}))
+    _memo[(kind, tag)] = best
+    return best
+
+
+def _recipe_unit_cost(r):
+    """Reference cost of one unit of a recipe's output made THIS way (inputs + labour)."""
+    cost = float(r.get("time_minutes", 0.0)) * LABOUR_RATE
+    for k, q in r["in"]:
+        m, l = _type_value_parts(k) if is_input_type(k) else _value_parts(k)
+        cost += (m + l * LABOUR_RATE) * float(q)
+    return cost / float(r["out"][1])
+
+
+def _balance_flows(sc=None):
+    """Per-period supply and demand of the town's coupled flows under a scenario (default
+    BALANCE_SCENARIO). Returns (flows, notes, work) where work is {stream: minutes per period}."""
+    sc = sc or BALANCE_SCENARIO
+    flows, notes, work = {}, [], {}
+    beds = sc["beds"]
+    harvest = {}
+    for crop, n in beds.items():
+        spec = CROPS[crop]
+        per = float(n) / float(spec["grow_periods"])
+        harvest[spec["harvest"]] = harvest.get(spec["harvest"], 0.0) + per * float(spec["yield"])
+        for k, q in spec.get("byproducts", {}).items():
+            harvest[k] = harvest.get(k, 0.0) + per * float(q)
+    residents = float(sc["residents"])
+    staple = next(r for r in RECIPES if r["name"] == sc["staple"])
+    food_demand = residents * float(sc["food_per_resident"])
+    # batches of every recipe in the staple's supply chain (inputs made by exactly one recipe)
+    chain, chain_seen = {}, set()
+
+    def run_chain(recipe, batches):
+        chain[recipe["name"]] = chain.get(recipe["name"], 0.0) + batches
+        for kind, qty in recipe["in"]:
+            makers = [] if is_input_type(kind) else _recipes_for(kind)
+            if makers and kind not in harvest and kind not in chain_seen:
+                # follow the cheapest recipe for each intermediate (the one reference_value uses)
+                maker = min(makers, key=lambda r: (_recipe_unit_cost(r), r["name"]))
+                chain_seen.add(kind)
+                run_chain(maker, batches * float(qty) / float(maker["out"][1]))
+                chain_seen.discard(kind)
+
+    run_chain(staple, food_demand / float(staple["out"][1]))
+    chain_byproducts = {}
+    for name, batches in chain.items():
+        recipe = next(r for r in RECIPES if r["name"] == name)
+        for kind, qty in recipe.get("byproducts", {}).items():
+            chain_byproducts[kind] = chain_byproducts.get(kind, 0.0) + batches * float(qty)
+
+    # food: what the harvest could become, best path per crop (upper bound)
+    food_supply = sum(q * _tag_yield(k, "food") for k, q in harvest.items())
+    staple_supply = sum(q * _tag_yield(k, "food") for k, q in harvest.items()
+                        if any(k == ik for ik, _ in staple["in"]) or _tag_yield(k, "food") and k == "grain")
+    flows["food (upper bound)"] = (food_supply, food_demand)
+    notes.append(f"food: harvest could make {food_supply:.1f} food units/period by the best recipes "
+                 f"(an upper bound; {staple_supply:.1f} of it from grain)")
+
+    # fuel: the staple burns fuel; straw and the lumber deposit (split into firewood) supply it
+    fuel_demand = sum(batches * sum(float(q) for k, q in next(r for r in RECIPES if r["name"] == n)["in"]
+                                    if k == "fuel") for n, batches in chain.items())
+    straw_heat = sum(q * _tag_yield(k, "fuel") for k, q in harvest.items())
+    lumber_regrowth = float(RESOURCE_DEPOSITS["lumber"]["growback"]) * float(sc.get("woodland", 1.0))
+    fuel_supply = straw_heat + lumber_regrowth * _tag_yield("lumber", "fuel")
+    flows["fuel (heat)"] = (fuel_supply, fuel_demand)
+    # the heat straw cannot cover is firewood: felled lumber split into wood
+    split = next(r for r in RECIPES if r["name"] == "split_firewood")
+    wood_heat = max(0.0, fuel_demand - straw_heat)
+    split_batches = wood_heat / (float(split["out"][1]) * _tag_yield("wood", "fuel"))
+    work["firewood"] = split_batches * float(split["time_minutes"])
+    work["felling"] = split_batches * float(split["in"][0][1]) * float(RESOURCE_DEPOSITS["lumber"]["minutes_per_unit"])
+
+    # nitrogen: beds draw it; mineralisation, legumes, manure, and composted night soil return it
+    n_demand = sum(float(n) * float(CROPS[c].get("nitrogen", 0.0)) for c, n in beds.items())
+    n_fix = sum(float(n) * float(CROPS[c].get("fixes", 0.0)) for c, n in beds.items())
+    mineral = float(sc["plots"]) * float(sc["plot_area"]) * float(NITROGEN["mineralisation_per_area"])
+    leach = (float(sc["plots"]) * float(SOILS[sc["soil"]]["nitrogen"]) * float(sc["plot_area"])
+             * float(NITROGEN["leaching"]) * float(SOILS[sc["soil"]]["drainage"]))
+    manure = sum(float(n) * float(ANIMALS[a].get("manure", 0.0)) for a, n in sc["animals"].items())
+    night_soil = residents * float(WASTE_CYCLES["human_waste"]["per_resident"])
+    ash = fuel_demand * float(INPUT_TYPES["fuel"]["byproducts"].get("ash", 0.0))
+    diet_scraps = sum(float(n) * float(ANIMALS[a].get("ration", 1)) for a, n in sc["animals"].items()
+                      if ANIMALS[a]["eats"] == "scraps")
+    spare_scraps = max(0.0, chain_byproducts.get("scraps", 0.0) - diet_scraps)
+    compost_recipe = next(r for r in RECIPES if r["name"] == "make_compost")
+    ns_per, cm_per = (float(q) for k, q in compost_recipe["in"])
+    compostables = ash + spare_scraps
+    composted = min(night_soil, compostables * ns_per / cm_per)   # each batch needs compostables too
+    n_supply = (mineral + n_fix + manure * _tag_yield("manure", "nitrogen")
+                + composted * _tag_yield("night_soil", "nitrogen"))
+    work["compost"] = composted / ns_per * float(compost_recipe["time_minutes"])
+    spread = NITROGEN["fertilise_amount"]
+    work["fertilise"] = (manure * _tag_yield("manure", "nitrogen")
+                         + composted * _tag_yield("night_soil", "nitrogen")) / spread * FIELD_WORK["fertilise"]
+    flows["soil nitrogen"] = (n_supply, n_demand + leach)
+    notes.append(f"nitrogen: {composted:.1f} of {night_soil:.1f} night soil/period can be composted -- the "
+                 f"heap needs compostables: {ash:.1f} ash + {spare_scraps:.1f} scraps the animals leave "
+                 f"(straw is also wanted as fuel and thatch)")
+
+    # animal feed by diet
+    diets = {}
+    for a, n in sc["animals"].items():
+        spec = ANIMALS[a]
+        diets[spec["eats"]] = diets.get(spec["eats"], 0.0) + float(n) * float(spec.get("ration", 1))
+    for diet, demand in sorted(diets.items()):
+        supply = sum(float(PASTURE_YIELDS.get(k, 0.0)) * float(sc["pasture_area"]) for k in feed_kinds(diet))
+        supply += sum(harvest.get(k, 0.0) + chain_byproducts.get(k, 0.0) for k in feed_kinds(diet))
+        flows[f"feed: {diet}"] = (supply, demand)
+    if "grain" in diets:
+        notes.append("feed: animals that eat grain compete with people for the staple")
+
+    # water: every growing bed is watered every period, and the staple uses some
+    water_demand = sum(float(n) * float(CROPS[c]["water"]) for c, n in beds.items())
+    water_demand += food_demand / float(staple["out"][1]) * sum(float(q) for k, q in staple["in"] if k == "water")
+    water_supply = sum(float(WATER_SOURCES[k]["yield"]) for k in sc["water_sources"])
+    flows["water"] = (water_supply, water_demand)
+
+    # work: the staple chain by trade, the fields, and the animals (minutes per period)
+    for name, batches in chain.items():
+        recipe = next(r for r in RECIPES if r["name"] == name)
+        key = f"trade:{recipe['requires']}"
+        work[key] = work.get(key, 0.0) + batches * float(recipe["time_minutes"])
+    work["field"] = sum(float(n) * (FIELD_WORK["water"]
+                                    + (FIELD_WORK["sow"] + FIELD_WORK["harvest"]) / float(CROPS[c]["grow_periods"]))
+                        for c, n in beds.items())
+    work["husbandry"] = sum(float(n) * float(ANIMALS[a].get("care_minutes", 0.0)) for a, n in sc["animals"].items())
+    labour_have = residents * float(sc["work_minutes_per_resident"])
+    flows["labour (minutes)"] = (labour_have, sum(work.values()))
+    return flows, notes, work
+
+
+# ---------------------------------------------------------------------------
+# JOBS -- who the founding townspeople are
+# ---------------------------------------------------------------------------
+# A JOB is what a resident is seeded as: the trades (capabilities) it carries and the tools its holder
+# starts with. Its WEIGHT -- how many full-time workers the town needs in it -- is derived, not
+# guessed: the balance model says how many minutes per period each work stream takes for a town of N
+# (the staple chain by trade, field work, animal care, firewood, felling, compost, fertilising), and
+# `duties` says what share of each stream this job covers. Jobs the model cannot derive (crafts,
+# offices, services) give a full-time-equivalent load as `fixed + per_100 * N / 100`: a village of
+# eight still needs someone to keep order part-time; a town of 400 needs several constables.
+#
+# seed_jobs(N) turns the weights into N residents. Heavy jobs get several holders; light ones are
+# packed together so one person in a hamlet is farmer, constable, and smith. Spare residents go where
+# the margin is thinnest. That is only the starting point: after seeding, residents decide for
+# themselves, and `open` recipes (splitting firewood, gathering, composting) can be done by anyone
+# capable who holds the tools -- everyone else buys the result or is given it.
+JOBS = {
+    # production jobs: their load is derived from the balance model's work streams
+    "farmer":        {"trades": ["farmer", "cook"], "tools": ["spade", "scythe"],
+                      "duties": {"field": 0.6, "compost": 1.0, "fertilise": 1.0}},
+    "farm_labourer": {"trades": ["farmer"], "tools": ["spade"], "duties": {"field": 0.4}},
+    "animal_keeper": {"trades": ["animal_keeper", "shepherd"], "tools": [], "duties": {"husbandry": 1.0}},
+    "miller":        {"trades": ["miller"], "tools": [], "duties": {"trade:miller": 1.0}},
+    "baker":         {"trades": ["baker"], "tools": [], "duties": {"trade:baker": 1.0}},
+    "forester":      {"trades": ["forester", "collier"], "tools": ["axe"],
+                      "duties": {"firewood": 1.0, "felling": 1.0}},
+    # crafts: full-time equivalents = fixed + per_100 * residents / 100
+    "smith":         {"trades": ["smith"], "tools": ["hammer"], "fixed": 0.10, "per_100": 1.0},
+    "carpenter":     {"trades": ["woodworker", "sawyer"], "tools": ["saw"], "fixed": 0.10, "per_100": 1.0},
+    "cooper":        {"trades": ["cooper"], "tools": ["adze"], "fixed": 0.05, "per_100": 0.5},
+    "mason":         {"trades": ["mason", "quarrier"], "tools": ["hammer", "pick"], "fixed": 0.05, "per_100": 1.0},
+    "leatherworker": {"trades": ["tanner", "cobbler"], "tools": ["awl"], "fixed": 0.05, "per_100": 0.5},
+    "weaver":        {"trades": ["weaver"], "tools": [], "fixed": 0.05, "per_100": 0.5},
+    "tailor":        {"trades": ["tailor", "dyer"], "tools": ["needle"], "fixed": 0.05, "per_100": 0.5},
+    "fisher":        {"trades": ["fisher"], "tools": ["net"], "fixed": 0.0, "per_100": 2.0},
+    "butcher":       {"trades": ["butcher"], "tools": ["cleaver"], "fixed": 0.05, "per_100": 0.5},
+    "dairymaid":     {"trades": ["dairymaid"], "tools": ["churn"], "fixed": 0.05, "per_100": 0.5},
+    "innkeeper":     {"trades": ["innkeeper", "brewer"], "tools": ["mash_tun"], "fixed": 0.10, "per_100": 1.0},
+    # offices and services
+    "mayor":         {"trades": ["mayor"], "tools": [], "fixed": 0.20, "per_100": 0.8},
+    "clerk":         {"trades": ["clerk", "scribe"], "tools": ["quill"], "fixed": 0.10, "per_100": 1.5},
+    "constable":     {"trades": ["constable"], "tools": [], "fixed": 0.20, "per_100": 0.8},
+    "councillor":    {"trades": ["councillor"], "tools": [], "fixed": 0.10, "per_100": 1.0},
+    "teacher":       {"trades": ["teacher"], "tools": [], "fixed": 0.10, "per_100": 1.5},
+    "doctor":        {"trades": ["doctor"], "tools": [], "fixed": 0.10, "per_100": 0.9},
+    "midwife":       {"trades": ["midwife"], "tools": [], "fixed": 0.10, "per_100": 0.9},
+    "pastor":        {"trades": ["pastor"], "tools": [], "fixed": 0.20, "per_100": 0.8},
+    # whoever is left: general hands, who can still do any open work they hold the tools for
+    "labourer":      {"trades": ["labourer"], "tools": ["axe"], "spare": True},
+}
+
+# Historical staffing per 100 residents a derived job weight should fall within. A weight outside its
+# range means a recipe's batch size or time is unrealistic, and the jobs report says so.
+#   miller -- Domesday (1086) recorded ~6,000 watermills in England for ~1.5-2 million people: ~1 mill
+#             per 300 people (historymedieval.com/watermills-a-key-tech-of-the-middle-ages). APPROX.
+#   baker  -- a village baker's large oven served the village; one baker per few hundred people. APPROX.
+JOB_REFERENCE_PER_100 = {"miller": (0.2, 0.6), "baker": (0.25, 0.6)}
+
+# A production job keeps spare hands until each holder carries at most this share of a full day.
+JOB_TARGET_LOAD = 0.8
+
+
+def scale_scenario(population):
+    """BALANCE_SCENARIO resized to a town of `population` working residents."""
+    import math
+    base = BALANCE_SCENARIO
+    f = float(population) / float(base["residents"])
+    beds = {c: max(1, int(round(n * f))) for c, n in base["beds"].items()}
+    # water: the town opens sources (in the founding town's order) until they cover its fields and
+    # staple with a 20% margin
+    staple = next(r for r in RECIPES if r["name"] == base["staple"])
+    demand = sum(float(n) * float(CROPS[c]["water"]) for c, n in beds.items())
+    demand += (float(population) * float(base["food_per_resident"]) / float(staple["out"][1])
+               * sum(float(q) for k, q in staple["in"] if k == "water"))
+    sources, water = [], 0.0
+    while water < 1.2 * demand or not sources:
+        kind = base["water_sources"][len(sources) % len(base["water_sources"])]
+        sources.append(kind)
+        water += float(WATER_SOURCES[kind]["yield"])
+    animals = {a: int(round(n * f)) for a, n in base["animals"].items()}
+    # pasture: enough area to graze the herd (20% margin), never less than the scaled founding area
+    pasture = float(base["pasture_area"]) * f
+    for diet in {ANIMALS[a]["eats"] for a, n in animals.items() if n}:
+        per_area = sum(float(PASTURE_YIELDS.get(k, 0.0)) for k in feed_kinds(diet))
+        need = sum(float(n) * float(ANIMALS[a].get("ration", 1)) for a, n in animals.items()
+                   if ANIMALS[a]["eats"] == diet)
+        if per_area > 0:
+            pasture = max(pasture, 1.2 * need / per_area)
+    return dict(base, residents=int(population), beds=beds,
+                plots=max(1, int(math.ceil(base["plots"] * f))),
+                animals=animals,
+                pasture_area=round(pasture, 2),
+                woodland=max(1.0, f),                       # one woodlot at least, more for a city
+                water_sources=sources)
+
+
+def job_requirements(population):
+    """{job: full-time workers needed} for a town of `population`, plus the work streams behind it."""
+    sc = scale_scenario(population)
+    flows, notes, work = _balance_flows(sc)
+    day = float(sc["work_minutes_per_resident"])
+    fte = {}
+    for job, spec in JOBS.items():
+        load = sum(float(share) * work.get(stream, 0.0) / day for stream, share in spec.get("duties", {}).items())
+        load += float(spec.get("fixed", 0.0)) + float(spec.get("per_100", 0.0)) * float(population) / 100.0
+        fte[job] = round(load, 4)
+    return fte, work, flows, sc
+
+
+def job_weights(population=100):
+    """The RELATIVE weight of each job: the share of the town's residents it needs."""
+    fte, _, _, _ = job_requirements(population)
+    return {job: round(load / float(population), 4) for job, load in fte.items()}
+
+
+def seed_jobs(population):
+    """Assign jobs to `population` founding residents.
+
+    Returns {"residents": [{"jobs", "trades", "tools", "load"}...], "fte", "holders", "short"}.
+    Every job with any load gets at least one holder. Each job's load is cut into whole days plus a
+    remainder, and the pieces are dealt largest-first to whoever is least loaded so far, so a hamlet
+    spreads its offices and crafts across everyone rather than heaping them on one person. Residents
+    left with nothing join the production job most loaded per holder, until each is at
+    JOB_TARGET_LOAD or below; the rest become labourers. `short` is how many more people the jobs
+    need than `population` (0 when the town can staff itself)."""
+    import math
+    n = int(population)
+    fte, _, _, _ = job_requirements(population)
+    pieces = []
+    for job, load in fte.items():
+        whole = int(load)
+        pieces += [(1.0, job)] * whole
+        if load - whole > 1e-9:
+            pieces.append((load - whole, job))
+    pieces.sort(key=lambda p: (-p[0], p[1]))
+    total = sum(fte.values())
+    short = max(0, int(math.ceil(total - 1e-9)) - n, len([p for p in pieces if p[0] >= 1.0]) - n)
+    people = [{"jobs": {}} for _ in range(max(n, 1))]
+    for load, job in pieces:
+        # least loaded person who does not already hold this job (else least loaded overall)
+        fresh = [p for p in people if job not in p["jobs"]] or people
+        person = min(fresh, key=lambda p: sum(p["jobs"].values()))
+        person["jobs"][job] = person["jobs"].get(job, 0.0) + load
+    if max(sum(p["jobs"].values()) for p in people) > 1.0 + 1e-6:
+        short = max(short, 1)
+    holders = {job: sum(1 for p in people if job in p["jobs"]) for job in fte}
+    production = [job for job, spec in JOBS.items() if spec.get("duties") and fte[job] > 0]
+    spare = next(j for j, spec in JOBS.items() if spec.get("spare"))
+    for person in [p for p in people if not p["jobs"]]:
+        loads = {job: fte[job] / holders[job] for job in production if holders[job]}
+        job = max(loads, key=lambda j: (loads[j], j)) if loads else None
+        if job is None or loads[job] <= JOB_TARGET_LOAD:
+            job = spare
+        person["jobs"][job] = 0.0
+        holders[job] = holders.get(job, 0) + 1
+    residents = []
+    for p in people:
+        jobs = sorted(p["jobs"], key=lambda j: (-p["jobs"][j], j))
+        trades, tools = [], []
+        for job in jobs:
+            trades += [t for t in JOBS[job]["trades"] if t not in trades]
+            tools += [t for t in JOBS[job].get("tools", []) if t not in tools]
+        residents.append({"jobs": jobs, "trades": trades, "tools": tools,
+                          "load": round(sum(p["jobs"].values()), 4)})
+    return {"residents": residents, "fte": fte, "holders": holders, "short": short}
+
+
+def check_job_seed(population):
+    """Is the seeded town of `population` sustainable at the start? Returns {"ok", "issues", ...}."""
+    seed = seed_jobs(population)
+    fte, work, flows, sc = job_requirements(population)
+    issues = []
+    if seed["short"]:
+        issues.append(f"LABOUR: the jobs need {population + seed['short']} people; only {population} "
+                      f"are seeded ({seed['short']} short)")
+    for job, load in fte.items():
+        if load > 0 and seed["holders"].get(job, 0) == 0:
+            issues.append(f"UNSTAFFED {job}: needs {load:.2f} full-time but no one holds it")
+    for name, (supply, demand) in flows.items():
+        if demand > 0 and supply < demand:
+            issues.append(f"DEFICIT {name}: supply {supply:.1f} vs demand {demand:.1f} per period")
+    for job, (lo, hi) in JOB_REFERENCE_PER_100.items():
+        per_100 = fte.get(job, 0.0) * 100.0 / float(population)
+        if not lo <= per_100 <= hi:
+            issues.append(f"UNREALISTIC {job}: {per_100:.2f} full-time per 100 residents; history suggests "
+                          f"{lo}-{hi} (check the recipe's batch size and time)")
+    for job, spec in JOBS.items():
+        for tool in spec.get("tools", []):
+            if not _recipes_for(tool) and not ITEMS.get(tool, {}).get("imported"):
+                issues.append(f"TOOL {tool} for {job} cannot be made or imported to replace a worn one")
+    return {"ok": not issues, "issues": issues, "seed": seed, "fte": fte, "work": work,
+            "flows": flows, "scenario": sc}
+
+
+def format_jobs_report(populations=(100, 30, 8)):
+    """Render the job weights and the seeded staffing for several town sizes."""
+    lines = ["JOBS (full-time equivalents needed -> holders seeded; relative weight = share of residents)"]
+    checks = {n: check_job_seed(n) for n in populations}
+    weights = job_weights(100)
+    head = "  " + "job".ljust(15) + "weight".rjust(8) + "".join(f"N={n}".rjust(18) for n in populations)
+    lines.append(head)
+    for job in JOBS:
+        row = "  " + job.ljust(15) + f"{weights[job]:>8.3f}"
+        for n in populations:
+            c = checks[n]
+            row += f"{c['fte'][job]:>8.2f} -> {c['seed']['holders'].get(job, 0):>3}".rjust(18)
+        lines.append(row)
+    for n in populations:
+        c = checks[n]
+        multi = [r for r in c["seed"]["residents"] if len(r["jobs"]) > 1]
+        lines.append(f"  N={n}: {len(c['seed']['residents'])} residents, {len(multi)} holding several jobs"
+                     + (f" (e.g. {' + '.join(multi[0]['jobs'])})" if multi else "")
+                     + f"; sustainable start: {c['ok']}")
+        for issue in c["issues"]:
+            lines.append(f"    - {issue}")
+    return "\n".join(lines)
+
+
+def analyse_systems():
+    """Build the production DAG, weigh items and systems, and find balance issues.
+
+    Returns {"graph": {...}, "loops": [...], "deepest": [...], "keystones": [...],
+             "systems": {...}, "coupling": [...], "flows": {...}, "issues": [...], "notes": [...]}."""
+    succ, kind_of, rows = build_production_graph()
+    comps = _strongly_connected(succ)
+    comp_of = {n: i for i, c in enumerate(comps) for n in c}
+    dag = {i: set() for i in range(len(comps))}
+    for v, ws in succ.items():
+        for w in ws:
+            if comp_of[v] != comp_of[w]:
+                dag[comp_of[v]].add(comp_of[w])
+    preds = {i: set() for i in dag}
+    for v, ws in dag.items():
+        for w in ws:
+            preds[w].add(v)
+    # tier = longest path from a source component (Kahn order)
+    tier, order, indeg = {}, [], {i: len(preds[i]) for i in dag}
+    ready = sorted(i for i, d in indeg.items() if d == 0)
+    while ready:
+        v = ready.pop(0); order.append(v)
+        tier[v] = max((tier[p] + 1 for p in preds[v]), default=0)
+        for w in sorted(dag[v]):
+            indeg[w] -= 1
+            if indeg[w] == 0:
+                ready.append(w)
+    acyclic = len(order) == len(dag)
+
+    def items_in(comp):
+        return sorted(n.split(":", 1)[1] for n in comp if kind_of[n] in ("item", "pseudo"))
+
+    loops = []
+    for i, c in enumerate(comps):
+        if len(c) > 1:
+            members = items_in(c)
+            steps = sorted(n for n in c if kind_of[n] in ("recipe", "process"))
+            loops.append({"items": members, "steps": len(steps), "size": len(c), "component": i})
+    loops.sort(key=lambda l: -l["size"])
+    loop_label = {l["component"]: f"[loop {n + 1}: {len(l['items'])} items]" for n, l in enumerate(loops)}
+
+    def label(c):
+        if c in loop_label:
+            return loop_label[c]
+        names = items_in(comps[c])
+        return names[0] if names else None
+
+    # depth: items ranked by tier, with one longest chain back to a source
+    item_tier = {n.split(":", 1)[1]: tier[comp_of[n]] for n in succ if kind_of[n] == "item"}
+    deepest = []
+    for kind in sorted(item_tier, key=lambda k: (-item_tier[k], k))[:5]:
+        c = comp_of[f"item:{kind}"]
+        chain = [label(c)]
+        while preds[c]:
+            c = max(preds[c], key=lambda p: (tier[p], -p))
+            name = label(c)
+            if name and name != chain[-1]:
+                chain.append(name)
+        deepest.append({"item": kind, "tier": item_tier[kind], "chain": list(reversed(chain))})
+
+    # keystones: how many recipes become unreachable if one item vanished from the world
+    sources = _item_sources()
+    base = set(sources) | {t for r in RECIPES for t in r.get("tools", [])}
+
+    def reachable(removed):
+        have = set(base) - {removed}
+        ran, changed = set(), True
+        while changed:
+            changed = False
+            for r in RECIPES:
+                if r["name"] in ran or r["out"][0] == removed:
+                    continue
+                if all((any(m in have for m, _ in type_members(k)) if is_input_type(k) else k in have)
+                       for k, _ in r["in"]):
+                    ran.add(r["name"]); have.add(r["out"][0]); changed = True
+        return ran
+
+    everything = reachable(None)
+    keystones = []
+    for kind in sorted(ITEMS):
+        lost = len(everything) - len(reachable(kind))
+        if lost:
+            keystones.append((kind, lost))
+    keystones.sort(key=lambda kv: (-kv[1], kv[0]))
+
+    # systems: size, value made per batch, labour; and which systems feed which
+    systems, producer_system = {}, {}
+    for r in rows:
+        if not r["name"].startswith("recipe:"):
+            for k, _ in r["out"]:
+                producer_system.setdefault(k, set()).add(r["system"])
+    for r in RECIPES:
+        sysname = SYSTEM_OF_TRADE.get(r["requires"], "other")
+        s = systems.setdefault(sysname, {"recipes": 0, "value": 0.0, "labour": 0.0})
+        s["recipes"] += 1
+        s["value"] += reference_value(r["out"][0]) * float(r["out"][1])
+        s["labour"] += float(r.get("time_minutes", 0.0))
+        producer_system.setdefault(r["out"][0], set()).add(sysname)
+    coupling = {}
+    for r in RECIPES:
+        sysname = SYSTEM_OF_TRADE.get(r["requires"], "other")
+        for k, q in r["in"]:
+            kinds = [m for m, _ in type_members(k)] if is_input_type(k) else [k]
+            for kk in kinds[:1]:
+                for src in producer_system.get(kk, ()):
+                    if src != sysname:
+                        weight = (reference_value(kk) * float(q)) if not is_input_type(k) else float(q)
+                        coupling[(src, sysname)] = coupling.get((src, sysname), 0.0) + weight
+    coupling = sorted(((a, b, round(w, 2)) for (a, b), w in coupling.items()), key=lambda t: -t[2])
+
+    # balance issues
+    flows, notes, _work = _balance_flows()
+    issues = []
+    for name, (supply, demand) in flows.items():
+        if demand <= 0:
+            continue
+        ratio = supply / demand
+        if ratio < 1.0:
+            issues.append(f"DEFICIT {name}: supply {supply:.1f} vs demand {demand:.1f} per period "
+                          f"({ratio:.0%} covered)")
+        elif ratio < 1.15:
+            issues.append(f"TIGHT {name}: supply {supply:.1f} vs demand {demand:.1f} per period "
+                          f"(only {ratio - 1:.0%} margin)")
+        elif ratio > 6.0 and name in ("fuel (heat)", "soil nitrogen", "water"):
+            issues.append(f"GLUT {name}: supply {supply:.1f} vs demand {demand:.1f} per period "
+                          f"({ratio:.1f}x -- the constraint may be too loose to matter)")
+    for crop, spec in CROPS.items():
+        if float(spec.get("seed_return", 1.0)) <= 1.0 and crop in BALANCE_SCENARIO["beds"]:
+            issues.append(f"BREAK-EVEN seed for {crop}: a harvest returns {spec.get('seed_return', 1.0)} seed per "
+                          f"seed sown, so every bed lost to wilting shrinks the seed stock for good")
+    # recipes that cost much more than the cheapest way to make the same thing
+    for r in RECIPES:
+        out, oq = r["out"]
+        per = _recipe_unit_cost(r)
+        ref = reference_value(out)
+        if ref > 0 and per > 1.5 * ref and len(_recipes_for(out)) > 1 and not r.get("fallback"):
+            issues.append(f"DOMINATED recipe {r['name']}: {per:.2f}/unit vs {ref:.2f} by the cheapest recipe "
+                          f"for {out}")
+    for kind, spec in ITEMS.items():
+        if spec.get("imported") and _recipes_for(kind):
+            m, l = _value_parts(kind)
+            if m + l * LABOUR_RATE < scarcity(kind) * 0.5:
+                issues.append(f"IMPORT {kind}: making it locally ({m + l * LABOUR_RATE:.2f}) costs under half "
+                              f"the import price ({scarcity(kind):.2f}) -- the import is unlikely to be used")
+    return {"graph": {"nodes": len(succ), "edges": sum(len(v) for v in succ.values()),
+                      "components": len(comps), "tiers": max(tier.values(), default=0) + 1,
+                      "acyclic_after_condensing": acyclic},
+            "loops": loops, "deepest": deepest, "keystones": keystones[:10],
+            "systems": systems, "coupling": coupling[:12], "flows": flows,
+            "issues": issues, "notes": notes}
+
+
+def format_systems_report(analysis=None):
+    """Render analyse_systems() as text."""
+    a = analysis or analyse_systems()
+    g = a["graph"]
+    lines = ["PRODUCTION GRAPH",
+             f"  {g['nodes']} nodes, {g['edges']} edges -> {g['components']} components; "
+             f"{g['tiers']} tiers deep; acyclic after condensing loops: {g['acyclic_after_condensing']}",
+             f"  loops ({len(a['loops'])}; a loop is a cycle such as seed -> crop -> seed):"]
+    for loop in a["loops"][:6]:
+        shown = ", ".join(loop["items"][:12]) + (" ..." if len(loop["items"]) > 12 else "")
+        lines.append(f"    - {len(loop['items'])} items / {loop['steps']} steps: {shown}")
+    if len(a["loops"]) > 6:
+        lines.append(f"    - ... and {len(a['loops']) - 6} smaller loops")
+    lines.append("  deepest items (tier: one chain from raw nature):")
+    for d in a["deepest"]:
+        lines.append(f"    - {d['item']} (tier {d['tier']}): {' -> '.join(d['chain'])}")
+    lines.append("  keystone items (recipes that become unreachable without them):")
+    lines.append("    " + ", ".join(f"{k} {n}" for k, n in a["keystones"]))
+    lines += ["", "SYSTEMS (recipes, reference value made per batch, labour minutes per batch)"]
+    total_v = sum(s["value"] for s in a["systems"].values()) or 1.0
+    for name, s in sorted(a["systems"].items(), key=lambda kv: -kv[1]["value"]):
+        lines.append(f"  {name:<12} {s['recipes']:>3} recipes  value {s['value']:>8.1f} "
+                     f"({s['value'] / total_v:>4.0%})  labour {s['labour']:>6.0f}")
+    lines.append("  strongest couplings (producer -> consumer: weight of inputs crossing):")
+    for src, dst, w in a["coupling"]:
+        lines.append(f"    {src} -> {dst}: {w}")
+    lines += ["", "BALANCE (per period, BALANCE_SCENARIO)"]
+    for name, (supply, demand) in a["flows"].items():
+        ratio = supply / demand if demand else float("inf")
+        lines.append(f"  {name:<18} supply {supply:>8.1f}  demand {demand:>8.1f}  ratio {ratio:>5.2f}")
+    for note in a["notes"]:
+        lines.append(f"  note: {note}")
+    lines.append(f"  issues ({len(a['issues'])}):")
+    lines.extend(f"    - {issue}" for issue in a["issues"]) if a["issues"] else lines.append("    none")
+    return "\n".join(lines)
+
+
+def format_consistency_report(report=None):
+    """Render check_consistency() as readable text, warnings grouped by their table/area."""
+    report = report or check_consistency()
+    s = report["stats"]
+    lines = ["bigville entities -- consistency report", "=" * 40,
+             f"items {s['items']}  recipes {s['recipes']} ({s['runnable_recipes']} runnable)  "
+             f"buildings {s['buildings']} ({s['founding_buildings']} at founding)  trades {s['trades']}",
+             f"crops {s['crops']}  animals {s['animals']}  containers {s['containers']}",
+             "items by class: " + ", ".join(f"{c} {n}" for c, n in s["items_by_class"].items()), ""]
+    for title, key in (("ERRORS", "errors"), ("WARNINGS", "warnings"), ("INFO", "info")):
+        msgs = report[key]
+        lines.append(f"{title} ({len(msgs)})")
+        groups = {}
+        for m in msgs:
+            groups.setdefault(m.split(":", 1)[0].split("[", 1)[0], []).append(m)
+        for group in sorted(groups):
+            lines.append(f"  {group} ({len(groups[group])})")
+            for m in groups[group]:
+                # pipeline groups name the problem; the entry is just the subject
+                lines.append(f"    - {m.split(':', 1)[1].strip() if m.startswith('PIPELINE') else m}")
+        if not msgs:
+            lines.append("  none")
+        lines.append("")
+    return "\n".join(lines)
+
+
+if __name__ == "__main__":
+    import sys as _sys
+    _report = check_consistency()
+    print(format_consistency_report(_report))
+    print(format_systems_report(analyse_systems()))
+    print()
+    print(format_jobs_report())
+    _sys.exit(1 if _report["errors"] else 0)

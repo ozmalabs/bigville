@@ -188,7 +188,8 @@ def test_the_run_scales_with_demand_and_an_unsold_glut_cools_the_belief():
 # ------------------------------------------------------ G-buildings-from-data (headline; folded in)
 def test_the_town_installs_its_buildings_from_the_data():
     w = World()
-    assert w.buildings() == set(E.BUILDINGS), "the world's buildings are exactly the data file's BUILDINGS"
+    assert w.buildings() == set(E.founding_buildings()), \
+        "the world's buildings are exactly the data file's founding BUILDINGS"
     assert w.building_provides("forge") == "blacksmith" and w.building_sheltered("forge"), \
         "the forge is staffed by a blacksmith and is sheltered -- from the data"
 
@@ -304,10 +305,11 @@ def test_a_barrel_holds_multiple_kinds_bounded_by_volume():
 # ------------------------------------------------------ G-fluids-need-a-watertight-vessel (headline)
 def test_the_inn_brews_ale_and_fluids_need_a_watertight_vessel():
     w = World(); w.add_tradesperson("Hostler", "brewer"); w.add_actor("Tom", role="hand")
-    w.set_stock("grain", 20); w.set_stock("water", 20)
+    w.set_stock("grain", 20); w.set_stock("water", 20); w.set_stock("wood", 10)
     assert "inn" in w.buildings() and w.is_fluid("ale"), "the inn is a building; ale is a fluid"
     w.do("Hostler", "brew_ale")
     assert w.qty("ale") == 5.0 and w.qty("grain") == 17.0, "the inn brews its own ale from grain + water"
+    assert w.qty("wood") == 8.0 and w.qty("ash") > 0.0, "brewing burns 2 fuel (here wood) and leaves ash"
     w.add_container("cask", kind="barrel", holds=["ale"]); w.fill("Tom", "cask", "ale", 5)
     assert w.contents("cask", "ale") == 5.0, "a watertight barrel holds the ale"
     w.add_container("sack1", kind="sack", holds=["ale"]); w.fill("Tom", "sack1", "ale", 5)
@@ -403,7 +405,7 @@ def test_goods_from_outside_bigville_are_imported_and_used_locally():
     w.import_good("dye", 5); w.import_good("ink", 3)
     assert w.qty("dye") == 5.0 and w.qty("ink") == 3.0, "imported goods are acquired from outside (a merchant)"
     # a LOCAL recipe uses an import: the dyer dyes cloth with imported dye
-    w.add_tradesperson("Dexter", "dyer"); w.set_stock("cloth", 5)
+    w.add_tradesperson("Dexter", "dyer"); w.set_stock("cloth", 5); w.set_stock("wood", 5)
     cc = w.forge("Dexter", "dye_cloth")
     assert w.tool_kind(cc) == "coloured_cloth" and w.qty("dye") == 4.0, "the dyer makes coloured cloth using the imported dye"
     # paper/ink ARE real recipes -- they exist; bigville just doesn't COMMONLY KNOW them, so it imports
@@ -561,9 +563,10 @@ def test_records_office_registers_land_titles_and_disputes():
 def test_crops_vegetables_and_food_are_data_and_cooked():
     w = World()
     assert {"cabbage", "carrot", "onion", "potato", "turnip", "bean", "pea"} <= set(E.ITEMS), "the vegetables are data"
-    w.add_tradesperson("Baker", "baker"); w.set_stock("flour", 10); w.set_stock("water", 20)
+    w.add_tradesperson("Baker", "baker"); w.set_stock("flour", 50); w.set_stock("water", 30)
+    w.set_stock("wood", 10)                       # heated dishes burn fuel
     w.do("Baker", "bake_bread")
-    assert w.qty("bread") == 3.0, "the baker bakes bread from flour + water"
+    assert w.qty("bread") == 60.0 and w.qty("flour") == 10.0, "one oven load: 40 flour + water -> 60 loaves"
     w.add_tradesperson("Cook", "cook"); w.set_stock("beef", 5); w.set_stock("carrot", 5); w.set_stock("onion", 5)
     w.do("Cook", "make_stew")                     # a 4-input recipe: beef + carrot + onion + water
     assert w.qty("stew") == 3.0 and w.qty("beef") == 4.0, "the cook makes stew from meat + vegetables"

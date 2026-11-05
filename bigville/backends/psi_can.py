@@ -53,7 +53,7 @@ class CANWeightModel:
         "work": ("competence", "duty"), "start": ("competence", "duty"),
         "fetch": ("duty", "survival"), "put": ("duty", "security"),
         "water": ("duty", "survival"), "harvest": ("duty", "survival"),
-        "sow": ("duty", "future"), "tend_animals": ("duty", "care"),
+        "sow": ("duty", "future"), "fertilise": ("duty", "future"), "tend_animals": ("duty", "care"),
         "build": ("competence", "security"), "maintain": ("security", "duty"),
         "care": ("care", "social"), "sell_labor": ("survival", "social"),
         "graze": ("survival", "comfort"), "herd": ("duty", "care"),

@@ -406,9 +406,13 @@
       "forge": 30,
       "bakery": 31,
       "fishmonger": 32,
-      "mill": 33,
-      "printshop": 34,
-      "scriptorium": 35
+      "barn": 33,
+      "charcoal_hearth": 34,
+      "inkhouse": 35,
+      "mill": 36,
+      "papermill": 37,
+      "printshop": 38,
+      "scriptorium": 39
     }
   },
   "cutaways": {
@@ -448,9 +452,13 @@
       "forge": 30,
       "bakery": 31,
       "fishmonger": 32,
-      "mill": 33,
-      "printshop": 34,
-      "scriptorium": 35
+      "barn": 33,
+      "charcoal_hearth": 34,
+      "inkhouse": 35,
+      "mill": 36,
+      "papermill": 37,
+      "printshop": 38,
+      "scriptorium": 39
     }
   },
   "large_buildings": {

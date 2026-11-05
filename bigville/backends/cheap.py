@@ -108,7 +108,7 @@ class DeterministicBackend:
         if self.time_band in {"morning", "workday"}:
             if actions & {"tend_animals", "milk", "shear"}:
                 candidates.append(("care_for_animals", 78.0, "morning care is due"))
-            if actions & {"harvest", "sow", "water"}:
+            if actions & {"harvest", "sow", "water", "fertilise"}:
                 candidates.append(("tend_farm", 76.0, "the farm needs attention"))
             if "work" in actions or "sell_labor" in actions:
                 candidates.append(("work", 64.0, "the workday is open"))
@@ -146,13 +146,13 @@ class DeterministicBackend:
     def _choice_key(self, option, context):
         """Prefer actions matching the active goal, then world score."""
         priority = {
-            "eat": 6, "tend_animals": 5, "harvest": 5, "sow": 4,
+            "eat": 6, "tend_animals": 5, "harvest": 5, "sow": 4, "fertilise": 4,
             "work": 3, "give": 2, "move": 1,
         }
         action = str(option.get("action", ""))
         goal_actions = {
             "eat": {"eat"}, "recover": {"rest"}, "care_for_animals": {"tend_animals", "milk", "shear"},
-            "tend_farm": {"harvest", "sow", "water"}, "work": {"work", "sell_labor"},
+            "tend_farm": {"harvest", "sow", "water", "fertilise"}, "work": {"work", "sell_labor"},
             "travel": {"move"}, "rest": {"rest"}, "socialize": {"move"}, "observe": set(),
         }
         goal_bonus = 30 if self.current_goal and action in goal_actions.get(self.current_goal.kind, set()) else 0
@@ -172,7 +172,7 @@ class DeterministicBackend:
         actions = {
             "eat": {"eat"}, "recover": {"rest"},
             "care_for_animals": {"tend_animals", "milk", "shear"},
-            "tend_farm": {"harvest", "sow", "water"},
+            "tend_farm": {"harvest", "sow", "water", "fertilise"},
             "work": {"work", "sell_labor"}, "travel": {"move"},
             "rest": {"rest"},
         }

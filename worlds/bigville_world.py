@@ -576,6 +576,7 @@ class BigvilleWorld:
         self._charter_specs = self._scenario_table("charters", E.CHARTERS)
         self._item_specs = dict(E.ITEMS)   # runtime item registry (data + runtime-added)
         self._tool_kinds = set()
+        self._recipe_specs = {}            # recipe name -> its data row (data + runtime-added)
         self.set_stock("none", 1e9)
         self._install_map(map_seed, self._scenario_data.get("map") or None)
         self._install_physical_objects()
@@ -604,7 +605,7 @@ class BigvilleWorld:
         scenario_buildings = self._scenario_data.get("buildings")
         if scenario_buildings is None:
             scenario_buildings = [{"kind": kind, "spec": spec}
-                                  for kind, spec in E.BUILDINGS.items()]
+                                  for kind, spec in E.founding_buildings().items()]
         for building in scenario_buildings:
             kind = str(building.get("kind", "place"))
             spec = dict(E.BUILDINGS.get(kind, {}))
@@ -938,7 +939,11 @@ class BigvilleWorld:
             for need in self.eng.neighbours(job, "need"):
                 na = self.eng.node(need)["attrs"]
                 kind, qty = na.get("kind", ""), float(na.get("qty", 0.0))
-                if float(na.get("is_item", 0.0)) == 1.0:
+                if na.get("slot_type"):
+                    if self.type_available(na["slot_type"]) + 1e-9 < qty:
+                        missing = True
+                    inputs.append(("type", na["slot_type"], need, qty))
+                elif float(na.get("is_item", 0.0)) == 1.0:
                     item = self._job_input(job, kind, True)
                     if item is None:
                         missing = True
@@ -955,10 +960,16 @@ class BigvilleWorld:
             actor_node = self._actors.get(actor_name)
             quality = float(self.eng.node(actor_node)["attrs"].get("skill", 0.0)) if actor_node else 0.0
             part_qualities = [float(self.eng.node(item)["attrs"].get("quality", quality))
-                              for _, _, item, _ in inputs if item is not None and self.eng.has_node(item)]
+                              for kind_type, _, item, _ in inputs
+                              if kind_type == "item" and item is not None and self.eng.has_node(item)]
             for kind_type, kind, item, qty in inputs:
                 if kind_type == "bulk":
                     self.set_stock(kind, self.qty(kind) - qty)
+                elif kind_type == "type":
+                    used = self._consume_type(kind, qty) or {}
+                    # record which members filled the slot, for inspection
+                    self.eng.set_attr(item, "filled_with",
+                                      ";".join(f"{k}:{round(v, 4)}" for k, v in used.items()))
                 else:
                     self.eng.remove_edge_unchecked(self._town, "has_tool_item", item)
                     for owner in list(self._actors.values()):
@@ -983,13 +994,19 @@ class BigvilleWorld:
                     pass
             elif out_kind:
                 self.set_stock(out_kind, self.qty(out_kind) + out_qty)
+            for kind, qty in self._recipe_specs.get(action.get("name", ""), {}).get("byproducts", {}).items():
+                self.set_stock(kind, self.qty(kind) + float(qty))      # e.g. bran from milling
+            own_tools = bool(self._recipe_specs.get(action.get("name", ""), {}).get("open"))
             for tool_use in self.eng.neighbours(job, "uses"):
                 kind = self.eng.node(tool_use)["attrs"].get("kind")
-                tool = self._tools.get(kind)
+                tool = (self._held_tool(actor_name, kind) if own_tools and actor_name in self._actors
+                        else None) or self._tools.get(kind)
                 if tool is not None:
                     ta = self.eng.node(tool)["attrs"]
-                    self.eng.set_attr(tool, "condition", max(0.0, float(ta.get("condition", 1.0))
-                                      - float(ta.get("wear", 0.02))))
+                    condition = max(0.0, float(ta.get("condition", 1.0)) - float(ta.get("wear", 0.02)))
+                    self.eng.set_attr(tool, "condition", condition)
+                    if self.eng.node(tool)["type"] == "ToolItem" and condition <= 0.0:
+                        self.eng.set_attr(tool, "broken", 1.0)      # a worn-out own tool must be replaced
             self.eng.set_attr(job, "complete", 1.0)
             self.eng.set_attr(job, "remaining", 0.0)
             if actor_node is not None:
@@ -1143,8 +1160,11 @@ class BigvilleWorld:
                 if float(aa.get("alive", 0.0)) != 1.0:
                     continue
                 feed = aa.get("eats", ""); ration = float(aa.get("ration", 1.0))
-                if self.qty(feed) >= ration:
-                    self.set_stock(feed, self.qty(feed) - ration); self.eng.set_attr(node, "hunger", 0.0)
+                if self._feed_qty(feed) >= ration:
+                    self._consume_feed(feed, ration); self.eng.set_attr(node, "hunger", 0.0)
+                    manure = float(E.ANIMALS.get(aa.get("species", ""), {}).get("manure", 0.0))
+                    if manure > 0.0:                    # a fed animal leaves manure to be collected
+                        self.set_stock("manure", self.qty("manure") + manure)
                 else:
                     hunger = float(aa.get("hunger", 0.0)) + 1.0; self.eng.set_attr(node, "hunger", hunger)
                     if hunger >= float(aa.get("starve_limit", 3.0)):
@@ -1157,6 +1177,8 @@ class BigvilleWorld:
                 self.eng.set_attr(node, "hunger", hunger)
                 if hunger > float(aa.get("starve_limit", 4.0)):
                     self.eng.set_attr(node, "alive", 0.0)
+            self._collect_night_soil()
+            self._advance_soil_nitrogen()
             for crop in list(self._living_crops()):
                 ca = self.eng.node(crop)["attrs"]
                 if float(ca.get("water_armed", 0.0)) == 1.0:
@@ -1167,6 +1189,7 @@ class BigvilleWorld:
                         self.eng.set_attr(crop, "alive", 0.0)
                 if self.crop_alive(crop):
                     self.eng.set_attr(crop, "age", float(ca.get("age", 0.0)) + 1.0)
+                    self._crop_draw_nitrogen(crop)
             # Freshness/condition is a property of the physical pile.  A
             # storage class changes the rate, never admissibility.
             for stock in self.eng.nodes("Stock"):
@@ -1523,7 +1546,7 @@ class BigvilleWorld:
             demand = sum(float(self.eng.node(a)["attrs"].get("ration", 1.0))
                           for a in self._animals.values()
                           if self.eng.node(a)["attrs"].get("eats", "") == feed)
-            feed_days[feed] = self.qty(feed) / demand if demand else 0.0
+            feed_days[feed] = self._feed_qty(feed) / demand if demand else 0.0
             if demand and feed_days[feed] < 4.0:
                 warnings.append(f"less than four days of animal feed: {feed}")
 
@@ -1917,6 +1940,31 @@ class BigvilleWorld:
             world.set_relationship(src, tgt, kind=kind, strength=strength)
         return world
 
+    def seed_residents(self, population, *, prefix=None):
+        """Seed `population` founding residents from the data's JOBS (E.seed_jobs).
+
+        Each resident gets their job(s) as trades (the first is their role), their trade's base skill,
+        and the jobs' starting tools in their own hands. Returns the seed plan plus the resident
+        names; what they do afterwards is up to them. Raises ValueError if the jobs need more people
+        than `population` (E.check_job_seed explains why)."""
+        plan = E.seed_jobs(int(population))
+        if plan["short"]:
+            raise ValueError(f"the jobs need {int(population) + plan['short']} residents; "
+                             f"only {int(population)} were asked for")
+        names, counts = [], {}
+        for resident in plan["residents"]:
+            primary = resident["jobs"][0]
+            counts[primary] = counts.get(primary, 0) + 1
+            name = f"{prefix or primary}_{counts[primary] if not prefix else len(names) + 1}"
+            role = resident["trades"][0]
+            skill = float(E.TRADES.get(role, {}).get("base_skill", 0.7))
+            self.add_actor(name, role=role, skill=skill, trades=tuple(resident["trades"][1:]))
+            self.eng.set_attr(self._actors[name], "jobs", ",".join(resident["jobs"]))
+            for tool in resident["tools"]:
+                self.give_tool(name, tool)
+            names.append(name)
+        return dict(plan, names=names)
+
     def populate_town100(self, *, seed=305000):
         """Import the 100-world's map-aligned cast as ordinary canonical entities.
 
@@ -1935,16 +1983,15 @@ class BigvilleWorld:
         self._t100_farms = []
 
         for kind, cell in layout.get("deposits", {}).items():
-            self.add_deposit(kind, tuple(cell), stock=60.0, growback=3.0, capacity=120.0)
-        self.add_store(tuple(layout["work"]["market"]), ("fish", "lumber", "stone"))
-        for trade, input_kind, output_kind in (
-                ("fishmonger", "fish", "fish_ready"),
-                ("carpenter", "lumber", "furniture"),
-                ("mason", "stone", "blocks"),
-                ("bakery", "grain", "bread")):
+            deposit = E.RESOURCE_DEPOSITS.get(kind, {})
+            self.add_deposit(kind, tuple(cell), stock=float(deposit.get("stock", 60.0)),
+                             growback=float(deposit.get("growback", 3.0)),
+                             capacity=float(deposit.get("capacity", 120.0)))
+        self.add_store(tuple(layout["work"]["market"]), tuple(E.RESOURCE_DEPOSITS))
+        for trade, chain in E.SHOP_CHAINS.items():
             if trade in layout["work"]:
                 self.add_shop(trade, tuple(layout["work"][trade]),
-                              input_kind=input_kind, output_kind=output_kind)
+                              input_kind=chain["in"], output_kind=chain["out"])
 
         station = {"low": "labouring", "middle": "middle", "high": "educated"}
         for record in cast["residents"]:
@@ -2147,7 +2194,10 @@ class BigvilleWorld:
         for kind, qty in r["in"]:                       # N input needs (data)
             icls = self._item_specs.get(kind, {}).get("class")
             is_item = 1.0 if icls not in (None, "material") and self._item_specs.get(kind, {}).get("discrete", True) else 0.0
-            need = self.eng.add_node("Need", {"kind": kind, "qty": float(qty), "is_item": is_item})
+            need_attrs = {"kind": kind, "qty": float(qty), "is_item": is_item}
+            if E.is_input_type(kind):                   # a TYPE slot: any member item fills it
+                need_attrs.update(slot_type=kind, is_item=0.0)
+            need = self.eng.add_node("Need", need_attrs)
             self.eng.add_edge_unchecked(asp, "in_need", need)
         for tk in r.get("tools", []):                   # Y tool uses (data)
             tu = self.eng.add_node("ToolUse", {"kind": tk})
@@ -2156,7 +2206,30 @@ class BigvilleWorld:
         if not discrete:
             self.set_stock(out_kind, self.qty(out_kind))
         self._actions[r["name"]] = asp
+        self._recipe_specs[r["name"]] = r
         return asp
+
+    # ---------------------------------------------------- typed input slots
+    def type_available(self, type_name):
+        """Units of a type slot (heat for fuel, nitrogen for fertiliser, ...) the store can supply."""
+        return round(sum(self.qty(kind) * units for kind, units in E.type_members(type_name)), 4)
+
+    def _consume_type(self, type_name, qty):
+        """Fill `qty` units of a type slot from store stock and leave its byproducts.
+
+        Returns the {kind: amount} actually burnt/used, or None (and changes nothing) if short."""
+        plan = E.type_plan(type_name, qty, self.qty)
+        if plan is None:
+            return None
+        for kind, amount in plan:
+            self.set_stock(kind, self.qty(kind) - amount)
+        for kind, amount in E.type_byproducts(type_name, qty).items():
+            self.set_stock(kind, self.qty(kind) + amount)
+        return dict(plan)
+
+    def _recipe_in_season(self, recipe_name):
+        seasons = self._recipe_specs.get(recipe_name, {}).get("seasons")
+        return not seasons or self.season() in seasons
 
     def _register_reference(self, reference):
         """Register a reference template; registration creates no town-owned fact."""
@@ -2266,8 +2339,7 @@ class BigvilleWorld:
         options = E.SEASONS.get(season, {}).get("weather", ("clear",))
         # Deterministic weather is still variable: the map seed controls it,
         # and the resulting weather remains an observation residents must make.
-        aliases = {"cool": "clear", "hot": "dry"}
-        options = tuple(aliases.get(option, option) for option in options if aliases.get(option, option) in E.WEATHER)
+        options = tuple(option for option in options if option in E.WEATHER)
         weather = options[self._rng.randrange(len(options))] if options else "clear"
         self.set_weather(weather)
 
@@ -2413,9 +2485,12 @@ class BigvilleWorld:
     def add_land(self, name, *, use="arable", soil="loam", area=1.0, cell=None, household=None):
         assert use in E.LAND_USES and soil in E.SOILS
         spec = E.SOILS[soil]
+        capacity = float(E.NITROGEN["capacity_per_area"]) * float(area)
         n = self.eng.add_node("Land", {"name": name, "use": use, "soil": soil,
                                         "area": float(area), "fertility": float(spec["fertility"]),
-                                        "moisture": 0.0, "erosion": float(spec["erosion"]), "fallow": 0.0})
+                                        "moisture": 0.0, "erosion": float(spec["erosion"]), "fallow": 0.0,
+                                        "nitrogen": min(capacity, float(spec.get("nitrogen", 0.0)) * float(area)),
+                                        "nitrogen_capacity": capacity})
         self.eng.add_edge_unchecked(self._town, "has_land", n)
         self._land[name] = n
         farms = self._map_layout.get("farms", []) if self._map_layout else []
@@ -3400,6 +3475,11 @@ class BigvilleWorld:
             return False
         stock = self._inventory_stock(actor, kind)
         self.eng.set_attr(stock, "qty", self.inventory_qty(actor, kind) - 1.0)
+        leftover = E.scrap_kind(kind)
+        if leftover is not None:                         # the bones/rind stay in the eater's hands
+            fraction = float(self._item_specs[kind]["leaves_scraps"])
+            scraps = self._inventory_stock(actor, leftover, create=True)
+            self.eng.set_attr(scraps, "qty", self.inventory_qty(actor, leftover) + fraction)
         self._refresh_carry_state(actor)
         self.eng.set_attr(self._actor(actor), "hunger", 0.0)
         self.eng.add_edge_unchecked(self._actor(actor), "ate", stock)
@@ -3966,7 +4046,7 @@ class BigvilleWorld:
                          if self.distance(position, cell) is not None else 10**9)
             options.append({"action": "move", "target": target, "score": 48.0,
                             "concepts": ["security", "survival"]})
-        if float(attrs.get("hunger", 0.0)) > 0.0 and self.qty(attrs.get("eats", "")) >= float(attrs.get("ration", 1.0)):
+        if float(attrs.get("hunger", 0.0)) > 0.0 and self._feed_qty(attrs.get("eats", "")) >= float(attrs.get("ration", 1.0)):
             options.append({"action": "eat", "kind": attrs.get("eats", ""), "score": 40.0,
                             "concepts": ["survival"]})
         if attrs.get("species") in {"cow", "sheep", "pig", "horse"} and position in allowed:
@@ -4166,10 +4246,11 @@ class BigvilleWorld:
         return added
 
     def _recipe_inputs_available(self, recipe):
-        data = next((r for r in E.RECIPES if r["name"] == recipe), None)
-        if data is None:
+        data = self._recipe_specs.get(recipe)
+        if data is None or not self._recipe_in_season(recipe):
             return False
-        return all(self.qty(kind) >= float(qty) for kind, qty in data.get("in", []))
+        return all((self.type_available(kind) if E.is_input_type(kind) else self.qty(kind)) >= float(qty)
+                   for kind, qty in data.get("in", []))
 
     def _village_start(self, actor, recipe):
         if self.busy(actor) or not self._recipe_inputs_available(recipe):
@@ -4201,9 +4282,7 @@ class BigvilleWorld:
                           if not self.actor_turn_state(name)["major_action_used"]), None)
             if actor is None:
                 break
-            crop = next((candidate for candidate in ("wheat", "barley", "oats")
-                         if self.qty(E.CROPS[candidate]["seed"]) >= 1.0
-                         and E.CROPS[candidate]["season"] == self.season()), None)
+            crop = self._rotation_crop(land_name)
             if crop is not None:
                 self.sow(actor, crop, land=land_name)
 
@@ -4263,12 +4342,13 @@ class BigvilleWorld:
             # bread pipeline even while the total grain stock looks ample.
             grain_reserve = max(4.0, grain_feed_demand * 4.0)
             for name in millers:
+                grain_per_run = sum(float(q) for k, q in self._recipe_specs["grind_flour"]["in"] if k == "grain")
                 if (not self.actor_turn_state(name)["major_action_used"]
-                        and self.qty("grain") >= 3.0 + grain_reserve):
+                        and self.qty("grain") >= grain_per_run + grain_reserve):
                     self._village_start(name, "grind_flour")
         for name in bakers:
-            if not self.actor_turn_state(name)["major_action_used"] and self.qty("flour") >= 2:
-                self._village_start(name, "bake_bread")
+            if not self.actor_turn_state(name)["major_action_used"]:
+                self._village_start(name, "bake_bread")     # starts only if a full oven load is in store
 
     def run_village(self, periods=1, *, ticks_per_period=96):
         """Advance the seeded village while each resident decides independently.
@@ -4335,7 +4415,10 @@ class BigvilleWorld:
                                        "alive": 1.0, "water": float(spec["water"]), "wilt": float(spec["wilt"]),
                                        "grow_periods": float(spec["grow_periods"]), "harvest": spec["harvest"],
                                        "water_armed": 0.0,
-                                       "yield": float(spec["yield"])})
+                                       "yield": float(spec["yield"]),
+                                       "nitrogen": float(spec.get("nitrogen", 0.0)),
+                                       "fixes": float(spec.get("fixes", 0.0)),
+                                       "n_wanted": 0.0, "n_supplied": 0.0})
         self.eng.add_edge_unchecked(self._town, "has_crop", c)
         if land in self._land:
             self.eng.add_edge_unchecked(c, "on_land", self._land[land])
@@ -4375,7 +4458,11 @@ class BigvilleWorld:
                 return 0.0
         a = self.eng.node(crop_node)["attrs"]
         if float(a["alive"]) == 1.0 and float(a["age"]) >= float(a["grow_periods"]):
-            self.set_stock(a["harvest"], self.qty(a["harvest"]) + float(a["yield"]))
+            factor = self.crop_nitrogen_factor(crop_node)
+            harvested = float(a["yield"]) * factor
+            self.set_stock(a["harvest"], self.qty(a["harvest"]) + harvested)
+            for kind, qty in E.CROPS[a["crop"]].get("byproducts", {}).items():
+                self.set_stock(kind, self.qty(kind) + float(qty) * factor)
             # Harvesting is also the seed loop that makes a farm renewable.
             # The returned seed is a physical reserve, not a hidden crop
             # respawn; sowing still consumes it and remains seasonal.
@@ -4383,8 +4470,106 @@ class BigvilleWorld:
             self.set_stock(seed, self.qty(seed) + float(E.CROPS[a["crop"]].get("seed_return", 1.0)))
             self.eng.set_attr(crop_node, "alive", 0.0)
             self.eng.remove_edge_unchecked(self._town, "has_crop", crop_node)
-            return float(a["yield"])
+            return round(harvested, 4)
         return 0.0
+
+    # ---------------------------------------------------- the nitrogen cycle (data: E.NITROGEN)
+    def land_nitrogen(self, land):
+        return round(float(self.eng.node(self._land[land])["attrs"].get("nitrogen", 0.0)), 4)
+
+    def land_nitrogen_fraction(self, land):
+        a = self.eng.node(self._land[land])["attrs"]
+        capacity = float(a.get("nitrogen_capacity", 0.0))
+        return float(a.get("nitrogen", 0.0)) / capacity if capacity > 0 else 0.0
+
+    def crop_nitrogen_factor(self, crop_node):
+        """Yield multiplier from the share of its nitrogen demand the soil met (1.0 off-land)."""
+        a = self.eng.node(crop_node)["attrs"]
+        wanted = float(a.get("n_wanted", 0.0))
+        if wanted <= 0.0:
+            return 1.0
+        floor = float(E.NITROGEN["yield_floor"])
+        return floor + (1.0 - floor) * min(1.0, float(a.get("n_supplied", 0.0)) / wanted)
+
+    def _advance_soil_nitrogen(self):
+        """Mineralisation adds to every parcel; leaching (scaled by drainage) takes from it."""
+        for node in self._land.values():
+            a = self.eng.node(node)["attrs"]
+            capacity = float(a.get("nitrogen_capacity", 0.0))
+            if capacity <= 0.0:
+                continue
+            nitrogen = float(a.get("nitrogen", 0.0))
+            nitrogen += float(E.NITROGEN["mineralisation_per_area"]) * float(a.get("area", 1.0))
+            drainage = float(E.SOILS.get(a.get("soil", ""), {}).get("drainage", 0.5))
+            nitrogen -= nitrogen * float(E.NITROGEN["leaching"]) * drainage
+            self.eng.set_attr(node, "nitrogen", min(capacity, max(0.0, nitrogen)))
+
+    def _crop_draw_nitrogen(self, crop):
+        """One period of a growing bed: draw its demand from its parcel; a legume fixes some back."""
+        lands = list(self.eng.neighbours(crop, "on_land"))
+        if not lands:
+            return
+        land, ca = lands[0], self.eng.node(crop)["attrs"]
+        la = self.eng.node(land)["attrs"]
+        nitrogen, capacity = float(la.get("nitrogen", 0.0)), float(la.get("nitrogen_capacity", 0.0))
+        want = float(ca.get("nitrogen", 0.0))
+        take = min(want, nitrogen)
+        nitrogen = min(capacity, nitrogen - take + float(ca.get("fixes", 0.0)))
+        self.eng.set_attr(land, "nitrogen", max(0.0, nitrogen))
+        self.eng.set_attr(crop, "n_wanted", float(ca.get("n_wanted", 0.0)) + want)
+        self.eng.set_attr(crop, "n_supplied", float(ca.get("n_supplied", 0.0)) + take)
+
+    def _collect_night_soil(self):
+        """Residents' waste is kept as night soil while a latrine stands; otherwise it is lost."""
+        latrine_up = any(self.eng.node(node)["attrs"].get("kind") == "latrine"
+                         and float(self.eng.node(node)["attrs"].get("condition", 1.0)) > 0.0
+                         for node in self._infrastructure.values())
+        if not latrine_up:
+            return 0.0
+        alive = sum(1 for node in self._actors.values()
+                    if float(self.eng.node(node)["attrs"].get("alive", 0.0)) == 1.0)
+        amount = alive * float(E.WASTE_CYCLES["human_waste"].get("per_resident", 0.0))
+        if amount > 0.0:
+            self.set_stock("night_soil", self.qty("night_soil") + amount)
+        return amount
+
+    def fertilise(self, actor, land, amount=None):
+        """Spread fertiliser (any `nitrogen`-tagged stock: manure, compost, dung) on a land parcel.
+
+        Returns the nitrogen added. The actor must stand on the parcel once the clock is running."""
+        if land not in self._land:
+            return 0.0
+        node = self._land[land]
+        cell = self.map_position_node(node)
+        if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
+            return 0.0
+        type_name = E.NITROGEN["fertiliser_type"]
+        la = self.eng.node(node)["attrs"]
+        room = float(la.get("nitrogen_capacity", 0.0)) - float(la.get("nitrogen", 0.0))
+        amount = min(float(amount if amount is not None else E.NITROGEN["fertilise_amount"]),
+                     room, self.type_available(type_name))
+        if amount <= 0.0:
+            return 0.0
+        if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "fertilise"):
+            return 0.0
+        if self._consume_type(type_name, amount) is None:
+            return 0.0
+        self.eng.set_attr(node, "nitrogen", float(la.get("nitrogen", 0.0)) + amount)
+        self.eng.add_edge_unchecked(self._actors[actor], "fertilised", node)
+        return round(amount, 4)
+
+    def _rotation_crop(self, land):
+        """The crop a farmer would sow on this parcel now: a restorative legume when its nitrogen is
+        low, else the main rotation -- the first in season with seed in store."""
+        low = (land in self._land
+               and self.land_nitrogen_fraction(land) < float(E.NITROGEN["restore_below"]))
+        groups = ("restorative", "main") if low else ("main",)
+        for group in groups:
+            for crop in E.ARABLE_ROTATION[group]:
+                spec = E.CROPS[crop]
+                if spec["season"] == self.season() and self.qty(spec["seed"]) >= 1.0:
+                    return crop
+        return None
 
     def crop_age(self, crop_node): return round(float(self.eng.node(crop_node)["attrs"]["age"]), 4)
     def crop_alive(self, crop_node): return float(self.eng.node(crop_node)["attrs"]["alive"]) == 1.0
@@ -4404,6 +4589,22 @@ class BigvilleWorld:
     def animal_alive(self, name): return float(self.eng.node(self._animals[name])["attrs"]["alive"]) == 1.0
     def is_imported(self, kind): return bool(self._item_specs.get(kind, {}).get("imported"))
 
+    def _feed_qty(self, eats):
+        """Store stock available to an animal with diet `eats` (a scraps diet takes any scraps)."""
+        return sum(self.qty(kind) for kind in E.feed_kinds(eats))
+
+    def _consume_feed(self, eats, ration):
+        """Draw `ration` from the stocks that diet accepts, in the data's preference order."""
+        remaining = float(ration)
+        for kind in E.feed_kinds(eats):
+            take = min(remaining, self.qty(kind))
+            if take > 0:
+                self.set_stock(kind, self.qty(kind) - take)
+                remaining -= take
+            if remaining <= 1e-9:
+                break
+        return float(ration) - remaining
+
     def give_product(self, animal, product):
         """The animal yields one of its products (a cow's milk, a chicken's eggs) into the store."""
         spec = E.ANIMALS[self.eng.node(self._animals[animal])["attrs"]["species"]]
@@ -4419,8 +4620,6 @@ class BigvilleWorld:
         self.eng.add_edge_unchecked(self._animals[horse], "pulls", self._containers[cart][0])
         return pull
 
-    _SLAUGHTER = {"pork", "beef", "mutton", "poultry", "fish", "ham", "bacon", "sausage", "hide"}
-
     def butcher(self, butcher, animal):
         """BUTCHERY is a skill: a butcher turns a (living) animal into its meat + hide (the on-death
         products from ANIMALS), killing it. Only a butcher can do it."""
@@ -4432,7 +4631,7 @@ class BigvilleWorld:
             return {}
         got = {}
         for product, qty in E.ANIMALS[self.eng.node(an)["attrs"]["species"]]["gives"].items():
-            if product in self._SLAUGHTER:
+            if product in E.SLAUGHTER_PRODUCTS:
                 self.set_stock(product, self.qty(product) + float(qty)); got[product] = float(qty)
         self.eng.set_attr(an, "alive", 0.0)
         return got
@@ -4757,7 +4956,8 @@ class BigvilleWorld:
                 self._seed_reference(existing, reference)
         recipe_roles = {role, *trades}
         for r in E.RECIPES:                              # a resident KNOWS their trade's COMMON recipes
-            if r.get("requires") in recipe_roles and r.get("common") is not False:
+            if ((r.get("requires") in recipe_roles and r.get("common") is not False)
+                    or r.get("open")):                   # ...and the household work anyone may do
                 self.eng.add_edge_unchecked(a, "knows", self._actions[r["name"]])
         return a
 
@@ -5421,7 +5621,8 @@ class BigvilleWorld:
             for animal, animal_node in self._animals.items():
                 aa = self.eng.node(animal_node)["attrs"]
                 species = aa.get("species")
-                task = "milk" if species == "cow" else "shear" if species == "sheep" else ""
+                task = next((name for name, spec in E.ANIMAL_HUSBANDRY.items()
+                             if spec["species"] == species), "")
                 if not task or not self.animal_alive(animal):
                     continue
                 period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
@@ -5456,19 +5657,30 @@ class BigvilleWorld:
             # A mapped parcel can contain many beds.  The parcel's occupancy
             # is not a one-crop gate; each sowing is its own physical Crop
             # affordance on that parcel.
-            for land_name in sorted(name for name in self._land if name.startswith("farm_plot_")):
-                for crop_name in ("wheat", "barley", "oats"):
-                    seed = E.CROPS[crop_name]["seed"]
-                    if (E.CROPS[crop_name]["season"] == self.season()
-                            and self.qty(seed) >= 1.0):
-                        destination = self.map_position_node(self._land[land_name])
-                        if destination is not None and reachable_destination(destination):
-                            key = target_key((crop_name, land_name) if self.actor_position(actor) == destination
-                                             else destination)
-                            options.append({"action": "sow" if self.actor_position(actor) == destination else "move",
-                                            "kind": "", "trade": "", "recipe": "",
-                                            "target": key, "score": 25.0 if self.actor_position(actor) == destination else 12.0})
-                        break
+            farm_plots = sorted(name for name in self._land if name.startswith("farm_plot_"))
+            for land_name in farm_plots:
+                crop_name = self._rotation_crop(land_name)
+                if crop_name is not None:
+                    destination = self.map_position_node(self._land[land_name])
+                    if destination is not None and reachable_destination(destination):
+                        key = target_key((crop_name, land_name) if self.actor_position(actor) == destination
+                                         else destination)
+                        options.append({"action": "sow" if self.actor_position(actor) == destination else "move",
+                                        "kind": "", "trade": "", "recipe": "",
+                                        "target": key, "score": 25.0 if self.actor_position(actor) == destination else 12.0})
+            # Fertilise the most depleted plot below the threshold, if there is fertiliser to spread.
+            fertiliser = E.NITROGEN["fertiliser_type"]
+            hungry_plots = [name for name in farm_plots
+                            if self.land_nitrogen_fraction(name) < float(E.NITROGEN["fertilise_below"])]
+            if hungry_plots and self.type_available(fertiliser) >= 1.0:
+                land_name = min(hungry_plots, key=lambda name: (self.land_nitrogen_fraction(name), name))
+                destination = self.map_position_node(self._land[land_name])
+                if destination is not None and reachable_destination(destination):
+                    here = self.actor_position(actor) == destination
+                    key = target_key(land_name if here else destination)
+                    options.append({"action": "fertilise" if here else "move",
+                                    "kind": "", "trade": "", "recipe": "",
+                                    "target": key, "score": 22.0 if here else 10.0})
 
         # Construction projects are physical places and require a resident
         # builder to travel there before spending materials and labour.
@@ -5526,7 +5738,8 @@ class BigvilleWorld:
                                 "target": key, "score": 38.0 if self.actor_position(actor) == destination else 20.0})
                 break
         for recipe in E.RECIPES:
-            if (not busy and recipe.get("requires") in roles and self.knows(actor, recipe["name"])
+            if (not busy and (recipe.get("requires") in roles or recipe.get("open"))
+                    and self._can_attempt(actor, recipe["name"])
                     and self._recipe_inputs_available(recipe["name"])):
                 out_kind = recipe.get("out", [""])[0]
                 options.append({"action": "work", "kind": out_kind, "trade": "", "target": "",
@@ -5672,7 +5885,7 @@ class BigvilleWorld:
                 return self.major_action(actor, "care", patient=target)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
-        if plan["action"] in {"water", "harvest", "sow"}:
+        if plan["action"] in {"water", "harvest", "sow", "fertilise"}:
             target = self._actor_targets[actor].get(plan.get("target", ""))
             if target is not None:
                 return self.major_action(actor, plan["action"], target=target)
@@ -6233,11 +6446,9 @@ class BigvilleWorld:
                 return False
             self._major_dispatch = True
             try:
-                if task == "milk":
-                    return self.milk(actor, animal) > 0.0
-                if task == "shear":
-                    return self.shear(actor, animal) > 0.0
-                return False
+                if task not in E.ANIMAL_HUSBANDRY:
+                    return False
+                return self._husbandry_yield(actor, animal, task) > 0.0
             finally:
                 self._major_dispatch = False
         if action in ("work", "make", "start"):
@@ -6254,12 +6465,14 @@ class BigvilleWorld:
                 return operation(actor, recipe)
             finally:
                 self._major_dispatch = False
-        if action in {"water", "harvest", "sow"}:
+        if action in {"water", "harvest", "sow", "fertilise"}:
             target = kwargs.get("target", args[0] if args else None)
             if not self._claim_major_action(actor, action):
                 return False
             self._major_dispatch = True
             try:
+                if action == "fertilise":
+                    return self.fertilise(actor, target, kwargs.get("amount")) > 0.0
                 if action == "water":
                     return self.water_crop(actor, target)
                 if action == "harvest":
@@ -6450,7 +6663,8 @@ class BigvilleWorld:
         for need in self.eng.neighbours(asp, "in_need"):
             a = self.eng.node(need)["attrs"]
             jn = self.eng.add_node("Need", {"kind": a["kind"], "qty": float(a["qty"]), "met": 0.0,
-                                            "is_item": float(a.get("is_item", 0.0))})
+                                            "is_item": float(a.get("is_item", 0.0)),
+                                            "slot_type": a.get("slot_type", "")})
             self.eng.add_edge_unchecked(job, "need", jn)
         for tu in self.eng.neighbours(asp, "in_tool"):
             a = self.eng.node(tu)["attrs"]
@@ -6469,8 +6683,44 @@ class BigvilleWorld:
         return skill >= floor
 
     def _can_attempt(self, actor, action_name):
-        """Admissible to attempt iff the actor KNOWS the recipe AND is SKILLED enough for it."""
-        return self._knows_or_none(actor, action_name) and self._skilled_enough(actor, action_name)
+        """Admissible to attempt iff the actor KNOWS the recipe AND is SKILLED enough for it, and
+        (for seasonal gathering) it is the right season. Open (household) recipes also need a body
+        strong enough for the work and the recipe's tools in the actor's own hands."""
+        if not (self._knows_or_none(actor, action_name) and self._skilled_enough(actor, action_name)
+                and self._recipe_in_season(action_name)):
+            return False
+        recipe = self._recipe_specs.get(action_name, {})
+        if recipe.get("open"):
+            strength_needed, _stamina = E.recipe_exertion(action_name)
+            if self.strength(actor) + 1e-9 < strength_needed:
+                return False
+            if any(self._held_tool(actor, tool) is None for tool in recipe.get("tools", [])):
+                return False
+        return True
+
+    def _held_tool(self, actor, kind):
+        """An unbroken tool of `kind` the actor holds (hand, belt, or carried), or None."""
+        node = self._actor(actor)
+        for edge in ("holds_in_hand", "holds_tableware", "holds"):
+            for item in self.eng.neighbours(node, edge):
+                ia = self.eng.node(item)["attrs"]
+                if ia.get("kind") == kind and float(ia.get("broken", 0.0)) != 1.0:
+                    return item
+        return None
+
+    def give_tool(self, actor, kind, *, quality=1.0):
+        """Put a new tool of `kind` in an actor's possession (founding kit, or a gift/purchase setup)."""
+        spec = self._item_specs.get(kind, {})
+        item = self.eng.add_node("ToolItem", {"kind": kind, "weight": self.item_weight(kind),
+                                                "quality": float(quality), "condition": 1.0, "broken": 0.0,
+                                                "wear": float(spec.get("wear_rate", 0.02)),
+                                                "decay": E.decay_rate(kind),
+                                                "use_armed": 0.0, "repair_armed": 0.0})
+        fit = self.eng.add_node("ToolFit", {"mult": float(spec.get("base_mult", 1.0)) * float(quality)})
+        self.eng.add_edge_unchecked(item, "fit_for", fit)
+        self.eng.add_edge_unchecked(self._actor(actor), "holds", item)
+        self._refresh_carry_state(actor)
+        return item
 
     def do(self, actor, action_name):
         """Perform an action INSTANTLY (no timer). Refused if the actor does not KNOW the recipe or is
