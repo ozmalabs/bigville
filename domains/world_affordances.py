@@ -80,6 +80,8 @@ WATER_SOURCES = _PACK["WATER_SOURCES"]
 FUEL_SOURCES = _PACK["FUEL_SOURCES"]
 # Phase 005: space heating each household burns per period (fuel_type, base_burn, unheated_chill).
 HEATING = _PACK["HEATING"]
+# Phase 006: the household-work scoring a backend applies to open recipe options (thresholds and weights).
+HOUSEHOLD_WORK = _PACK["HOUSEHOLD_WORK"]
 SOILS = _PACK["SOILS"]
 LAND_USES = _PACK["LAND_USES"]
 PASTURE_YIELDS = _PACK["PASTURE_YIELDS"]

@@ -5,9 +5,46 @@ from dataclasses import dataclass
 import hashlib
 from typing import Any
 
+from domains.world_affordances import HOUSEHOLD_WORK as _HOUSEHOLD_WORK
+
 
 def _clamp(value: float, lo: float = 0.0, hi: float = 1.0) -> float:
     return max(lo, min(hi, float(value)))
+
+
+def open_work_governed(option: dict[str, Any]) -> bool:
+    """True for an open recipe whose offer depends on the household-work need (Phase 006): its option carries
+    a fuel or night-soil read-off. Other open recipes (baking bread at home, spinning) keep their prior
+    behaviour, with no read-off and no need."""
+    return (option.get("action") == "work" and bool(option.get("open_recipe"))
+            and ("fuel_held" in option or "night_soil_held" in option))
+
+
+def open_work_need(option: dict[str, Any], table: dict[str, Any] | None = None) -> float:
+    """Points an open (household) work option earns from its physical read-offs (Phase 006).
+
+    The world publishes quantities on the option (worlds/bigville_world.py `_open_work_read_offs`); this rule
+    turns them into points with the pack's HOUSEHOLD_WORK thresholds and weights:
+      fuel_cold: fuel_cold weight x household_fuel_short (the household's felt unmet heating share, 0 to 1).
+      fuel_low: fuel_low weight, once, when fuel_held plus fuel_store (when perceived) is below fuel_low_units.
+      night_soil_high: night_soil_high weight, once, when night_soil_held plus night_soil_store (when perceived)
+        reaches night_soil_high_units.
+    An option that is not an open recipe earns nothing. The caller offers an open recipe only above zero."""
+    if option.get("action") != "work" or not option.get("open_recipe"):
+        return 0.0
+    table = _HOUSEHOLD_WORK if table is None else table
+    weights = table["weights"]
+    need = 0.0
+    if "fuel_held" in option:
+        fuel = float(option.get("fuel_held", 0.0)) + float(option.get("fuel_store", 0.0))
+        need += float(weights["fuel_cold"]) * _clamp(float(option.get("household_fuel_short", 0.0)))
+        if fuel < float(table["fuel_low_units"]):
+            need += float(weights["fuel_low"])
+    if "night_soil_held" in option:
+        soil = float(option.get("night_soil_held", 0.0)) + float(option.get("night_soil_store", 0.0))
+        if soil >= float(table["night_soil_high_units"]):
+            need += float(weights["night_soil_high"])
+    return round(need, 4)
 
 
 @dataclass(frozen=True)
@@ -98,6 +135,7 @@ class CANWeightModel:
         can = {concept: round(float(activations.get(concept, 0.0)), 4) for concept in concepts}
         weighted = float(option.get("score", 0.0)) + 6.0 * sum(can.values())
         weighted += max(psi.hunger, psi.illness) * (12.0 if "survival" in concepts else 0.0)
+        weighted += open_work_need(option)
         result = dict(option)
         result.update(weighted_score=round(weighted, 4), psi=psi.as_dict(), can=can,
                       can_concepts=list(concepts))
@@ -109,6 +147,10 @@ class CANWeightModel:
         return int.from_bytes(hashlib.blake2b(payload.encode(), digest_size=4).digest(), "big")
 
     def choose(self, context, options):
+        # A fuel or night-soil open recipe is a candidate only when its read-offs give it a need. Without one,
+        # the resident has no reason to start that household work. Other options are unchanged.
+        options = [option for option in options
+                   if not open_work_governed(option) or open_work_need(option) > 0.0]
         if not options:
             return None
         scored = [self.score(option, context) for option in options]

@@ -1,0 +1,16 @@
+{
+  "_doc": "HOUSEHOLD_WORK (Phase 006): the scoring a cognition backend applies to open (household) recipe options. The world publishes only physical read-offs on those options (fuel_held, fuel_store, household_fuel_short, night_soil_held, night_soil_store; see worlds/bigville_world.py `_open_work_read_offs`). The backend (bigville/backends/psi_can.py `open_work_need`) turns them into points with the weights below, and it offers an open recipe only when its points are above zero.\nnight_soil_kind names the ITEMS kind that the night-soil read-offs count (checked by the self-test). fuel_low_units is in the fuel slot's units (HEATING.fuel_type; 1 wood = 1 unit): fuel held below it reads as low. Its figure: about 2.4 days of a household's mean heating burn (HEATING base_burn 0.4 x mean firewood demand 1.04). night_soil_high_units is in night_soil units: about two make_compost batches (each batch takes 2 night soil, RECIPES make_compost).\nweights: points added to an open recipe's score. fuel_cold is multiplied by the household's last unmet heating share (0 to 1, the felt cold). fuel_low and night_soil_high are added once when their threshold is met. The points are the same size as the cheap backend's goal bonus (30) and role bonus (24), so a need can outrank ordinary work without overriding eating or resting.\nAll values here are APPROX design choices, not measured or sourced figures. They set how strongly a need pulls a resident toward household work; they describe no real-world rate.",
+  "_types": {},
+  "tables": {
+    "HOUSEHOLD_WORK": {
+      "night_soil_kind": "night_soil",
+      "fuel_low_units": 1.0,
+      "night_soil_high_units": 4.0,
+      "weights": {
+        "fuel_cold": 30.0,
+        "fuel_low": 30.0,
+        "night_soil_high": 30.0
+      }
+    }
+  }
+}

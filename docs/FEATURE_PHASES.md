@@ -170,7 +170,12 @@ rising without fuel; the balance report's fuel line includes heating.
 
 ## Phase 006 -- Household work choice in the backends
 
-**Status:** ready (after 005 is useful but not required)
+**Status:** done (see History). Open-recipe options carry perceivable read-offs (fuel held, store
+fuel only at the store cell, the household's felt heating shortfall, night soil held or at the
+store); `psi_can.open_work_need` scores them with HOUSEHOLD_WORK weights (APPROX), and fuel and
+night-soil recipes are offered only with a need. Cheap uses it through CANWeightModel. No effect
+in the founding town yet: no founder holds an axe or spade and there is no take-tool-to-hand
+action (follow-up). Read stamina once 022/024 land.
 
 **Goal.** Residents rarely choose open work (splitting firewood, composting),
 so night soil piles up and fuel runs out. In `bigville/backends/cheap.py` and
@@ -693,3 +698,4 @@ exist, at the precision they know them -- never the world's map.
 | 018 Generated LLM instructions | done | (this commit) | docs/phases/phase018/PHASE018_REPORT.md -- prompts from the pack, bounded memory selection, derived laws in world_frames, speech lexicon in the pack; prompt schema 1 -> 2 in test_bigville_backends; 464 passed |
 | 004 Located gathering | done | (this commit) | docs/phases/phase004/PHASE004_REPORT.md -- GATHERING_SITES placed without moving existing sites; site-gated gathering with daily regrowth; 483 passed |
 | 005 Household heating | done | (this commit) | docs/phases/phase005/PHASE005_REPORT.md -- HEATING table, household burn own-store-first, chill when unheated, heating in the balance fuel line; cast gains a forester; 497 passed |
+| 006 Household work choice | done | (this commit) | docs/phases/phase006/PHASE006_REPORT.md -- open-recipe read-offs and HOUSEHOLD_WORK scoring in psi_can; no founding change (no held axes or spades); 514 passed |

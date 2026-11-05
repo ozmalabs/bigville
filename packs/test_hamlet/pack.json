@@ -190,6 +190,10 @@
       "file": "world/heating.json"
     },
     {
+      "name": "HOUSEHOLD_WORK",
+      "file": "world/household_work.json"
+    },
+    {
       "name": "SOILS",
       "file": "world/soils.json"
     },

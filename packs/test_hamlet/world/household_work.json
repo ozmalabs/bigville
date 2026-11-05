@@ -1,0 +1,16 @@
+{
+  "_doc": "HOUSEHOLD_WORK (Phase 013b test pack): the hamlet has no open (household) recipes that burn or compost, so these scores never reach a decision. The values match the bigville pack (packs/bigville/world/household_work.json), which holds the figures and the reasoning. The self-test checks the night_soil_kind only where an open recipe consumes it.",
+  "_types": {},
+  "tables": {
+    "HOUSEHOLD_WORK": {
+      "night_soil_kind": "night_soil",
+      "fuel_low_units": 1.0,
+      "night_soil_high_units": 4.0,
+      "weights": {
+        "fuel_cold": 30.0,
+        "fuel_low": 30.0,
+        "night_soil_high": 30.0
+      }
+    }
+  }
+}

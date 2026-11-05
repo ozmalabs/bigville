@@ -2492,6 +2492,43 @@ class BigvilleWorld:
             return 0.0
         return float(self.eng.node(h)["attrs"].get("fuel_short", 0.0))
 
+    def _open_work_read_offs(self, actor, recipe):
+        """Physical read-offs that an open (household) recipe option carries (Phase 006). Empty for any other
+        recipe. The world states quantities; it does not score them or say what the worker should do.
+
+        fuel_held: fuel units in the worker's own inventory (what they hold).
+        fuel_store: fuel units in the town store. Present only while the worker stands on the store's cell.
+        household_fuel_short: the household's last unmet heating share (0 when fully heated, 1 with no fuel).
+            Members feel this as cold. Present only for a resident in a household.
+        night_soil_held: night soil in the worker's own inventory.
+        night_soil_store: night soil in the town store, where it accumulates (`_collect_night_soil`). Present
+            only while the worker stands on the store's cell.
+
+        A recipe whose output is the HEATING fuel slot gets the fuel read-offs. A recipe that consumes night soil
+        (HOUSEHOLD_WORK night_soil_kind) gets the night-soil read-offs. `open_recipe` marks every open recipe."""
+        if not recipe.get("open"):
+            return {}
+        offs = {"open_recipe": True}
+        slot = self.E.type_members(self.E.HEATING["fuel_type"])
+        carrier = self._actor_inventories.get(actor)
+        store_cell = self.map_position_node(self._store)
+        at_store = store_cell is not None and self.actor_position(actor) == store_cell
+        out_kind = recipe.get("out", [""])[0]
+        if out_kind in {kind for kind, _units in slot}:
+            held = sum(self.contents(carrier, kind) * units for kind, units in slot) if carrier else 0.0
+            offs["fuel_held"] = round(held, 4)
+            if at_store:
+                offs["fuel_store"] = round(sum(self.qty(kind) * units for kind, units in slot), 4)
+            household = self.eng.node(self._actors[actor])["attrs"].get("household")
+            if household in self._households:
+                offs["household_fuel_short"] = self._household_unheated_share(household)
+        soil = self.E.HOUSEHOLD_WORK["night_soil_kind"]
+        if any(kind == soil for kind, _qty in recipe.get("in", [])):
+            offs["night_soil_held"] = self.contents(carrier, soil) if carrier else 0.0
+            if at_store:
+                offs["night_soil_store"] = self.qty(soil)
+        return offs
+
     def _recipe_in_season(self, recipe_name):
         seasons = self._recipe_specs.get(recipe_name, {}).get("seasons")
         return not seasons or self.season() in seasons
@@ -6351,6 +6388,7 @@ class BigvilleWorld:
                 options.append({"action": "work", "kind": out_kind, "trade": "", "target": "",
                                 "recipe": recipe["name"],
                                 "score": 0.0})
+                options[-1].update(self._open_work_read_offs(actor, recipe))
         # Rest is afforded only when the same reserve threshold that gates
         # physical recovery says it can apply. A resident with a full reserve
         # idles by proposing no major action; do not publish a rest choice that

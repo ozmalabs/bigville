@@ -668,6 +668,22 @@ def check_consistency():
         errors.append(f"HEATING: fuel_type '{HEATING['fuel_type']}' is not an INPUT_TYPE with any member item")
     if float(HEATING["base_burn"]) < 0 or float(HEATING["unheated_chill"]) < 0:
         errors.append("HEATING: base_burn and unheated_chill must not be negative")
+    # Phase 006: the household-work scoring table. Its thresholds and weights are non-negative, and its
+    # night-soil kind is an item that any open recipe consuming it names (so a pack with no night soil
+    # and no such recipe is still clean).
+    for key in ("fuel_low_units", "night_soil_high_units"):
+        if float(HOUSEHOLD_WORK[key]) <= 0:
+            errors.append(f"HOUSEHOLD_WORK: {key} must be above zero")
+    for key, weight in HOUSEHOLD_WORK["weights"].items():
+        if float(weight) < 0:
+            errors.append(f"HOUSEHOLD_WORK: weight '{key}' must not be negative")
+    if set(HOUSEHOLD_WORK["weights"]) != {"fuel_cold", "fuel_low", "night_soil_high"}:
+        errors.append("HOUSEHOLD_WORK: weights must name fuel_cold, fuel_low and night_soil_high")
+    for r in RECIPES:
+        if r.get("open") and any(kind == HOUSEHOLD_WORK["night_soil_kind"] for kind, _ in r["in"]) \
+                and HOUSEHOLD_WORK["night_soil_kind"] not in ITEMS:
+            errors.append(f"HOUSEHOLD_WORK: night_soil_kind '{HOUSEHOLD_WORK['night_soil_kind']}' "
+                          f"is not an ITEM, but open recipe '{r['name']}' consumes it")
     for kind in SLAUGHTER_PRODUCTS:
         ref(kind, "SLAUGHTER_PRODUCTS")
     _flows, _notes, streams = _balance_flows(BALANCE_SCENARIO)
