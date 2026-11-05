@@ -819,7 +819,14 @@ features set aside as out of scope are added, ported from their seeds (034-039).
 
 ## Phase 020 -- Validate before claiming the action slot; refuse malformed proposals
 
-**Status:** ready
+**Status:** done (see History). `major_action` claims the slot per attempt and releases it, with the
+turn record, on any refusal (claim-then-release rather than reordering every primitive); a short
+fiscal payer keeps the slot because arrears are recorded. `_enact_plan` and the major actions return
+False for missing, mistyped or unknown values; wrong-species milking/shearing return 0.0; `sell` and
+`sell_labor` removed. `BigvilleGame` contains one actor's failure (`last_errors`). Parity sweep: 4,202
+published options (move, work, eat) all enact. Open: public `enact_plan` still raises on a non-dict
+plan (next to the other session's hunk); partial responses are not rolled back; `last_errors` is not
+in checkpoints (the other session's game_persistence.py).
 
 **Goal.** Make `major_action` consistent: every branch runs its physical checks first and
 claims the slot only for an attempt that will be enacted, so a refused attempt costs nothing.
@@ -1811,3 +1818,4 @@ rearing priors (the backend's); carrying infants.
 | 008 Animal life cycle | done | (this commit) | docs/phases/phase008/PHASE008_REPORT.md -- ageing, breeding in shared enclosures when fed, gestation, death at lifespan; pig lifespan 15 -> 180 months; 546 passed |
 | 010 Death, burial, graveyard | done | (this commit) | docs/phases/phase010/PHASE010_REPORT.md -- corpse item on death, graveyard, dig_grave/bury/make_coffin, unburied-body household risk; Phase 004 layout digest updated for the graveyard site; 571 passed |
 | 011 Fiscal institutions as data | done | (this commit) | docs/phases/phase011/PHASE011_REPORT.md -- 44 seed rules mapped to 9 institutions or the backend; purses, obligations, face-to-face payment and arrears; round_bp; generated seeds 22 -> 31; 609 passed |
+| 020 Validate before claiming the slot | done | (this commit) | docs/phases/phase020/PHASE020_REPORT.md -- refused attempts free the slot; malformed proposals return False; step() contains failures; 809 passed |

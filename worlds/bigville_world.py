@@ -4856,16 +4856,22 @@ class BigvilleWorld:
         return action == "stay"
 
     def _husbandry_yield(self, actor, animal, task):
-        """Perform one data-defined animal-care yield with a period cooldown."""
-        assert actor in self._actors and animal in self._animals
+        """Perform one data-defined animal-care yield with a period cooldown.
+
+        Returns 0.0 for any refusal: an unknown resident, animal or task, a task
+        for another species, a dead animal, a resident not standing with the
+        animal, a cooldown, or an empty product.
+        """
+        if actor not in self._actors or animal not in self._animals or task not in self.E.ANIMAL_HUSBANDRY:
+            return 0.0
         if (self._turn > 0
                 and self.actor_position(actor) != self.map_position_node(self._animals[animal])):
             return 0.0
         spec = self.E.ANIMAL_HUSBANDRY[task]
         an = self._animals[animal]
         aa = self.eng.node(an)["attrs"]
-        assert aa["species"] == spec["species"], f"{task} requires a {spec['species']}"
-        assert float(aa.get("alive", 0.0)) == 1.0, f"{animal} is not alive"
+        if aa["species"] != spec["species"] or float(aa.get("alive", 0.0)) != 1.0:
+            return 0.0
         period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
         epoch_key = f"{task}_epoch"
         last = float(aa.get(epoch_key, -float(spec["cooldown"])))
@@ -4881,14 +4887,23 @@ class BigvilleWorld:
         return amount
 
     def milk(self, milker, cow):
-        if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(milker, "milk"):
-            return 0.0
-        return self._husbandry_yield(milker, cow, "milk")
+        return self._husbandry_act(milker, cow, "milk")
 
     def shear(self, shearer, sheep):
-        if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(shearer, "shear"):
-            return 0.0
-        return self._husbandry_yield(shearer, sheep, "shear")
+        return self._husbandry_act(shearer, sheep, "shear")
+
+    def _husbandry_act(self, actor, animal, task):
+        """One standalone milking or shearing. The slot is claimed only for a yield that happens."""
+        if self._turn == 0 or self._major_dispatch:
+            return self._husbandry_yield(actor, animal, task)
+        result = {"amount": 0.0}
+
+        def attempt():
+            result["amount"] = self._husbandry_yield(actor, animal, task)
+            return result["amount"] > 0.0
+
+        self._claimed_attempt(actor, task, attempt)
+        return result["amount"]
 
     def _draw_village_water(self):
         """Draw one period's renewable water yield into the physical store."""
@@ -7015,26 +7030,40 @@ class BigvilleWorld:
         return self._enact_plan(actor, plan)
 
     def _enact_plan(self, actor, plan):
-        """Shared physical enactment for Ocelot and arbitrary cognition backends."""
-        if plan["action"] == "give":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+        """Shared physical enactment for Ocelot and arbitrary cognition backends.
+
+        A proposal with a missing key, a value of the wrong type, or a target
+        this resident does not have is refused with False. Nothing here raises
+        for backend input; the checks in ``major_action`` decide every refusal.
+        """
+        if actor not in self._actors or not isinstance(plan, dict):
+            return False
+        action = plan.get("action")
+        targets = self._actor_targets.get(actor, {})
+
+        def target_of(key="target"):
+            name = self._as_key(plan.get(key, ""))
+            return targets.get(name) if name is not None else None
+
+        if action == "give":
+            target = target_of()
             if target in self._actors:
                 return self.major_action(actor, "give", recipient=target,
-                                         kind=plan["kind"], amount=plan.get("amount", 1.0))
+                                         kind=plan.get("kind"), amount=plan.get("amount", 1.0))
             # A shop is not a physical recipient. Purchase intent, speech,
             # acceptance, and any payment are choices owned by cognition.
             return False
-        if plan["action"] in {"transfer", "take"}:
-            if plan["action"] == "transfer":
-                recipient = plan.get("recipient") or self._actor_targets[actor].get(plan.get("target", ""))
+        if action in {"transfer", "take"}:
+            if action == "transfer":
+                recipient = plan.get("recipient") or target_of()
                 return self.major_action(actor, "transfer", source=actor,
                                          recipient=recipient, kind=plan.get("kind"),
                                          amount=plan.get("amount", 1.0))
             return self.major_action(
-                actor, plan["action"], source=plan.get("source"),
+                actor, action, source=plan.get("source"),
                 recipient=plan.get("recipient"), kind=plan.get("kind"),
                 amount=plan.get("amount", 1.0))
-        if plan["action"] == "rest":
+        if action == "rest":
             # Rest is a real major action, but a healthy resident's default
             # idle option is not a physical rest event.  This prevents every
             # unoccupied turn from consuming the slot while preserving rest
@@ -7042,43 +7071,46 @@ class BigvilleWorld:
             if self.stamina_reserve(actor) >= 0.8:
                 return False
             return self.major_action(actor, "rest", amount=1.0)
-        if plan["action"] == "eat":
-            equipment = self._serving_equipment(actor, plan["kind"])
-            kwargs = {"kind": plan["kind"]}
+        if action == "eat":
+            kind = plan.get("kind")
+            if not isinstance(kind, str):
+                return False
+            equipment = self._serving_equipment(actor, kind)
+            kwargs = {"kind": kind}
             if equipment is not None:
                 kwargs.update(vessel=equipment[0], utensil=equipment[1])
             return self.major_action(actor, "eat", **kwargs)
-        if plan["action"] == "work":
-            return self.major_action(actor, "start", action_name=plan["recipe"])
-        if plan["action"] == "move":
+        if action == "work":
+            return self.major_action(actor, "start", action_name=plan.get("recipe"))
+        if action == "move":
             target = plan.get("destination")
             if target is None:
-                target = self._actor_targets[actor].get(plan.get("target", ""))
+                target = target_of()
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
-        if plan["action"] == "move_object":
+        if action == "move_object":
             return self.major_action(actor, "move_object",
                                      object_id=plan.get("object_id", plan.get("item")),
                                      destination=plan.get("destination", plan.get("target")))
-        if plan["action"] == "put":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+        if action == "put":
+            target = target_of()
             if target is not None:
-                return self.major_action(actor, "put", container=target, kind=plan["kind"], amount=1.0)
-        if plan["action"] == "fetch":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+                return self.major_action(actor, "put", container=target, kind=plan.get("kind"), amount=1.0)
+        if action == "fetch":
+            target = target_of()
             source = target if target in self._containers else None
-            return self.major_action(actor, "fetch", kind=plan["kind"], amount=1.0, source=source)
-        if plan["action"] == "tend_animals":
-            target = plan.get("animal") or self._actor_targets[actor].get(plan.get("target", ""))
+            return self.major_action(actor, "fetch", kind=plan.get("kind"), amount=1.0, source=source)
+        if action == "tend_animals":
+            target = self._as_key(plan.get("animal")) or target_of()
             if target in self._animals:
                 destination = self.map_position_node(self._animals[target])
                 if destination is not None and self.actor_position(actor) != destination:
                     return self.major_action(actor, "move", destination=destination)
-                return self.major_action(actor, "tend_animals", animal=target, task=plan["kind"])
+                return self.major_action(actor, "tend_animals", animal=target, task=plan.get("kind"))
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
-        if plan["action"] == "build":
-            target = plan.get("project") or self._actor_targets[actor].get(plan.get("target", ""))
+        if action == "build":
+            target = self._as_key(plan.get("project")) or target_of()
             if target in self._building_projects:
                 cells = list(self.eng.neighbours(self._building_projects[target], "at_cell"))
                 destination = self.map_position_node(cells[0]) if cells else None
@@ -7087,8 +7119,8 @@ class BigvilleWorld:
                 return self.major_action(actor, "build", project=target, labour=1.0)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
-        if plan["action"] == "maintain":
-            target = plan.get("name") or self._actor_targets[actor].get(plan.get("target", ""))
+        if action == "maintain":
+            target = self._as_key(plan.get("name")) or target_of()
             if target in self._infrastructure:
                 destination = self.map_position_node(self._infrastructure[target])
                 if destination is not None and self.actor_position(actor) != destination:
@@ -7096,8 +7128,8 @@ class BigvilleWorld:
                 return self.major_action(actor, "maintain", name=target, labour=1.0)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
-        if plan["action"] == "care":
-            target = plan.get("patient") or self._actor_targets[actor].get(plan.get("target", ""))
+        if action == "care":
+            target = self._as_key(plan.get("patient")) or target_of()
             if target in self._actors:
                 destination = self.actor_position(target)
                 if destination is not None and self.actor_position(actor) != destination:
@@ -7105,16 +7137,16 @@ class BigvilleWorld:
                 return self.major_action(actor, "care", patient=target)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
-        if plan["action"] in {"water", "harvest", "sow", "fertilise"}:
-            target = self._actor_targets[actor].get(plan.get("target", ""))
-            if plan["action"] in {"water", "harvest"}:
-                crop_node = plan.get("crop_node")
+        if action in {"water", "harvest", "sow", "fertilise"}:
+            target = target_of()
+            if action in {"water", "harvest"}:
+                crop_node = self._as_key(plan.get("crop_node"))
                 if crop_node is not None and crop_node in {int(node) for node in self._crops.values()}:
                     target = crop_node
             elif plan.get("sow_kind") and plan.get("land"):
                 target = (plan["sow_kind"], plan["land"])
             if target is not None:
-                return self.major_action(actor, plan["action"], target=target)
+                return self.major_action(actor, action, target=target)
         return False
 
     def resolve_actor_turn(self):
@@ -7428,206 +7460,253 @@ class BigvilleWorld:
             self.eng.set_attr(self._actor(name), "major_action_used", 0.0)
             self.eng.set_attr(self._actor(name), "major_action_kind", "")
 
+    @staticmethod
+    def _as_key(value):
+        """A name or node reference from a backend proposal, else None (no bools, no empty names)."""
+        if isinstance(value, bool) or not isinstance(value, (str, int)) or value == "":
+            return None
+        return value
+
+    @staticmethod
+    def _as_amount(value):
+        """A finite real number from a backend proposal, else None (no bools, no numeric strings)."""
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            return None
+        return float(value)
+
+    def _known_ref(self, value, type_name=None):
+        """Whether `value` is a node of this world (of `type_name`, when given)."""
+        if isinstance(value, bool) or not isinstance(value, int):
+            return False
+        try:
+            record = self.eng.node(value)
+        except (KeyError, TypeError, ValueError):
+            return False
+        return type_name is None or record["type"] == type_name
+
+    def _walked_toward(self, actor, destination):
+        """Start one step toward ``destination``. Once the move is under way it always uses the slot:
+        terrain and load cost effort and may hold the walker on a cooldown with no change of cell."""
+        self.move_actor(actor, destination)
+        return True
+
+    def _rested(self, actor, amount):
+        """A rest is always enacted once claimed; the return value is the reserve, not a refusal."""
+        self.rest(actor, amount)
+        return True
+
+    def _claimed_attempt(self, actor, kind, attempt, *, consumed=None):
+        """Run one major-action attempt inside the actor's turn slot.
+
+        The slot is claimed for the attempt. A refused attempt (``attempt``
+        returns False) releases the claim and its turn record, so the actor's
+        turn state and history are as they were before. ``consumed``, when
+        given, names a refusal that still used the slot because the world
+        recorded a consequence (an unpaid obligation's arrears). If ``attempt``
+        raises, the claim is released and the exception propagates.
+        """
+        attrs = self.eng.node(self._actor(actor))["attrs"]
+        before = {"major_action_used": attrs.get("major_action_used", 0.0),
+                  "major_action_kind": attrs.get("major_action_kind", ""),
+                  "last_major_action": attrs.get("last_major_action", "")}
+        if not self._claim_major_action(actor, kind):
+            return False
+        record = self._turn_actions[actor][-1]
+        old_dispatch = self._major_dispatch
+        self._major_dispatch = True
+        try:
+            enacted = bool(attempt())
+        except Exception:
+            self._release_major_action(actor, before, record)
+            raise
+        finally:
+            self._major_dispatch = old_dispatch
+        if not enacted and not (consumed is not None and consumed()):
+            self._release_major_action(actor, before, record)
+        return enacted
+
+    def _release_major_action(self, actor, before, record):
+        node = self._actor(actor)
+        for key, value in before.items():
+            self.eng.set_attr(node, key, value)
+        turns = self._turn_actions.get(actor, [])
+        if record in turns:
+            turns.remove(record)
+        self.eng.remove_node(record)
+
     def major_action(self, actor, action, *args, **kwargs):
         """Dispatch one substantial action through the unified turn budget.
+
+        Each attempt runs the same physical checks the primitive runs, and the
+        action slot is held only while the attempt runs. A proposal with a
+        missing or mistyped value, or a target that does not exist, returns
+        False; a refused attempt leaves ``actor_turn_state`` unchanged. An
+        unknown action name is a programming error and raises ``ValueError``.
 
         Existing low-level ``do``/``start`` calls remain useful for scenario
         setup and timed-job tests.  Simulation code should use this method (or
         ``perform_major_action``) so the one-action rule is enforced.
         """
+        if actor not in self._actors:
+            return False
         if action == "move":
             destination = kwargs.get("destination", args[0] if args else None)
             current = self.actor_position(actor)
-            if (destination is None or current is None or destination not in self._map_cells
-                    or self.distance(current, destination) is None
-                    or not self._claim_major_action(actor, "move")):
+            if (not isinstance(destination, (int, tuple)) or current is None or destination not in self._map_cells
+                    or destination == current or self.distance(current, destination) is None):
                 return False
-            return self.move_actor(actor, destination)
+            return self._claimed_attempt(actor, "move", lambda: self._walked_toward(actor, destination))
         if action == "move_object":
-            object_id = kwargs.get("object_id", kwargs.get("item", args[0] if args else None))
-            destination = kwargs.get("destination", kwargs.get("target", args[1] if len(args) > 1 else None))
-            if (object_id is None or destination is None
-                    or not self._claim_major_action(actor, "move_object")):
+            object_id = self._as_key(kwargs.get("object_id", kwargs.get("item", args[0] if args else None)))
+            destination = self._as_key(kwargs.get("destination", kwargs.get("target",
+                                                                             args[1] if len(args) > 1 else None)))
+            if object_id is None or destination is None:
                 return False
-            return self.move_physical_object_as_actor(actor, object_id, destination)
+            return self._claimed_attempt(actor, "move_object", lambda: self.move_physical_object_as_actor(
+                actor, object_id, destination))
         if action == "give":
-            recipient = kwargs.get("recipient", kwargs.get("target", args[0] if args else None))
-            kind = kwargs.get("kind", args[1] if len(args) > 1 else None)
-            amount = kwargs.get("amount", args[2] if len(args) > 2 else 1.0)
-            if (recipient not in self._actors or kind is None
-                    or actor not in self._actors
-                    or not self._physical_transfer_precheck(actor, recipient, kind, amount)
-                    or not self._claim_major_action(actor, "give")):
+            recipient = self._as_key(kwargs.get("recipient", kwargs.get("target", args[0] if args else None)))
+            kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
+            amount = self._as_amount(kwargs.get("amount", args[2] if len(args) > 2 else 1.0))
+            if (recipient not in self._actors or kind is None or amount is None
+                    or not self._physical_transfer_precheck(actor, recipient, kind, amount)):
                 return False
-            return self._physical_transfer(actor, recipient, kind, amount)
+            return self._claimed_attempt(actor, "give", lambda: self._physical_transfer(
+                actor, recipient, kind, amount))
         if action == "transfer":
-            source = kwargs.get("source", args[0] if args else None)
-            recipient = kwargs.get("recipient", args[1] if len(args) > 1 else None)
-            kind = kwargs.get("kind", args[2] if len(args) > 2 else None)
-            amount = kwargs.get("amount", args[3] if len(args) > 3 else 1.0)
-            if (source is None or recipient is None or kind is None
+            source = self._as_key(kwargs.get("source", args[0] if args else None))
+            recipient = self._as_key(kwargs.get("recipient", args[1] if len(args) > 1 else None))
+            kind = self._as_key(kwargs.get("kind", args[2] if len(args) > 2 else None))
+            amount = self._as_amount(kwargs.get("amount", args[3] if len(args) > 3 else 1.0))
+            if (source is None or recipient is None or kind is None or amount is None
                     or actor != source
-                    or not self._physical_transfer_precheck(source, recipient, kind, amount)
-                    or not self._claim_major_action(actor, action)):
+                    or not self._physical_transfer_precheck(source, recipient, kind, amount)):
                 return False
-            return self._physical_transfer(source, recipient, kind, amount)
+            return self._claimed_attempt(actor, "transfer", lambda: self._physical_transfer(
+                source, recipient, kind, amount))
         if action == "take":
             # A resident's carried stock is not unattended merely because a
             # backend can name its holder.  Taking held goods needs an explicit
             # contested physical mechanism; this action does not invent one.
             return False
         if action == "put":
-            container = kwargs.get("container", args[0] if args else None)
-            kind = kwargs.get("kind", args[1] if len(args) > 1 else None)
-            amount = kwargs.get("amount", args[2] if len(args) > 2 else 1.0)
-            if container is None or kind is None or not self._claim_major_action(actor, "put"):
+            container = self._as_key(kwargs.get("container", args[0] if args else None))
+            kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
+            amount = self._as_amount(kwargs.get("amount", args[2] if len(args) > 2 else 1.0))
+            if container not in self._containers or kind is None or amount is None:
                 return False
-            self._major_dispatch = True
-            try:
-                return self.put(actor, container, kind, amount)
-            finally:
-                self._major_dispatch = False
+            return self._claimed_attempt(actor, "put", lambda: self.put(actor, container, kind, amount))
         if action == "pick_up":
-            item = kwargs.get("item", args[0] if args else None)
-            if item is None or not self._claim_major_action(actor, "pick_up"):
+            item = self._as_key(kwargs.get("item", args[0] if args else None))
+            if not self._known_ref(item):
                 return False
-            self._major_dispatch = True
-            try:
-                return self.pick_up(actor, item)
-            finally:
-                self._major_dispatch = False
+            return self._claimed_attempt(actor, "pick_up", lambda: self.pick_up(actor, item))
         if action == "drop":
-            item = kwargs.get("item", args[0] if args else None)
-            if item is None or not self._claim_major_action(actor, "drop"):
+            item = self._as_key(kwargs.get("item", args[0] if args else None))
+            if not self._known_ref(item):
                 return False
-            self._major_dispatch = True
-            try:
-                return self.drop_item(actor, item)
-            finally:
-                self._major_dispatch = False
-        if action == "sell":
-            trade = kwargs.get("trade", args[0] if args else None)
-            kind = kwargs.get("kind", args[1] if len(args) > 1 else None)
-            amount = kwargs.get("amount", args[2] if len(args) > 2 else 1.0)
-            if not self._claim_major_action(actor, action):
-                return False
-            self._major_dispatch = True
-            try:
-                return self.sell_to_shop(actor, trade, kind, amount)
-            finally:
-                self._major_dispatch = False
-        if action == "sell_labor":
-            if not self._claim_major_action(actor, action):
-                return False
-            return self.sell_labor(actor, kwargs.get("trade", args[0] if args else None),
-                                   kwargs.get("amount", args[1] if len(args) > 1 else 2.0))
+            return self._claimed_attempt(actor, "drop", lambda: self.drop_item(actor, item))
         if action == "eat":
-            if not self._claim_major_action(actor, "eat"):
-                return False
-            self._major_dispatch = True
-            try:
-                return self.eat(actor, kwargs.get("kind", args[0] if args else None),
-                                vessel=kwargs.get("vessel"), utensil=kwargs.get("utensil"),
-                                source=kwargs.get("source"))
-            finally:
-                self._major_dispatch = False
-        if action == "rest":
-            if not self._claim_major_action(actor, "rest"):
-                return False
-            return self.rest(actor, kwargs.get("amount", args[0] if args else 1.0))
-        if action == "fetch":
             kind = kwargs.get("kind", args[0] if args else None)
-            amount = kwargs.get("amount", args[1] if len(args) > 1 else 1.0)
+            if kind is not None and not isinstance(kind, str):
+                return False
             source = kwargs.get("source")
-            if kind is None or not self._claim_major_action(actor, "fetch"):
+            if source is not None and self._as_key(source) is None:
                 return False
-            self._major_dispatch = True
-            try:
-                return self.fetch(actor, kind, amount, source=source)
-            finally:
-                self._major_dispatch = False
+            vessel, utensil = kwargs.get("vessel"), kwargs.get("utensil")
+            return self._claimed_attempt(actor, "eat", lambda: self.eat(
+                actor, kind, vessel=vessel, utensil=utensil, source=source))
+        if action == "rest":
+            amount = self._as_amount(kwargs.get("amount", args[0] if args else 1.0))
+            if amount is None or amount <= 0.0:
+                return False
+            return self._claimed_attempt(actor, "rest", lambda: self._rested(actor, amount))
+        if action == "fetch":
+            kind = self._as_key(kwargs.get("kind", args[0] if args else None))
+            amount = self._as_amount(kwargs.get("amount", args[1] if len(args) > 1 else 1.0))
+            raw_source = kwargs.get("source")
+            source = None if raw_source is None else self._as_key(raw_source)
+            if kind is None or amount is None or (raw_source is not None and source not in self._containers):
+                return False
+            return self._claimed_attempt(actor, "fetch", lambda: self.fetch(actor, kind, amount, source=source))
         if action == "build":
-            project = kwargs.get("project", args[0] if args else None)
-            labour = kwargs.get("labour", args[1] if len(args) > 1 else 1.0)
-            if project is None or not self._claim_major_action(actor, "build"):
+            project = self._as_key(kwargs.get("project", args[0] if args else None))
+            labour = self._as_amount(kwargs.get("labour", args[1] if len(args) > 1 else 1.0))
+            if project not in self._building_projects or labour is None:
                 return False
-            self._major_dispatch = True
-            try:
-                return self.advance_building(project, actor, labour=labour) is not None
-            finally:
-                self._major_dispatch = False
+            return self._claimed_attempt(actor, "build", lambda: self.advance_building(
+                project, actor, labour=labour) is not None)
         if action == "maintain":
-            name = kwargs.get("name", args[0] if args else None)
-            labour = kwargs.get("labour", args[1] if len(args) > 1 else 1.0)
-            if name is None or not self._claim_major_action(actor, "maintain"):
+            name = self._as_key(kwargs.get("name", args[0] if args else None))
+            labour = self._as_amount(kwargs.get("labour", args[1] if len(args) > 1 else 1.0))
+            if name not in self._infrastructure or labour is None:
                 return False
-            self._major_dispatch = True
-            try:
-                return self.maintain_infrastructure(actor, name, labour=labour)
-            finally:
-                self._major_dispatch = False
+            return self._claimed_attempt(actor, "maintain", lambda: self.maintain_infrastructure(
+                actor, name, labour=labour))
         if action == "care":
-            patient = kwargs.get("patient", args[0] if args else None)
-            if patient is None or not self._claim_major_action(actor, "care"):
+            patient = self._as_key(kwargs.get("patient", args[0] if args else None))
+            if patient not in self._actors:
                 return False
-            self._major_dispatch = True
-            try:
-                return self.care_for(actor, patient)
-            finally:
-                self._major_dispatch = False
+            return self._claimed_attempt(actor, "care", lambda: self.care_for(actor, patient))
         if action == "tend_animals":
-            animal = kwargs.get("animal", args[0] if args else None)
-            task = kwargs.get("task", args[1] if len(args) > 1 else "milk")
-            if animal is None or animal not in self._animals or not self._claim_major_action(actor, "tend_animals"):
+            animal = self._as_key(kwargs.get("animal", args[0] if args else None))
+            task = self._as_key(kwargs.get("task", args[1] if len(args) > 1 else "milk"))
+            if animal not in self._animals or task not in self.E.ANIMAL_HUSBANDRY:
                 return False
-            self._major_dispatch = True
-            try:
-                if task not in self.E.ANIMAL_HUSBANDRY:
-                    return False
-                return self._husbandry_yield(actor, animal, task) > 0.0
-            finally:
-                self._major_dispatch = False
+            return self._claimed_attempt(actor, "tend_animals",
+                                         lambda: self._husbandry_yield(actor, animal, task) > 0.0)
         if action in ("work", "make", "start"):
-            recipe = kwargs.get("action_name", kwargs.get("recipe", args[0] if args else None))
-            if recipe is None:
+            recipe = self._as_key(kwargs.get("action_name", kwargs.get("recipe", args[0] if args else None)))
+            if recipe is None or not self._can_attempt(actor, recipe):
                 return False
             operation = self.start if action == "start" else self.do
-            if not self._can_attempt(actor, recipe):
-                return False
-            if not self._claim_major_action(actor, action):
-                return False
-            self._major_dispatch = True
-            try:
-                return operation(actor, recipe)
-            finally:
-                self._major_dispatch = False
+            return self._claimed_attempt(actor, action, lambda: operation(actor, recipe))
         if action in {"water", "harvest", "sow", "fertilise"}:
             target = kwargs.get("target", args[0] if args else None)
-            if not self._claim_major_action(actor, action):
+            if action == "sow":
+                crop, land = (target if isinstance(target, tuple) and len(target) == 2 else (None, None))
+                crop, land = self._as_key(crop), self._as_key(land)
+                if crop not in self.E.CROPS or land not in self._land:
+                    return False
+                return self._claimed_attempt(actor, "sow", lambda: self.sow(actor, crop, land=land) is not None)
+            if action == "fertilise":
+                land = self._as_key(target)
+                amount = kwargs.get("amount")
+                if land not in self._land or (amount is not None and self._as_amount(amount) is None):
+                    return False
+                return self._claimed_attempt(actor, action, lambda: self.fertilise(actor, land, amount) > 0.0)
+            crop_node = self._as_key(target)
+            if not self._known_ref(crop_node, "Crop"):
                 return False
-            self._major_dispatch = True
-            try:
-                if action == "fertilise":
-                    return self.fertilise(actor, target, kwargs.get("amount")) > 0.0
-                if action == "water":
-                    return self.water_crop(actor, target)
-                if action == "harvest":
-                    return bool(self.harvest_crop(target, harvester=actor))
-                crop, land = target
-                return self.sow(actor, crop, land=land) is not None
-            finally:
-                self._major_dispatch = False
+            if action == "water":
+                return self._claimed_attempt(actor, action, lambda: self.water_crop(actor, crop_node))
+            return self._claimed_attempt(actor, action, lambda: bool(self.harvest_crop(crop_node, harvester=actor)))
         if action in ("pay_obligation", "collect", "deliver_collected"):
             obligation = kwargs.get("obligation", args[0] if args else None)
-            if self._obligation_attrs(obligation) is None or not self._claim_major_action(actor, action):
+            if isinstance(obligation, bool) or not isinstance(obligation, int):
                 return False
-            if action == "pay_obligation":
-                return self.pay_obligation(actor, obligation)
-            if action == "collect":
-                return self.collect(actor, obligation)
-            return self.deliver_collected(actor, obligation, kwargs.get("share_bp", args[1] if len(args) > 1 else 10000))
+            attrs = self._obligation_attrs(obligation)
+            if attrs is None:
+                return False
+            if action == "deliver_collected":
+                share_bp = kwargs.get("share_bp", args[1] if len(args) > 1 else 10000)
+                if isinstance(share_bp, bool) or not isinstance(share_bp, int):
+                    return False
+                return self._claimed_attempt(actor, action, lambda: self.deliver_collected(
+                    actor, obligation, share_bp))
+            # A short payer records arrears: a consequence of this attempt, so the slot stays used.
+            arrears_before = float(attrs["arrears"])
+            attempt = self.pay_obligation if action == "pay_obligation" else self.collect
+            return self._claimed_attempt(
+                actor, action, lambda: attempt(actor, obligation),
+                consumed=lambda: float(self._obligation_attrs(obligation)["arrears"]) > arrears_before)
         if action == "complete_request":
             request = kwargs.get("request", args[0] if args else None)
+            if isinstance(request, str):
+                if request not in self._requests:
+                    return False
+            elif not self._known_ref(request):
+                return False
             return self.complete_request(actor, request, result=kwargs.get("result", ""))
         raise ValueError(f"unknown major action: {action}")
 

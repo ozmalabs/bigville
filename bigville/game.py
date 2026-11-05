@@ -75,6 +75,7 @@ class BigvilleGame:
         self._sync_animal_backends()
         self.last_responses: dict[str, ActorResponse] = {}
         self.last_results: dict[str, bool] = {}
+        self.last_errors: dict[str, str] = {}
 
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
@@ -700,6 +701,18 @@ class BigvilleGame:
         character.memories.append(record)
         return record
 
+    def _apply_response_contained(self, actor: str, response: ActorResponse) -> bool:
+        """Apply one actor's response. A failure makes only this actor's result False.
+
+        The error is kept in ``last_errors`` so the turn report can show it; the
+        other actors' responses still apply and the turn completes.
+        """
+        try:
+            return self._apply_response(actor, response)
+        except Exception as exc:  # one resident's failed proposal must not stop the turn
+            self.last_errors[actor] = f"{type(exc).__name__}: {exc}"
+            return False
+
     def step(self) -> dict:
         """Advance one shared turn, or return waiting for human input."""
         # Period changes happen only after a successful turn, below. Publish
@@ -731,6 +744,7 @@ class BigvilleGame:
         self.animal_turn()
         self.last_responses = responses
         self.last_results = {}
+        self.last_errors = {}
         for actor, response in responses.items():
             # Avoid actor-by-actor world scans in the common object-free
             # town. With objects present, only the actor and residents
@@ -744,7 +758,7 @@ class BigvilleGame:
                             and self.world.distance(actor_pos, other_pos) is not None
                             and self.world.distance(actor_pos, other_pos) <= 1)):
                         before[name] = self._visible_object_snapshot(name)
-            result = self._apply_response(actor, response)
+            result = self._apply_response_contained(actor, response)
             self.last_results[actor] = result
             if result and before:
                 after = {name: self._visible_object_snapshot(name) for name in before}
