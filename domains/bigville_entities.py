@@ -958,10 +958,9 @@ TERRAIN_WEAR = {
 
 
 # ---------------------------------------------------------------- SHARED REFERENCES
-# A reference is a subject/predicate/object TEMPLATE in the domain data. It is not itself a town fact:
-# when seeded, the world creates a resident-owned fact/reference node. `seed_roles` is an initial
-# knowledge distribution, not a truth restriction: a resident can learn any reference later by being
-# told, observing it, or reading it. "*" means the fact is ordinarily public once its office exists.
+# A reference is a physical subject/predicate/object template in domain data, not a town fact or
+# resident belief. `seed_roles` is retained as authoring metadata for character setup tools; the
+# physical world must not infer knowledge from role or population composition.
 SHARED_CONCEPTS = [
     {"name": "grain_in_granary",
      "reference": {"subject": "grain", "predicate": "stored_in", "object": "granary"},
@@ -1175,7 +1174,7 @@ def all_reference_templates():
 
 
 def shared_concepts_for(role, present_roles=None):
-    """Return the references initially seeded to a resident in `role`."""
+    """Legacy authoring helper; world construction must not use it to assign beliefs."""
     present = set(present_roles or ())
     return [c for c in all_reference_templates()
             if ("*" in c.get("seed_roles", ()) or role in c.get("seed_roles", ()))

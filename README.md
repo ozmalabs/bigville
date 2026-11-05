@@ -7,6 +7,12 @@ cognition. Actors are driven through a backend boundary: Ocelot, a human UI,
 the deterministic game backend, or a future LLM backend can all propose the
 same validated actions.
 
+Recipe work follows that boundary too: the world publishes physically legal
+recipes and validates explicit craft actions. It does not infer an actor's
+demand beliefs, choose a recipe, or size a production run from town-wide
+signals. Those expectations and choices belong to the actor's cognition
+backend.
+
 The public API is in `bigville/`:
 
 ```python
@@ -109,6 +115,43 @@ Common hand-held objects use a separate detailed atlas and are anchored to the
 walking hand rather than floating at a fixed map offset.
 
 ## Cognition backends
+
+`simple` (also spelled `cheap` for compatibility) selects the lightweight
+deterministic NPC backend, suitable for low-cost residents and animal-style
+policies. Selecting `ocelot` requires Ocelot's actual
+`worlds.bigville_ocelot_adapter.BigvilleOcelotResident` and its dependencies;
+the session raises `OcelotUnavailableError` instead of using a local fallback.
+Put both repositories on `PYTHONPATH`. The current Ocelot adapter also reads
+some seed files relative to the working directory, so run from the Ocelot
+checkout. Scenario-authored backend choices take precedence over the default.
+
+`BigvilleWorld.tick()` advances physical time and does not choose resident or
+animal policies. `BigvilleGame` owns resident and animal backends, invokes them
+for a successful turn, and submits their proposed actions to world-side
+physical validation. The world publishes animal actions from adjacent legal
+movement, reachable stocked feed, and available herding targets; hunger and
+species preferences are backend motivations. Feeding consumes stock only when
+the animal is within physical reach. For an unattended run, pass `autonomous=True` to `create_game`; Game sessions
+advance metabolism and ecology once per 96 successful turns by default; set
+`ticks_per_period` to another positive integer or `None` to manage periods
+externally. A waiting human does not advance time. Residents must still acquire
+and eat food through physical actions.
+
+Scenarios can customise the deterministic policy using a backend factory and
+`SimplePolicy`, both without changing world rules. For example:
+
+```python
+from bigville.backends import DeterministicBackend, SimplePolicy
+
+factories = {"simple": lambda world, character: DeterministicBackend(
+    character, policy=SimplePolicy(action_bonuses={"inspect": 50}))}
+game = create_game(scenario="my_scenario", default_backend="simple",
+                   backend_factories=factories, autonomous=True)
+```
+
+The bonus applies only when the world offers `inspect`; it does not create an
+affordance or bypass physical admissibility. Scenario-authored backend choices
+still override `default_backend`.
 
 `DeterministicBackend` is the cheap, repeatable NPC backend. It maintains
 needs-driven goals, changes priorities across morning/workday/evening/night,

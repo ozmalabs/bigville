@@ -1,10 +1,11 @@
-from .cheap import CheapBackend, DeterministicBackend, NPCGoal
+from .cheap import (CheapBackend, DeterministicBackend, NPCGoal, SimplePolicy,
+                    register_simple_profile, simple_policy_for, simple_profile_names)
 from .animal import AnimalNPCBackend
 from .conversation import ConversationMessage, TemplateConversationInterface
 from .human import HumanBackend
 from .llm import LLMBackend, LLMProvider
 from .prompts import PromptBuilder, PromptRecord, build_prompt
-from .ocelot import OcelotBackend
+from .ocelot import OcelotBackend, OcelotUnavailableError
 from .protocol import (ActorContext, ActorContinuation, ActorResponse, CognitionBackend,
                        ProposedAction, SpeechProposal, communication_capabilities)
 
@@ -16,6 +17,10 @@ __all__ = [
     "CheapBackend",
     "DeterministicBackend",
     "NPCGoal",
+    "SimplePolicy",
+    "register_simple_profile",
+    "simple_policy_for",
+    "simple_profile_names",
     "ConversationMessage",
     "CognitionBackend",
     "HumanBackend",
@@ -25,6 +30,7 @@ __all__ = [
     "PromptRecord",
     "build_prompt",
     "OcelotBackend",
+    "OcelotUnavailableError",
     "ProposedAction",
     "SpeechProposal",
     "TemplateConversationInterface",

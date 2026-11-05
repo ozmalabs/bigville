@@ -27,7 +27,46 @@ class AnimalNPCBackend:
         self.last_choice = {}
 
     def decide(self, context: ActorContext) -> ActorResponse:
-        choice = self.model.choose(context, list(context.affordances))
+        # Urgency and species-specific duties are animal motivations. The
+        # world only supplies actions that are physically available.
+        hunger = max(0.0, float((context.observations or {}).get("hunger", 0.0)))
+        insecurity = max(0.0, float((context.observations or {}).get("insecurity", 0.0)))
+        observations = context.observations or {}
+        current = observations.get("position")
+        enclosure_cells = [tuple(cell) for cell in observations.get("enclosure_cells", ())]
+        preferred_targets = set(self.setup.get("preferred_targets", ()))
+        options = []
+        for option in context.affordances:
+            option = dict(option)
+            if option.get("action") == "eat":
+                option["score"] = 30.0 * min(1.0, hunger / 2.0)
+            elif option.get("action") == "move":
+                option["score"] = 35.0 * min(1.0, insecurity)
+                # Pick among legal adjacent steps using observed enclosure
+                # geometry; the world does not choose a recovery destination.
+                target = tuple(option.get("target", ()))
+                if insecurity and target and enclosure_cells:
+                    current_distance = min(abs(current[0] - x) + abs(current[1] - y)
+                                           for x, y in enclosure_cells) if current else 0
+                    next_distance = min(abs(target[0] - x) + abs(target[1] - y)
+                                        for x, y in enclosure_cells)
+                    option["score"] += 12.0 * (current_distance - next_distance)
+            elif option.get("action") == "herd":
+                # A working dog is more likely to tend its preferred stock,
+                # especially when it observes an animal beyond an intact pen.
+                preferred = option.get("target_species") in preferred_targets
+                target_pos = option.get("target_position")
+                target_pen = {tuple(cell) for cell in option.get("enclosure_cells", ())}
+                escaped = bool(
+                    option.get("enclosure_intact")
+                    and target_pos is not None
+                    and tuple(target_pos) not in target_pen
+                )
+                option["score"] = (24.0 if (preferred and escaped) else -4.0)
+                if preferred and escaped:
+                    option["score"] += 24.0
+            options.append(option)
+        choice = self.model.choose(context, options)
         if choice is None:
             return ActorResponse()
         self.last_choice = dict(choice)

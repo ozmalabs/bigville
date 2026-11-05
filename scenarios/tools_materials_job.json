@@ -1,0 +1,14 @@
+{
+  "id": "tools_materials_job",
+  "name": "Smithing materials and tool control",
+  "description": "One simple-backend smith with finite inputs and a hammer-dependent timed recipe.",
+  "map": {
+    "grid": [["floor", "floor", "floor"], ["floor", "floor", "floor"], ["floor", "floor", "floor"]],
+    "layout": {"w": 3, "h": 3, "homes": [[1, 1]]}
+  },
+  "actors": [
+    {"name": "Smith", "role": "smith", "skill": 0.9, "backend": "simple", "simple_profile": "pkg7.smith", "home_cell": [1, 1], "recipe_priors": ["forge_nails"]}
+  ],
+  "initial": {"hour": 8.0, "weather": "clear", "temperature": 15.0},
+  "metadata": {"domain": "physical_craft", "package": 7, "recipe": "forge_nails", "required_tool": "hammer"}
+}

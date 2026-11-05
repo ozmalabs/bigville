@@ -1,0 +1,20 @@
+{
+  "id": "work_food_exchange",
+  "name": "Work, Food and Exchange",
+  "description": "A farmer, carrier and consumer share a finite crop output through physical actions.",
+  "map": {
+    "grid": [["floor", "floor", "floor"], ["floor", "floor", "floor"], ["floor", "floor", "floor"]],
+    "layout": {"w": 3, "h": 3, "homes": [[1, 1]], "farms": [[1, 1]], "work": {"farm": [1, 1], "market": [2, 1]}}
+  },
+  "actors": [
+    {"name": "Farmer", "role": "farmer", "backend": "simple", "simple_profile": "pkg14.farmer", "home_cell": [1, 1]},
+    {"name": "Carrier", "role": "hand", "backend": "simple", "simple_profile": "pkg14.carrier", "home_cell": [1, 1]},
+    {"name": "Eater", "role": "hand", "backend": "simple", "home_cell": [1, 1]},
+    {"name": "Miller", "role": "miller", "backend": "simple", "simple_profile": "pkg14.miller", "home_cell": [1, 1], "recipe_priors": ["grind_flour"]},
+    {"name": "Baker", "role": "baker", "backend": "simple", "simple_profile": "pkg14.baker", "home_cell": [1, 1], "recipe_priors": ["bake_bread"]}
+  ],
+  "stocks": {"wheat_seed": 1, "water": 6},
+  "initial": {"hour": 8.0, "season": "spring", "weather": "clear", "temperature": 15.0},
+  "physical_subsystems": {"metabolism": true, "ecology": true, "decay": false},
+  "metadata": {"domain": "work_food_exchange", "package": 14, "observation_scope": "actor", "period_every_turns": 2}
+}

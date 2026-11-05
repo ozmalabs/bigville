@@ -264,8 +264,10 @@ class HeldMonopolyExperiment:
             )
             if participant.backend_kind == "ocelot":
                 participant.backend = OcelotBackend(self._backend_world, character)
-            elif participant.backend_kind == "cheap":
+            elif participant.backend_kind in {"cheap", "simple"}:
                 participant.backend = DeterministicBackend(character)
+            else:
+                raise ValueError(f"Unknown backend: {participant.backend_kind}")
 
     @property
     def backends(self):

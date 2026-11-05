@@ -1,0 +1,18 @@
+{
+  "id": "restaurant_room_policy",
+  "name": "Restaurant room policy test",
+  "description": "The Lantern dining room with neutral objects for comparing simple actor choices.",
+  "map": {"grid": [["wall","wall","wall","wall","wall"],["wall","floor","floor","floor","wall"],["wall","floor","floor","floor","wall"],["wall","wall","wall","wall","wall"]], "layout": {"w": 5,"h": 4,"homes": [[2,1],[2,2]]}},
+  "buildings": [],
+  "actors": [
+    {"name":"Ruth","role":"server","backend":"simple","simple_profile":"room_move_cup","home_cell":[2,1]},
+    {"name":"Nell","role":"patron","backend":"simple","simple_profile":"room_refuse","home_cell":[2,2]}
+  ],
+  "physical_objects": [
+    {"id":"water_cup","name":"water cup","kind":"cup","location":"table"},
+    {"id":"menu_card","name":"menu card","kind":"paper card","location":"table"}
+  ],
+  "initial":{"hour":12.0,"weather":"clear","temperature":18.0},
+  "laws":[],"policies":[],"charters":[],
+  "metadata":{"domain":"restaurant_room_policy","scale":"room"}
+}

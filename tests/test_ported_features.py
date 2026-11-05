@@ -3,6 +3,7 @@
 from bigville.backends import ActorContext, CheapBackend
 from bigville.backends.conversation import ConversationMessage, TemplateConversationInterface
 from bigville.character import CharacterDefinition
+from bigville.game import BigvilleGame
 from bigville.runtime import WorldAdapter
 from worlds.bigville_speech_world import BigvilleSpeechWorld, SPEECH_MENU
 from worlds.bigville_world import BigvilleWorld
@@ -32,11 +33,13 @@ def test_seeded_animals_have_species_npcs_and_paddock_fences():
     world = BigvilleWorld.from_town100(autonomous_actors=False)
     assert "village_paddock" in world.enclosures()
     assert len(world._fences) == 16
-    assert len(world._animal_minds) == len(world._animals) == 7
+    assert len(world._animals) == 7
     sanity = world.sanity_report()
     assert sanity["animals_in_enclosures"] == 7
     assert sanity["intact_enclosures"] == 1
-    choices = world.animal_tick()
+    game = BigvilleGame(world, autonomous=True)
+    assert len(game._animal_backends) == len(world._animals)
+    choices = game.animal_turn()
     assert choices["dog_6"]["decision_model"] == "psi_can_weighted"
     assert choices["dog_6"]["can"]["duty"] > 0.0
     assert world.animal_enclosure("dog_6") == "village_paddock"

@@ -1,0 +1,21 @@
+{
+  "id": "simple_resident_food",
+  "name": "Resident and Pantry",
+  "description": "One resident lives beside a small local pantry for a physical food and time loop.",
+  "map": {
+    "grid": [
+      ["wall", "wall", "wall", "wall", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "wall", "wall", "wall", "wall"]
+    ],
+    "layout": {"w": 5, "h": 5, "homes": [[2, 2]]}
+  },
+  "actors": [
+    {"name": "Ada", "role": "hand", "backend": "simple", "home_cell": [2, 2]}
+  ],
+  "initial": {"hour": 7.0, "weather": "clear", "temperature": 18.0},
+  "physical_subsystems": {"metabolism": true, "ecology": false, "decay": false},
+  "metadata": {"experiment": "simple_body_food_time", "observation_scope": "actor"}
+}

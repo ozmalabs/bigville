@@ -1,0 +1,16 @@
+{
+  "id": "crop_water",
+  "name": "Single farmer crop and water loop",
+  "description": "One resident, one arable bed, finite seed and water, spring sowing.",
+  "map": {
+    "grid": [["floor", "floor", "floor"], ["floor", "floor", "floor"], ["floor", "floor", "floor"]],
+    "layout": {"w": 3, "h": 3, "homes": [[1, 1]], "farms": [[1, 1]], "work": {"farm": [1, 1]}}
+  },
+  "buildings": [],
+  "actors": [
+    {"name": "Farmer", "role": "farmer", "backend": "simple", "simple_profile": "pkg8.crop_water", "home_cell": [1, 1]}
+  ],
+  "stocks": {"wheat_seed": 1, "water": 6},
+  "initial": {"hour": 8.0, "season": "spring", "weather": "clear", "temperature": 15.0},
+  "metadata": {"domain": "crop_water", "package": 8, "plot": "farm_plot_00", "crop": "wheat", "period_every_turns": 2}
+}

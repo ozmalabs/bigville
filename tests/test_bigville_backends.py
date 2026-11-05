@@ -70,7 +70,9 @@ def test_deterministic_backend_prefers_a_path_route_between_equal_moves():
 
 def test_deterministic_backend_holds_goals_and_can_speak_structured_meanings():
     character = CharacterDefinition(
-        character_id="Ada", name="Ada", identity={"role": "farmer"})
+        character_id="Ada", name="Ada", identity={"role": "farmer"},
+        memories=[MemoryRecord("recipe:bake_bread", {"recipe": "bake_bread"},
+                               kind="recipe_knowledge", source="scenario_prior")])
     backend = DeterministicBackend(character)
     context = ActorContext(
         character, 0,
