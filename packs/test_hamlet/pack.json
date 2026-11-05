@@ -162,6 +162,14 @@
       "file": "world/starting_crops.json"
     },
     {
+      "name": "REFUSAL_REASONS",
+      "file": "world/refusal_reasons.json"
+    },
+    {
+      "name": "REFUSAL_LOG_LIMIT",
+      "file": "world/refusal_reasons.json"
+    },
+    {
       "name": "FREE_ACTIONS",
       "file": "world/free_actions.json"
     },

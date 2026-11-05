@@ -275,8 +275,19 @@ class PromptBuilder:
             "legal_affordances": _plain(context.affordances),
             "recipient_interfaces": _plain(context.recipient_interfaces),
         }
+        outcome = context.observations.get("last_outcome")
+        if outcome:
+            # Phase 021: the resident's own last major action, with what its refusal reason means.
+            public["last_outcome"] = self._outcome_entry(outcome)
         return PromptRecord(self.schema, self.system, {"private": private, "public": public},
                             pack=self.pack.name, pack_hash=self.pack_hash)
+
+    def _outcome_entry(self, outcome) -> dict[str, Any]:
+        entry = _plain(outcome)
+        reason = entry.get("reason")
+        if reason:
+            entry["meaning"] = self.pack["REFUSAL_REASONS"].get(reason, {}).get("description", "")
+        return entry
 
 
 def build_prompt(context: ActorContext) -> PromptRecord:

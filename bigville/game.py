@@ -541,6 +541,9 @@ class BigvilleGame:
             start, end = end, len(practice)
             self._published_practice[actor] = (turn, start, end)
         observations["practice"] = [dict(record) for record in practice[start:end]]
+        # Phase 021: the actor's own last major-action outcome (applied, reason). Only this resident
+        # sees it; the world does not publish another resident's attempt.
+        observations["last_outcome"] = self.world.last_outcome(actor)
         active = self._continuations.get(actor)
         if active is not None:
             observations["continuation"] = active.request.to_dict()
@@ -712,6 +715,24 @@ class BigvilleGame:
         except Exception as exc:  # one resident's failed proposal must not stop the turn
             self.last_errors[actor] = f"{type(exc).__name__}: {exc}"
             return False
+
+    @property
+    def last_rejections(self) -> dict[str, dict]:
+        """Refused major actions at the current world turn, the newest per resident.
+
+        Derived from the world's refusal log, which checkpoints with the world, so a restored game
+        reports the same value with no saved copy here. Each entry names the actor, action, reason
+        (a REFUSAL_REASONS code), and turn.
+        """
+        turn = int(self.world._turn)
+        rejections = {}
+        for name in self.world._actors:
+            refused = [record for record in self.world.refusals(name) if int(record["turn"]) == turn]
+            if refused:
+                last = refused[-1]
+                rejections[name] = {"actor": name, "action": last["action"],
+                                    "reason": last["reason"], "turn": turn}
+        return rejections
 
     def step(self) -> dict:
         """Advance one shared turn, or return waiting for human input."""

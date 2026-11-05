@@ -853,7 +853,13 @@ one actor's response: that actor's result is False, the others still apply, and 
 
 ## Phase 021 -- Refusal records and result feedback
 
-**Status:** ready (after 020)
+**Status:** done (see History). Every refusal names a code from REFUSAL_REASONS (21 codes, in the
+pack); the world logs refusals as `Refusal` nodes per actor (newest 20) with counts by action and
+reason, and `last_outcome` on the actor node. `_context` and the prompt carry the actor's own last
+outcome (with the reason's meaning); `BigvilleGame.last_rejections` is derived from the world log, so
+checkpoints need no change in game_persistence.py (its round-trip test skips until that module is
+committed); `report()["refusals"]`. Supervisor decision: an unneeded `rest` keeps logging
+`not_needed`.
 
 **Goal.** Make refusal visible. Each refusal point in the major-action primitives reports a short
 physical reason code from a fixed table in the pack (for example `slot_used`, `not_in_reach`,
@@ -1819,3 +1825,4 @@ rearing priors (the backend's); carrying infants.
 | 010 Death, burial, graveyard | done | (this commit) | docs/phases/phase010/PHASE010_REPORT.md -- corpse item on death, graveyard, dig_grave/bury/make_coffin, unburied-body household risk; Phase 004 layout digest updated for the graveyard site; 571 passed |
 | 011 Fiscal institutions as data | done | (this commit) | docs/phases/phase011/PHASE011_REPORT.md -- 44 seed rules mapped to 9 institutions or the backend; purses, obligations, face-to-face payment and arrears; round_bp; generated seeds 22 -> 31; 609 passed |
 | 020 Validate before claiming the slot | done | (this commit) | docs/phases/phase020/PHASE020_REPORT.md -- refused attempts free the slot; malformed proposals return False; step() contains failures; 809 passed |
+| 021 Refusal records and feedback | done | (this commit) | docs/phases/phase021/PHASE021_REPORT.md -- REFUSAL_REASONS table, per-actor refusal log and counts, last outcome in context and prompt, report refusals; 828 passed |

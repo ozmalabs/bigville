@@ -293,6 +293,12 @@ class SimulationReporter:
                           "by_kind": self.economy()["living_crops"]},
                 "land": self.economy()["land"]}
 
+    def refusals(self) -> dict[str, Any]:
+        """Refused major actions over the town, counted by action and by reason (Phase 021).
+
+        The world counts every refusal. The per-resident log keeps only the newest REFUSAL_LOG_LIMIT."""
+        return self.world.refusal_counts()
+
     def _series_metrics(self, report: dict[str, Any]) -> dict[str, float]:
         return {"alive": float(report["population"]["alive"]),
                 "population_coin": float(report["population"]["coin"]["mean"] or 0.0),
@@ -311,7 +317,7 @@ class SimulationReporter:
         social = self.social()
         report = {"schema": "bigville/report/1", "clock": dict(self.world.calendar()),
                   "population": population, "economy": economy, "social": social,
-                  "ecology": self.ecology(), "measurement": {
+                  "ecology": self.ecology(), "refusals": self.refusals(), "measurement": {
                       "population": "complete_census", "economy": "complete_physical_and_transaction_readout",
                       "social": "complete_recorded_graph_events", "sample_estimate": "simple_random_sample_with_fpc"}}
         current = self._series_metrics(report)

@@ -1,0 +1,72 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nREFUSAL REASONS (Phase 021): the short physical reason a major-action attempt did not happen.\n\nEach refusal point in the world's major-action primitives names one code from REFUSAL_REASONS. The world\nkeeps the code in a per-resident log of refused attempts (a Refusal node, bounded by REFUSAL_LOG_LIMIT) and\nin counters by action and reason. The actor's own last outcome (applied, reason) is published to that actor\nand to no one else, and the LLM prompt quotes the description. Descriptions are written for the resident\n(second person). A code names the physical check that failed, never a judgement about the choice.\n\nnot_possible is the catch-all for a refusal whose check is not yet named. A report that shows it means a\nrefusal point still needs its own code.\n\nREFUSAL_LOG_LIMIT: the number of refused attempts kept per resident, oldest dropped first. APPROX: a design\nchoice (no seed or source gives a figure). It bounds graph size for a 100-resident town, nothing else.",
+  "_types": {},
+  "tables": {
+    "REFUSAL_REASONS": {
+      "malformed": {
+        "description": "The proposal was incomplete or had a value of the wrong kind (a name or number missing, or not the right type)."
+      },
+      "unknown_target": {
+        "description": "The person, object, container, animal, crop, project, obligation or request named does not exist in this town."
+      },
+      "wrong_target": {
+        "description": "The thing named exists, but this action cannot use it (the wrong animal kind, a dead animal or crop, a party you do not act for, or a container that cannot hold this kind of thing)."
+      },
+      "slot_used": {
+        "description": "You have already used your one major action this turn."
+      },
+      "not_in_reach": {
+        "description": "You are not close enough. You must stand on the same cell as the person, object, or place, or one step away."
+      },
+      "not_at_site": {
+        "description": "You are not at the place this work needs: the store, the workplace, the building the recipe is done in, the gathering site, or the field or parcel."
+      },
+      "out_of_stock": {
+        "description": "There is not enough of it. The store, the container, or the coin you hold is less than the amount asked for."
+      },
+      "not_held": {
+        "description": "You do not hold it, so it cannot be dropped, given, eaten, or handed on."
+      },
+      "already_held": {
+        "description": "You already hold it."
+      },
+      "no_capacity": {
+        "description": "It does not fit. Your carrying capacity, the container's volume, its load limit, or the serving vessel's size is full or too small."
+      },
+      "no_tool": {
+        "description": "You do not have the tool or serving equipment this work needs in your hands or at your workplace."
+      },
+      "unskilled": {
+        "description": "You are not skilled enough for this work, or your strength is below what it needs."
+      },
+      "not_known": {
+        "description": "You do not know how to do this work."
+      },
+      "out_of_season": {
+        "description": "It is not the season for this crop or this work."
+      },
+      "on_cooldown": {
+        "description": "This cannot be done again yet. The animal or task has only just been tended."
+      },
+      "not_ready": {
+        "description": "It is not ready yet (the crop is not mature, or the grave is not open or no body is waiting)."
+      },
+      "container_locked": {
+        "description": "The container is locked, and you do not hold its key."
+      },
+      "invalid_destination": {
+        "description": "The place cannot be reached this way: it is the cell you already stand on, or it would put a container inside itself."
+      },
+      "not_needed": {
+        "description": "It is not needed now: you are not hurt or hungry enough for this care, your stamina is high enough not to rest, or the crop does not need water."
+      },
+      "unsupported": {
+        "description": "The world has no physical way to do this action yet."
+      },
+      "not_possible": {
+        "description": "The attempt was refused for a physical reason that the world does not name more precisely."
+      }
+    },
+    "REFUSAL_LOG_LIMIT": 20
+  }
+}

@@ -484,6 +484,9 @@ class BigvilleWorld:
         self._resolved_period = 0.0
         self._job_tick_armed = False
         self._major_dispatch = False
+        # Phase 021: the reason the current major-action attempt was refused, and whether an attempt is open.
+        self._refusal_code = None
+        self._outcome_open = False
         self._next_home_index = 0
         self._next_farm_index = 0
         self._policy_specs = self._scenario_table("policies", self.E.POLICIES)
@@ -820,17 +823,17 @@ class BigvilleWorld:
         destination as ownership or the movement as a transaction.
         """
         if actor not in self._actors:
-            return False
+            return self._refuse("unknown_target")
         object_id = self.resolve_physical_object_id(object_id)
         if object_id not in self._physical_objects:
-            return False
+            return self._refuse("unknown_target")
         source = self._physical_object_locations.get(object_id, "world")
         if not self._physical_object_accessible(actor, source, object_id=object_id):
-            return False
+            return self._refuse("not_in_reach")
         destination = self.resolve_physical_object_id(destination)
         if destination not in {"table", "world", *self._actors} \
                 and destination not in self._physical_objects:
-            return False
+            return self._refuse("unknown_target")
         if destination in self._physical_objects:
             # A container cannot be moved inside itself or any of its own
             # descendants; reject before changing either location index.
@@ -838,12 +841,12 @@ class BigvilleWorld:
             seen = set()
             while cursor in self._physical_objects and cursor not in seen:
                 if cursor == object_id:
-                    return False
+                    return self._refuse("invalid_destination")
                 seen.add(cursor)
                 cursor = self._physical_object_locations.get(cursor, "")
         if destination in self._physical_objects and not self._physical_object_accessible(
                 actor, destination):
-            return False
+            return self._refuse("not_in_reach")
         # A coordinate-backed source or destination makes the handover
         # spatial. Both endpoints must be within one walkable step of the actor.
         actor_cell = self.actor_position(actor)
@@ -858,7 +861,7 @@ class BigvilleWorld:
                 if cell is not None and (actor_cell is None
                         or self.distance(actor_cell, cell) is None
                         or self.distance(actor_cell, cell) > 1):
-                    return False
+                    return self._refuse("not_in_reach")
         # A carried/contained object's authored cell is its last shared-place
         # position. Persist the current physical position when it is dropped
         # into a shared room location so later reach checks use the drop site.
@@ -3056,20 +3059,20 @@ class BigvilleWorld:
         """Repair a mapped infrastructure node using its data-defined materials."""
         self._actor(operator)
         if name not in self._infrastructure:
-            return False
+            return self._refuse("unknown_target")
         attrs = self.eng.node(self._actors[operator])["attrs"]
         node = self._infrastructure[name]
         if self._turn > 0 and self.actor_position(operator) != self.map_position_node(node):
-            return False
+            return self._refuse("not_in_reach")
         spec = self.E.INFRASTRUCTURE[self.eng.node(node)["attrs"]["kind"]]
         amount = min(float(labour), max(0.0, 1.0 - self.infrastructure_condition(name)))
         if amount <= 0.0:
-            return False
+            return self._refuse("not_needed")
         required = {kind: amount for kind in spec.get("maintenance", ())}
         if any(self.qty(kind) < qty for kind, qty in required.items()):
-            return False
+            return self._refuse("out_of_stock")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(operator, "maintain"):
-            return False
+            return self._refuse("slot_used")
         for kind, qty in required.items():
             self.set_stock(kind, self.qty(kind) - qty)
         self.eng.set_attr(node, "condition", min(1.0, self.infrastructure_condition(name) + amount))
@@ -3382,12 +3385,14 @@ class BigvilleWorld:
 
     def _move_stock_to_inventory(self, actor, kind, amount):
         amount = float(amount)
-        if amount <= 0.0 or self.qty(kind) < amount:
-            return False
+        if amount <= 0.0:
+            return self._refuse("malformed")
+        if self.qty(kind) < amount:
+            return self._refuse("out_of_stock")
         inventory = self._inventory_container(actor)[0]
         used = self.used_volume(self._actor_inventories[actor])
         if used + amount * self.item_volume(kind) > self.capacity(self._actor_inventories[actor]) + 1e-9:
-            return False
+            return self._refuse("no_capacity")
         self.set_stock(kind, self.qty(kind) - amount)
         stock = self._inventory_stock(actor, kind, create=True)
         self.eng.set_attr(stock, "qty", float(self.eng.node(stock)["attrs"].get("qty", 0.0)) + amount)
@@ -3488,11 +3493,11 @@ class BigvilleWorld:
         """Move a held stock pile directly between two resident carriers."""
         amount = float(amount)
         if amount <= 0.0 or self.inventory_qty(giver, kind) < amount:
-            return False
+            return self._refuse("out_of_stock")
         if (self.used_volume(self._actor_inventories[recipient])
                 + amount * self.item_volume(kind)
                 > self.capacity(self._actor_inventories[recipient]) + 1e-9):
-            return False
+            return self._refuse("no_capacity")
         source = self._inventory_stock(giver, kind)
         target = self._inventory_stock(recipient, kind, create=True)
         self.eng.set_attr(source, "qty", self.inventory_qty(giver, kind) - amount)
@@ -3503,7 +3508,7 @@ class BigvilleWorld:
 
     def _give_discrete_item(self, giver, recipient, item):
         if self._item_owner_edge(giver, item) is None:
-            return False
+            return self._refuse("not_held")
         accepted = self._accept_discrete_item(recipient, item, giver=giver)
         if accepted:
             self.eng.add_edge_unchecked(self._actor(giver), "gave_item", item)
@@ -3520,19 +3525,19 @@ class BigvilleWorld:
         """
         amount = max(0.0, float(amount))
         if amount <= 0.0:
-            return False
+            return self._refuse("malformed")
         if recipient in self._shops:
-            return False
+            return self._refuse("wrong_target")
         self._actor(giver); self._actor(recipient)
         if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(giver, "give"):
-            return False
+            return self._refuse("slot_used")
         if (self._turn > 0 and self.actor_position(giver) != self.actor_position(recipient)):
-            return False
+            return self._refuse("not_in_reach")
         if not isinstance(kind, str):
             return self._give_discrete_item(giver, recipient, kind)
         if kind == "coin":
             if self.coin(giver) < amount:
-                return False
+                return self._refuse("out_of_stock")
             self.set_coin(giver, self.coin(giver) - amount)
             self.set_coin(recipient, self.coin(recipient) + amount)
         elif not self._move_inventory_to_inventory(giver, recipient, kind, amount):
@@ -3553,24 +3558,31 @@ class BigvilleWorld:
 
     def _physical_transfer_precheck(self, source, recipient, kind, amount=1.0):
         if source not in self._actors or recipient not in self._actors:
-            return False
+            return self._refuse("unknown_target")
         if (self.actor_position(source) is None
                 or self.actor_position(source) != self.actor_position(recipient)):
-            return False
+            return self._refuse("not_in_reach")
         if isinstance(kind, str):
             try:
                 amount = float(amount)
             except (TypeError, ValueError):
-                return False
+                return self._refuse("malformed")
             if amount <= 0.0:
-                return False
+                return self._refuse("malformed")
             if kind == "coin":
-                return self.coin(source) >= amount
-            return (self.inventory_qty(source, kind) >= amount
-                    and self.used_volume(self._actor_inventories[recipient])
+                if self.coin(source) < amount:
+                    return self._refuse("out_of_stock")
+                return True
+            if self.inventory_qty(source, kind) < amount:
+                return self._refuse("out_of_stock")
+            if (self.used_volume(self._actor_inventories[recipient])
                     + amount * self.item_volume(kind)
-                    <= self.capacity(self._actor_inventories[recipient]) + 1e-9)
-        return self._item_owner_edge(source, kind) is not None
+                    > self.capacity(self._actor_inventories[recipient]) + 1e-9):
+                return self._refuse("no_capacity")
+            return True
+        if self._item_owner_edge(source, kind) is None:
+            return self._refuse("not_held")
+        return True
 
     def _physical_transfer(self, source, recipient, kind, amount=1.0):
         """Move an already-held physical good or object between nearby people.
@@ -3720,12 +3732,12 @@ class BigvilleWorld:
         """Put an item in the accepting person's hand, then apply load limits."""
         self._actor(actor)
         if self.eng.node(item).get("type") != "ToolItem":
-            return False
+            return self._refuse("wrong_target")
         if giver is not None:
             self._actor(giver)
             edge = self._item_owner_edge(giver, item)
             if edge is None:
-                return False
+                return self._refuse("not_held")
             self.eng.remove_edge_unchecked(self._actor(giver), edge, item)
             if self._actor_hands.get(giver) == item:
                 self._actor_hands[giver] = None
@@ -3735,7 +3747,7 @@ class BigvilleWorld:
                                                       if held != item]
             self._refresh_carry_state(giver)
         elif self._item_owner_edge(actor, item) is not None:
-            return False
+            return self._refuse("already_held")
         self._remove_item_location(item)
         self.eng.remove_edge_unchecked(self._town, "has_tool_item", item)
         self.eng.add_edge_unchecked(self._actor(actor), "holds_in_hand", item)
@@ -3765,22 +3777,22 @@ class BigvilleWorld:
         """Try to pick up a ground item; overload may immediately drop it."""
         self._actor(actor)
         if self._item_owner_edge(actor, item) is not None:
-            return False
+            return self._refuse("already_held")
         if not self.eng.has_edge(self._town, "has_tool_item", item):
             cells = list(self.eng.neighbours(item, "at_cell"))
             actor_cells = list(self.eng.neighbours(self._actor(actor), "at_cell"))
             if not cells or not actor_cells or cells[0] != actor_cells[0]:
-                return False
+                return self._refuse("not_in_reach")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "pick_up"):
-            return False
+            return self._refuse("slot_used")
         return self._accept_discrete_item(actor, item)
 
     def drop_item(self, actor, item):
         """Drop an item voluntarily as a handling action."""
         if self._item_owner_edge(actor, item) is None:
-            return False
+            return self._refuse("not_held")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "drop"):
-            return False
+            return self._refuse("slot_used")
         self._drop_discrete_item(actor, item)
         self.eng.set_attr(self._actor(actor), "last_carry_outcome", "dropped")
         return True
@@ -3802,24 +3814,26 @@ class BigvilleWorld:
             candidates.sort(key=lambda k: (0 if self._item_specs[k].get("prepared") else 1, k))
             kind = candidates[0] if candidates else None
         if kind is None or not self._item_specs.get(kind, {}).get("food"):
-            return False
+            return self._refuse("not_held")
         if self.inventory_qty(actor, kind) < 1.0:
-            return False
+            return self._refuse("not_held")
         service = self.E.food_service(kind)
         if service is not None:
             if vessel is None or utensil is None:
-                return False
+                return self._refuse("no_tool")
             if not self._has_tableware(actor, vessel) or not self._has_tableware(actor, utensil):
-                return False
+                return self._refuse("no_tool")
             source_kind = None
             if source is not None:
-                if source not in self._containers or self.contents(source, kind) < 1.0:
-                    return False
+                if source not in self._containers:
+                    return self._refuse("unknown_target")
+                if self.contents(source, kind) < 1.0:
+                    return self._refuse("out_of_stock")
                 source_kind = self.eng.node(self._containers[source][0])["attrs"].get("kind", "")
             if not self.E.can_serve(kind, vessel, utensil, source_kind=source_kind):
-                return False
+                return self._refuse("no_capacity")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "eat"):
-            return False
+            return self._refuse("slot_used")
         stock = self._inventory_stock(actor, kind)
         self.eng.set_attr(stock, "qty", self.inventory_qty(actor, kind) - 1.0)
         leftover = self.E.scrap_kind(kind)
@@ -3952,17 +3966,17 @@ class BigvilleWorld:
         """
         attrs = self._obligation_attrs(obligation)
         if attrs is None:
-            return False
+            return self._refuse("unknown_target")
         payer, receiver = self._fiscal_party(attrs["debtor"]), self._fiscal_party(attrs["creditor"])
         if payer is None or receiver is None or payer[1] == receiver[1] or not self._acts_for(actor, payer):
-            return False
+            return self._refuse("wrong_target")
         here = self._party_location(payer)
         if here is None or here != self._party_location(receiver):
-            return False
+            return self._refuse("not_in_reach")
         amount = float(attrs["amount"])
         if self.eng.node(payer[1])["attrs"].get("coin", 0.0) < amount:
             self._record_arrears(obligation)
-            return False
+            return self._refuse("out_of_stock")
         self._move_fiscal_coin(payer, receiver, amount)
         self.eng.set_attr(obligation, "paid", float(attrs["paid"]) + amount)
         self.eng.set_attr(obligation, "periods_paid", float(attrs["periods_paid"]) + 1.0)
@@ -3979,20 +3993,20 @@ class BigvilleWorld:
         """
         attrs = self._obligation_attrs(obligation)
         if attrs is None or collector not in self._actors:
-            return False
+            return self._refuse("unknown_target")
         debtor, creditor = self._fiscal_party(attrs["debtor"]), self._fiscal_party(attrs["creditor"])
         if debtor is None or creditor is None or debtor[0] != "resident" or debtor[1] == creditor[1]:
-            return False
+            return self._refuse("wrong_target")
         hired = attrs["collector"]
         if not (collector == hired or self._acts_for(collector, creditor)):
-            return False
+            return self._refuse("wrong_target")
         here = self.actor_position(collector)
         if here is None or here != self._party_location(debtor):
-            return False
+            return self._refuse("not_in_reach")
         amount = float(attrs["amount"])
         if self.eng.node(debtor[1])["attrs"].get("coin", 0.0) < amount:
             self._record_arrears(obligation)
-            return False
+            return self._refuse("out_of_stock")
         if hired and collector == hired:
             self._move_fiscal_coin(debtor, ("resident", self._actors[collector]), amount)
             self.eng.set_attr(obligation, "held", float(attrs["held"]) + amount)
@@ -4011,22 +4025,22 @@ class BigvilleWorld:
         """
         attrs = self._obligation_attrs(obligation)
         if attrs is None or not attrs["collector"] or collector != attrs["collector"] or collector not in self._actors:
-            return False
+            return self._refuse("wrong_target")
         creditor = self._fiscal_party(attrs["creditor"])
         if creditor is None:
-            return False
+            return self._refuse("unknown_target")
         try:
             held = float(attrs["held"])
             if held <= 0.0:
-                return False
+                return self._refuse("out_of_stock")
             delivered = float(round_bp(held, share_bp))
         except ValueError:
-            return False
+            return self._refuse("malformed")
         here = self.actor_position(collector)
         if here is None or here != self._party_location(creditor):
-            return False
+            return self._refuse("not_in_reach")
         if self.eng.node(self._actors[collector])["attrs"].get("coin", 0.0) < delivered:
-            return False
+            return self._refuse("out_of_stock")
         self._move_fiscal_coin(("resident", self._actors[collector]), creditor, delivered)
         self.eng.set_attr(obligation, "held", 0.0)
         self.eng.set_attr(obligation, "delivered", float(attrs["delivered"]) + delivered)
@@ -4376,8 +4390,10 @@ class BigvilleWorld:
         project_cell = self.map_position_node(project_cells[0]) if project_cells else None
         if (self._turn > 0 and project_cell is not None
                 and self.actor_position(builder) != project_cell):
+            self._refuse("not_in_reach")
             return None
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(builder, "build"):
+            self._refuse("slot_used")
             return None
         n = self._building_projects[project]
         attrs = self.eng.node(n)["attrs"]
@@ -4388,10 +4404,12 @@ class BigvilleWorld:
         total_labour = float(attrs["labour"])
         labour = min(float(labour), total_labour - starting_progress)
         if labour <= 0:
+            self._refuse("malformed")
             return None
         scale = labour / float(attrs["labour"])
         required = {k: float(v) * scale for k, v in spec.get("inputs", {}).items()}
         if any(self.qty(k) + 1e-9 < q for k, q in required.items()):
+            self._refuse("out_of_stock")
             return None
         for kind, qty in required.items():
             # Repeated fractional costs can leave a tiny negative remainder
@@ -4863,23 +4881,28 @@ class BigvilleWorld:
         animal, a cooldown, or an empty product.
         """
         if actor not in self._actors or animal not in self._animals or task not in self.E.ANIMAL_HUSBANDRY:
+            self._refuse("unknown_target")
             return 0.0
         if (self._turn > 0
                 and self.actor_position(actor) != self.map_position_node(self._animals[animal])):
+            self._refuse("not_in_reach")
             return 0.0
         spec = self.E.ANIMAL_HUSBANDRY[task]
         an = self._animals[animal]
         aa = self.eng.node(an)["attrs"]
         if aa["species"] != spec["species"] or float(aa.get("alive", 0.0)) != 1.0:
+            self._refuse("wrong_target")
             return 0.0
         period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
         epoch_key = f"{task}_epoch"
         last = float(aa.get(epoch_key, -float(spec["cooldown"])))
         if period - last < float(spec["cooldown"]):
+            self._refuse("on_cooldown")
             return 0.0
         product = spec["product"]
         amount = float(self.E.ANIMALS[aa["species"]].get("gives", {}).get(product, 0.0))
         if amount <= 0.0:
+            self._refuse("wrong_target")
             return 0.0
         self.set_stock(product, self.qty(product) + amount)
         self.eng.set_attr(an, epoch_key, period)
@@ -5403,6 +5426,7 @@ class BigvilleWorld:
         Consumes one seed and plants a growing Crop (which then needs water each period, or it wilts).
         Returns None if it is the wrong season."""
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(sower, "sow"):
+            self._refuse("slot_used")
             return None
         land_cell = (self.map_position_node(self._land[land])
                      if land in self._land else None)
@@ -5410,8 +5434,10 @@ class BigvilleWorld:
             return None
         spec = self.E.CROPS[crop]
         if spec["season"] != self.season():
+            self._refuse("out_of_season")
             return None                                     # out of season -- nothing is sown
         if self.qty(spec["seed"]) < 1.0:
+            self._refuse("out_of_stock")
             return None                                     # another actor may have used the last seed
         self.set_stock(spec["seed"], max(0.0, self.qty(spec["seed"]) - 1.0))    # a seed is used
         c = self.eng.add_node("Crop", {"crop": crop, "age": 0.0, "thirst": 0.0, "thirst_epoch": 0.0,
@@ -5437,9 +5463,12 @@ class BigvilleWorld:
         crop_cell = self.map_position_node(crop_node)
         if self._turn > 0 and crop_cell is not None and self.actor_position(actor) != crop_cell:
             return False
-        if (float(attrs.get("alive", 0.0)) != 1.0 or float(attrs.get("thirst", 0.0)) <= 0.0
-                or self.qty("water") < float(attrs.get("water", 0.0))):
-            return False
+        if float(attrs.get("alive", 0.0)) != 1.0:
+            return self._refuse("wrong_target")
+        if float(attrs.get("thirst", 0.0)) <= 0.0:
+            return self._refuse("not_needed")
+        if self.qty("water") < float(attrs.get("water", 0.0)):
+            return self._refuse("out_of_stock")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "water"):
             return False
         self.eng.set_attr(self._actor(actor), "water_armed", 1.0)
@@ -5474,6 +5503,10 @@ class BigvilleWorld:
             self.eng.set_attr(crop_node, "alive", 0.0)
             self.eng.remove_edge_unchecked(self._town, "has_crop", crop_node)
             return round(harvested, 4)
+        if float(a["alive"]) != 1.0:
+            self._refuse("wrong_target")
+        else:
+            self._refuse("not_ready")
         return 0.0
 
     # ---------------------------------------------------- the nitrogen cycle (data: E.NITROGEN)
@@ -5541,10 +5574,12 @@ class BigvilleWorld:
 
         Returns the nitrogen added. The actor must stand on the parcel once the clock is running."""
         if land not in self._land:
+            self._refuse("unknown_target")
             return 0.0
         node = self._land[land]
         cell = self.map_position_node(node)
         if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
+            self._refuse("not_in_reach")
             return 0.0
         type_name = self.E.NITROGEN["fertiliser_type"]
         la = self.eng.node(node)["attrs"]
@@ -5552,10 +5587,13 @@ class BigvilleWorld:
         amount = min(float(amount if amount is not None else self.E.NITROGEN["fertilise_amount"]),
                      room, self.type_available(type_name))
         if amount <= 0.0:
+            self._refuse("out_of_stock")
             return 0.0
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "fertilise"):
+            self._refuse("slot_used")
             return 0.0
         if self._consume_type(type_name, amount) is None:
+            self._refuse("out_of_stock")
             return 0.0
         self.eng.set_attr(node, "nitrogen", float(la.get("nitrogen", 0.0)) + amount)
         self.eng.add_edge_unchecked(self._actors[actor], "fertilised", node)
@@ -5723,9 +5761,12 @@ class BigvilleWorld:
         container_cell = self.container_position(container)
         if (self._turn > 0 and container_cell is not None and self.actor_position(actor) != container_cell):
             return False
-        if (amount <= 0.0 or not self._container_accessible(actor, container)
-                or self.inventory_qty(actor, kind) < amount):
-            return False
+        if amount <= 0.0:
+            return self._refuse("malformed")
+        if not self._container_accessible(actor, container):
+            return self._refuse("container_locked")
+        if self.inventory_qty(actor, kind) < amount:
+            return self._refuse("out_of_stock")
         if self.used_volume(container) + amount * self.item_volume(kind) > self.capacity(container) + 1e-9:
             return False
         if (self.is_fluid(kind)
@@ -5783,25 +5824,25 @@ class BigvilleWorld:
         self._actor(actor)
         amount = float(amount)
         if amount <= 0.0:
-            return False
+            return self._refuse("malformed")
         if source is None:
             source_cell = self.map_position_node(self._store)
             if self._turn > 0 and self.actor_position(actor) != source_cell:
-                return False
+                return self._refuse("not_at_site")
             if self.qty(kind) < amount:
-                return False
+                return self._refuse("out_of_stock")
             if not self._move_stock_to_inventory(actor, kind, amount):
-                return False
+                return self._refuse("no_capacity")
         else:
             if source not in self._containers or not self._container_accessible(actor, source):
-                return False
+                return self._refuse("container_locked")
             if self.container_position(source) != self.actor_position(actor):
-                return False
+                return self._refuse("not_in_reach")
             if self.contents(source, kind) < amount:
-                return False
+                return self._refuse("out_of_stock")
             if (self.used_volume(self._actor_inventories[actor])
                     + amount * self.item_volume(kind) > self.capacity(self._actor_inventories[actor]) + 1e-9):
-                return False
+                return self._refuse("no_capacity")
             inner = self._containers[source][1][kind]
             self.eng.set_attr(inner, "qty", self.contents(source, kind) - amount)
             target = self._inventory_stock(actor, kind, create=True)
@@ -6228,9 +6269,9 @@ class BigvilleWorld:
         """Carry out an accepted request as the actor's one major action."""
         req = self._request_node(request)
         if self.request_status(req) != 1 or not self.eng.has_edge(req, "to", self._actor(actor)):
-            return False
+            return self._refuse("wrong_target")
         if not self._claim_major_action(actor, "complete_request"):
-            return False
+            return self._refuse("slot_used")
         self.eng.set_attr(req, "status", 2.0)
         self.eng.set_attr(req, "result", str(result))
         self.eng.add_edge_unchecked(self._actor(actor), "completed_request", req)
@@ -6279,13 +6320,13 @@ class BigvilleWorld:
     def care_for(self, caregiver, patient):
         """Perform one co-located care action for an injured or ill resident."""
         if caregiver not in self._actors or patient not in self._actors:
-            return False
+            return self._refuse("unknown_target")
         if self._turn > 0 and self.actor_position(caregiver) != self.actor_position(patient):
-            return False
+            return self._refuse("not_in_reach")
         attrs = self.eng.node(self._actors[patient])["attrs"]
         if (attrs.get("health") == "healthy" and float(attrs.get("injury", 0.0)) <= 0.0
                 and float(attrs.get("hunger", 0.0)) < float(self.E.CARE["care_hunger_need"])):
-            return False
+            return self._refuse("not_needed")
         medicine = 1.0 if self.qty("medicine") >= 1.0 and attrs.get("disease") else 0.0
         if medicine:
             return self.treat(caregiver, patient, medicine=medicine)
@@ -7027,7 +7068,7 @@ class BigvilleWorld:
         )
         if needs_targets:
             self._actor_options(actor)
-        return self._enact_plan(actor, plan)
+        return self._attempt(actor, action, lambda: self._enact_plan(actor, plan))
 
     def _enact_plan(self, actor, plan):
         """Shared physical enactment for Ocelot and arbitrary cognition backends.
@@ -7036,8 +7077,10 @@ class BigvilleWorld:
         this resident does not have is refused with False. Nothing here raises
         for backend input; the checks in ``major_action`` decide every refusal.
         """
-        if actor not in self._actors or not isinstance(plan, dict):
-            return False
+        if actor not in self._actors:
+            return self._refuse("unknown_target")
+        if not isinstance(plan, dict):
+            return self._refuse("malformed")
         action = plan.get("action")
         targets = self._actor_targets.get(actor, {})
 
@@ -7052,7 +7095,7 @@ class BigvilleWorld:
                                          kind=plan.get("kind"), amount=plan.get("amount", 1.0))
             # A shop is not a physical recipient. Purchase intent, speech,
             # acceptance, and any payment are choices owned by cognition.
-            return False
+            return self._refuse("wrong_target")
         if action in {"transfer", "take"}:
             if action == "transfer":
                 recipient = plan.get("recipient") or target_of()
@@ -7069,12 +7112,12 @@ class BigvilleWorld:
             # unoccupied turn from consuming the slot while preserving rest
             # as the chosen action once the body actually needs recovery.
             if self.stamina_reserve(actor) >= 0.8:
-                return False
+                return self._refuse("not_needed")
             return self.major_action(actor, "rest", amount=1.0)
         if action == "eat":
             kind = plan.get("kind")
             if not isinstance(kind, str):
-                return False
+                return self._refuse("malformed")
             equipment = self._serving_equipment(actor, kind)
             kwargs = {"kind": kind}
             if equipment is not None:
@@ -7147,7 +7190,8 @@ class BigvilleWorld:
                 target = (plan["sow_kind"], plan["land"])
             if target is not None:
                 return self.major_action(actor, action, target=target)
-        return False
+        # The plan names no action this resident can take, or no target for it.
+        return self._refuse("malformed")
 
     def resolve_actor_turn(self):
         """Settle deferred physical effects after an explicitly submitted turn."""
@@ -7495,6 +7539,111 @@ class BigvilleWorld:
         self.rest(actor, amount)
         return True
 
+    def _refuse(self, code):
+        """Name the physical reason the current attempt is refused, and return False.
+
+        Every refusal point returns ``self._refuse(code)``. ``code`` must be a key of the pack's
+        REFUSAL_REASONS table, so an unknown code is a programming error and raises ``ValueError``.
+        """
+        if code not in self.E.REFUSAL_REASONS:
+            raise ValueError(f"unknown refusal reason: {code!r}")
+        self._refusal_code = code
+        return False
+
+    def _recipe_refusal(self, actor, action_name):
+        """The first physical check this actor fails to start a recipe now, or None when none fails.
+
+        The checks run in the order ``_capable``, ``_can_attempt`` and ``_recipe_tools_usable`` make them."""
+        if action_name not in self._actions:
+            return "not_known"
+        if not self._skilled_enough(actor, action_name):
+            return "unskilled"
+        if not self._recipe_in_season(action_name):
+            return "out_of_season"
+        recipe = self._recipe_specs.get(action_name, {})
+        if recipe.get("open"):
+            strength_needed, _stamina = self.E.recipe_exertion(action_name)
+            if self.strength(actor) + 1e-9 < strength_needed:
+                return "unskilled"
+            if any(self._held_tool(actor, tool) is None for tool in recipe.get("tools", [])):
+                return "no_tool"
+        if not self._at_gathering_site(actor, action_name):
+            return "not_at_site"
+        if not self._at_recipe_building(actor, action_name):
+            return "not_at_site"
+        if not self._burial_ready(action_name):
+            return "not_ready"
+        if not self._recipe_tools_usable(actor, action_name):
+            return "no_tool"
+        return None
+
+    def _attempt(self, actor, action, run):
+        """Run one major-action attempt and publish its outcome to the actor's own record.
+
+        An attempt that runs inside another (``enact_plan`` calls ``major_action``) belongs to the outer
+        attempt, which publishes once. An exception publishes nothing and propagates.
+        """
+        if self._outcome_open:
+            return run()
+        self._outcome_open = True
+        self._refusal_code = None
+        try:
+            applied = bool(run())
+            code = None if applied else (self._refusal_code or "not_possible")
+        finally:
+            self._outcome_open = False
+            self._refusal_code = None
+        self._publish_outcome(actor, action, applied, code)
+        return applied
+
+    def _publish_outcome(self, actor, action, applied, code):
+        """Store the attempt's outcome on the actor's node, and log a refusal as a Refusal node.
+
+        Only the acting resident's node carries the outcome. Nothing here tells another resident."""
+        if actor not in self._actors:
+            return
+        node = self._actor(actor)
+        self.eng.set_attr(node, "last_outcome", {"turn": int(self._turn), "action": str(action),
+                                                 "applied": bool(applied), "reason": code or ""})
+        if applied:
+            return
+        record = self.eng.add_node("Refusal", {"actor": actor, "action": str(action),
+                                               "reason": code, "turn": int(self._turn)})
+        self.eng.add_edge_unchecked(node, "refused", record)
+        counts = {name: dict(by_reason) for name, by_reason in
+                  self.eng.node(node)["attrs"].get("refusal_counts", {}).items()}
+        by_reason = counts.setdefault(str(action), {})
+        by_reason[code] = by_reason.get(code, 0) + 1
+        self.eng.set_attr(node, "refusal_counts", counts)
+        # Keep the newest REFUSAL_LOG_LIMIT refusals (node ids grow with creation).
+        kept = sorted(self.eng.neighbours(node, "refused"))
+        for old in kept[:max(0, len(kept) - int(self.E.REFUSAL_LOG_LIMIT))]:
+            self.eng.remove_node(old)
+
+    def last_outcome(self, actor):
+        """The actor's own most recent major-action outcome (turn, action, applied, reason), or None."""
+        outcome = self.eng.node(self._actor(actor))["attrs"].get("last_outcome")
+        return None if outcome is None else dict(outcome)
+
+    def refusals(self, actor):
+        """The actor's logged refusals, oldest first, at most REFUSAL_LOG_LIMIT of them."""
+        node = self._actor(actor)
+        return [dict(self.eng.node(record)["attrs"])
+                for record in sorted(self.eng.neighbours(node, "refused"))]
+
+    def refusal_counts(self):
+        """Refused attempts over all residents: counts by action, by reason, and in total."""
+        by_action, by_reason, total = {}, {}, 0
+        for name in self._actors:
+            counts = self.eng.node(self._actor(name))["attrs"].get("refusal_counts", {})
+            for action, reasons in counts.items():
+                for reason, count in reasons.items():
+                    by_action.setdefault(action, {})
+                    by_action[action][reason] = by_action[action].get(reason, 0) + int(count)
+                    by_reason[reason] = by_reason.get(reason, 0) + int(count)
+                    total += int(count)
+        return {"total": total, "by_action": by_action, "by_reason": by_reason}
+
     def _claimed_attempt(self, actor, kind, attempt, *, consumed=None):
         """Run one major-action attempt inside the actor's turn slot.
 
@@ -7510,7 +7659,7 @@ class BigvilleWorld:
                   "major_action_kind": attrs.get("major_action_kind", ""),
                   "last_major_action": attrs.get("last_major_action", "")}
         if not self._claim_major_action(actor, kind):
-            return False
+            return self._refuse("slot_used")
         record = self._turn_actions[actor][-1]
         old_dispatch = self._major_dispatch
         self._major_dispatch = True
@@ -7540,36 +7689,51 @@ class BigvilleWorld:
         Each attempt runs the same physical checks the primitive runs, and the
         action slot is held only while the attempt runs. A proposal with a
         missing or mistyped value, or a target that does not exist, returns
-        False; a refused attempt leaves ``actor_turn_state`` unchanged. An
-        unknown action name is a programming error and raises ``ValueError``.
+        False; a refused attempt leaves ``actor_turn_state`` unchanged. The
+        refusal's physical reason is published to the actor (``last_outcome``)
+        and logged (``refusals``). An unknown action name is a programming error
+        and raises ``ValueError``.
 
         Existing low-level ``do``/``start`` calls remain useful for scenario
         setup and timed-job tests.  Simulation code should use this method (or
         ``perform_major_action``) so the one-action rule is enforced.
         """
+        return self._attempt(actor, action,
+                             lambda: self._major_action_attempt(actor, action, *args, **kwargs))
+
+    def _major_action_attempt(self, actor, action, *args, **kwargs):
+        """The branch for each major action. Returns True when the attempt is enacted."""
         if actor not in self._actors:
-            return False
+            return self._refuse("unknown_target")
         if action == "move":
             destination = kwargs.get("destination", args[0] if args else None)
             current = self.actor_position(actor)
-            if (not isinstance(destination, (int, tuple)) or current is None or destination not in self._map_cells
-                    or destination == current or self.distance(current, destination) is None):
-                return False
+            if not isinstance(destination, (int, tuple)):
+                return self._refuse("malformed")
+            if current is None or destination not in self._map_cells:
+                return self._refuse("unknown_target")
+            if destination == current:
+                return self._refuse("invalid_destination")
+            if self.distance(current, destination) is None:
+                return self._refuse("invalid_destination")
             return self._claimed_attempt(actor, "move", lambda: self._walked_toward(actor, destination))
         if action == "move_object":
             object_id = self._as_key(kwargs.get("object_id", kwargs.get("item", args[0] if args else None)))
             destination = self._as_key(kwargs.get("destination", kwargs.get("target",
                                                                              args[1] if len(args) > 1 else None)))
             if object_id is None or destination is None:
-                return False
+                return self._refuse("malformed")
             return self._claimed_attempt(actor, "move_object", lambda: self.move_physical_object_as_actor(
                 actor, object_id, destination))
         if action == "give":
             recipient = self._as_key(kwargs.get("recipient", kwargs.get("target", args[0] if args else None)))
             kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
             amount = self._as_amount(kwargs.get("amount", args[2] if len(args) > 2 else 1.0))
-            if (recipient not in self._actors or kind is None or amount is None
-                    or not self._physical_transfer_precheck(actor, recipient, kind, amount)):
+            if recipient not in self._actors:
+                return self._refuse("unknown_target")
+            if kind is None or amount is None:
+                return self._refuse("malformed")
+            if not self._physical_transfer_precheck(actor, recipient, kind, amount):
                 return False
             return self._claimed_attempt(actor, "give", lambda: self._physical_transfer(
                 actor, recipient, kind, amount))
@@ -7578,9 +7742,11 @@ class BigvilleWorld:
             recipient = self._as_key(kwargs.get("recipient", args[1] if len(args) > 1 else None))
             kind = self._as_key(kwargs.get("kind", args[2] if len(args) > 2 else None))
             amount = self._as_amount(kwargs.get("amount", args[3] if len(args) > 3 else 1.0))
-            if (source is None or recipient is None or kind is None or amount is None
-                    or actor != source
-                    or not self._physical_transfer_precheck(source, recipient, kind, amount)):
+            if source is None or recipient is None or kind is None or amount is None:
+                return self._refuse("malformed")
+            if actor != source:
+                return self._refuse("wrong_target")
+            if not self._physical_transfer_precheck(source, recipient, kind, amount):
                 return False
             return self._claimed_attempt(actor, "transfer", lambda: self._physical_transfer(
                 source, recipient, kind, amount))
@@ -7588,77 +7754,90 @@ class BigvilleWorld:
             # A resident's carried stock is not unattended merely because a
             # backend can name its holder.  Taking held goods needs an explicit
             # contested physical mechanism; this action does not invent one.
-            return False
+            return self._refuse("unsupported")
         if action == "put":
             container = self._as_key(kwargs.get("container", args[0] if args else None))
             kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
             amount = self._as_amount(kwargs.get("amount", args[2] if len(args) > 2 else 1.0))
-            if container not in self._containers or kind is None or amount is None:
-                return False
+            if container not in self._containers:
+                return self._refuse("unknown_target")
+            if kind is None or amount is None:
+                return self._refuse("malformed")
             return self._claimed_attempt(actor, "put", lambda: self.put(actor, container, kind, amount))
         if action == "pick_up":
             item = self._as_key(kwargs.get("item", args[0] if args else None))
             if not self._known_ref(item):
-                return False
+                return self._refuse("unknown_target")
             return self._claimed_attempt(actor, "pick_up", lambda: self.pick_up(actor, item))
         if action == "drop":
             item = self._as_key(kwargs.get("item", args[0] if args else None))
             if not self._known_ref(item):
-                return False
+                return self._refuse("unknown_target")
             return self._claimed_attempt(actor, "drop", lambda: self.drop_item(actor, item))
         if action == "eat":
             kind = kwargs.get("kind", args[0] if args else None)
             if kind is not None and not isinstance(kind, str):
-                return False
+                return self._refuse("malformed")
             source = kwargs.get("source")
             if source is not None and self._as_key(source) is None:
-                return False
+                return self._refuse("malformed")
             vessel, utensil = kwargs.get("vessel"), kwargs.get("utensil")
             return self._claimed_attempt(actor, "eat", lambda: self.eat(
                 actor, kind, vessel=vessel, utensil=utensil, source=source))
         if action == "rest":
             amount = self._as_amount(kwargs.get("amount", args[0] if args else 1.0))
             if amount is None or amount <= 0.0:
-                return False
+                return self._refuse("malformed")
             return self._claimed_attempt(actor, "rest", lambda: self._rested(actor, amount))
         if action == "fetch":
             kind = self._as_key(kwargs.get("kind", args[0] if args else None))
             amount = self._as_amount(kwargs.get("amount", args[1] if len(args) > 1 else 1.0))
             raw_source = kwargs.get("source")
             source = None if raw_source is None else self._as_key(raw_source)
-            if kind is None or amount is None or (raw_source is not None and source not in self._containers):
-                return False
+            if kind is None or amount is None:
+                return self._refuse("malformed")
+            if raw_source is not None and source not in self._containers:
+                return self._refuse("unknown_target")
             return self._claimed_attempt(actor, "fetch", lambda: self.fetch(actor, kind, amount, source=source))
         if action == "build":
             project = self._as_key(kwargs.get("project", args[0] if args else None))
             labour = self._as_amount(kwargs.get("labour", args[1] if len(args) > 1 else 1.0))
-            if project not in self._building_projects or labour is None:
-                return False
+            if project not in self._building_projects:
+                return self._refuse("unknown_target")
+            if labour is None:
+                return self._refuse("malformed")
             return self._claimed_attempt(actor, "build", lambda: self.advance_building(
                 project, actor, labour=labour) is not None)
         if action == "maintain":
             name = self._as_key(kwargs.get("name", args[0] if args else None))
             labour = self._as_amount(kwargs.get("labour", args[1] if len(args) > 1 else 1.0))
-            if name not in self._infrastructure or labour is None:
-                return False
+            if name not in self._infrastructure:
+                return self._refuse("unknown_target")
+            if labour is None:
+                return self._refuse("malformed")
             return self._claimed_attempt(actor, "maintain", lambda: self.maintain_infrastructure(
                 actor, name, labour=labour))
         if action == "care":
             patient = self._as_key(kwargs.get("patient", args[0] if args else None))
             if patient not in self._actors:
-                return False
+                return self._refuse("unknown_target")
             return self._claimed_attempt(actor, "care", lambda: self.care_for(actor, patient))
         if action == "tend_animals":
             animal = self._as_key(kwargs.get("animal", args[0] if args else None))
             task = self._as_key(kwargs.get("task", args[1] if len(args) > 1 else "milk"))
-            if animal not in self._animals or task not in self.E.ANIMAL_HUSBANDRY:
-                return False
+            if animal not in self._animals:
+                return self._refuse("unknown_target")
+            if task not in self.E.ANIMAL_HUSBANDRY:
+                return self._refuse("malformed")
             return self._claimed_attempt(actor, "tend_animals",
                                          lambda: self._husbandry_yield(actor, animal, task) > 0.0)
         if action in ("work", "make", "start"):
             recipe = self._as_key(kwargs.get("action_name", kwargs.get("recipe", args[0] if args else None)))
-            if recipe is None or not self._can_attempt(actor, recipe):
-                return False
+            if recipe is None:
+                return self._refuse("malformed")
+            code = self._recipe_refusal(actor, recipe)
+            if code is not None:
+                return self._refuse(code)
             operation = self.start if action == "start" else self.do
             return self._claimed_attempt(actor, action, lambda: operation(actor, recipe))
         if action in {"water", "harvest", "sow", "fertilise"}:
@@ -7667,31 +7846,33 @@ class BigvilleWorld:
                 crop, land = (target if isinstance(target, tuple) and len(target) == 2 else (None, None))
                 crop, land = self._as_key(crop), self._as_key(land)
                 if crop not in self.E.CROPS or land not in self._land:
-                    return False
+                    return self._refuse("unknown_target")
                 return self._claimed_attempt(actor, "sow", lambda: self.sow(actor, crop, land=land) is not None)
             if action == "fertilise":
                 land = self._as_key(target)
                 amount = kwargs.get("amount")
-                if land not in self._land or (amount is not None and self._as_amount(amount) is None):
-                    return False
+                if land not in self._land:
+                    return self._refuse("unknown_target")
+                if amount is not None and self._as_amount(amount) is None:
+                    return self._refuse("malformed")
                 return self._claimed_attempt(actor, action, lambda: self.fertilise(actor, land, amount) > 0.0)
             crop_node = self._as_key(target)
             if not self._known_ref(crop_node, "Crop"):
-                return False
+                return self._refuse("unknown_target")
             if action == "water":
                 return self._claimed_attempt(actor, action, lambda: self.water_crop(actor, crop_node))
             return self._claimed_attempt(actor, action, lambda: bool(self.harvest_crop(crop_node, harvester=actor)))
         if action in ("pay_obligation", "collect", "deliver_collected"):
             obligation = kwargs.get("obligation", args[0] if args else None)
             if isinstance(obligation, bool) or not isinstance(obligation, int):
-                return False
+                return self._refuse("malformed")
             attrs = self._obligation_attrs(obligation)
             if attrs is None:
-                return False
+                return self._refuse("unknown_target")
             if action == "deliver_collected":
                 share_bp = kwargs.get("share_bp", args[1] if len(args) > 1 else 10000)
                 if isinstance(share_bp, bool) or not isinstance(share_bp, int):
-                    return False
+                    return self._refuse("malformed")
                 return self._claimed_attempt(actor, action, lambda: self.deliver_collected(
                     actor, obligation, share_bp))
             # A short payer records arrears: a consequence of this attempt, so the slot stays used.
@@ -7704,9 +7885,9 @@ class BigvilleWorld:
             request = kwargs.get("request", args[0] if args else None)
             if isinstance(request, str):
                 if request not in self._requests:
-                    return False
+                    return self._refuse("unknown_target")
             elif not self._known_ref(request):
-                return False
+                return self._refuse("unknown_target")
             return self.complete_request(actor, request, result=kwargs.get("result", ""))
         raise ValueError(f"unknown major action: {action}")
 
@@ -8100,26 +8281,24 @@ class BigvilleWorld:
     def do(self, actor, action_name):
         """Perform an action INSTANTLY (no timer). Refused if the actor does not KNOW the recipe or is
         not SKILLED enough (below its min_skill floor)."""
-        if not self._can_attempt(actor, action_name):
-            return False
-        if not self._recipe_tools_usable(actor, action_name):
-            return False
+        code = self._recipe_refusal(actor, action_name)
+        if code is not None:
+            return self._refuse(code)
         # Calls made before the first simulation tick remain convenient setup
         # operations.  Once the clock is running, a direct craft is a major
         # action too; the explicit dispatcher suppresses this second charge.
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "work"):
-            return False
+            return self._refuse("slot_used")
         self._open_job(actor, action_name, 0.0); self._run()
         return True
 
     def start(self, actor, action_name):
         """START a TIMED action; refused if the actor does not know OR is not skilled enough for it."""
-        if not self._can_attempt(actor, action_name):
-            return False
-        if not self._recipe_tools_usable(actor, action_name):
-            return False
+        code = self._recipe_refusal(actor, action_name)
+        if code is not None:
+            return self._refuse(code)
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "start"):
-            return False
+            return self._refuse("slot_used")
         mins = float(self.eng.node(self._actions[action_name])["attrs"]["time_minutes"])
         self._open_job(actor, action_name, math.ceil(mins / float(self.E.TIME["minutes_per_tick"]))); self._run()
         return True

@@ -473,6 +473,21 @@ def _check_burial(errors, warnings, info):
                 f"{BURIAL.get('risk_after_periods')} periods at {BURIAL.get('onset_chance')} a dawn")
 
 
+def _check_refusal_reasons(errors, warnings, info):
+    """Phase 021: the refusal reason table. Codes are snake_case words, each has a description for the
+    resident's prompt, and the per-resident refusal log keeps a whole number of entries, at least 1."""
+    import re as _re
+    for code, spec in REFUSAL_REASONS.items():
+        if not _re.fullmatch(r"[a-z]+(_[a-z]+)*", str(code)):
+            errors.append(f"REFUSAL_REASONS[{code!r}]: a reason code is a snake_case word")
+        if not str(spec.get("description", "")).strip():
+            errors.append(f"REFUSAL_REASONS[{code}]: no description (the resident's prompt quotes it)")
+    if "not_possible" not in REFUSAL_REASONS:
+        errors.append("REFUSAL_REASONS: needs the 'not_possible' catch-all")
+    if isinstance(REFUSAL_LOG_LIMIT, bool) or not isinstance(REFUSAL_LOG_LIMIT, int) or REFUSAL_LOG_LIMIT < 1:
+        errors.append(f"REFUSAL_LOG_LIMIT: must be a whole number of at least 1, not {REFUSAL_LOG_LIMIT!r}")
+
+
 def _check_prompt_instructions(errors, warnings, info):
     """Phase 018: the LLM prompt tables and speech lexicon. Each action has a description, the response
     fields are the ones the backend parses, the selection caps are positive, the standing types and gist
@@ -1255,6 +1270,7 @@ def check_consistency():
     _check_gathering_sites(errors, warnings, info)
     _check_burial(errors, warnings, info)
     _check_prompt_instructions(errors, warnings, info)
+    _check_refusal_reasons(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)
     stats = {

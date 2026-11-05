@@ -58,6 +58,10 @@ TERRAIN_WEAR = _PACK["TERRAIN_WEAR"]
 ANIMALS = _PACK["ANIMALS"]
 SLAUGHTER_PRODUCTS = _PACK["SLAUGHTER_PRODUCTS"]
 ANIMAL_NPC_SETUP = _PACK["ANIMAL_NPC_SETUP"]
+# Phase 021: the physical reason codes a refused major action reports, and the number of refused attempts
+# each resident's log keeps (packs/*/world/refusal_reasons.json).
+REFUSAL_REASONS = _PACK["REFUSAL_REASONS"]
+REFUSAL_LOG_LIMIT = _PACK["REFUSAL_LOG_LIMIT"]
 FENCE_TYPES = _PACK["FENCE_TYPES"]
 ENCLOSURE_TYPES = _PACK["ENCLOSURE_TYPES"]
 ANIMAL_HUSBANDRY = _PACK["ANIMAL_HUSBANDRY"]
