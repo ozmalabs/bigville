@@ -1011,7 +1011,10 @@ sight and `lateness` from the real sunset (Phase 042; until then `lateness` come
 
 ## Phase 025 -- Fair turn order
 
-**Status:** ready
+**Status:** done (see History). `BigvilleGame.step()` applies responses in `turn_order(actors, turn)`:
+the sorted actor names shuffled by `random.Random(f"{map_seed}:{turn}")`, built per call, so replay
+is exact, `world._rng` is untouched and checkpoints store nothing new. `last_order` records the
+applied order. Two residents contesting one loaf for 120 turns each win between 35% and 65%.
 
 **Goal.** Residents act in insertion order every turn against decisions made before the tick,
 so the first residents always win contested stock. Apply responses in a deterministic order
@@ -1844,3 +1847,4 @@ rearing priors (the backend's); carrying infants.
 | 022 Recipe stamina is spent | done | (this commit) | docs/phases/phase022/PHASE022_REPORT.md -- declared recipe stamina charged via Effort, hunger-scaled exertion raises hunger, fatigue a read-off, balance stamina line; 835 passed |
 | 023 Timed jobs occupy the worker | done | (this commit) | docs/phases/phase023/PHASE023_REPORT.md -- busy refusal, jobs pause when the worker leaves the start cell, paused read-offs; 844 passed |
 | 024 Exhaustion, collapse and sleep | done | (this commit) | docs/phases/phase024/PHASE024_REPORT.md -- EXHAUSTION table, graded slowdown, collapse and sleep with refusals and job pause, sleep facts, simple-backend sleep rule; 872 passed |
+| 025 Fair turn order | done | (this commit) | docs/phases/phase025/PHASE025_REPORT.md -- per-turn seeded permutation of response order; last_order; 879 passed |

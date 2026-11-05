@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -76,6 +77,8 @@ class BigvilleGame:
         self.last_responses: dict[str, ActorResponse] = {}
         self.last_results: dict[str, bool] = {}
         self.last_errors: dict[str, str] = {}
+        # Actors in the order their responses were applied on the last advanced turn (Phase 025).
+        self.last_order: list[str] = []
 
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
@@ -734,6 +737,20 @@ class BigvilleGame:
                                     "reason": last["reason"], "turn": turn}
         return rejections
 
+    def turn_order(self, actors: list[str], turn: int) -> list[str]:
+        """A deterministic permutation of ``actors`` for one turn (Phase 025).
+
+        The generator is built per call from the map seed and the turn number, so it holds no state
+        and checkpoints need nothing new. It is independent of ``world._rng``, so weather and failure
+        draws are unchanged. Names are sorted before shuffling so the result does not depend on the
+        order the backends were registered.
+        """
+        node = getattr(self.world, "_map_node", None)
+        seed = int(self.world.eng.node(node)["attrs"].get("seed", 0.0)) if node else 0
+        order = sorted(actors)
+        random.Random(f"{seed}:{int(turn)}").shuffle(order)
+        return order
+
     def step(self) -> dict:
         """Advance one shared turn, or return waiting for human input."""
         # Period changes happen only after a successful turn, below. Publish
@@ -766,7 +783,10 @@ class BigvilleGame:
         self.last_responses = responses
         self.last_results = {}
         self.last_errors = {}
-        for actor, response in responses.items():
+        order = self.turn_order(list(responses), int(self.world._turn))
+        self.last_order = order
+        for actor in order:
+            response = responses[actor]
             # Avoid actor-by-actor world scans in the common object-free
             # town. With objects present, only the actor and residents
             # close enough to witness this action need endpoint snapshots.
