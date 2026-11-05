@@ -55,6 +55,12 @@ _SKILL_CLUSTER = _PACK["_SKILL_CLUSTER"]
 # How a townspeople seed's relationship labels become held ties (Phase 014).
 RELATIONSHIP_KINDS = _PACK["RELATIONSHIP_KINDS"]
 RELATIONSHIP_DEFAULT = _PACK["RELATIONSHIP_DEFAULT"]
+# Kinship (Phase 009). Genealogy is a world fact; these are what residents call one another and the
+# inheritance custom under which genealogical heirs are published. See packs/bigville/frames/kinship.json.
+KIN_TERMS = _PACK["KIN_TERMS"]
+KIN_ATTRIBUTION = _PACK["KIN_ATTRIBUTION"]
+KIN_OBLIGATIONS = _PACK["KIN_OBLIGATIONS"]
+INHERITANCE_CUSTOM = _PACK["INHERITANCE_CUSTOM"]
 
 
 def trade_skills(trade):

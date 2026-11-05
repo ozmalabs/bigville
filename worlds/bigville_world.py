@@ -2130,7 +2130,175 @@ class BigvilleWorld:
         # share a mapped parcel; the map locates the field, while each Crop
         # node is an independently watered and harvested unit.
         self._seed_village_crops(target=80)
+        self._found_kinship(cast["residents"], seed)
         return cast
+
+    # ------------------------------------------------------------------ kinship (Phase 009)
+    # Genealogy is a world fact: bore/fathered edges from each parent to each child, union_with edges
+    # between partners (each union is a Union node carrying its start and end periods), and the birth
+    # period and sex on every person. Kin terms are HELD: each founder holds KinTerm nodes, reachable
+    # only through that founder's node. The founding seed writes the genealogical terms as authored
+    # priors; later changes belong to the resident's backend. The world never decides who counts as
+    # someone's uncle, and recording a held term never checks it against the genealogy.
+
+    def _kin_clock(self):
+        """Years since the founding clock (the founding year is 0)."""
+        a = self.eng.node(self._town)["attrs"]
+        per_year = float(self.E.TIME["ticks_per_day"]) * float(self.E.TIME["days_per_year"])
+        return (float(a.get("clock", 0.0)) - float(getattr(self, "_kin_clock0", 0.0))) / per_year
+
+    def _found_kinship(self, residents, seed):
+        """Record the founding genealogy and seed each founder's genealogical kin terms.
+
+        The draw uses its own generator (map seed + KINSHIP_STREAM), so the world's random streams, and
+        every resident's name, role, household, home, and stock, are unchanged. Founders are the existing
+        Agent nodes; the other persons are new Kin nodes."""
+        import numpy as np
+        self._kin_clock0 = float(self.eng.node(self._town)["attrs"].get("clock", 0.0))
+        rng = np.random.default_rng(int(seed) + int(self.E.KINSHIP_STREAM))
+        founders = [{"name": r["name"],
+                     "age": float(self.eng.node(self._actors[r["name"]])["attrs"]["age"])}
+                    for r in residents]
+        kin = self.E.draw_founding_kin(founders, rng, present=0.0)
+        node_of = {}
+        for person in kin["persons"]:
+            if person["founder"]:
+                node = self._actors[person["name"]]
+                attrs = {"kin_sex": person["sex"], "kin_birth": person["birth"]}
+            else:
+                node = self.eng.add_node("Kin", {"name": f"kin {person['id']}", "in_village": 0.0,
+                                                 "kin_sex": person["sex"], "kin_birth": person["birth"]})
+                attrs = {}
+            for key, value in attrs.items():
+                self.eng.set_attr(node, key, value)
+            self.eng.set_attr(node, "kin_dead", 0.0 if person["death"] is None else 1.0)
+            self.eng.set_attr(node, "kin_death", float(person["death"] or 0.0))
+            node_of[person["id"]] = node
+        for birth in kin["births"]:
+            parent_sex = kin["persons"][birth["parent"]]["sex"]
+            self.eng.add_edge_unchecked(node_of[birth["parent"]],
+                                        "bore" if parent_sex == "female" else "fathered",
+                                        node_of[birth["child"]])
+        for union in kin["unions"]:
+            a, b = node_of[union["a"]], node_of[union["b"]]
+            record = self.eng.add_node("Union", {"a": int(a), "b": int(b), "start": union["start"],
+                                                 "ended": 0.0 if union["end"] is None else 1.0,
+                                                 "end": 0.0 if union["end"] is None else union["end"]})
+            self.eng.add_edge_unchecked(a, "union_with", b)
+            self.eng.add_edge_unchecked(b, "union_with", a)
+            self.eng.add_edge_unchecked(a, "in_union", record)
+            self.eng.add_edge_unchecked(b, "in_union", record)
+        index = self.E.index_kinship(kin["persons"], kin["births"], kin["unions"])
+        for pid in kin["founders"]:
+            for target, (term, path) in sorted(self.E.kin_relatives(index, pid, 0.0).items()):
+                self._hold_kin(node_of[pid], node_of[target], term, attribution="genealogy", path=path)
+        return kin
+
+    def _hold_kin(self, holder_node, target_node, term, *, attribution, path="", source=""):
+        """A KinTerm node: `holder_node` holds `term` for `target_node`. Reachable only from the holder."""
+        name = lambda node: str(self.eng.node(node)["attrs"].get("name", ""))  # noqa: E731
+        ref = self.eng.add_node("KinTerm", {"term": term, "attribution": attribution, "path": path,
+                                            "holder": name(holder_node), "target": name(target_node),
+                                            "holder_node": int(holder_node), "target_node": int(target_node),
+                                            "source": source})
+        self.eng.add_edge_unchecked(holder_node, "holds_kin_term", ref)
+        self.eng.add_edge_unchecked(ref, "of_kin", target_node)
+        return ref
+
+    def _person_node(self, who):
+        """The graph node of a resident (by name) or of any kin person (by node id)."""
+        if isinstance(who, str):
+            if who not in self._actors:
+                raise KeyError(f"unknown resident: {who}")
+            return self._actors[who]
+        node = int(who)
+        if not self.eng.has_node(node) or "kin_birth" not in self.eng.node(node)["attrs"]:
+            raise KeyError(f"no kinship record for node {who}")
+        return node
+
+    def _kin_index(self):
+        """The genealogy as it stands in the graph, indexed for path queries (E.index_kinship)."""
+        persons, births, unions = {}, [], []
+        for node in self.eng.nodes():
+            attrs = self.eng.node(node)["attrs"]
+            if "kin_birth" not in attrs:
+                continue
+            nid = int(node)
+            dead = float(attrs.get("kin_dead", 0.0)) == 1.0
+            persons[nid] = {"id": nid, "name": str(attrs.get("name", "")), "sex": str(attrs["kin_sex"]),
+                            "birth": float(attrs["kin_birth"]),
+                            "death": float(attrs.get("kin_death", 0.0)) if dead else None,
+                            "in_village": self.eng.node(node)["type"] == "Agent",
+                            "founder": self.eng.node(node)["type"] == "Agent"}
+        for pid in persons:
+            for kind in ("bore", "fathered"):
+                for child in self.eng.neighbours(pid, kind):
+                    births.append({"parent": pid, "child": int(child),
+                                   "period": persons[int(child)]["birth"]})
+        for node in self.eng.nodes("Union"):
+            attrs = self.eng.node(node)["attrs"]
+            unions.append({"a": int(attrs["a"]), "b": int(attrs["b"]), "start": float(attrs["start"]),
+                           "end": float(attrs["end"]) if attrs.get("ended") == 1.0 else None})
+        return self.E.index_kinship(persons, births, unions)
+
+    def genealogical_kin(self, holder, target):
+        """The term the genealogy gives `holder` for `target` as (term, path), or None if no path."""
+        return self.E.kin_relatives(self._kin_index(), self._person_node(holder),
+                                    self._kin_clock()).get(self._person_node(target))
+
+    def kin_terms_held(self, holder):
+        """The kin terms `holder` holds: dicts with term, attribution, path, holder, and target. Held
+        references are private to the holder's node; this returns them for that holder only."""
+        rows = []
+        for ref in self.eng.neighbours(self._person_node(holder), "holds_kin_term"):
+            rows.append(dict(self.eng.node(ref)["attrs"]))
+        return sorted(rows, key=lambda r: (r["target"], r["term"], r["attribution"]))
+
+    def hold_kin_term(self, holder, target, term, *, attribution="honorific", source=""):
+        """Record that `holder` calls `target` by `term`, held by an attribution (KIN_ATTRIBUTION): adoption,
+        fostering, godparenthood, step-family, or an honorific title. The term is the holder's own reference
+        and is not checked against the genealogy, so the two layers may disagree. Returns the held record."""
+        assert term in self.E.KIN_TERMS, f"unknown kin term {term}"
+        assert attribution in self.E.KIN_ATTRIBUTION and term in self.E.KIN_ATTRIBUTION[attribution]["terms"], \
+            f"attribution {attribution} does not give {term}"
+        holder_node, target_node = self._person_node(holder), self._person_node(target)
+        assert holder_node != target_node, "a resident does not hold a kin term for themselves"
+        ref = self._hold_kin(holder_node, target_node, term, attribution=attribution, source=source)
+        return dict(self.eng.node(ref)["attrs"])
+
+    def publish_heirs(self, name, *, custom=None):
+        """Publish who the genealogical heirs of `name` are under `custom` (default: INHERITANCE_CUSTOM's
+        default). The result is a HeirRecord and an observed event, and it names the successors for the
+        existing 'inheritance' deed type. It moves no land, title, stock, coin, or household."""
+        node = self._person_node(name)
+        if "kin_birth" not in self.eng.node(node)["attrs"]:
+            return None
+        now = self._kin_clock()
+        index = self._kin_index()
+        custom_name = custom or self.E.INHERITANCE_CUSTOM["default"]
+        heirs = [{"resident": index["persons"][h["id"]]["name"], "kind": h["kind"],
+                  "share": round(float(h["share"]), 4), "life_interest": bool(h["life_interest"])}
+                 for h in self.E.genealogical_heirs(index, int(node), now, custom_name)]
+        listed = ";".join(f"{h['resident']}|{h['kind']}|{h['share']:.4f}|{int(h['life_interest'])}"
+                          for h in heirs)
+        record = self.eng.add_node("HeirRecord", {"predecessor": str(name), "custom": custom_name,
+                                                  "deed_type": "inheritance", "period": now, "heirs": listed})
+        self.eng.add_edge_unchecked(self._town, "has_heir_record", record)
+        self.eng.add_edge_unchecked(node, "heir_record", record)
+        who = ", ".join(f"{h['resident']} ({h['kind']}, share {h['share']:.2f})" for h in heirs) or "none"
+        self.create_event("heirs_published", subject=str(name), public=True,
+                          detail=f"{name}'s genealogical heirs under {custom_name}: {who}.")
+        return {"predecessor": str(name), "custom": custom_name, "deed_type": "inheritance",
+                "period": now, "heirs": heirs}
+
+    def _record_kin_death(self, actor):
+        """Mark a founder's genealogical death and publish their heirs. Residents with no kin record: no-op."""
+        node = self._actors[actor]
+        if "kin_birth" not in self.eng.node(node)["attrs"]:
+            return None
+        self.eng.set_attr(node, "kin_dead", 1.0)
+        self.eng.set_attr(node, "kin_death", self._kin_clock())
+        return self.publish_heirs(actor)
 
     def seed_workplace_relationships(self, *, strength=0.4):
         """Sparse, deterministic pre-existing colleague ties for the town100 cast.
@@ -5561,6 +5729,7 @@ class BigvilleWorld:
         self.eng.set_attr(node, "death_recorded", 1.0)
         self._deaths.append({"actor": actor, "day": self.calendar()["day"],
                              "cause": str(cause), "event": str(event)})
+        self._record_kin_death(actor)
         self._alive_snapshot[actor] = False
         return event
 

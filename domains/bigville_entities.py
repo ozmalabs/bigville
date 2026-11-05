@@ -660,6 +660,90 @@ def check_consistency():
             if key not in winter.get("parameters", {}):
                 errors.append(f"POLICIES[winter_food_reserve].parameters: '{key}' is missing (the village reserve reads it)")
 
+    # Phase 009: kin terms, attribution, obligations, the inheritance custom, and the founding household
+    # and genealogy draws checked against their cited figures.
+    for term, spec in KIN_TERMS.items():
+        rec = spec.get("reciprocal")
+        if rec not in KIN_TERMS:
+            errors.append(f"KIN_TERMS[{term}].reciprocal: '{rec}' is not a kin term")
+        elif KIN_TERMS[rec].get("reciprocal") != term:
+            errors.append(f"KIN_TERMS[{term}].reciprocal: '{rec}' does not name '{term}' back")
+        if spec.get("sex") not in (None, "male", "female"):
+            errors.append(f"KIN_TERMS[{term}].sex: '{spec.get('sex')}' is not male, female, or null")
+        if not isinstance(spec.get("generation"), int):
+            errors.append(f"KIN_TERMS[{term}].generation: must be an integer")
+        if spec.get("shared_parents") not in (None, "both", "one"):
+            errors.append(f"KIN_TERMS[{term}].shared_parents: must be 'both' or 'one'")
+        for path in spec.get("paths", []):
+            for token in path:
+                if token not in ("parent", "child", "spouse", "sibling"):
+                    errors.append(f"KIN_TERMS[{term}].paths: step '{token}' is not parent, child, spouse, or sibling")
+        if not spec.get("paths") and not spec.get("attributions"):
+            errors.append(f"KIN_TERMS[{term}]: no genealogical path and no attribution, so nothing can hold it")
+        for ob in spec.get("obligations", []):
+            if ob not in KIN_OBLIGATIONS:
+                errors.append(f"KIN_TERMS[{term}].obligations: '{ob}' is not in KIN_OBLIGATIONS")
+        for att in spec.get("attributions", []):
+            if att not in KIN_ATTRIBUTION:
+                errors.append(f"KIN_TERMS[{term}].attributions: '{att}' is not in KIN_ATTRIBUTION")
+            elif term not in KIN_ATTRIBUTION[att]["terms"]:
+                errors.append(f"KIN_TERMS[{term}].attributions: KIN_ATTRIBUTION[{att}] does not list '{term}'")
+    for att, spec in KIN_ATTRIBUTION.items():
+        for term in spec["terms"]:
+            if term not in KIN_TERMS:
+                errors.append(f"KIN_ATTRIBUTION[{att}].terms: '{term}' is not a kin term")
+        for ob in spec["obligations"]:
+            if ob not in KIN_OBLIGATIONS:
+                errors.append(f"KIN_ATTRIBUTION[{att}].obligations: '{ob}' is not in KIN_OBLIGATIONS")
+        if not isinstance(spec.get("inherits"), bool):
+            errors.append(f"KIN_ATTRIBUTION[{att}].inherits: must be true or false")
+    for name, spec in INHERITANCE_CUSTOM["customs"].items():
+        if spec.get("spouse") not in ("share", "life_interest"):
+            errors.append(f"INHERITANCE_CUSTOM[{name}].spouse: must be 'share' or 'life_interest'")
+        if not spec.get("tiers"):
+            errors.append(f"INHERITANCE_CUSTOM[{name}].tiers: empty, so no custom ever names an heir")
+        for tier in spec.get("tiers", []):
+            if tier.get("rule") not in ("equal", "eldest"):
+                errors.append(f"INHERITANCE_CUSTOM[{name}].tiers: rule '{tier.get('rule')}' is not equal or eldest")
+            for kind in tier.get("kinds", []):
+                if kind not in ("child", "parent", "sibling"):
+                    errors.append(f"INHERITANCE_CUSTOM[{name}].tiers: kind '{kind}' is not child, parent, or sibling")
+    if INHERITANCE_CUSTOM["default"] not in INHERITANCE_CUSTOM["customs"]:
+        errors.append(f"INHERITANCE_CUSTOM: default '{INHERITANCE_CUSTOM['default']}' is not a custom")
+    for name, spec in KIN_OBLIGATIONS.items():
+        if not spec.get("description") or not spec.get("source"):
+            errors.append(f"KIN_OBLIGATIONS[{name}]: needs a description and a source (APPROX if unsourced)")
+    if abs(sum(HOUSEHOLD_SIZE.values()) - 1.0) > 1e-6:
+        errors.append(f"HOUSEHOLD_SIZE: shares sum to {sum(HOUSEHOLD_SIZE.values()):.4f}, not 1")
+    if sorted(int(k) for k in HOUSEHOLD_SIZE) != list(range(1, len(HOUSEHOLD_SIZE) + 1)):
+        errors.append("HOUSEHOLD_SIZE: sizes must run 1, 2, 3, ... without gaps")
+    if abs(sum(EXTENDED_KIN.values()) - 1.0) > 1e-6:
+        errors.append(f"EXTENDED_KIN: shares sum to {sum(EXTENDED_KIN.values()):.4f}, not 1")
+    for key in ("EXTENDED_FAMILY",):
+        _num(f"{key}", EXTENDED_FAMILY, 0.0, 1.0)
+    for key, value in KIN_MODEL.items():
+        if key != "CHILD_SPACING_YEARS":
+            _num(f"KIN_MODEL.{key}", value, 0.0, 1.0)
+    _num("KIN_MODEL.CHILD_SPACING_YEARS", KIN_MODEL["CHILD_SPACING_YEARS"], 0.5)
+    _num("INFANT_SURVIVAL", INFANT_SURVIVAL, 0.0, 1.0)
+    kin_draw = describe_household_distribution(10000, seed=1)
+    for key, label, measured in (("mean_size", "household size (mean members)", kin_draw["mean_size"]),
+                                 ("extended_share", "extended-family share of households", kin_draw["extended_share"])):
+        target = HOUSEHOLD_TARGETS[key]
+        gap = abs(measured - float(target["value"]))
+        line = (f"{label}: sample {measured:.3f} vs {float(target['value']):.3f} "
+                f"(tolerance {float(target['tolerance']):.2f}; {target['source']})")
+        if gap > float(target["tolerance"]):
+            errors.append(f"HOUSEHOLD_TARGETS[{key}]: {line}")
+        else:
+            info.append(f"HOUSEHOLDS: {line}")
+    kin_shape = describe_founding_kin(100, seed=305009)
+    info.append(f"FOUNDING KIN (100 adults of 30, as the founding cast): {kin_shape['with_parent_on_record']:.0%} "
+                f"have a parent on record, {kin_shape['married']:.0%} are joined by a union, "
+                f"{kin_shape['with_aunt_or_uncle']:.0%} have an aunt or uncle, {kin_shape['with_cousin']:.0%} "
+                f"have a first cousin, married founders average {kin_shape['mean_children_married']:.1f} children "
+                f"(model shape; see population/household_composition.json)")
+
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

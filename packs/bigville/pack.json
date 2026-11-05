@@ -524,6 +524,66 @@
     {
       "name": "RELATIONSHIP_DEFAULT",
       "file": "frames/relationship_kinds.json"
+    },
+    {
+      "name": "KIN_TERMS",
+      "file": "frames/kinship.json"
+    },
+    {
+      "name": "KIN_ATTRIBUTION",
+      "file": "frames/kinship.json"
+    },
+    {
+      "name": "KIN_OBLIGATIONS",
+      "file": "frames/kinship.json"
+    },
+    {
+      "name": "INHERITANCE_CUSTOM",
+      "file": "frames/kinship.json"
+    },
+    {
+      "name": "HOUSEHOLD_SIZE",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "EXTENDED_FAMILY",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "EXTENDED_KIN",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "AGE_AT_FIRST_UNION",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "CHILDREN_PER_UNION",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "INFANT_SURVIVAL",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "ADULT_LIFESPAN",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "PARENT_AGE_AT_BIRTH",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "KIN_MODEL",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "KINSHIP_STREAM",
+      "file": "population/household_composition.json"
+    },
+    {
+      "name": "HOUSEHOLD_TARGETS",
+      "file": "population/household_composition.json"
     }
   ]
 }

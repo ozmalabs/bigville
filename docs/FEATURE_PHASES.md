@@ -218,9 +218,14 @@ species where the town has two or more (record the choice).
 
 ## Phase 009 -- Kinship, households, and inheritance
 
-**Status:** ready (decision 2026-11-05: kinship as in the real world -- extended
-family -- but a kin term is a social relation, not only a genealogical one: an
-uncle does not have to be a biological uncle).
+**Status:** done (see History). Decision 2026-11-05: kinship as in the real world (extended
+family), but a kin term is a social relation, not only a genealogical one. Supervisor review:
+checked the mean household size (Laslett, 4.75) and the share of households with kin (about
+10-11%) and recorded the sources in the pack; the other demographic figures stay APPROX. Left for
+Phase 016/003: the cast still has one household per resident and every founder is aged 30, so
+household draws are checked only by the self-test and founders have about 2.5 children. Open:
+heirs are published as a public event (records office only?); no second unions, so no
+half-siblings or step-family arise by genealogy.
 
 **Goal.** Separate the two layers real kinship has:
 1. **Genealogy (world fact):** who bore or fathered whom, and recorded unions.
@@ -635,3 +640,4 @@ exist, at the precision they know them -- never the world's map.
 | 015 Roles, offices, procedures | done | (this commit) | docs/phases/phase015/PHASE015_REPORT.md -- HOUSEHOLDS roles/groups/fallback, GOVERNANCE_OFFICES registrar, LABOUR_TASKS worker_roles (+bake), winter reserve parameters, scenario `procedures`, civic records carry stage; fixture tests/fixtures/phase015_offices (reeve/notary); 364 passed |
 | 002 Recipe inputs from own stock | done | (this commit) | docs/phases/phase002/PHASE002_REPORT.md -- draw order own -> accessible container at cell -> store; drawn_from on Need; affordance uses the same planner; 373 passed |
 | 012 Physical and cognitive learning | done | (this commit) | docs/phases/phase012/PHASE012_REPORT.md -- `learning` tag on every skill and metaskill; `cognitive_practice` switch (default off) with a `practice` observation in the actor's context; 378 passed |
+| 009 Kinship, households, inheritance | done | (this commit) | docs/phases/phase009/PHASE009_REPORT.md -- genealogy (bore/fathered/union_with) as world fact, held KinTerm references, KIN_TERMS/ATTRIBUTION/OBLIGATIONS, partible default custom, heirs published on death with no transfer; household draw checked against Laslett; 394 passed |

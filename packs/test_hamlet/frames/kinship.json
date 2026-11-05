@@ -1,0 +1,473 @@
+{
+  "_doc": "Kinship as a shared frame (Phase 009). Two layers. GENEALOGY is a world fact: bore/fathered (parent to child) and union_with edges with their periods, recorded in the world graph. KIN_TERMS are what people call one another; a resident HOLDS a term as a private reference, seeded from genealogy at founding and changed later only by the resident's backend. A term can be held without a genealogical path (see KIN_ATTRIBUTION).\n\nKIN_TERMS: generation (+1 up, -1 down, 0 level); sex (null = either); reciprocal (the term the other person holds); paths (step sequences from the holder: parent = up to a parent, child = down to a child, spouse = an active union partner, sibling = another child of one of my parents; a path is a term's usual genealogical route, for example uncle = parent's sibling, or parent's sister's husband); shared_parents (optional filter on a sibling step: 'both' full siblings, 'one' half siblings); obligations (KIN_OBLIGATIONS the term normally implies); attributions (KIN_ATTRIBUTION kinds that can give the term without a path). A term with no paths arises only by attribution. The first matching term in table order is the one held.\n\nKIN_ATTRIBUTION: the ways a term is held WITHOUT the genealogical path. 'terms' are the KIN_TERMS it can give; 'inherits' says whether the holder counts as a heir under a custom (only adoption does, by default). These are model categories; the village's real practice varies (APPROX).\n\nKIN_OBLIGATIONS: what a kin term normally implies, as frames a resident may hold. They are social norms, not world rules.\n\nINHERITANCE_CUSTOM: the default custom used to publish genealogical heirs when a resident dies. 'default' names the custom in use. Each custom has 'spouse' ('share' = a spouse takes an equal share in the first tier, 'life_interest' = the spouse is listed with no share of the estate) and 'tiers' in order: the first tier with living members lists them, sharing under 'rule' ('equal' splits equally, 'eldest' gives the whole to the eldest by birth). Publishing a heir list never moves property; it feeds the existing 'inheritance' deed type.\n\nSources: Goody, Thirsk and Thompson (eds.), Family and Inheritance: Rural Society in Western Europe 1200-1800 (Cambridge UP, 1976), which describes both partible and impartible customary inheritance in English and continental villages. The default (partible) is a model choice, not a measured village rule (APPROX). Kin term definitions are the usual English genealogical usage; the step, godparent, and honorific terms are social categories with no fixed genealogical path (APPROX).",
+  "_types": {},
+  "tables": {
+    "KIN_TERMS": {
+      "parent": {
+        "generation": 1,
+        "sex": null,
+        "reciprocal": "child",
+        "paths": [
+          [
+            "parent"
+          ]
+        ],
+        "obligations": [
+          "care_dependants",
+          "hospitality"
+        ],
+        "attributions": [
+          "adoption",
+          "fostering"
+        ]
+      },
+      "child": {
+        "generation": -1,
+        "sex": null,
+        "reciprocal": "parent",
+        "paths": [
+          [
+            "child"
+          ]
+        ],
+        "obligations": [
+          "care_dependants",
+          "inheritance_claim"
+        ],
+        "attributions": [
+          "adoption",
+          "fostering"
+        ]
+      },
+      "spouse": {
+        "generation": 0,
+        "sex": null,
+        "reciprocal": "spouse",
+        "paths": [
+          [
+            "spouse"
+          ]
+        ],
+        "obligations": [
+          "support_in_need",
+          "inheritance_claim",
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "sibling": {
+        "generation": 0,
+        "sex": null,
+        "reciprocal": "sibling",
+        "paths": [
+          [
+            "sibling"
+          ]
+        ],
+        "shared_parents": "both",
+        "obligations": [
+          "support_in_need",
+          "hospitality"
+        ],
+        "attributions": [
+          "adoption",
+          "honorific"
+        ]
+      },
+      "half_sibling": {
+        "generation": 0,
+        "sex": null,
+        "reciprocal": "half_sibling",
+        "paths": [
+          [
+            "sibling"
+          ]
+        ],
+        "shared_parents": "one",
+        "obligations": [
+          "support_in_need",
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "grandparent": {
+        "generation": 2,
+        "sex": null,
+        "reciprocal": "grandchild",
+        "paths": [
+          [
+            "parent",
+            "parent"
+          ]
+        ],
+        "obligations": [
+          "care_elders",
+          "hospitality"
+        ],
+        "attributions": [
+          "honorific"
+        ]
+      },
+      "grandchild": {
+        "generation": -2,
+        "sex": null,
+        "reciprocal": "grandparent",
+        "paths": [
+          [
+            "child",
+            "child"
+          ]
+        ],
+        "obligations": [
+          "care_elders",
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "uncle": {
+        "generation": 1,
+        "sex": "male",
+        "reciprocal": "nephew",
+        "paths": [
+          [
+            "parent",
+            "sibling"
+          ],
+          [
+            "parent",
+            "sibling",
+            "spouse"
+          ]
+        ],
+        "obligations": [
+          "support_in_need",
+          "hospitality"
+        ],
+        "attributions": [
+          "honorific",
+          "fostering"
+        ]
+      },
+      "aunt": {
+        "generation": 1,
+        "sex": "female",
+        "reciprocal": "niece",
+        "paths": [
+          [
+            "parent",
+            "sibling"
+          ],
+          [
+            "parent",
+            "sibling",
+            "spouse"
+          ]
+        ],
+        "obligations": [
+          "support_in_need",
+          "hospitality"
+        ],
+        "attributions": [
+          "honorific",
+          "fostering"
+        ]
+      },
+      "nephew": {
+        "generation": -1,
+        "sex": "male",
+        "reciprocal": "uncle",
+        "paths": [
+          [
+            "sibling",
+            "child"
+          ]
+        ],
+        "obligations": [
+          "support_in_need",
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "niece": {
+        "generation": -1,
+        "sex": "female",
+        "reciprocal": "aunt",
+        "paths": [
+          [
+            "sibling",
+            "child"
+          ]
+        ],
+        "obligations": [
+          "support_in_need",
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "cousin": {
+        "generation": 0,
+        "sex": null,
+        "reciprocal": "cousin",
+        "paths": [
+          [
+            "parent",
+            "sibling",
+            "child"
+          ]
+        ],
+        "obligations": [
+          "hospitality"
+        ],
+        "attributions": [
+          "honorific"
+        ]
+      },
+      "parent_in_law": {
+        "generation": 1,
+        "sex": null,
+        "reciprocal": "child_in_law",
+        "paths": [
+          [
+            "spouse",
+            "parent"
+          ]
+        ],
+        "obligations": [
+          "support_in_need",
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "child_in_law": {
+        "generation": -1,
+        "sex": null,
+        "reciprocal": "parent_in_law",
+        "paths": [
+          [
+            "child",
+            "spouse"
+          ]
+        ],
+        "obligations": [
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "sibling_in_law": {
+        "generation": 0,
+        "sex": null,
+        "reciprocal": "sibling_in_law",
+        "paths": [
+          [
+            "spouse",
+            "sibling"
+          ],
+          [
+            "sibling",
+            "spouse"
+          ]
+        ],
+        "obligations": [
+          "hospitality"
+        ],
+        "attributions": []
+      },
+      "step_parent": {
+        "generation": 1,
+        "sex": null,
+        "reciprocal": "step_child",
+        "paths": [],
+        "obligations": [
+          "care_dependants",
+          "hospitality"
+        ],
+        "attributions": [
+          "step_family"
+        ]
+      },
+      "step_child": {
+        "generation": -1,
+        "sex": null,
+        "reciprocal": "step_parent",
+        "paths": [],
+        "obligations": [
+          "care_dependants",
+          "hospitality"
+        ],
+        "attributions": [
+          "step_family"
+        ]
+      },
+      "step_sibling": {
+        "generation": 0,
+        "sex": null,
+        "reciprocal": "step_sibling",
+        "paths": [],
+        "obligations": [
+          "hospitality"
+        ],
+        "attributions": [
+          "step_family"
+        ]
+      },
+      "godparent": {
+        "generation": 1,
+        "sex": null,
+        "reciprocal": "godchild",
+        "paths": [],
+        "obligations": [
+          "care_dependants"
+        ],
+        "attributions": [
+          "godparenthood"
+        ]
+      },
+      "godchild": {
+        "generation": -1,
+        "sex": null,
+        "reciprocal": "godparent",
+        "paths": [],
+        "obligations": [
+          "care_dependants"
+        ],
+        "attributions": [
+          "godparenthood"
+        ]
+      }
+    },
+    "KIN_ATTRIBUTION": {
+      "adoption": {
+        "terms": [
+          "parent",
+          "child",
+          "sibling"
+        ],
+        "obligations": [
+          "care_dependants",
+          "inheritance_claim"
+        ],
+        "inherits": true
+      },
+      "fostering": {
+        "terms": [
+          "parent",
+          "child",
+          "uncle",
+          "aunt"
+        ],
+        "obligations": [
+          "care_dependants"
+        ],
+        "inherits": false
+      },
+      "godparenthood": {
+        "terms": [
+          "godparent",
+          "godchild"
+        ],
+        "obligations": [
+          "care_dependants"
+        ],
+        "inherits": false
+      },
+      "step_family": {
+        "terms": [
+          "step_parent",
+          "step_child",
+          "step_sibling"
+        ],
+        "obligations": [
+          "care_dependants",
+          "hospitality"
+        ],
+        "inherits": false
+      },
+      "honorific": {
+        "terms": [
+          "uncle",
+          "aunt",
+          "grandparent",
+          "cousin",
+          "sibling"
+        ],
+        "obligations": [
+          "hospitality"
+        ],
+        "inherits": false
+      }
+    },
+    "KIN_OBLIGATIONS": {
+      "care_dependants": {
+        "description": "Feed, house, and raise a dependent child or ward when parents cannot.",
+        "source": "APPROX: usual pre-industrial English expectation; model category."
+      },
+      "care_elders": {
+        "description": "Shelter and support an aged relative who can no longer work.",
+        "source": "APPROX: usual pre-industrial English expectation; model category."
+      },
+      "support_in_need": {
+        "description": "Lend help, labour, or money to a kinsman in hardship.",
+        "source": "APPROX: model category, from Laslett 1972 on kin support in pre-industrial households."
+      },
+      "inheritance_claim": {
+        "description": "A claim on the estate of the deceased under the village custom.",
+        "source": "Goody, Thirsk and Thompson 1976 (see the INHERITANCE_CUSTOM note)."
+      },
+      "hospitality": {
+        "description": "Welcome and a meal at the household, on visits and feast days.",
+        "source": "APPROX: model category."
+      }
+    },
+    "INHERITANCE_CUSTOM": {
+      "default": "partible",
+      "customs": {
+        "partible": {
+          "spouse": "share",
+          "tiers": [
+            {
+              "kinds": [
+                "child"
+              ],
+              "rule": "equal"
+            },
+            {
+              "kinds": [
+                "parent"
+              ],
+              "rule": "equal"
+            },
+            {
+              "kinds": [
+                "sibling"
+              ],
+              "rule": "equal"
+            }
+          ]
+        },
+        "primogeniture": {
+          "spouse": "life_interest",
+          "tiers": [
+            {
+              "kinds": [
+                "child"
+              ],
+              "rule": "eldest"
+            },
+            {
+              "kinds": [
+                "sibling"
+              ],
+              "rule": "eldest"
+            },
+            {
+              "kinds": [
+                "parent"
+              ],
+              "rule": "equal"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
