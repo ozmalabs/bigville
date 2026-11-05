@@ -78,6 +78,8 @@ SEASONS = _PACK["SEASONS"]
 WEATHER = _PACK["WEATHER"]
 WATER_SOURCES = _PACK["WATER_SOURCES"]
 FUEL_SOURCES = _PACK["FUEL_SOURCES"]
+# Phase 005: space heating each household burns per period (fuel_type, base_burn, unheated_chill).
+HEATING = _PACK["HEATING"]
 SOILS = _PACK["SOILS"]
 LAND_USES = _PACK["LAND_USES"]
 PASTURE_YIELDS = _PACK["PASTURE_YIELDS"]
@@ -460,6 +462,26 @@ def _recipe_unit_cost(r):
     return cost / float(r["out"][1])
 
 
+def mean_firewood_demand():
+    """The year's mean firewood_demand (WEATHER). Each season is weighted equally (TIME gives each a
+    90-day span in the founding calendar), and within a season each weather option is equally likely,
+    as the world draws one per day (world_affordances' _set_daily_weather)."""
+    per_season = []
+    for season in SEASONS.values():
+        options = [float(WEATHER[w]["firewood_demand"]) for w in season.get("weather", ()) if w in WEATHER]
+        if options:
+            per_season.append(sum(options) / len(options))
+    return sum(per_season) / len(per_season) if per_season else 1.0
+
+
+def heating_demand(sc):
+    """Fuel burnt for space heating per period (one day), averaged over the year's weather: each of the
+    scenario's households burns HEATING base_burn x firewood_demand. Zero without households or HEATING."""
+    if not sc or not HEATING:
+        return 0.0
+    return float(sc.get("households", 0)) * float(HEATING["base_burn"]) * mean_firewood_demand()
+
+
 def _balance_flows(sc):
     """Per-period supply and demand of a town's coupled flows under scenario `sc` (see
     population.BALANCE_SCENARIO). Returns (flows, notes, work): work is {stream: minutes per period}.
@@ -511,6 +533,11 @@ def _balance_flows(sc):
     # fuel: the staple burns fuel; straw and the lumber deposit (split into firewood) supply it
     fuel_demand = sum(batches * sum(float(q) for k, q in next(r for r in RECIPES if r["name"] == n)["in"]
                                     if k == "fuel") for n, batches in chain.items())
+    heat = heating_demand(sc)
+    fuel_demand += heat
+    notes.append(f"heating: {float(sc.get('households', 0)):.0f} households burn {heat:.1f} fuel/period on average "
+                 f"(base {float(HEATING.get('base_burn', 0.0)):g} x mean firewood demand {mean_firewood_demand():.2f}); "
+                 f"the cooking staple chain is the rest")
     straw_heat = sum(q * _tag_yield(k, "fuel") for k, q in harvest.items())
     lumber_regrowth = float(RESOURCE_DEPOSITS["lumber"]["growback"]) * float(sc.get("woodland", 1.0))
     fuel_supply = straw_heat + lumber_regrowth * _tag_yield("lumber", "fuel")

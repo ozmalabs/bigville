@@ -1,9 +1,10 @@
 {
-  "_doc": "The founding town the balance model assumes. These mirror what worlds/bigville_world.py builds\nfor the 100-resident scenario (populate_town100 / _seed_village_crops): keep them in step.\nfood units eaten per resident per period\nthe recipe most food is assumed to come through\na working day per period",
+  "_doc": "The founding town the balance model assumes. These mirror what worlds/bigville_world.py builds\nfor the 100-resident scenario (populate_town100 / _seed_village_crops): keep them in step.\nhouseholds: the founding households that burn fuel for heating (HEATING); 46 is what the 100-resident cast builds (Phase 016b test)\nfood units eaten per resident per period\nthe recipe most food is assumed to come through\na working day per period",
   "_types": {},
   "tables": {
     "BALANCE_SCENARIO": {
       "residents": 100,
+      "households": 46,
       "food_per_resident": 1.0,
       "staple": "bake_bread",
       "beds": {

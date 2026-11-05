@@ -2566,9 +2566,9 @@
   {
    "age": 40,
    "capability": 0.9,
-   "class": "middle",
+   "class": "poor",
    "former_skills": {},
-   "group": "middle",
+   "group": "low",
    "history": {
     "apprenticed": [],
     "apprenticed_years": {},
@@ -2588,7 +2588,7 @@
    "household_role": "head",
    "index": 31,
    "jobs": [
-    "miller"
+    "forester"
    ],
    "literacy": 1,
    "name": "Lavinia Grubb",
@@ -2607,15 +2607,17 @@
     "w_spite": 0.3181,
     "w_supergraph": 0.624
    },
-   "role": "miller",
-   "role_identity": 0.5291,
+   "role": "forester",
+   "role_identity": 0.2364,
    "skill": 0.6,
-   "trades": [],
-   "workplace_cell": [
-    13,
-    12
+   "trades": [
+    "collier"
    ],
-   "workplace_kind": "mill"
+   "workplace_cell": [
+    7,
+    30
+   ],
+   "workplace_kind": "lumber"
   },
   {
    "age": 34,
@@ -2642,7 +2644,7 @@
    "household_role": "head",
    "index": 32,
    "jobs": [
-    "farmer"
+    "miller"
    ],
    "literacy": 1,
    "name": "Keturah Marsh",
@@ -2661,27 +2663,29 @@
     "w_spite": 0.254,
     "w_supergraph": 0.6512
    },
-   "role": "farmer",
-   "role_identity": 0.542,
-   "skill": 0.7,
-   "trades": [
-    "cook"
-   ],
+   "role": "miller",
+   "role_identity": 0.5292,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    45,
-    32
+    13,
+    12
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "mill"
   },
   {
    "age": 34,
    "capability": 0.9,
-   "class": "poor",
+   "class": "middle",
    "former_skills": {},
-   "group": "low",
+   "group": "middle",
    "history": {
-    "apprenticed": [],
-    "apprenticed_years": {},
+    "apprenticed": [
+     "farmer"
+    ],
+    "apprenticed_years": {
+     "farmer": 7.0
+    },
     "former_trades": [],
     "household_role": "child",
     "local": true,
@@ -2698,7 +2702,7 @@
    "household_role": "child",
    "index": 33,
    "jobs": [
-    "animal_keeper"
+    "farmer"
    ],
    "literacy": 1,
    "name": "Alby Harkness",
@@ -2717,30 +2721,30 @@
     "w_spite": 0.1936,
     "w_supergraph": 0.6459
    },
-   "role": "animal_keeper",
-   "role_identity": 0.3637,
-   "skill": 0.6,
+   "role": "farmer",
+   "role_identity": 0.7516,
+   "skill": 0.7,
    "trades": [
-    "shepherd"
+    "cook"
    ],
    "workplace_cell": [
-    36,
-    29
+    45,
+    32
    ],
    "workplace_kind": "farm"
   },
   {
    "age": 25,
    "capability": 0.9,
-   "class": "middle",
+   "class": "poor",
    "former_skills": {},
-   "group": "high",
+   "group": "low",
    "history": {
     "apprenticed": [
-     "woodworker"
+     "animal_keeper"
     ],
     "apprenticed_years": {
-     "woodworker": 7.0
+     "animal_keeper": 7.0
     },
     "former_trades": [],
     "household_role": "child",
@@ -2758,7 +2762,7 @@
    "household_role": "child",
    "index": 34,
    "jobs": [
-    "carpenter"
+    "animal_keeper"
    ],
    "literacy": 1,
    "name": "Vernon Lorric",
@@ -2777,25 +2781,24 @@
     "w_spite": 0.3156,
     "w_supergraph": 0.7755
    },
-   "role": "carpenter",
-   "role_identity": 0.9703,
-   "skill": 0.7,
+   "role": "animal_keeper",
+   "role_identity": 0.3554,
+   "skill": 0.6,
    "trades": [
-    "woodworker",
-    "sawyer"
+    "shepherd"
    ],
    "workplace_cell": [
-    33,
-    9
+    36,
+    29
    ],
-   "workplace_kind": "carpenter"
+   "workplace_kind": "farm"
   },
   {
    "age": 34,
    "capability": 0.55,
    "class": "middle",
    "former_skills": {},
-   "group": "middle",
+   "group": "high",
    "history": {
     "apprenticed": [],
     "apprenticed_years": {},
@@ -2815,7 +2818,7 @@
    "household_role": "child",
    "index": 35,
    "jobs": [
-    "councillor"
+    "carpenter"
    ],
    "literacy": 0,
    "name": "Millicent Vellum",
@@ -2834,28 +2837,31 @@
     "w_spite": 0.0,
     "w_supergraph": 0.6497
    },
-   "role": "councillor",
-   "role_identity": 0.6627,
-   "skill": 0.6,
-   "trades": [],
-   "workplace_cell": [
-    23,
-    14
+   "role": "carpenter",
+   "role_identity": 0.9244,
+   "skill": 0.7,
+   "trades": [
+    "woodworker",
+    "sawyer"
    ],
-   "workplace_kind": "townhall"
+   "workplace_cell": [
+    33,
+    9
+   ],
+   "workplace_kind": "carpenter"
   },
   {
    "age": 27,
    "capability": 0.9,
-   "class": "rich",
+   "class": "middle",
    "former_skills": {},
-   "group": "high",
+   "group": "middle",
    "history": {
     "apprenticed": [
-     "innkeeper"
+     "councillor"
     ],
     "apprenticed_years": {
-     "innkeeper": 7.0
+     "councillor": 7.0
     },
     "former_trades": [],
     "household_role": "child",
@@ -2873,7 +2879,7 @@
    "household_role": "child",
    "index": 36,
    "jobs": [
-    "innkeeper"
+    "councillor"
    ],
    "literacy": 1,
    "name": "Mordecai Oakes",
@@ -2892,31 +2898,25 @@
     "w_spite": 0.2799,
     "w_supergraph": 0.5998
    },
-   "role": "innkeeper",
-   "role_identity": 0.8716,
-   "skill": 0.7,
-   "trades": [
-    "brewer"
-   ],
+   "role": "councillor",
+   "role_identity": 0.6577,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    30,
-    20
+    23,
+    14
    ],
-   "workplace_kind": "inn"
+   "workplace_kind": "townhall"
   },
   {
    "age": 50,
    "capability": 0.9,
-   "class": "middle",
+   "class": "rich",
    "former_skills": {},
-   "group": "middle",
+   "group": "high",
    "history": {
-    "apprenticed": [
-     "smith"
-    ],
-    "apprenticed_years": {
-     "smith": 7.0
-    },
+    "apprenticed": [],
+    "apprenticed_years": {},
     "former_trades": [],
     "household_role": "head",
     "local": false,
@@ -2933,7 +2933,7 @@
    "household_role": "head",
    "index": 37,
    "jobs": [
-    "smith"
+    "innkeeper"
    ],
    "literacy": 1,
    "name": "Erasmus Inkpen",
@@ -2952,22 +2952,24 @@
     "w_spite": 0.1926,
     "w_supergraph": 0.1069
    },
-   "role": "smith",
-   "role_identity": 0.6326,
+   "role": "innkeeper",
+   "role_identity": 0.8572,
    "skill": 0.7,
-   "trades": [],
-   "workplace_cell": [
-    33,
-    9
+   "trades": [
+    "brewer"
    ],
-   "workplace_kind": "carpenter"
+   "workplace_cell": [
+    30,
+    20
+   ],
+   "workplace_kind": "inn"
   },
   {
    "age": 22,
    "capability": 0.9,
    "class": "poor",
    "former_skills": {},
-   "group": "high",
+   "group": "middle",
    "history": {
     "apprenticed": [],
     "apprenticed_years": {},
@@ -2987,7 +2989,7 @@
    "household_role": "child",
    "index": 38,
    "jobs": [
-    "mason"
+    "smith"
    ],
    "literacy": 1,
    "name": "Erasmus Ottermole",
@@ -3006,26 +3008,24 @@
     "w_spite": 0.0488,
     "w_supergraph": 0.3436
    },
-   "role": "mason",
-   "role_identity": 0.9009,
+   "role": "smith",
+   "role_identity": 0.6216,
    "skill": 0.7,
-   "trades": [
-    "quarrier"
-   ],
+   "trades": [],
    "workplace_cell": [
-    45,
-    14
+    33,
+    9
    ],
-   "workplace_kind": "mason"
+   "workplace_kind": "carpenter"
   },
   {
    "age": 34,
    "capability": 0.9,
-   "class": "middle",
+   "class": "rich",
    "former_skills": {
-    "butchery": 0.1
+    "fishing": 0.1
    },
-   "group": "middle",
+   "group": "high",
    "history": {
     "apprenticed": [],
     "apprenticed_years": {},
@@ -3033,9 +3033,9 @@
      {
       "level": 0.1,
       "skills": [
-       "butchery"
+       "fishing"
       ],
-      "trade": "butcher",
+      "trade": "fisher",
       "years": 1.0
      }
     ],
@@ -3054,7 +3054,7 @@
    "household_role": "head",
    "index": 39,
    "jobs": [
-    "farmer"
+    "mason"
    ],
    "literacy": 1,
    "name": "Constance Ottermole",
@@ -3073,24 +3073,24 @@
     "w_spite": 0.067,
     "w_supergraph": 0.7902
    },
-   "role": "farmer",
-   "role_identity": 0.6946,
+   "role": "mason",
+   "role_identity": 0.9473,
    "skill": 0.7,
    "trades": [
-    "cook"
+    "quarrier"
    ],
    "workplace_cell": [
-    39,
-    28
+    45,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "mason"
   },
   {
    "age": 25,
    "capability": 0.9,
-   "class": "poor",
+   "class": "middle",
    "former_skills": {},
-   "group": "low",
+   "group": "middle",
    "history": {
     "apprenticed": [],
     "apprenticed_years": {},
@@ -3110,7 +3110,7 @@
    "household_role": "child",
    "index": 40,
    "jobs": [
-    "labourer"
+    "farmer"
    ],
    "literacy": 1,
    "name": "Thaddeus Furlong",
@@ -3129,15 +3129,17 @@
     "w_spite": 0.0,
     "w_supergraph": 0.5407
    },
-   "role": "labourer",
-   "role_identity": 0.2324,
-   "skill": 0.5,
-   "trades": [],
-   "workplace_cell": [
-    22,
-    14
+   "role": "farmer",
+   "role_identity": 0.6166,
+   "skill": 0.7,
+   "trades": [
+    "cook"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    39,
+    28
+   ],
+   "workplace_kind": "farm"
   },
   {
    "age": 18,

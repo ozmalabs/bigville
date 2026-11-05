@@ -662,6 +662,12 @@ def check_consistency():
             errors.append(f"SOILS[{soil}]: no starting nitrogen")
     if NITROGEN["fertiliser_type"] not in INPUT_TYPES:
         errors.append(f"NITROGEN: fertiliser_type '{NITROGEN['fertiliser_type']}' is not an INPUT_TYPE")
+    # Phase 005: a household's heating burns the typed fuel slot, which must have members to burn (a pack
+    # with no fuel economy sets base_burn 0 and need not name one).
+    if float(HEATING["base_burn"]) > 0 and (HEATING["fuel_type"] not in INPUT_TYPES or not type_members(HEATING["fuel_type"])):
+        errors.append(f"HEATING: fuel_type '{HEATING['fuel_type']}' is not an INPUT_TYPE with any member item")
+    if float(HEATING["base_burn"]) < 0 or float(HEATING["unheated_chill"]) < 0:
+        errors.append("HEATING: base_burn and unheated_chill must not be negative")
     for kind in SLAUGHTER_PRODUCTS:
         ref(kind, "SLAUGHTER_PRODUCTS")
     _flows, _notes, streams = _balance_flows(BALANCE_SCENARIO)

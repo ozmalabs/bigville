@@ -1,0 +1,11 @@
+{
+  "_doc": "HEATING (Phase 005): space heating burnt from the typed fuel slot. Each period (one day) every household burns base_burn x the day's WEATHER firewood_demand (0.6 in hot weather to 1.7 in frost), drawing first on its own fuel (its members' inventories and the containers at its home cell) and then on the town store. The burn leaves INPUT_TYPES byproducts (ash) in the town store, as a recipe's fuel slot does. A household that cannot burn its full need is cold: each member's chill rises by unheated_chill x the unmet share of need (0 = fully heated, 1 = no fuel at all).\nfuel_type names the INPUT_TYPES slot the burn draws on (checked by the self-test).\nbase_burn: fuel units per household per period at firewood_demand 1.0. APPROX, not checked against a source. Set at about twice the balance model's own cooking fuel per household (BALANCE_SCENARIO's staple burns 10 units per period over 46 households, about 0.22 each), on the recalled finding that roughly two-thirds of pre-industrial English household wood went on space heating and one-third on cooking (P. Warde, Energy Consumption in England and Wales 1560-2000, 2007; recalled, not re-read). Fuel units are the model's units (1 wood = 1 fuel), not kilograms.\nunheated_chill: chill added per unit of unmet need. APPROX: the town's cold exposure is 0 or 1 (world_affordances WEATHER, set_weather), so a household with no fuel at all is as chilled as a day of frost in the open.",
+  "_types": {},
+  "tables": {
+    "HEATING": {
+      "fuel_type": "fuel",
+      "base_burn": 0.4,
+      "unheated_chill": 1.0
+    }
+  }
+}

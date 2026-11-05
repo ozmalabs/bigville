@@ -186,6 +186,10 @@
       "file": "world/fuel_sources.json"
     },
     {
+      "name": "HEATING",
+      "file": "world/heating.json"
+    },
+    {
       "name": "SOILS",
       "file": "world/soils.json"
     },

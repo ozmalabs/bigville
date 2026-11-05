@@ -145,7 +145,12 @@ the site's stock falling and regrowing; self-test clean.
 
 ## Phase 005 -- Household heating and fuel use
 
-**Status:** ready
+**Status:** done (see History). Each household burns HEATING.base_burn (0.4, APPROX and unsourced)
+x the day's firewood_demand per period, from members' inventories and containers at its home cell
+before the town store; ash goes to the store; an unheated household's members gain chill by the
+unmet share. Balance fuel line: demand 10.0 -> 29.1 against supply 36.0 (ratio 1.24, not flagged).
+The forester load gives one forester at 100 residents (labourer 60 -> 59, ten roles reshuffle;
+cast seeds regenerated). Open: a checked source for the burn; nothing reads chill yet.
 
 **Goal.** Weather already sets `firewood_demand`, and bodies track `chill`.
 Each household burns `fuel` (the typed slot, from the household's own store or
@@ -687,3 +692,4 @@ exist, at the precision they know them -- never the world's map.
 | 017 Generated Ocelot seeds | done | (this commit) | docs/phases/phase017/PHASE017_REPORT.md -- domains/generated_seeds.py + tools/generate_seeds.py; 22 files in bigville/seeds with generated_from headers; staleness check in the self-test; 447 passed |
 | 018 Generated LLM instructions | done | (this commit) | docs/phases/phase018/PHASE018_REPORT.md -- prompts from the pack, bounded memory selection, derived laws in world_frames, speech lexicon in the pack; prompt schema 1 -> 2 in test_bigville_backends; 464 passed |
 | 004 Located gathering | done | (this commit) | docs/phases/phase004/PHASE004_REPORT.md -- GATHERING_SITES placed without moving existing sites; site-gated gathering with daily regrowth; 483 passed |
+| 005 Household heating | done | (this commit) | docs/phases/phase005/PHASE005_REPORT.md -- HEATING table, household burn own-store-first, chill when unheated, heating in the balance fuel line; cast gains a forester; 497 passed |

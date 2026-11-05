@@ -1,0 +1,11 @@
+{
+  "_doc": "HEATING (Phase 013b test pack): the hamlet has no fuel items and no founding households burning them, so base_burn is 0 and the heating burn does nothing. The bigville pack's HEATING (packs/bigville/world/heating.json) holds the figures and their sources; the self-test requires a fuel_type with members only when base_burn is above 0.",
+  "_types": {},
+  "tables": {
+    "HEATING": {
+      "fuel_type": "fuel",
+      "base_burn": 0.0,
+      "unheated_chill": 0.0
+    }
+  }
+}

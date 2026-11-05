@@ -1158,7 +1158,9 @@ class BigvilleWorld:
                 ga = self.eng.node(garment)["attrs"]
                 warmth += float(ga.get("warmth", 0.0)); rain += float(ga.get("rain", 0.0)); finery += float(ga.get("finery", 0.0))
             self.eng.set_attr(node, "warmth", warmth); self.eng.set_attr(node, "rain_cover", rain); self.eng.set_attr(node, "finery", finery)
-            self.eng.set_attr(node, "chill", max(0.0, float(town.get("cold", 0.0)) - warmth))
+            unheated = self._household_unheated_share(attrs.get("household"))
+            self.eng.set_attr(node, "chill", max(0.0, float(town.get("cold", 0.0)) - warmth)
+                              + unheated * float(self.E.HEATING["unheated_chill"]))
             self.eng.set_attr(node, "soaked", max(0.0, float(town.get("wet", 0.0)) - rain))
             for garment in self.eng.neighbours(node, "wears"):
                 if float(self.eng.node(garment)["attrs"].get("dye_armed", 0.0)) == 1.0:
@@ -1205,6 +1207,7 @@ class BigvilleWorld:
                     if hunger > float(aa.get("starve_limit", self.E.CARE["starve_limit"])):
                         self.eng.set_attr(node, "alive", 0.0)
                 self._collect_night_soil()
+                self._burn_household_heat()
             if self.physical_subsystems["ecology"]:
                 self._advance_soil_nitrogen()
                 for crop in list(self._living_crops()):
@@ -2417,6 +2420,78 @@ class BigvilleWorld:
             self.set_stock(kind, self.qty(kind) + amount)
         return dict(plan)
 
+    def _household_fuel_sources(self, household):
+        """A household's own fuel sources, in draw order: each member's own inventory, then each container
+        at the household's home cell that some member may access. These are the Phase 002 sources
+        (`_bulk_sources`, `_container_accessible`), with the home cell standing in for a member's position,
+        since a member may be away from home. The town store is not included."""
+        h = self._households[household]
+        members = [name for name, node in self._actors.items() if self.eng.has_edge(h, "has_member", node)]
+        sources, seen = [], set()
+        for name in members:
+            for label, carrier in self._bulk_sources(name, "fuel"):
+                if label == "own" and (label, carrier) not in seen:
+                    seen.add((label, carrier))
+                    sources.append((name, (label, carrier)))
+        home = self.map_position(household)
+        carriers = set(self._actor_inventories.values())
+        if home is not None:
+            for container in self._containers:
+                if container in carriers or self.container_position(container) != home:
+                    continue
+                accessors = [name for name in members if self._container_accessible(name, container)]
+                if accessors:
+                    sources.append((accessors[0], ("box", container)))
+        return sources
+
+    def _burn_household_heat(self, households=None):
+        """Each household burns fuel for space heat once per period (one day), at HEATING base_burn x the
+        day's firewood_demand. It draws its own fuel first (see `_household_fuel_sources`), then the town
+        store, and leaves the fuel's byproducts (ash) in the town store as `_consume_type` does. The
+        household's fuel_need and fuel_short (the unmet share of its need) are written on its node; the
+        members' chill reads fuel_short (`_resolve_clothing_and_bodies`). `households` limits the burn to
+        the named households (default: all of them)."""
+        if float(self.E.HEATING["base_burn"]) <= 0.0:      # a pack with no fuel economy burns nothing
+            return
+        demand = float(self.eng.node(self._town)["attrs"].get("firewood_demand", 1.0))
+        slot = self.E.HEATING["fuel_type"]
+        members = self.E.type_members(slot)
+        for household in (self._households if households is None else households):
+            h = self._households[household]
+            need = float(self.E.HEATING["base_burn"]) * demand
+            sources = self._household_fuel_sources(household)
+            own_plan = self.E.type_plan(slot, min(need, sum(
+                self._source_qty(src, kind) * units for _, src in sources for kind, units in members)),
+                lambda kind: sum(self._source_qty(src, kind) for _, src in sources)) if need > 1e-9 else []
+            burnt = 0.0
+            for kind, amount in own_plan or []:
+                left = float(amount)
+                for who, src in sources:
+                    take = min(left, self._source_qty(src, kind))
+                    if take > 1e-9:
+                        self._take_draws(who, kind, [(src, take)])
+                        left -= take
+                        burnt += take * dict(members)[kind]
+                    if left <= 1e-9:
+                        break
+            rest = need - burnt
+            store_units = sum(self.qty(kind) * units for kind, units in members)
+            store_plan = self.E.type_plan(slot, min(rest, store_units), self.qty) if rest > 1e-9 else []
+            for kind, amount in store_plan or []:
+                self.set_stock(kind, self.qty(kind) - amount)
+                burnt += amount * dict(members)[kind]
+            for kind, amount in self.E.type_byproducts(slot, burnt).items():
+                self.set_stock(kind, self.qty(kind) + amount)
+            self.eng.set_attr(h, "fuel_need", need)
+            self.eng.set_attr(h, "fuel_short", max(0.0, need - burnt) / need if need > 1e-9 else 0.0)
+
+    def _household_unheated_share(self, household):
+        """The unmet share of a household's heating need last period (0 when it is fully heated or has none)."""
+        h = self._households.get(household)
+        if h is None:
+            return 0.0
+        return float(self.eng.node(h)["attrs"].get("fuel_short", 0.0))
+
     def _recipe_in_season(self, recipe_name):
         seasons = self._recipe_specs.get(recipe_name, {}).get("seasons")
         return not seasons or self.season() in seasons
@@ -2651,7 +2726,7 @@ class BigvilleWorld:
         spec = self.E.HOUSEHOLDS[kind]
         h = self.eng.add_node("Household", {"name": name, "kind": kind,
                                              "food_need": 0.0, "water_need": 0.0,
-                                             "fuel_need": 0.0, "shelter": 1.0,
+                                     "fuel_need": 0.0, "fuel_short": 0.0, "shelter": 1.0,
                                              "assets": ",".join(assets or spec["assets"])})
         self.eng.add_edge_unchecked(self._town, "has_household", h)
         self._households[name] = h

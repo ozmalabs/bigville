@@ -269,12 +269,15 @@ def scale_scenario(population):
                    if ANIMALS[a]["eats"] == diet)
         if per_area > 0:
             pasture = max(pasture, 1.2 * need / per_area)
-    return dict(base, residents=int(population), beds=beds,
-                plots=max(1, int(math.ceil(base["plots"] * f))),
-                animals=animals,
-                pasture_area=round(pasture, 2),
-                woodland=max(1.0, f),                       # one woodlot at least, more for a city
-                water_sources=sources)
+    scaled = dict(base, residents=int(population), beds=beds,
+                  plots=max(1, int(math.ceil(base["plots"] * f))),
+                  animals=animals,
+                  pasture_area=round(pasture, 2),
+                  woodland=max(1.0, f),                       # one woodlot at least, more for a city
+                  water_sources=sources)
+    if "households" in base:                                  # Phase 005: heated households scale with the town
+        scaled["households"] = max(1, int(round(float(base["households"]) * f)))
+    return scaled
 
 
 def job_requirements(population):
