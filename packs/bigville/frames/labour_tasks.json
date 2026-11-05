@@ -1,5 +1,5 @@
 {
-  "_doc": "",
+  "_doc": "Labour tasks. `worker_roles` (Phase 015) names the resident roles that do the task, in priority order: the world uses the first role that has residents, and a task with no such residents has no workers. `skills` names the skills the task exercises.",
   "_types": {},
   "tables": {
     "LABOUR_TASKS": {
@@ -19,6 +19,10 @@
       },
       "farm": {
         "seasonal": true,
+        "worker_roles": [
+          "farm_labourer",
+          "farmer"
+        ],
         "skills": [
           "farmer",
           "farm_labourer"
@@ -50,6 +54,9 @@
       },
       "mill": {
         "seasonal": false,
+        "worker_roles": [
+          "miller"
+        ],
         "skills": [
           "miller"
         ],
@@ -59,6 +66,22 @@
         ],
         "outputs": [
           "flour"
+        ]
+      },
+      "bake": {
+        "seasonal": false,
+        "worker_roles": [
+          "baker"
+        ],
+        "skills": [
+          "baker"
+        ],
+        "inputs": [
+          "flour",
+          "water"
+        ],
+        "outputs": [
+          "bread"
         ]
       },
       "fuel": {

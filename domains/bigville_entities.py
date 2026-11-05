@@ -601,6 +601,59 @@ def check_consistency():
             errors.append(f"{where}: no kind of tie is named")
         _num(f"{where}: strength", spec.get("strength"), -1.0, 1.0)
 
+    # Phase 015: households, registrar offices, labour worker roles, civic-action stages, policy parameters.
+    if HOUSEHOLDS:
+        fallbacks = [kind for kind, spec in HOUSEHOLDS.items() if spec.get("fallback")]
+        if len(fallbacks) != 1:
+            errors.append(f"HOUSEHOLDS: exactly one kind must be the fallback (found {len(fallbacks)})")
+        claimed_roles, claimed_groups = {}, {}
+        for kind, spec in HOUSEHOLDS.items():
+            for role in spec.get("roles", []):
+                if role in claimed_roles:
+                    errors.append(f"HOUSEHOLDS[{kind}]: role '{role}' is also listed by HOUSEHOLDS[{claimed_roles[role]}]")
+                claimed_roles[role] = kind
+            for group in spec.get("groups", []):
+                if group not in ("low", "middle", "high"):
+                    errors.append(f"HOUSEHOLDS[{kind}].groups: '{group}' is not a cast group")
+                if group in claimed_groups:
+                    errors.append(f"HOUSEHOLDS[{kind}]: group '{group}' is also listed by HOUSEHOLDS[{claimed_groups[group]}]")
+                claimed_groups[group] = kind
+            for role in spec.get("land_roles", []):
+                if role not in spec.get("roles", []):
+                    errors.append(f"HOUSEHOLDS[{kind}].land_roles: '{role}' is not one of its roles")
+    registrars = [role for role, spec in GOVERNANCE_OFFICES.items() if spec.get("registrar")]
+    if GOVERNANCE_OFFICES and not registrars:
+        errors.append("GOVERNANCE_OFFICES: no office is marked registrar, so the land register has no keeper")
+    for role in registrars:
+        if GOVERNANCE_OFFICES[role].get("authority") != "records":
+            errors.append(f"GOVERNANCE_OFFICES[{role}]: a registrar must have authority 'records'")
+    for role, spec in GOVERNANCE_OFFICES.items():
+        for target in spec.get("appoints", []):
+            if target not in GOVERNANCE_OFFICES:
+                errors.append(f"GOVERNANCE_OFFICES[{role}].appoints: '{target}' is not an office")
+    for task, spec in LABOUR_TASKS.items():
+        if "worker_roles" in spec and not spec["worker_roles"]:
+            errors.append(f"LABOUR_TASKS[{task}].worker_roles: empty (list the roles that do the task)")
+    civic_actions = {"lawmaking": {"proposal", "meeting", "vote"}, "justice": {"case", "statement"}}
+    for key, table, procedures in (("lawmaking", "LAWMAKING_PROCEDURES", LAWMAKING_PROCEDURES),
+                                   ("justice", "JUSTICE_PROCEDURES", JUSTICE_PROCEDURES)):
+        listed = {}
+        for stage, spec in procedures.items():
+            for action in spec.get("civic_actions", []):
+                if action not in civic_actions[key]:
+                    errors.append(f"{table}[{stage}].civic_actions: '{action}' is not a {key} civic action")
+                elif action in listed:
+                    errors.append(f"{table}[{stage}].civic_actions: '{action}' is also listed by stage '{listed[action]}'")
+                listed[action] = stage
+    for bundle in POLICIES:
+        for key, value in dict(bundle.get("parameters", {})).items():
+            _num(f"POLICIES[{bundle['name']}].parameters.{key}", value, 0.0)
+    winter = next((bundle for bundle in POLICIES if bundle["name"] == "winter_food_reserve"), None)
+    if winter is not None:
+        for key in ("minimum_grain", "feed_periods"):
+            if key not in winter.get("parameters", {}):
+                errors.append(f"POLICIES[winter_food_reserve].parameters: '{key}' is missing (the village reserve reads it)")
+
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

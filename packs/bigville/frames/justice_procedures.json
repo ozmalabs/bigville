@@ -1,10 +1,13 @@
 {
-  "_doc": "",
+  "_doc": "Justice stages. `civic_actions` (Phase 015) names the civic records that correspond to a stage: a recorded case filing corresponds to the complaint stage, and a recorded verdict or remedy statement to the judgment stage. The world records that correspondence only; residents decide whether a stage was carried out validly.",
   "_types": {},
   "tables": {
     "JUSTICE_PROCEDURES": {
       "complaint": {
         "actor": "resident",
+        "civic_actions": [
+          "case"
+        ],
         "requires": [
           "harm_or_claim",
           "complainant"
@@ -12,6 +15,7 @@
       },
       "investigation": {
         "actor": "constable",
+        "civic_actions": [],
         "requires": [
           "complaint",
           "witnesses",
@@ -20,6 +24,7 @@
       },
       "hearing": {
         "actor": "council_or_court",
+        "civic_actions": [],
         "requires": [
           "notice",
           "accused",
@@ -28,6 +33,9 @@
       },
       "judgment": {
         "actor": "council_or_court",
+        "civic_actions": [
+          "statement"
+        ],
         "requires": [
           "hearing",
           "law",
@@ -36,6 +44,7 @@
       },
       "remedy": {
         "actor": "constable_or_council",
+        "civic_actions": [],
         "requires": [
           "judgment",
           "proportionate_penalty"
@@ -43,6 +52,7 @@
       },
       "appeal": {
         "actor": "council",
+        "civic_actions": [],
         "requires": [
           "judgment",
           "new_evidence_or_error"

@@ -1,10 +1,13 @@
 {
-  "_doc": "",
+  "_doc": "Lawmaking stages. `civic_actions` (Phase 015) names the civic records that correspond to a stage: a recorded proposal, meeting, or vote carries the stage of the entry that lists its action. The world records that correspondence only; whether a stage was carried out validly is for residents to decide.",
   "_types": {},
   "tables": {
     "LAWMAKING_PROCEDURES": {
       "proposal": {
         "actor": "resident_or_councillor",
+        "civic_actions": [
+          "proposal"
+        ],
         "requires": [
           "grievance_or_need",
           "witnessed_observation"
@@ -12,6 +15,7 @@
       },
       "notice": {
         "actor": "clerk",
+        "civic_actions": [],
         "requires": [
           "written_proposal",
           "public_notice"
@@ -19,6 +23,9 @@
       },
       "deliberation": {
         "actor": "council",
+        "civic_actions": [
+          "meeting"
+        ],
         "requires": [
           "meeting",
           "speakers",
@@ -27,6 +34,9 @@
       },
       "vote": {
         "actor": "council",
+        "civic_actions": [
+          "vote"
+        ],
         "requires": [
           "quorum",
           "majority"
@@ -34,6 +44,7 @@
       },
       "promulgation": {
         "actor": "clerk",
+        "civic_actions": [],
         "requires": [
           "approved_law",
           "written_record"
@@ -41,6 +52,7 @@
       },
       "effective": {
         "actor": "council",
+        "civic_actions": [],
         "requires": [
           "effective_date",
           "public_notice"

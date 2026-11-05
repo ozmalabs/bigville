@@ -1,0 +1,60 @@
+{
+  "_doc": "Phase 015 acceptance fixture. The mayor is renamed reeve and the clerk is renamed notary. The notary is the registrar, so the registrar lookup finds the new name with no code change.",
+  "_types": {},
+  "tables": {
+    "GOVERNANCE_OFFICES": {
+      "reeve": {
+        "authority": "executive",
+        "records": true,
+        "appoints": [
+          "constable",
+          "notary"
+        ]
+      },
+      "constable": {
+        "authority": "enforcement",
+        "records": true,
+        "protects": [
+          "people",
+          "property"
+        ]
+      },
+      "notary": {
+        "authority": "records",
+        "records": true,
+        "registrar": true,
+        "maintains": [
+          "taxes",
+          "land",
+          "laws"
+        ]
+      },
+      "councillor": {
+        "authority": "deliberative",
+        "records": false,
+        "decides": [
+          "commons",
+          "works",
+          "emergency"
+        ]
+      },
+      "midwife": {
+        "authority": "care",
+        "records": true,
+        "supports": [
+          "birth",
+          "infant",
+          "mother"
+        ]
+      },
+      "doctor": {
+        "authority": "care",
+        "records": true,
+        "supports": [
+          "injury",
+          "disease"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "format": 1,
+  "name": "phase015_offices",
+  "version": 1,
+  "description": "Phase 015 acceptance fixture: a child of bigville that renames the mayor to reeve and the clerk to notary (the registrar). Only the office and household tables change; everything else is inherited.",
+  "extends": "bigville",
+  "tables": [
+    {
+      "name": "GOVERNANCE_OFFICES",
+      "file": "frames/governance_offices.json"
+    },
+    {
+      "name": "HOUSEHOLDS",
+      "file": "frames/households.json"
+    }
+  ]
+}

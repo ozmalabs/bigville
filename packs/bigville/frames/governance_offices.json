@@ -1,5 +1,5 @@
 {
-  "_doc": "",
+  "_doc": "Governance offices (Phase 015). `registrar: true` marks the office that keeps the land register (the world's registrar lookup reads it). Office keys are the role names residents hold.",
   "_types": {},
   "tables": {
     "GOVERNANCE_OFFICES": {
@@ -22,6 +22,7 @@
       "clerk": {
         "authority": "records",
         "records": true,
+        "registrar": true,
         "maintains": [
           "taxes",
           "land",

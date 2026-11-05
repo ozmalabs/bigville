@@ -1,5 +1,5 @@
 {
-  "_doc": "Policies and laws have two representations: a durable written document and resident-held concepts.\nEach concept is deliberately present at several abstraction levels. A resident may understand the\nprinciple without knowing the office procedure, or know the procedure without understanding its\njustification. The document is never the resident's knowledge by itself.\nPublic compatibility views: the canonical Bigville world sees the inherited and local seed data as\none law/policy book, while origin and immutability remain explicit on every entry.",
+  "_doc": "Policies and laws have two representations: a durable written document and resident-held concepts.\nEach concept is deliberately present at several abstraction levels. A resident may understand the\nprinciple without knowing the office procedure, or know the procedure without understanding its\njustification. The document is never the resident's knowledge by itself.\nPublic compatibility views: the canonical Bigville world sees the inherited and local seed data as\none law/policy book, while origin and immutability remain explicit on every entry.\nA policy may carry `parameters`: named numbers the world reads (Phase 015). winter_food_reserve has\nminimum_grain (the grain kept back, floor) and feed_periods (periods of poultry grain feed kept back).",
   "_types": {},
   "tables": {
     "LOCAL_POLICIES": [
@@ -8,12 +8,11 @@
         "title": "Winter Food Reserve Policy",
         "kind": "policy",
         "scope": "village",
+        "parameters": {
+          "minimum_grain": 4.0,
+          "feed_periods": 4.0
+        },
         "seed_roles": [
-          "mayor",
-          "clerk",
-          "farmer",
-          "miller",
-          "granary_keeper",
           "cook"
         ],
         "concepts": [

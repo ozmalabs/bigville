@@ -473,7 +473,10 @@ the suite passes unchanged.
 
 ## Phase 015 -- Roles, offices, and procedures from the pack
 
-**Status:** blocked on 013.
+**Status:** done (see History). Supervisor review: `_policy_parameters` falls back to the pack's
+policy row when a scenario's policy list omits it. Open questions left for later phases:
+`seed_roles` still names the old offices; `register_land` does not require a registrar (boundary
+audit keeps registry records ungated); backend role-to-task sets in `cheap.py` stay in code.
 
 **Goal.** Replace hardcoded role literals with pack lookups: household kind by role (in
 `HOUSEHOLDS`), registrar and other authorities from `GOVERNANCE_OFFICES`, worker selection in
@@ -623,3 +626,4 @@ exist, at the precision they know them -- never the world's map.
 | 013a Pack files, compiler, export | done | (this commit) | docs/phases/phase013a/PHASE013A_REPORT.md -- 119 tables in packs/bigville; self-test output identical; 331 passed |
 | 013b World reads a named pack | done | (this commit) | docs/phases/phase013b/PHASE013B_REPORT.md -- data_view per-pack module views; domains.check --pack; packs/test_hamlet; 340 passed |
 | 014 World mechanics parameters | done | (this commit) | docs/phases/phase014/PHASE014_REPORT.md -- TIME, TOWN_INITIAL, ACTOR_DEFAULTS, CARE, PRICE_DEFAULTS, DOCUMENT_LITERACY, ENGINE_SEEDS, RESIDENT_SEEDS, RELATIONSHIP_KINDS tables; ticks_per_period read from TIME; 351 passed |
+| 015 Roles, offices, procedures | done | (this commit) | docs/phases/phase015/PHASE015_REPORT.md -- HOUSEHOLDS roles/groups/fallback, GOVERNANCE_OFFICES registrar, LABOUR_TASKS worker_roles (+bake), winter reserve parameters, scenario `procedures`, civic records carry stage; fixture tests/fixtures/phase015_offices (reeve/notary); 364 passed |

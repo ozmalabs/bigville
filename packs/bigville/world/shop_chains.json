@@ -17,7 +17,10 @@
       },
       "bakery": {
         "in": "grain",
-        "out": "bread"
+        "out": "bread",
+        "keeper_roles": [
+          "baker"
+        ]
       }
     }
   }

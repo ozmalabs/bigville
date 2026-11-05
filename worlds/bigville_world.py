@@ -476,6 +476,8 @@ class BigvilleWorld:
         self._policy_specs = self._scenario_table("policies", self.E.POLICIES)
         self._law_specs = self._scenario_table("laws", self.E.LAWS)
         self._charter_specs = self._scenario_table("charters", self.E.CHARTERS)
+        # Lawmaking and justice stages: the pack's tables, with a scenario's "procedures" applied.
+        self._procedures = self._procedure_tables()
         self._item_specs = dict(self.E.ITEMS)   # runtime item registry (data + runtime-added)
         self._recipe_specs = {}            # recipe name -> its data row (data + runtime-added)
         self.set_stock("none", 1e9)
@@ -1995,14 +1997,7 @@ class BigvilleWorld:
         for record in cast["residents"]:
             idx = int(record["index"])
             role = record["role"]
-            if role in {"farmer", "farm_labourer"}:
-                household_kind = "farm_household"
-            elif role in {"clerk", "councillor", "mayor", "constable", "teacher"}:
-                household_kind = "institutional_household"
-            elif record["group"] == "high":
-                household_kind = "craft_household"
-            else:
-                household_kind = "landless_household"
+            household_kind = self.household_kind_for(role, record["group"])
             household = f"household_{idx:03d}"
             self.add_household(household, kind=household_kind,
                                home_cell=tuple(record["home_cell"]))
@@ -2040,7 +2035,8 @@ class BigvilleWorld:
                 self.give_tableware(record["name"], tableware)
             self.assign_household(record["name"], household)
 
-        farmers = [r for r in cast["residents"] if r["role"] == "farmer"]
+        land_roles = self._land_holder_roles()
+        farmers = [r for r in cast["residents"] if r["role"] in land_roles]
         for index, cell in enumerate(layout.get("farms", [])):
             owner = self._t100_households[farmers[index % len(farmers)]["name"]] if farmers else None
             land = self.add_land(f"farm_plot_{index:02d}", use="arable", soil="loam",
@@ -2056,8 +2052,9 @@ class BigvilleWorld:
                              if (x, y) in self._map_cells]
             self.add_enclosure("village_paddock", pasture_cells,
                                kind="paddock", gates=((px, py - 2),))
+        registrars = self._registrar_roles()
         clerks = [name for name, node in self._actors.items()
-                  if self.eng.node(node)["attrs"].get("role") == "clerk"]
+                  if self.eng.node(node)["attrs"].get("role") in registrars]
         if clerks and farmers:
             clerk = clerks[0]
             common_holder = self._t100_households[farmers[0]["name"]]
@@ -2105,8 +2102,7 @@ class BigvilleWorld:
         # carried by actual residents.  Seed the first two bakery workers with
         # a finite opening inventory; later output is collected from completed
         # recipes by the canonical job bridge above.
-        bakers = [name for name, node in self._actors.items()
-                  if self.eng.node(node)["attrs"].get("role") == "baker"]
+        bakers = self._workers_with_roles(self.E.LABOUR_TASKS["bake"]["worker_roles"], alive_only=False)
         for baker in bakers:
             if self.qty("bread") <= 0.0:
                 break
@@ -2420,7 +2416,32 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._actors[reader], "read_article", article)
         return [dict(self.eng.node(article)["attrs"]) for article in articles]
 
-    def add_household(self, name, *, kind="landless_household", assets=None, home_cell=None):
+    def household_kind_for(self, role=None, group=None):
+        """The household kind a resident lives in (HOUSEHOLDS): the first kind that lists the role,
+        else the first kind that lists the cast group, else the kind marked fallback."""
+        kinds = self.E.HOUSEHOLDS
+        for kind, spec in kinds.items():
+            if role is not None and role in spec.get("roles", ()):
+                return kind
+        for kind, spec in kinds.items():
+            if group is not None and group in spec.get("groups", ()):
+                return kind
+        for kind, spec in kinds.items():
+            if spec.get("fallback"):
+                return kind
+        raise KeyError("HOUSEHOLDS has no fallback kind for residents outside its roles and groups")
+
+    def _land_holder_roles(self):
+        """Roles whose holders own founding parcels (land_roles of each household kind)."""
+        return {role for spec in self.E.HOUSEHOLDS.values() for role in spec.get("land_roles", ())}
+
+    def _registrar_roles(self):
+        """Roles that keep the land register (GOVERNANCE_OFFICES entries marked registrar)."""
+        return {role for role, spec in self.E.GOVERNANCE_OFFICES.items() if spec.get("registrar")}
+
+    def add_household(self, name, *, kind=None, assets=None, home_cell=None):
+        if kind is None:
+            kind = self.household_kind_for()
         spec = self.E.HOUSEHOLDS[kind]
         h = self.eng.add_node("Household", {"name": name, "kind": kind,
                                              "food_need": 0.0, "water_need": 0.0,
@@ -2488,8 +2509,10 @@ class BigvilleWorld:
         raise KeyError(f"unknown land holder: {holder}")
 
     def _require_clerk(self, clerk):
-        assert self.eng.node(self._actors[clerk])["attrs"].get("role") == "clerk", \
-            f"{clerk} is not the village clerk"
+        """The actor must hold a registrar office in the pack's GOVERNANCE_OFFICES."""
+        registrars = self._registrar_roles()
+        role = self.eng.node(self._actors[clerk])["attrs"].get("role")
+        assert role in registrars, f"{clerk} does not hold a registrar office ({', '.join(sorted(registrars))})"
 
     def _register_title(self, clerk, land, holder, *, holder_kind=None, tenure="freehold",
                         basis="grant", effective=None, witnesses=(), deed=None, occupant=None):
@@ -2590,7 +2613,8 @@ class BigvilleWorld:
         dispute_id = f"dispute:{len(self._land_disputes) + 1}"
         n = self.eng.add_node("LandDispute", {"record_id": dispute_id, "parcel": land, "kind": kind,
                                                "complainant": complainant, "against": against,
-                                               "grounds": grounds, "status": "open", "outcome": ""})
+                                               "grounds": grounds, "status": "open", "outcome": "",
+                                               **self._civic_record("justice", "case")})
         self.eng.add_edge_unchecked(self._town, "has_land_dispute", n)
         self.eng.add_edge_unchecked(self._land[land], "has_dispute", n)
         if complainant in self._actors:
@@ -2615,6 +2639,7 @@ class BigvilleWorld:
             "claimed_winner": str(winner),
             "suggested_remedy": str(remedy),
             "day": float(self.calendar()["day"]),
+            **self._civic_record("justice", "statement"),
         })
         self.eng.add_edge_unchecked(dispute, "has_statement", statement)
         self.eng.add_edge_unchecked(self._town, "has_land_dispute_statement", statement)
@@ -2821,7 +2846,7 @@ class BigvilleWorld:
                 continue
             trades = set(str(attrs.get("trades", "")).split(","))
             role = str(attrs.get("role", ""))
-            if trade in trades or role == trade or (trade == "bakery" and role == "baker"):
+            if trade in trades or role == trade or role in self.E.SHOP_CHAINS.get(trade, {}).get("keeper_roles", ()):
                 candidates.append(name)
         return next((name for name in candidates if self.is_alive(name)), None) or (candidates[0] if candidates else None)
 
@@ -3367,7 +3392,8 @@ class BigvilleWorld:
         # inherited registry or resolve the proposal's legal meaning.
         proposal = self.eng.add_node("LawProposal", {"name": name, "title": title or name.replace("_", " ").title(),
                                                         "scope": scope, "status": "open", "votes_for": 0.0,
-                                                        "votes_against": 0.0, "author": author})
+                                                        "votes_against": 0.0, "author": author,
+                                                        **self._civic_record("lawmaking", "proposal")})
         self.eng.add_edge_unchecked(self._town, "has_proposal", proposal)
         self.eng.add_edge_unchecked(self._actors[author], "proposed", proposal)
         for concept in concepts:
@@ -3380,13 +3406,21 @@ class BigvilleWorld:
         # who is entitled to vote or whether a proposal remains votable.
         edge = "voted_for" if support else "voted_against"
         self.eng.add_edge_unchecked(self._actors[voter], edge, proposal)
+        record = self.eng.add_node("CouncilVote", {"voter": voter, "support": 1.0 if support else 0.0,
+                                                     "proposal": str(self.eng.node(proposal)["attrs"].get("name", "")),
+                                                     "day": float(self.calendar()["day"]),
+                                                     **self._civic_record("lawmaking", "vote")})
+        self.eng.add_edge_unchecked(self._town, "has_vote", record)
+        self.eng.add_edge_unchecked(self._actors[voter], "cast_vote", record)
+        self.eng.add_edge_unchecked(record, "on_proposal", proposal)
         return True
 
     def hold_council(self, chair=None, proposal=None):
         # Persist the convening and any observed tally as records only. Quorum,
         # enactment, and promulgation are interpretations for residents.
         meeting = self.eng.add_node("CouncilMeeting", {"day": float(self.calendar()["day"]),
-                                                         "chair": chair or ""})
+                                                         "chair": chair or "",
+                                                         **self._civic_record("lawmaking", "meeting")})
         self.eng.add_edge_unchecked(self._town, "has_meeting", meeting)
         self._meetings[f"meeting:{len(self._meetings) + 1}"] = meeting
         if proposal is not None:
@@ -3400,7 +3434,8 @@ class BigvilleWorld:
     def file_case(self, complainant, respondent, *, charge, law="", evidence=""):
         case = self.eng.add_node("Case", {"charge": charge, "law": law, "evidence": evidence,
                                            "complainant": complainant, "respondent": respondent,
-                                           "status": "open", "verdict": "", "remedy": ""})
+                                           "status": "open", "verdict": "", "remedy": "",
+                                           **self._civic_record("justice", "case")})
         self.eng.add_edge_unchecked(self._town, "has_case", case)
         self.eng.add_edge_unchecked(self._actors[complainant], "filed_case", case)
         self.eng.add_edge_unchecked(self._actors[respondent], "answerable_case", case)
@@ -3422,6 +3457,7 @@ class BigvilleWorld:
             "reported_verdict": str(verdict),
             "suggested_remedy": str(remedy),
             "day": float(self.calendar()["day"]),
+            **self._civic_record("justice", "statement"),
         })
         self.eng.add_edge_unchecked(case, "has_statement", statement)
         self.eng.add_edge_unchecked(self._town, "has_case_statement", statement)
@@ -3459,8 +3495,47 @@ class BigvilleWorld:
     def law_immutable(self, name): return bool(self._law_specs[name].get("immutable", False))
     def law_enforcement(self, name): return self._law_specs[name].get("enforcement", "bigville")
 
-    def lawmaking_procedures(self): return {k: dict(v) for k, v in self.E.LAWMAKING_PROCEDURES.items()}
-    def justice_procedures(self): return {k: dict(v) for k, v in self.E.JUSTICE_PROCEDURES.items()}
+    def lawmaking_procedures(self):
+        return {k: dict(v) for k, v in self._procedures["lawmaking"].items()}
+
+    def justice_procedures(self):
+        return {k: dict(v) for k, v in self._procedures["justice"].items()}
+
+    def _procedure_tables(self):
+        """The lawmaking and justice stages in effect. A scenario's "procedures" entry overrides them
+        by stage: a stage given in full replaces or adds that stage, and null removes it. Stages are
+        data for recording; the world does not check that a stage was carried out validly."""
+        overrides = self._scenario_data.get("procedures") or {}
+        unknown = set(overrides) - {"lawmaking", "justice"}
+        if unknown:
+            raise ValueError(f"unknown procedure table(s) in scenario: {sorted(unknown)}")
+        tables = {}
+        for key, base in (("lawmaking", self.E.LAWMAKING_PROCEDURES), ("justice", self.E.JUSTICE_PROCEDURES)):
+            table = {stage: dict(spec) for stage, spec in base.items()}
+            for stage, spec in dict(overrides.get(key) or {}).items():
+                if spec is None:
+                    table.pop(stage, None)
+                else:
+                    table[stage] = dict(spec)
+            tables[key] = table
+        return tables
+
+    def _civic_record(self, table, action):
+        """The civic-record fields for one action: the action's name and the stage of `table` that
+        lists it in civic_actions (empty when no stage does)."""
+        stage = next((name for name, spec in self._procedures[table].items()
+                      if action in spec.get("civic_actions", ())), "")
+        return {"civic_action": action, "stage": stage}
+
+    def _policy_parameters(self, name):
+        """The named numbers a policy carries in the data pack (its `parameters`)."""
+        # A scenario may select a policy list without this policy; its numbers still come from the pack.
+        spec = self._policy_specs.get(name)
+        if spec is None or "parameters" not in spec:
+            spec = next((p for p in self.E.POLICIES if p.get("name") == name), None)
+        if spec is None or "parameters" not in spec:
+            raise KeyError(f"policy '{name}' has no parameters in the data pack")
+        return spec["parameters"]
 
     def policy_concepts(self, name):
         return [dict(c) for c in self._policy_specs[name]["concepts"]]
@@ -4106,8 +4181,7 @@ class BigvilleWorld:
         """
         if not self._land:
             return 0
-        farmers = [name for name, node in self._actors.items()
-                   if self.eng.node(node)["attrs"].get("role") in {"farmer", "farm_labourer"}]
+        farmers = self._workers_with_roles(self.E.LABOUR_TASKS["farm"]["worker_roles"], alive_only=False)
         if not farmers:
             return 0
         crops = ("wheat", "barley", "oats")
@@ -4240,6 +4314,22 @@ class BigvilleWorld:
             return False
         return bool(self.start(actor, recipe))
 
+    def _workers_with_roles(self, roles, *, alive_only=True):
+        """Resident names whose role is in `roles`, in cast order; `alive_only` drops the dead."""
+        roles = set(roles)
+        return [name for name, node in self._actors.items()
+                if self.eng.node(node)["attrs"].get("role") in roles
+                and (not alive_only or self.is_alive(name))]
+
+    def _labour_workers(self, task, *, alive_only=True):
+        """The residents who do a labour task: those of the first role in the task's worker_roles
+        (pack order) that has any. A task with no such residents has no workers."""
+        for role in self.E.LABOUR_TASKS[task]["worker_roles"]:
+            names = self._workers_with_roles([role], alive_only=alive_only)
+            if names:
+                return names
+        return []
+
     def _village_work_tick(self, period):
         """Perform the small, explicit founding policy used by ``run_village``.
 
@@ -4247,14 +4337,10 @@ class BigvilleWorld:
         operation claims the actor's current major-action slot; speech,
         requests, and other free actions remain available between these calls.
         """
-        farmers = [name for name, node in self._actors.items()
-                   if self.is_alive(name) and self.eng.node(node)["attrs"].get("role") == "farm_labourer"]
+        farmers = self._labour_workers("farm")
         # Keep the named farmers available for food preparation when the
         # labourers can cover field work; small scenarios with no labourers
         # still fall back to farmers for cultivation.
-        if not farmers:
-            farmers = [name for name, node in self._actors.items()
-                       if self.is_alive(name) and self.eng.node(node)["attrs"].get("role") == "farmer"]
         # Replanting is a separate sowing action. A farmer who harvested this
         # turn cannot also sow; another available farmer may do it later.
         occupied_lands = {self._crop_land_name(crop) for crop in self._living_crops()}
@@ -4301,12 +4387,11 @@ class BigvilleWorld:
         # fallback matters because timed jobs reserve inputs only when they
         # complete; launching every cook against the same visible grain pile
         # would overbook it under a batched rule pass.
-        millers = [name for name, node in self._actors.items()
-                   if self.is_alive(name) and self.eng.node(node)["attrs"].get("role") == "miller"]
-        bakers = [name for name, node in self._actors.items()
-                  if self.is_alive(name) and self.eng.node(node)["attrs"].get("role") == "baker"]
+        millers = self._labour_workers("mill")
+        bakers = self._labour_workers("bake")
+        cook_trade = self._recipe_specs["make_gruel"]["requires"]
         cooks = [name for name, node in self._actors.items()
-                 if self.is_alive(name) and "cook" in self.eng.node(node)["attrs"].get("trades", "").split(",")]
+                 if self.is_alive(name) and cook_trade in self.eng.node(node)["attrs"].get("trades", "").split(",")]
         if self.qty("bread") < max(200.0, len(self._actors) * 3.0):
             for name in cooks:
                 if self.actor_turn_state(name)["major_action_used"]:
@@ -4323,7 +4408,9 @@ class BigvilleWorld:
             # of grain aside before the miller turns the remainder into flour.
             # Otherwise a healthy chicken can be starved by a well-intentioned
             # bread pipeline even while the total grain stock looks ample.
-            grain_reserve = max(4.0, grain_feed_demand * 4.0)
+            reserve = self._policy_parameters("winter_food_reserve")
+            grain_reserve = max(float(reserve["minimum_grain"]),
+                                grain_feed_demand * float(reserve["feed_periods"]))
             for name in millers:
                 grain_per_run = sum(float(q) for k, q in self._recipe_specs["grind_flour"]["in"] if k == "grain")
                 if (not self.actor_turn_state(name)["major_action_used"]

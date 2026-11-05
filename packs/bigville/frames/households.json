@@ -1,9 +1,16 @@
 {
-  "_doc": "",
+  "_doc": "Household kinds (Phase 015). A resident lives in the first kind whose `roles` lists the resident's role; if none does, the first kind whose `groups` lists the resident's cast group; if none does, the kind marked `fallback`. `land_roles` names the roles whose holders are the owners of founding parcels. Exactly one kind is the fallback.",
   "_types": {},
   "tables": {
     "HOUSEHOLDS": {
       "farm_household": {
+        "roles": [
+          "farmer",
+          "farm_labourer"
+        ],
+        "land_roles": [
+          "farmer"
+        ],
         "members": [
           "adult",
           "child",
@@ -22,6 +29,9 @@
         ]
       },
       "craft_household": {
+        "groups": [
+          "high"
+        ],
         "members": [
           "adult",
           "child",
@@ -39,6 +49,7 @@
         ]
       },
       "landless_household": {
+        "fallback": true,
         "members": [
           "adult",
           "child",
@@ -55,6 +66,13 @@
         ]
       },
       "institutional_household": {
+        "roles": [
+          "clerk",
+          "councillor",
+          "mayor",
+          "constable",
+          "teacher"
+        ],
         "members": [
           "adult",
           "child"

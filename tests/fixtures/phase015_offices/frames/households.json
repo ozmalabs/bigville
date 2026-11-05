@@ -1,0 +1,93 @@
+{
+  "_doc": "Phase 015 acceptance fixture. The institutional household lists the renamed offices (notary, reeve) in place of clerk and mayor. Other kinds are as in bigville.",
+  "_types": {},
+  "tables": {
+    "HOUSEHOLDS": {
+      "farm_household": {
+        "roles": [
+          "farmer",
+          "farm_labourer"
+        ],
+        "land_roles": [
+          "farmer"
+        ],
+        "members": [
+          "adult",
+          "child",
+          "elder"
+        ],
+        "needs": [
+          "food",
+          "water",
+          "fuel",
+          "shelter"
+        ],
+        "assets": [
+          "land",
+          "livestock",
+          "tools"
+        ]
+      },
+      "craft_household": {
+        "groups": [
+          "high"
+        ],
+        "members": [
+          "adult",
+          "child",
+          "elder"
+        ],
+        "needs": [
+          "food",
+          "water",
+          "fuel",
+          "shelter"
+        ],
+        "assets": [
+          "workshop",
+          "tools"
+        ]
+      },
+      "landless_household": {
+        "fallback": true,
+        "members": [
+          "adult",
+          "child",
+          "elder"
+        ],
+        "needs": [
+          "food",
+          "water",
+          "fuel",
+          "shelter"
+        ],
+        "assets": [
+          "labour"
+        ]
+      },
+      "institutional_household": {
+        "roles": [
+          "notary",
+          "councillor",
+          "reeve",
+          "constable",
+          "teacher"
+        ],
+        "members": [
+          "adult",
+          "child"
+        ],
+        "needs": [
+          "food",
+          "water",
+          "fuel",
+          "shelter"
+        ],
+        "assets": [
+          "office",
+          "records"
+        ]
+      }
+    }
+  }
+}
