@@ -406,9 +406,29 @@ def check_consistency():
     for skill in SKILLS:
         if len(clustered.get(skill, [])) != 1:
             errors.append(f"SKILLS[{skill}]: in {len(clustered.get(skill, []))} clusters (must be exactly 1)")
-    for meta in METASKILLS:
-        if not any(spec["metaskill"] == meta for spec in SKILL_CLUSTERS.values()):
+    for meta, spec in METASKILLS.items():
+        if not any(c["metaskill"] == meta for c in SKILL_CLUSTERS.values()):
             warnings.append(f"METASKILLS[{meta}]: no cluster belongs to it")
+        if not 0.0 <= float(spec.get("g_loading", -1)) <= 1.0:
+            errors.append(f"METASKILLS[{meta}]: g_loading must be between 0 and 1")
+    for name, spec in SKILL_LIMITATIONS.items():
+        if name not in LIMITATION_PREVALENCE:
+            errors.append(f"SKILL_LIMITATIONS[{name}]: no prevalence in population.LIMITATION_PREVALENCE")
+        for skill, effect in spec.get("skills", {}).items():
+            if skill not in SKILLS:
+                errors.append(f"SKILL_LIMITATIONS[{name}]: unknown skill '{skill}'")
+        for meta in spec.get("metaskills", {}):
+            if meta not in METASKILLS:
+                errors.append(f"SKILL_LIMITATIONS[{name}]: unknown metaskill '{meta}'")
+        for effect in list(spec.get("skills", {}).values()) + list(spec.get("metaskills", {}).values()):
+            if float(effect.get("level", 0.0)) > 0 or not 0 < float(effect.get("learn", 1.0)) <= 1:
+                errors.append(f"SKILL_LIMITATIONS[{name}]: a limitation must lower level and slow learning")
+    for name, spec in LIMITATION_PREVALENCE.items():
+        if name not in SKILL_LIMITATIONS:
+            errors.append(f"LIMITATION_PREVALENCE[{name}]: no effects in SKILL_LIMITATIONS")
+        for other in spec.get("given", {}):
+            if other not in LIMITATION_PREVALENCE:
+                errors.append(f"LIMITATION_PREVALENCE[{name}].given: unknown limitation '{other}'")
     for (a, b), value in SKILL_AFFINITY.items():
         if a not in SKILLS or b not in SKILLS:
             errors.append(f"SKILL_AFFINITY[{a}, {b}]: unknown skill")
@@ -824,6 +844,28 @@ def format_systems_report(analysis=None):
     return "\n".join(lines)
 
 
+def format_capacity_report(n=10000):
+    """Summarise drawn capacities against the published prevalence each is set from."""
+    lines = [f"PEOPLE (aptitude, talents, limitations drawn for {n} adults; target = source rate)"]
+    for age in (35.0, 75.0):
+        d = describe_capacity_distribution(n, age=age)
+        lines.append(f"  age {age:.0f}: aptitude mean {d['aptitude_mean']:.3f} (2nd-98th pct "
+                     f"{d['aptitude_p02']:.2f}-{d['aptitude_p98']:.2f}); "
+                     f"{d['any_limitation']:.0%} have at least one limitation")
+        def expected(name):
+            """Population rate, both sexes, including any raised rate given a comorbid condition."""
+            base = (limitation_rate(name, age=age, sex="male") + limitation_rate(name, age=age, sex="female")) / 2
+            for other, conditional in LIMITATION_PREVALENCE[name].get("given", {}).items():
+                q = expected(other)
+                base = (1 - q) * base + q * max(base, float(conditional))
+            return base
+
+        for name, rate in d["limitation_rates"].items():
+            target = expected(name)
+            lines.append(f"    {name:<36} {rate:>6.1%}   target {target:>6.1%}")
+    return "\n".join(lines)
+
+
 def format_consistency_report(report=None):
     """Render check_consistency() as readable text, warnings grouped by their table/area."""
     report = report or check_consistency()
@@ -857,4 +899,6 @@ if __name__ == "__main__":
     print(format_systems_report(analyse_systems()))
     print()
     print(format_jobs_report())
+    print()
+    print(format_capacity_report())
     _sys.exit(1 if _report["errors"] else 0)

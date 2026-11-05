@@ -1934,7 +1934,7 @@ class BigvilleWorld:
             world.set_relationship(src, tgt, kind=kind, strength=strength)
         return world
 
-    def seed_residents(self, population, *, prefix=None):
+    def seed_residents(self, population, *, prefix=None, capacity_seed=0):
         """Seed `population` founding residents from the data's JOBS (E.seed_jobs).
 
         Each resident gets their job(s) as trades (the first is their role), their trade's base skill,
@@ -1954,6 +1954,7 @@ class BigvilleWorld:
             skill = float(E.TRADES.get(role, {}).get("base_skill", 0.7))
             self.add_actor(name, role=role, skill=skill, trades=tuple(resident["trades"][1:]))
             self.eng.set_attr(self._actors[name], "jobs", ",".join(resident["jobs"]))
+            self.draw_capacities(name, seed=capacity_seed)
             for tool in resident["tools"]:
                 self.give_tool(name, tool)
             names.append(name)
@@ -2029,6 +2030,9 @@ class BigvilleWorld:
                            klass=record["class"], group=record["group"],
                            role_identity=float(record["role_identity"]), traits=record["params"],
                            trades=E.CAST_ROLE_TRADES.get(role, ()))
+            # the founding cast are real people: aptitude, talents, and limitations drawn from the
+            # observed distributions (E.LIMITATION_PREVALENCE), deterministic in the map seed
+            self.draw_capacities(record["name"], seed=seed)
             for tableware in E.SERVING_EQUIPMENT:
                 self.give_tableware(record["name"], tableware)
             self.assign_household(record["name"], household)
@@ -4727,6 +4731,10 @@ class BigvilleWorld:
                                         "skill_levels": E.initial_skill_levels((role,) + tuple(trades), skill)[0],
                                         "metaskill_levels": E.initial_skill_levels((role,) + tuple(trades), skill)[1],
                                         "skill_practice": {},
+                                        # the meta-metaskill, metaskill talents, and limitations
+                                        # (average and unlimited unless drawn: draw_capacities)
+                                        "aptitude": 1.0, "aptitude_base": 1.0, "talents": {},
+                                        "limitations": [],
                                         "role_identity": float(role_identity if role_identity is not None else 0.0),
                                         "work_fraction": float(stage["work_fraction"]),
                                         "care_need": float(stage["care"]), "food_need": float(stage["food"]),
@@ -6480,10 +6488,46 @@ class BigvilleWorld:
         """The actor's own level at a skill (0 if never learned)."""
         return self.skill_levels(actor).get(skill, 0.0)
 
-    def effective_skill(self, actor, skill):
-        """The actor's working level at a skill: own level, lifted by their closest skill and metaskill."""
+    def _person(self, actor):
         a = self.eng.node(self._actors[actor])["attrs"]
-        return round(E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill), 4)
+        return {"aptitude": float(a.get("aptitude", 1.0)), "aptitude_base": float(a.get("aptitude_base", 1.0)),
+                "talents": dict(a.get("talents", {})), "limitations": list(a.get("limitations", []))}
+
+    def capacities(self, actor):
+        """The actor's aptitude (meta-metaskill), metaskill talents, and limitations."""
+        return self._person(actor)
+
+    def set_capacities(self, actor, *, aptitude=None, talents=None, limitations=None):
+        """Set an actor's capacities (setup, or a scenario authoring a particular person)."""
+        node = self._actors[actor]
+        if aptitude is not None:
+            self.eng.set_attr(node, "aptitude", float(aptitude))
+            self.eng.set_attr(node, "aptitude_base", float(aptitude))
+        if talents is not None:
+            assert set(talents) <= set(E.METASKILLS), f"unknown metaskill in {talents}"
+            self.eng.set_attr(node, "talents", {k: float(v) for k, v in talents.items()})
+        if limitations is not None:
+            assert set(limitations) <= set(E.SKILL_LIMITATIONS), f"unknown limitation in {limitations}"
+            self.eng.set_attr(node, "limitations", sorted(limitations))
+        return self._person(actor)
+
+    def draw_capacities(self, actor, *, seed=0, sex=None):
+        """Draw an actor's capacities from the population distributions (E.draw_person_capacities),
+        deterministically from `seed` and their name."""
+        import zlib
+        import numpy as np
+        rng = np.random.default_rng((int(seed) * 1_000_003) ^ zlib.crc32(str(actor).encode()))
+        age = float(self.eng.node(self._actors[actor])["attrs"].get("age", 30.0))
+        drawn = E.draw_person_capacities(rng, age=age, sex=sex)
+        return self.set_capacities(actor, aptitude=drawn["aptitude"], talents=drawn["talents"],
+                                   limitations=drawn["limitations"])
+
+    def effective_skill(self, actor, skill):
+        """The actor's working level at a skill: own level, lifted by their closest skill through the
+        metaskill (sharpened by aptitude), lowered by any limitations."""
+        a = self.eng.node(self._actors[actor])["attrs"]
+        return round(E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill,
+                                       self._person(actor)), 4)
 
     def recipe_skill_level(self, actor, recipe):
         """Working level for a recipe row (its skill per E.recipe_skill); a recipe with no named skill
@@ -6521,9 +6565,11 @@ class BigvilleWorld:
                 continue
             levels = self._levels(actor)
             metas = dict(a.get("metaskill_levels", {}))
+            person = self._person(actor)
             for skill, minutes in sorted(log.items()):
                 before = float(levels.get(skill, 0.0))
-                gain, meta_gain = E.practice_gain(levels, metas, skill, minutes)
+                gain, meta_gain, aptitude_gain = E.practice_gain(levels, metas, skill, minutes, person)
+                person["aptitude"] += aptitude_gain
                 levels[skill] = before + gain
                 meta = E.skill_metaskill(skill)
                 if meta:
@@ -6535,6 +6581,7 @@ class BigvilleWorld:
                                       observer=actor, severity=0.15)
             self.eng.set_attr(node, "skill_levels", levels)
             self.eng.set_attr(node, "metaskill_levels", metas)
+            self.eng.set_attr(node, "aptitude", person["aptitude"])
             self.eng.set_attr(node, "skill_practice", {})
             self._sync_main_skill(actor)
 

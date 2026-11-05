@@ -105,16 +105,53 @@ def job_skills(job):
 #   gain per hour = PRACTICE["rate"] * (1 - own) * (1 + PRACTICE["transfer"] * transfer
 #                                                     + PRACTICE["meta"] * metaskill)
 # and every hour of practice also raises the skill's metaskill a little (PRACTICE["meta_rate"]).
+# Above the metaskills sits one META-METASKILL, APTITUDE: general learning ability (the psychometric
+# g, which correlates with every broad ability -- the "positive manifold"). It is a multiplier near 1
+# that speeds learning and sharpens a metaskill's use, by how much that metaskill depends on general
+# ability (its `g_loading`, 0..1): reading and reckoning lean on it heavily, hand-skill and heavy toil
+# little. A person also has a TALENT per metaskill (their innate lean, a multiplier near 1) and may
+# have LIMITATIONS (SKILL_LIMITATIONS) that lower levels and slow learning. How these are distributed
+# across people is in population.
+#
 # These are how skill works -- the rules of the world's bodies and hands. Which skills a person has,
 # and how well, is theirs; nobody else knows it except by watching their work.
+#
+# g_loading grounding (APPROX, model choices on the direction of the evidence): broad abilities sit
+# under g in the Cattell-Horn-Carroll / three-stratum model (Carroll 1993); verbal/crystallised and
+# quantitative abilities load highest; neuromotor scores correlate only weakly with intelligence
+# (r = 0.15-0.37 in 7-18 year olds, PubMed 23410213), so hand-skill and toil load lowest.
 METASKILLS = {
-    "craftsmanship": "hand and eye for making things in any material",
-    "provisioning":  "judgement of food, fire, and timing in the kitchen and the dairy",
-    "stewardship":   "reading land, weather, plants, and beasts",
-    "letters":       "symbols, records, and abstract reasoning",
-    "care":          "attending to bodies, minds, and souls",
-    "dealing":       "persuasion, order, and trust between people",
-    "toil":          "the technique and endurance of heavy, plain work",
+    "craftsmanship": {"description": "hand and eye for making things in any material", "g_loading": 0.30},
+    "provisioning":  {"description": "judgement of food, fire, and timing in the kitchen and the dairy",
+                      "g_loading": 0.40},
+    "stewardship":   {"description": "reading land, weather, plants, and beasts", "g_loading": 0.40},
+    "letters":       {"description": "symbols, records, and abstract reasoning", "g_loading": 0.80},
+    "care":          {"description": "attending to bodies, minds, and souls", "g_loading": 0.50},
+    "dealing":       {"description": "persuasion, order, and trust between people", "g_loading": 0.50},
+    "toil":          {"description": "the technique and endurance of heavy, plain work", "g_loading": 0.15},
+}
+META_METASKILL = "aptitude"
+
+# Limitations: each lowers a person's working LEVEL at some skills or whole metaskills (`level`, added
+# after transfer) and/or slows how fast they LEARN them (`learn`, a multiplier). `all_learning`
+# multiplies every learning rate. Prevalence and who has them are in population.LIMITATION_PREVALENCE.
+SKILL_LIMITATIONS = {
+    "dyslexia":      {"skills": {"writing": {"level": -0.25, "learn": 0.5}, "law": {"level": -0.15},
+                                 "printing": {"level": -0.10}},
+                      "metaskills": {"letters": {"learn": 0.7}}},
+    "dyscalculia":   {"skills": {"reckoning": {"level": -0.25, "learn": 0.5},
+                                 "trading": {"level": -0.10}, "storekeeping": {"level": -0.10}}},
+    "developmental_coordination_disorder":
+                     {"metaskills": {"craftsmanship": {"level": -0.15, "learn": 0.6}},
+                      "skills": {"writing": {"level": -0.05}}},
+    "colour_vision_deficiency":
+                     {"skills": {"dyeing": {"level": -0.30}, "foraging": {"level": -0.10}}},
+    "essential_tremor":
+                     {"metaskills": {"craftsmanship": {"level": -0.20}},
+                      "skills": {"writing": {"level": -0.15}, "medicine": {"level": -0.10}}},
+    "adult_adhd":    {"all_learning": 0.85, "metaskills": {"letters": {"level": -0.05}}},
+    "hand_osteoarthritis":
+                     {"metaskills": {"craftsmanship": {"level": -0.15}, "toil": {"level": -0.10}}},
 }
 
 SKILL_CLUSTERS = {
@@ -153,6 +190,8 @@ SKILL_AFFINITY = {
 }
 
 TRANSFER = {"base": 0.5, "meta": 0.5}
+APTITUDE_PRACTICE = {"rate": 0.0002, "headroom": 0.10}   # learning to learn: slow, and bounded
+                                                         # to 10% above the person's base aptitude
 PRACTICE = {
     "rate": 0.004,         # level gained per hour of practice, times the headroom (1 - level)
     "transfer": 1.0,       # extra learning speed per unit of transfer from a close skill
@@ -203,26 +242,62 @@ def skill_transfer(levels, skill):
     return best, source
 
 
-def effective_skill(levels, metas, skill):
-    """A person's working level at `skill`: their own, lifted by transfer and the metaskill."""
+def aptitude_factor(person, metaskill):
+    """How much a person's aptitude helps with a metaskill: aptitude ** g_loading (1.0 if average)."""
+    aptitude = float((person or {}).get("aptitude", 1.0))
+    loading = float(METASKILLS.get(metaskill, {}).get("g_loading", 0.0)) if metaskill else 0.0
+    return max(0.0, aptitude) ** loading
+
+
+def _limitation_effects(person, skill):
+    """(level delta, learn multiplier) from a person's limitations, for `skill` and its metaskill."""
+    meta = skill_metaskill(skill)
+    delta, learn = 0.0, 1.0
+    for name in (person or {}).get("limitations", ()):
+        spec = SKILL_LIMITATIONS.get(name, {})
+        learn *= float(spec.get("all_learning", 1.0))
+        for effect in (spec.get("skills", {}).get(skill), spec.get("metaskills", {}).get(meta)):
+            if effect:
+                delta += float(effect.get("level", 0.0))
+                learn *= float(effect.get("learn", 1.0))
+    return delta, learn
+
+
+def effective_skill(levels, metas, skill, person=None):
+    """A person's working level at `skill`: their own, lifted by transfer through the metaskill (which
+    aptitude sharpens), then lowered by any limitations. `person` is {"aptitude", "talents",
+    "limitations"}; omitted, they are average and unlimited."""
     own = float(levels.get(skill, 0.0))
     transfer, _ = skill_transfer(levels, skill)
-    meta = float(metas.get(skill_metaskill(skill), 0.0))
-    lift = transfer * (TRANSFER["base"] + TRANSFER["meta"] * meta)
-    return min(1.0, own + (1.0 - own) * lift)
+    meta_name = skill_metaskill(skill)
+    meta = float(metas.get(meta_name, 0.0)) * aptitude_factor(person, meta_name)
+    lift = transfer * (TRANSFER["base"] + TRANSFER["meta"] * min(1.0, meta))
+    delta, _learn = _limitation_effects(person, skill)
+    return max(0.0, min(1.0, own + (1.0 - own) * lift + delta))
 
 
-def practice_gain(levels, metas, skill, minutes):
-    """(skill gain, metaskill gain) from `minutes` of practice at `skill`."""
+def practice_gain(levels, metas, skill, minutes, person=None):
+    """(skill gain, metaskill gain, aptitude gain) from `minutes` of practice at `skill`.
+
+    Learning speed rises with transfer from close skills and with the metaskill, and is scaled by
+    aptitude (through the metaskill's g_loading), the person's talent for that metaskill, and any
+    limitations. Every hour of practice also nudges aptitude toward its ceiling (learning to learn)."""
     hours = float(minutes) / 60.0
     own = float(levels.get(skill, 0.0))
     transfer, _ = skill_transfer(levels, skill)
     meta_name = skill_metaskill(skill)
     meta = float(metas.get(meta_name, 0.0))
-    speed = 1.0 + PRACTICE["transfer"] * transfer + PRACTICE["meta"] * meta
+    person = person or {}
+    gift = aptitude_factor(person, meta_name) * float(person.get("talents", {}).get(meta_name, 1.0))
+    _delta, learn = _limitation_effects(person, skill)
+    speed = (1.0 + PRACTICE["transfer"] * transfer + PRACTICE["meta"] * meta) * gift * learn
     gain = min(1.0 - own, PRACTICE["rate"] * hours * (1.0 - own) * speed)
-    meta_gain = min(1.0 - meta, PRACTICE["meta_rate"] * hours * (1.0 - meta)) if meta_name else 0.0
-    return gain, meta_gain
+    meta_gain = (min(1.0 - meta, PRACTICE["meta_rate"] * hours * (1.0 - meta) * gift * learn)
+                 if meta_name else 0.0)
+    aptitude = float(person.get("aptitude", 1.0))
+    ceiling = float(person.get("aptitude_base", aptitude)) * (1.0 + APTITUDE_PRACTICE["headroom"])
+    aptitude_gain = max(0.0, APTITUDE_PRACTICE["rate"] * hours * (ceiling - aptitude))
+    return gain, meta_gain, aptitude_gain
 
 
 def initial_skill_levels(trades, level):

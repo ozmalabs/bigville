@@ -19,6 +19,8 @@ from domains.world_affordances import (
 )
 from domains.shared_frames import (
     JOBS,
+    METASKILLS,
+    SKILL_LIMITATIONS,
 )
 
 # Starting literacy/capability by station in life (the world's defaults; any agent can be set higher).
@@ -240,6 +242,104 @@ def draw_physique(rng):
 #    are exposed the day supply fails. So provisioning is bounded by min(what you project you'll
 #    need, what you can store). Larder capacity is set from wealth (a purchased/rented resource).
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# APTITUDE, TALENTS, AND LIMITATIONS -- how skill capacity varies between people
+# ---------------------------------------------------------------------------
+# APTITUDE (the meta-metaskill, general learning ability): IQ is normed to a normal distribution,
+# mean 100 and SD 15 (en.wikipedia.org/wiki/Intelligence_quotient; ~2% each above 130 and below 70).
+# Aptitude is that scale divided by 100 -- a multiplier with mean 1.0 and SD 0.15 -- floored at 0.4.
+APTITUDE = {"mean": 1.0, "sd": 0.15, "floor": 0.40}
+# TALENT: each metaskill's specific ability beyond what aptitude explains (the part of a broad ability
+# not shared with g). Independent per metaskill; SD APPROX (a model choice), floor 0.5.
+TALENT = {"mean": 1.0, "sd": 0.12, "floor": 0.50}
+
+# LIMITATIONS -- prevalence in a population, with the published figure each is set from. Age/sex
+# dependence follows the sources; `persistence` is the share of childhood cases still present in
+# adults; `given` gives a higher rate when another condition is present (comorbidity).
+LIMITATION_PREVALENCE = {
+    # 5-10% of school-age children have a reading or a maths learning disorder; ~40% of children with
+    # the maths disorder also have the reading one (PubMed 39827782). A Spanish primary-school sample
+    # found risk of dyslexia 8.5% (Frontiers in Psychology 2025, 10.3389/fpsyg.2025.1664437).
+    "dyslexia": {"rate": 0.07, "given": {"dyscalculia": 0.40}},
+    # 3-7% of children, adolescents, and adults (PubMed 30905334).
+    "dyscalculia": {"rate": 0.05},
+    # 5-6% of school-age children (PMC8448494, DSM-5); continues into adulthood in 50-70% (PMC10784181).
+    "developmental_coordination_disorder": {"rate": 0.055, "persistence": 0.6},
+    # red-green colour vision deficiency: up to 8% of males and 0.5% of females of Northern European
+    # descent, lower elsewhere (PMC12385717).
+    "colour_vision_deficiency": {"rate": {"male": 0.08, "female": 0.005}},
+    # essential tremor: ~0.4% overall; 5.79% at age >= 65 in a meta-analysis (PubMed 34277141).
+    "essential_tremor": {"rate_by_age": [(0, 0.004), (65, 0.058)]},
+    # persistent adult ADHD: 2.58% of adults, adjusted to the 2020 global population (meta-analysis,
+    # PubMed 33692893); 5-7% in childhood (PMC9197091).
+    "adult_adhd": {"rate_by_age": [(0, 0.06), (18, 0.026)]},
+    # symptomatic hand osteoarthritis: 8% of US adults (NHANES III, PubMed 17304684); at 71-100 years,
+    # 26.2% of women and 13.4% of men (Framingham, PubMed 12446258). The under-50 rate is APPROX.
+    "hand_osteoarthritis": {"rate_by_age": [(0, 0.0), (35, 0.02), (50, 0.08)],
+                            "rate_by_age_sex": {"male": [(71, 0.134)], "female": [(71, 0.262)]}},
+}
+
+
+def _age_rate(points, age):
+    rate = 0.0
+    for start, value in points:
+        if age >= start:
+            rate = value
+    return rate
+
+
+def limitation_rate(name, *, age=30.0, sex=None, present=()):
+    """The probability a person of this age/sex has a limitation, given ones already drawn."""
+    spec = LIMITATION_PREVALENCE[name]
+    rate = spec.get("rate", 0.0)
+    if isinstance(rate, dict):
+        rate = rate.get(sex, sum(rate.values()) / len(rate))
+    if "rate_by_age" in spec:
+        rate = _age_rate(spec["rate_by_age"], age)
+    if "rate_by_age_sex" in spec:
+        by_sex = spec["rate_by_age_sex"]
+        sexes = [sex] if sex in by_sex else list(by_sex)          # unknown sex: average the sexes
+        if any(age >= start for s_ in sexes for start, _ in by_sex[s_]):
+            rate = sum(_age_rate(by_sex[s_], age) for s_ in sexes) / len(sexes)
+    if age >= 18:
+        rate *= float(spec.get("persistence", 1.0))
+    for other, conditional in spec.get("given", {}).items():
+        if other in present:
+            rate = max(rate, float(conditional))
+    return float(rate)
+
+
+def draw_person_capacities(rng, *, age=30.0, sex=None):
+    """One person's aptitude, metaskill talents, and limitations, drawn from the distributions above.
+
+    `rng` is a numpy Generator. Returns {"aptitude", "aptitude_base", "talents", "limitations"}."""
+    aptitude = float(max(APTITUDE["floor"], rng.normal(APTITUDE["mean"], APTITUDE["sd"])))
+    talents = {m: round(float(max(TALENT["floor"], rng.normal(TALENT["mean"], TALENT["sd"]))), 4)
+               for m in METASKILLS}
+    present = []
+    # conditions with no comorbidity dependence first, so `given` can see them
+    order = sorted(LIMITATION_PREVALENCE, key=lambda n: (bool(LIMITATION_PREVALENCE[n].get("given")), n))
+    for name in order:
+        if rng.random() < limitation_rate(name, age=age, sex=sex, present=present):
+            present.append(name)
+    return {"aptitude": round(aptitude, 4), "aptitude_base": round(aptitude, 4),
+            "talents": talents, "limitations": sorted(present)}
+
+
+def describe_capacity_distribution(n=10000, *, seed=1, age=35.0):
+    """Draw `n` adults (half each sex) and summarise them: for checking against the sources."""
+    import numpy as np
+    rng = np.random.default_rng(seed)
+    people = [draw_person_capacities(rng, age=age, sex=("male", "female")[i % 2]) for i in range(n)]
+    aptitudes = sorted(p["aptitude"] for p in people)
+    rates = {name: sum(name in p["limitations"] for p in people) / n for name in LIMITATION_PREVALENCE}
+    return {"n": n, "age": age,
+            "aptitude_mean": round(sum(aptitudes) / n, 4),
+            "aptitude_p02": aptitudes[int(0.02 * n)], "aptitude_p98": aptitudes[int(0.98 * n)],
+            "any_limitation": round(sum(bool(p["limitations"]) for p in people) / n, 4),
+            "limitation_rates": {k: round(v, 4) for k, v in rates.items()}}
+
 
 PLAN_HORIZON = {"mean": 2.0, "sd": 1.2, "min": 1.0}   # days ahead an agent provisions (APPROX; heterogeneous)
 
