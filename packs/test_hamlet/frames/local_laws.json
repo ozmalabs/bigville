@@ -8,9 +8,14 @@
         "title": "Hamlet Common Law",
         "kind": "law",
         "scope": "hamlet",
-        "seed_roles": [
-          "baker"
-        ],
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "bread_is_shared_at_fair_price",

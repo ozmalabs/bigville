@@ -1,0 +1,4 @@
+BigvilleGame build s 0.36
+memories per resident: min 218 mean 294.6 max 438 total 29455
+kinds {'recipe_knowledge': 542, 'awareness': 20334, 'understanding': 8579}
+derived by type (all residents) {'recipe': 3109, 'good': 7549, 'law': 400, 'policy': 297, 'concept': 2403, 'procedure': 200, 'office': 600, 'kin_term': 2000, 'place': 4497, 'animal': 798, 'resident': 7598, 'charter': 4}

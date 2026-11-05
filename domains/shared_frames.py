@@ -217,17 +217,10 @@ def all_reference_templates():
             row["source_name"] = bundle["name"]
             row["source_origin"] = bundle.get("origin", "bigville")
             row["source_immutable"] = bool(bundle.get("immutable", False))
-            row.setdefault("seed_roles", bundle.get("seed_roles", []))
+            # A concept inherits its bundle's knowledge spec (Phase 019); see domains/knowledge.py.
+            row.setdefault("knowledge", bundle.get("knowledge", {}))
             templates.append(row)
     return templates
-
-
-def shared_concepts_for(role, present_roles=None):
-    """Legacy authoring helper; world construction must not use it to assign beliefs."""
-    present = set(present_roles or ())
-    return [c for c in all_reference_templates()
-            if ("*" in c.get("seed_roles", ()) or role in c.get("seed_roles", ()))
-            and (not c.get("requires_role") or c["requires_role"] in present)]
 
 
 def min_skill(recipe_name):

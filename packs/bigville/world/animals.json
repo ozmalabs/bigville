@@ -15,7 +15,20 @@
         "ration": 2,
         "starve_limit": 3,
         "manure": 0.8,
-        "care_minutes": 15
+        "care_minutes": 15,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "husbandry",
+              "level": 0.3
+            }
+          ]
+        }
       },
       "cow": {
         "gives": {
@@ -30,7 +43,20 @@
         "ration": 4,
         "starve_limit": 3,
         "manure": 2.0,
-        "care_minutes": 45
+        "care_minutes": 45,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "husbandry",
+              "level": 0.3
+            }
+          ]
+        }
       },
       "chicken": {
         "gives": {
@@ -45,7 +71,20 @@
         "ration": 1,
         "starve_limit": 4,
         "manure": 0.1,
-        "care_minutes": 10
+        "care_minutes": 10,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "husbandry",
+              "level": 0.3
+            }
+          ]
+        }
       },
       "horse": {
         "gives": {
@@ -59,7 +98,20 @@
         "starve_limit": 3,
         "pull": 500.0,
         "manure": 1.5,
-        "care_minutes": 30
+        "care_minutes": 30,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "husbandry",
+              "level": 0.3
+            }
+          ]
+        }
       },
       "dog": {
         "gives": {
@@ -71,7 +123,15 @@
         "role": "working",
         "ration": 1,
         "starve_limit": 5,
-        "care_minutes": 5
+        "care_minutes": 5,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "cat": {
         "gives": {
@@ -83,7 +143,15 @@
         "role": "working",
         "ration": 1,
         "starve_limit": 3,
-        "care_minutes": 0
+        "care_minutes": 0,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "sheep": {
         "gives": {
@@ -97,7 +165,20 @@
         "ration": 1,
         "starve_limit": 3,
         "manure": 0.6,
-        "care_minutes": 10
+        "care_minutes": 10,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "husbandry",
+              "level": 0.3
+            }
+          ]
+        }
       },
       "bee": {
         "gives": {
@@ -110,7 +191,20 @@
         "role": "pollination",
         "ration": 1,
         "starve_limit": 3,
-        "care_minutes": 5
+        "care_minutes": 5,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.2,
+          "after_years": 3,
+          "understanding_requires": [
+            {
+              "skill": "husbandry",
+              "level": 0.3
+            }
+          ]
+        }
       }
     }
   }

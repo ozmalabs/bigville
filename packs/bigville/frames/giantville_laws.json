@@ -11,12 +11,14 @@
         "origin": "giantville",
         "immutable": true,
         "enforcement": "bigville",
-        "seed_roles": [
-          "mayor",
-          "clerk",
-          "constable",
-          "councillor"
-        ],
+        "knowledge": {
+          "topics": [
+            "policing"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "murder_is_forbidden",
@@ -55,13 +57,14 @@
         "origin": "giantville",
         "immutable": true,
         "enforcement": "bigville",
-        "seed_roles": [
-          "mayor",
-          "clerk",
-          "constable",
-          "councillor",
-          "merchant"
-        ],
+        "knowledge": {
+          "topics": [
+            "policing"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "theft_is_forbidden",

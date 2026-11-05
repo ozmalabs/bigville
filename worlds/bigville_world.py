@@ -2049,6 +2049,12 @@ class BigvilleWorld:
             # the founding cast are real people: aptitude, talents, and limitations drawn from the
             # observed distributions (E.LIMITATION_PREVALENCE), deterministic in the map seed
             self.draw_capacities(record["name"], seed=seed)
+            # Phase 019: the founder's implied history is held on the node, and an earlier apprenticeship
+            # in another trade leaves its skill levels (they are physical, so the world holds them).
+            if record.get("history") is not None:
+                self.eng.set_attr(self._actors[record["name"]], "history", dict(record["history"]))
+            if record.get("former_skills"):
+                self.seed_skill_floor(record["name"], dict(record["former_skills"]))
             for tableware in self.E.SERVING_EQUIPMENT:
                 self.give_tableware(record["name"], tableware)
             self.assign_household(record["name"], household)
@@ -7089,6 +7095,25 @@ class BigvilleWorld:
         if skill is None:
             return float(self.eng.node(self._actors[actor])["attrs"].get("skill", 0.0))
         return self.effective_skill(actor, skill)
+
+    def seed_skill_floor(self, actor, levels):
+        """Raise an actor's own levels to at least `levels` ({skill: level}), and their metaskill levels
+        to match (META_FROM_SKILL x level, the rule add_actor uses). Used for apprenticeships in trades the
+        actor no longer works (Phase 019). Levels already higher are kept."""
+        node = self._actors[actor]
+        attrs = self.eng.node(node)["attrs"]
+        current = dict(attrs.get("skill_levels", {}))
+        metas = dict(attrs.get("metaskill_levels", {}))
+        for skill, level in sorted(levels.items()):
+            assert skill in self.E.SKILLS, f"unknown skill: {skill}"
+            current[skill] = max(float(current.get(skill, 0.0)), float(level))
+            meta = self.E.skill_metaskill(skill)
+            if meta:
+                metas[meta] = max(float(metas.get(meta, 0.0)), float(self.E.META_FROM_SKILL) * float(level))
+        self.eng.set_attr(node, "skill_levels", current)
+        self.eng.set_attr(node, "metaskill_levels", metas)
+        self._sync_main_skill(actor)
+        return current
 
     def set_skill_level(self, actor, skill, level):
         """Set an actor's own level at a skill (setup, or a backend recording what they have learned)."""

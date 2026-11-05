@@ -772,7 +772,19 @@
    "age": 42,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 42.0
+   },
    "home_cell": [
     2,
     7
@@ -817,7 +829,30 @@
    "age": 33,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "masonry": 0.1
+   },
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.1,
+      "skills": [
+       "masonry"
+      ],
+      "trade": "mason",
+      "years": 1.0
+     }
+    ],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 33.0
+   },
    "home_cell": [
     7,
     9
@@ -861,7 +896,30 @@
    "age": 45,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "masonry": 0.6
+   },
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.6,
+      "skills": [
+       "masonry"
+      ],
+      "trade": "mason",
+      "years": 6.0
+     }
+    ],
+    "household_role": "child",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 3.0
+   },
    "home_cell": [
     4,
     22
@@ -903,7 +961,19 @@
    "age": 31,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 31.0
+   },
    "home_cell": [
     7,
     31
@@ -945,7 +1015,23 @@
    "age": 31,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [
+     "doctor"
+    ],
+    "apprenticed_years": {
+     "doctor": 7.0
+    },
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 31.0
+   },
    "home_cell": [
     0,
     32
@@ -987,7 +1073,19 @@
    "age": 29,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 29.0
+   },
    "home_cell": [
     0,
     20
@@ -1031,7 +1129,30 @@
    "age": 55,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "smithing": 0.3
+   },
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.3,
+      "skills": [
+       "smithing"
+      ],
+      "trade": "smith",
+      "years": 3.0
+     }
+    ],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 51.0
+   },
    "home_cell": [
     2,
     9
@@ -1075,7 +1196,30 @@
    "age": 30,
    "capability": 0.55,
    "class": "middle",
+   "former_skills": {
+    "dairying": 0.2
+   },
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.2,
+      "skills": [
+       "dairying"
+      ],
+      "trade": "dairymaid",
+      "years": 2.0
+     }
+    ],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 30.0
+   },
    "home_cell": [
     6,
     11
@@ -1119,7 +1263,19 @@
    "age": 31,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 31.0
+   },
    "home_cell": [
     3,
     7
@@ -1163,7 +1319,19 @@
    "age": 44,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 40.0
+   },
    "home_cell": [
     4,
     32
@@ -1207,7 +1375,19 @@
    "age": 34,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 34.0
+   },
    "home_cell": [
     4,
     22
@@ -1249,7 +1429,19 @@
    "age": 47,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 11.0
+   },
    "home_cell": [
     4,
     20
@@ -1291,7 +1483,30 @@
    "age": 26,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {
+    "milling": 0.6
+   },
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.6,
+      "skills": [
+       "milling"
+      ],
+      "trade": "miller",
+      "years": 6.0
+     }
+    ],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 26.0
+   },
    "home_cell": [
     1,
     33
@@ -1335,7 +1550,30 @@
    "age": 44,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {
+    "masonry": 0.4
+   },
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.4,
+      "skills": [
+       "masonry"
+      ],
+      "trade": "mason",
+      "years": 4.0
+     }
+    ],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 4,
+    "widowed": false,
+    "years_in_village": 44.0
+   },
    "home_cell": [
     0,
     9
@@ -1379,7 +1617,21 @@
    "age": 57,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [
+     "councillor"
+    ],
+    "schooling_years": 2,
+    "widowed": true,
+    "years_in_village": 56.0
+   },
    "home_cell": [
     2,
     33
@@ -1423,7 +1675,19 @@
    "age": 47,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 47.0
+   },
    "home_cell": [
     5,
     34
@@ -1465,7 +1729,19 @@
    "age": 36,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 36.0
+   },
    "home_cell": [
     2,
     33
@@ -1507,7 +1783,19 @@
    "age": 26,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 4,
+    "widowed": false,
+    "years_in_village": 26.0
+   },
    "home_cell": [
     3,
     19
@@ -1549,7 +1837,19 @@
    "age": 23,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 23.0
+   },
    "home_cell": [
     1,
     21
@@ -1591,7 +1891,19 @@
    "age": 32,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 4,
+    "widowed": false,
+    "years_in_village": 32.0
+   },
    "home_cell": [
     6,
     11
@@ -1633,7 +1945,19 @@
    "age": 40,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 4,
+    "widowed": false,
+    "years_in_village": 40.0
+   },
    "home_cell": [
     3,
     31
@@ -1675,7 +1999,23 @@
    "age": 18,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [
+     "clerk"
+    ],
+    "apprenticed_years": {
+     "clerk": 4.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     1,
     19
@@ -1719,7 +2059,23 @@
    "age": 20,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [
+     "teacher"
+    ],
+    "apprenticed_years": {
+     "teacher": 6.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 4,
+    "widowed": false,
+    "years_in_village": 20.0
+   },
    "home_cell": [
     1,
     21
@@ -1761,7 +2117,19 @@
    "age": 40,
    "capability": 0.55,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 14.0
+   },
    "home_cell": [
     7,
     11
@@ -1805,7 +2173,19 @@
    "age": 29,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 15.0
+   },
    "home_cell": [
     2,
     9
@@ -1847,7 +2227,19 @@
    "age": 37,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 37.0
+   },
    "home_cell": [
     5,
     22
@@ -1889,7 +2281,19 @@
    "age": 36,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 20.0
+   },
    "home_cell": [
     4,
     10
@@ -1931,7 +2335,19 @@
    "age": 24,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 24.0
+   },
    "home_cell": [
     1,
     30
@@ -1976,7 +2392,19 @@
    "age": 38,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 38.0
+   },
    "home_cell": [
     6,
     31
@@ -2020,7 +2448,30 @@
    "age": 34,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {
+    "dyeing": 0.4
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.4,
+      "skills": [
+       "dyeing"
+      ],
+      "trade": "dyer",
+      "years": 4.0
+     }
+    ],
+    "household_role": "spouse",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 34.0
+   },
    "home_cell": [
     7,
     23
@@ -2062,7 +2513,19 @@
    "age": 33,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 5.0
+   },
    "home_cell": [
     1,
     7
@@ -2104,7 +2567,19 @@
    "age": 40,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 40.0
+   },
    "home_cell": [
     6,
     8
@@ -2146,7 +2621,19 @@
    "age": 34,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 34.0
+   },
    "home_cell": [
     2,
     21
@@ -2190,7 +2677,19 @@
    "age": 34,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 34.0
+   },
    "home_cell": [
     3,
     7
@@ -2234,7 +2733,23 @@
    "age": 25,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [
+     "woodworker"
+    ],
+    "apprenticed_years": {
+     "woodworker": 7.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 25.0
+   },
    "home_cell": [
     0,
     9
@@ -2279,7 +2794,19 @@
    "age": 34,
    "capability": 0.55,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 34.0
+   },
    "home_cell": [
     3,
     7
@@ -2321,7 +2848,23 @@
    "age": 27,
    "capability": 0.9,
    "class": "rich",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [
+     "innkeeper"
+    ],
+    "apprenticed_years": {
+     "innkeeper": 7.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 27.0
+   },
    "home_cell": [
     3,
     22
@@ -2365,7 +2908,23 @@
    "age": 50,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "middle",
+   "history": {
+    "apprenticed": [
+     "smith"
+    ],
+    "apprenticed_years": {
+     "smith": 7.0
+    },
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 17.0
+   },
    "home_cell": [
     6,
     11
@@ -2407,7 +2966,19 @@
    "age": 22,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "high",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 22.0
+   },
    "home_cell": [
     1,
     10
@@ -2451,7 +3022,30 @@
    "age": 34,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "butchery": 0.1
+   },
    "group": "middle",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.1,
+      "skills": [
+       "butchery"
+      ],
+      "trade": "butcher",
+      "years": 1.0
+     }
+    ],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 34.0
+   },
    "home_cell": [
     5,
     8
@@ -2495,7 +3089,19 @@
    "age": 25,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 20.0
+   },
    "home_cell": [
     1,
     33
@@ -2537,7 +3143,23 @@
    "age": 18,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [
+     "labourer"
+    ],
+    "apprenticed_years": {
+     "labourer": 4.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     0,
     31
@@ -2579,7 +3201,19 @@
    "age": 18,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     0,
     8
@@ -2621,7 +3255,23 @@
    "age": 35,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [
+     "labourer"
+    ],
+    "apprenticed_years": {
+     "labourer": 7.0
+    },
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 1.0
+   },
    "home_cell": [
     7,
     21
@@ -2663,7 +3313,23 @@
    "age": 41,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [
+     "labourer"
+    ],
+    "apprenticed_years": {
+     "labourer": 7.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 41.0
+   },
    "home_cell": [
     4,
     10
@@ -2705,7 +3371,19 @@
    "age": 40,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 40.0
+   },
    "home_cell": [
     6,
     23
@@ -2747,7 +3425,30 @@
    "age": 29,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {
+    "sawing": 0.1
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.1,
+      "skills": [
+       "sawing"
+      ],
+      "trade": "sawyer",
+      "years": 1.0
+     }
+    ],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 29.0
+   },
    "home_cell": [
     3,
     7
@@ -2789,7 +3490,30 @@
    "age": 45,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {
+    "dyeing": 0.6
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.6,
+      "skills": [
+       "dyeing"
+      ],
+      "trade": "dyer",
+      "years": 6.0
+     }
+    ],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 40.0
+   },
    "home_cell": [
     1,
     33
@@ -2831,7 +3555,30 @@
    "age": 28,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {
+    "shoemaking": 0.5
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.5,
+      "skills": [
+       "shoemaking"
+      ],
+      "trade": "cobbler",
+      "years": 5.0
+     }
+    ],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 28.0
+   },
    "home_cell": [
     4,
     20
@@ -2873,7 +3620,30 @@
    "age": 33,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {
+    "milling": 0.6
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.6,
+      "skills": [
+       "milling"
+      ],
+      "trade": "miller",
+      "years": 6.0
+     }
+    ],
+    "household_role": "spouse",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 16.0
+   },
    "home_cell": [
     2,
     31
@@ -2915,7 +3685,19 @@
    "age": 24,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 24.0
+   },
    "home_cell": [
     1,
     30
@@ -2957,7 +3739,19 @@
    "age": 44,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 28.0
+   },
    "home_cell": [
     5,
     20
@@ -2999,7 +3793,30 @@
    "age": 41,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {
+    "brewing": 0.4
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.4,
+      "skills": [
+       "brewing"
+      ],
+      "trade": "brewer",
+      "years": 4.0
+     }
+    ],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 14.0
+   },
    "home_cell": [
     1,
     21
@@ -3041,7 +3858,30 @@
    "age": 26,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "masonry": 0.6
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.6,
+      "skills": [
+       "masonry"
+      ],
+      "trade": "mason",
+      "years": 6.0
+     }
+    ],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 26.0
+   },
    "home_cell": [
     1,
     33
@@ -3083,7 +3923,19 @@
    "age": 42,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 12.0
+   },
    "home_cell": [
     1,
     30
@@ -3125,7 +3977,19 @@
    "age": 18,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     1,
     10
@@ -3167,7 +4031,19 @@
    "age": 21,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 21.0
+   },
    "home_cell": [
     1,
     10
@@ -3209,7 +4085,19 @@
    "age": 22,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 22.0
+   },
    "home_cell": [
     1,
     10
@@ -3251,7 +4139,30 @@
    "age": 40,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "tailoring": 0.3
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.3,
+      "skills": [
+       "tailoring"
+      ],
+      "trade": "tailor",
+      "years": 3.0
+     }
+    ],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 40.0
+   },
    "home_cell": [
     1,
     10
@@ -3293,7 +4204,30 @@
    "age": 42,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "butchery": 0.2
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.2,
+      "skills": [
+       "butchery"
+      ],
+      "trade": "butcher",
+      "years": 2.0
+     }
+    ],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 42.0
+   },
    "home_cell": [
     4,
     10
@@ -3335,7 +4269,19 @@
    "age": 37,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 37.0
+   },
    "home_cell": [
     7,
     23
@@ -3377,7 +4323,19 @@
    "age": 63,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 2.0
+   },
    "home_cell": [
     4,
     22
@@ -3419,7 +4377,19 @@
    "age": 26,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 26.0
+   },
    "home_cell": [
     3,
     22
@@ -3461,7 +4431,30 @@
    "age": 60,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {
+    "tanning": 0.1
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.1,
+      "skills": [
+       "tanning"
+      ],
+      "trade": "tanner",
+      "years": 1.0
+     }
+    ],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 60.0
+   },
    "home_cell": [
     4,
     10
@@ -3503,7 +4496,19 @@
    "age": 29,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 29.0
+   },
    "home_cell": [
     2,
     9
@@ -3545,7 +4550,19 @@
    "age": 37,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 37.0
+   },
    "home_cell": [
     0,
     31
@@ -3587,7 +4604,19 @@
    "age": 27,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 27.0
+   },
    "home_cell": [
     1,
     33
@@ -3629,7 +4658,19 @@
    "age": 38,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 38.0
+   },
    "home_cell": [
     2,
     31
@@ -3671,7 +4712,19 @@
    "age": 18,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     1,
     19
@@ -3713,7 +4766,19 @@
    "age": 46,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 46.0
+   },
    "home_cell": [
     3,
     22
@@ -3755,7 +4820,30 @@
    "age": 46,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {
+    "charcoal_burning": 0.2
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.2,
+      "skills": [
+       "charcoal_burning"
+      ],
+      "trade": "collier",
+      "years": 2.0
+     }
+    ],
+    "household_role": "spouse",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 46.0
+   },
    "home_cell": [
     1,
     21
@@ -3797,7 +4885,19 @@
    "age": 27,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 27.0
+   },
    "home_cell": [
     1,
     33
@@ -3839,7 +4939,19 @@
    "age": 35,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 35.0
+   },
    "home_cell": [
     2,
     33
@@ -3881,7 +4993,19 @@
    "age": 56,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 56.0
+   },
    "home_cell": [
     6,
     31
@@ -3923,7 +5047,19 @@
    "age": 33,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 16.0
+   },
    "home_cell": [
     4,
     34
@@ -3965,7 +5101,32 @@
    "age": 51,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {
+    "spinning": 0.2,
+    "weaving": 0.2
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.2,
+      "skills": [
+       "weaving",
+       "spinning"
+      ],
+      "trade": "weaver",
+      "years": 2.0
+     }
+    ],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 51.0
+   },
    "home_cell": [
     3,
     10
@@ -4007,7 +5168,19 @@
    "age": 40,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 14.0
+   },
    "home_cell": [
     5,
     32
@@ -4049,7 +5222,23 @@
    "age": 18,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [
+     "labourer"
+    ],
+    "apprenticed_years": {
+     "labourer": 4.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     0,
     31
@@ -4091,7 +5280,19 @@
    "age": 18,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     0,
     31
@@ -4133,7 +5334,19 @@
    "age": 40,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 25.0
+   },
    "home_cell": [
     3,
     34
@@ -4175,7 +5388,19 @@
    "age": 46,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 46.0
+   },
    "home_cell": [
     0,
     8
@@ -4217,7 +5442,19 @@
    "age": 26,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 26.0
+   },
    "home_cell": [
     3,
     19
@@ -4259,7 +5496,19 @@
    "age": 41,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 41.0
+   },
    "home_cell": [
     6,
     20
@@ -4301,7 +5550,19 @@
    "age": 25,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 25.0
+   },
    "home_cell": [
     3,
     10
@@ -4343,7 +5604,23 @@
    "age": 28,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [
+     "labourer"
+    ],
+    "apprenticed_years": {
+     "labourer": 7.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 21.0
+   },
    "home_cell": [
     3,
     10
@@ -4385,7 +5662,19 @@
    "age": 35,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 6,
+    "widowed": false,
+    "years_in_village": 32.0
+   },
    "home_cell": [
     6,
     31
@@ -4427,7 +5716,23 @@
    "age": 36,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [
+     "labourer"
+    ],
+    "apprenticed_years": {
+     "labourer": 7.0
+    },
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 36.0
+   },
    "home_cell": [
     1,
     19
@@ -4469,7 +5774,23 @@
    "age": 27,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [
+     "labourer"
+    ],
+    "apprenticed_years": {
+     "labourer": 7.0
+    },
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 8,
+    "widowed": false,
+    "years_in_village": 27.0
+   },
    "home_cell": [
     3,
     10
@@ -4511,7 +5832,19 @@
    "age": 52,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 45.0
+   },
    "home_cell": [
     3,
     7
@@ -4553,7 +5886,19 @@
    "age": 23,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 23.0
+   },
    "home_cell": [
     0,
     9
@@ -4595,7 +5940,19 @@
    "age": 46,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 5,
+    "widowed": false,
+    "years_in_village": 46.0
+   },
    "home_cell": [
     5,
     10
@@ -4637,7 +5994,19 @@
    "age": 30,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 30.0
+   },
    "home_cell": [
     2,
     19
@@ -4679,7 +6048,19 @@
    "age": 36,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "spouse",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 36.0
+   },
    "home_cell": [
     0,
     8
@@ -4721,7 +6102,19 @@
    "age": 37,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 11.0
+   },
    "home_cell": [
     4,
     8
@@ -4763,7 +6156,30 @@
    "age": 41,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {
+    "cooking": 0.1
+   },
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [
+     {
+      "level": 0.1,
+      "skills": [
+       "cooking"
+      ],
+      "trade": "cook",
+      "years": 1.0
+     }
+    ],
+    "household_role": "head",
+    "local": false,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 36.0
+   },
    "home_cell": [
     6,
     34
@@ -4805,7 +6221,19 @@
    "age": 38,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "sibling",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 3,
+    "widowed": false,
+    "years_in_village": 38.0
+   },
    "home_cell": [
     4,
     8
@@ -4847,7 +6275,19 @@
    "age": 52,
    "capability": 0.55,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 52.0
+   },
    "home_cell": [
     7,
     31
@@ -4889,7 +6329,19 @@
    "age": 47,
    "capability": 0.9,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "spouse",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 2,
+    "widowed": false,
+    "years_in_village": 47.0
+   },
    "home_cell": [
     2,
     9
@@ -4931,7 +6383,19 @@
    "age": 46,
    "capability": 0.9,
    "class": "middle",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "head",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 7,
+    "widowed": false,
+    "years_in_village": 46.0
+   },
    "home_cell": [
     3,
     19
@@ -4973,7 +6437,19 @@
    "age": 18,
    "capability": 0.55,
    "class": "poor",
+   "former_skills": {},
    "group": "low",
+   "history": {
+    "apprenticed": [],
+    "apprenticed_years": {},
+    "former_trades": [],
+    "household_role": "child",
+    "local": true,
+    "past_offices": [],
+    "schooling_years": 0,
+    "widowed": false,
+    "years_in_village": 18.0
+   },
    "home_cell": [
     0,
     8

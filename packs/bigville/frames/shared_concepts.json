@@ -1,5 +1,5 @@
 {
-  "_doc": "---------------------------------------------------------------- SHARED REFERENCES\nA reference is a physical subject/predicate/object template in domain data, not a town fact or\nresident belief. `seed_roles` is retained as authoring metadata for character setup tools; the\nphysical world must not infer knowledge from role or population composition.",
+  "_doc": "---------------------------------------------------------------- SHARED REFERENCES\nA reference is a physical subject/predicate/object template in domain data, not a town fact or\nresident belief. Each concept carries a `knowledge` spec (Phase 019; see frames/knowledge.json): residents'\nawareness and understanding are derived from their job, skills, history, and literacy, not from\nrole lists. The physical world must not infer knowledge from role or population composition.",
   "_types": {},
   "tables": {
     "SHARED_CONCEPTS": [
@@ -10,14 +10,14 @@
           "predicate": "stored_in",
           "object": "granary"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "miller",
-          "baker",
-          "cook",
-          "granary_keeper"
-        ]
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "roots_in_cellar",
@@ -26,12 +26,14 @@
           "predicate": "stored_in",
           "object": "root_cellar"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "cook",
-          "granary_keeper"
-        ]
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "prepared_food_in_pantry",
@@ -40,13 +42,14 @@
           "predicate": "stored_in",
           "object": "pantry"
         },
-        "seed_roles": [
-          "cook",
-          "baker",
-          "dairymaid",
-          "granary_keeper",
-          "innkeeper"
-        ]
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "granary_is_long_term_storage",
@@ -55,13 +58,19 @@
           "predicate": "provides",
           "object": "long_term_storage"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "miller",
-          "granary_keeper",
-          "clerk"
-        ]
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.3,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "storekeeping",
+              "level": 0.3
+            }
+          ]
+        }
       },
       {
         "name": "miller_grinds_grain",
@@ -70,13 +79,14 @@
           "predicate": "processes",
           "object": "grain"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "miller",
-          "baker",
-          "cook"
-        ]
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "cook_needs_heat_and_containment",
@@ -85,11 +95,19 @@
           "predicate": "requires",
           "object": "heat_and_containment"
         },
-        "seed_roles": [
-          "cook",
-          "baker",
-          "dairymaid"
-        ]
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.3,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "cooking",
+              "level": 0.3
+            }
+          ]
+        }
       },
       {
         "name": "food_requires_serving_vessel",
@@ -98,12 +116,14 @@
           "predicate": "served_with",
           "object": "vessel_and_utensil"
         },
-        "seed_roles": [
-          "cook",
-          "baker",
-          "dairymaid",
-          "innkeeper"
-        ]
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.2,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "constable_holds_constable_post",
@@ -112,9 +132,14 @@
           "predicate": "holds_position",
           "object": "constable_post"
         },
-        "seed_roles": [
-          "*"
-        ],
+        "knowledge": {
+          "topics": [
+            "policing"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "requires_role": "constable"
       },
       {
@@ -124,9 +149,14 @@
           "predicate": "holds_position",
           "object": "mayoral_office"
         },
-        "seed_roles": [
-          "*"
-        ],
+        "knowledge": {
+          "topics": [
+            "civic_procedure"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "requires_role": "mayor"
       },
       {
@@ -136,9 +166,14 @@
           "predicate": "is_for",
           "object": "public_exchange"
         },
-        "seed_roles": [
-          "*"
-        ]
+        "knowledge": {
+          "topics": [
+            "trade_and_stores"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "well_provides_clean_water",
@@ -147,13 +182,14 @@
           "predicate": "provides",
           "object": "clean_water"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "water_keeper",
-          "midwife",
-          "doctor"
-        ]
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "latrine_kept_away_from_well",
@@ -162,13 +198,19 @@
           "predicate": "kept_away_from",
           "object": "well"
         },
-        "seed_roles": [
-          "water_keeper",
-          "sanitation_keeper",
-          "midwife",
-          "doctor",
-          "clerk"
-        ]
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.3,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "sanitation",
+              "level": 0.3
+            }
+          ]
+        }
       },
       {
         "name": "manure_returns_to_soil",
@@ -177,12 +219,19 @@
           "predicate": "returns_to",
           "object": "soil"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "compost_keeper",
-          "animal_keeper"
-        ]
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.2,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "composting",
+              "level": 0.3
+            }
+          ]
+        }
       },
       {
         "name": "crop_rotation_preserves_fertility",
@@ -191,11 +240,19 @@
           "predicate": "preserves",
           "object": "soil_fertility"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "miller"
-        ]
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.2,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "fieldwork",
+              "level": 0.4
+            }
+          ]
+        }
       },
       {
         "name": "maintenance_prevents_failure",
@@ -204,12 +261,19 @@
           "predicate": "prevents",
           "object": "infrastructure_failure"
         },
-        "seed_roles": [
-          "craftsperson",
-          "labourer",
-          "mayor",
-          "clerk"
-        ]
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.2,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "skill": "carpentry",
+              "level": 0.3
+            }
+          ]
+        }
       },
       {
         "name": "illness_requires_care_and_rest",
@@ -218,12 +282,14 @@
           "predicate": "requires",
           "object": "care_and_rest"
         },
-        "seed_roles": [
-          "parent",
-          "midwife",
-          "doctor",
-          "teacher"
-        ]
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "contagious_illness_requires_separation",
@@ -232,12 +298,19 @@
           "predicate": "requires",
           "object": "separation"
         },
-        "seed_roles": [
-          "midwife",
-          "doctor",
-          "constable",
-          "mayor"
-        ]
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.2,
+          "after_years": 1,
+          "understanding_requires": [
+            {
+              "skill": "medicine",
+              "level": 0.5
+            }
+          ]
+        }
       },
       {
         "name": "children_require_care",
@@ -246,11 +319,14 @@
           "predicate": "require",
           "object": "adult_care"
         },
-        "seed_roles": [
-          "parent",
-          "midwife",
-          "teacher"
-        ]
+        "knowledge": {
+          "topics": [
+            "household_work"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "weather_changes_work_priorities",
@@ -259,13 +335,14 @@
           "predicate": "changes",
           "object": "work_priorities"
         },
-        "seed_roles": [
-          "farmer",
-          "farm_labourer",
-          "forester",
-          "mayor",
-          "clerk"
-        ]
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "land_registry_records_title",
@@ -274,13 +351,28 @@
           "predicate": "records",
           "object": "land_title"
         },
-        "seed_roles": [
-          "clerk",
-          "mayor",
-          "councillor",
-          "farmer",
-          "constable"
-        ]
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.2,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "literacy": "educated"
+            },
+            {
+              "any": [
+                {
+                  "authority": "records"
+                },
+                {
+                  "authority": "executive"
+                }
+              ]
+            }
+          ]
+        }
       },
       {
         "name": "deed_is_evidence_of_transfer",
@@ -289,12 +381,22 @@
           "predicate": "is_evidence_of",
           "object": "land_transfer"
         },
-        "seed_roles": [
-          "clerk",
-          "mayor",
-          "councillor",
-          "farmer"
-        ]
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.1,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "literacy": "educated"
+            },
+            {
+              "skill": "law",
+              "level": 0.3
+            }
+          ]
+        }
       },
       {
         "name": "registered_title_identifies_holder",
@@ -303,13 +405,18 @@
           "predicate": "identifies",
           "object": "land_holder"
         },
-        "seed_roles": [
-          "clerk",
-          "mayor",
-          "councillor",
-          "constable",
-          "farmer"
-        ]
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.2,
+          "after_years": 1,
+          "understanding_requires": [
+            {
+              "literacy": "educated"
+            }
+          ]
+        }
       },
       {
         "name": "land_dispute_goes_to_council",
@@ -318,13 +425,14 @@
           "predicate": "goes_to",
           "object": "council_hearing"
         },
-        "seed_roles": [
-          "clerk",
-          "mayor",
-          "councillor",
-          "constable",
-          "farmer"
-        ]
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "paths_are_preferred_travel_surface",
@@ -333,9 +441,14 @@
           "predicate": "preferred_for",
           "object": "travel"
         },
-        "seed_roles": [
-          "*"
-        ]
+        "knowledge": {
+          "topics": [
+            "trade_and_stores"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       {
         "name": "terrain_changes_travel_cost",
@@ -344,9 +457,14 @@
           "predicate": "changes",
           "object": "travel_speed_and_stamina"
         },
-        "seed_roles": [
-          "*"
-        ]
+        "knowledge": {
+          "topics": [
+            "trade_and_stores"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       }
     ]
   }

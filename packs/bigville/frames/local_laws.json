@@ -8,13 +8,15 @@
         "title": "Commons and Land Ordinance",
         "kind": "law",
         "scope": "village",
-        "seed_roles": [
-          "mayor",
-          "clerk",
-          "constable",
-          "councillor",
-          "farmer"
-        ],
+        "knowledge": {
+          "topics": [
+            "land_law",
+            "agriculture"
+          ],
+          "public": 0.7,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "commons_are_shared_resource",
@@ -50,12 +52,14 @@
         "title": "Public Order and Protection Law",
         "kind": "law",
         "scope": "village",
-        "seed_roles": [
-          "mayor",
-          "clerk",
-          "constable",
-          "councillor"
-        ],
+        "knowledge": {
+          "topics": [
+            "policing"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "people_and_property_are_protected",

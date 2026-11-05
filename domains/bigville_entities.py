@@ -23,6 +23,7 @@ if __package__ in (None, ""):          # run as a script: make `domains` importa
 from domains.world_affordances import *       # noqa: E402,F401,F403
 from domains.shared_frames import *           # noqa: E402,F401,F403
 from domains.population import *              # noqa: E402,F401,F403
+from domains.knowledge import *               # noqa: E402,F401,F403
 from domains.world_affordances import (     # noqa: E402,F401  private helpers, for a complete view
     _serving_kind, _tag_yield, _type_value_parts,
 )
@@ -360,6 +361,29 @@ def _check_founding_town(errors, warnings, info):
     if unresolved:
         info.append(f"FOUNDING_ANCHOR_ALIASES: {', '.join(sorted(unresolved))} name no workplace, so those "
                     f"buildings fall back to the market anchor (as the code did at HEAD)")
+
+
+def _knowledge_view():
+    """This entity view as a plain namespace (every name the knowledge module reads from its pack)."""
+    import types as _types
+    return _types.SimpleNamespace(**{k: v for k, v in globals().items() if not k.startswith("__")})
+
+
+def _check_knowledge(errors, warnings, info):
+    """Phase 019: the knowledge specs (references and shape) and, for a pack with a founding town, the
+    aware and understanding shares of the seeded cast (see town_knowledge_shares)."""
+    from domains.knowledge import check_knowledge, town_knowledge_shares, knowledge_shares_flags
+    pack = _knowledge_view()
+    check_knowledge(pack, errors, warnings, info)
+    if not FOUNDING_JOBS or not FOUNDING_MAP:
+        return
+    from worlds.bigville_town100_world import build_town_100, generate_cast100
+    seed = 305000                       # populate_town100's default founding seed
+    _, _, layout = build_town_100(seed, entities=pack)
+    cast = generate_cast100(layout, seed, pack)
+    shares = town_knowledge_shares(cast, pack, seed=seed)
+    info.extend(shares["report"])
+    knowledge_shares_flags(shares, pack, errors, warnings)
 
 
 def check_consistency():
@@ -948,6 +972,7 @@ def check_consistency():
                     f"(model shape; see population/household_composition.json)")
 
     _check_founding_town(errors, warnings, info)
+    _check_knowledge(errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

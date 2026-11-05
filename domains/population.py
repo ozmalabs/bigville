@@ -24,6 +24,8 @@ from domains.shared_frames import (
     SKILL_LIMITATIONS,
     KIN_TERMS,
     INHERITANCE_CUSTOM,
+    TRADES,
+    TRADE_SKILLS,
 )
 
 from domains.pack import load_pack as _load_pack
@@ -75,6 +77,9 @@ FOUNDING_FIRST_NAMES = _PACK["FOUNDING_FIRST_NAMES"]
 FOUNDING_LAST_NAMES = _PACK["FOUNDING_LAST_NAMES"]
 FOUNDING_PERSONALITY = _PACK["FOUNDING_PERSONALITY"]
 FOUNDING_CAUSAL_RESOLUTION = _PACK["FOUNDING_CAUSAL_RESOLUTION"]
+# Implied life history of the founders (Phase 019): distributions and the former-trade pool.
+HISTORY = _PACK["HISTORY"]
+FORMER_TRADES = _PACK["FORMER_TRADES"]
 
 
 def _draw_categorical(rng, dist):
@@ -872,3 +877,68 @@ def describe_founding_kin(founders=100, *, seed=1):
             "extended_drawn_share": round(sum(1 for h in households if h["extended_drawn"])
                                           / max(1, len(households)), 4),
             "spouse_co_resident_share": round(len(married_heads) / max(1, len(households)), 4)}
+
+
+# ----------------------------------------------------------------------------- implied history (Phase 019)
+def draw_founding_history(residents, seed):
+    """The implied life history of each founder, drawn on the population's own stream (seed + HISTORY["stream"]).
+
+    `residents` is the cast in order: each a dict with role (job), group, age, literacy (0 or 1), trades (the
+    current trades, excluding the job), primary_trade (the job's first trade), household, and household_role.
+    Nine uniform draws per founder, in a fixed order, whatever branch they take. Returns one dict per resident:
+    {"history": {...}, "former_skills": {skill: level}}.
+
+    A former trade gives its skills the level min(trade base_skill, level_per_year x years). The apprenticeship
+    in a current trade adds a history fact and no skill level, since the current trade's level is already the
+    job's base skill (add_actor). Literacy is taken as given: schooling is zero for the unlettered."""
+    import math
+    import numpy as np
+    rng = np.random.default_rng(int(seed) + int(HISTORY["stream"]))
+    spouse_in = {r["household"] for r in residents if r.get("household_role") == "spouse"}
+    schooling = HISTORY["schooling_years"]
+    former_years = HISTORY["former_trade_years"]
+    out = []
+    for r in residents:
+        u = rng.random(9)
+        age = float(r["age"])
+        group = r["group"]
+        child = r.get("household_role") in ("child", "sibling")
+        local = bool(u[0] < (HISTORY["local_born_child_share"] if child else HISTORY["local_born_share"]))
+        years = float(age) if local else float(max(1.0, min(age, 1.0 + math.floor(u[1] * max(1.0, age - 1.0)))))
+        literate = float(r.get("literacy", 0.0)) >= 0.5
+        school = (schooling["min"] + int(u[2] * (schooling["max"] - schooling["min"] + 1))) if literate else 0
+        apprenticed, apprenticed_years = [], {}
+        if u[3] < HISTORY["apprenticed_share"][group] and age >= HISTORY["apprenticeship_min_start_age"] + 1:
+            primary = r["primary_trade"]
+            apprenticed = [primary]
+            apprenticed_years[primary] = float(min(HISTORY["apprenticeship_term_years"],
+                                                   age - HISTORY["apprenticeship_min_start_age"]))
+        former = []
+        pool = [t for t in FORMER_TRADES if t not in set(r.get("trades", [])) | {r["role"], r["primary_trade"]}]
+        if u[4] < HISTORY["former_trade_share"] and age >= HISTORY["former_trade_min_age"] and pool:
+            trade = pool[min(len(pool) - 1, int(u[5] * len(pool)))]
+            span = int(former_years["max"] - former_years["min"] + 1)
+            span_years = former_years["min"] + min(span - 1, int(u[6] * span))
+            span_years = min(span_years, int(age - HISTORY["apprenticeship_min_start_age"]) - 1)
+            if span_years >= former_years["min"]:
+                level = min(float(TRADES[trade]["base_skill"]), float(HISTORY["level_per_year"]) * span_years)
+                former.append({"trade": trade, "years": float(span_years), "level": round(level, 4),
+                               "skills": list(TRADE_SKILLS[trade])})
+        past_offices = []
+        if u[7] < HISTORY["past_office_share"][group] and r["role"] != "councillor" and age >= 30:
+            past_offices.append("councillor")
+        widowed = bool(r.get("household_role") == "head" and r["household"] not in spouse_in
+                       and age >= HISTORY["widowed_min_age"] and u[8] < HISTORY["widowed_share"])
+        former_skills = {}
+        for f in former:
+            for skill in f["skills"]:
+                former_skills[skill] = max(former_skills.get(skill, 0.0), f["level"])
+        out.append({
+            "history": {"local": local, "years_in_village": years, "schooling_years": int(school),
+                        "apprenticed": apprenticed, "apprenticed_years": apprenticed_years,
+                        "former_trades": former, "past_offices": past_offices, "widowed": widowed,
+                        "household_role": str(r.get("household_role", ""))},
+            "former_skills": former_skills,
+        })
+    return out
+

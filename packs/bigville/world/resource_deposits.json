@@ -8,21 +8,45 @@
         "stock": 60.0,
         "growback": 3.0,
         "capacity": 120.0,
-        "minutes_per_unit": 30
+        "minutes_per_unit": 30,
+        "knowledge": {
+          "topics": [
+            "fishing"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "lumber": {
         "tile": "tree",
         "stock": 60.0,
         "growback": 4.0,
         "capacity": 120.0,
-        "minutes_per_unit": 40
+        "minutes_per_unit": 40,
+        "knowledge": {
+          "topics": [
+            "fuel_and_light"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "stone": {
         "tile": "wall",
         "stock": 60.0,
         "growback": 3.0,
         "capacity": 120.0,
-        "minutes_per_unit": 40
+        "minutes_per_unit": 40,
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.4,
+          "after_years": 3,
+          "understanding_requires": []
+        }
       }
     }
   }

@@ -15,7 +15,15 @@
         "rooms": [
           "smithy",
           "clamp"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "woodshop": {
         "staff_role": "woodworker",
@@ -23,7 +31,15 @@
         "sheltered": true,
         "rooms": [
           "shop"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "mill": {
         "staff_role": "miller",
@@ -32,7 +48,15 @@
         "rooms": [
           "millroom",
           "store"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "sawpit": {
         "staff_role": "sawyer",
@@ -40,7 +64,15 @@
         "sheltered": false,
         "rooms": [
           "pit"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "cooperage": {
         "staff_role": "cooper",
@@ -48,7 +80,15 @@
         "sheltered": true,
         "rooms": [
           "workshop"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.3,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "tannery": {
         "staff_role": "tanner",
@@ -57,7 +97,15 @@
         "rooms": [
           "pits",
           "drying"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "leatherwork"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "cobbler": {
         "staff_role": "cobbler",
@@ -65,7 +113,15 @@
         "sheltered": true,
         "rooms": [
           "bench"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "leatherwork"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "school": {
         "staff_role": "teacher",
@@ -73,7 +129,15 @@
         "sheltered": true,
         "rooms": [
           "schoolroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "letters"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "printshop": {
         "staff_role": "printer",
@@ -81,7 +145,15 @@
         "sheltered": true,
         "rooms": [
           "pressroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "print_and_paper"
+          ],
+          "public": 0.4,
+          "after_years": 1,
+          "understanding_requires": []
+        }
       },
       "weavery": {
         "staff_role": "weaver",
@@ -89,7 +161,15 @@
         "sheltered": true,
         "rooms": [
           "loomroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "tailorshop": {
         "staff_role": "tailor",
@@ -97,7 +177,15 @@
         "sheltered": true,
         "rooms": [
           "cuttingroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "inn": {
         "staff_role": "innkeeper",
@@ -107,7 +195,15 @@
           "taproom",
           "cellar",
           "brewhouse"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "dyehouse": {
         "staff_role": "dyer",
@@ -115,7 +211,15 @@
         "sheltered": true,
         "rooms": [
           "vatroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.3,
+          "after_years": 1,
+          "understanding_requires": []
+        }
       },
       "bakery": {
         "staff_role": "baker",
@@ -123,7 +227,15 @@
         "sheltered": true,
         "rooms": [
           "ovenroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "kitchen": {
         "staff_role": "cook",
@@ -131,7 +243,15 @@
         "sheltered": true,
         "rooms": [
           "hearthroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "dairy": {
         "staff_role": "dairymaid",
@@ -139,7 +259,15 @@
         "sheltered": true,
         "rooms": [
           "churnroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "wharf": {
         "staff_role": "fisher",
@@ -147,7 +275,15 @@
         "sheltered": false,
         "rooms": [
           "dock"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "fishing"
+          ],
+          "public": 0.7,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "granary": {
         "staff_role": "granary_keeper",
@@ -156,7 +292,15 @@
         "rooms": [
           "grain_floor",
           "dry_store"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "root_cellar": {
         "staff_role": "cellar_keeper",
@@ -164,7 +308,15 @@
         "sheltered": true,
         "rooms": [
           "root_store"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "wellhouse": {
         "staff_role": "water_keeper",
@@ -172,7 +324,15 @@
         "sheltered": false,
         "rooms": [
           "well"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "latrine": {
         "staff_role": "sanitation_keeper",
@@ -180,7 +340,15 @@
         "sheltered": false,
         "rooms": [
           "privy"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "compost_yard": {
         "staff_role": "compost_keeper",
@@ -188,7 +356,15 @@
         "sheltered": false,
         "rooms": [
           "heap"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.3,
+          "after_years": 1,
+          "understanding_requires": []
+        }
       },
       "smokehouse": {
         "staff_role": "smoker",
@@ -196,7 +372,15 @@
         "sheltered": true,
         "rooms": [
           "smoke_room"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.4,
+          "after_years": 1,
+          "understanding_requires": []
+        }
       },
       "townhall": {
         "staff_role": "mayor",
@@ -209,7 +393,15 @@
         "rooms": [
           "council_room",
           "records_room"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "civic_procedure"
+          ],
+          "public": 0.95,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "church": {
         "staff_role": "pastor",
@@ -223,7 +415,15 @@
         "rooms": [
           "nave",
           "vestry"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "faith_and_teaching"
+          ],
+          "public": 0.95,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "watchhouse": {
         "staff_role": "constable",
@@ -233,7 +433,15 @@
         "rooms": [
           "watch_room",
           "lockup"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "policing"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "records_office": {
         "staff_role": "clerk",
@@ -243,7 +451,15 @@
           "land_register",
           "deed_archive",
           "public_counter"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.4,
+          "after_years": 1,
+          "understanding_requires": []
+        }
       },
       "scriptorium": {
         "staff_role": "scribe",
@@ -251,7 +467,15 @@
         "sheltered": true,
         "rooms": [
           "deskroom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "letters"
+          ],
+          "public": 0.3,
+          "after_years": 2,
+          "understanding_requires": []
+        }
       },
       "shambles": {
         "staff_role": "butcher",
@@ -259,7 +483,15 @@
         "sheltered": false,
         "rooms": [
           "killing_floor"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.7,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "surgery": {
         "staff_role": "doctor",
@@ -270,7 +502,15 @@
           "consulting_room",
           "sickroom",
           "lying_in_room"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "charcoal_hearth": {
         "staff_role": "collier",
@@ -279,7 +519,15 @@
         "rooms": [
           "clamp_floor"
         ],
-        "founding": false
+        "founding": false,
+        "knowledge": {
+          "topics": [
+            "fuel_and_light"
+          ],
+          "public": 0.4,
+          "after_years": 1,
+          "understanding_requires": []
+        }
       },
       "papermill": {
         "staff_role": "papermaker",
@@ -289,7 +537,15 @@
           "vat_room",
           "drying_loft"
         ],
-        "founding": false
+        "founding": false,
+        "knowledge": {
+          "topics": [
+            "print_and_paper"
+          ],
+          "public": 0.3,
+          "after_years": 2,
+          "understanding_requires": []
+        }
       },
       "inkhouse": {
         "staff_role": "inkmaker",
@@ -298,7 +554,15 @@
         "rooms": [
           "mixing_room"
         ],
-        "founding": false
+        "founding": false,
+        "knowledge": {
+          "topics": [
+            "print_and_paper"
+          ],
+          "public": 0.2,
+          "after_years": 2,
+          "understanding_requires": []
+        }
       },
       "house": {
         "staff_role": "",
@@ -307,7 +571,16 @@
           "living_room",
           "hearth"
         ],
-        "founding": false
+        "founding": false,
+        "knowledge": {
+          "personal": true,
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "barn": {
         "staff_role": "",
@@ -316,7 +589,15 @@
           "stall",
           "hayloft"
         ],
-        "founding": false
+        "founding": false,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       }
     }
   }

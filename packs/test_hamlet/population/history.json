@@ -1,0 +1,39 @@
+{
+  "_doc": "Phase 019: the founding population's implied history. Drawn per founder on its own stream (map seed + `stream`), after the cast and households, so no existing draw moves. Every value is a model parameter. The citations are from memory and were not checked against the texts; each is marked APPROX. `apprenticeship_term_years`: the Statute of Artificers 1563 (5 Eliz. c.4) set a seven-year term for many trades (from memory). `level_per_year` is a model choice: a trade skill gained by apprenticeship is min(trade base skill, level_per_year x years).",
+  "_types": {},
+  "tables": {
+    "HISTORY": {
+      "stream": 9019,
+      "local_born_share": 0.6,
+      "local_born_child_share": 0.9,
+      "schooling_years": {
+        "min": 2,
+        "max": 8
+      },
+      "apprenticed_share": {
+        "low": 0.15,
+        "middle": 0.3,
+        "high": 0.2
+      },
+      "apprenticeship_term_years": 7,
+      "apprenticeship_min_start_age": 14,
+      "former_trade_share": 0.25,
+      "former_trade_min_age": 25,
+      "former_trade_years": {
+        "min": 1,
+        "max": 6
+      },
+      "level_per_year": 0.1,
+      "past_office_share": {
+        "low": 0.0,
+        "middle": 0.08,
+        "high": 0.15
+      },
+      "widowed_share": 0.25,
+      "widowed_min_age": 45
+    },
+    "FORMER_TRADES": [
+      "baker"
+    ]
+  }
+}

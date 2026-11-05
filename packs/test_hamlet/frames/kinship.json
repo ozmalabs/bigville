@@ -19,7 +19,15 @@
         "attributions": [
           "adoption",
           "fostering"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "child": {
         "generation": -1,
@@ -37,7 +45,15 @@
         "attributions": [
           "adoption",
           "fostering"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "spouse": {
         "generation": 0,
@@ -53,7 +69,15 @@
           "inheritance_claim",
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "sibling": {
         "generation": 0,
@@ -72,7 +96,15 @@
         "attributions": [
           "adoption",
           "honorific"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "half_sibling": {
         "generation": 0,
@@ -88,7 +120,15 @@
           "support_in_need",
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "grandparent": {
         "generation": 2,
@@ -106,7 +146,15 @@
         ],
         "attributions": [
           "honorific"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "grandchild": {
         "generation": -2,
@@ -122,7 +170,15 @@
           "care_elders",
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "uncle": {
         "generation": 1,
@@ -146,7 +202,15 @@
         "attributions": [
           "honorific",
           "fostering"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "aunt": {
         "generation": 1,
@@ -170,7 +234,15 @@
         "attributions": [
           "honorific",
           "fostering"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "nephew": {
         "generation": -1,
@@ -186,7 +258,15 @@
           "support_in_need",
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "niece": {
         "generation": -1,
@@ -202,7 +282,15 @@
           "support_in_need",
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "cousin": {
         "generation": 0,
@@ -220,7 +308,15 @@
         ],
         "attributions": [
           "honorific"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "parent_in_law": {
         "generation": 1,
@@ -236,7 +332,15 @@
           "support_in_need",
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "child_in_law": {
         "generation": -1,
@@ -251,7 +355,15 @@
         "obligations": [
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "sibling_in_law": {
         "generation": 0,
@@ -270,7 +382,15 @@
         "obligations": [
           "hospitality"
         ],
-        "attributions": []
+        "attributions": [],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "step_parent": {
         "generation": 1,
@@ -283,7 +403,15 @@
         ],
         "attributions": [
           "step_family"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "step_child": {
         "generation": -1,
@@ -296,7 +424,15 @@
         ],
         "attributions": [
           "step_family"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "step_sibling": {
         "generation": 0,
@@ -308,7 +444,15 @@
         ],
         "attributions": [
           "step_family"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "godparent": {
         "generation": 1,
@@ -320,7 +464,15 @@
         ],
         "attributions": [
           "godparenthood"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "godchild": {
         "generation": -1,
@@ -332,7 +484,15 @@
         ],
         "attributions": [
           "godparenthood"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "kin_and_household"
+          ],
+          "public": 1.0,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       }
     },
     "KIN_ATTRIBUTION": {

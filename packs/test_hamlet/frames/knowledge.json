@@ -1,0 +1,238 @@
+{
+  "_doc": "Phase 019: knowledge topics, the rules that derive awareness and understanding, and the knowable places, jobs, and procedures. A KNOWLEDGE SPEC on an entry has: `topics` (names in KNOWLEDGE_TOPICS), `public` (0..1, how widely awareness spreads among residents by living in the village; at or above KNOWLEDGE_RULES.public_cutoff everyone with `after_years` in the village is aware), `after_years` (years in the village before that spread reaches a resident), and `understanding_requires` (conditions that all must hold for understanding: {skill, level}, {metaskill, level}, {trade}, {apprenticed}, {literacy: functional|educated}, {office}, {served: council}, {years}, or {any: [conditions]}). A written bundle (law, policy, charter) also requires DOCUMENT_LITERACY's tier for its kind, unless its spec has written false. Public values are authored judgement (APPROX), not measured; see the phase report.",
+  "_types": {},
+  "tables": {
+    "KNOWLEDGE_TOPICS": {
+      "agriculture": {
+        "title": "farming: fields, compost, foraging, and stores of grain",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "animal_husbandry": {
+        "title": "keeping and working animals, and their dairy and meat",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "food_preparation": {
+        "title": "cooking, brewing, and smoking food",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "milling_and_baking": {
+        "title": "grinding grain and baking bread",
+        "skills": [
+          "milling",
+          "baking"
+        ],
+        "clusters": [],
+        "metaskills": []
+      },
+      "smithing": {
+        "title": "forging metal",
+        "skills": [],
+        "clusters": [],
+        "metaskills": [
+          "craftsmanship"
+        ]
+      },
+      "carpentry_and_building": {
+        "title": "timber, stone, and building work",
+        "skills": [],
+        "clusters": [],
+        "metaskills": [
+          "craftsmanship"
+        ]
+      },
+      "textiles": {
+        "title": "spinning, weaving, dyeing, and tailoring cloth",
+        "skills": [],
+        "clusters": [],
+        "metaskills": [
+          "craftsmanship"
+        ]
+      },
+      "leatherwork": {
+        "title": "tanning hides and making shoes",
+        "skills": [],
+        "clusters": [],
+        "metaskills": [
+          "craftsmanship"
+        ]
+      },
+      "print_and_paper": {
+        "title": "paper, ink, and printing",
+        "skills": [],
+        "clusters": [],
+        "metaskills": [
+          "craftsmanship"
+        ]
+      },
+      "fuel_and_light": {
+        "title": "felling timber, charcoal, and candles",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "fishing": {
+        "title": "taking fish from the water",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "water_and_sanitation": {
+        "title": "drawing water and keeping the latrines clean",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "trade_and_stores": {
+        "title": "buying, selling, and keeping stores",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "health": {
+        "title": "medicine, birth, and the care of the sick",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "faith_and_teaching": {
+        "title": "church teaching and schooling children",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "letters": {
+        "title": "reading, writing, and reckoning accounts",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "land_law": {
+        "title": "land, commons, titles, and written law",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "civic_procedure": {
+        "title": "council, offices, and how decisions are made",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "policing": {
+        "title": "keeping order and protecting people and property",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "household_work": {
+        "title": "work in the home: service, labour, and the household",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      },
+      "kin_and_household": {
+        "title": "family, kin, and the household",
+        "skills": [],
+        "clusters": [],
+        "metaskills": []
+      }
+    },
+    "KNOWLEDGE_RULES": {
+      "public_cutoff": 0.2,
+      "store_goods_public": 0.6,
+      "check_law_aware_min": 0.2,
+      "check_trade_understand_min": 0.5,
+      "_doc_checks": "Self-test thresholds on the seeded cast: a law aware to fewer than check_law_aware_min of residents, or a trade whose holders understand its core recipes in fewer than check_trade_understand_min of cases, is a warning. Zero is an error."
+    },
+    "JOB_PUBLIC": {
+      "baker": 0.9
+    },
+    "JOB_ROUTINE": {
+      "baker": [
+        "market"
+      ]
+    },
+    "KNOWABLE_PLACES": {
+      "market": {
+        "topics": [
+          "trade_and_stores"
+        ],
+        "public": 0.95,
+        "after_years": 0,
+        "understanding_requires": [],
+        "_doc": "The square market and its stalls."
+      },
+      "field": {
+        "topics": [
+          "agriculture"
+        ],
+        "public": 0.9,
+        "after_years": 0,
+        "understanding_requires": [],
+        "_doc": "The village arable plots (farm_plot_NN)."
+      },
+      "pasture": {
+        "topics": [
+          "animal_husbandry"
+        ],
+        "public": 0.7,
+        "after_years": 0,
+        "understanding_requires": [],
+        "_doc": "The village pasture and paddock."
+      }
+    },
+    "PROCEDURE_KNOWLEDGE": {
+      "lawmaking": {
+        "topics": [
+          "civic_procedure"
+        ],
+        "public": 0.2,
+        "after_years": 0,
+        "understanding_requires": [
+          {
+            "any": [
+              {
+                "authority": "deliberative"
+              },
+              {
+                "authority": "executive"
+              },
+              {
+                "served": "council"
+              }
+            ]
+          }
+        ]
+      },
+      "justice": {
+        "topics": [
+          "policing",
+          "land_law"
+        ],
+        "public": 0.3,
+        "after_years": 0,
+        "understanding_requires": [
+          {
+            "any": [
+              {
+                "authority": "enforcement"
+              },
+              {
+                "authority": "executive"
+              },
+              {
+                "authority": "deliberative"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

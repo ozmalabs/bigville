@@ -17,7 +17,23 @@
           2
         ],
         "difficulty": 0.8,
-        "time_minutes": 20
+        "time_minutes": 20,
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "sawyer"
+            },
+            {
+              "skill": "sawing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "burn_charcoal",
@@ -33,7 +49,23 @@
           1
         ],
         "difficulty": 2.0,
-        "time_minutes": 60
+        "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "fuel_and_light"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "collier"
+            },
+            {
+              "skill": "charcoal_burning",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "smelt_iron",
@@ -53,7 +85,23 @@
           1
         ],
         "difficulty": 3.0,
-        "time_minutes": 90
+        "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.65
+            }
+          ]
+        }
       },
       {
         "name": "forge_nails",
@@ -76,7 +124,23 @@
         "time_minutes": 10,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_knife",
@@ -99,7 +163,23 @@
         "time_minutes": 90,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "carve_rake",
@@ -115,7 +195,23 @@
           1
         ],
         "difficulty": 0.7,
-        "time_minutes": 60
+        "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "grind_flour",
@@ -134,6 +230,22 @@
         "time_minutes": 45,
         "byproducts": {
           "scraps": 10
+        },
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "miller"
+            },
+            {
+              "skill": "milling",
+              "level": 0.0
+            }
+          ]
         }
       },
       {
@@ -157,7 +269,23 @@
         "time_minutes": 120,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "carve_pick_handle",
@@ -173,7 +301,23 @@
           1
         ],
         "difficulty": 0.7,
-        "time_minutes": 60
+        "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "assemble_pick",
@@ -196,7 +340,23 @@
         "time_minutes": 15,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_scythe",
@@ -219,7 +379,23 @@
         "time_minutes": 180,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.5
+            }
+          ]
+        }
       },
       {
         "name": "rive_staves",
@@ -238,7 +414,23 @@
         "time_minutes": 30,
         "tools": [
           "adze"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cooper"
+            },
+            {
+              "skill": "coopering",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "raise_barrel",
@@ -257,7 +449,23 @@
         "time_minutes": 120,
         "tools": [
           "adze"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cooper"
+            },
+            {
+              "skill": "coopering",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "tan_hide",
@@ -273,7 +481,23 @@
           1
         ],
         "difficulty": 1.5,
-        "time_minutes": 240
+        "time_minutes": 240,
+        "knowledge": {
+          "topics": [
+            "leatherwork"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tanner"
+            },
+            {
+              "skill": "tanning",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_shoes",
@@ -292,7 +516,23 @@
         "time_minutes": 120,
         "tools": [
           "awl"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "leatherwork"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cobbler"
+            },
+            {
+              "skill": "shoemaking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "weave_cloth",
@@ -311,7 +551,23 @@
         "time_minutes": 180,
         "tools": [
           "loom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "weaver"
+            },
+            {
+              "skill": "weaving",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_coat",
@@ -330,7 +586,23 @@
         "time_minutes": 150,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_cloak",
@@ -349,7 +621,23 @@
         "time_minutes": 150,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_hat",
@@ -368,7 +656,23 @@
         "time_minutes": 60,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_breeches",
@@ -387,7 +691,23 @@
         "time_minutes": 120,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_dress",
@@ -406,7 +726,23 @@
         "time_minutes": 200,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_smock",
@@ -425,7 +761,23 @@
         "time_minutes": 40,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_tunic",
@@ -444,7 +796,23 @@
         "time_minutes": 80,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_cap",
@@ -463,7 +831,23 @@
         "time_minutes": 30,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_apron",
@@ -482,7 +866,23 @@
         "time_minutes": 30,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_clogs",
@@ -501,7 +901,23 @@
         "time_minutes": 60,
         "tools": [
           "awl"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "leatherwork"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cobbler"
+            },
+            {
+              "skill": "shoemaking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_gown",
@@ -521,7 +937,26 @@
         "tools": [
           "needle"
         ],
-        "common": false
+        "common": false,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.7
+            },
+            {
+              "apprenticed": "tailor"
+            }
+          ]
+        }
       },
       {
         "name": "sew_doublet",
@@ -541,7 +976,26 @@
         "tools": [
           "needle"
         ],
-        "common": false
+        "common": false,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.65
+            },
+            {
+              "apprenticed": "tailor"
+            }
+          ]
+        }
       },
       {
         "name": "sew_fur_cloak",
@@ -561,7 +1015,26 @@
         "tools": [
           "needle"
         ],
-        "common": false
+        "common": false,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.6
+            },
+            {
+              "apprenticed": "tailor"
+            }
+          ]
+        }
       },
       {
         "name": "sew_silk_shirt",
@@ -581,7 +1054,26 @@
         "tools": [
           "needle"
         ],
-        "common": false
+        "common": false,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.6
+            },
+            {
+              "apprenticed": "tailor"
+            }
+          ]
+        }
       },
       {
         "name": "sew_fine_hat",
@@ -601,7 +1093,26 @@
         "tools": [
           "needle"
         ],
-        "common": false
+        "common": false,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.55
+            },
+            {
+              "apprenticed": "tailor"
+            }
+          ]
+        }
       },
       {
         "name": "make_chair",
@@ -620,7 +1131,23 @@
         "time_minutes": 90,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_table",
@@ -639,7 +1166,23 @@
         "time_minutes": 150,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_bed",
@@ -658,7 +1201,23 @@
         "time_minutes": 240,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_chest",
@@ -677,7 +1236,23 @@
         "time_minutes": 120,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_plough",
@@ -700,7 +1275,23 @@
         "time_minutes": 240,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.7
+            }
+          ]
+        }
       },
       {
         "name": "make_wheel",
@@ -719,7 +1310,23 @@
         "time_minutes": 90,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_cart",
@@ -742,7 +1349,23 @@
         "time_minutes": 300,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.6
+            }
+          ]
+        }
       },
       {
         "name": "make_wagon",
@@ -765,7 +1388,23 @@
         "time_minutes": 480,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.7
+            }
+          ]
+        }
       },
       {
         "name": "make_loom",
@@ -784,7 +1423,23 @@
         "time_minutes": 180,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "carve_wooden_mug",
@@ -803,7 +1458,23 @@
         "time_minutes": 45,
         "tools": [
           "knife"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_metal_mug",
@@ -826,7 +1497,23 @@
         "time_minutes": 75,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "carve_wooden_bowl",
@@ -845,7 +1532,23 @@
         "time_minutes": 60,
         "tools": [
           "knife"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_metal_bowl",
@@ -868,7 +1571,23 @@
         "time_minutes": 90,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "carve_wooden_ladle",
@@ -887,7 +1606,23 @@
         "time_minutes": 45,
         "tools": [
           "knife"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_metal_ladle",
@@ -910,7 +1645,23 @@
         "time_minutes": 60,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "carve_wooden_serving_spoon",
@@ -929,7 +1680,23 @@
         "time_minutes": 35,
         "tools": [
           "knife"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_metal_serving_spoon",
@@ -952,7 +1719,23 @@
         "time_minutes": 50,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "carve_wooden_dipper",
@@ -971,7 +1754,23 @@
         "time_minutes": 40,
         "tools": [
           "knife"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "brew_ale",
@@ -992,6 +1791,22 @@
         ],
         "difficulty": 2.0,
         "time_minutes": 480,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "brewer"
+            },
+            {
+              "skill": "brewing",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "mash_tun"
         ]
@@ -1021,7 +1836,23 @@
         "time_minutes": 120,
         "tools": [
           "dye_vat"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "dyer"
+            },
+            {
+              "skill": "dyeing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_paper",
@@ -1045,7 +1876,26 @@
         "tools": [
           "press"
         ],
-        "common": false
+        "common": false,
+        "knowledge": {
+          "topics": [
+            "print_and_paper"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "papermaker"
+            },
+            {
+              "skill": "papermaking",
+              "level": 0.0
+            },
+            {
+              "apprenticed": "papermaker"
+            }
+          ]
+        }
       },
       {
         "name": "print_newspaper",
@@ -1068,7 +1918,23 @@
         "time_minutes": 60,
         "tools": [
           "printing_press"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "print_and_paper"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "printer"
+            },
+            {
+              "skill": "printing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_sandwich",
@@ -1088,7 +1954,23 @@
           1
         ],
         "difficulty": 0.5,
-        "time_minutes": 10
+        "time_minutes": 10,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_ink",
@@ -1109,7 +1991,26 @@
         ],
         "difficulty": 1.5,
         "time_minutes": 120,
-        "common": false
+        "common": false,
+        "knowledge": {
+          "topics": [
+            "print_and_paper"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "inkmaker"
+            },
+            {
+              "skill": "inkmaking",
+              "level": 0.0
+            },
+            {
+              "apprenticed": "inkmaker"
+            }
+          ]
+        }
       },
       {
         "name": "bake_bread",
@@ -1130,6 +2031,22 @@
         ],
         "difficulty": 1.5,
         "time_minutes": 120,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1154,7 +2071,23 @@
           3
         ],
         "difficulty": 1.0,
-        "time_minutes": 90
+        "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_pottage",
@@ -1179,6 +2112,22 @@
         ],
         "difficulty": 1.0,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1210,6 +2159,22 @@
         ],
         "difficulty": 1.5,
         "time_minutes": 150,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1233,6 +2198,22 @@
         ],
         "difficulty": 1.5,
         "time_minutes": 120,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "spit"
         ]
@@ -1260,6 +2241,22 @@
         ],
         "difficulty": 2.0,
         "time_minutes": 150,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1281,7 +2278,23 @@
         "time_minutes": 60,
         "tools": [
           "churn"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "dairymaid"
+            },
+            {
+              "skill": "dairying",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_cheese",
@@ -1307,6 +2320,22 @@
         ],
         "byproducts": {
           "scraps": 2
+        },
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "dairymaid"
+            },
+            {
+              "skill": "dairying",
+              "level": 0.0
+            }
+          ]
         }
       },
       {
@@ -1327,7 +2356,23 @@
           2
         ],
         "difficulty": 1.0,
-        "time_minutes": 60
+        "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_gruel",
@@ -1348,6 +2393,22 @@
         ],
         "difficulty": 0.6,
         "time_minutes": 45,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1375,6 +2436,22 @@
         ],
         "difficulty": 0.8,
         "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1402,6 +2479,22 @@
         ],
         "difficulty": 1.0,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1429,6 +2522,22 @@
         ],
         "difficulty": 1.0,
         "time_minutes": 75,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1456,6 +2565,22 @@
         ],
         "difficulty": 1.0,
         "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "griddle"
         ]
@@ -1483,6 +2608,22 @@
         ],
         "difficulty": 1.2,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1506,6 +2647,22 @@
         ],
         "difficulty": 1.2,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "board"
         ]
@@ -1533,6 +2690,22 @@
         ],
         "difficulty": 0.9,
         "time_minutes": 75,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1564,6 +2737,22 @@
         ],
         "difficulty": 1.0,
         "time_minutes": 100,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1595,6 +2784,22 @@
         ],
         "difficulty": 1.0,
         "time_minutes": 100,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1626,6 +2831,22 @@
         ],
         "difficulty": 1.1,
         "time_minutes": 120,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1657,6 +2878,22 @@
         ],
         "difficulty": 1.1,
         "time_minutes": 120,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1688,6 +2925,22 @@
         ],
         "difficulty": 1.4,
         "time_minutes": 130,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1719,6 +2972,22 @@
         ],
         "difficulty": 1.3,
         "time_minutes": 125,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1742,6 +3011,22 @@
         ],
         "difficulty": 0.8,
         "time_minutes": 45,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "griddle"
         ]
@@ -1769,6 +3054,22 @@
         ],
         "difficulty": 1.5,
         "time_minutes": 135,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "spit"
         ]
@@ -1796,6 +3097,22 @@
         ],
         "difficulty": 1.3,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "spit"
         ]
@@ -1827,6 +3144,22 @@
         ],
         "difficulty": 1.8,
         "time_minutes": 160,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -1854,6 +3187,22 @@
         ],
         "difficulty": 1.0,
         "time_minutes": 50,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "griddle"
         ]
@@ -1881,6 +3230,22 @@
         ],
         "difficulty": 1.8,
         "time_minutes": 150,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1908,6 +3273,22 @@
         ],
         "difficulty": 1.8,
         "time_minutes": 150,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1939,6 +3320,22 @@
         ],
         "difficulty": 2.0,
         "time_minutes": 180,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1966,6 +3363,22 @@
         ],
         "difficulty": 1.8,
         "time_minutes": 145,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -1988,7 +3401,23 @@
           2
         ],
         "difficulty": 0.4,
-        "time_minutes": 10
+        "time_minutes": 10,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_fruit_pie",
@@ -2013,6 +3442,22 @@
         ],
         "difficulty": 1.7,
         "time_minutes": 150,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -2044,6 +3489,22 @@
         ],
         "difficulty": 2.0,
         "time_minutes": 150,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -2071,6 +3532,22 @@
         ],
         "difficulty": 1.8,
         "time_minutes": 130,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -2098,6 +3575,22 @@
         ],
         "difficulty": 1.3,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -2123,7 +3616,23 @@
         "time_minutes": 180,
         "tools": [
           "press"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "dairymaid"
+            },
+            {
+              "skill": "dairying",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_yogurt",
@@ -2140,6 +3649,22 @@
         ],
         "difficulty": 1.2,
         "time_minutes": 180,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "dairymaid"
+            },
+            {
+              "skill": "dairying",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -2169,7 +3694,23 @@
         "time_minutes": 120,
         "tools": [
           "barrel"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_sauerkraut",
@@ -2192,7 +3733,23 @@
         "time_minutes": 120,
         "tools": [
           "barrel"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "dry_fruit",
@@ -2211,7 +3768,23 @@
         "time_minutes": 180,
         "tools": [
           "drying_rack"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_fruit_jam",
@@ -2232,6 +3805,22 @@
         ],
         "difficulty": 1.1,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -2257,7 +3846,23 @@
         "time_minutes": 75,
         "tools": [
           "barrel"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "smoke_fish",
@@ -2284,7 +3889,23 @@
         "time_minutes": 150,
         "tools": [
           "smoking_rack"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "brew_cider",
@@ -2305,6 +3926,22 @@
         ],
         "difficulty": 1.8,
         "time_minutes": 360,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "brewer"
+            },
+            {
+              "skill": "brewing",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "mash_tun"
         ]
@@ -2328,6 +3965,22 @@
         ],
         "difficulty": 2.0,
         "time_minutes": 360,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "brewer"
+            },
+            {
+              "skill": "brewing",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "mash_tun"
         ]
@@ -2353,7 +4006,23 @@
         "time_minutes": 180,
         "tools": [
           "quill"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "letters"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "scribe"
+            },
+            {
+              "skill": "writing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "split_firewood",
@@ -2373,7 +4042,23 @@
         "time_minutes": 40,
         "tools": [
           "axe"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "fuel_and_light"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "forester"
+            },
+            {
+              "skill": "felling",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "lift_saplings",
@@ -2390,7 +4075,23 @@
         "seasons": [
           "winter",
           "spring"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "forester"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "gather_berries",
@@ -2406,7 +4107,23 @@
         "gathered_from": "woodlot",
         "seasons": [
           "summer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "forester"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "gather_mushrooms",
@@ -2422,7 +4139,23 @@
         "gathered_from": "woodlot",
         "seasons": [
           "autumn"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "forester"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "pick_apples",
@@ -2438,7 +4171,23 @@
         "gathered_from": "orchard",
         "seasons": [
           "autumn"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "pick_pears",
@@ -2454,7 +4203,23 @@
         "gathered_from": "orchard",
         "seasons": [
           "autumn"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "pick_plums",
@@ -2470,7 +4235,23 @@
         "gathered_from": "orchard",
         "seasons": [
           "summer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "cut_sage",
@@ -2487,7 +4268,23 @@
         "seasons": [
           "spring",
           "summer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "cut_thyme",
@@ -2504,7 +4301,23 @@
         "seasons": [
           "spring",
           "summer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "cut_parsley",
@@ -2521,7 +4334,23 @@
         "seasons": [
           "spring",
           "summer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "foraging",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "dig_ore",
@@ -2536,7 +4365,23 @@
         "gathered_from": "quarry",
         "tools": [
           "pick"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "quarrier"
+            },
+            {
+              "skill": "quarrying",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_hammer",
@@ -2559,7 +4404,23 @@
         "time_minutes": 90,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_saw",
@@ -2582,7 +4443,23 @@
         "time_minutes": 120,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_adze",
@@ -2605,7 +4482,23 @@
         "time_minutes": 100,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_awl",
@@ -2628,7 +4521,23 @@
         "time_minutes": 30,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_needle",
@@ -2651,7 +4560,23 @@
         "time_minutes": 40,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_cleaver",
@@ -2674,7 +4599,23 @@
         "time_minutes": 90,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_spade",
@@ -2697,7 +4638,23 @@
         "time_minutes": 120,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_axe",
@@ -2720,7 +4677,23 @@
         "time_minutes": 150,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_hinge",
@@ -2743,7 +4716,23 @@
         "time_minutes": 45,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_pot",
@@ -2766,7 +4755,23 @@
         "time_minutes": 120,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_pan",
@@ -2789,7 +4794,23 @@
         "time_minutes": 90,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_griddle",
@@ -2812,7 +4833,23 @@
         "time_minutes": 90,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "forge_spit",
@@ -2835,7 +4872,23 @@
         "time_minutes": 60,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "smithing"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "smith"
+            },
+            {
+              "skill": "smithing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_stool",
@@ -2854,7 +4907,23 @@
         "time_minutes": 60,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_board",
@@ -2873,7 +4942,23 @@
         "time_minutes": 30,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_drying_rack",
@@ -2892,7 +4977,23 @@
         "time_minutes": 90,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_smoking_rack",
@@ -2911,7 +5012,23 @@
         "time_minutes": 90,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_press",
@@ -2934,7 +5051,23 @@
         "time_minutes": 240,
         "tools": [
           "saw"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "woodworker"
+            },
+            {
+              "skill": "carpentry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_bucket",
@@ -2953,7 +5086,23 @@
         "time_minutes": 60,
         "tools": [
           "adze"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cooper"
+            },
+            {
+              "skill": "coopering",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_churn",
@@ -2972,7 +5121,23 @@
         "time_minutes": 90,
         "tools": [
           "adze"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cooper"
+            },
+            {
+              "skill": "coopering",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_mash_tun",
@@ -2991,7 +5156,23 @@
         "time_minutes": 240,
         "tools": [
           "adze"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cooper"
+            },
+            {
+              "skill": "coopering",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_dye_vat",
@@ -3010,7 +5191,23 @@
         "time_minutes": 200,
         "tools": [
           "adze"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cooper"
+            },
+            {
+              "skill": "coopering",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "dress_stone",
@@ -3029,7 +5226,23 @@
         "time_minutes": 45,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "mason"
+            },
+            {
+              "skill": "masonry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "build_oven",
@@ -3048,7 +5261,23 @@
         "time_minutes": 480,
         "tools": [
           "hammer"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "mason"
+            },
+            {
+              "skill": "masonry",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "spin_thread",
@@ -3065,7 +5294,23 @@
           2
         ],
         "difficulty": 0.8,
-        "time_minutes": 90
+        "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "weaver"
+            },
+            {
+              "skill": "spinning",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "spin_linen",
@@ -3084,7 +5329,23 @@
         "time_minutes": 240,
         "tools": [
           "loom"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "weaver"
+            },
+            {
+              "skill": "weaving",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "knit_net",
@@ -3100,7 +5361,23 @@
           1
         ],
         "difficulty": 1.2,
-        "time_minutes": 180
+        "time_minutes": 180,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "weaver"
+            },
+            {
+              "skill": "weaving",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "sew_shirt",
@@ -3123,7 +5400,23 @@
         "time_minutes": 90,
         "tools": [
           "needle"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "cut_rags",
@@ -3140,7 +5433,23 @@
           6
         ],
         "difficulty": 0.2,
-        "time_minutes": 15
+        "time_minutes": 15,
+        "knowledge": {
+          "topics": [
+            "textiles"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "tailor"
+            },
+            {
+              "skill": "tailoring",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_boots",
@@ -3159,7 +5468,23 @@
         "time_minutes": 180,
         "tools": [
           "awl"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "leatherwork"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cobbler"
+            },
+            {
+              "skill": "shoemaking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "cut_quill",
@@ -3178,7 +5503,23 @@
         "time_minutes": 15,
         "tools": [
           "knife"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "letters"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "scribe"
+            },
+            {
+              "skill": "writing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "cure_ham",
@@ -3201,7 +5542,23 @@
         "time_minutes": 90,
         "tools": [
           "cleaver"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "butcher"
+            },
+            {
+              "skill": "butchery",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_sausage",
@@ -3232,7 +5589,23 @@
         "time_minutes": 90,
         "tools": [
           "cleaver"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "butcher"
+            },
+            {
+              "skill": "butchery",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "render_lard",
@@ -3249,6 +5622,22 @@
         ],
         "difficulty": 0.8,
         "time_minutes": 90,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "butcher"
+            },
+            {
+              "skill": "butchery",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -3267,7 +5656,23 @@
           1
         ],
         "difficulty": 0.4,
-        "time_minutes": 30
+        "time_minutes": 30,
+        "knowledge": {
+          "topics": [
+            "animal_husbandry"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "dairymaid"
+            },
+            {
+              "skill": "dairying",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "malt_barley",
@@ -3291,7 +5696,23 @@
           3
         ],
         "difficulty": 1.4,
-        "time_minutes": 240
+        "time_minutes": 240,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "brewer"
+            },
+            {
+              "skill": "brewing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "brew_beer",
@@ -3320,6 +5741,22 @@
         ],
         "difficulty": 2.2,
         "time_minutes": 480,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "brewer"
+            },
+            {
+              "skill": "brewing",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "mash_tun"
         ]
@@ -3342,7 +5779,23 @@
           2
         ],
         "difficulty": 0.8,
-        "time_minutes": 60
+        "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "brewer"
+            },
+            {
+              "skill": "brewing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_vinegar",
@@ -3361,7 +5814,23 @@
         "time_minutes": 120,
         "tools": [
           "barrel"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "brewer"
+            },
+            {
+              "skill": "brewing",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "grind_rye",
@@ -3380,6 +5849,22 @@
         "time_minutes": 45,
         "byproducts": {
           "scraps": 10
+        },
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "miller"
+            },
+            {
+              "skill": "milling",
+              "level": 0.0
+            }
+          ]
         }
       },
       {
@@ -3399,7 +5884,23 @@
         "time_minutes": 60,
         "tools": [
           "press"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "miller"
+            },
+            {
+              "skill": "milling",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_mustard",
@@ -3419,7 +5920,23 @@
           2
         ],
         "difficulty": 0.6,
-        "time_minutes": 30
+        "time_minutes": 30,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_salad",
@@ -3443,7 +5960,23 @@
           3
         ],
         "difficulty": 0.4,
-        "time_minutes": 15
+        "time_minutes": 15,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_pea_soup",
@@ -3468,6 +6001,22 @@
         ],
         "difficulty": 0.9,
         "time_minutes": 100,
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "pot"
         ]
@@ -3497,7 +6046,23 @@
         "time_minutes": 90,
         "tools": [
           "barrel"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "food_preparation"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "cook"
+            },
+            {
+              "skill": "cooking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "bake_spice_cake",
@@ -3534,6 +6099,22 @@
         ],
         "difficulty": 2.2,
         "time_minutes": 150,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        },
         "tools": [
           "oven"
         ]
@@ -3563,7 +6144,23 @@
         "time_minutes": 60,
         "tools": [
           "pot"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "fuel_and_light"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "chandler"
+            },
+            {
+              "skill": "candle_making",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_thatch",
@@ -3580,7 +6177,23 @@
           2
         ],
         "difficulty": 0.6,
-        "time_minutes": 60
+        "time_minutes": 60,
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "fieldwork",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "make_compost",
@@ -3604,7 +6217,23 @@
         "time_minutes": 60,
         "tools": [
           "spade"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "farmer"
+            },
+            {
+              "skill": "composting",
+              "level": 0.0
+            }
+          ]
+        }
       }
     ]
   }

@@ -558,9 +558,20 @@ the pack. Record the prompt schema version and the pack hash in each prompt reco
 who has not been seeded a law does not see it; a different pack yields a different premise with
 no code change.
 
+**Supervisor note (after 019).** Seeded memories average 119 KB per founder. The turn packet must
+carry a bounded, relevant selection (for example the items the current affordances, place, and
+neighbours touch, plus understood laws), not every memory, and an aware-only item as its name and
+gist. Also route derived law and policy understanding into `world_frames` without restoring the
+global law list.
+
 ## Phase 019 -- Derived knowledge priors (awareness and understanding)
 
-**Status:** blocked on 013; uses 009 (kinship) and 012 (physical vs cognitive skills) when present.
+**Status:** done (see History). Supervisor review: the derived priors are about 295 memories per
+founder (29,455 in the town, about 12 MB serialized, 119 KB per resident on average). The LLM
+prompt builder (`bigville/backends/prompts.py`) puts every memory into each prompt, so Phase 018
+must select memories rather than send them all. Derived law and policy understanding does not
+reach `_context`'s `world_frames` yet (it reads only `law_knowledge`/`policy_knowledge` kinds).
+History figures and public-spread values are APPROX; citations are from memory and unchecked.
 
 **Decision 2026-11-05.** What a resident knows at the start is EXTRAPOLATED from their job, their
 implied life history, and their skill levels -- not from hand-listed role names. Knowledge has
@@ -655,3 +666,4 @@ exist, at the precision they know them -- never the world's map.
 | 009 Kinship, households, inheritance | done | (this commit) | docs/phases/phase009/PHASE009_REPORT.md -- genealogy (bore/fathered/union_with) as world fact, held KinTerm references, KIN_TERMS/ATTRIBUTION/OBLIGATIONS, partible default custom, heirs published on death with no transfer; household draw checked against Laslett; 394 passed |
 | 016a Founding town as pack data | done | (this commit) | docs/phases/phase016a/PHASE016A_REPORT.md -- 14 founding tables (population/founding_*, world/founding_*); town digest identical except legacy adapter lumber growback 3.0 -> 4.0; 397 passed |
 | 016b + 003 Founding cast from JOBS | done | (this commit) | docs/phases/phase016b/PHASE016B_REPORT.md -- seed_jobs(100) cast, drawn ages, 46 households, genealogy from households; households 100 -> 46 in test_bigville_world_migrated; homophily test compares odds; 411 passed |
+| 019 Derived knowledge priors | done | (this commit) | docs/phases/phase019/PHASE019_REPORT.md -- domains/knowledge.py derive_knowledge; knowledge specs replace seed_roles; implied history on its own stream (20 founders gain former-trade levels); awareness/understanding/location memories; 434 passed |

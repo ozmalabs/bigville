@@ -1,0 +1,58 @@
+ M README.md
+ M bigville/backends/ocelot.py
+ M bigville/game.py
+ M bigville/runtime.py
+ M bigville/seeds/bigville_actor_decision.json
+ M bigville/seeds/bigville_cast100.json
+ M docs/AGENT_BACKENDS_PLAN.md
+ M docs/FEATURE_PHASES.md
+ M domains/bigville_entities.py
+ M domains/data_view.py
+ M domains/population.py
+ M domains/shared_frames.py
+ M packs/bigville/frames/charters.json
+ M packs/bigville/frames/giantville_laws.json
+ M packs/bigville/frames/giantville_policies.json
+ M packs/bigville/frames/governance_offices.json
+ M packs/bigville/frames/kinship.json
+ M packs/bigville/frames/local_laws.json
+ M packs/bigville/frames/local_policies.json
+ M packs/bigville/frames/shared_concepts.json
+ M packs/bigville/pack.json
+ M packs/bigville/world/animals.json
+ M packs/bigville/world/buildings.json
+ M packs/bigville/world/recipes.json
+ M packs/bigville/world/resource_deposits.json
+ M packs/bigville/world/water_sources.json
+ M packs/test_hamlet/frames/kinship.json
+ M packs/test_hamlet/frames/local_laws.json
+ M packs/test_hamlet/pack.json
+ M packs/test_hamlet/world/buildings.json
+ M packs/test_hamlet/world/recipes.json
+ M seeds/bigville_cast100.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M worlds/bigville_town100_world.py
+ M worlds/bigville_world.py
+?? bigville/game_persistence.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/world_persistence.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase019/
+?? docs/runs/
+?? domains/knowledge.py
+?? packs/bigville/frames/knowledge.json
+?? packs/bigville/population/history.json
+?? packs/test_hamlet/frames/knowledge.json
+?? packs/test_hamlet/population/history.json
+?? tests/test_bigville_game_persistence.py
+?? tests/test_bigville_graph_persistence.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_bigville_world_persistence.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase019_knowledge.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

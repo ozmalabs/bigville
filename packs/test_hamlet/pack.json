@@ -644,6 +644,38 @@
     {
       "name": "FOUNDING_ANCHOR_ALIASES",
       "file": "world/founding_sites.json"
+    },
+    {
+      "name": "KNOWLEDGE_TOPICS",
+      "file": "frames/knowledge.json"
+    },
+    {
+      "name": "KNOWLEDGE_RULES",
+      "file": "frames/knowledge.json"
+    },
+    {
+      "name": "JOB_PUBLIC",
+      "file": "frames/knowledge.json"
+    },
+    {
+      "name": "JOB_ROUTINE",
+      "file": "frames/knowledge.json"
+    },
+    {
+      "name": "KNOWABLE_PLACES",
+      "file": "frames/knowledge.json"
+    },
+    {
+      "name": "PROCEDURE_KNOWLEDGE",
+      "file": "frames/knowledge.json"
+    },
+    {
+      "name": "HISTORY",
+      "file": "population/history.json"
+    },
+    {
+      "name": "FORMER_TRADES",
+      "file": "population/history.json"
     }
   ]
 }

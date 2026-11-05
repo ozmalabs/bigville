@@ -12,9 +12,15 @@
           "minimum_grain": 4.0,
           "feed_periods": 4.0
         },
-        "seed_roles": [
-          "cook"
-        ],
+        "knowledge": {
+          "topics": [
+            "agriculture",
+            "food_preparation"
+          ],
+          "public": 0.5,
+          "after_years": 3,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "reserve_food_for_winter",
@@ -50,13 +56,14 @@
         "title": "Water Safety Policy",
         "kind": "policy",
         "scope": "village",
-        "seed_roles": [
-          "mayor",
-          "clerk",
-          "midwife",
-          "doctor",
-          "constable"
-        ],
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "clean_water_protects_health",

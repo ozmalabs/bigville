@@ -11,14 +11,28 @@
         "origin": "giantville",
         "immutable": true,
         "enforcement": "bigville",
-        "seed_roles": [
-          "mayor",
-          "clerk",
-          "constable",
-          "councillor",
-          "lawyer",
-          "teacher"
-        ],
+        "knowledge": {
+          "topics": [
+            "civic_procedure"
+          ],
+          "public": 0.1,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "any": [
+                {
+                  "authority": "deliberative"
+                },
+                {
+                  "authority": "executive"
+                },
+                {
+                  "served": "council"
+                }
+              ]
+            }
+          ]
+        },
         "concepts": [
           {
             "name": "council_derives_authority_from_charter",

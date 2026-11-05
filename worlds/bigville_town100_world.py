@@ -492,6 +492,15 @@ def generate_cast100(layout, seed=SEED_DEFAULT, entities=None):
             "household": hh_index, "household_role": hh_role,
             "home_cell": list(homes[hh_index]), "workplace_cell": list(work),
             "workplace_kind": wkind, "params": params})
+    # Phase 019: each founder's implied history, drawn on its own stream after the cast is complete, so no
+    # draw above moves. A former trade's skill levels are carried as `former_skills`.
+    histories = E.draw_founding_history([{
+        "role": r["role"], "group": r["group"], "age": r["age"], "literacy": r["literacy"],
+        "trades": r["trades"], "primary_trade": E.JOBS[r["role"]]["trades"][0],
+        "household": r["household"], "household_role": r["household_role"]} for r in residents], seed)
+    for record, drawn in zip(residents, histories):
+        record["history"] = drawn["history"]
+        record["former_skills"] = drawn["former_skills"]
     household_records = []
     for hh in households:
         household_records.append({

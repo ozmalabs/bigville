@@ -17,7 +17,23 @@
           1
         ],
         "difficulty": 0.5,
-        "time_minutes": 10
+        "time_minutes": 10,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        }
       },
       {
         "name": "bake_bread",
@@ -37,7 +53,23 @@
           2
         ],
         "difficulty": 1.0,
-        "time_minutes": 30
+        "time_minutes": 30,
+        "knowledge": {
+          "topics": [
+            "milling_and_baking"
+          ],
+          "public": 0.0,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "trade": "baker"
+            },
+            {
+              "skill": "baking",
+              "level": 0.0
+            }
+          ]
+        }
       }
     ]
   }

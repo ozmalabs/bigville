@@ -9,7 +9,19 @@
         "appoints": [
           "constable",
           "clerk"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "civic_procedure"
+          ],
+          "public": 0.95,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "office": "mayor"
+            }
+          ]
+        }
       },
       "constable": {
         "authority": "enforcement",
@@ -17,7 +29,19 @@
         "protects": [
           "people",
           "property"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "policing"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "office": "constable"
+            }
+          ]
+        }
       },
       "clerk": {
         "authority": "records",
@@ -27,7 +51,19 @@
           "taxes",
           "land",
           "laws"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "office": "clerk"
+            }
+          ]
+        }
       },
       "councillor": {
         "authority": "deliberative",
@@ -36,7 +72,19 @@
           "commons",
           "works",
           "emergency"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "civic_procedure"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "office": "councillor"
+            }
+          ]
+        }
       },
       "midwife": {
         "authority": "care",
@@ -45,7 +93,19 @@
           "birth",
           "infant",
           "mother"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "office": "midwife"
+            }
+          ]
+        }
       },
       "doctor": {
         "authority": "care",
@@ -53,7 +113,19 @@
         "supports": [
           "injury",
           "disease"
-        ]
+        ],
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "office": "doctor"
+            }
+          ]
+        }
       }
     }
   }

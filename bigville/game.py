@@ -248,6 +248,67 @@ class BigvilleGame:
         self.backends[actor] = backend
         self._sync_backend_metadata()
 
+    def _derived_knowledge_memories(self, name, attrs, memories, *, explicit_recipes=False):
+        """The derived knowledge priors of one resident as private memory records (Phase 019).
+
+        Derived from the world's own facts about the resident (job, skills, capacities, history, household,
+        genealogical kin terms, neighbours) by domains.knowledge. Positions are the world's at founding: a
+        place's cell for an exact location, and its landmark otherwise. An item already set by the scenario
+        (a memory with the same `item`) is not replaced, and neither is a recipe with explicit recipe_priors."""
+        from domains.knowledge import derive_knowledge, knowledge_memories, person_from_attrs
+        entities = world_entities(self.world)
+        kin_terms = ([row["term"] for row in self.world.kin_terms_held(name)]
+                     if hasattr(self.world, "kin_terms_held") else [])
+        neighbours = []
+        for other, node in self.world._actors.items():
+            if other == name:
+                continue
+            other_attrs = self.world.eng.node(node)["attrs"]
+            job = str(other_attrs.get("role", ""))
+            workplace = str(entities.FOUNDING_JOBS.get(job, {}).get("workplace", "")) if entities.FOUNDING_JOBS else ""
+            neighbours.append({"name": other, "job": job, "household": str(other_attrs.get("household", "")),
+                               "workplace": workplace})
+        home = self.world.actor_position(name)
+        person = person_from_attrs(name, attrs, pack=entities, history=attrs.get("history"),
+                                   kin_terms=kin_terms, neighbours=neighbours, home_cell=home)
+        derived = derive_knowledge(person, entities)
+        layout = getattr(self.world, "_map_layout", None) or {}
+        aliases = entities.FOUNDING_ANCHOR_ALIASES or {}
+        positions = {}
+        for item in derived:
+            kind, _, place_name = item.partition(":")
+            if kind != "place":
+                continue
+            believed = {"landmark": str(aliases.get(place_name, place_name))}
+            if place_name == "home" and home is not None:
+                believed["position"] = list(home)
+            elif place_name in self.world._building_sites:
+                believed["position"] = list(self.world._building_sites[place_name])
+            elif place_name in layout.get("deposits", {}):
+                believed["position"] = list(layout["deposits"][place_name])
+            elif place_name == "market" and layout.get("work", {}).get("market"):
+                believed["position"] = list(layout["work"]["market"])
+            elif place_name == "pasture" and layout.get("farms"):
+                believed["position"] = list(layout["farms"][0])
+            positions[place_name] = believed
+        existing = {memory.content.get("item") for memory in memories
+                    if isinstance(memory.content, dict) and memory.content.get("item")}
+        # A resident with no recorded history (a scenario actor) gets only the recipe knowledge that
+        # their trades give. The awareness of the village is drawn for the founders, who have histories.
+        has_history = "history" in attrs
+        out = []
+        for record in knowledge_memories(derived, positions=positions):
+            content = record["content"]
+            if content["item"] in existing:
+                continue
+            if explicit_recipes and content["type"] == "recipe":
+                continue
+            if not has_history and not (content["type"] == "recipe" and content["understands"] > 0):
+                continue
+            out.append(MemoryRecord(memory_id=record["memory_id"], content=content,
+                                    kind=record["kind"], source="derived_prior", private=True))
+        return out
+
     def _characters_from_world(self):
         entities = world_entities(self.world)
         characters = {}
@@ -282,32 +343,28 @@ class BigvilleGame:
                         content=content, kind="reference_knowledge",
                         source="character_prior", private=True))
                     known_reference_priors.add(reference_name)
-            # Recipe knowledge is a private backend prior. Scenario-authored
-            # priors take precedence; the default cheap-backend profession
-            # catalog supplies conventional craft knowledge for legacy casts.
+            # Recipe and other knowledge priors are the resident's private memories (backend-held, not world
+            # facts). Explicit scenario recipe_priors take precedence over derived recipe knowledge. Phase 019:
+            # the rest of the knowledge is derived from the resident's job, skills, history, and literacy.
             explicit_priors = preset.get("recipe_priors")
-            if explicit_priors is None:
-                roles = {str(attrs.get("role", ""))}
-                roles.update(filter(None, str(attrs.get("trades", "")).split(",")))
-                known_recipe_names = sorted(
-                    recipe["name"] for recipe in entities.RECIPES
-                    if recipe.get("requires") in roles and recipe.get("common") is not False)
-            else:
+            if explicit_priors is not None:
                 known_recipe_names = [
                     str(prior.get("recipe", prior.get("name", "")))
                     if isinstance(prior, dict) else str(prior)
                     for prior in explicit_priors]
-            existing_recipe_beliefs = {
-                str(memory.content.get("recipe")) for memory in memories
-                if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
-                and memory.content.get("recipe")
-            }
-            for recipe in known_recipe_names:
-                if recipe and recipe not in existing_recipe_beliefs:
-                    memories.append(MemoryRecord(
-                        memory_id=f"recipe:{name}:{recipe}",
-                        content={"recipe": recipe, "belief": "can_attempt"},
-                        kind="recipe_knowledge", source="scenario_prior", private=True))
+                existing_recipe_beliefs = {
+                    str(memory.content.get("recipe")) for memory in memories
+                    if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
+                    and memory.content.get("recipe")
+                }
+                for recipe in known_recipe_names:
+                    if recipe and recipe not in existing_recipe_beliefs:
+                        memories.append(MemoryRecord(
+                            memory_id=f"recipe:{name}:{recipe}",
+                            content={"recipe": recipe, "belief": "can_attempt"},
+                            kind="recipe_knowledge", source="scenario_prior", private=True))
+            memories.extend(self._derived_knowledge_memories(
+                name, attrs, memories, explicit_recipes=explicit_priors is not None))
             held_frames = []
             for frame in preset.get("held_frames", []):
                 if isinstance(frame, str):

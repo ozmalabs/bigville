@@ -25,7 +25,7 @@ from domains.pack import load_pack
 
 DEFAULT_PACK = "bigville"
 # Import order matters: a module may import names from the modules before it.
-MODULES = ("world_affordances", "shared_frames", "population", "bigville_entities")
+MODULES = ("world_affordances", "shared_frames", "population", "knowledge", "bigville_entities")
 
 _VIEWS = {}   # pack directory -> {"domains.<module>": module-like object}
 

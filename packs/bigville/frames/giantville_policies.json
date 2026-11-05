@@ -11,13 +11,14 @@
         "origin": "giantville",
         "immutable": true,
         "enforcement": "bigville",
-        "seed_roles": [
-          "mayor",
-          "clerk",
-          "midwife",
-          "doctor",
-          "constable"
-        ],
+        "knowledge": {
+          "topics": [
+            "health"
+          ],
+          "public": 0.3,
+          "after_years": 2,
+          "understanding_requires": []
+        },
         "concepts": [
           {
             "name": "safe_water_is_public_duty",

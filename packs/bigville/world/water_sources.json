@@ -8,28 +8,60 @@
         "yield": 40.0,
         "quality": 0.95,
         "seasonal": 0.1,
-        "labour": 0.2
+        "labour": 0.2,
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "spring": {
         "kind": "spring",
         "yield": 60.0,
         "quality": 0.98,
         "seasonal": 0.15,
-        "labour": 0.1
+        "labour": 0.1,
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "stream": {
         "kind": "surface",
         "yield": 100.0,
         "quality": 0.65,
         "seasonal": 0.4,
-        "labour": 0.3
+        "labour": 0.3,
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
       },
       "rain_cistern": {
         "kind": "rainwater",
         "yield": 80.0,
         "quality": 0.75,
         "seasonal": 0.55,
-        "labour": 0.1
+        "labour": 0.1,
+        "knowledge": {
+          "topics": [
+            "water_and_sanitation"
+          ],
+          "public": 0.2,
+          "after_years": 1,
+          "understanding_requires": []
+        }
       }
     }
   }
