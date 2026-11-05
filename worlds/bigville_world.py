@@ -948,6 +948,12 @@ class BigvilleWorld:
             ja = self.eng.node(job)["attrs"]
             if float(ja.get("complete", 0.0)) == 1.0:
                 continue
+            # Phase 023: a job advances, completes and spends stamina only while its worker stands on the
+            # cell where the job started. A paused job keeps its materials and its remaining ticks.
+            paused = self._job_away(job)
+            self._set_job_paused(str(ja.get("canonical_actor", "")), paused)
+            if paused:
+                continue
             remaining = float(ja.get("remaining", 0.0))
             if remaining > 0.0:
                 if not self._job_tick_armed:
@@ -1083,6 +1089,7 @@ class BigvilleWorld:
                                                 turn=int(self._turn),
                                                 day=float(self.calendar().get("day") or 0.0))
                 self.eng.set_attr(actor_node, "busy", 0.0)
+                self._set_job_paused(actor_name, False)
                 self.eng.remove_edge_unchecked(actor_node, "on_job", job)
 
     def _resolve_actor_events(self):
@@ -1858,6 +1865,7 @@ class BigvilleWorld:
         # Footfall is a physical effect of arriving, so it belongs to the single
         # enactment site rather than to any one caller that happens to move someone.
         self._wear_cell_by_traversal(actor, cell)
+        self._set_job_paused(actor, self.job_paused(actor))
 
     def move_actor(self, actor, destination):
         """Move one resident toward a destination, with load affecting travel."""
@@ -6999,6 +7007,15 @@ class BigvilleWorld:
         # enactment will reject as a no-op.
         if self.stamina_reserve(actor) < 0.8:
             options.append({"action": "rest", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
+        # Phase 023: a paused timed job is resumed by walking back to its start cell. The return is a legal
+        # move; every option is marked while the job waits, so the backend can see the paused state.
+        if self.job_paused(actor):
+            start = self.job_start_cell(actor)
+            if start is not None and reachable_destination(start):
+                options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
+                                "target": target_key(start), "resumes_job": True, "score": 0.0})
+            for option in options:
+                option["job_paused"] = True
         # Target keys are intentionally opaque and may be rebuilt on every
         # observation.  Expose the physical destination alongside a movement
         # affordance so a cognition backend can safely retain a route across
@@ -7561,6 +7578,9 @@ class BigvilleWorld:
         The checks run in the order ``_capable``, ``_can_attempt`` and ``_recipe_tools_usable`` make them."""
         if action_name not in self._actions:
             return "not_known"
+        # One timed job at a time: a worker who is busy cannot start another (Phase 023).
+        if self.busy(actor):
+            return "busy"
         if not self._skilled_enough(actor, action_name):
             return "unskilled"
         if not self._recipe_in_season(action_name):
@@ -8034,6 +8054,10 @@ class BigvilleWorld:
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
         self.eng.add_edge_unchecked(job, "runs", asp)
         self.eng.set_attr(self._actors[actor], "busy", 1.0)
+        # The cell the job started on: the job pauses while its worker stands elsewhere (Phase 023).
+        here = self.actor_position(actor)
+        if here is not None:
+            self.eng.set_attr(job, "start_cell", [int(here[0]), int(here[1])])
         for need in self.eng.neighbours(asp, "in_need"):
             a = self.eng.node(need)["attrs"]
             jn = self.eng.add_node("Need", {"kind": a["kind"], "qty": float(a["qty"]), "met": 0.0,
@@ -8461,6 +8485,44 @@ class BigvilleWorld:
     def soaked(self, actor):  return round(float(self.eng.node(self._actors[actor])["attrs"].get("soaked", 0.0)), 4)
 
     def busy(self, actor): return float(self.eng.node(self._actors[actor])["attrs"]["busy"]) == 1.0
+
+    def _job_of(self, actor):
+        """The actor's timed job (its `on_job` edge), or None."""
+        if actor not in self._actors:
+            return None
+        jobs = self.eng.neighbours(self._actors[actor], "on_job")
+        return jobs[0] if jobs else None
+
+    def _job_away(self, job):
+        """Whether a job's worker stands off the cell where the job started (Phase 023). A job opened
+        without a position (no cell to return to) is never paused."""
+        ja = self.eng.node(job)["attrs"]
+        start = ja.get("start_cell")
+        actor = str(ja.get("canonical_actor", ""))
+        if not start or actor not in self._actors:
+            return False
+        here = self.actor_position(actor)
+        return here is None or tuple(start) != tuple(here)
+
+    def _set_job_paused(self, actor, paused):
+        """Publish the paused read-off on the actor node (`job_paused`, 1.0 or 0.0)."""
+        if actor not in self._actors:
+            return
+        node = self._actors[actor]
+        value = 1.0 if paused else 0.0
+        if float(self.eng.node(node)["attrs"].get("job_paused", 0.0)) != value:
+            self.eng.set_attr(node, "job_paused", value)
+
+    def job_paused(self, actor):
+        """True while the actor's timed job waits because its worker is not on the job's start cell."""
+        job = self._job_of(actor)
+        return job is not None and self._job_away(job)
+
+    def job_start_cell(self, actor):
+        """The cell the actor's timed job started on, or None when there is no such job."""
+        job = self._job_of(actor)
+        start = self.eng.node(job)["attrs"].get("start_cell") if job is not None else None
+        return tuple(start) if start else None
     def fatigue(self, actor):
         """Read-off of stamina spent (Phase 022): the same as `exertion`. There is no separate accumulator."""
         return self.exertion(actor)

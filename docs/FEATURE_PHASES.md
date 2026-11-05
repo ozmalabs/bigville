@@ -923,8 +923,13 @@ without a decision.
 
 ## Phase 023 -- Timed jobs occupy the worker
 
-**Status:** ready, with a default the user may override (decision 2026-11-05: time is a scarce
-resource; a worker cannot do two things at once).
+**Status:** done (see History). `start`/`do` refuse a busy worker (reason `busy`); eating and moving
+stay allowed. Default kept: a timed job advances, completes and spends stamina only while its worker
+stands on the cell where it started; leaving pauses it (no cancel, inputs untouched). Read-offs:
+`job_paused`, `job_start_cell`, and a `move` option back marked `resumes_job` (the simple backend
+gives it +40). A job waiting for inputs keeps its worker busy, as before. Unattended-work candidates
+(brewing, malting, tanning, charcoal, cheese, pickling, compost, paper; possibly baking, smelting)
+are listed in the report for a later data phase.
 
 **Goal.** Make occupation a world rule, not only an affordance filter:
 - `start` and `do` refuse a worker who is already `busy` with a timed job (eating between work
@@ -1833,3 +1838,4 @@ rearing priors (the backend's); carrying infants.
 | 020 Validate before claiming the slot | done | (this commit) | docs/phases/phase020/PHASE020_REPORT.md -- refused attempts free the slot; malformed proposals return False; step() contains failures; 809 passed |
 | 021 Refusal records and feedback | done | (this commit) | docs/phases/phase021/PHASE021_REPORT.md -- REFUSAL_REASONS table, per-actor refusal log and counts, last outcome in context and prompt, report refusals; 828 passed |
 | 022 Recipe stamina is spent | done | (this commit) | docs/phases/phase022/PHASE022_REPORT.md -- declared recipe stamina charged via Effort, hunger-scaled exertion raises hunger, fatigue a read-off, balance stamina line; 835 passed |
+| 023 Timed jobs occupy the worker | done | (this commit) | docs/phases/phase023/PHASE023_REPORT.md -- busy refusal, jobs pause when the worker leaves the start cell, paused read-offs; 844 passed |

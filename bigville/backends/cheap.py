@@ -8,6 +8,10 @@ from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
 from .psi_can import CANWeightModel
 
+# Score added to the walk back to a paused timed job (Phase 023). A modest bias: the job
+# resumes unless a need (food, rest) scores higher. It is a valuation, not a world rule.
+RESUME_JOB_BONUS = 40.0
+
 
 @dataclass
 class NPCGoal:
@@ -213,6 +217,7 @@ class DeterministicBackend:
                     food_response_bonus = 100.0
             candidate["score"] = (float(candidate.get("score", 0.0))
                                    + self._goal_bonus(candidate)
+                                   + (RESUME_JOB_BONUS if candidate.get("resumes_job") else 0.0)
                                    + food_response_bonus
                                    + role_bonus
                                    + float(self.policy.action_bonuses.get(candidate.get("action"), 0.0))

@@ -15,6 +15,9 @@
       "slot_used": {
         "description": "You have already used your one major action this turn."
       },
+      "busy": {
+        "description": "You are still in the middle of a timed job. Finish it first; it waits while you are away from the place you started it."
+      },
       "not_in_reach": {
         "description": "You are not close enough. You must stand on the same cell as the person, object, or place, or one step away."
       },
