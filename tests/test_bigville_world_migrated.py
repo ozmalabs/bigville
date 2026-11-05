@@ -80,7 +80,7 @@ def test_a_recipe_takes_its_time_and_is_hard_work():
     assert w.busy("Wayland") and w.newest_tool() is None, "3 ticks in, still forging"
     w.tick(3)
     assert not w.busy("Wayland") and w.newest_tool() is not None, "after the full 6 ticks the knife exists"
-    assert w.fatigue("Wayland") > 10.0, "and the work has tired him (difficulty accrues per tick)"
+    assert w.fatigue("Wayland") > 0.0, "and the work has tired him (stamina spent, read off as fatigue; Phase 022)"
 
 
 # ------------------------------------------------------ G-tools-are-discrete-with-quality (headline; ported catalog)

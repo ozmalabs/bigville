@@ -128,6 +128,9 @@ TRAIN_HEADROOM = _PACK["TRAIN_HEADROOM"]
 TRAIN_RATE = _PACK["TRAIN_RATE"]
 RECIPE_EXERTION = _PACK["RECIPE_EXERTION"]
 HUNGER_PER_STAMINA = _PACK["HUNGER_PER_STAMINA"]
+# Stamina one `rest` action restores, per unit of its amount (the port's rate; APPROX, not sourced: the
+# seed bd_rest_recover gives no figure). One rest action spans one clock tick (TIME.minutes_per_tick).
+REST_RECOVERY_PER_UNIT = 0.1
 ANIMAL_SERVICES = _PACK["ANIMAL_SERVICES"]
 # World mechanics parameters (Phase 014): the clock, the town's starting state, a resident's
 # starting state, care and starvation, default prices, the literacy gate for each written kind,
@@ -634,4 +637,19 @@ def _balance_flows(sc):
     work["husbandry"] = sum(float(n) * float(ANIMALS[a].get("care_minutes", 0.0)) for a, n in sc["animals"].items())
     labour_have = residents * float(sc["work_minutes_per_resident"])
     flows["labour (minutes)"] = (labour_have, sum(work.values()))
+    # stamina: the declared stamina cost (RECIPE_EXERTION) of the recipes the labour streams run, per
+    # resident per period, against the stamina rest can restore in the minutes labour leaves free.
+    # Streams without a declared cost (field work, husbandry, felling, fertilising) and walking are not
+    # counted, so the spend is a lower bound. The affordable figure is an upper bound: it assumes every
+    # non-labour tick is a rest action at REST_RECOVERY_PER_UNIT, and reserves no time for sleep.
+    spend = sum(batches * recipe_exertion(name)[1] for name, batches in chain.items())
+    spend += split_batches * recipe_exertion("split_firewood")[1]
+    spend += (composted / ns_per) * recipe_exertion("make_compost")[1]
+    per_resident = max(1.0, residents)
+    period_minutes = float(TIME["ticks_per_period"]) * float(TIME["minutes_per_tick"])
+    free_ticks = max(0.0, period_minutes - sum(work.values()) / per_resident) / float(TIME["minutes_per_tick"])
+    flows["stamina (per resident)"] = (free_ticks * REST_RECOVERY_PER_UNIT, spend / per_resident)
+    notes.append(f"stamina: labour spends {spend / per_resident:.3f} stamina per resident per period on declared "
+                 f"recipe costs (lower bound); rest can restore {free_ticks * REST_RECOVERY_PER_UNIT:.3f} in the "
+                 f"{free_ticks:.1f} ticks labour leaves free (upper bound, no sleep reserved)")
     return flows, notes, work

@@ -887,7 +887,13 @@ refusal contains it.
 
 ## Phase 022 -- Recipe stamina is spent
 
-**Status:** ready (after 012)
+**Status:** done (see History). RECIPE_EXERTION stamina is spent through Effort: evenly over a timed
+job's ticks, at completion for an instant `do`; never below 0. All exertion (recipes and moves) is
+scaled by 1 + hunger/starve_limit and raises hunger by HUNGER_PER_STAMINA (kept at the seed's 1.0;
+the pack note about "a meal relieves ~5" is stale). `fatigue` is now a read-off of stamina spent.
+Balance: a per-resident stamina line (0.020 spent vs 9.4 restorable; not flagged, because rest at
+0.1/tick is unbounded by sleep). Open: `REST_RECOVERY_PER_UNIT` is in Python, move it to the pack
+with Phase 024's EXHAUSTION table.
 
 **Goal.** Charge the stamina cost `RECIPE_EXERTION` already declares. Spend it through the same
 `Effort` mechanism movement uses, spread evenly over the ticks of a timed job (an instant `do`
@@ -1826,3 +1832,4 @@ rearing priors (the backend's); carrying infants.
 | 011 Fiscal institutions as data | done | (this commit) | docs/phases/phase011/PHASE011_REPORT.md -- 44 seed rules mapped to 9 institutions or the backend; purses, obligations, face-to-face payment and arrears; round_bp; generated seeds 22 -> 31; 609 passed |
 | 020 Validate before claiming the slot | done | (this commit) | docs/phases/phase020/PHASE020_REPORT.md -- refused attempts free the slot; malformed proposals return False; step() contains failures; 809 passed |
 | 021 Refusal records and feedback | done | (this commit) | docs/phases/phase021/PHASE021_REPORT.md -- REFUSAL_REASONS table, per-actor refusal log and counts, last outcome in context and prompt, report refusals; 828 passed |
+| 022 Recipe stamina is spent | done | (this commit) | docs/phases/phase022/PHASE022_REPORT.md -- declared recipe stamina charged via Effort, hunger-scaled exertion raises hunger, fatigue a read-off, balance stamina line; 835 passed |

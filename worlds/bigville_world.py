@@ -954,13 +954,8 @@ class BigvilleWorld:
                     continue
                 remaining -= 1.0
                 self.eng.set_attr(job, "remaining", max(0.0, remaining))
-                actor_nodes = self.eng.in_neighbours(job, "on_job")
-                if actor_nodes:
-                    actor_attrs = self.eng.node(actor_nodes[0])["attrs"]
-                    asp_nodes = self.eng.neighbours(job, "runs")
-                    difficulty = float(self.eng.node(asp_nodes[0])["attrs"].get("difficulty", 1.0)) if asp_nodes else 1.0
-                    self.eng.set_attr(actor_nodes[0], "fatigue",
-                                      float(actor_attrs.get("fatigue", 0.0)) + difficulty * 2.0)
+                # The recipe's stamina cost is spread evenly over the ticks of the job (Phase 022).
+                self._spend_job_stamina(job)
                 if remaining > 0.0:
                     continue
             asp_nodes = self.eng.neighbours(job, "runs")
@@ -1000,6 +995,8 @@ class BigvilleWorld:
                 missing = True
             if missing:
                 continue
+            # Any stamina the job has not yet spent is charged at completion (an instant `do` spends all of it here).
+            self._spend_job_stamina(job, final=True)
             # Read component quality before consuming those physical nodes.
             actor_name = str(ja.get("canonical_actor", ""))
             actor_node = self._actors.get(actor_name)
@@ -1154,14 +1151,22 @@ class BigvilleWorld:
                         continue
                     ba = self.eng.node(body)["attrs"]
                     if edge == "exerted":
+                        # bd_exert_cost (Phase 022): hungrier residents tire faster, and exertion makes you hungrier.
+                        # Hunger is scaled by starve_limit so a resident at starvation spends twice the declared cost.
                         cost = float(ea.get("stamina_cost", 0.0))
-                        self.eng.set_attr(body, "stamina_reserve",
-                                          max(0.0, float(ba.get("stamina_reserve", 1.0)) - cost))
+                        starve = float(attrs.get("starve_limit", self.E.CARE["starve_limit"]))
+                        hunger = float(attrs.get("hunger", 0.0))
+                        if starve > 0.0:
+                            cost *= 1.0 + hunger / starve
+                        reserve = float(ba.get("stamina_reserve", 1.0))
+                        spent = min(reserve, max(0.0, cost))
+                        self.eng.set_attr(body, "stamina_reserve", max(0.0, reserve - spent))
+                        self.eng.set_attr(node, "hunger", hunger + spent * float(self.E.HUNGER_PER_STAMINA))
                         self.eng.set_attr(ea and event, "cost_done", 1.0)
                     else:
                         amount = float(ea.get("amount", 1.0))
                         self.eng.set_attr(body, "stamina_reserve",
-                                          min(float(ba.get("stamina", 1.0)), float(ba.get("stamina_reserve", 1.0)) + amount * 0.1))
+                                          min(float(ba.get("stamina", 1.0)), float(ba.get("stamina_reserve", 1.0)) + amount * float(self.E.REST_RECOVERY_PER_UNIT)))
                         self.eng.set_attr(event, "rest_done", 1.0)
 
             for option in self.eng.neighbours(node, "has_option"):
@@ -5924,7 +5929,7 @@ class BigvilleWorld:
                                         "care_need": float(stage["care"]), "food_need": float(stage["food"]),
                                         "health_work_fraction": float(healthy["work_fraction"]),
                                         "available_time": 1.0, "household": "",
-                                        "fatigue": 0.0, "busy": 0.0,
+                                        "busy": 0.0,
                                         "carried_weight": 0.0, "carry_ratio": 0.0,
                                         "carry_speed": 1.0, "carry_move_energy": 1.0,
                                         "carry_overloaded": 0.0, "carry_move_cooldown": 0.0,
@@ -8019,9 +8024,13 @@ class BigvilleWorld:
         if site_kind:
             # A gathering batch is taken from its site as the job opens (do/start have already checked it).
             self._draw_gathering_site(site_kind, action_name)
+        # The recipe's declared stamina cost (RECIPE_EXERTION) is spent over the job's ticks (Phase 022).
+        stamina = float(self.E.recipe_exertion(action_name)[1])
         job = self.eng.add_node("Job", {"remaining": float(remaining), "last_tick": 0.0,
                                         "min_quality": 1.0, "item_inputs": 0.0,
-                                        "canonical_actor": str(actor)})
+                                        "canonical_actor": str(actor),
+                                        "stamina_total": stamina, "stamina_left": stamina,
+                                        "stamina_ticks": float(remaining)})
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
         self.eng.add_edge_unchecked(job, "runs", asp)
         self.eng.set_attr(self._actors[actor], "busy", 1.0)
@@ -8035,6 +8044,31 @@ class BigvilleWorld:
             a = self.eng.node(tu)["attrs"]
             jt = self.eng.add_node("ToolUse", {"kind": a["kind"], "met": 0.0})
             self.eng.add_edge_unchecked(job, "uses", jt)
+
+    def _spend_job_stamina(self, job, final=False):
+        """Spend a job's declared stamina through the Effort mechanism movement uses (Phase 022).
+
+        Each tick of a timed job spends stamina_total / stamina_ticks; `final` spends whatever is left
+        (all of it for an instant `do`). The Effort is resolved by `_resolve_actor_events`, which also
+        applies the hunger scaling and the reserve floor of 0."""
+        ja = self.eng.node(job)["attrs"]
+        left = float(ja.get("stamina_left", 0.0))
+        if left <= 0.0:
+            return
+        ticks = float(ja.get("stamina_ticks", 0.0))
+        if final or ticks <= 0.0:
+            amount = left
+        else:
+            amount = min(left, float(ja.get("stamina_total", 0.0)) / ticks)
+        self.eng.set_attr(job, "stamina_left", max(0.0, left - amount))
+        actor = str(ja.get("canonical_actor", ""))
+        if amount <= 0.0 or actor not in self._actors or self._bodies.get(actor) is None:
+            return
+        effort = self.eng.add_node("Effort", {"uses_strength": 0.0, "uses_stamina": 1.0,
+                                              "intensity": min(1.0, amount), "stamina_cost": amount,
+                                              "terrain": "", "terrain_speed": 1.0,
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+        self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
 
     def _knows_or_none(self, actor, action_name):
         """Compatibility hook; world action admissibility does not inspect beliefs."""
@@ -8427,7 +8461,9 @@ class BigvilleWorld:
     def soaked(self, actor):  return round(float(self.eng.node(self._actors[actor])["attrs"].get("soaked", 0.0)), 4)
 
     def busy(self, actor): return float(self.eng.node(self._actors[actor])["attrs"]["busy"]) == 1.0
-    def fatigue(self, actor): return round(float(self.eng.node(self._actors[actor])["attrs"]["fatigue"]), 4)
+    def fatigue(self, actor):
+        """Read-off of stamina spent (Phase 022): the same as `exertion`. There is no separate accumulator."""
+        return self.exertion(actor)
 
     def rest(self, actor, amount=1.0):
         """Rest as a physical body event; it recovers held stamina reserve."""
