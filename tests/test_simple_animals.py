@@ -243,3 +243,26 @@ def test_animal_turn_moves_toward_intact_pen_and_broken_barrier_allows_escape():
     world.break_fence(fence)
     assert not world.enclosure_intact("small_pen")
     assert world._move_animal_to("Daisy", outside) == outside
+
+
+def test_herding_publishes_raw_enclosure_facts_and_steps_one_adjacent_cell():
+    game = _animal_game(grass=0.0, ticks_per_period=None, animal_cell=(1, 1))
+    world = game.world
+    world.add_enclosure("far_pen", [(3, 3)])
+    world.add_animal("Woolly", "sheep", cell=(1, 1), enclosure="far_pen")
+    world.add_animal("Rex", "dog", cell=(1, 1), enclosure="far_pen")
+
+    herd_options = [option for option in world.animal_affordances("Rex")
+                    if option.get("action") == "herd" and option.get("target") == "Woolly"]
+    assert len(herd_options) == 1
+    herd_opt = herd_options[0]
+    assert "target_escaped" not in herd_opt
+    assert herd_opt["target_position"] == (1, 1)
+    assert herd_opt["target_enclosure"] == "far_pen"
+    assert herd_opt["enclosure_intact"] is True
+    assert set(map(tuple, herd_opt["enclosure_cells"])) == {(3, 3)}
+
+    assert world.apply_animal_action("Rex", "herd", {"target": "Woolly"}) is True
+    after = world.animal_position("Woolly")
+    assert abs(after[0] - 1) + abs(after[1] - 1) == 1
+    assert after not in world.enclosure_cells("far_pen")

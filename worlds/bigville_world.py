@@ -3714,8 +3714,21 @@ class BigvilleWorld:
 
     def _animal_allowed_cell(self, name, cell):
         enclosure = self.animal_enclosure(name)
-        return (enclosure is None or not self.enclosure_intact(enclosure)
-                or tuple(cell) in self._enclosure_cells.get(enclosure, set()))
+        if enclosure is None or not self.enclosure_intact(enclosure):
+            return True
+        allowed = self._enclosure_cells.get(enclosure, set())
+        cell = tuple(cell)
+        if cell in allowed:
+            return True
+        current = self.animal_position(name)
+        if current is not None and current not in allowed and cell != current and allowed:
+            cur_dist = min((self.distance(current, p) for p in allowed
+                            if self.distance(current, p) is not None), default=None)
+            nxt_dist = min((self.distance(cell, p) for p in allowed
+                            if self.distance(cell, p) is not None), default=None)
+            if cur_dist is not None and nxt_dist is not None and nxt_dist < cur_dist:
+                return True
+        return False
 
     def _move_animal_to(self, name, cell):
         cell = tuple(cell)
@@ -3811,10 +3824,10 @@ class BigvilleWorld:
                     and self.animal_position(target) is not None):
                 options.append({"action": "herd", "target": target,
                                 "target_species": target_attrs.get("species", ""),
-                                "target_escaped": bool(
-                                    self.enclosure_intact(target_enclosure)
-                                    and self.animal_position(target) not in
-                                    self._enclosure_cells.get(target_enclosure, set()))})
+                                "target_position": self.animal_position(target),
+                                "target_enclosure": target_enclosure,
+                                "enclosure_intact": bool(self.enclosure_intact(target_enclosure)),
+                                "enclosure_cells": sorted(self._enclosure_cells.get(target_enclosure, set()))})
         options.append({"action": "stay"})
         return options
 
@@ -3834,7 +3847,7 @@ class BigvilleWorld:
             return False
         destination = min(allowed, key=lambda cell: self.distance(target_position, cell)
                           if self.distance(target_position, cell) is not None else 10**9)
-        self._move_animal_to(target, destination)
+        self._animal_step_toward(target, destination)
         self.eng.add_edge_unchecked(self._animals[dog], "herded", self._animals[target])
         return True
 
@@ -5173,21 +5186,30 @@ class BigvilleWorld:
         # in the store until a selected fetch succeeds.
         market_cell = self.map_position_node(self._store)
         if market_cell is not None:
+            market_move_added = False
             for kind in self._item_specs:
                 if self.qty(kind) < 1.0 or not self._inventory_can_receive(actor, kind):
                     continue
                 if any(option.get("action") == "fetch" and option.get("kind") == kind
                        for option in options):
                     continue
+                is_food = bool(self._item_specs.get(kind, {}).get("food"))
                 if self.actor_position(actor) == market_cell:
                     key = target_key(("store", kind))
                     options.append({"action": "fetch", "kind": kind, "trade": "", "recipe": "",
-                                    "stock_source": "town",
+                                    "stock_source": "town", "food": is_food,
                                     "target": key, "score": 0.0})
-                elif reachable_destination(market_cell):
+                elif reachable_destination(market_cell) and not market_move_added:
                     key = target_key(market_cell)
+                    has_edible = any(
+                        bool(spec.get("food")) and self.qty(k) >= 1.0
+                        and self._inventory_can_receive(actor, k)
+                        for k, spec in self._item_specs.items()
+                    )
                     options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
+                                    "food": has_edible,
                                     "target": key, "destination": market_cell, "score": 0.0})
+                    market_move_added = True
 
         # A tradesperson who has made or is collecting a good must physically
         # fetch it from the mapped store before carrying it to other people.
@@ -5197,18 +5219,18 @@ class BigvilleWorld:
                 output = self.eng.node(shop_node)["attrs"].get("output_kind", "")
                 if output not in self._item_specs or self.qty(output) < 1.0:
                     continue
+                is_food = bool(self._item_specs.get(output, {}).get("food"))
                 # Output collection is a physical carrying opportunity. Trade
                 # identity can influence cognition, but does not grant access.
                 if (self.actor_position(actor) == market_cell
                         and self._inventory_can_receive(actor, output)):
                     key = target_key(("store", output))
                     options.append({"action": "fetch", "kind": output, "trade": trade, "recipe": "",
-                                    "target": key, "score": 0.0})
+                                    "food": is_food, "target": key, "score": 0.0})
                 elif reachable_destination(market_cell):
                     key = target_key(market_cell)
                     options.append({"action": "move", "kind": "", "trade": trade, "recipe": "",
-                                    "target": key, "score": 0.0})
-                break
+                                    "food": is_food, "target": key, "score": 0.0})
         # Physical household storage is an ordinary carrying choice.  A
         # resident may put any held food into any accessible container; the
         # container's storage class only changes decay, never permission.
@@ -5250,7 +5272,8 @@ class BigvilleWorld:
                     if self.actor_position(actor) != animal_cell and not reachable_destination(animal_cell):
                         continue
                     key = target_key(animal if self.actor_position(actor) == animal_cell else animal_cell)
-                    options.append({"action": "tend_animals", "kind": task, "trade": "", "recipe": "",
+                    options.append({"action": "tend_animals" if self.actor_position(actor) == animal_cell else "move",
+                                    "kind": task, "trade": "", "recipe": "",
                                     "target": key, "animal": animal, "score": 0.0})
             for crop in self._living_crops():
                 crop_attrs = self.eng.node(crop)["attrs"]
@@ -5308,7 +5331,8 @@ class BigvilleWorld:
                 if self.actor_position(actor) != destination and not reachable_destination(destination):
                     continue
                 key = target_key(project if self.actor_position(actor) == destination else destination)
-                options.append({"action": "build", "kind": "", "trade": "", "recipe": project,
+                options.append({"action": "build" if self.actor_position(actor) == destination else "move",
+                                "kind": "", "trade": "", "recipe": project,
                                 "target": key, "project": project, "score": 0.0})
             for name, infra_node in self._infrastructure.items():
                 if self.infrastructure_condition(name) >= 0.8:
@@ -5322,7 +5346,8 @@ class BigvilleWorld:
                 if self.actor_position(actor) != destination and not reachable_destination(destination):
                     continue
                 key = target_key(name if self.actor_position(actor) == destination else destination)
-                options.append({"action": "maintain", "kind": "", "trade": "", "recipe": "",
+                options.append({"action": "maintain" if self.actor_position(actor) == destination else "move",
+                                "kind": "", "trade": "", "recipe": "",
                                 "target": key, "name": name, "score": 0.0})
 
         if self._actors:
@@ -5344,7 +5369,8 @@ class BigvilleWorld:
                 if self.actor_position(actor) != destination and not reachable_destination(destination):
                     continue
                 key = target_key(patient if self.actor_position(actor) == destination else destination)
-                options.append({"action": "care", "kind": "", "trade": "", "recipe": "",
+                options.append({"action": "care" if self.actor_position(actor) == destination else "move",
+                                "kind": "", "trade": "", "recipe": "",
                                 "target": key, "patient": patient, "score": 0.0})
                 break
         # Ordinary object movement is a physical option, not a purchase,
@@ -5425,8 +5451,17 @@ class BigvilleWorld:
     def enact_plan(self, actor, plan):
         """Enact an external backend proposal after rebuilding its target map."""
         self._actor(actor)
-        self._actor_options(actor)
-        return self._enact_plan(actor, dict(plan))
+        plan = dict(plan)
+        action = plan.get("action")
+        needs_targets = not (
+            (action == "move" and plan.get("destination") is not None)
+            or action in {"rest", "eat", "work", "move_object"}
+            or (action == "transfer" and plan.get("recipient"))
+            or (action == "take")
+        )
+        if needs_targets:
+            self._actor_options(actor)
+        return self._enact_plan(actor, plan)
 
     def _enact_plan(self, actor, plan):
         """Shared physical enactment for Ocelot and arbitrary cognition backends."""
@@ -5485,24 +5520,37 @@ class BigvilleWorld:
         if plan["action"] == "tend_animals":
             target = plan.get("animal") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._animals:
+                destination = self.map_position_node(self._animals[target])
+                if destination is not None and self.actor_position(actor) != destination:
+                    return self.major_action(actor, "move", destination=destination)
                 return self.major_action(actor, "tend_animals", animal=target, task=plan["kind"])
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] == "build":
             target = plan.get("project") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._building_projects:
+                cells = list(self.eng.neighbours(self._building_projects[target], "at_cell"))
+                destination = self.map_position_node(cells[0]) if cells else None
+                if destination is not None and self.actor_position(actor) != destination:
+                    return self.major_action(actor, "move", destination=destination)
                 return self.major_action(actor, "build", project=target, labour=1.0)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] == "maintain":
             target = plan.get("name") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._infrastructure:
+                destination = self.map_position_node(self._infrastructure[target])
+                if destination is not None and self.actor_position(actor) != destination:
+                    return self.major_action(actor, "move", destination=destination)
                 return self.major_action(actor, "maintain", name=target, labour=1.0)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] == "care":
             target = plan.get("patient") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._actors:
+                destination = self.actor_position(target)
+                if destination is not None and self.actor_position(actor) != destination:
+                    return self.major_action(actor, "move", destination=destination)
                 return self.major_action(actor, "care", patient=target)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)

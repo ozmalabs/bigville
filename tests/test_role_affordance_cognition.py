@@ -78,3 +78,26 @@ def test_simple_backend_uses_situated_hunger_to_choose_among_same_affordances():
     hungry = ActorContext(character, 1, {"hunger": 1.0, "energy": 100.0}, affordances)
     assert backend.decide(satiated).major_action.action == "inspect"
     assert backend.decide(hungry).major_action.action == "eat"
+
+
+def test_distant_husbandry_publishes_move_and_non_farmer_does_not_adopt_animal_goal():
+    farmer = _game("farmer")
+    baker = _game("baker")
+    for game in (farmer, baker):
+        game.world._move_animal_to("Daisy", (3, 3))
+
+    farmer_opts = [o for o in farmer._context("Ada").affordances if o.get("animal") == "Daisy"]
+    baker_opts = [o for o in baker._context("Ada").affordances if o.get("animal") == "Daisy"]
+    assert len(farmer_opts) == 1 and len(baker_opts) == 1
+    assert farmer_opts[0]["action"] == "move" and farmer_opts[0]["destination"] == (3, 3)
+    assert baker_opts[0]["action"] == "move" and baker_opts[0]["destination"] == (3, 3)
+
+    baker_ctx = ActorContext(
+        baker.characters["Ada"], 0, {"hunger": 0.0, "energy": 100.0, "calendar": {"hour": 8.0}},
+        [{"action": "tend_animals", "kind": "milk", "animal": "Daisy", "score": 0.0},
+         {"action": "work", "recipe": "bake_bread", "score": 0.0},
+         {"action": "rest", "score": 0.0}],
+    )
+    decision = baker.backends["Ada"].decide(baker_ctx)
+    assert baker.backends["Ada"].current_goal.kind == "work"
+    assert decision.major_action.action == "work"

@@ -130,57 +130,76 @@ class BigvilleGame:
             if self.world.eng.has_node(node)
         }
 
+    def _nearby_resident_ids(self, actor: str, position) -> set[str]:
+        if position is None:
+            return set()
+        nearby = set()
+        for name in self.world._actors:
+            if name == actor or not self.world.is_alive(name):
+                continue
+            other_position = self.world.actor_position(name)
+            distance = self.world.distance(position, other_position) if other_position else None
+            if distance is not None and distance <= 8:
+                nearby.add(str(name))
+        return nearby
+
     def _activate_continuation(self, actor: str, request: ActorContinuation,
                                *, action_ok: bool):
         request = ActorContinuation.from_value(request.to_dict())
         request.destination = self._normalise_destination(request.destination)
-        context = self._context(actor)
-        observations = context.observations
+        attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
+        position = self.world.actor_position(actor)
         self._continuations[actor] = _ActiveContinuation(
             request=request,
-            started_turn=context.turn,
-            baseline_hunger=float(observations.get("hunger", 0.0)),
-            baseline_energy=float(observations.get("energy", 100.0)),
-            baseline_nearby=frozenset(
-                str(resident.get("id"))
-                for resident in observations.get("nearby_residents", [])
-                if resident.get("id") is not None),
-            baseline_position=observations.get("position"),
+            started_turn=int(self.world._turn),
+            baseline_hunger=float(attrs.get("hunger", 0.0)),
+            baseline_energy=float(self.world.energy(actor)),
+            baseline_nearby=frozenset(self._nearby_resident_ids(actor, position)),
+            baseline_position=position,
             baseline_events=frozenset(self._event_snapshot()),
             last_action_ok=bool(action_ok),
             destination_complete=(request.destination is not None
-                                  and observations.get("position") == request.destination),
+                                  and position == request.destination),
         )
 
     def _continuation_interrupt(self, actor: str, active: _ActiveContinuation,
-                                context: ActorContext) -> str | None:
+                                context: ActorContext | None = None) -> str | None:
         request = active.request
         if request.poll_each_turn:
             return "poll_each_turn"
-        observations = context.observations
         interrupt_on = set(request.interrupt_on)
         expected = set(request.expected_events)
+        if context is not None:
+            observations = context.observations
+            position = observations.get("position")
+            nearby = {
+                str(resident.get("id"))
+                for resident in observations.get("nearby_residents", [])
+                if resident.get("id") is not None
+            }
+            hunger = float(observations.get("hunger", 0.0))
+            energy = float(observations.get("energy", 100.0))
+        else:
+            attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
+            position = self.world.actor_position(actor)
+            nearby = (self._nearby_resident_ids(actor, position)
+                      if "encounter" in interrupt_on else set())
+            hunger = float(attrs.get("hunger", 0.0))
+            energy = float(self.world.energy(actor))
 
         destination = self._normalise_destination(request.destination)
         if (destination is not None and active.destination_complete
-                and observations.get("position") == destination):
+                and position == destination):
             # Completion is not an unexpected event, but it is the natural
             # point at which a backend gets to choose the next task.
             return "destination_reached"
-        nearby = {
-            str(resident.get("id"))
-            for resident in observations.get("nearby_residents", [])
-            if resident.get("id") is not None
-        }
         if "encounter" in interrupt_on and nearby - active.baseline_nearby:
             return "encounter"
 
-        hunger = float(observations.get("hunger", 0.0))
         if ("hunger_threshold" in interrupt_on
                 and active.baseline_hunger < request.hunger_threshold
                 <= hunger):
             return "hunger_threshold"
-        energy = float(observations.get("energy", 100.0))
         if ("energy_threshold" in interrupt_on
                 and active.baseline_energy > request.energy_threshold
                 >= energy):
@@ -579,13 +598,13 @@ class BigvilleGame:
         for actor, backend in self.backends.items():
             if not self.world.is_alive(actor):
                 continue
-            context = self._context(actor)
             active = self._continuations.get(actor) if self.continuations_enabled else None
-            reason = (self._continuation_interrupt(actor, active, context)
+            reason = (self._continuation_interrupt(actor, active)
                       if active is not None else None)
             if active is not None and reason is None:
                 response = self._continuation_response(active)
             else:
+                context = self._context(actor)
                 response = backend.decide(context)
                 if reason is not None:
                     response.backend_state.setdefault("continuation_interrupted", reason)

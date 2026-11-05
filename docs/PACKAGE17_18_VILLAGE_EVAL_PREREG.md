@@ -62,7 +62,9 @@ covers all per-turn measurements and causal events.
 The registered per-cell acceptance criteria are:
 
 1. At least 90% of the initial 100 residents survive.
-2. At most 20% of survivors have hunger at or above 0.95.
+2. At most 20% of survivors have hunger at or above 0.95 (where resident hunger
+   is normalized by `starve_limit = 4.0` on `[0, 1]`, matching
+   `PsiState.from_context`).
 3. Selected major-action failures are at most 5%; selected actions must have
    boolean results.
 4. There are no negative town stocks or tracked resource quantities, no

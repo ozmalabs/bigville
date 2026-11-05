@@ -55,8 +55,15 @@ class AnimalNPCBackend:
                 # A working dog is more likely to tend its preferred stock,
                 # especially when it observes an animal beyond an intact pen.
                 preferred = option.get("target_species") in preferred_targets
-                option["score"] = (24.0 if preferred else -4.0)
-                if preferred and option.get("target_escaped"):
+                target_pos = option.get("target_position")
+                target_pen = {tuple(cell) for cell in option.get("enclosure_cells", ())}
+                escaped = bool(
+                    option.get("enclosure_intact")
+                    and target_pos is not None
+                    and tuple(target_pos) not in target_pen
+                )
+                option["score"] = (24.0 if (preferred and escaped) else -4.0)
+                if preferred and escaped:
                     option["score"] += 24.0
             options.append(option)
         choice = self.model.choose(context, options)

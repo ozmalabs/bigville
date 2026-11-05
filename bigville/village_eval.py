@@ -128,10 +128,11 @@ def _resident_snapshot(world) -> list[dict[str, Any]]:
     residents = []
     for name in sorted(world._actors):
         attrs = world.eng.node(world._actors[name])["attrs"]
+        starve_limit = max(1.0, float(attrs.get("starve_limit", 4.0)))
         residents.append({
             "id": name,
             "alive": bool(float(attrs.get("alive", 1.0))),
-            "hunger": _round(attrs.get("hunger", 0.0)),
+            "hunger": _round(float(attrs.get("hunger", 0.0)) / starve_limit),
             "health": _numeric_or_label(attrs.get("health", "unknown")),
             "inventory": {key: _round(value)
                           for key, value in sorted(world.inventory(name).items())},

@@ -30,23 +30,20 @@ Regression coverage compares physically identical actors with distinct
 explicit priors and checks that their public work affordances and world recipe
 knowledge edges do not differ.
 
-### 3. Herding resolution may bypass physical movement — low physical-mechanics issue
+### 3. Herding resolution may bypass physical movement — resolved
 
-The animal decision lifecycle is now session-owned: `BigvilleWorld.tick()` no
+The animal decision lifecycle is session-owned: `BigvilleWorld.tick()` no
 longer decides or enacts animal actions; `BigvilleGame.animal_turn()` invokes
 the animal backend and submits a selected action through
-`apply_animal_action` (`bigville/game.py:83-109, 590-591`). One affordance
-still publishes `target_escaped`, derived from enclosure integrity and target
-position (`worlds/bigville_world.py:3813-3819`); these underlying facts should
-be available directly if the backend is expected to interpret escape. Also,
-when a herding animal and target are co-located, `_herd` moves the target
-directly to the nearest enclosure cell (`worlds/bigville_world.py:3822-3839`)
-rather than advancing it one adjacent step. This is a physical action
-resolution issue, not an automatic cognition leak, but could distort animal
-movement results.
-
-Minimal repro: place the herding animal and target together several cells from
-an intact pen, submit one legal `herd` action, and inspect target displacement.
+`apply_animal_action` (`bigville/game.py:83-109, 611`). `animal_affordances`
+now publishes raw `target_position`, `target_enclosure`, `enclosure_intact`,
+and `enclosure_cells` rather than a pre-derived `target_escaped` flag
+(`worlds/bigville_world.py:3812-3817`), and `AnimalNPCBackend.decide` derives
+escape status from those observed facts (`bigville/backends/animal.py:54-67`).
+When a herding animal and target are co-located outside an enclosure, `_herd`
+now advances the target one adjacent step toward the nearest enclosure cell via
+`_animal_step_toward` (`worlds/bigville_world.py:3837`) rather than moving it
+directly to the pen in a single turn.
 
 ## Recently resolved
 

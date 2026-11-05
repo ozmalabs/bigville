@@ -125,7 +125,9 @@ class DeterministicBackend:
                    and (o.get("stock_source") != "town" or
                         (self.policy.allow_stock_fetches and
                          (not self.policy.stock_fetch_kinds or
-                          o.get("kind") in self.policy.stock_fetch_kinds)))
+                          o.get("kind") in self.policy.stock_fetch_kinds)) or
+                        (self.policy.hook is None and hunger > 0 and not carried_food_kinds
+                         and bool(o.get("food"))))
                    and (self.policy.allow_travel or o.get("action") != "move")
                    and (self.policy.allow_work or o.get("action") != "work")
                    and (o.get("action") != "work" or str(o.get("recipe", "")) in known_recipes)
@@ -172,8 +174,22 @@ class DeterministicBackend:
             candidate = dict(option)
             # Seeded occupation is a preference held by this cognition policy,
             # not a restriction on what bodies can physically do.
-            role_bonus = 24.0 if option.get("action") in preferred else 0.0
-            if option.get("action") in task_actions and option.get("action") not in preferred:
+            effective_task = option.get("action")
+            if effective_task == "move":
+                if option.get("animal"):
+                    effective_task = "tend_animals"
+                elif option.get("crop_node") is not None:
+                    effective_task = "harvest"
+                elif option.get("sow_kind"):
+                    effective_task = "sow"
+                elif option.get("project"):
+                    effective_task = "build"
+                elif option.get("name"):
+                    effective_task = "maintain"
+                elif option.get("patient"):
+                    effective_task = "care"
+            role_bonus = 24.0 if effective_task in preferred else 0.0
+            if effective_task in task_actions and effective_task not in preferred:
                 role_bonus = -24.0
             if option.get("action") in {"fetch", "move"} and option.get("trade"):
                 trade = str(option.get("trade"))
@@ -189,6 +205,9 @@ class DeterministicBackend:
                 if option.get("action") == "fetch" or (
                     option.get("action") == "move" and option.get("fetch_kind")
                 ):
+                    food_response_bonus = 100.0
+            elif hungry_without_food and self.policy.hook is None and bool(option.get("food")):
+                if option.get("action") in {"fetch", "move"}:
                     food_response_bonus = 100.0
             candidate["score"] = (float(candidate.get("score", 0.0))
                                    + self._goal_bonus(candidate)
@@ -246,17 +265,41 @@ class DeterministicBackend:
         hunger = float(observations.get("hunger", 0.0))
         energy = float(observations.get("energy", 100.0))
         actions = {str(option.get("action")) for option in context.affordances}
+        role = str(self.character.identity.get("role", "resident"))
+        preferred_tasks = {
+            "farmer": {"tend_animals", "water", "harvest", "sow"},
+            "farm_labourer": {"tend_animals", "water", "harvest", "sow", "build", "maintain"},
+            "mason": {"build", "maintain"}, "carpenter": {"build", "maintain"},
+            "woodworker": {"build", "maintain"}, "labourer": {"build", "maintain"},
+            "doctor": {"care"}, "midwife": {"care"},
+        }
+        preferred = preferred_tasks.get(role, set())
+        known_recipes = {
+            str(memory.content.get("recipe"))
+            for memory in self.character.memories
+            if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
+            and memory.content.get("recipe")
+        }
+        has_known_work = self.policy.allow_work and any(
+            option.get("action") == "work" and str(option.get("recipe", "")) in known_recipes
+            for option in context.affordances
+        )
         candidates: list[tuple[str, float, str]] = []
         if "eat" in actions and hunger > 0.25:
             candidates.append(("eat", 100.0 + hunger * 20, "hunger is rising"))
         if "rest" in actions and energy < self.rest_energy_threshold:
             candidates.append(("recover", 95.0 + (self.rest_energy_threshold - energy), "energy is low"))
         if self.time_band in {"morning", "workday"}:
-            if actions & {"tend_animals", "milk", "shear"}:
+            if (actions & {"tend_animals", "milk", "shear"}) and (
+                "tend_animals" in preferred or "care_for_animals" in self.policy.goal_priorities
+            ):
                 candidates.append(("care_for_animals", 78.0, "morning care is due"))
-            if actions & {"harvest", "sow", "water"}:
+            if (actions & {"harvest", "sow", "water"}) and (
+                bool(preferred & {"harvest", "sow", "water"})
+                or "tend_farm" in self.policy.goal_priorities
+            ):
                 candidates.append(("tend_farm", 76.0, "the farm needs attention"))
-            if "work" in actions or "sell_labor" in actions:
+            if has_known_work or "sell_labor" in actions:
                 candidates.append(("work", 64.0, "the workday is open"))
         elif self.time_band == "evening":
             candidates.append(("socialize", 48.0, "the workday is ending"))
