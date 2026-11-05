@@ -1,0 +1,43 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "constable protects people_and_property",
+      "name": "people_and_property_are_protected"
+    },
+    {
+      "category": "institutional",
+      "definition": "constable answers_to council",
+      "name": "constable_answers_to_council"
+    },
+    {
+      "category": "operational",
+      "definition": "theft is_reported_to constable",
+      "name": "theft_is_reported_to_constable"
+    }
+  ],
+  "depends_on": [],
+  "description": "Public Order and Protection Law (law, village scope). Generated from the 'bigville' pack (LAWS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "public_order_law",
+    "sha256": "68632132d3517fbc154ccf4b9ab5f55661aa23345b02bb3a14c4fa34b2f9e3dd",
+    "tables": [
+      "LAWS"
+    ]
+  },
+  "id": "gen_law_public_order_law",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: false; kind: law; origin: bigville; scope: village",
+      "head": "Public Order and Protection Law",
+      "name": "gen_law_public_order_law_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

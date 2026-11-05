@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "office",
+      "definition": "authority: care; records: true; supports: [\"birth\", \"infant\", \"mother\"]",
+      "name": "office_midwife"
+    }
+  ],
+  "depends_on": [],
+  "description": "Office of midwife. Generated from the 'bigville' pack (GOVERNANCE_OFFICES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "midwife",
+    "sha256": "b00923887bcdaf6540988f78d716eb1c76a8c7ee001d521ba25c1163c12ed105",
+    "tables": [
+      "GOVERNANCE_OFFICES"
+    ]
+  },
+  "id": "gen_office_midwife",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

@@ -1,0 +1,43 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "safe_water is public_duty",
+      "name": "safe_water_is_public_duty"
+    },
+    {
+      "category": "institutional",
+      "definition": "health_officer reports outbreak",
+      "name": "health_officers_report_outbreaks"
+    },
+    {
+      "category": "operational",
+      "definition": "outbreak authorises isolation",
+      "name": "outbreak_isolation_is_authorised"
+    }
+  ],
+  "depends_on": [],
+  "description": "Public Health Baseline (policy, giantville_and_dependencies scope). Generated from the 'bigville' pack (POLICIES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "giantville_public_health_baseline",
+    "sha256": "4d153afbd4d9e866637885d85114e1a962d6ebbd834a5f52471e55e1652768b3",
+    "tables": [
+      "POLICIES"
+    ]
+  },
+  "id": "gen_policy_giantville_public_health_baseline",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: true; kind: policy; origin: giantville; scope: giantville_and_dependencies",
+      "head": "Public Health Baseline",
+      "name": "gen_policy_giantville_public_health_baseline_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

@@ -28,6 +28,8 @@ from domains.world_affordances import (     # noqa: E402,F401  private helpers, 
     _serving_kind, _tag_yield, _type_value_parts,
 )
 from domains.population import _draw_categorical   # noqa: E402,F401
+from domains.world_affordances import _PACK as _WORLD_PACK   # noqa: E402  which pack this view reads
+from domains import generated_seeds as _generated_seeds      # noqa: E402  Phase 017
 from domains.world_affordances import (  # noqa: E402
     _balance_flows,
     _recipe_unit_cost,
@@ -384,6 +386,15 @@ def _check_knowledge(errors, warnings, info):
     shares = town_knowledge_shares(cast, pack, seed=seed)
     info.extend(shares["report"])
     knowledge_shares_flags(shares, pack, errors, warnings)
+
+
+def _check_generated_seeds(errors):
+    """Phase 017: the generated Ocelot seeds in bigville/seeds/ are what the bigville pack produces now.
+    Only the canonical pack is checked; a child or test pack has no canonical directory."""
+    if _WORLD_PACK.name != _generated_seeds.CANONICAL_PACK:
+        return
+    for problem in _generated_seeds.check_seeds(_WORLD_PACK, _generated_seeds.CANONICAL_SEED_DIR):
+        errors.append(f"generated seeds: {problem}")
 
 
 def check_consistency():
@@ -973,6 +984,7 @@ def check_consistency():
 
     _check_founding_town(errors, warnings, info)
     _check_knowledge(errors, warnings, info)
+    _check_generated_seeds(errors)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "office",
+      "definition": "authority: enforcement; protects: [\"people\", \"property\"]; records: true",
+      "name": "office_constable"
+    }
+  ],
+  "depends_on": [],
+  "description": "Office of constable. Generated from the 'bigville' pack (GOVERNANCE_OFFICES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "constable",
+    "sha256": "4af82c0ad61a49729a78d7afdb5d241d03bf4d283fbce791e70edddbfd4b8526",
+    "tables": [
+      "GOVERNANCE_OFFICES"
+    ]
+  },
+  "id": "gen_office_constable",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

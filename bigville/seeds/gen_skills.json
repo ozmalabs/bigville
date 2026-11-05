@@ -1,0 +1,359 @@
+{
+  "concepts": [
+    {
+      "category": "skill",
+      "definition": "cluster: metalwork; kind: craft; learning: physical",
+      "name": "skill_smithing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: woodwork; kind: craft; learning: physical",
+      "name": "skill_carpentry"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: woodwork; kind: craft; learning: physical",
+      "name": "skill_sawing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: woodwork; kind: craft; learning: physical",
+      "name": "skill_coopering"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: stonework; kind: craft; learning: physical",
+      "name": "skill_masonry"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: stonework; kind: land; learning: physical",
+      "name": "skill_quarrying"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: craft; learning: physical",
+      "name": "skill_milling"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: craft; learning: physical",
+      "name": "skill_baking"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: general; learning: physical",
+      "name": "skill_cooking"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: craft; learning: physical",
+      "name": "skill_brewing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: craft; learning: physical",
+      "name": "skill_dairying"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: craft; learning: physical",
+      "name": "skill_butchery"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: leather; kind: craft; learning: physical",
+      "name": "skill_tanning"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: leather; kind: craft; learning: physical",
+      "name": "skill_shoemaking"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: fibre; kind: general; learning: physical",
+      "name": "skill_spinning"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: fibre; kind: craft; learning: physical",
+      "name": "skill_weaving"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: fibre; kind: craft; learning: physical",
+      "name": "skill_tailoring"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: fibre; kind: craft; learning: physical",
+      "name": "skill_dyeing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: bookcraft; kind: craft; learning: physical",
+      "name": "skill_papermaking"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: bookcraft; kind: craft; learning: physical",
+      "name": "skill_printing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: bookcraft; kind: craft; learning: physical",
+      "name": "skill_inkmaking"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: craft; learning: physical",
+      "name": "skill_candle_making"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: woods_and_water; kind: land; learning: physical",
+      "name": "skill_charcoal_burning"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: fields; kind: land; learning: physical",
+      "name": "skill_fieldwork"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: beasts; kind: land; learning: physical",
+      "name": "skill_husbandry"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: beasts; kind: land; learning: physical",
+      "name": "skill_shepherding"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: woods_and_water; kind: land; learning: physical",
+      "name": "skill_felling"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: fields; kind: general; learning: physical",
+      "name": "skill_foraging"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: woods_and_water; kind: land; learning: physical",
+      "name": "skill_fishing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: foodcraft; kind: craft; learning: physical",
+      "name": "skill_smoking"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: civic; kind: general; learning: cognitive",
+      "name": "skill_storekeeping"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: household; kind: general; learning: physical",
+      "name": "skill_sanitation"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: household; kind: general; learning: physical",
+      "name": "skill_water_drawing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: fields; kind: land; learning: physical",
+      "name": "skill_composting"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: letters; kind: office; learning: cognitive",
+      "name": "skill_writing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: letters; kind: office; learning: cognitive",
+      "name": "skill_reckoning"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: civic; kind: office; learning: cognitive",
+      "name": "skill_governance"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: letters; kind: office; learning: cognitive",
+      "name": "skill_law"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: civic; kind: office; learning: cognitive",
+      "name": "skill_policing"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: care; kind: care; learning: cognitive",
+      "name": "skill_teaching"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: care; kind: care; learning: cognitive",
+      "name": "skill_medicine"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: care; kind: care; learning: physical",
+      "name": "skill_midwifery"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: care; kind: care; learning: cognitive",
+      "name": "skill_ministry"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: civic; kind: general; learning: cognitive",
+      "name": "skill_trading"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: civic; kind: general; learning: physical",
+      "name": "skill_service"
+    },
+    {
+      "category": "skill",
+      "definition": "cluster: household; kind: general; learning: physical",
+      "name": "skill_labour"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: craftsmanship; skills: [\"smithing\"]",
+      "name": "skill_cluster_metalwork"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: craftsmanship; skills: [\"carpentry\", \"sawing\", \"coopering\"]",
+      "name": "skill_cluster_woodwork"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: craftsmanship; skills: [\"masonry\", \"quarrying\"]",
+      "name": "skill_cluster_stonework"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: craftsmanship; skills: [\"spinning\", \"weaving\", \"tailoring\", \"dyeing\"]",
+      "name": "skill_cluster_fibre"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: craftsmanship; skills: [\"tanning\", \"shoemaking\"]",
+      "name": "skill_cluster_leather"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: craftsmanship; skills: [\"papermaking\", \"inkmaking\", \"printing\"]",
+      "name": "skill_cluster_bookcraft"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: provisioning; skills: [\"milling\", \"baking\", \"cooking\", \"brewing\", \"dairying\", \"butchery\", \"smoking\", \"candle_making\"]",
+      "name": "skill_cluster_foodcraft"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: stewardship; skills: [\"fieldwork\", \"composting\", \"foraging\"]",
+      "name": "skill_cluster_fields"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: stewardship; skills: [\"husbandry\", \"shepherding\"]",
+      "name": "skill_cluster_beasts"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: stewardship; skills: [\"felling\", \"charcoal_burning\", \"fishing\"]",
+      "name": "skill_cluster_woods_and_water"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: letters; skills: [\"writing\", \"reckoning\", \"law\"]",
+      "name": "skill_cluster_letters"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: care; skills: [\"medicine\", \"midwifery\", \"teaching\", \"ministry\"]",
+      "name": "skill_cluster_care"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: dealing; skills: [\"governance\", \"policing\", \"trading\", \"service\", \"storekeeping\"]",
+      "name": "skill_cluster_civic"
+    },
+    {
+      "category": "skill_cluster",
+      "definition": "metaskill: toil; skills: [\"labour\", \"water_drawing\", \"sanitation\"]",
+      "name": "skill_cluster_household"
+    },
+    {
+      "category": "metaskill",
+      "definition": "description: hand and eye for making things in any material; g_loading: 0.3; learning: physical",
+      "name": "metaskill_craftsmanship"
+    },
+    {
+      "category": "metaskill",
+      "definition": "description: judgement of food, fire, and timing in the kitchen and the dairy; g_loading: 0.4; learning: physical",
+      "name": "metaskill_provisioning"
+    },
+    {
+      "category": "metaskill",
+      "definition": "description: reading land, weather, plants, and beasts; g_loading: 0.4; learning: physical",
+      "name": "metaskill_stewardship"
+    },
+    {
+      "category": "metaskill",
+      "definition": "description: symbols, records, and abstract reasoning; g_loading: 0.8; learning: cognitive",
+      "name": "metaskill_letters"
+    },
+    {
+      "category": "metaskill",
+      "definition": "description: attending to bodies, minds, and souls; g_loading: 0.5; learning: cognitive",
+      "name": "metaskill_care"
+    },
+    {
+      "category": "metaskill",
+      "definition": "description: persuasion, order, and trust between people; g_loading: 0.5; learning: cognitive",
+      "name": "metaskill_dealing"
+    },
+    {
+      "category": "metaskill",
+      "definition": "description: the technique and endurance of heavy, plain work; g_loading: 0.15; learning: physical",
+      "name": "metaskill_toil"
+    }
+  ],
+  "depends_on": [],
+  "description": "Skills, skill clusters, and metaskills. Generated from the 'bigville' pack (SKILLS, SKILL_CLUSTERS, METASKILLS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": null,
+    "sha256": "47c896c4e955bf4a4b0fd8b0160eae545afaca57fb610285f76c6317a7aa4dd3",
+    "tables": [
+      "SKILLS",
+      "SKILL_CLUSTERS",
+      "METASKILLS"
+    ]
+  },
+  "id": "gen_skills",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

@@ -1,0 +1,52 @@
+{
+  "concepts": [
+    {
+      "category": "procedure",
+      "definition": "actor: resident; civic_actions: [\"case\"]; requires: [\"harm_or_claim\", \"complainant\"]",
+      "name": "justice_complaint"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: constable; civic_actions: []; requires: [\"complaint\", \"witnesses\", \"property_or_scene\"]",
+      "name": "justice_investigation"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: council_or_court; civic_actions: []; requires: [\"notice\", \"accused\", \"evidence\"]",
+      "name": "justice_hearing"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: council_or_court; civic_actions: [\"statement\"]; requires: [\"hearing\", \"law\", \"record\"]",
+      "name": "justice_judgment"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: constable_or_council; civic_actions: []; requires: [\"judgment\", \"proportionate_penalty\"]",
+      "name": "justice_remedy"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: council; civic_actions: []; requires: [\"judgment\", \"new_evidence_or_error\"]",
+      "name": "justice_appeal"
+    }
+  ],
+  "depends_on": [],
+  "description": "The justice procedure, one concept per stage. Generated from the 'bigville' pack (JUSTICE_PROCEDURES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": null,
+    "sha256": "088d732bc7401018eff640c2a4ca48e92835280e742f10759601def1ee227fc0",
+    "tables": [
+      "JUSTICE_PROCEDURES"
+    ]
+  },
+  "id": "gen_procedure_justice",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

@@ -1,0 +1,43 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "clean_water protects health",
+      "name": "clean_water_protects_health"
+    },
+    {
+      "category": "institutional",
+      "definition": "well kept_separate_from latrine",
+      "name": "well_is_kept_separate_from_latrine"
+    },
+    {
+      "category": "operational",
+      "definition": "water_source is_inspected_after flood",
+      "name": "water_source_is_inspected_after_flood"
+    }
+  ],
+  "depends_on": [],
+  "description": "Water Safety Policy (policy, village scope). Generated from the 'bigville' pack (POLICIES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "water_safety_policy",
+    "sha256": "5589bcc958c3639f524285506d216b94cd0f9a3c24702451ef36c7dcbdac7005",
+    "tables": [
+      "POLICIES"
+    ]
+  },
+  "id": "gen_policy_water_safety_policy",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: false; kind: policy; origin: bigville; scope: village",
+      "head": "Water Safety Policy",
+      "name": "gen_policy_water_safety_policy_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

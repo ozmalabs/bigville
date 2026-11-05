@@ -1,0 +1,418 @@
+{
+  "concepts": [
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: forge; tools: [\"hammer\"]",
+      "name": "trade_smith"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: woodshop; tools: [\"saw\"]",
+      "name": "trade_woodworker"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: charcoal_hearth; tools: []",
+      "name": "trade_collier"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: sawpit; tools: [\"saw\"]",
+      "name": "trade_sawyer"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: mill; tools: []",
+      "name": "trade_miller"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: cooperage; tools: [\"adze\"]",
+      "name": "trade_cooper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: tannery; tools: []",
+      "name": "trade_tanner"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: cobbler; tools: [\"awl\"]",
+      "name": "trade_cobbler"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: weavery; tools: [\"loom\"]",
+      "name": "trade_weaver"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: tailorshop; tools: [\"needle\"]",
+      "name": "trade_tailor"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: inn; tools: [\"mash_tun\"]",
+      "name": "trade_brewer"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: dyehouse; tools: [\"dye_vat\"]",
+      "name": "trade_dyer"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: papermill; tools: [\"press\"]",
+      "name": "trade_papermaker"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: printshop; capability: 0.8; literacy: 0.9; tools: [\"printing_press\"]",
+      "name": "trade_printer"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: inkhouse; tools: []",
+      "name": "trade_inkmaker"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: bakery; tools: [\"oven\"]",
+      "name": "trade_baker"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: kitchen; tools: [\"pot\"]",
+      "name": "trade_cook"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: dairy; tools: [\"churn\"]",
+      "name": "trade_dairymaid"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: wharf; tools: [\"net\"]",
+      "name": "trade_fisher"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.5; building: granary; tools: []",
+      "name": "trade_granary_keeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.5; building: root_cellar; tools: []",
+      "name": "trade_cellar_keeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.5; building: wellhouse; tools: [\"bucket\"]",
+      "name": "trade_water_keeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.5; building: latrine; tools: []",
+      "name": "trade_sanitation_keeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.5; building: compost_yard; tools: []",
+      "name": "trade_compost_keeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: smokehouse; tools: []",
+      "name": "trade_smoker"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: townhall; capability: 0.9; literacy: 0.9; tools: []",
+      "name": "trade_mayor"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: watchhouse; tools: []",
+      "name": "trade_constable"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: townhall; capability: 0.9; literacy: 0.9; tools: [\"quill\"]",
+      "name": "trade_clerk"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: townhall; capability: 0.8; literacy: 0.8; tools: []",
+      "name": "trade_councillor"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: surgery; capability: 0.8; literacy: 0.7; tools: []",
+      "name": "trade_midwife"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.8; building: surgery; capability: 0.9; literacy: 0.9; tools: []",
+      "name": "trade_doctor"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: scriptorium; capability: 0.9; literacy: 0.9; tools: [\"quill\"]",
+      "name": "trade_scribe"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: school; capability: 0.95; literacy: 0.95; tools: []",
+      "name": "trade_teacher"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: shambles; tools: [\"cleaver\"]",
+      "name": "trade_butcher"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: null; site: farm; tools: [\"spade\", \"plough\"]",
+      "name": "trade_farmer"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: null; site: pasture; tools: []",
+      "name": "trade_shepherd"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: null; site: pasture; tools: []",
+      "name": "trade_animal_keeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.5; building: null; site: market; tools: []",
+      "name": "trade_labourer"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: null; site: lumber; tools: [\"axe\"]",
+      "name": "trade_forester"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: null; site: stone; tools: [\"pick\"]",
+      "name": "trade_quarrier"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: null; site: mason; tools: [\"hammer\"]",
+      "name": "trade_mason"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.5; building: null; site: manor; tools: []",
+      "name": "trade_servant"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: null; capability: 0.8; literacy: 0.8; site: market; tools: []",
+      "name": "trade_merchant"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: inn; tools: [\"mash_tun\"]",
+      "name": "trade_innkeeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: church; capability: 0.9; literacy: 0.9; tools: []",
+      "name": "trade_pastor"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: townhall; capability: 0.9; literacy: 0.95; tools: [\"quill\"]",
+      "name": "trade_lawyer"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: printshop; capability: 0.8; literacy: 0.9; tools: [\"quill\"]",
+      "name": "trade_reporter"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: null; capability: 0.8; literacy: 0.8; site: store; tools: []",
+      "name": "trade_shopkeeper"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: null; capability: 0.9; literacy: 0.95; site: bank; tools: []",
+      "name": "trade_banker"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.7; building: null; capability: 0.9; literacy: 0.9; site: estate; tools: []",
+      "name": "trade_landlord"
+    },
+    {
+      "category": "trade",
+      "definition": "base_skill: 0.6; building: null; site: market; tools: [\"pot\"]",
+      "name": "trade_chandler"
+    },
+    {
+      "category": "job",
+      "definition": "duties: {\"compost\": 1.0, \"fertilise\": 1.0, \"field\": 0.6}; tools: [\"spade\", \"scythe\"]; trades: [\"farmer\", \"cook\"]",
+      "name": "job_farmer"
+    },
+    {
+      "category": "job",
+      "definition": "duties: {\"field\": 0.4}; tools: [\"spade\"]; trades: [\"farmer\"]",
+      "name": "job_farm_labourer"
+    },
+    {
+      "category": "job",
+      "definition": "duties: {\"husbandry\": 1.0}; tools: []; trades: [\"animal_keeper\", \"shepherd\"]",
+      "name": "job_animal_keeper"
+    },
+    {
+      "category": "job",
+      "definition": "duties: {\"trade:miller\": 1.0}; tools: []; trades: [\"miller\"]",
+      "name": "job_miller"
+    },
+    {
+      "category": "job",
+      "definition": "duties: {\"trade:baker\": 1.0}; tools: []; trades: [\"baker\"]",
+      "name": "job_baker"
+    },
+    {
+      "category": "job",
+      "definition": "duties: {\"felling\": 1.0, \"firewood\": 1.0}; tools: [\"axe\"]; trades: [\"forester\", \"collier\"]",
+      "name": "job_forester"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 1.0; tools: [\"hammer\"]; trades: [\"smith\"]",
+      "name": "job_smith"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 1.0; tools: [\"saw\"]; trades: [\"woodworker\", \"sawyer\"]",
+      "name": "job_carpenter"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.05; per_100: 0.5; tools: [\"adze\"]; trades: [\"cooper\"]",
+      "name": "job_cooper"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.05; per_100: 1.0; tools: [\"hammer\", \"pick\"]; trades: [\"mason\", \"quarrier\"]",
+      "name": "job_mason"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.05; per_100: 0.5; tools: [\"awl\"]; trades: [\"tanner\", \"cobbler\"]",
+      "name": "job_leatherworker"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.05; per_100: 0.5; tools: []; trades: [\"weaver\"]",
+      "name": "job_weaver"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.05; per_100: 0.5; tools: [\"needle\"]; trades: [\"tailor\", \"dyer\"]",
+      "name": "job_tailor"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.0; per_100: 2.0; tools: [\"net\"]; trades: [\"fisher\"]",
+      "name": "job_fisher"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.05; per_100: 0.5; tools: [\"cleaver\"]; trades: [\"butcher\"]",
+      "name": "job_butcher"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.05; per_100: 0.5; tools: [\"churn\"]; trades: [\"dairymaid\"]",
+      "name": "job_dairymaid"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 1.0; tools: [\"mash_tun\"]; trades: [\"innkeeper\", \"brewer\"]",
+      "name": "job_innkeeper"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.2; per_100: 0.8; tools: []; trades: [\"mayor\"]",
+      "name": "job_mayor"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 1.5; tools: [\"quill\"]; trades: [\"clerk\", \"scribe\"]",
+      "name": "job_clerk"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.2; per_100: 0.8; tools: []; trades: [\"constable\"]",
+      "name": "job_constable"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 1.0; tools: []; trades: [\"councillor\"]",
+      "name": "job_councillor"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 1.5; tools: []; trades: [\"teacher\"]",
+      "name": "job_teacher"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 0.9; tools: []; trades: [\"doctor\"]",
+      "name": "job_doctor"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.1; per_100: 0.9; tools: []; trades: [\"midwife\"]",
+      "name": "job_midwife"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.2; per_100: 0.8; tools: []; trades: [\"pastor\"]",
+      "name": "job_pastor"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 1.0; tools: []; trades: [\"fisher\"]",
+      "name": "job_fishmonger"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 1.0; tools: []; trades: [\"reporter\"]",
+      "name": "job_reporter"
+    },
+    {
+      "category": "job",
+      "definition": "spare: true; tools: [\"axe\"]; trades: [\"labourer\"]",
+      "name": "job_labourer"
+    }
+  ],
+  "depends_on": [],
+  "description": "Trades and the jobs that exercise them. Generated from the 'bigville' pack (TRADES, JOBS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": null,
+    "sha256": "1cc835f8b595f56cbda62ad60221e1c36c18ffc44b27202f753368bc70433b5e",
+    "tables": [
+      "TRADES",
+      "JOBS"
+    ]
+  },
+  "id": "gen_trades",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

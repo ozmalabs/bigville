@@ -1,0 +1,147 @@
+{
+  "concepts": [
+    {
+      "category": "shared",
+      "definition": "grain stored_in granary",
+      "name": "grain_in_granary"
+    },
+    {
+      "category": "shared",
+      "definition": "root_crops stored_in root_cellar",
+      "name": "roots_in_cellar"
+    },
+    {
+      "category": "shared",
+      "definition": "prepared_food stored_in pantry",
+      "name": "prepared_food_in_pantry"
+    },
+    {
+      "category": "shared",
+      "definition": "granary provides long_term_storage",
+      "name": "granary_is_long_term_storage"
+    },
+    {
+      "category": "shared",
+      "definition": "miller processes grain",
+      "name": "miller_grinds_grain"
+    },
+    {
+      "category": "shared",
+      "definition": "cooking requires heat_and_containment",
+      "name": "cook_needs_heat_and_containment"
+    },
+    {
+      "category": "shared",
+      "definition": "soup_or_drink served_with vessel_and_utensil",
+      "name": "food_requires_serving_vessel"
+    },
+    {
+      "category": "shared",
+      "definition": "constable holds_position constable_post",
+      "name": "constable_holds_constable_post"
+    },
+    {
+      "category": "shared",
+      "definition": "mayor holds_position mayoral_office",
+      "name": "mayor_holds_mayoral_office"
+    },
+    {
+      "category": "shared",
+      "definition": "market is_for public_exchange",
+      "name": "market_is_public_exchange"
+    },
+    {
+      "category": "shared",
+      "definition": "well provides clean_water",
+      "name": "well_provides_clean_water"
+    },
+    {
+      "category": "shared",
+      "definition": "latrine kept_away_from well",
+      "name": "latrine_kept_away_from_well"
+    },
+    {
+      "category": "shared",
+      "definition": "manure returns_to soil",
+      "name": "manure_returns_to_soil"
+    },
+    {
+      "category": "shared",
+      "definition": "crop_rotation preserves soil_fertility",
+      "name": "crop_rotation_preserves_fertility"
+    },
+    {
+      "category": "shared",
+      "definition": "maintenance prevents infrastructure_failure",
+      "name": "maintenance_prevents_failure"
+    },
+    {
+      "category": "shared",
+      "definition": "illness requires care_and_rest",
+      "name": "illness_requires_care_and_rest"
+    },
+    {
+      "category": "shared",
+      "definition": "contagious_illness requires separation",
+      "name": "contagious_illness_requires_separation"
+    },
+    {
+      "category": "shared",
+      "definition": "children require adult_care",
+      "name": "children_require_care"
+    },
+    {
+      "category": "shared",
+      "definition": "weather changes work_priorities",
+      "name": "weather_changes_work_priorities"
+    },
+    {
+      "category": "shared",
+      "definition": "land_registry records land_title",
+      "name": "land_registry_records_title"
+    },
+    {
+      "category": "shared",
+      "definition": "deed is_evidence_of land_transfer",
+      "name": "deed_is_evidence_of_transfer"
+    },
+    {
+      "category": "shared",
+      "definition": "registered_title identifies land_holder",
+      "name": "registered_title_identifies_holder"
+    },
+    {
+      "category": "shared",
+      "definition": "land_dispute goes_to council_hearing",
+      "name": "land_dispute_goes_to_council"
+    },
+    {
+      "category": "shared",
+      "definition": "path preferred_for travel",
+      "name": "paths_are_preferred_travel_surface"
+    },
+    {
+      "category": "shared",
+      "definition": "terrain changes travel_speed_and_stamina",
+      "name": "terrain_changes_travel_cost"
+    }
+  ],
+  "depends_on": [],
+  "description": "Shared concepts that residents can hold in common. Generated from the 'bigville' pack (SHARED_CONCEPTS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": null,
+    "sha256": "129ada44338af672d605caef698d465f22c45ea5301e526f3cec5f185981a0f1",
+    "tables": [
+      "SHARED_CONCEPTS"
+    ]
+  },
+  "id": "gen_shared_concepts",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

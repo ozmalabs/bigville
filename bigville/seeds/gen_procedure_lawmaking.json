@@ -1,0 +1,52 @@
+{
+  "concepts": [
+    {
+      "category": "procedure",
+      "definition": "actor: resident_or_councillor; civic_actions: [\"proposal\"]; requires: [\"grievance_or_need\", \"witnessed_observation\"]",
+      "name": "lawmaking_proposal"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: clerk; civic_actions: []; requires: [\"written_proposal\", \"public_notice\"]",
+      "name": "lawmaking_notice"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: council; civic_actions: [\"meeting\"]; requires: [\"meeting\", \"speakers\", \"record\"]",
+      "name": "lawmaking_deliberation"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: council; civic_actions: [\"vote\"]; requires: [\"quorum\", \"majority\"]",
+      "name": "lawmaking_vote"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: clerk; civic_actions: []; requires: [\"approved_law\", \"written_record\"]",
+      "name": "lawmaking_promulgation"
+    },
+    {
+      "category": "procedure",
+      "definition": "actor: council; civic_actions: []; requires: [\"effective_date\", \"public_notice\"]",
+      "name": "lawmaking_effective"
+    }
+  ],
+  "depends_on": [],
+  "description": "The lawmaking procedure, one concept per stage. Generated from the 'bigville' pack (LAWMAKING_PROCEDURES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": null,
+    "sha256": "80f1b950786cea16587edea93de5d625a8f5f0da0b6cfe22f5b20571d972863b",
+    "tables": [
+      "LAWMAKING_PROCEDURES"
+    ]
+  },
+  "id": "gen_procedure_lawmaking",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

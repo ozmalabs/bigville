@@ -527,7 +527,13 @@ are listed (expected, per Phase 003's decision).
 
 ## Phase 017 -- Generated Ocelot seeds
 
-**Status:** blocked on 013.
+**Status:** done (see History). Canonical directory: `bigville/seeds/` (the Ocelot adapter loads
+it; pyproject ships it). 22 generated files (`gen_*` plus `bigville_terrain_movement`, replaced in
+place). Reconciled: `bigville_action_decide` (root copy wins), `bigville_dispositions_cast100`
+(copied to canonical). Pending: `bigville_actor_decision` stays as is until the other session
+commits its 1.3.0 work; then keep the `bigville/seeds/` copy after checking root's `-6.0` term.
+Root `seeds/` still has writers (cast and dispositions) and readers; not removed. Per-resident
+knowledge seeds are not generated (open).
 
 **Goal.** A generator (`tools/generate_seeds.py`, deterministic) writes Ocelot seed JSON from the
 pack: concept and frame seeds for laws, policies, charters, procedures, offices, skills and
@@ -667,3 +673,4 @@ exist, at the precision they know them -- never the world's map.
 | 016a Founding town as pack data | done | (this commit) | docs/phases/phase016a/PHASE016A_REPORT.md -- 14 founding tables (population/founding_*, world/founding_*); town digest identical except legacy adapter lumber growback 3.0 -> 4.0; 397 passed |
 | 016b + 003 Founding cast from JOBS | done | (this commit) | docs/phases/phase016b/PHASE016B_REPORT.md -- seed_jobs(100) cast, drawn ages, 46 households, genealogy from households; households 100 -> 46 in test_bigville_world_migrated; homophily test compares odds; 411 passed |
 | 019 Derived knowledge priors | done | (this commit) | docs/phases/phase019/PHASE019_REPORT.md -- domains/knowledge.py derive_knowledge; knowledge specs replace seed_roles; implied history on its own stream (20 founders gain former-trade levels); awareness/understanding/location memories; 434 passed |
+| 017 Generated Ocelot seeds | done | (this commit) | docs/phases/phase017/PHASE017_REPORT.md -- domains/generated_seeds.py + tools/generate_seeds.py; 22 files in bigville/seeds with generated_from headers; staleness check in the self-test; 447 passed |

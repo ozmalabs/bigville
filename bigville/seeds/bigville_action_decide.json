@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "depends_on": [],
   "self_load_only": true,
-  "description": "bigville R77 (block 396000): OBSERVED-DEMAND PRODUCTION on the data-driven world. po_observe forms the maker's beliefs from OBSERVED signals (adaptive expectation, harvest discounted by his unsold glut); pd_decide is a COLLAPSE over the ACTION catalog -- among his own trade's actions, Argmax by expected demand of the output -- setting will_make + want_qty (a run sized by demand). Ports the produce float world's belief/decide/run/glut onto bigville_world + the general engine; the produce float world is retired.",
+  "description": "Retired legacy observed-demand production cognition. The world no longer loads these rules or stores actor demand beliefs / recipe choices. Recipe selection and any actor-held expectations belong to cognition backends; physical crafting remains an explicit action.",
   "nodes": [],
   "edges": [],
   "productions": [],

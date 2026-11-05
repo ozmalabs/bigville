@@ -1,0 +1,43 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "village should_preserve food_for_winter",
+      "name": "reserve_food_for_winter"
+    },
+    {
+      "category": "institutional",
+      "definition": "granary_keeper administers winter_reserve",
+      "name": "reserve_is_administered_by_granary"
+    },
+    {
+      "category": "operational",
+      "definition": "reserve_stock is_counted monthly",
+      "name": "reserve_stock_is_counted_monthly"
+    }
+  ],
+  "depends_on": [],
+  "description": "Winter Food Reserve Policy (policy, village scope). Generated from the 'bigville' pack (POLICIES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "winter_food_reserve",
+    "sha256": "776ab7f7ec2216b73c3f791f9ae10a03162cd49dcac05fddf7a5d76700b8aec8",
+    "tables": [
+      "POLICIES"
+    ]
+  },
+  "id": "gen_policy_winter_food_reserve",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: false; kind: policy; origin: bigville; parameters: {\"feed_periods\": 4.0, \"minimum_grain\": 4.0}; scope: village",
+      "head": "Winter Food Reserve Policy",
+      "name": "gen_policy_winter_food_reserve_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

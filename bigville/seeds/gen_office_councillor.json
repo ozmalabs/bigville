@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "office",
+      "definition": "authority: deliberative; decides: [\"commons\", \"works\", \"emergency\"]; records: false",
+      "name": "office_councillor"
+    }
+  ],
+  "depends_on": [],
+  "description": "Office of councillor. Generated from the 'bigville' pack (GOVERNANCE_OFFICES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "councillor",
+    "sha256": "4301b2eb75d97a1452c3c97b89e5aea10bf873be80730d4f045304d330322822",
+    "tables": [
+      "GOVERNANCE_OFFICES"
+    ]
+  },
+  "id": "gen_office_councillor",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "office",
+      "definition": "appoints: [\"constable\", \"clerk\"]; authority: executive; records: true",
+      "name": "office_mayor"
+    }
+  ],
+  "depends_on": [],
+  "description": "Office of mayor. Generated from the 'bigville' pack (GOVERNANCE_OFFICES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "mayor",
+    "sha256": "cf6613fee7630762118afb1ee7faa243ac269a7c96a9fb0bc43ae9eec984a119",
+    "tables": [
+      "GOVERNANCE_OFFICES"
+    ]
+  },
+  "id": "gen_office_mayor",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

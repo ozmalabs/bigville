@@ -1,0 +1,43 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "theft is forbidden",
+      "name": "theft_is_forbidden"
+    },
+    {
+      "category": "institutional",
+      "definition": "constable recognises property_claims",
+      "name": "constable_recognises_property_claims"
+    },
+    {
+      "category": "operational",
+      "definition": "stolen_goods are recovered",
+      "name": "stolen_goods_are_recovered"
+    }
+  ],
+  "depends_on": [],
+  "description": "Prohibition of Theft (law, giantville_and_dependencies scope). Generated from the 'bigville' pack (LAWS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "giantville_theft_law",
+    "sha256": "96d21ab5b889681d2893c4cb850e0ad27e6dc8e0021b9e9e6981643ecbe18a4c",
+    "tables": [
+      "LAWS"
+    ]
+  },
+  "id": "gen_law_giantville_theft_law",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: true; kind: law; origin: giantville; scope: giantville_and_dependencies",
+      "head": "Prohibition of Theft",
+      "name": "gen_law_giantville_theft_law_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

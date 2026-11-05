@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "office",
+      "definition": "authority: records; maintains: [\"taxes\", \"land\", \"laws\"]; records: true; registrar: true",
+      "name": "office_clerk"
+    }
+  ],
+  "depends_on": [],
+  "description": "Office of clerk. Generated from the 'bigville' pack (GOVERNANCE_OFFICES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "clerk",
+    "sha256": "eb2247a3702f29734fc06cbdc510db1e084bcb679c9536bff3479ad79d00b330",
+    "tables": [
+      "GOVERNANCE_OFFICES"
+    ]
+  },
+  "id": "gen_office_clerk",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

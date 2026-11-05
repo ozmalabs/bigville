@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "office",
+      "definition": "authority: care; records: true; supports: [\"injury\", \"disease\"]",
+      "name": "office_doctor"
+    }
+  ],
+  "depends_on": [],
+  "description": "Office of doctor. Generated from the 'bigville' pack (GOVERNANCE_OFFICES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "doctor",
+    "sha256": "5efffd988b8c34ea341538b7470fb7545d14b4a2bdc54b6e446632b2c8d9bcd7",
+    "tables": [
+      "GOVERNANCE_OFFICES"
+    ]
+  },
+  "id": "gen_office_doctor",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

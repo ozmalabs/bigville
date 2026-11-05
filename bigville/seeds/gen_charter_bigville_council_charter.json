@@ -1,0 +1,58 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "council derives_authority_from charter",
+      "name": "council_derives_authority_from_charter"
+    },
+    {
+      "category": "institutional",
+      "definition": "council makes local_law",
+      "name": "council_makes_local_law"
+    },
+    {
+      "category": "operational",
+      "definition": "local_law requires notice_and_majority",
+      "name": "local_law_requires_notice_and_majority"
+    },
+    {
+      "category": "principle",
+      "definition": "justice requires hearing_and_record",
+      "name": "justice_requires_hearing_and_record"
+    },
+    {
+      "category": "institutional",
+      "definition": "constable investigates_and_council judges",
+      "name": "constable_investigates_council_judges"
+    },
+    {
+      "category": "operational",
+      "definition": "judgment precedes remedy",
+      "name": "judgment_is_written_before_remedy"
+    }
+  ],
+  "depends_on": [],
+  "description": "Charter of the Bigville Council (charter, bigville scope). Generated from the 'bigville' pack (CHARTERS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "bigville_council_charter",
+    "sha256": "c03f59ab696c85a5068e834d97ab337cc997173332ce60a9cc2d8089b73c2458",
+    "tables": [
+      "CHARTERS"
+    ]
+  },
+  "id": "gen_charter_bigville_council_charter",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: true; kind: charter; origin: giantville; scope: bigville",
+      "head": "Charter of the Bigville Council",
+      "name": "gen_charter_bigville_council_charter_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

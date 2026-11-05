@@ -1,0 +1,43 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "commons belongs_to village",
+      "name": "commons_are_shared_resource"
+    },
+    {
+      "category": "institutional",
+      "definition": "council sets_rules_for grazing",
+      "name": "council_sets_grazing_rules"
+    },
+    {
+      "category": "operational",
+      "definition": "unauthorised_enclosure is offence",
+      "name": "unauthorised_enclosure_is_offence"
+    }
+  ],
+  "depends_on": [],
+  "description": "Commons and Land Ordinance (law, village scope). Generated from the 'bigville' pack (LAWS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "commons_and_land_law",
+    "sha256": "298609f9e9cd48adc85948dd147e01f69791854fb0ab030594150fea56e5dc87",
+    "tables": [
+      "LAWS"
+    ]
+  },
+  "id": "gen_law_commons_and_land_law",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: false; kind: law; origin: bigville; scope: village",
+      "head": "Commons and Land Ordinance",
+      "name": "gen_law_commons_and_land_law_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

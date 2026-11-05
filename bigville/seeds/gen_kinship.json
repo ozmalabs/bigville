@@ -1,0 +1,122 @@
+{
+  "concepts": [
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"adoption\", \"fostering\"]; generation: 1; obligations: [\"care_dependants\", \"hospitality\"]; paths: [[\"parent\"]]; reciprocal: child; sex: null",
+      "name": "kin_parent"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"adoption\", \"fostering\"]; generation: -1; obligations: [\"care_dependants\", \"inheritance_claim\"]; paths: [[\"child\"]]; reciprocal: parent; sex: null",
+      "name": "kin_child"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: 0; obligations: [\"support_in_need\", \"inheritance_claim\", \"hospitality\"]; paths: [[\"spouse\"]]; reciprocal: spouse; sex: null",
+      "name": "kin_spouse"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"adoption\", \"honorific\"]; generation: 0; obligations: [\"support_in_need\", \"hospitality\"]; paths: [[\"sibling\"]]; reciprocal: sibling; sex: null; shared_parents: both",
+      "name": "kin_sibling"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: 0; obligations: [\"support_in_need\", \"hospitality\"]; paths: [[\"sibling\"]]; reciprocal: half_sibling; sex: null; shared_parents: one",
+      "name": "kin_half_sibling"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"honorific\"]; generation: 2; obligations: [\"care_elders\", \"hospitality\"]; paths: [[\"parent\", \"parent\"]]; reciprocal: grandchild; sex: null",
+      "name": "kin_grandparent"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: -2; obligations: [\"care_elders\", \"hospitality\"]; paths: [[\"child\", \"child\"]]; reciprocal: grandparent; sex: null",
+      "name": "kin_grandchild"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"honorific\", \"fostering\"]; generation: 1; obligations: [\"support_in_need\", \"hospitality\"]; paths: [[\"parent\", \"sibling\"], [\"parent\", \"sibling\", \"spouse\"]]; reciprocal: nephew; sex: male",
+      "name": "kin_uncle"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"honorific\", \"fostering\"]; generation: 1; obligations: [\"support_in_need\", \"hospitality\"]; paths: [[\"parent\", \"sibling\"], [\"parent\", \"sibling\", \"spouse\"]]; reciprocal: niece; sex: female",
+      "name": "kin_aunt"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: -1; obligations: [\"support_in_need\", \"hospitality\"]; paths: [[\"sibling\", \"child\"]]; reciprocal: uncle; sex: male",
+      "name": "kin_nephew"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: -1; obligations: [\"support_in_need\", \"hospitality\"]; paths: [[\"sibling\", \"child\"]]; reciprocal: aunt; sex: female",
+      "name": "kin_niece"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"honorific\"]; generation: 0; obligations: [\"hospitality\"]; paths: [[\"parent\", \"sibling\", \"child\"]]; reciprocal: cousin; sex: null",
+      "name": "kin_cousin"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: 1; obligations: [\"support_in_need\", \"hospitality\"]; paths: [[\"spouse\", \"parent\"]]; reciprocal: child_in_law; sex: null",
+      "name": "kin_parent_in_law"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: -1; obligations: [\"hospitality\"]; paths: [[\"child\", \"spouse\"]]; reciprocal: parent_in_law; sex: null",
+      "name": "kin_child_in_law"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: []; generation: 0; obligations: [\"hospitality\"]; paths: [[\"spouse\", \"sibling\"], [\"sibling\", \"spouse\"]]; reciprocal: sibling_in_law; sex: null",
+      "name": "kin_sibling_in_law"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"step_family\"]; generation: 1; obligations: [\"care_dependants\", \"hospitality\"]; paths: []; reciprocal: step_child; sex: null",
+      "name": "kin_step_parent"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"step_family\"]; generation: -1; obligations: [\"care_dependants\", \"hospitality\"]; paths: []; reciprocal: step_parent; sex: null",
+      "name": "kin_step_child"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"step_family\"]; generation: 0; obligations: [\"hospitality\"]; paths: []; reciprocal: step_sibling; sex: null",
+      "name": "kin_step_sibling"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"godparenthood\"]; generation: 1; obligations: [\"care_dependants\"]; paths: []; reciprocal: godchild; sex: null",
+      "name": "kin_godparent"
+    },
+    {
+      "category": "kin_term",
+      "definition": "attributions: [\"godparenthood\"]; generation: -1; obligations: [\"care_dependants\"]; paths: []; reciprocal: godparent; sex: null",
+      "name": "kin_godchild"
+    }
+  ],
+  "depends_on": [],
+  "description": "Kin terms. Generated from the 'bigville' pack (KIN_TERMS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": null,
+    "sha256": "91b7d071309204b27a270df58b75c7878f6854aff97850022e60137f53ed8be5",
+    "tables": [
+      "KIN_TERMS"
+    ]
+  },
+  "id": "gen_kinship",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

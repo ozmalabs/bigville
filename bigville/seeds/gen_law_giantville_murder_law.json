@@ -1,0 +1,43 @@
+{
+  "concepts": [
+    {
+      "category": "principle",
+      "definition": "murder is forbidden",
+      "name": "murder_is_forbidden"
+    },
+    {
+      "category": "institutional",
+      "definition": "constable investigates murder",
+      "name": "constable_investigates_murder"
+    },
+    {
+      "category": "operational",
+      "definition": "murder is reported_and_prosecuted",
+      "name": "murder_is_reported_and_prosecuted"
+    }
+  ],
+  "depends_on": [],
+  "description": "Prohibition of Murder (law, giantville_and_dependencies scope). Generated from the 'bigville' pack (LAWS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "giantville_murder_law",
+    "sha256": "f28851b1bad5e864f8517ecd8fd6af9e51aa8b04c358b7c943eff5086dd0e464",
+    "tables": [
+      "LAWS"
+    ]
+  },
+  "id": "gen_law_giantville_murder_law",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "enforcement: bigville; immutable: true; kind: law; origin: giantville; scope: giantville_and_dependencies",
+      "head": "Prohibition of Murder",
+      "name": "gen_law_giantville_murder_law_identity"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

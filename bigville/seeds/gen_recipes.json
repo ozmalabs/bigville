@@ -1,0 +1,837 @@
+{
+  "concepts": [],
+  "depends_on": [],
+  "description": "Recipes as know-how. Generated from the 'bigville' pack (RECIPES). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": null,
+    "sha256": "30ba8616b8b0b4af46668b923736613d83e055e273e05965f29a64eaf3f1a34c",
+    "tables": [
+      "RECIPES"
+    ]
+  },
+  "id": "gen_recipes",
+  "nodes": [],
+  "rules": [
+    {
+      "body": "difficulty: 0.8; in: [[\"lumber\", 1]]; time_minutes: 20",
+      "head": "saw_planks makes timber x2 from a sawyer",
+      "name": "saw_planks_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"wood\", 4]]; time_minutes: 60",
+      "head": "burn_charcoal makes charcoal x1 from a collier",
+      "name": "burn_charcoal_know_how"
+    },
+    {
+      "body": "difficulty: 3.0; in: [[\"ore\", 2], [\"charcoal\", 1]]; time_minutes: 90",
+      "head": "smelt_iron makes iron x1 from a smith",
+      "name": "smelt_iron_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 10; tools: [\"hammer\"]",
+      "head": "forge_nails makes nails x5 from a smith",
+      "name": "forge_nails_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 90; tools: [\"hammer\"]",
+      "head": "forge_knife makes knife x1 from a smith",
+      "name": "forge_knife_know_how"
+    },
+    {
+      "body": "difficulty: 0.7; in: [[\"timber\", 1]]; time_minutes: 60",
+      "head": "carve_rake makes rake x1 from a woodworker",
+      "name": "carve_rake_know_how"
+    },
+    {
+      "body": "byproducts: {\"scraps\": 10}; difficulty: 1.0; in: [[\"grain\", 30]]; time_minutes: 45",
+      "head": "grind_flour makes flour x20 from a miller",
+      "name": "grind_flour_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 120; tools: [\"hammer\"]",
+      "head": "forge_pick_head makes pick_head x1 from a smith",
+      "name": "forge_pick_head_know_how"
+    },
+    {
+      "body": "difficulty: 0.7; in: [[\"timber\", 1]]; time_minutes: 60",
+      "head": "carve_pick_handle makes pick_handle x1 from a woodworker",
+      "name": "carve_pick_handle_know_how"
+    },
+    {
+      "body": "difficulty: 0.5; in: [[\"pick_head\", 1], [\"pick_handle\", 1]]; time_minutes: 15; tools: [\"hammer\"]",
+      "head": "assemble_pick makes pick x1 from a smith",
+      "name": "assemble_pick_know_how"
+    },
+    {
+      "body": "difficulty: 2.5; in: [[\"iron\", 2], [\"charcoal\", 1]]; time_minutes: 180; tools: [\"hammer\"]",
+      "head": "forge_scythe makes scythe x1 from a smith",
+      "name": "forge_scythe_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"timber\", 1]]; time_minutes: 30; tools: [\"adze\"]",
+      "head": "rive_staves makes stave x3 from a cooper",
+      "name": "rive_staves_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"stave\", 6]]; time_minutes: 120; tools: [\"adze\"]",
+      "head": "raise_barrel makes barrel x1 from a cooper",
+      "name": "raise_barrel_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"hide\", 2]]; time_minutes: 240",
+      "head": "tan_hide makes leather x1 from a tanner",
+      "name": "tan_hide_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"leather\", 1]]; time_minutes: 120; tools: [\"awl\"]",
+      "head": "make_shoes makes shoes x1 from a cobbler",
+      "name": "make_shoes_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"wool\", 3]]; time_minutes: 180; tools: [\"loom\"]",
+      "head": "weave_cloth makes cloth x1 from a weaver",
+      "name": "weave_cloth_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"cloth\", 2]]; time_minutes: 150; tools: [\"needle\"]",
+      "head": "sew_coat makes coat x1 from a tailor",
+      "name": "sew_coat_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"cloth\", 3]]; time_minutes: 150; tools: [\"needle\"]",
+      "head": "sew_cloak makes cloak x1 from a tailor",
+      "name": "sew_cloak_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"cloth\", 1]]; time_minutes: 60; tools: [\"needle\"]",
+      "head": "sew_hat makes hat x1 from a tailor",
+      "name": "sew_hat_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"cloth\", 2]]; time_minutes: 120; tools: [\"needle\"]",
+      "head": "sew_breeches makes breeches x1 from a tailor",
+      "name": "sew_breeches_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"cloth\", 3]]; time_minutes: 200; tools: [\"needle\"]",
+      "head": "sew_dress makes dress x1 from a tailor",
+      "name": "sew_dress_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; in: [[\"cloth\", 1]]; time_minutes: 40; tools: [\"needle\"]",
+      "head": "sew_smock makes smock x1 from a tailor",
+      "name": "sew_smock_know_how"
+    },
+    {
+      "body": "difficulty: 0.9; in: [[\"cloth\", 2]]; time_minutes: 80; tools: [\"needle\"]",
+      "head": "sew_tunic makes tunic x1 from a tailor",
+      "name": "sew_tunic_know_how"
+    },
+    {
+      "body": "difficulty: 0.5; in: [[\"cloth\", 1]]; time_minutes: 30; tools: [\"needle\"]",
+      "head": "sew_cap makes cap x1 from a tailor",
+      "name": "sew_cap_know_how"
+    },
+    {
+      "body": "difficulty: 0.5; in: [[\"cloth\", 1]]; time_minutes: 30; tools: [\"needle\"]",
+      "head": "sew_apron makes apron x1 from a tailor",
+      "name": "sew_apron_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"wood\", 2]]; time_minutes: 60; tools: [\"awl\"]",
+      "head": "make_clogs makes clogs x1 from a cobbler",
+      "name": "make_clogs_know_how"
+    },
+    {
+      "body": "common: false; difficulty: 2.8; in: [[\"silk\", 3]]; time_minutes: 360; tools: [\"needle\"]",
+      "head": "sew_gown makes gown x1 from a tailor",
+      "name": "sew_gown_know_how"
+    },
+    {
+      "body": "common: false; difficulty: 2.5; in: [[\"velvet\", 2]]; time_minutes: 300; tools: [\"needle\"]",
+      "head": "sew_doublet makes doublet x1 from a tailor",
+      "name": "sew_doublet_know_how"
+    },
+    {
+      "body": "common: false; difficulty: 2.2; in: [[\"fur\", 3]]; time_minutes: 260; tools: [\"needle\"]",
+      "head": "sew_fur_cloak makes fur_cloak x1 from a tailor",
+      "name": "sew_fur_cloak_know_how"
+    },
+    {
+      "body": "common: false; difficulty: 2.3; in: [[\"silk\", 2]]; time_minutes: 240; tools: [\"needle\"]",
+      "head": "sew_silk_shirt makes silk_shirt x1 from a tailor",
+      "name": "sew_silk_shirt_know_how"
+    },
+    {
+      "body": "common: false; difficulty: 2.0; in: [[\"velvet\", 1]]; time_minutes: 180; tools: [\"needle\"]",
+      "head": "sew_fine_hat makes fine_hat x1 from a tailor",
+      "name": "sew_fine_hat_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"timber\", 2]]; time_minutes: 90; tools: [\"saw\"]",
+      "head": "make_chair makes chair x1 from a woodworker",
+      "name": "make_chair_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"timber\", 4]]; time_minutes: 150; tools: [\"saw\"]",
+      "head": "make_table makes table x1 from a woodworker",
+      "name": "make_table_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"timber\", 5]]; time_minutes: 240; tools: [\"saw\"]",
+      "head": "make_bed makes bed x1 from a woodworker",
+      "name": "make_bed_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"timber\", 3]]; time_minutes: 120; tools: [\"saw\"]",
+      "head": "make_chest makes chest x1 from a woodworker",
+      "name": "make_chest_know_how"
+    },
+    {
+      "body": "difficulty: 3.0; in: [[\"iron\", 3], [\"charcoal\", 2]]; time_minutes: 240; tools: [\"hammer\"]",
+      "head": "forge_plough makes plough x1 from a smith",
+      "name": "forge_plough_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"timber\", 1]]; time_minutes: 90; tools: [\"saw\"]",
+      "head": "make_wheel makes wheel x1 from a woodworker",
+      "name": "make_wheel_know_how"
+    },
+    {
+      "body": "difficulty: 2.5; in: [[\"timber\", 6], [\"wheel\", 2]]; time_minutes: 300; tools: [\"saw\"]",
+      "head": "make_cart makes cart x1 from a woodworker",
+      "name": "make_cart_know_how"
+    },
+    {
+      "body": "difficulty: 3.5; in: [[\"timber\", 10], [\"wheel\", 4]]; time_minutes: 480; tools: [\"saw\"]",
+      "head": "make_wagon makes wagon x1 from a woodworker",
+      "name": "make_wagon_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"timber\", 4]]; time_minutes: 180; tools: [\"saw\"]",
+      "head": "make_loom makes loom x1 from a woodworker",
+      "name": "make_loom_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"timber\", 1]]; time_minutes: 45; tools: [\"knife\"]",
+      "head": "carve_wooden_mug makes wooden_mug x1 from a woodworker",
+      "name": "carve_wooden_mug_know_how"
+    },
+    {
+      "body": "difficulty: 1.4; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 75; tools: [\"hammer\"]",
+      "head": "forge_metal_mug makes metal_mug x1 from a smith",
+      "name": "forge_metal_mug_know_how"
+    },
+    {
+      "body": "difficulty: 0.9; in: [[\"timber\", 1]]; time_minutes: 60; tools: [\"knife\"]",
+      "head": "carve_wooden_bowl makes wooden_bowl x1 from a woodworker",
+      "name": "carve_wooden_bowl_know_how"
+    },
+    {
+      "body": "difficulty: 1.6; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 90; tools: [\"hammer\"]",
+      "head": "forge_metal_bowl makes metal_bowl x1 from a smith",
+      "name": "forge_metal_bowl_know_how"
+    },
+    {
+      "body": "difficulty: 0.7; in: [[\"timber\", 1]]; time_minutes: 45; tools: [\"knife\"]",
+      "head": "carve_wooden_ladle makes wooden_ladle x1 from a woodworker",
+      "name": "carve_wooden_ladle_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 60; tools: [\"hammer\"]",
+      "head": "forge_metal_ladle makes metal_ladle x1 from a smith",
+      "name": "forge_metal_ladle_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; in: [[\"timber\", 1]]; time_minutes: 35; tools: [\"knife\"]",
+      "head": "carve_wooden_serving_spoon makes wooden_serving_spoon x1 from a woodworker",
+      "name": "carve_wooden_serving_spoon_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 50; tools: [\"hammer\"]",
+      "head": "forge_metal_serving_spoon makes metal_serving_spoon x1 from a smith",
+      "name": "forge_metal_serving_spoon_know_how"
+    },
+    {
+      "body": "difficulty: 0.7; in: [[\"timber\", 1]]; time_minutes: 40; tools: [\"knife\"]",
+      "head": "carve_wooden_dipper makes wooden_dipper x1 from a woodworker",
+      "name": "carve_wooden_dipper_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"grain\", 3], [\"water\", 4], [\"fuel\", 2]]; method_tools: [\"mash_tun\"]; preparation: {\"methods\": [\"hearth_pot\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 480",
+      "head": "brew_ale makes ale x5 from a brewer",
+      "name": "brew_ale_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"cloth\", 1], [\"dyestuff\", 1], [\"fuel\", 1]]; time_minutes: 120; tools: [\"dye_vat\"]",
+      "head": "dye_cloth makes coloured_cloth x1 from a dyer",
+      "name": "dye_cloth_know_how"
+    },
+    {
+      "body": "common: false; difficulty: 2.0; in: [[\"rag\", 3], [\"water\", 2]]; time_minutes: 240; tools: [\"press\"]",
+      "head": "make_paper makes paper x5 from a papermaker",
+      "name": "make_paper_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"paper\", 1], [\"ink\", 1]]; time_minutes: 60; tools: [\"printing_press\"]",
+      "head": "print_newspaper makes newspaper x20 from a printer",
+      "name": "print_newspaper_know_how"
+    },
+    {
+      "body": "difficulty: 0.5; in: [[\"ham\", 1], [\"bread\", 1]]; time_minutes: 10",
+      "head": "make_sandwich makes sandwich x1 from a cook",
+      "name": "make_sandwich_know_how"
+    },
+    {
+      "body": "common: false; difficulty: 1.5; in: [[\"soot\", 1], [\"oil\", 1]]; time_minutes: 120",
+      "head": "make_ink makes ink x3 from a inkmaker",
+      "name": "make_ink_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"flour\", 40], [\"water\", 20], [\"fuel\", 6]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 120",
+      "head": "bake_bread makes bread x60 from a baker",
+      "name": "bake_bread_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; fallback: true; in: [[\"flour\", 2], [\"water\", 1], [\"fuel\", 1]]; open: true; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\", \"coal_griddle\", \"coal_spit\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "bake_bread_at_home makes bread x3 from a cook",
+      "name": "bake_bread_at_home_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"oats\", 1], [\"water\", 2], [\"cabbage\", 1], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "make_pottage makes pottage x3 from a cook",
+      "name": "make_pottage_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"beef\", 1], [\"carrot\", 1], [\"onion\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 150",
+      "head": "make_stew makes stew x3 from a cook",
+      "name": "make_stew_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"pork\", 1], [\"salt\", 1], [\"fuel\", 1]]; method_tools: [\"spit\"]; preparation: {\"methods\": [\"coal_spit\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 120",
+      "head": "roast_meat makes roast x1 from a cook",
+      "name": "roast_meat_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"flour\", 2], [\"beef\", 1], [\"onion\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 150",
+      "head": "make_pie makes pie x1 from a baker",
+      "name": "make_pie_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"milk\", 4]]; time_minutes: 60; tools: [\"churn\"]",
+      "head": "churn_butter makes butter x1 from a dairymaid",
+      "name": "churn_butter_know_how"
+    },
+    {
+      "body": "byproducts: {\"scraps\": 2}; difficulty: 1.5; in: [[\"milk\", 6], [\"salt\", 1]]; time_minutes: 240; tools: [\"press\"]",
+      "head": "make_cheese makes cheese x2 from a dairymaid",
+      "name": "make_cheese_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"pork\", 2], [\"salt\", 1]]; time_minutes: 60",
+      "head": "salt_pork makes bacon x2 from a cook",
+      "name": "salt_pork_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; in: [[\"grain\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 45",
+      "head": "make_gruel makes gruel x3 from a cook",
+      "name": "make_gruel_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"oats\", 1], [\"milk\", 1], [\"water\", 1], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 60",
+      "head": "make_porridge makes porridge x3 from a cook",
+      "name": "make_porridge_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"oats\", 2], [\"flour\", 1], [\"water\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "bake_oatcakes makes oatcake x4 from a baker",
+      "name": "bake_oatcakes_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"flour\", 2], [\"water\", 1], [\"oil\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 75",
+      "head": "bake_flatbread makes flatbread x4 from a baker",
+      "name": "bake_flatbread_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"flour\", 2], [\"eggs\", 1], [\"milk\", 1], [\"fuel\", 1]]; method_tools: [\"griddle\"]; preparation: {\"methods\": [\"coal_griddle\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 60",
+      "head": "make_pancakes makes pancake x5 from a cook",
+      "name": "make_pancakes_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"flour\", 2], [\"eggs\", 1], [\"water\", 1], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "make_dumplings makes dumpling x6 from a cook",
+      "name": "make_dumplings_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"flour\", 2], [\"eggs\", 1], [\"fuel\", 1]]; method_tools: [\"board\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\", \"coal_griddle\", \"coal_spit\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "make_noodles makes noodles x4 from a cook",
+      "name": "make_noodles_know_how"
+    },
+    {
+      "body": "difficulty: 0.9; in: [[\"flour\", 2], [\"water\", 1], [\"salt\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 75",
+      "head": "bake_crackers makes crackers x6 from a baker",
+      "name": "bake_crackers_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"potato\", 1], [\"carrot\", 1], [\"onion\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 100",
+      "head": "make_vegetable_soup makes vegetable_soup x4 from a cook",
+      "name": "make_vegetable_soup_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"turnip\", 1], [\"parsnip\", 1], [\"leek\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 100",
+      "head": "make_root_soup makes root_soup x4 from a cook",
+      "name": "make_root_soup_know_how"
+    },
+    {
+      "body": "difficulty: 1.1; in: [[\"bean\", 1], [\"carrot\", 1], [\"onion\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 120",
+      "head": "make_bean_stew makes bean_stew x4 from a cook",
+      "name": "make_bean_stew_know_how"
+    },
+    {
+      "body": "difficulty: 1.1; in: [[\"lentil\", 1], [\"onion\", 1], [\"garlic\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 120",
+      "head": "make_lentil_stew makes lentil_stew x4 from a cook",
+      "name": "make_lentil_stew_know_how"
+    },
+    {
+      "body": "difficulty: 1.4; in: [[\"fish\", 1], [\"potato\", 1], [\"onion\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 130",
+      "head": "make_fish_stew makes fish_stew x3 from a cook",
+      "name": "make_fish_stew_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"sausage\", 1], [\"bean\", 1], [\"onion\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 125",
+      "head": "make_sausage_stew makes sausage_stew x4 from a cook",
+      "name": "make_sausage_stew_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"bacon\", 1], [\"eggs\", 2], [\"fuel\", 1]]; method_tools: [\"griddle\"]; preparation: {\"methods\": [\"coal_griddle\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 45",
+      "head": "make_bacon_eggs makes bacon_eggs x2 from a cook",
+      "name": "make_bacon_eggs_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"poultry\", 1], [\"salt\", 1], [\"sage\", 1], [\"fuel\", 1]]; method_tools: [\"spit\"]; preparation: {\"methods\": [\"coal_spit\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 135",
+      "head": "roast_poultry makes roast_poultry x2 from a cook",
+      "name": "roast_poultry_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"fish\", 1], [\"salt\", 1], [\"thyme\", 1], [\"fuel\", 1]]; method_tools: [\"spit\"]; preparation: {\"methods\": [\"coal_spit\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "roast_fish makes roast_fish x2 from a cook",
+      "name": "roast_fish_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"cabbage\", 1], [\"pork\", 1], [\"grain\", 1], [\"onion\", 1], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 160",
+      "head": "stuffed_cabbage makes stuffed_cabbage x4 from a cook",
+      "name": "stuffed_cabbage_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"eggs\", 2], [\"milk\", 1], [\"onion\", 1], [\"fuel\", 1]]; method_tools: [\"griddle\"]; preparation: {\"methods\": [\"coal_griddle\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 50",
+      "head": "make_omelette makes omelette x2 from a cook",
+      "name": "make_omelette_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"flour\", 2], [\"fish\", 1], [\"onion\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 150",
+      "head": "make_fish_pie makes fish_pie x2 from a baker",
+      "name": "make_fish_pie_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"flour\", 2], [\"beef\", 1], [\"onion\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 150",
+      "head": "make_meat_pie makes meat_pie x2 from a baker",
+      "name": "make_meat_pie_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"flour\", 1], [\"mutton\", 1], [\"potato\", 2], [\"onion\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 180",
+      "head": "make_shepherds_pie makes shepherds_pie x3 from a baker",
+      "name": "make_shepherds_pie_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"flour\", 2], [\"cheese\", 1], [\"eggs\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 145",
+      "head": "make_cheese_pie makes cheese_pie x2 from a baker",
+      "name": "make_cheese_pie_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; in: [[\"bread\", 1], [\"butter\", 1]]; time_minutes: 10",
+      "head": "make_buttered_bread makes buttered_bread x2 from a cook",
+      "name": "make_buttered_bread_know_how"
+    },
+    {
+      "body": "difficulty: 1.7; in: [[\"flour\", 2], [\"apple\", 1], [\"berry\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 150",
+      "head": "make_fruit_pie makes fruit_pie x2 from a baker",
+      "name": "make_fruit_pie_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"flour\", 2], [\"eggs\", 1], [\"milk\", 1], [\"honey\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 150",
+      "head": "bake_cake makes cake x3 from a baker",
+      "name": "bake_cake_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"flour\", 2], [\"honey\", 1], [\"eggs\", 1], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 130",
+      "head": "bake_honey_cake makes honey_cake x3 from a baker",
+      "name": "bake_honey_cake_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"milk\", 2], [\"eggs\", 1], [\"honey\", 1], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "make_pudding makes pudding x3 from a cook",
+      "name": "make_pudding_know_how"
+    },
+    {
+      "body": "difficulty: 1.4; in: [[\"milk\", 4], [\"salt\", 1]]; time_minutes: 180; tools: [\"press\"]",
+      "head": "make_cream_curd makes cream_curd x2 from a dairymaid",
+      "name": "make_cream_curd_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"milk\", 3], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 180",
+      "head": "make_yogurt makes yogurt x2 from a dairymaid",
+      "name": "make_yogurt_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"cucumber\", 2], [\"vinegar\", 1], [\"salt\", 1]]; time_minutes: 120; tools: [\"barrel\"]",
+      "head": "make_pickles makes pickles x3 from a cook",
+      "name": "make_pickles_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"cabbage\", 3], [\"salt\", 1]]; time_minutes: 120; tools: [\"barrel\"]",
+      "head": "make_sauerkraut makes sauerkraut x3 from a cook",
+      "name": "make_sauerkraut_know_how"
+    },
+    {
+      "body": "difficulty: 0.7; in: [[\"apple\", 3]]; time_minutes: 180; tools: [\"drying_rack\"]",
+      "head": "dry_fruit makes dried_fruit x2 from a cook",
+      "name": "dry_fruit_know_how"
+    },
+    {
+      "body": "difficulty: 1.1; in: [[\"berry\", 3], [\"sugar\", 1], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "make_fruit_jam makes fruit_jam x3 from a cook",
+      "name": "make_fruit_jam_know_how"
+    },
+    {
+      "body": "difficulty: 0.9; in: [[\"fish\", 2], [\"salt\", 1]]; time_minutes: 75; tools: [\"barrel\"]",
+      "head": "salt_fish makes salt_fish x2 from a cook",
+      "name": "salt_fish_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"fish\", 2], [\"salt\", 1], [\"fuel\", 1]]; time_minutes: 150; tools: [\"smoking_rack\"]",
+      "head": "smoke_fish makes smoked_fish x2 from a cook",
+      "name": "smoke_fish_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"apple\", 4], [\"water\", 2], [\"fuel\", 2]]; method_tools: [\"mash_tun\"]; preparation: {\"methods\": [\"hearth_pot\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 360",
+      "head": "brew_cider makes cider x5 from a brewer",
+      "name": "brew_cider_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"honey\", 2], [\"water\", 2], [\"fuel\", 2]]; method_tools: [\"mash_tun\"]; preparation: {\"methods\": [\"hearth_pot\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 360",
+      "head": "brew_mead makes mead x4 from a brewer",
+      "name": "brew_mead_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"paper\", 3], [\"ink\", 1]]; time_minutes: 180; tools: [\"quill\"]",
+      "head": "bind_book makes book x1 from a scribe",
+      "name": "bind_book_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"lumber\", 1]]; open: true; time_minutes: 40; tools: [\"axe\"]",
+      "head": "split_firewood makes wood x4 from a forester",
+      "name": "split_firewood_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; gathered_from: woodlot; in: []; open: true; seasons: [\"winter\", \"spring\"]; time_minutes: 60",
+      "head": "lift_saplings makes sapling x3 from a forester",
+      "name": "lift_saplings_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; gathered_from: woodlot; in: []; open: true; seasons: [\"summer\"]; time_minutes: 90",
+      "head": "gather_berries makes berry x4 from a forester",
+      "name": "gather_berries_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; gathered_from: woodlot; in: []; open: true; seasons: [\"autumn\"]; time_minutes: 90",
+      "head": "gather_mushrooms makes mushroom x3 from a forester",
+      "name": "gather_mushrooms_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; gathered_from: orchard; in: []; open: true; seasons: [\"autumn\"]; time_minutes: 90",
+      "head": "pick_apples makes apple x6 from a farmer",
+      "name": "pick_apples_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; gathered_from: orchard; in: []; open: true; seasons: [\"autumn\"]; time_minutes: 90",
+      "head": "pick_pears makes pear x5 from a farmer",
+      "name": "pick_pears_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; gathered_from: orchard; in: []; open: true; seasons: [\"summer\"]; time_minutes: 90",
+      "head": "pick_plums makes plum x5 from a farmer",
+      "name": "pick_plums_know_how"
+    },
+    {
+      "body": "difficulty: 0.3; gathered_from: kitchen_garden; in: []; open: true; seasons: [\"spring\", \"summer\"]; time_minutes: 30",
+      "head": "cut_sage makes sage x2 from a farmer",
+      "name": "cut_sage_know_how"
+    },
+    {
+      "body": "difficulty: 0.3; gathered_from: kitchen_garden; in: []; open: true; seasons: [\"spring\", \"summer\"]; time_minutes: 30",
+      "head": "cut_thyme makes thyme x2 from a farmer",
+      "name": "cut_thyme_know_how"
+    },
+    {
+      "body": "difficulty: 0.3; gathered_from: kitchen_garden; in: []; open: true; seasons: [\"spring\", \"summer\"]; time_minutes: 30",
+      "head": "cut_parsley makes parsley x2 from a farmer",
+      "name": "cut_parsley_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; gathered_from: quarry; in: []; time_minutes: 120; tools: [\"pick\"]",
+      "head": "dig_ore makes ore x2 from a quarrier",
+      "name": "dig_ore_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 90; tools: [\"hammer\"]",
+      "head": "forge_hammer makes hammer x1 from a smith",
+      "name": "forge_hammer_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 120; tools: [\"hammer\"]",
+      "head": "forge_saw makes saw x1 from a smith",
+      "name": "forge_saw_know_how"
+    },
+    {
+      "body": "difficulty: 1.6; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 100; tools: [\"hammer\"]",
+      "head": "forge_adze makes adze x1 from a smith",
+      "name": "forge_adze_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 30; tools: [\"hammer\"]",
+      "head": "forge_awl makes awl x1 from a smith",
+      "name": "forge_awl_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 40; tools: [\"hammer\"]",
+      "head": "forge_needle makes needle x1 from a smith",
+      "name": "forge_needle_know_how"
+    },
+    {
+      "body": "difficulty: 1.5; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 90; tools: [\"hammer\"]",
+      "head": "forge_cleaver makes cleaver x1 from a smith",
+      "name": "forge_cleaver_know_how"
+    },
+    {
+      "body": "difficulty: 1.4; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 120; tools: [\"hammer\"]",
+      "head": "forge_spade makes spade x1 from a smith",
+      "name": "forge_spade_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"iron\", 2], [\"charcoal\", 1]]; time_minutes: 150; tools: [\"hammer\"]",
+      "head": "forge_axe makes axe x1 from a smith",
+      "name": "forge_axe_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 45; tools: [\"hammer\"]",
+      "head": "forge_hinge makes hinge x1 from a smith",
+      "name": "forge_hinge_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"iron\", 2], [\"charcoal\", 1]]; time_minutes: 120; tools: [\"hammer\"]",
+      "head": "forge_pot makes pot x1 from a smith",
+      "name": "forge_pot_know_how"
+    },
+    {
+      "body": "difficulty: 1.4; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 90; tools: [\"hammer\"]",
+      "head": "forge_pan makes pan x1 from a smith",
+      "name": "forge_pan_know_how"
+    },
+    {
+      "body": "difficulty: 1.4; in: [[\"iron\", 2], [\"charcoal\", 1]]; time_minutes: 90; tools: [\"hammer\"]",
+      "head": "forge_griddle makes griddle x1 from a smith",
+      "name": "forge_griddle_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"iron\", 1], [\"charcoal\", 1]]; time_minutes: 60; tools: [\"hammer\"]",
+      "head": "forge_spit makes spit x1 from a smith",
+      "name": "forge_spit_know_how"
+    },
+    {
+      "body": "difficulty: 0.7; in: [[\"timber\", 1]]; time_minutes: 60; tools: [\"saw\"]",
+      "head": "make_stool makes stool x1 from a woodworker",
+      "name": "make_stool_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; in: [[\"timber\", 1]]; time_minutes: 30; tools: [\"saw\"]",
+      "head": "make_board makes board x1 from a woodworker",
+      "name": "make_board_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"timber\", 2]]; time_minutes: 90; tools: [\"saw\"]",
+      "head": "make_drying_rack makes drying_rack x1 from a woodworker",
+      "name": "make_drying_rack_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"timber\", 2]]; time_minutes: 90; tools: [\"saw\"]",
+      "head": "make_smoking_rack makes smoking_rack x1 from a woodworker",
+      "name": "make_smoking_rack_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"timber\", 4], [\"nails\", 4]]; time_minutes: 240; tools: [\"saw\"]",
+      "head": "make_press makes press x1 from a woodworker",
+      "name": "make_press_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"stave\", 3]]; time_minutes: 60; tools: [\"adze\"]",
+      "head": "make_bucket makes bucket x1 from a cooper",
+      "name": "make_bucket_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"stave\", 4]]; time_minutes: 90; tools: [\"adze\"]",
+      "head": "make_churn makes churn x1 from a cooper",
+      "name": "make_churn_know_how"
+    },
+    {
+      "body": "difficulty: 2.2; in: [[\"stave\", 10]]; time_minutes: 240; tools: [\"adze\"]",
+      "head": "make_mash_tun makes mash_tun x1 from a cooper",
+      "name": "make_mash_tun_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"stave\", 8]]; time_minutes: 200; tools: [\"adze\"]",
+      "head": "make_dye_vat makes dye_vat x1 from a cooper",
+      "name": "make_dye_vat_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"stone\", 1]]; time_minutes: 45; tools: [\"hammer\"]",
+      "head": "dress_stone makes blocks x1 from a mason",
+      "name": "dress_stone_know_how"
+    },
+    {
+      "body": "difficulty: 2.0; in: [[\"blocks\", 8]]; time_minutes: 480; tools: [\"hammer\"]",
+      "head": "build_oven makes oven x1 from a mason",
+      "name": "build_oven_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"wool\", 1]]; open: true; time_minutes: 90",
+      "head": "spin_thread makes thread x2 from a weaver",
+      "name": "spin_thread_know_how"
+    },
+    {
+      "body": "difficulty: 1.6; in: [[\"flax\", 3]]; time_minutes: 240; tools: [\"loom\"]",
+      "head": "spin_linen makes linen x1 from a weaver",
+      "name": "spin_linen_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"thread\", 4]]; time_minutes: 180",
+      "head": "knit_net makes net x1 from a weaver",
+      "name": "knit_net_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"linen\", 2], [\"thread\", 1]]; time_minutes: 90; tools: [\"needle\"]",
+      "head": "sew_shirt makes shirt x1 from a tailor",
+      "name": "sew_shirt_know_how"
+    },
+    {
+      "body": "difficulty: 0.2; in: [[\"cloth\", 1]]; open: true; time_minutes: 15",
+      "head": "cut_rags makes rag x6 from a tailor",
+      "name": "cut_rags_know_how"
+    },
+    {
+      "body": "difficulty: 1.8; in: [[\"leather\", 2]]; time_minutes: 180; tools: [\"awl\"]",
+      "head": "make_boots makes boots x1 from a cobbler",
+      "name": "make_boots_know_how"
+    },
+    {
+      "body": "difficulty: 0.5; in: [[\"feather\", 1]]; time_minutes: 15; tools: [\"knife\"]",
+      "head": "cut_quill makes quill x1 from a scribe",
+      "name": "cut_quill_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"pork\", 3], [\"salt\", 1]]; time_minutes: 90; tools: [\"cleaver\"]",
+      "head": "cure_ham makes ham x2 from a butcher",
+      "name": "cure_ham_know_how"
+    },
+    {
+      "body": "difficulty: 1.3; in: [[\"pork\", 2], [\"salt\", 1], [\"sage\", 0.5], [\"pepper\", 0.5]]; time_minutes: 90; tools: [\"cleaver\"]",
+      "head": "make_sausage makes sausage x3 from a butcher",
+      "name": "make_sausage_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"pork\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 90",
+      "head": "render_lard makes lard x1 from a butcher",
+      "name": "render_lard_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; in: [[\"milk\", 3]]; time_minutes: 30",
+      "head": "skim_cream makes cream x1 from a dairymaid",
+      "name": "skim_cream_know_how"
+    },
+    {
+      "body": "difficulty: 1.4; in: [[\"barley\", 3], [\"water\", 1], [\"fuel\", 1]]; time_minutes: 240",
+      "head": "malt_barley makes malt x3 from a brewer",
+      "name": "malt_barley_know_how"
+    },
+    {
+      "body": "difficulty: 2.2; in: [[\"malt\", 3], [\"hops\", 1], [\"water\", 4], [\"yeast\", 1], [\"fuel\", 2]]; method_tools: [\"mash_tun\"]; preparation: {\"methods\": [\"hearth_pot\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 480",
+      "head": "brew_beer makes beer x5 from a brewer",
+      "name": "brew_beer_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"grain\", 1], [\"water\", 1]]; time_minutes: 60",
+      "head": "propagate_yeast makes yeast x2 from a brewer",
+      "name": "propagate_yeast_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; in: [[\"cider\", 2]]; time_minutes: 120; tools: [\"barrel\"]",
+      "head": "make_vinegar makes vinegar x2 from a brewer",
+      "name": "make_vinegar_know_how"
+    },
+    {
+      "body": "byproducts: {\"scraps\": 10}; difficulty: 1.0; in: [[\"rye\", 30]]; time_minutes: 45",
+      "head": "grind_rye makes flour x20 from a miller",
+      "name": "grind_rye_know_how"
+    },
+    {
+      "body": "difficulty: 1.2; in: [[\"linseed\", 3]]; time_minutes: 60; tools: [\"press\"]",
+      "head": "press_linseed_oil makes oil x1 from a miller",
+      "name": "press_linseed_oil_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; in: [[\"mustard_seed\", 2], [\"vinegar\", 1]]; time_minutes: 30",
+      "head": "make_mustard makes mustard x2 from a cook",
+      "name": "make_mustard_know_how"
+    },
+    {
+      "body": "difficulty: 0.4; in: [[\"lettuce\", 2], [\"cucumber\", 1], [\"parsley\", 1]]; time_minutes: 15",
+      "head": "make_salad makes salad x3 from a cook",
+      "name": "make_salad_know_how"
+    },
+    {
+      "body": "difficulty: 0.9; in: [[\"pea\", 2], [\"onion\", 1], [\"water\", 2], [\"fuel\", 1]]; method_tools: [\"pot\"]; preparation: {\"methods\": [\"hearth_pot\", \"oven_baked\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 100",
+      "head": "make_pea_soup makes pea_soup x4 from a cook",
+      "name": "make_pea_soup_know_how"
+    },
+    {
+      "body": "difficulty: 1.0; in: [[\"beet\", 2], [\"vinegar\", 1], [\"salt\", 1]]; time_minutes: 90; tools: [\"barrel\"]",
+      "head": "pickle_beets makes pickles x3 from a cook",
+      "name": "pickle_beets_know_how"
+    },
+    {
+      "body": "difficulty: 2.2; in: [[\"flour\", 2], [\"honey\", 1], [\"eggs\", 1], [\"cinnamon\", 0.5], [\"ginger\", 0.5], [\"nutmeg\", 0.5], [\"fuel\", 1]]; method_tools: [\"oven\"]; preparation: {\"methods\": [\"oven_baked\", \"hearth_pot\", \"coal_pan\"], \"requires\": [\"heat\", \"containment\"]}; time_minutes: 150",
+      "head": "bake_spice_cake makes spice_cake x3 from a baker",
+      "name": "bake_spice_cake_know_how"
+    },
+    {
+      "body": "difficulty: 0.8; in: [[\"candle_fat\", 1], [\"thread\", 0.5], [\"fuel\", 0.5]]; time_minutes: 60; tools: [\"pot\"]",
+      "head": "make_candles makes candle x1 from a chandler",
+      "name": "make_candles_know_how"
+    },
+    {
+      "body": "difficulty: 0.6; in: [[\"straw\", 4]]; open: true; time_minutes: 60",
+      "head": "make_thatch makes thatch x2 from a farmer",
+      "name": "make_thatch_know_how"
+    },
+    {
+      "body": "difficulty: 0.5; in: [[\"night_soil\", 2], [\"compostable\", 2]]; open: true; time_minutes: 60; tools: [\"spade\"]",
+      "head": "make_compost makes compost x3 from a farmer",
+      "name": "make_compost_know_how"
+    }
+  ],
+  "self_load_only": true,
+  "version": "1.0.0"
+}
