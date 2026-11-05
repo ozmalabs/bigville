@@ -586,7 +586,11 @@
       "file": "population/household_composition.json"
     },
     {
-      "name": "FOUNDING_ROLES",
+      "name": "FOUNDING_JOBS",
+      "file": "population/founding_cast.json"
+    },
+    {
+      "name": "FOUNDING_AGE",
       "file": "population/founding_cast.json"
     },
     {

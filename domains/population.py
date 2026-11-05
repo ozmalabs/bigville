@@ -10,6 +10,7 @@ from domains.world_affordances import (
     ANIMALS,
     CROPS,
     ITEMS,
+    LIFE_STAGES,
     PASTURE_YIELDS,
     RECIPES,
     WATER_SOURCES,
@@ -63,9 +64,10 @@ PARENT_AGE_AT_BIRTH = _PACK["PARENT_AGE_AT_BIRTH"]
 KIN_MODEL = _PACK["KIN_MODEL"]
 KINSHIP_STREAM = _PACK["KINSHIP_STREAM"]
 HOUSEHOLD_TARGETS = _PACK["HOUSEHOLD_TARGETS"]
-# The founding cast (Phase 016a): who lives in the founding town and how their traits are drawn.
+# The founding cast (Phase 016a; reshaped in 016b): who lives in the founding town and how their traits are drawn.
 # Empty in a pack with no founding town. Sources and APPROX marks: packs/bigville/population/founding_*.json.
-FOUNDING_ROLES = _PACK["FOUNDING_ROLES"]
+FOUNDING_JOBS = _PACK["FOUNDING_JOBS"]
+FOUNDING_AGE = _PACK["FOUNDING_AGE"]
 FOUNDING_CLASS = _PACK["FOUNDING_CLASS"]
 FOUNDING_ANCHOR_NAMES = _PACK["FOUNDING_ANCHOR_NAMES"]
 FOUNDING_DRAW_BOUNDS = _PACK["FOUNDING_DRAW_BOUNDS"]
@@ -451,22 +453,98 @@ def _sex_of(rng, sex=None):
     return "female" if rng.random() < 0.5 else "male"
 
 
+def draw_founding_ages(n, seed):
+    """Ages (whole years) of `n` founders: a clipped Normal from FOUNDING_AGE on its own stream
+    (seed + FOUNDING_AGE['stream']), so no other draw of the founding town moves when ages change."""
+    import numpy as np
+    rng = np.random.default_rng(int(seed) + int(FOUNDING_AGE["stream"]))
+    return [int(round(_clipped_normal(rng, FOUNDING_AGE))) for _ in range(int(n))]
+
+
+def draw_founding_households(ages, sexes, rng):
+    """Group the founders into households (Phase 016b). Each household is:
+
+    * a head: the first founder, in a seeded order, aged at least AGE_AT_FIRST_UNION.male.mean (a
+      founder who has had time to marry and have children); if none is left, the first left over;
+    * married with probability EVER_MARRIED. The spouse lives in the household only if an opposite-sex
+      founder of similar age (within ten years, both adult) is free and a SPOUSE_IN_VILLAGE draw succeeds;
+      otherwise the spouse is outside the village (the genealogy records the union either way);
+    * the head's adult children: free founders at least PARENT_AGE_AT_BIRTH.female.min years younger than
+      each parent (the youngest parent sets the limit), filled up to the drawn size;
+    * for a household whose drawn extended kin is a sibling, one free adult founder whose age is within
+      SIBLING_MAX_GAP_YEARS of the head's. Grandparents and other kin are not founders, so an extended
+      household drawn with them has no founder kin (see the report).
+
+    The size is the draw_household size (HOUSEHOLD_SIZE): it caps the household, it does not force it.
+    Children under 18 are not modelled, so a household holds only the founders who fit the rules above.
+    Returns a list of dicts with founder indices: head, spouse, children, siblings, members, size_drawn,
+    extended_drawn, kin_drawn, extended (a sibling lives in it), married (a union, co-resident or not)."""
+    adult = float(LIFE_STAGES["adult"]["age_min"])
+    head_min = float(AGE_AT_FIRST_UNION["male"]["mean"])
+    gap = float(PARENT_AGE_AT_BIRTH["female"]["min"])
+    sibling_gap = float(KIN_MODEL["SIBLING_MAX_GAP_YEARS"])
+    order = [int(i) for i in rng.permutation(len(ages))]
+    taken, households = set(), []
+    while len(taken) < len(ages):
+        pool = [i for i in order if i not in taken]
+        eligible = [i for i in pool if ages[i] >= head_min]
+        head = (eligible or pool)[0]
+        taken.add(head)
+        drawn = draw_household(rng)
+        married = bool(rng.random() < float(KIN_MODEL["EVER_MARRIED"]))
+        spouse = None
+        if married:
+            cands = [i for i in order if i not in taken and sexes[i] != sexes[head]
+                     and abs(ages[i] - ages[head]) <= 10 and min(ages[i], ages[head]) >= adult]
+            if cands and rng.random() < float(KIN_MODEL["SPOUSE_IN_VILLAGE"]):
+                spouse = cands[0]
+                taken.add(spouse)
+        parents = [ages[head]] + ([ages[spouse]] if spouse is not None else [])
+        slots = drawn["size"] - (1 if spouse is None else 2)
+        children = []
+        for i in order:
+            if slots <= 0:
+                break
+            if i not in taken and adult <= ages[i] <= min(parents) - gap:
+                children.append(i)
+                taken.add(i)
+                slots -= 1
+        siblings = []
+        if drawn["extended"] and drawn["kin"] == "sibling" and slots > 0:
+            for i in order:
+                if i not in taken and adult <= ages[i] and abs(ages[i] - ages[head]) <= sibling_gap:
+                    siblings.append(i)
+                    taken.add(i)
+                    break
+        members = [head] + ([spouse] if spouse is not None else []) + children + siblings
+        households.append({"index": len(households), "head": head, "spouse": spouse, "children": children,
+                           "siblings": siblings, "members": members, "size_drawn": drawn["size"],
+                           "extended_drawn": drawn["extended"], "kin_drawn": drawn["kin"],
+                           "extended": bool(siblings), "married": married})
+    return households
+
+
 def draw_founding_kin(founders, rng, *, present=0.0):
-    """Draw the genealogy of a founding population, from the cited distributions in the pack.
+    """Draw the households and genealogy of a founding population from the cited distributions.
 
-    `founders` is a list of {"name", "age"} (and optionally "sex"). Returns
-    {"persons", "births", "unions", "founders"}: persons are dicts {id, name, sex, birth, death,
-    in_village, founder} (death None = alive at `present`); births are {parent, child, period}; unions
-    are {a, b, start, end} (end None = still joined). Everything comes from `rng`, so a seed fixes it.
+    `founders` is a list of {"name", "age"} (and optionally "sex"), in cast order; founder i is person i.
+    The households come first (draw_founding_households). The genealogy is then fitted to them:
 
-    Shape. Each founder is a child of one couple. That couple's other children are founders with
-    probability SIBLING_IN_VILLAGE, else people outside the village. Each parent's parents are a couple
-    already in the record with probability GRANDPARENT_REUSE (two parents who are siblings make their
-    children cousins), else a new couple with their own other children (the aunts and uncles). A
-    founder has a union with probability EVER_MARRIED; the spouse is a founder with probability
-    SPOUSE_IN_VILLAGE, else a person outside the village. Children of a union are born after it starts
-    and before any parent dies, spaced by CHILD_SPACING_YEARS. The record stops three generations
-    above the founders, so some relatives are missing (see the report's Limits).
+    * the head's parents are a couple who bear the head and the head's siblings (who share parents);
+      the couple's other children (aunts and uncles) are outside the village. The head's parents'
+      parents are a couple already in the record with probability GRANDPARENT_REUSE, else a new couple;
+    * the spouse's parents are a couple of their own;
+    * a head and a co-resident spouse form a union, which starts after both are of age and before their
+      first child (a union starts at the first of its children's births less one year, and never after
+      the founding year). Their children are the household's adult children, plus any outside children
+      up to CHILDREN_PER_UNION;
+    * a head with no spouse bears their adult children alone (a single parent on record). No outside
+      partner is invented.
+
+    Returns {"persons", "births", "unions", "founders", "households"}. Persons are dicts {id, name, sex,
+    birth, death, in_village, founder} (death None = alive at `present`); births are {parent, child,
+    period}; unions are {a, b, start, end} (end None = still joined); households are the draw_founding_
+    households records. Everything comes from `rng`, so a seed fixes it.
     """
     persons, births, unions = [], [], []
     now = float(present)
@@ -543,71 +621,92 @@ def draw_founding_kin(founders, rng, *, present=0.0):
             pool.append(g)
         bear(g["ids"], parent, pb)
 
-    founder_ids = []
-    for f in founders:
-        founder_ids.append(person(str(f.get("name", "")), _sex_of(rng, f.get("sex")),
-                                  now - float(f["age"]), in_village=True, founder=True))
-
-    unit_of = {}
-    order = [founder_ids[int(i)] for i in rng.permutation(len(founder_ids))]
-    for fid in order:
-        if fid in unit_of:
-            continue
-        unit = max(unit_of.values()) + 1 if unit_of else 0
-        fb0 = persons[fid]["birth"]
-        mb = fb0 - _clipped_normal(rng, PARENT_AGE_AT_BIRTH["female"])
-        fa = fb0 - _clipped_normal(rng, PARENT_AGE_AT_BIRTH["male"])
-        mother = mortal(person("", "female", mb), not_before=fb0)
-        father = mortal(person("", "male", fa), not_before=fb0)
+    def parents_of(sibs):
+        """A couple who are the parents of `sibs` (a list of (founder id, birth)), and of the others they
+        had. The parents' births are set so that every sibling is born while each parent is of a
+        plausible parenting age (PARENT_AGE_AT_BIRTH)."""
+        eldest = min(b for _, b in sibs)
+        youngest = max(b for _, b in sibs)
+        mb = max(eldest - _clipped_normal(rng, PARENT_AGE_AT_BIRTH["female"]),
+                 youngest - float(PARENT_AGE_AT_BIRTH["female"]["max"]))
+        fb = max(eldest - _clipped_normal(rng, PARENT_AGE_AT_BIRTH["male"]),
+                 youngest - float(PARENT_AGE_AT_BIRTH["male"]["max"]))
+        mother = mortal(person("", "female", mb), not_before=youngest)
+        father = mortal(person("", "male", fb), not_before=youngest)
         ids = (father, mother)
-        couple(father, mother, fb0 - 1.0)
-        unit_of[fid] = unit
-        bear(ids, fid, fb0)
-        lo = max(mb + 18.0, fa + 18.0)
-        cap = window_end(ids, min(mb + 42.0, fa + 60.0))
-        for _ in range(max(0, _child_count(rng) - 1)):
-            in_cast = [f for f in order if f not in unit_of and lo <= persons[f]["birth"] <= cap]
-            if in_cast and rng.random() < float(KIN_MODEL["SIBLING_IN_VILLAGE"]):
-                sib = in_cast[0]
-                unit_of[sib] = unit
-                bear(ids, sib, persons[sib]["birth"])
-                continue
-            for b in child_births(lo, cap, 1):
-                kid = mortal(person("", _sex_of(rng), b), infant=True)
-                bear(ids, kid, b)
-        attach_to_grandparents(father)
-        attach_to_grandparents(mother)
-
-    joined = set()
-    married = [fid for fid in founder_ids if rng.random() < float(KIN_MODEL["EVER_MARRIED"])]
-    for fid in married:
-        if fid in joined:
-            continue
-        me = persons[fid]
-        start = me["birth"] + _clipped_normal(rng, AGE_AT_FIRST_UNION[me["sex"]])
-        partners = [o for o in married if o not in joined and o != fid
-                    and persons[o]["sex"] != me["sex"] and unit_of[o] != unit_of[fid]
-                    and abs(persons[o]["birth"] - me["birth"]) <= 10.0]
-        spouse = None
-        if partners and rng.random() < float(KIN_MODEL["SPOUSE_IN_VILLAGE"]):
-            other = partners[0]
-            other_start = persons[other]["birth"] + _clipped_normal(rng, AGE_AT_FIRST_UNION[persons[other]["sex"]])
-            if max(start, other_start) <= now - 0.5:
-                spouse, start = other, max(start, other_start)
-        if spouse is None:
-            if start > now - 0.5:
-                continue          # not yet joined by the founding year
-            opposite = "male" if me["sex"] == "female" else "female"
-            sb = min(me["birth"] + float(rng.normal(0.0, 3.0)), start - 16.0)
-            spouse = mortal(person("", opposite, sb), not_before=start)
-        joined.update((fid, spouse))
-        couple(fid, spouse, start)
-        ids = (fid, spouse)
-        for b in child_births(start + 0.5, window_end(ids, now), _child_count(rng)):
+        start = min(max(mb, fb) + 17.0, eldest - 0.5)
+        couple(father, mother, start)
+        for sid, b in sibs:
+            bear(ids, sid, b)
+        for b in child_births(start + 0.5, window_end(ids, min(mb + 42.0, fb + 60.0)),
+                              max(0, _child_count(rng) - len(sibs))):
             kid = mortal(person("", _sex_of(rng), b), infant=True)
             bear(ids, kid, b)
+        attach_to_grandparents(father)
+        attach_to_grandparents(mother)
+        return ids
 
-    return {"persons": persons, "births": births, "unions": unions, "founders": founder_ids}
+    sexes = [_sex_of(rng, f.get("sex")) for f in founders]
+    ages = [float(f["age"]) for f in founders]
+    founder_ids = [person(str(f.get("name", "")), sexes[i], now - ages[i], in_village=True, founder=True)
+                   for i, f in enumerate(founders)]
+    households = draw_founding_households(ages, sexes, rng)
+
+    def marry(fid, spouse, kids):
+        """A union of founder `fid` and `spouse` (a person id, or None for a spouse outside the village).
+        The union starts after both partners are of age (AGE_AT_FIRST_UNION), no later than the founding
+        year, and before the first of `kids`, the founders born to the couple. An outside spouse is born
+        at most 16 years before the start and 18 years before the youngest child. The couple also has
+        outside children, up to CHILDREN_PER_UNION. Returns the spouse's person id."""
+        me = persons[fid]
+        desired = me["birth"] + _clipped_normal(rng, AGE_AT_FIRST_UNION[me["sex"]])
+        if spouse is not None:
+            desired = max(desired, persons[spouse]["birth"] + _clipped_normal(rng, AGE_AT_FIRST_UNION[persons[spouse]["sex"]]))
+        start = min(desired, now - 0.5)
+        youngest = min((persons[k]["birth"] for k in kids), default=None)
+        if youngest is not None:
+            start = min(start, youngest - 1.0)
+        if spouse is None:
+            opposite = "male" if me["sex"] == "female" else "female"
+            cap = start - 16.0 if youngest is None else min(start - 16.0, youngest - 18.0)
+            spouse = mortal(person("", opposite, min(me["birth"] + float(rng.normal(0.0, 3.0)), cap)),
+                            not_before=start)
+        couple(fid, spouse, start)
+        ids = (fid, spouse)
+        for kid in kids:
+            bear(ids, kid, persons[kid]["birth"])
+        for b in child_births(start + 0.5, window_end(ids, now), max(0, _child_count(rng) - len(kids))):
+            kid = mortal(person("", _sex_of(rng), b), infant=True)
+            bear(ids, kid, b)
+        return spouse
+
+    decided = set()
+    out = []
+    for hh in households:
+        head = founder_ids[hh["head"]]
+        sibs = [(founder_ids[i], persons[founder_ids[i]]["birth"]) for i in [hh["head"]] + hh["siblings"]]
+        parents_of(sibs)
+        spouse = founder_ids[hh["spouse"]] if hh["spouse"] is not None else None
+        if spouse is not None:
+            parents_of([(spouse, persons[spouse]["birth"])])
+        kids = [founder_ids[i] for i in hh["children"]]
+        decided.add(head)
+        if hh["married"]:
+            if spouse is not None:
+                decided.add(spouse)
+            marry(head, spouse, kids)
+        else:
+            for kid in kids:
+                bear((head,), kid, persons[kid]["birth"])
+        out.append(dict(hh, head=head, spouse=spouse, children=kids,
+                        siblings=[founder_ids[i] for i in hh["siblings"]],
+                        members=[founder_ids[i] for i in hh["members"]]))
+    # founders who are not a head or a spouse (adult children and siblings) may marry outside the village
+    for fid in founder_ids:
+        if fid not in decided and rng.random() < float(KIN_MODEL["EVER_MARRIED"]):
+            marry(fid, None, [])
+    return {"persons": persons, "births": births, "unions": unions, "founders": founder_ids,
+            "households": out}
 
 
 def index_kinship(persons, births, unions):
@@ -721,23 +820,55 @@ def genealogical_heirs(index, deceased, now, custom=None):
     return out
 
 
-def describe_founding_kin(founders=100, *, seed=1, age=30.0):
-    """Draw a founding population of `founders` adults of one age and report how many have each kind of
-    relative on record (the self-test's information on the genealogy shape)."""
+def plan_founding_town(seed, size=None):
+    """The founding cast's staffing, ages, households, and genealogy, all from one seed (Phase 016b).
+
+    `staffing` is E.seed_jobs(size): each resident's jobs, in cast order. `ages` are the founders' ages on
+    the FOUNDING_AGE stream. `kin` is draw_founding_kin over those ages, on the KINSHIP_STREAM generator.
+    The map (one home per household), the cast, and the genealogy all read this plan, so they agree."""
     import numpy as np
-    rng = np.random.default_rng(seed)
-    kin = draw_founding_kin([{"name": str(i), "age": age} for i in range(founders)], rng)
+    size = int(BALANCE_SCENARIO["residents"]) if size is None else int(size)
+    staffing = seed_jobs(size)
+    ages = draw_founding_ages(size, seed)
+    kin = draw_founding_kin([{"name": str(i), "age": age} for i, age in enumerate(ages)],
+                            np.random.default_rng(int(seed) + int(KINSHIP_STREAM)))
+    return {"staffing": staffing, "ages": ages, "kin": kin}
+
+
+def describe_founding_kin(founders=100, *, seed=1):
+    """Draw a founding population (ages from FOUNDING_AGE) and report its households and genealogy:
+    realised household sizes and extended shares, the kin on record, and the unions.
+
+    `size` of a household is the number of founders in it (children under 18 are not modelled)."""
+    import numpy as np
+    ages = draw_founding_ages(founders, seed)
+    rng = np.random.default_rng(int(seed) + int(KINSHIP_STREAM))
+    kin = draw_founding_kin([{"name": str(i), "age": age} for i, age in enumerate(ages)], rng)
     index = index_kinship(kin["persons"], kin["births"], kin["unions"])
     ids = kin["founders"]
     terms = {f: kin_relatives(index, f) for f in ids}
+    households = kin["households"]
+    members = [len(h["members"]) for h in households]
+    drawn = [h["size_drawn"] for h in households]
 
     def share(pred):
         return round(sum(1 for f in ids if pred(f)) / founders, 4)
 
-    married = [f for f in ids if _partners_at(index, f, 0.0)]
+    unions_of = {f: _partners_at(index, f, 0.0) for f in ids}
+    married_heads = [h for h in households if h["spouse"] is not None]
     return {"founders": founders,
+            "ages_mean": round(sum(ages) / max(1, len(ages)), 2),
             "with_parent_on_record": share(lambda f: bool(index["parents"][f])),
-            "married": share(lambda f: bool(_partners_at(index, f, 0.0))),
+            "in_a_union": share(lambda f: bool(unions_of[f])),
             "with_aunt_or_uncle": share(lambda f: any(t in ("aunt", "uncle") for t, _ in terms[f].values())),
             "with_cousin": share(lambda f: any(t == "cousin" for t, _ in terms[f].values())),
-            "mean_children_married": round(sum(len(index["children"][f]) for f in married) / max(1, len(married)), 3)}
+            "mean_children_with_spouse": round(sum(len(h["children"]) for h in married_heads)
+                                               / max(1, len(married_heads)), 3),
+            "households": len(households),
+            "mean_members": round(sum(members) / max(1, len(members)), 3),
+            "mean_drawn_size": round(sum(drawn) / max(1, len(drawn)), 3),
+            "single_member_share": round(sum(1 for m in members if m == 1) / max(1, len(members)), 4),
+            "extended_share": round(sum(1 for h in households if h["extended"]) / max(1, len(households)), 4),
+            "extended_drawn_share": round(sum(1 for h in households if h["extended_drawn"])
+                                          / max(1, len(households)), 4),
+            "spouse_co_resident_share": round(len(married_heads) / max(1, len(households)), 4)}

@@ -1,0 +1,6 @@
+{"step": 0, "alive": 100, "deaths": 0, "grain": 40.0, "bread": 760.0, "flour": 0.0, "day": 0.0, "seconds": 0.0}
+{"step": 96, "alive": 100, "deaths": 0, "grain": 0.0, "bread": 783.0, "flour": 0.0, "day": 1.0, "seconds": 73.7}
+{"step": 192, "alive": 100, "deaths": 0, "grain": 0.0, "bread": 694.0, "flour": 0.0, "day": 2.0, "seconds": 279.8}
+{"step": 288, "alive": 100, "deaths": 0, "grain": 0.0, "bread": 583.0, "flour": 0.0, "day": 3.0, "seconds": 621.4}
+{"step": 384, "alive": 100, "deaths": 0, "grain": 0.0, "bread": 0.0, "flour": 0.0, "day": 4.0, "seconds": 1087.6}
+{"step": 480, "alive": 100, "deaths": 0, "grain": 168.0, "bread": 0.0, "flour": 37.0, "day": 5.0, "seconds": 1677.1}

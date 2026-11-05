@@ -82,9 +82,9 @@ def _founding_view(entities, what):
     """The entity view to build from: the given one, or the default pack's. Raises if the pack has no
     founding town (its founding tables are empty), because there is no town to build."""
     view = entities if entities is not None else _entities_view()
-    if not view.FOUNDING_ROLES or not view.FOUNDING_MAP:
+    if not view.FOUNDING_JOBS or not view.FOUNDING_MAP:
         raise ValueError(f"{what} builds a founding town, and this data pack has none "
-                         f"(FOUNDING_ROLES or FOUNDING_MAP is empty)")
+                         f"(FOUNDING_JOBS or FOUNDING_MAP is empty)")
     return view
 
 
@@ -310,7 +310,7 @@ def build_town_100(seed=SEED_DEFAULT, entities=None):
         layout["farms"].append(_take((fp["origin"][0] + (k % fp["columns"]) * fp["column_step"],
                                       fp["origin"][1] + (k // fp["columns"]) * fp["row_step"])))
     # one home per founding resident (residential -- remaining road-adjacent plots, deterministic order)
-    n_homes = sum(int(row["count"]) for row in E.FOUNDING_ROLES)
+    n_homes = len(E.plan_founding_town(seed)["kin"]["households"])   # one home per household
     home_pool = [c for c in cand if c not in used]
     if len(home_pool) < n_homes:
         raise ValueError("not enough home plots: %d for %d residents" % (len(home_pool), n_homes))
@@ -400,22 +400,37 @@ def _draw_resolution_bins(rng, mixture=None):
 
 
 def generate_cast100(layout, seed=SEED_DEFAULT, entities=None):
-    """The founding cast as records, one per founding resident (FOUNDING_ROLES). Deterministic in
-    `seed` and in the founding cast of `entities` (default: the default pack)."""
+    """The founding cast as records, one per founding resident. Deterministic in `seed` and in the
+    founding pack of `entities` (default: the default pack).
+
+    Phase 016b: the roles and their counts come from E.seed_jobs (a resident's role is their first job),
+    and the ages, households, and genealogy from E.plan_founding_town (one seed, its own streams). Each
+    household shares one home cell. Names, class, literacy, and personality params draw from their own
+    streams, as at HEAD. A job's workplace, group, and role identity come from its FOUNDING_JOBS row."""
     E = _founding_view(entities, "generate_cast100")
     rng = np.random.default_rng(seed)
     nrng = np.random.default_rng(seed + 7)     # separate stream for names
-    rrng = np.random.default_rng(seed + 13)    # separate stream for the
-                                                # resolution_bins trait --
-                                                # keeps the existing 12
-                                                # _PARAM_SPEC draws (and
-                                                # every downstream resident's
-                                                # values) byte-unchanged on
-                                                # regeneration, same isolation
-                                                # discipline as nrng above
+    rrng = np.random.default_rng(seed + 13)    # separate stream for the resolution_bins trait (see
+                                                # DRAW_CLIP_DECIMALS): the other params stay byte-unchanged
+
+    plan = E.plan_founding_town(seed)
+    staffing = plan["staffing"]["residents"]
+    ages = plan["ages"]
+    households = plan["kin"]["households"]
+    membership = {}
+    for hh in households:
+        for member in hh["members"]:
+            if member == hh["head"]:
+                membership[member] = (hh["index"], "head")
+            elif member == hh["spouse"]:
+                membership[member] = (hh["index"], "spouse")
+            elif member in hh["children"]:
+                membership[member] = (hh["index"], "child")
+            else:
+                membership[member] = (hh["index"], "sibling")
 
     # reserve anchor names; fill the rest from the generated pool
-    anchor_names = E.FOUNDING_ANCHOR_NAMES
+    anchor_names = E.FOUNDING_ANCHOR_NAMES                 # job -> name
     reserved = set(anchor_names.values())
     pool = [nm for nm in _name_pool(NAME_POOL_DRAW, nrng, E.FOUNDING_FIRST_NAMES, E.FOUNDING_LAST_NAMES)
             if nm not in reserved]
@@ -423,64 +438,78 @@ def generate_cast100(layout, seed=SEED_DEFAULT, entities=None):
 
     by_group = E.FOUNDING_CLASS["by_group"]          # group -> {rich, middle}; poor is the remainder
     lit_by_class = E.FOUNDING_CLASS["literacy_by_class"]
+    cap_by_literacy = E.FOUNDING_CLASS["capability_by_literacy"]
     ri_bounds = E.FOUNDING_DRAW_BOUNDS["role_identity"]
 
     farms = layout["farms"]
     homes = layout["homes"]
     residents = []
-    idx = 0
+    named_jobs = set()
     farm_cursor = 0
-    for row in E.FOUNDING_ROLES:
-        role, group, wkind = row["role"], row["group"], row["workplace"]
-        for _ in range(row["count"]):
-            # name
-            if role in anchor_names and anchor_names[role] not in \
-                    {r["name"] for r in residents}:
-                name = anchor_names[role]
-            else:
-                if pi >= len(pool):
-                    raise ValueError("the founding name pool is too small for the cast")
-                name = pool[pi]
-                pi += 1
-            # role identity (the R4 switching friction) -- drawn, not cloned
-            ri = _draw_clip(rng, row["role_identity_mean"], row["role_identity_sd"],
-                            ri_bounds["lo"], ri_bounds["hi"])
-            # class + literacy
-            u = float(rng.random())
-            rp, mp = by_group[group]["rich"], by_group[group]["middle"]
-            klass = "rich" if u < rp else ("middle" if u < rp + mp else "poor")
-            literate = 1 if float(rng.random()) < lit_by_class[klass] else 0
-            # drawn personality/emotion params
-            params = {k: _draw_clip(rng, s["mean"], s["sd"], s["lo"], s["hi"])
-                      for k, s in E.FOUNDING_PERSONALITY.items()}
-            # trait-level causal-belief resolution (bin count) -- a 13th,
-            # MIXTURE-drawn param, drawn from its OWN rng stream (rrng, like
-            # nrng for names above) so every existing param's value is
-            # byte-unchanged on regeneration.
-            params["resolution_bins"] = _draw_resolution_bins(rrng, E.FOUNDING_CAUSAL_RESOLUTION)
-            # workplace cell
-            if wkind == "farm":
-                work = farms[farm_cursor % len(farms)]
-                farm_cursor += 1
-            else:
-                work = layout["work"][wkind]
-            home = homes[idx]
-            residents.append({
-                "index": idx, "name": name, "role": role, "group": group,
-                "role_identity": ri, "class": klass, "literacy": literate,
-                "home_cell": list(home), "workplace_cell": list(work),
-                "workplace_kind": wkind, "params": params})
-            idx += 1
+    for idx, staff in enumerate(staffing):
+        job = staff["jobs"][0]
+        row = E.FOUNDING_JOBS[job]
+        group, wkind = row["group"], row["workplace"]
+        # name: the anchor for the job's first holder, else the next pooled name
+        if job in anchor_names and job not in named_jobs:
+            name = anchor_names[job]
+            named_jobs.add(job)
+        else:
+            if pi >= len(pool):
+                raise ValueError("the founding name pool is too small for the cast")
+            name = pool[pi]
+            pi += 1
+        # role identity (the R4 switching friction) -- drawn, not cloned
+        ri = _draw_clip(rng, row["role_identity_mean"], row["role_identity_sd"],
+                        ri_bounds["lo"], ri_bounds["hi"])
+        # class + literacy
+        u = float(rng.random())
+        rp, mp = by_group[group]["rich"], by_group[group]["middle"]
+        klass = "rich" if u < rp else ("middle" if u < rp + mp else "poor")
+        literate = 1 if float(rng.random()) < lit_by_class[klass] else 0
+        # drawn personality/emotion params
+        params = {k: _draw_clip(rng, s["mean"], s["sd"], s["lo"], s["hi"])
+                  for k, s in E.FOUNDING_PERSONALITY.items()}
+        # trait-level causal-belief resolution (bin count) -- a 13th, MIXTURE-drawn param, from its own stream
+        params["resolution_bins"] = _draw_resolution_bins(rrng, E.FOUNDING_CAUSAL_RESOLUTION)
+        # workplace cell
+        if wkind == "farm":
+            work = farms[farm_cursor % len(farms)]
+            farm_cursor += 1
+        else:
+            work = layout["work"][wkind]
+        # skill: the job's first trade's base skill (TRADES), the default where the trade has none
+        skill_trade = E.JOBS[job]["trades"][0]
+        skill = float(E.TRADES.get(skill_trade, {}).get("base_skill", E.ACTOR_DEFAULTS["skill"]))
+        hh_index, hh_role = membership[idx]
+        residents.append({
+            "index": idx, "name": name, "role": job, "group": group,
+            "role_identity": ri, "class": klass, "literacy": literate,
+            "age": ages[idx], "jobs": list(staff["jobs"]),
+            "trades": [t for t in E.JOBS[job]["trades"] if t != job],
+            "skill": skill,
+            "capability": float(cap_by_literacy["literate" if literate else "unlettered"]),
+            "household": hh_index, "household_role": hh_role,
+            "home_cell": list(homes[hh_index]), "workplace_cell": list(work),
+            "workplace_kind": wkind, "params": params})
+    household_records = []
+    for hh in households:
+        household_records.append({
+            "index": hh["index"], "head": residents[hh["head"]]["name"],
+            "members": [residents[m]["name"] for m in hh["members"]],
+            "home_cell": list(homes[hh["index"]]),
+            "size_drawn": hh["size_drawn"], "extended_drawn": hh["extended_drawn"],
+            "kin_drawn": hh["kin_drawn"], "extended": hh["extended"]})
     return {
         "id": "bigville_cast100", "version": "1.0.0", "self_load_only": True,
         "depends_on": [],
-        "description": ("100-resident bigville cast: jobs/houses/role-identity/"
-                        "drawn-Normal params on the build_town_100 map (blocks "
-                        "305000-309000). Deterministic in seed=%d." % seed),
+        "description": ("100-resident bigville cast: jobs (E.seed_jobs), ages, households and "
+                        "drawn-Normal params on the build_town_100 map. Deterministic in seed=%d." % seed),
         "seed": seed,
         "map": {"w": layout["w"], "h": layout["h"],
                 "component_size": layout["component_size"],
                 "deposits": {k: list(v) for k, v in layout["deposits"].items()}},
+        "households": household_records,
         "residents": residents}
 
 
@@ -511,9 +540,9 @@ class BigvilleTown100World(BigvilleTradeWorld):
         scenario_data = load_scenario(scenario).to_dict() if scenario is not None else None
         self.data_pack = requested_data_pack(data_pack, scenario_data)
         self.E = _entities_view(self.data_pack)
-        if not self.E.FOUNDING_ROLES or not self.E.FOUNDING_MAP:
+        if not self.E.FOUNDING_JOBS or not self.E.FOUNDING_MAP:
             raise ValueError(f"BigvilleTown100World builds a pack's founding town; data pack "
-                             f"'{self.data_pack}' has none (FOUNDING_ROLES or FOUNDING_MAP is empty)")
+                             f"'{self.data_pack}' has none (FOUNDING_JOBS or FOUNDING_MAP is empty)")
         # The map places these deposits and the town's fixed workplaces (see build_town_100).
         # A pack without them cannot host this town.
         missing = [kind for kind in self.E.FOUNDING_DEPOSITS if kind not in self.E.RESOURCE_DEPOSITS]

@@ -1,6 +1,752 @@
 {
  "depends_on": [],
- "description": "100-resident bigville cast: jobs/houses/role-identity/drawn-Normal params on the build_town_100 map (blocks 305000-309000). Deterministic in seed=305000.",
+ "description": "100-resident bigville cast: jobs (E.seed_jobs), ages, households and drawn-Normal params on the build_town_100 map. Deterministic in seed=305000.",
+ "households": [
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Horace Nubbins",
+   "home_cell": [
+    0,
+    8
+   ],
+   "index": 0,
+   "kin_drawn": null,
+   "members": [
+    "Horace Nubbins",
+    "Willa Jubbins",
+    "Godfrey Tremble",
+    "Lemuel Norbisham"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": true,
+   "head": "Lemuel Bindle",
+   "home_cell": [
+    0,
+    9
+   ],
+   "index": 1,
+   "kin_drawn": "sibling",
+   "members": [
+    "Lemuel Bindle",
+    "Vernon Lorric",
+    "Ignatius Kettle"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Barnaby Furlong",
+   "home_cell": [
+    0,
+    20
+   ],
+   "index": 2,
+   "kin_drawn": null,
+   "members": [
+    "Barnaby Furlong"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": true,
+   "head": "Effie Wormwood",
+   "home_cell": [
+    0,
+    31
+   ],
+   "index": 3,
+   "kin_drawn": "grandparent",
+   "members": [
+    "Effie Wormwood",
+    "Agnes Wick",
+    "Lettice Sallow",
+    "Ephraim Larkspur"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Bryony Turnbull",
+   "home_cell": [
+    0,
+    32
+   ],
+   "index": 4,
+   "kin_drawn": null,
+   "members": [
+    "Bryony Turnbull"
+   ],
+   "size_drawn": 9
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Marjorie Dough",
+   "home_cell": [
+    1,
+    7
+   ],
+   "index": 5,
+   "kin_drawn": null,
+   "members": [
+    "Marjorie Dough"
+   ],
+   "size_drawn": 7
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Corvin Cobb",
+   "home_cell": [
+    1,
+    10
+   ],
+   "index": 6,
+   "kin_drawn": null,
+   "members": [
+    "Corvin Cobb",
+    "Henrietta Everdew",
+    "Drusilla Ottermole",
+    "Erasmus Ottermole",
+    "Isolde Everdew"
+   ],
+   "size_drawn": 5
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Verity Ottermole",
+   "home_cell": [
+    1,
+    19
+   ],
+   "index": 7,
+   "kin_drawn": null,
+   "members": [
+    "Verity Ottermole",
+    "Garnet Inkpen",
+    "Prosper Tallowick"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Mordecai Tremble",
+   "home_cell": [
+    1,
+    21
+   ],
+   "index": 8,
+   "kin_drawn": null,
+   "members": [
+    "Mordecai Tremble",
+    "Prudence Gorse",
+    "Cask Thistlewood",
+    "Godfrey Norbisham"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Jem Cobb",
+   "home_cell": [
+    1,
+    30
+   ],
+   "index": 9,
+   "kin_drawn": null,
+   "members": [
+    "Jem Cobb",
+    "Henrietta Sedge",
+    "Cobweb Furlong"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Jem Grubb",
+   "home_cell": [
+    1,
+    33
+   ],
+   "index": 10,
+   "kin_drawn": null,
+   "members": [
+    "Jem Grubb",
+    "Doreen Ferrety",
+    "Bettony Bindle",
+    "Thaddeus Furlong",
+    "Horace Yarrow",
+    "Barnaby Rushton"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Verity Peaseblossom",
+   "home_cell": [
+    2,
+    7
+   ],
+   "index": 11,
+   "kin_drawn": null,
+   "members": [
+    "Verity Peaseblossom"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Thaddeus Ramskin",
+   "home_cell": [
+    2,
+    9
+   ],
+   "index": 12,
+   "kin_drawn": null,
+   "members": [
+    "Thaddeus Ramskin",
+    "Jem Sedge",
+    "Prosper Grubb",
+    "Phineas Underhill"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Quentin Codling",
+   "home_cell": [
+    2,
+    19
+   ],
+   "index": 13,
+   "kin_drawn": null,
+   "members": [
+    "Quentin Codling"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Keturah Marsh",
+   "home_cell": [
+    2,
+    21
+   ],
+   "index": 14,
+   "kin_drawn": null,
+   "members": [
+    "Keturah Marsh"
+   ],
+   "size_drawn": 7
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Henrietta Nettle",
+   "home_cell": [
+    2,
+    31
+   ],
+   "index": 15,
+   "kin_drawn": null,
+   "members": [
+    "Henrietta Nettle",
+    "Winifred Ottermole"
+   ],
+   "size_drawn": 2
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Phineas Jubbins",
+   "home_cell": [
+    2,
+    33
+   ],
+   "index": 16,
+   "kin_drawn": null,
+   "members": [
+    "Phineas Jubbins",
+    "Radella Peaseblossom",
+    "Drusilla Underhill"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Corvin Inkpen",
+   "home_cell": [
+    3,
+    7
+   ],
+   "index": 17,
+   "kin_drawn": null,
+   "members": [
+    "Corvin Inkpen",
+    "Adelina Gorse",
+    "Alby Harkness",
+    "Millicent Vellum",
+    "Wat Bracken"
+   ],
+   "size_drawn": 5
+  },
+  {
+   "extended": false,
+   "extended_drawn": true,
+   "head": "Henrietta Peaseblossom",
+   "home_cell": [
+    3,
+    10
+   ],
+   "index": 18,
+   "kin_drawn": "other",
+   "members": [
+    "Henrietta Peaseblossom",
+    "Elowen Puddifoot",
+    "Jerusha Thistlewood",
+    "Jem Vellum"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Dunstan Haywain",
+   "home_cell": [
+    3,
+    19
+   ],
+   "index": 19,
+   "kin_drawn": null,
+   "members": [
+    "Dunstan Haywain",
+    "Mary",
+    "Peony Tremble"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Radella Ramskin",
+   "home_cell": [
+    3,
+    22
+   ],
+   "index": 20,
+   "kin_drawn": null,
+   "members": [
+    "Radella Ramskin",
+    "Ida Sedge",
+    "Mordecai Oakes"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Henrietta Jubbins",
+   "home_cell": [
+    3,
+    31
+   ],
+   "index": 21,
+   "kin_drawn": null,
+   "members": [
+    "Henrietta Jubbins"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Tobias Jubbins",
+   "home_cell": [
+    3,
+    34
+   ],
+   "index": 22,
+   "kin_drawn": null,
+   "members": [
+    "Tobias Jubbins"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": true,
+   "extended_drawn": true,
+   "head": "Effie Larkspur",
+   "home_cell": [
+    4,
+    8
+   ],
+   "index": 23,
+   "kin_drawn": "sibling",
+   "members": [
+    "Effie Larkspur",
+    "Alby Frittle"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Septimus Underhill",
+   "home_cell": [
+    4,
+    10
+   ],
+   "index": 24,
+   "kin_drawn": null,
+   "members": [
+    "Septimus Underhill",
+    "Lemuel Bramble",
+    "Wat Nettle",
+    "Radella Gorse"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Bartholomew Quirke",
+   "home_cell": [
+    4,
+    20
+   ],
+   "index": 25,
+   "kin_drawn": null,
+   "members": [
+    "Bartholomew Quirke",
+    "Mordecai Hobb"
+   ],
+   "size_drawn": 8
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Lavinia Rundle",
+   "home_cell": [
+    4,
+    22
+   ],
+   "index": 26,
+   "kin_drawn": null,
+   "members": [
+    "Lavinia Rundle",
+    "Garnet Hollow",
+    "Rosamund Haywain"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Gristle Bracken",
+   "home_cell": [
+    4,
+    32
+   ],
+   "index": 27,
+   "kin_drawn": null,
+   "members": [
+    "Gristle Bracken"
+   ],
+   "size_drawn": 1
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Adelina Sputterfield",
+   "home_cell": [
+    4,
+    34
+   ],
+   "index": 28,
+   "kin_drawn": null,
+   "members": [
+    "Adelina Sputterfield"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Constance Ottermole",
+   "home_cell": [
+    5,
+    8
+   ],
+   "index": 29,
+   "kin_drawn": null,
+   "members": [
+    "Constance Ottermole"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": true,
+   "head": "Ida Hobb",
+   "home_cell": [
+    5,
+    10
+   ],
+   "index": 30,
+   "kin_drawn": "grandparent",
+   "members": [
+    "Ida Hobb"
+   ],
+   "size_drawn": 5
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Elowen Peaseblossom",
+   "home_cell": [
+    5,
+    20
+   ],
+   "index": 31,
+   "kin_drawn": null,
+   "members": [
+    "Elowen Peaseblossom"
+   ],
+   "size_drawn": 8
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Bettony Rundle",
+   "home_cell": [
+    5,
+    22
+   ],
+   "index": 32,
+   "kin_drawn": null,
+   "members": [
+    "Bettony Rundle"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Ottoline Frittle",
+   "home_cell": [
+    5,
+    32
+   ],
+   "index": 33,
+   "kin_drawn": null,
+   "members": [
+    "Ottoline Frittle"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "John",
+   "home_cell": [
+    5,
+    34
+   ],
+   "index": 34,
+   "kin_drawn": null,
+   "members": [
+    "John"
+   ],
+   "size_drawn": 2
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Lavinia Grubb",
+   "home_cell": [
+    6,
+    8
+   ],
+   "index": 35,
+   "kin_drawn": null,
+   "members": [
+    "Lavinia Grubb"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Erasmus Inkpen",
+   "home_cell": [
+    6,
+    11
+   ],
+   "index": 36,
+   "kin_drawn": null,
+   "members": [
+    "Erasmus Inkpen",
+    "Cuthbert Wold",
+    "Hogget Jubbins"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Obadiah Sedge",
+   "home_cell": [
+    6,
+    20
+   ],
+   "index": 37,
+   "kin_drawn": null,
+   "members": [
+    "Obadiah Sedge"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Bartholomew Tremble",
+   "home_cell": [
+    6,
+    23
+   ],
+   "index": 38,
+   "kin_drawn": null,
+   "members": [
+    "Bartholomew Tremble"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": true,
+   "head": "Ferdinand Wormwood",
+   "home_cell": [
+    6,
+    31
+   ],
+   "index": 39,
+   "kin_drawn": "grandparent",
+   "members": [
+    "Ferdinand Wormwood",
+    "Peony Hobb",
+    "Godfrey Ashby"
+   ],
+   "size_drawn": 3
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Adelina Norbisham",
+   "home_cell": [
+    6,
+    34
+   ],
+   "index": 40,
+   "kin_drawn": null,
+   "members": [
+    "Adelina Norbisham"
+   ],
+   "size_drawn": 7
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Ida Ditchwater",
+   "home_cell": [
+    7,
+    9
+   ],
+   "index": 41,
+   "kin_drawn": null,
+   "members": [
+    "Ida Ditchwater"
+   ],
+   "size_drawn": 5
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Silas Kettle",
+   "home_cell": [
+    7,
+    11
+   ],
+   "index": 42,
+   "kin_drawn": null,
+   "members": [
+    "Silas Kettle"
+   ],
+   "size_drawn": 4
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Thaddeus Puddifoot",
+   "home_cell": [
+    7,
+    21
+   ],
+   "index": 43,
+   "kin_drawn": null,
+   "members": [
+    "Thaddeus Puddifoot"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Ida Codling",
+   "home_cell": [
+    7,
+    23
+   ],
+   "index": 44,
+   "kin_drawn": null,
+   "members": [
+    "Ida Codling",
+    "Corvin Kindle"
+   ],
+   "size_drawn": 6
+  },
+  {
+   "extended": false,
+   "extended_drawn": false,
+   "head": "Kester Furlong",
+   "home_cell": [
+    7,
+    31
+   ],
+   "index": 45,
+   "kin_drawn": null,
+   "members": [
+    "Kester Furlong",
+    "Alby Marsh"
+   ],
+   "size_drawn": 4
+  }
+ ],
  "id": "bigville_cast100",
  "map": {
   "component_size": 1953,
@@ -10,8 +756,8 @@
     2
    ],
    "lumber": [
-    13,
-    3
+    7,
+    30
    ],
    "stone": [
     42,
@@ -23,13 +769,20 @@
  },
  "residents": [
   {
-   "class": "poor",
-   "group": "low",
+   "age": 42,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "high",
    "home_cell": [
-    0,
-    6
+    2,
+    7
    ],
+   "household": 11,
+   "household_role": "head",
    "index": 0,
+   "jobs": [
+    "carpenter"
+   ],
    "literacy": 1,
    "name": "Verity Peaseblossom",
    "params": {
@@ -47,22 +800,34 @@
     "w_spite": 0.2027,
     "w_supergraph": 0.3944
    },
-   "role": "labourer",
-   "role_identity": 0.2022,
-   "workplace_cell": [
-    24,
-    13
+   "role": "carpenter",
+   "role_identity": 0.8882,
+   "skill": 0.7,
+   "trades": [
+    "woodworker",
+    "sawyer"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    33,
+    9
+   ],
+   "workplace_kind": "carpenter"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 33,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    0,
-    10
+    7,
+    9
    ],
+   "household": 41,
+   "household_role": "head",
    "index": 1,
+   "jobs": [
+    "clerk"
+   ],
    "literacy": 1,
    "name": "Ida Ditchwater",
    "params": {
@@ -80,22 +845,33 @@
     "w_spite": 0.3047,
     "w_supergraph": 0.5882
    },
-   "role": "labourer",
-   "role_identity": 0.2302,
-   "workplace_cell": [
-    24,
-    13
+   "role": "clerk",
+   "role_identity": 0.5619,
+   "skill": 0.7,
+   "trades": [
+    "scribe"
    ],
-   "workplace_kind": "market"
-  },
-  {
-   "class": "middle",
-   "group": "low",
-   "home_cell": [
-    0,
+   "workplace_cell": [
+    23,
     14
    ],
+   "workplace_kind": "townhall"
+  },
+  {
+   "age": 45,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
+   "home_cell": [
+    4,
+    22
+   ],
+   "household": 26,
+   "household_role": "child",
    "index": 2,
+   "jobs": [
+    "constable"
+   ],
    "literacy": 1,
    "name": "Garnet Hollow",
    "params": {
@@ -113,22 +889,31 @@
     "w_spite": 0.3344,
     "w_supergraph": 0.8008
    },
-   "role": "labourer",
-   "role_identity": 0.1992,
+   "role": "constable",
+   "role_identity": 0.5757,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    18,
+    28
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "watch"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 31,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    0,
-    18
+    7,
+    31
    ],
+   "household": 45,
+   "household_role": "child",
    "index": 3,
+   "jobs": [
+    "councillor"
+   ],
    "literacy": 1,
    "name": "Alby Marsh",
    "params": {
@@ -146,22 +931,31 @@
     "w_spite": 0.3763,
     "w_supergraph": 0.4319
    },
-   "role": "labourer",
-   "role_identity": 0.1228,
+   "role": "councillor",
+   "role_identity": 0.5066,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    23,
+    14
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "townhall"
   },
   {
-   "class": "middle",
-   "group": "low",
+   "age": 31,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "high",
    "home_cell": [
     0,
-    22
+    32
    ],
+   "household": 4,
+   "household_role": "head",
    "index": 4,
+   "jobs": [
+    "doctor"
+   ],
    "literacy": 1,
    "name": "Bryony Turnbull",
    "params": {
@@ -179,22 +973,31 @@
     "w_spite": 0.0,
     "w_supergraph": 0.3908
    },
-   "role": "labourer",
-   "role_identity": 0.1122,
+   "role": "doctor",
+   "role_identity": 0.7502,
+   "skill": 0.8,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    16,
+    20
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "surgery"
   },
   {
+   "age": 29,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
     0,
-    26
+    20
    ],
+   "household": 2,
+   "household_role": "head",
    "index": 5,
+   "jobs": [
+    "farm_labourer"
+   ],
    "literacy": 0,
    "name": "Barnaby Furlong",
    "params": {
@@ -212,22 +1015,33 @@
     "w_spite": 0.4088,
     "w_supergraph": 0.3177
    },
-   "role": "labourer",
-   "role_identity": 0.2446,
-   "workplace_cell": [
-    24,
-    13
+   "role": "farm_labourer",
+   "role_identity": 0.2246,
+   "skill": 0.7,
+   "trades": [
+    "farmer"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    36,
+    29
+   ],
+   "workplace_kind": "farm"
   },
   {
+   "age": 55,
+   "capability": 0.9,
    "class": "middle",
-   "group": "low",
+   "group": "middle",
    "home_cell": [
-    0,
-    30
+    2,
+    9
    ],
+   "household": 12,
+   "household_role": "head",
    "index": 6,
+   "jobs": [
+    "farmer"
+   ],
    "literacy": 1,
    "name": "Thaddeus Ramskin",
    "params": {
@@ -245,22 +1059,33 @@
     "w_spite": 0.2836,
     "w_supergraph": 0.6137
    },
-   "role": "labourer",
-   "role_identity": 0.1513,
-   "workplace_cell": [
-    24,
-    13
+   "role": "farmer",
+   "role_identity": 0.5084,
+   "skill": 0.7,
+   "trades": [
+    "cook"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    39,
+    28
+   ],
+   "workplace_kind": "farm"
   },
   {
+   "age": 30,
+   "capability": 0.55,
    "class": "middle",
-   "group": "low",
+   "group": "middle",
    "home_cell": [
-    0,
-    34
+    6,
+    11
    ],
+   "household": 36,
+   "household_role": "child",
    "index": 7,
+   "jobs": [
+    "farmer"
+   ],
    "literacy": 0,
    "name": "Cuthbert Wold",
    "params": {
@@ -278,22 +1103,33 @@
     "w_spite": 0.1472,
     "w_supergraph": 0.2468
    },
-   "role": "labourer",
-   "role_identity": 0.2819,
-   "workplace_cell": [
-    24,
-    13
+   "role": "farmer",
+   "role_identity": 0.6825,
+   "skill": 0.7,
+   "trades": [
+    "cook"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    43,
+    26
+   ],
+   "workplace_kind": "farm"
   },
   {
-   "class": "middle",
-   "group": "low",
+   "age": 31,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "middle",
    "home_cell": [
-    1,
-    5
+    3,
+    7
    ],
+   "household": 17,
+   "household_role": "child",
    "index": 8,
+   "jobs": [
+    "farmer"
+   ],
    "literacy": 1,
    "name": "Wat Bracken",
    "params": {
@@ -311,23 +1147,34 @@
     "w_spite": 0.0,
     "w_supergraph": 0.4735
    },
-   "role": "labourer",
-   "role_identity": 0.2805,
-   "workplace_cell": [
-    24,
-    13
+   "role": "farmer",
+   "role_identity": 0.6807,
+   "skill": 0.7,
+   "trades": [
+    "cook"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    45,
+    26
+   ],
+   "workplace_kind": "farm"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 44,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    1,
-    7
+    4,
+    32
    ],
+   "household": 27,
+   "household_role": "head",
    "index": 9,
-   "literacy": 0,
+   "jobs": [
+    "farmer"
+   ],
+   "literacy": 1,
    "name": "Gristle Bracken",
    "params": {
     "arousal": 0.1143,
@@ -344,22 +1191,33 @@
     "w_spite": 0.0822,
     "w_supergraph": 0.4394
    },
-   "role": "labourer",
-   "role_identity": 0.1212,
-   "workplace_cell": [
-    24,
-    13
+   "role": "farmer",
+   "role_identity": 0.4682,
+   "skill": 0.7,
+   "trades": [
+    "cook"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    36,
+    32
+   ],
+   "workplace_kind": "farm"
   },
   {
+   "age": 34,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    1,
-    9
+    4,
+    22
    ],
+   "household": 26,
+   "household_role": "child",
    "index": 10,
+   "jobs": [
+    "fisher"
+   ],
    "literacy": 1,
    "name": "Rosamund Haywain",
    "params": {
@@ -377,22 +1235,31 @@
     "w_spite": 0.015,
     "w_supergraph": 0.1962
    },
-   "role": "labourer",
-   "role_identity": 0.1803,
+   "role": "fisher",
+   "role_identity": 0.2403,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    1,
+    2
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "fish"
   },
   {
+   "age": 47,
+   "capability": 0.9,
    "class": "middle",
    "group": "low",
    "home_cell": [
-    1,
-    11
+    4,
+    20
    ],
+   "household": 25,
+   "household_role": "head",
    "index": 11,
+   "jobs": [
+    "fisher"
+   ],
    "literacy": 1,
    "name": "Bartholomew Quirke",
    "params": {
@@ -410,24 +1277,33 @@
     "w_spite": 0.0409,
     "w_supergraph": 0.1263
    },
-   "role": "labourer",
-   "role_identity": 0.2129,
+   "role": "fisher",
+   "role_identity": 0.2729,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    1,
+    2
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "fish"
   },
   {
+   "age": 26,
+   "capability": 0.9,
    "class": "rich",
-   "group": "low",
+   "group": "high",
    "home_cell": [
     1,
-    13
+    33
    ],
+   "household": 10,
+   "household_role": "child",
    "index": 12,
+   "jobs": [
+    "fishmonger"
+   ],
    "literacy": 1,
-   "name": "Lemuel Bindle",
+   "name": "Doreen Ferrety",
    "params": {
     "arousal": 0.5356,
     "charm_weight": 0.3332,
@@ -443,24 +1319,35 @@
     "w_spite": 0.3201,
     "w_supergraph": 0.3832
    },
-   "role": "labourer",
-   "role_identity": 0.2458,
-   "workplace_cell": [
-    24,
-    13
+   "role": "fishmonger",
+   "role_identity": 0.8972,
+   "skill": 0.6,
+   "trades": [
+    "fisher"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    11,
+    8
+   ],
+   "workplace_kind": "fishmonger"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 44,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "high",
    "home_cell": [
-    1,
-    15
+    0,
+    9
    ],
+   "household": 1,
+   "household_role": "head",
    "index": 13,
+   "jobs": [
+    "innkeeper"
+   ],
    "literacy": 1,
-   "name": "Phineas Jubbins",
+   "name": "Lemuel Bindle",
    "params": {
     "arousal": 0.0064,
     "charm_weight": 0.6262,
@@ -476,24 +1363,35 @@
     "w_spite": 0.0,
     "w_supergraph": 0.3239
    },
-   "role": "labourer",
-   "role_identity": 0.2516,
-   "workplace_cell": [
-    24,
-    13
+   "role": "innkeeper",
+   "role_identity": 0.8711,
+   "skill": 0.7,
+   "trades": [
+    "brewer"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    30,
+    20
+   ],
+   "workplace_kind": "inn"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 57,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "high",
    "home_cell": [
-    1,
-    17
+    2,
+    33
    ],
+   "household": 16,
+   "household_role": "head",
    "index": 14,
+   "jobs": [
+    "mason"
+   ],
    "literacy": 1,
-   "name": "Radella Peaseblossom",
+   "name": "Phineas Jubbins",
    "params": {
     "arousal": 0.4552,
     "charm_weight": 0.4114,
@@ -509,24 +1407,35 @@
     "w_spite": 0.0453,
     "w_supergraph": 0.2806
    },
-   "role": "labourer",
-   "role_identity": 0.2159,
-   "workplace_cell": [
-    24,
-    13
+   "role": "mason",
+   "role_identity": 0.8973,
+   "skill": 0.7,
+   "trades": [
+    "quarrier"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    45,
+    14
+   ],
+   "workplace_kind": "mason"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 47,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "high",
    "home_cell": [
-    1,
-    19
+    5,
+    34
    ],
+   "household": 34,
+   "household_role": "head",
    "index": 15,
+   "jobs": [
+    "mayor"
+   ],
    "literacy": 1,
-   "name": "Cask Thistlewood",
+   "name": "John",
    "params": {
     "arousal": 0.3483,
     "charm_weight": 0.2033,
@@ -542,24 +1451,33 @@
     "w_spite": 0.4887,
     "w_supergraph": 0.4603
    },
-   "role": "labourer",
-   "role_identity": 0.2335,
+   "role": "mayor",
+   "role_identity": 0.9268,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    23,
+    14
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "townhall"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 36,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    1,
-    21
+    2,
+    33
    ],
+   "household": 16,
+   "household_role": "child",
    "index": 16,
-   "literacy": 0,
-   "name": "Hogget Jubbins",
+   "jobs": [
+    "midwife"
+   ],
+   "literacy": 1,
+   "name": "Radella Peaseblossom",
    "params": {
     "arousal": 0.2103,
     "charm_weight": 0.1802,
@@ -575,24 +1493,33 @@
     "w_spite": 0.3012,
     "w_supergraph": 0.6979
    },
-   "role": "labourer",
-   "role_identity": 0.2319,
+   "role": "midwife",
+   "role_identity": 0.5939,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    16,
+    20
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "surgery"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 26,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "high",
    "home_cell": [
-    1,
-    23
+    3,
+    19
    ],
+   "household": 19,
+   "household_role": "child",
    "index": 17,
+   "jobs": [
+    "pastor"
+   ],
    "literacy": 1,
-   "name": "Henrietta Jubbins",
+   "name": "Mary",
    "params": {
     "arousal": 0.6879,
     "charm_weight": 0.2844,
@@ -608,24 +1535,33 @@
     "w_spite": 0.4553,
     "w_supergraph": 0.3227
    },
-   "role": "labourer",
-   "role_identity": 0.251,
+   "role": "pastor",
+   "role_identity": 0.8458,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    31,
+    14
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "church"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 23,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
     1,
-    25
+    21
    ],
+   "household": 8,
+   "household_role": "child",
    "index": 18,
+   "jobs": [
+    "reporter"
+   ],
    "literacy": 1,
-   "name": "Prosper Tallowick",
+   "name": "Cask Thistlewood",
    "params": {
     "arousal": 0.3686,
     "charm_weight": 0.439,
@@ -641,24 +1577,33 @@
     "w_spite": 0.1001,
     "w_supergraph": 0.4158
    },
-   "role": "labourer",
-   "role_identity": 0.2175,
+   "role": "reporter",
+   "role_identity": 0.5971,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    28,
+    12
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "press"
   },
   {
+   "age": 32,
+   "capability": 0.9,
    "class": "middle",
-   "group": "low",
+   "group": "middle",
    "home_cell": [
-    1,
-    27
+    6,
+    11
    ],
+   "household": 36,
+   "household_role": "child",
    "index": 19,
+   "jobs": [
+    "smith"
+   ],
    "literacy": 1,
-   "name": "Godfrey Norbisham",
+   "name": "Hogget Jubbins",
    "params": {
     "arousal": 0.4263,
     "charm_weight": 0.517,
@@ -674,24 +1619,33 @@
     "w_spite": 0.1878,
     "w_supergraph": 0.4867
    },
-   "role": "labourer",
-   "role_identity": 0.1845,
+   "role": "smith",
+   "role_identity": 0.5786,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    33,
+    9
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "carpenter"
   },
   {
-   "class": "middle",
-   "group": "low",
+   "age": 40,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "middle",
    "home_cell": [
-    1,
-    29
+    3,
+    31
    ],
+   "household": 21,
+   "household_role": "head",
    "index": 20,
-   "literacy": 0,
-   "name": "Silas Kettle",
+   "jobs": [
+    "teacher"
+   ],
+   "literacy": 1,
+   "name": "Henrietta Jubbins",
    "params": {
     "arousal": 0.6001,
     "charm_weight": 0.7045,
@@ -707,24 +1661,33 @@
     "w_spite": 0.2295,
     "w_supergraph": 0.5369
    },
-   "role": "labourer",
-   "role_identity": 0.2548,
+   "role": "teacher",
+   "role_identity": 0.6906,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    18,
+    22
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "school"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 18,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
     1,
-    31
+    19
    ],
+   "household": 7,
+   "household_role": "child",
    "index": 21,
+   "jobs": [
+    "clerk"
+   ],
    "literacy": 1,
-   "name": "Phineas Underhill",
+   "name": "Prosper Tallowick",
    "params": {
     "arousal": 0.1892,
     "charm_weight": 0.4183,
@@ -740,24 +1703,35 @@
     "w_spite": 0.1551,
     "w_supergraph": 0.6009
    },
-   "role": "labourer",
-   "role_identity": 0.3158,
-   "workplace_cell": [
-    24,
-    13
+   "role": "clerk",
+   "role_identity": 0.6617,
+   "skill": 0.7,
+   "trades": [
+    "scribe"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    23,
+    14
+   ],
+   "workplace_kind": "townhall"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 20,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
     1,
-    33
+    21
    ],
+   "household": 8,
+   "household_role": "child",
    "index": 22,
+   "jobs": [
+    "teacher"
+   ],
    "literacy": 1,
-   "name": "Bettony Rundle",
+   "name": "Godfrey Norbisham",
    "params": {
     "arousal": 0.5508,
     "charm_weight": 0.8302,
@@ -773,24 +1747,33 @@
     "w_spite": 0.3697,
     "w_supergraph": 0.5492
    },
-   "role": "labourer",
-   "role_identity": 0.2725,
+   "role": "teacher",
+   "role_identity": 0.7112,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    18,
+    22
    ],
-   "workplace_kind": "market"
+   "workplace_kind": "school"
   },
   {
+   "age": 40,
+   "capability": 0.55,
    "class": "middle",
    "group": "low",
    "home_cell": [
-    1,
-    35
+    7,
+    11
    ],
+   "household": 42,
+   "household_role": "head",
    "index": 23,
+   "jobs": [
+    "farm_labourer"
+   ],
    "literacy": 0,
-   "name": "Wat Nettle",
+   "name": "Silas Kettle",
    "params": {
     "arousal": 0.131,
     "charm_weight": 0.521,
@@ -806,24 +1789,35 @@
     "w_spite": 0.1524,
     "w_supergraph": 0.7766
    },
-   "role": "labourer",
-   "role_identity": 0.333,
-   "workplace_cell": [
-    24,
-    13
+   "role": "farm_labourer",
+   "role_identity": 0.313,
+   "skill": 0.7,
+   "trades": [
+    "farmer"
    ],
-   "workplace_kind": "market"
+   "workplace_cell": [
+    39,
+    31
+   ],
+   "workplace_kind": "farm"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 29,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
     2,
-    7
+    9
    ],
+   "household": 12,
+   "household_role": "child",
    "index": 24,
+   "jobs": [
+    "butcher"
+   ],
    "literacy": 1,
-   "name": "Cobweb Furlong",
+   "name": "Phineas Underhill",
    "params": {
     "arousal": 0.4782,
     "charm_weight": 0.5585,
@@ -839,24 +1833,33 @@
     "w_spite": 0.0499,
     "w_supergraph": 0.3618
    },
-   "role": "labourer",
-   "role_identity": 0.1762,
+   "role": "butcher",
+   "role_identity": 0.4989,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    24,
-    13
+    22,
+    14
    ],
    "workplace_kind": "market"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 37,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    2,
-    9
+    5,
+    22
    ],
+   "household": 32,
+   "household_role": "head",
    "index": 25,
+   "jobs": [
+    "cooper"
+   ],
    "literacy": 1,
-   "name": "Peony Hobb",
+   "name": "Bettony Rundle",
    "params": {
     "arousal": 0.5375,
     "charm_weight": 0.2158,
@@ -872,24 +1875,33 @@
     "w_spite": 0.26,
     "w_supergraph": 0.5307
    },
-   "role": "farm_labourer",
-   "role_identity": 0.203,
+   "role": "cooper",
+   "role_identity": 0.5535,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    36,
-    25
+    33,
+    9
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "carpenter"
   },
   {
+   "age": 36,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    2,
-    11
+    4,
+    10
    ],
+   "household": 24,
+   "household_role": "child",
    "index": 26,
+   "jobs": [
+    "dairymaid"
+   ],
    "literacy": 0,
-   "name": "Corvin Kindle",
+   "name": "Wat Nettle",
    "params": {
     "arousal": 0.3131,
     "charm_weight": 0.5798,
@@ -905,24 +1917,33 @@
     "w_spite": 0.1251,
     "w_supergraph": 0.1957
    },
-   "role": "farm_labourer",
+   "role": "dairymaid",
    "role_identity": 0.2822,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    39,
-    25
+    42,
+    31
    ],
    "workplace_kind": "farm"
   },
   {
+   "age": 24,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    2,
-    13
+    1,
+    30
    ],
+   "household": 9,
+   "household_role": "child",
    "index": 27,
+   "jobs": [
+    "leatherworker"
+   ],
    "literacy": 1,
-   "name": "Lavinia Grubb",
+   "name": "Cobweb Furlong",
    "params": {
     "arousal": 0.2365,
     "charm_weight": 0.4089,
@@ -938,24 +1959,36 @@
     "w_spite": 0.2483,
     "w_supergraph": 0.5206
    },
-   "role": "farm_labourer",
-   "role_identity": 0.2065,
-   "workplace_cell": [
-    42,
-    25
+   "role": "leatherworker",
+   "role_identity": 0.3065,
+   "skill": 0.6,
+   "trades": [
+    "tanner",
+    "cobbler"
    ],
-   "workplace_kind": "farm"
+   "workplace_cell": [
+    22,
+    14
+   ],
+   "workplace_kind": "market"
   },
   {
+   "age": 38,
+   "capability": 0.9,
    "class": "rich",
-   "group": "low",
+   "group": "middle",
    "home_cell": [
-    2,
-    15
+    6,
+    31
    ],
+   "household": 39,
+   "household_role": "child",
    "index": 28,
+   "jobs": [
+    "tailor"
+   ],
    "literacy": 1,
-   "name": "Keturah Marsh",
+   "name": "Peony Hobb",
    "params": {
     "arousal": 0.6366,
     "charm_weight": 0.6906,
@@ -971,24 +2004,35 @@
     "w_spite": 0.1128,
     "w_supergraph": 0.2632
    },
-   "role": "farm_labourer",
-   "role_identity": 0.2713,
-   "workplace_cell": [
-    45,
-    25
+   "role": "tailor",
+   "role_identity": 0.5831,
+   "skill": 0.7,
+   "trades": [
+    "dyer"
    ],
-   "workplace_kind": "farm"
+   "workplace_cell": [
+    22,
+    14
+   ],
+   "workplace_kind": "market"
   },
   {
+   "age": 34,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    2,
-    17
+    7,
+    23
    ],
+   "household": 44,
+   "household_role": "spouse",
    "index": 29,
+   "jobs": [
+    "weaver"
+   ],
    "literacy": 0,
-   "name": "Alby Harkness",
+   "name": "Corvin Kindle",
    "params": {
     "arousal": 0.8503,
     "charm_weight": 0.6585,
@@ -1004,24 +2048,33 @@
     "w_spite": 0.3925,
     "w_supergraph": 0.4807
    },
-   "role": "farm_labourer",
-   "role_identity": 0.2512,
+   "role": "weaver",
+   "role_identity": 0.3512,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    36,
-    32
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "low",
+   "age": 33,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "high",
    "home_cell": [
-    2,
-    19
+    1,
+    7
    ],
+   "household": 5,
+   "household_role": "head",
    "index": 30,
+   "jobs": [
+    "baker"
+   ],
    "literacy": 1,
-   "name": "Vernon Lorric",
+   "name": "Marjorie Dough",
    "params": {
     "arousal": 0.5005,
     "charm_weight": 0.4011,
@@ -1037,24 +2090,33 @@
     "w_spite": 0.1161,
     "w_supergraph": 0.5619
    },
-   "role": "farm_labourer",
-   "role_identity": 0.2052,
+   "role": "baker",
+   "role_identity": 0.8834,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    39,
-    31
+    28,
+    24
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "bakery"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 40,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    2,
-    21
+    6,
+    8
    ],
+   "household": 35,
+   "household_role": "head",
    "index": 31,
+   "jobs": [
+    "miller"
+   ],
    "literacy": 1,
-   "name": "Millicent Vellum",
+   "name": "Lavinia Grubb",
    "params": {
     "arousal": 0.593,
     "charm_weight": 0.787,
@@ -1070,24 +2132,33 @@
     "w_spite": 0.3181,
     "w_supergraph": 0.624
    },
-   "role": "farm_labourer",
-   "role_identity": 0.1564,
+   "role": "miller",
+   "role_identity": 0.5291,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    42,
-    32
+    13,
+    12
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "mill"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 34,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
     2,
-    23
+    21
    ],
+   "household": 14,
+   "household_role": "head",
    "index": 32,
+   "jobs": [
+    "farmer"
+   ],
    "literacy": 1,
-   "name": "Mordecai Oakes",
+   "name": "Keturah Marsh",
    "params": {
     "arousal": 0.6694,
     "charm_weight": 0.5161,
@@ -1103,24 +2174,35 @@
     "w_spite": 0.254,
     "w_supergraph": 0.6512
    },
-   "role": "farm_labourer",
-   "role_identity": 0.1565,
+   "role": "farmer",
+   "role_identity": 0.542,
+   "skill": 0.7,
+   "trades": [
+    "cook"
+   ],
    "workplace_cell": [
     45,
-    31
+    32
    ],
    "workplace_kind": "farm"
   },
   {
+   "age": 34,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    2,
-    25
+    3,
+    7
    ],
+   "household": 17,
+   "household_role": "child",
    "index": 33,
+   "jobs": [
+    "animal_keeper"
+   ],
    "literacy": 1,
-   "name": "Erasmus Inkpen",
+   "name": "Alby Harkness",
    "params": {
     "arousal": 0.3304,
     "charm_weight": 0.4033,
@@ -1136,24 +2218,35 @@
     "w_spite": 0.1936,
     "w_supergraph": 0.6459
    },
-   "role": "farm_labourer",
-   "role_identity": 0.3137,
+   "role": "animal_keeper",
+   "role_identity": 0.3637,
+   "skill": 0.6,
+   "trades": [
+    "shepherd"
+   ],
    "workplace_cell": [
     36,
-    25
+    29
    ],
    "workplace_kind": "farm"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 25,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "high",
    "home_cell": [
-    2,
-    27
+    0,
+    9
    ],
+   "household": 1,
+   "household_role": "child",
    "index": 34,
+   "jobs": [
+    "carpenter"
+   ],
    "literacy": 1,
-   "name": "Erasmus Ottermole",
+   "name": "Vernon Lorric",
    "params": {
     "arousal": 0.595,
     "charm_weight": 0.6617,
@@ -1169,24 +2262,36 @@
     "w_spite": 0.3156,
     "w_supergraph": 0.7755
    },
-   "role": "farm_labourer",
-   "role_identity": 0.3054,
-   "workplace_cell": [
-    39,
-    25
+   "role": "carpenter",
+   "role_identity": 0.9703,
+   "skill": 0.7,
+   "trades": [
+    "woodworker",
+    "sawyer"
    ],
-   "workplace_kind": "farm"
+   "workplace_cell": [
+    33,
+    9
+   ],
+   "workplace_kind": "carpenter"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 34,
+   "capability": 0.55,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    2,
-    29
+    3,
+    7
    ],
+   "household": 17,
+   "household_role": "child",
    "index": 35,
+   "jobs": [
+    "councillor"
+   ],
    "literacy": 0,
-   "name": "Constance Ottermole",
+   "name": "Millicent Vellum",
    "params": {
     "arousal": 0.3742,
     "charm_weight": 0.284,
@@ -1202,24 +2307,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.6497
    },
-   "role": "farm_labourer",
-   "role_identity": 0.2366,
+   "role": "councillor",
+   "role_identity": 0.6627,
+   "skill": 0.6,
+   "trades": [],
    "workplace_cell": [
-    42,
-    25
+    23,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "townhall"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 27,
+   "capability": 0.9,
+   "class": "rich",
+   "group": "high",
    "home_cell": [
-    2,
-    31
+    3,
+    22
    ],
+   "household": 20,
+   "household_role": "child",
    "index": 36,
+   "jobs": [
+    "innkeeper"
+   ],
    "literacy": 1,
-   "name": "Thaddeus Furlong",
+   "name": "Mordecai Oakes",
    "params": {
     "arousal": 0.6441,
     "charm_weight": 0.3815,
@@ -1235,24 +2349,35 @@
     "w_spite": 0.2799,
     "w_supergraph": 0.5998
    },
-   "role": "farm_labourer",
-   "role_identity": 0.2323,
-   "workplace_cell": [
-    45,
-    25
+   "role": "innkeeper",
+   "role_identity": 0.8716,
+   "skill": 0.7,
+   "trades": [
+    "brewer"
    ],
-   "workplace_kind": "farm"
+   "workplace_cell": [
+    30,
+    20
+   ],
+   "workplace_kind": "inn"
   },
   {
+   "age": 50,
+   "capability": 0.9,
    "class": "middle",
-   "group": "low",
+   "group": "middle",
    "home_cell": [
-    2,
-    33
+    6,
+    11
    ],
+   "household": 36,
+   "household_role": "head",
    "index": 37,
+   "jobs": [
+    "smith"
+   ],
    "literacy": 1,
-   "name": "Ephraim Larkspur",
+   "name": "Erasmus Inkpen",
    "params": {
     "arousal": 0.6179,
     "charm_weight": 0.3513,
@@ -1268,24 +2393,33 @@
     "w_spite": 0.1926,
     "w_supergraph": 0.1069
    },
-   "role": "fisher",
-   "role_identity": 0.2908,
+   "role": "smith",
+   "role_identity": 0.6326,
+   "skill": 0.7,
+   "trades": [],
    "workplace_cell": [
-    1,
-    2
+    33,
+    9
    ],
-   "workplace_kind": "fish"
+   "workplace_kind": "carpenter"
   },
   {
+   "age": 22,
+   "capability": 0.9,
    "class": "poor",
-   "group": "low",
+   "group": "high",
    "home_cell": [
-    2,
-    35
+    1,
+    10
    ],
+   "household": 6,
+   "household_role": "child",
    "index": 38,
+   "jobs": [
+    "mason"
+   ],
    "literacy": 1,
-   "name": "Godfrey Tremble",
+   "name": "Erasmus Ottermole",
    "params": {
     "arousal": 0.2294,
     "charm_weight": 0.457,
@@ -1301,24 +2435,35 @@
     "w_spite": 0.0488,
     "w_supergraph": 0.3436
    },
-   "role": "fisher",
-   "role_identity": 0.2813,
-   "workplace_cell": [
-    1,
-    2
+   "role": "mason",
+   "role_identity": 0.9009,
+   "skill": 0.7,
+   "trades": [
+    "quarrier"
    ],
-   "workplace_kind": "fish"
+   "workplace_cell": [
+    45,
+    14
+   ],
+   "workplace_kind": "mason"
   },
   {
-   "class": "poor",
-   "group": "low",
+   "age": 34,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "middle",
    "home_cell": [
-    3,
-    7
+    5,
+    8
    ],
+   "household": 29,
+   "household_role": "head",
    "index": 39,
+   "jobs": [
+    "farmer"
+   ],
    "literacy": 1,
-   "name": "Thaddeus Puddifoot",
+   "name": "Constance Ottermole",
    "params": {
     "arousal": 0.3473,
     "charm_weight": 0.0,
@@ -1334,24 +2479,35 @@
     "w_spite": 0.067,
     "w_supergraph": 0.7902
    },
-   "role": "fisher",
-   "role_identity": 0.3509,
-   "workplace_cell": [
-    1,
-    2
+   "role": "farmer",
+   "role_identity": 0.6946,
+   "skill": 0.7,
+   "trades": [
+    "cook"
    ],
-   "workplace_kind": "fish"
+   "workplace_cell": [
+    39,
+    28
+   ],
+   "workplace_kind": "farm"
   },
   {
+   "age": 25,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    9
+    1,
+    33
    ],
+   "household": 10,
+   "household_role": "child",
    "index": 40,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Radella Gorse",
+   "name": "Thaddeus Furlong",
    "params": {
     "arousal": 0.4521,
     "charm_weight": 0.801,
@@ -1367,24 +2523,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.5407
    },
-   "role": "fisher",
-   "role_identity": 0.2924,
+   "role": "labourer",
+   "role_identity": 0.2324,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    1,
-    2
+    22,
+    14
    ],
-   "workplace_kind": "fish"
+   "workplace_kind": "market"
   },
   {
+   "age": 18,
+   "capability": 0.9,
    "class": "middle",
    "group": "low",
    "home_cell": [
-    3,
-    11
+    0,
+    31
    ],
+   "household": 3,
+   "household_role": "child",
    "index": 41,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Bartholomew Tremble",
+   "name": "Ephraim Larkspur",
    "params": {
     "arousal": 0.1568,
     "charm_weight": 0.3339,
@@ -1400,24 +2565,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.0812
    },
-   "role": "fisher",
-   "role_identity": 0.4446,
+   "role": "labourer",
+   "role_identity": 0.3846,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    1,
-    2
+    22,
+    14
    ],
-   "workplace_kind": "fish"
+   "workplace_kind": "market"
   },
   {
+   "age": 18,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    13
+    0,
+    8
    ],
+   "household": 0,
+   "household_role": "child",
    "index": 42,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Adelina Gorse",
+   "name": "Godfrey Tremble",
    "params": {
     "arousal": 0.1951,
     "charm_weight": 0.6194,
@@ -1433,24 +2607,33 @@
     "w_spite": 0.1872,
     "w_supergraph": 0.7881
    },
-   "role": "fisher",
-   "role_identity": 0.3844,
+   "role": "labourer",
+   "role_identity": 0.3244,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    1,
-    2
+    22,
+    14
    ],
-   "workplace_kind": "fish"
+   "workplace_kind": "market"
   },
   {
+   "age": 35,
+   "capability": 0.9,
    "class": "middle",
    "group": "low",
    "home_cell": [
-    3,
-    15
+    7,
+    21
    ],
+   "household": 43,
+   "household_role": "head",
    "index": 43,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Jem Grubb",
+   "name": "Thaddeus Puddifoot",
    "params": {
     "arousal": 0.4994,
     "charm_weight": 0.3267,
@@ -1466,24 +2649,33 @@
     "w_spite": 0.171,
     "w_supergraph": 0.4594
    },
-   "role": "fisher",
-   "role_identity": 0.2359,
+   "role": "labourer",
+   "role_identity": 0.1759,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    1,
-    2
+    22,
+    14
    ],
-   "workplace_kind": "fish"
+   "workplace_kind": "market"
   },
   {
+   "age": 41,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    17
+    4,
+    10
    ],
+   "household": 24,
+   "household_role": "child",
    "index": 44,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Mordecai Hobb",
+   "name": "Radella Gorse",
    "params": {
     "arousal": 0.4254,
     "charm_weight": 0.6481,
@@ -1499,24 +2691,33 @@
     "w_spite": 0.1361,
     "w_supergraph": 0.7182
    },
-   "role": "fisher",
-   "role_identity": 0.3137,
+   "role": "labourer",
+   "role_identity": 0.2537,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    1,
-    2
+    22,
+    14
    ],
-   "workplace_kind": "fish"
+   "workplace_kind": "market"
   },
   {
+   "age": 40,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    19
+    6,
+    23
    ],
+   "household": 38,
+   "household_role": "head",
    "index": 45,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Winifred Ottermole",
+   "name": "Bartholomew Tremble",
    "params": {
     "arousal": 0.3347,
     "charm_weight": 0.336,
@@ -1532,24 +2733,33 @@
     "w_spite": 0.1578,
     "w_supergraph": 0.6438
    },
-   "role": "forester",
-   "role_identity": 0.2831,
+   "role": "labourer",
+   "role_identity": 0.2231,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    13,
-    3
+    22,
+    14
    ],
-   "workplace_kind": "lumber"
+   "workplace_kind": "market"
   },
   {
+   "age": 29,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
     3,
-    21
+    7
    ],
+   "household": 17,
+   "household_role": "child",
    "index": 46,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Henrietta Sedge",
+   "name": "Adelina Gorse",
    "params": {
     "arousal": 0.4522,
     "charm_weight": 0.8505,
@@ -1565,24 +2775,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.5926
    },
-   "role": "forester",
-   "role_identity": 0.276,
+   "role": "labourer",
+   "role_identity": 0.216,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    13,
-    3
+    22,
+    14
    ],
-   "workplace_kind": "lumber"
+   "workplace_kind": "market"
   },
   {
+   "age": 45,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    23
+    1,
+    33
    ],
+   "household": 10,
+   "household_role": "head",
    "index": 47,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Elowen Peaseblossom",
+   "name": "Jem Grubb",
    "params": {
     "arousal": 0.5209,
     "charm_weight": 0.5962,
@@ -1598,24 +2817,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.5821
    },
-   "role": "forester",
-   "role_identity": 0.3718,
+   "role": "labourer",
+   "role_identity": 0.3118,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    13,
-    3
+    22,
+    14
    ],
-   "workplace_kind": "lumber"
+   "workplace_kind": "market"
   },
   {
+   "age": 28,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    25
+    4,
+    20
    ],
+   "household": 25,
+   "household_role": "child",
    "index": 48,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Mordecai Tremble",
+   "name": "Mordecai Hobb",
    "params": {
     "arousal": 0.1913,
     "charm_weight": 0.3453,
@@ -1631,24 +2859,33 @@
     "w_spite": 0.1959,
     "w_supergraph": 0.3174
    },
-   "role": "forester",
-   "role_identity": 0.2879,
+   "role": "labourer",
+   "role_identity": 0.2279,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    13,
-    3
+    22,
+    14
    ],
-   "workplace_kind": "lumber"
+   "workplace_kind": "market"
   },
   {
+   "age": 33,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    27
+    2,
+    31
    ],
+   "household": 15,
+   "household_role": "spouse",
    "index": 49,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Barnaby Rushton",
+   "name": "Winifred Ottermole",
    "params": {
     "arousal": 0.7176,
     "charm_weight": 0.6006,
@@ -1664,24 +2901,33 @@
     "w_spite": 0.0397,
     "w_supergraph": 0.588
    },
-   "role": "forester",
-   "role_identity": 0.2403,
+   "role": "labourer",
+   "role_identity": 0.1803,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    13,
-    3
+    22,
+    14
    ],
-   "workplace_kind": "lumber"
+   "workplace_kind": "market"
   },
   {
+   "age": 24,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    29
+    1,
+    30
    ],
+   "household": 9,
+   "household_role": "child",
    "index": 50,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Jem Cobb",
+   "name": "Henrietta Sedge",
    "params": {
     "arousal": 0.5427,
     "charm_weight": 0.6326,
@@ -1697,24 +2943,33 @@
     "w_spite": 0.2435,
     "w_supergraph": 0.432
    },
-   "role": "forester",
-   "role_identity": 0.2333,
+   "role": "labourer",
+   "role_identity": 0.1733,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    13,
-    3
+    22,
+    14
    ],
-   "workplace_kind": "lumber"
+   "workplace_kind": "market"
   },
   {
+   "age": 44,
+   "capability": 0.9,
    "class": "middle",
    "group": "low",
    "home_cell": [
-    3,
-    31
+    5,
+    20
    ],
+   "household": 31,
+   "household_role": "head",
    "index": 51,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Isolde Everdew",
+   "name": "Elowen Peaseblossom",
    "params": {
     "arousal": 0.7583,
     "charm_weight": 0.8278,
@@ -1730,24 +2985,33 @@
     "w_spite": 0.1129,
     "w_supergraph": 0.2798
    },
-   "role": "quarrier",
-   "role_identity": 0.3537,
+   "role": "labourer",
+   "role_identity": 0.2937,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "stone"
+   "workplace_kind": "market"
   },
   {
+   "age": 41,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    3,
-    33
+    1,
+    21
    ],
+   "household": 8,
+   "household_role": "head",
    "index": 52,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Henrietta Everdew",
+   "name": "Mordecai Tremble",
    "params": {
     "arousal": 0.2827,
     "charm_weight": 0.5518,
@@ -1763,24 +3027,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.631
    },
-   "role": "quarrier",
-   "role_identity": 0.2087,
+   "role": "labourer",
+   "role_identity": 0.1487,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "stone"
+   "workplace_kind": "market"
   },
   {
+   "age": 26,
+   "capability": 0.9,
    "class": "middle",
    "group": "low",
    "home_cell": [
-    3,
-    35
+    1,
+    33
    ],
+   "household": 10,
+   "household_role": "child",
    "index": 53,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Drusilla Ottermole",
+   "name": "Barnaby Rushton",
    "params": {
     "arousal": 0.3981,
     "charm_weight": 0.3696,
@@ -1796,24 +3069,33 @@
     "w_spite": 0.1369,
     "w_supergraph": 0.4238
    },
-   "role": "quarrier",
-   "role_identity": 0.3686,
+   "role": "labourer",
+   "role_identity": 0.3086,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "stone"
+   "workplace_kind": "market"
   },
   {
+   "age": 42,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    4,
-    1
+    1,
+    30
    ],
+   "household": 9,
+   "household_role": "head",
    "index": 54,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Corvin Cobb",
+   "name": "Jem Cobb",
    "params": {
     "arousal": 0.5043,
     "charm_weight": 0.2419,
@@ -1829,24 +3111,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.3799
    },
-   "role": "quarrier",
-   "role_identity": 0.2839,
+   "role": "labourer",
+   "role_identity": 0.2239,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "stone"
+   "workplace_kind": "market"
   },
   {
+   "age": 18,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    4,
-    7
+    1,
+    10
    ],
+   "household": 6,
+   "household_role": "child",
    "index": 55,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Lemuel Bramble",
+   "name": "Isolde Everdew",
    "params": {
     "arousal": 0.5089,
     "charm_weight": 0.0553,
@@ -1862,24 +3153,33 @@
     "w_spite": 0.1327,
     "w_supergraph": 0.4355
    },
-   "role": "quarrier",
-   "role_identity": 0.257,
+   "role": "labourer",
+   "role_identity": 0.197,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "stone"
+   "workplace_kind": "market"
   },
   {
+   "age": 21,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    4,
-    8
+    1,
+    10
    ],
+   "household": 6,
+   "household_role": "child",
    "index": 56,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Ida Codling",
+   "name": "Henrietta Everdew",
    "params": {
     "arousal": 0.5044,
     "charm_weight": 0.7449,
@@ -1895,24 +3195,33 @@
     "w_spite": 0.0174,
     "w_supergraph": 0.4448
    },
-   "role": "servant",
-   "role_identity": 0.2394,
+   "role": "labourer",
+   "role_identity": 0.2094,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    40,
-    29
+    22,
+    14
    ],
-   "workplace_kind": "manor"
+   "workplace_kind": "market"
   },
   {
+   "age": 22,
+   "capability": 0.9,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    4,
-    9
+    1,
+    10
    ],
+   "household": 6,
+   "household_role": "child",
    "index": 57,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Lavinia Rundle",
+   "name": "Drusilla Ottermole",
    "params": {
     "arousal": 0.8422,
     "charm_weight": 0.6069,
@@ -1928,24 +3237,33 @@
     "w_spite": 0.2839,
     "w_supergraph": 0.3369
    },
-   "role": "servant",
-   "role_identity": 0.1432,
+   "role": "labourer",
+   "role_identity": 0.1132,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    40,
-    29
+    22,
+    14
    ],
-   "workplace_kind": "manor"
+   "workplace_kind": "market"
   },
   {
+   "age": 40,
+   "capability": 0.9,
    "class": "middle",
    "group": "low",
    "home_cell": [
-    4,
-    11
+    1,
+    10
    ],
+   "household": 6,
+   "household_role": "head",
    "index": 58,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Ida Sedge",
+   "name": "Corvin Cobb",
    "params": {
     "arousal": 0.3493,
     "charm_weight": 0.3278,
@@ -1961,24 +3279,33 @@
     "w_spite": 0.1268,
     "w_supergraph": 0.6364
    },
-   "role": "servant",
-   "role_identity": 0.2329,
+   "role": "labourer",
+   "role_identity": 0.2029,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    40,
-    29
+    22,
+    14
    ],
-   "workplace_kind": "manor"
+   "workplace_kind": "market"
   },
   {
+   "age": 42,
+   "capability": 0.9,
    "class": "middle",
    "group": "low",
    "home_cell": [
     4,
-    12
+    10
    ],
+   "household": 24,
+   "household_role": "child",
    "index": 59,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Septimus Underhill",
+   "name": "Lemuel Bramble",
    "params": {
     "arousal": 0.0,
     "charm_weight": 0.0401,
@@ -1994,24 +3321,33 @@
     "w_spite": 0.2288,
     "w_supergraph": 0.5342
    },
-   "role": "servant",
-   "role_identity": 0.2796,
+   "role": "labourer",
+   "role_identity": 0.2496,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    40,
-    29
+    22,
+    14
    ],
-   "workplace_kind": "manor"
+   "workplace_kind": "market"
   },
   {
+   "age": 37,
+   "capability": 0.55,
    "class": "poor",
    "group": "low",
    "home_cell": [
-    4,
-    13
+    7,
+    23
    ],
+   "household": 44,
+   "household_role": "head",
    "index": 60,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Prosper Grubb",
+   "name": "Ida Codling",
    "params": {
     "arousal": 0.6455,
     "charm_weight": 0.3229,
@@ -2027,24 +3363,33 @@
     "w_spite": 0.1578,
     "w_supergraph": 0.0
    },
-   "role": "servant",
-   "role_identity": 0.1734,
+   "role": "labourer",
+   "role_identity": 0.1434,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    40,
-    29
+    22,
+    14
    ],
-   "workplace_kind": "manor"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 63,
+   "capability": 0.55,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
     4,
-    15
+    22
    ],
+   "household": 26,
+   "household_role": "head",
    "index": 61,
-   "literacy": 1,
-   "name": "Effie Wormwood",
+   "jobs": [
+    "labourer"
+   ],
+   "literacy": 0,
+   "name": "Lavinia Rundle",
    "params": {
     "arousal": 0.7848,
     "charm_weight": 0.5346,
@@ -2060,24 +3405,33 @@
     "w_spite": 0.201,
     "w_supergraph": 0.4892
    },
-   "role": "farmer",
-   "role_identity": 0.5848,
+   "role": "labourer",
+   "role_identity": 0.2086,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    36,
-    32
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
+   "age": 26,
+   "capability": 0.9,
    "class": "poor",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    16
+    3,
+    22
    ],
+   "household": 20,
+   "household_role": "child",
    "index": 62,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Bettony Bindle",
+   "name": "Ida Sedge",
    "params": {
     "arousal": 0.0336,
     "charm_weight": 0.9165,
@@ -2093,24 +3447,33 @@
     "w_spite": 0.1401,
     "w_supergraph": 0.6922
    },
-   "role": "farmer",
-   "role_identity": 0.594,
+   "role": "labourer",
+   "role_identity": 0.2155,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    39,
-    31
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "middle",
+   "age": 60,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
     4,
-    17
+    10
    ],
+   "household": 24,
+   "household_role": "head",
    "index": 63,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Henrietta Nettle",
+   "name": "Septimus Underhill",
    "params": {
     "arousal": 0.1688,
     "charm_weight": 0.6955,
@@ -2126,24 +3489,33 @@
     "w_spite": 0.3578,
     "w_supergraph": 0.4703
    },
-   "role": "farmer",
-   "role_identity": 0.6587,
+   "role": "labourer",
+   "role_identity": 0.264,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    32
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
+   "age": 29,
+   "capability": 0.9,
    "class": "middle",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    19
+    2,
+    9
    ],
+   "household": 12,
+   "household_role": "child",
    "index": 64,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Garnet Inkpen",
+   "name": "Prosper Grubb",
    "params": {
     "arousal": 0.2749,
     "charm_weight": 0.3472,
@@ -2159,24 +3531,33 @@
     "w_spite": 0.257,
     "w_supergraph": 0.3696
    },
-   "role": "farmer",
-   "role_identity": 0.6118,
+   "role": "labourer",
+   "role_identity": 0.2288,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    45,
-    31
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 37,
+   "capability": 0.55,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    4,
-    20
+    0,
+    31
    ],
+   "household": 3,
+   "household_role": "head",
    "index": 65,
-   "literacy": 1,
-   "name": "Radella Ramskin",
+   "jobs": [
+    "labourer"
+   ],
+   "literacy": 0,
+   "name": "Effie Wormwood",
    "params": {
     "arousal": 0.2736,
     "charm_weight": 0.6918,
@@ -2192,24 +3573,33 @@
     "w_spite": 0.4667,
     "w_supergraph": 0.0126
    },
-   "role": "farmer",
-   "role_identity": 0.563,
+   "role": "labourer",
+   "role_identity": 0.1922,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    36,
-    25
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
+   "age": 27,
+   "capability": 0.9,
    "class": "middle",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    21
+    1,
+    33
    ],
+   "household": 10,
+   "household_role": "child",
    "index": 66,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Prudence Gorse",
+   "name": "Bettony Bindle",
    "params": {
     "arousal": 0.4972,
     "charm_weight": 0.6643,
@@ -2225,24 +3615,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.2756
    },
-   "role": "farmer",
-   "role_identity": 0.5358,
+   "role": "labourer",
+   "role_identity": 0.1719,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    39,
-    25
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
+   "age": 38,
+   "capability": 0.55,
    "class": "poor",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    23
+    2,
+    31
    ],
+   "household": 15,
+   "household_role": "head",
    "index": 67,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Horace Yarrow",
+   "name": "Henrietta Nettle",
    "params": {
     "arousal": 0.4683,
     "charm_weight": 0.7521,
@@ -2258,24 +3657,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.2006
    },
-   "role": "farmer",
-   "role_identity": 0.6316,
+   "role": "labourer",
+   "role_identity": 0.2437,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    25
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 18,
+   "capability": 0.55,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    4,
-    24
+    1,
+    19
    ],
+   "household": 7,
+   "household_role": "child",
    "index": 68,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Drusilla Underhill",
+   "name": "Garnet Inkpen",
    "params": {
     "arousal": 0.3364,
     "charm_weight": 0.3027,
@@ -2291,24 +3699,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.3477
    },
-   "role": "farmer",
-   "role_identity": 0.6933,
+   "role": "labourer",
+   "role_identity": 0.29,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    45,
-    25
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
+   "age": 46,
+   "capability": 0.9,
    "class": "poor",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    25
+    3,
+    22
    ],
+   "household": 20,
+   "household_role": "head",
    "index": 69,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Ferdinand Wormwood",
+   "name": "Radella Ramskin",
    "params": {
     "arousal": 0.6231,
     "charm_weight": 0.8974,
@@ -2324,24 +3741,33 @@
     "w_spite": 0.146,
     "w_supergraph": 0.4537
    },
-   "role": "farmer",
-   "role_identity": 0.4314,
+   "role": "labourer",
+   "role_identity": 0.0936,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    36,
-    32
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
+   "age": 46,
+   "capability": 0.9,
    "class": "poor",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    27
+    1,
+    21
    ],
+   "household": 8,
+   "household_role": "spouse",
    "index": 70,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Adelina Sputterfield",
+   "name": "Prudence Gorse",
    "params": {
     "arousal": 0.6532,
     "charm_weight": 0.3731,
@@ -2357,24 +3783,33 @@
     "w_spite": 0.2233,
     "w_supergraph": 0.1469
    },
-   "role": "farmer",
-   "role_identity": 0.5918,
+   "role": "labourer",
+   "role_identity": 0.2139,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    39,
-    31
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 27,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    4,
-    28
+    1,
+    33
    ],
+   "household": 10,
+   "household_role": "child",
    "index": 71,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Henrietta Peaseblossom",
+   "name": "Horace Yarrow",
    "params": {
     "arousal": 0.4661,
     "charm_weight": 0.3951,
@@ -2390,24 +3825,33 @@
     "w_spite": 0.2006,
     "w_supergraph": 0.101
    },
-   "role": "farmer",
-   "role_identity": 0.6253,
+   "role": "labourer",
+   "role_identity": 0.2389,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    42,
-    32
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
+   "age": 35,
+   "capability": 0.9,
    "class": "middle",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    29
+    2,
+    33
    ],
+   "household": 16,
+   "household_role": "child",
    "index": 72,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Ottoline Frittle",
+   "name": "Drusilla Underhill",
    "params": {
     "arousal": 0.3983,
     "charm_weight": 1.0,
@@ -2423,24 +3867,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.6234
    },
-   "role": "farmer",
-   "role_identity": 0.6851,
+   "role": "labourer",
+   "role_identity": 0.2838,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    45,
-    31
+    22,
+    14
    ],
-   "workplace_kind": "farm"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 56,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    4,
+    6,
     31
    ],
+   "household": 39,
+   "household_role": "head",
    "index": 73,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Agnes Wick",
+   "name": "Ferdinand Wormwood",
    "params": {
     "arousal": 0.1858,
     "charm_weight": 0.4355,
@@ -2456,24 +3909,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.3494
    },
-   "role": "teacher",
-   "role_identity": 0.7715,
+   "role": "labourer",
+   "role_identity": 0.3241,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    16,
-    24
+    22,
+    14
    ],
-   "workplace_kind": "school"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 33,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
     4,
-    32
+    34
    ],
+   "household": 28,
+   "household_role": "head",
    "index": 74,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Lettice Sallow",
+   "name": "Adelina Sputterfield",
    "params": {
     "arousal": 0.3595,
     "charm_weight": 0.4662,
@@ -2489,24 +3951,33 @@
     "w_spite": 0.1566,
     "w_supergraph": 0.8159
    },
-   "role": "teacher",
-   "role_identity": 0.4284,
+   "role": "labourer",
+   "role_identity": 0.03,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    16,
-    24
+    22,
+    14
    ],
-   "workplace_kind": "school"
+   "workplace_kind": "market"
   },
   {
+   "age": 51,
+   "capability": 0.9,
    "class": "poor",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    33
+    3,
+    10
    ],
+   "household": 18,
+   "household_role": "head",
    "index": 75,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Tobias Jubbins",
+   "name": "Henrietta Peaseblossom",
    "params": {
     "arousal": 0.4997,
     "charm_weight": 0.5214,
@@ -2522,24 +3993,33 @@
     "w_spite": 0.0808,
     "w_supergraph": 0.4097
    },
-   "role": "reporter",
-   "role_identity": 0.6324,
+   "role": "labourer",
+   "role_identity": 0.2477,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    28,
-    13
+    22,
+    14
    ],
-   "workplace_kind": "press"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 40,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    4,
-    35
+    5,
+    32
    ],
+   "household": 33,
+   "household_role": "head",
    "index": 76,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Horace Nubbins",
+   "name": "Ottoline Frittle",
    "params": {
     "arousal": 0.203,
     "charm_weight": 0.5554,
@@ -2555,24 +4035,33 @@
     "w_spite": 0.0873,
     "w_supergraph": 0.6704
    },
-   "role": "clerk",
-   "role_identity": 0.6342,
+   "role": "labourer",
+   "role_identity": 0.2922,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    13
+    14
    ],
-   "workplace_kind": "townhall"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "middle",
+   "age": 18,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    36
+    0,
+    31
    ],
+   "household": 3,
+   "household_role": "child",
    "index": 77,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Peony Tremble",
+   "name": "Agnes Wick",
    "params": {
     "arousal": 0.5399,
     "charm_weight": 0.5629,
@@ -2588,24 +4077,33 @@
     "w_spite": 0.0683,
     "w_supergraph": 0.6177
    },
-   "role": "clerk",
-   "role_identity": 0.5551,
+   "role": "labourer",
+   "role_identity": 0.2244,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    13
+    14
    ],
-   "workplace_kind": "townhall"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 18,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    4,
-    37
+    0,
+    31
    ],
+   "household": 3,
+   "household_role": "child",
    "index": 78,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Obadiah Sedge",
+   "name": "Lettice Sallow",
    "params": {
     "arousal": 0.6044,
     "charm_weight": 0.3607,
@@ -2621,24 +4119,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.5126
    },
-   "role": "councillor",
-   "role_identity": 0.5513,
+   "role": "labourer",
+   "role_identity": 0.1611,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    13
+    14
    ],
-   "workplace_kind": "townhall"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "middle",
+   "age": 40,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
-    4,
-    38
+    3,
+    34
    ],
+   "household": 22,
+   "household_role": "head",
    "index": 79,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Jerusha Thistlewood",
+   "name": "Tobias Jubbins",
    "params": {
     "arousal": 0.6465,
     "charm_weight": 0.705,
@@ -2654,24 +4161,33 @@
     "w_spite": 0.0437,
     "w_supergraph": 0.4272
    },
-   "role": "councillor",
-   "role_identity": 0.5148,
+   "role": "labourer",
+   "role_identity": 0.1299,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    13
+    14
    ],
-   "workplace_kind": "townhall"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 46,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    5,
-    0
+    0,
+    8
    ],
+   "household": 0,
+   "household_role": "head",
    "index": 80,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Jem Vellum",
+   "name": "Horace Nubbins",
    "params": {
     "arousal": 0.6877,
     "charm_weight": 0.5452,
@@ -2687,24 +4203,33 @@
     "w_spite": 0.0739,
     "w_supergraph": 0.7
    },
-   "role": "councillor",
-   "role_identity": 0.6461,
+   "role": "labourer",
+   "role_identity": 0.2424,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    13
+    14
    ],
-   "workplace_kind": "townhall"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 26,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    5,
-    39
+    3,
+    19
    ],
+   "household": 19,
+   "household_role": "child",
    "index": 81,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Godfrey Ashby",
+   "name": "Peony Tremble",
    "params": {
     "arousal": 0.3245,
     "charm_weight": 0.6033,
@@ -2720,24 +4245,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.3777
    },
-   "role": "councillor",
-   "role_identity": 0.5588,
+   "role": "labourer",
+   "role_identity": 0.1676,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    13
+    14
    ],
-   "workplace_kind": "townhall"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "middle",
+   "age": 41,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
     6,
-    1
+    20
    ],
+   "household": 37,
+   "household_role": "head",
    "index": 82,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Verity Ottermole",
+   "name": "Obadiah Sedge",
    "params": {
     "arousal": 0.3466,
     "charm_weight": 0.2296,
@@ -2753,24 +4287,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.5469
    },
-   "role": "miller",
-   "role_identity": 0.5083,
+   "role": "labourer",
+   "role_identity": 0.1585,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    12,
-    12
+    22,
+    14
    ],
-   "workplace_kind": "mill"
+   "workplace_kind": "market"
   },
   {
+   "age": 25,
+   "capability": 0.9,
    "class": "poor",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    6,
-    7
+    3,
+    10
    ],
+   "household": 18,
+   "household_role": "child",
    "index": 83,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Elowen Puddifoot",
+   "name": "Jerusha Thistlewood",
    "params": {
     "arousal": 0.4023,
     "charm_weight": 0.4807,
@@ -2786,24 +4329,33 @@
     "w_spite": 0.0086,
     "w_supergraph": 0.5741
    },
-   "role": "constable",
-   "role_identity": 0.5706,
+   "role": "labourer",
+   "role_identity": 0.1948,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    20,
-    25
+    22,
+    14
    ],
-   "workplace_kind": "watch"
+   "workplace_kind": "market"
   },
   {
+   "age": 28,
+   "capability": 0.55,
    "class": "poor",
-   "group": "middle",
+   "group": "low",
    "home_cell": [
-    6,
-    8
+    3,
+    10
    ],
+   "household": 18,
+   "household_role": "child",
    "index": 84,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Corvin Inkpen",
+   "name": "Jem Vellum",
    "params": {
     "arousal": 0.4564,
     "charm_weight": 0.5504,
@@ -2819,24 +4371,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.0785
    },
-   "role": "midwife",
-   "role_identity": 0.6442,
+   "role": "labourer",
+   "role_identity": 0.275,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    16,
-    20
+    22,
+    14
    ],
-   "workplace_kind": "surgery"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "high",
+   "age": 35,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
     6,
-    9
+    31
    ],
+   "household": 39,
+   "household_role": "child",
    "index": 85,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Doreen Ferrety",
+   "name": "Godfrey Ashby",
    "params": {
     "arousal": 0.3997,
     "charm_weight": 0.747,
@@ -2852,24 +4413,33 @@
     "w_spite": 0.2985,
     "w_supergraph": 0.9114
    },
-   "role": "fishmonger",
-   "role_identity": 0.9414,
+   "role": "labourer",
+   "role_identity": 0.3121,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    10,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "fishmonger"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 36,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
-    6,
-    11
+    1,
+    19
    ],
+   "household": 7,
+   "household_role": "head",
    "index": 86,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Ignatius Kettle",
+   "name": "Verity Ottermole",
    "params": {
     "arousal": 0.5479,
     "charm_weight": 0.0667,
@@ -2885,24 +4455,33 @@
     "w_spite": 0.0364,
     "w_supergraph": 0.4787
    },
-   "role": "fishmonger",
-   "role_identity": 0.9683,
+   "role": "labourer",
+   "role_identity": 0.3524,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    10,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "fishmonger"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 27,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
-    6,
-    12
+    3,
+    10
    ],
+   "household": 18,
+   "household_role": "child",
    "index": 87,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Ida Hobb",
+   "name": "Elowen Puddifoot",
    "params": {
     "arousal": 0.0,
     "charm_weight": 0.1329,
@@ -2918,24 +4497,33 @@
     "w_spite": 0.2127,
     "w_supergraph": 0.6134
    },
-   "role": "carpenter",
-   "role_identity": 0.8244,
+   "role": "labourer",
+   "role_identity": 0.1066,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    34,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "carpenter"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "high",
+   "age": 52,
+   "capability": 0.55,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    13
+    3,
+    7
    ],
+   "household": 17,
+   "household_role": "head",
    "index": 88,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Quentin Codling",
+   "name": "Corvin Inkpen",
    "params": {
     "arousal": 0.1727,
     "charm_weight": 0.5706,
@@ -2951,24 +4539,33 @@
     "w_spite": 0.4559,
     "w_supergraph": 0.8902
    },
-   "role": "carpenter",
-   "role_identity": 0.9496,
+   "role": "labourer",
+   "role_identity": 0.2944,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    34,
-    8
+    22,
+    14
    ],
-   "workplace_kind": "carpenter"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 23,
+   "capability": 0.55,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    15
+    0,
+    9
    ],
+   "household": 1,
+   "household_role": "child",
    "index": 89,
-   "literacy": 1,
-   "name": "Willa Jubbins",
+   "jobs": [
+    "labourer"
+   ],
+   "literacy": 0,
+   "name": "Ignatius Kettle",
    "params": {
     "arousal": 0.4275,
     "charm_weight": 0.5258,
@@ -2984,24 +4581,33 @@
     "w_spite": 0.1974,
     "w_supergraph": 0.299
    },
-   "role": "mason",
-   "role_identity": 0.931,
+   "role": "labourer",
+   "role_identity": 0.2665,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    45,
-    15
+    22,
+    14
    ],
-   "workplace_kind": "mason"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 46,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
-    6,
-    16
+    5,
+    10
    ],
+   "household": 30,
+   "household_role": "head",
    "index": 90,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Effie Larkspur",
+   "name": "Ida Hobb",
    "params": {
     "arousal": 0.5614,
     "charm_weight": 0.5357,
@@ -3017,24 +4623,33 @@
     "w_spite": 0.3089,
     "w_supergraph": 0.4409
    },
-   "role": "mason",
-   "role_identity": 0.8595,
+   "role": "labourer",
+   "role_identity": 0.1593,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    45,
-    15
+    22,
+    14
    ],
-   "workplace_kind": "mason"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 30,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    17
+    2,
+    19
    ],
+   "household": 13,
+   "household_role": "head",
    "index": 91,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Marjorie Dough",
+   "name": "Quentin Codling",
    "params": {
     "arousal": 0.3214,
     "charm_weight": 0.2092,
@@ -3050,24 +4665,33 @@
     "w_spite": 0.0881,
     "w_supergraph": 0.7919
    },
-   "role": "baker",
-   "role_identity": 0.9183,
+   "role": "labourer",
+   "role_identity": 0.2774,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    28,
-    24
+    22,
+    14
    ],
-   "workplace_kind": "bakery"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "high",
+   "age": 36,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    19
+    0,
+    8
    ],
+   "household": 0,
+   "household_role": "spouse",
    "index": 92,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Adelina Norbisham",
+   "name": "Willa Jubbins",
    "params": {
     "arousal": 0.4933,
     "charm_weight": 0.3448,
@@ -3083,24 +4707,33 @@
     "w_spite": 0.2081,
     "w_supergraph": 0.5761
    },
-   "role": "baker",
-   "role_identity": 0.9121,
+   "role": "labourer",
+   "role_identity": 0.2681,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    28,
-    24
+    22,
+    14
    ],
-   "workplace_kind": "bakery"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 37,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    20
+    4,
+    8
    ],
+   "household": 23,
+   "household_role": "head",
    "index": 93,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Alby Frittle",
+   "name": "Effie Larkspur",
    "params": {
     "arousal": 0.0,
     "charm_weight": 0.5504,
@@ -3116,24 +4749,33 @@
     "w_spite": 0.3125,
     "w_supergraph": 0.4798
    },
-   "role": "innkeeper",
-   "role_identity": 0.8678,
+   "role": "labourer",
+   "role_identity": 0.2466,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    30,
-    20
+    22,
+    14
    ],
-   "workplace_kind": "inn"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "high",
+   "age": 41,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
     6,
-    21
+    34
    ],
+   "household": 40,
+   "household_role": "head",
    "index": 94,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Kester Furlong",
+   "name": "Adelina Norbisham",
    "params": {
     "arousal": 0.4413,
     "charm_weight": 0.7278,
@@ -3149,24 +4791,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.8265
    },
-   "role": "landlord",
-   "role_identity": 0.8897,
+   "role": "labourer",
+   "role_identity": 0.1395,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    34,
-    17
+    22,
+    14
    ],
-   "workplace_kind": "estate"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 38,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    23
+    4,
+    8
    ],
+   "household": 23,
+   "household_role": "sibling",
    "index": 95,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Scrooge",
+   "name": "Alby Frittle",
    "params": {
     "arousal": 0.0,
     "charm_weight": 0.3867,
@@ -3182,24 +4833,33 @@
     "w_spite": 0.2291,
     "w_supergraph": 0.5146
    },
-   "role": "banker",
-   "role_identity": 0.9344,
+   "role": "labourer",
+   "role_identity": 0.2289,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    19,
-    13
+    22,
+    14
    ],
-   "workplace_kind": "bank"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 52,
+   "capability": 0.55,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
-    6,
-    24
+    7,
+    31
    ],
+   "household": 45,
+   "household_role": "head",
    "index": 96,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Jem Sedge",
+   "name": "Kester Furlong",
    "params": {
     "arousal": 0.501,
     "charm_weight": 0.4031,
@@ -3215,24 +4875,33 @@
     "w_spite": 0.2915,
     "w_supergraph": 0.7444
    },
-   "role": "shopkeeper",
-   "role_identity": 0.9181,
+   "role": "labourer",
+   "role_identity": 0.2472,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    23
+    14
    ],
-   "workplace_kind": "store"
+   "workplace_kind": "market"
   },
   {
-   "class": "middle",
-   "group": "high",
+   "age": 47,
+   "capability": 0.9,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    25
+    2,
+    9
    ],
+   "household": 12,
+   "household_role": "spouse",
    "index": 97,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "John",
+   "name": "Jem Sedge",
    "params": {
     "arousal": 0.0213,
     "charm_weight": 0.493,
@@ -3248,24 +4917,33 @@
     "w_spite": 0.2795,
     "w_supergraph": 0.0
    },
-   "role": "mayor",
-   "role_identity": 0.9474,
+   "role": "labourer",
+   "role_identity": 0.2748,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
     22,
-    13
+    14
    ],
-   "workplace_kind": "townhall"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 46,
+   "capability": 0.9,
+   "class": "middle",
+   "group": "low",
    "home_cell": [
-    6,
-    27
+    3,
+    19
    ],
+   "household": 19,
+   "household_role": "head",
    "index": 98,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 1,
-   "name": "Mary",
+   "name": "Dunstan Haywain",
    "params": {
     "arousal": 0.4989,
     "charm_weight": 0.5764,
@@ -3281,24 +4959,33 @@
     "w_spite": 0.0,
     "w_supergraph": 0.5959
    },
-   "role": "pastor",
-   "role_identity": 0.8098,
+   "role": "labourer",
+   "role_identity": 0.2078,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    31,
-    13
+    22,
+    14
    ],
-   "workplace_kind": "church"
+   "workplace_kind": "market"
   },
   {
-   "class": "rich",
-   "group": "high",
+   "age": 18,
+   "capability": 0.55,
+   "class": "poor",
+   "group": "low",
    "home_cell": [
-    6,
-    28
+    0,
+    8
    ],
+   "household": 0,
+   "household_role": "child",
    "index": 99,
+   "jobs": [
+    "labourer"
+   ],
    "literacy": 0,
-   "name": "Dunstan Haywain",
+   "name": "Lemuel Norbisham",
    "params": {
     "arousal": 0.6504,
     "charm_weight": 0.6972,
@@ -3314,13 +5001,15 @@
     "w_spite": 0.0346,
     "w_supergraph": 0.6205
    },
-   "role": "doctor",
-   "role_identity": 0.885,
+   "role": "labourer",
+   "role_identity": 0.274,
+   "skill": 0.5,
+   "trades": [],
    "workplace_cell": [
-    16,
-    20
+    22,
+    14
    ],
-   "workplace_kind": "surgery"
+   "workplace_kind": "market"
   }
  ],
  "seed": 305000,

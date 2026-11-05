@@ -174,7 +174,7 @@ def _check_founding_town(errors, warnings, info):
     The tile names are those of worlds.bigville_sim_world.TILE_NAME (not imported: this module has
     no world code).
     """
-    required = {"FOUNDING_ROLES": FOUNDING_ROLES, "FOUNDING_CLASS": FOUNDING_CLASS,
+    required = {"FOUNDING_JOBS": FOUNDING_JOBS, "FOUNDING_AGE": FOUNDING_AGE, "FOUNDING_CLASS": FOUNDING_CLASS,
                 "FOUNDING_FIRST_NAMES": FOUNDING_FIRST_NAMES, "FOUNDING_LAST_NAMES": FOUNDING_LAST_NAMES,
                 "FOUNDING_PERSONALITY": FOUNDING_PERSONALITY,
                 "FOUNDING_CAUSAL_RESOLUTION": FOUNDING_CAUSAL_RESOLUTION,
@@ -199,19 +199,20 @@ def _check_founding_town(errors, warnings, info):
     def inside(x, y):
         return isinstance(x, int) and isinstance(y, int) and 0 <= x < W and 0 <= y < H
 
-    # --- the cast
+    # --- the cast: jobs, staffing, ages, and the classes they are drawn into
     groups = FOUNDING_CLASS.get("by_group", {})
     stations = FOUNDING_CLASS.get("station_by_group", {})
     literacy = FOUNDING_CLASS.get("literacy_by_class", {})
-    residents = 0
-    loose_roles = set()
-    for row in FOUNDING_ROLES:
-        role = row.get("role")
-        where = f"FOUNDING_ROLES[{role}]"
-        if not isinstance(row.get("count"), int) or row["count"] < 1:
-            errors.append(f"{where}.count: must be a whole number of at least 1")
-        else:
-            residents += row["count"]
+    capability = FOUNDING_CLASS.get("capability_by_literacy", {})
+    residents = int(BALANCE_SCENARIO.get("residents", 0))
+    roles = set(FOUNDING_JOBS)
+    for job in JOBS:
+        if job not in FOUNDING_JOBS:
+            errors.append(f"FOUNDING_JOBS: JOBS[{job}] has no row, so the job has no workplace or group")
+    for job, row in FOUNDING_JOBS.items():
+        where = f"FOUNDING_JOBS[{job}]"
+        if job not in JOBS:
+            errors.append(f"{where}: '{job}' is not a JOBS key")
         if row.get("group") not in groups:
             errors.append(f"{where}.group: '{row.get('group')}' has no FOUNDING_CLASS.by_group entry")
         if row.get("workplace") not in FOUNDING_WORKPLACES and row.get("workplace") not in FOUNDING_DEPOSITS \
@@ -223,15 +224,15 @@ def _check_founding_town(errors, warnings, info):
             errors.append(f"{where}.role_identity_mean: must be between 0 and 1")
         if not (isinstance(sd, (int, float)) and sd >= 0.0):
             errors.append(f"{where}.role_identity_sd: must be zero or more")
-        if role not in JOBS and role not in TRADES and role not in CAST_ROLE_TRADES:
-            loose_roles.add(role)
-    if loose_roles:
-        info.append(f"FOUNDING ROLES: {', '.join(sorted(loose_roles))} have no JOBS, TRADES, or "
-                    f"CAST_ROLE_TRADES entry (the cast seeds them, and they get no trades)")
-    info.append(f"FOUNDING TOWN: {residents} residents in {len(FOUNDING_ROLES)} roles on a {W}x{H} map")
+    info.append(f"FOUNDING TOWN: {residents} residents in {len(FOUNDING_JOBS)} jobs on a {W}x{H} map")
     if residents < 1:
-        errors.append("FOUNDING_ROLES: the cast has no residents")
-    roles = {row.get("role") for row in FOUNDING_ROLES}
+        errors.append("FOUNDING_JOBS: the cast has no residents (BALANCE_SCENARIO.residents is 0)")
+    staffing = check_job_seed(residents)
+    if not staffing["ok"]:
+        errors.append("FOUNDING TOWN: the jobs do not staff the founding town: " + "; ".join(staffing["issues"]))
+    for group in {row.get("group") for row in FOUNDING_JOBS.values()}:
+        if group not in stations:
+            errors.append(f"FOUNDING_CLASS.station_by_group: group '{group}' has no station")
     for group, shares in groups.items():
         rich, middle = shares.get("rich"), shares.get("middle")
         if not (isinstance(rich, (int, float)) and isinstance(middle, (int, float))
@@ -240,17 +241,24 @@ def _check_founding_town(errors, warnings, info):
     for klass in ("rich", "middle", "poor"):
         if not (isinstance(literacy.get(klass), (int, float)) and 0.0 <= literacy[klass] <= 1.0):
             errors.append(f"FOUNDING_CLASS.literacy_by_class: '{klass}' must be a probability between 0 and 1")
-    for group in {row.get("group") for row in FOUNDING_ROLES}:
-        if group not in stations:
-            errors.append(f"FOUNDING_CLASS.station_by_group: group '{group}' has no station")
+    for key in ("literate", "unlettered"):
+        if not (isinstance(capability.get(key), (int, float)) and 0.0 <= capability[key] <= 1.0):
+            errors.append(f"FOUNDING_CLASS.capability_by_literacy: '{key}' must be between 0 and 1")
     for group, station in stations.items():
         if station not in STATION_EDUCATION:
             errors.append(f"FOUNDING_CLASS.station_by_group[{group}]: '{station}' is not a STATION_EDUCATION key")
+    adult = LIFE_STAGES["adult"]
+    age = FOUNDING_AGE
+    if not all(field in age for field in ("mean", "sd", "min", "max", "stream")):
+        errors.append("FOUNDING_AGE: needs mean, sd, min, max, and stream")
+    elif not (adult["age_min"] <= age["min"] <= age["mean"] <= age["max"] <= adult["age_max"] and age["sd"] >= 0):
+        errors.append(f"FOUNDING_AGE: founders must be of working age ({adult['age_min']} to {adult['age_max']}); "
+                      f"min, mean, and max must lie in that range in order, with sd zero or more")
 
     # --- names, anchors, and drawn traits
     for role in FOUNDING_ANCHOR_NAMES:
         if role not in roles:
-            errors.append(f"FOUNDING_ANCHOR_NAMES[{role}]: no FOUNDING_ROLES row has that role")
+            errors.append(f"FOUNDING_ANCHOR_NAMES[{role}]: no FOUNDING_JOBS row has that job")
     anchor_names = list(FOUNDING_ANCHOR_NAMES.values())
     if len(set(anchor_names)) != len(anchor_names):
         errors.append("FOUNDING_ANCHOR_NAMES: two roles share a name")
@@ -911,9 +919,10 @@ def check_consistency():
     for key in ("EXTENDED_FAMILY",):
         _num(f"{key}", EXTENDED_FAMILY, 0.0, 1.0)
     for key, value in KIN_MODEL.items():
-        if key != "CHILD_SPACING_YEARS":
+        if key not in ("CHILD_SPACING_YEARS", "SIBLING_MAX_GAP_YEARS"):
             _num(f"KIN_MODEL.{key}", value, 0.0, 1.0)
     _num("KIN_MODEL.CHILD_SPACING_YEARS", KIN_MODEL["CHILD_SPACING_YEARS"], 0.5)
+    _num("KIN_MODEL.SIBLING_MAX_GAP_YEARS", KIN_MODEL["SIBLING_MAX_GAP_YEARS"], 0.0, 40.0)
     _num("INFANT_SURVIVAL", INFANT_SURVIVAL, 0.0, 1.0)
     kin_draw = describe_household_distribution(10000, seed=1)
     for key, label, measured in (("mean_size", "household size (mean members)", kin_draw["mean_size"]),
@@ -926,12 +935,17 @@ def check_consistency():
             errors.append(f"HOUSEHOLD_TARGETS[{key}]: {line}")
         else:
             info.append(f"HOUSEHOLDS: {line}")
-    kin_shape = describe_founding_kin(100, seed=305009)
-    info.append(f"FOUNDING KIN (100 adults of 30, as the founding cast): {kin_shape['with_parent_on_record']:.0%} "
-                f"have a parent on record, {kin_shape['married']:.0%} are joined by a union, "
-                f"{kin_shape['with_aunt_or_uncle']:.0%} have an aunt or uncle, {kin_shape['with_cousin']:.0%} "
-                f"have a first cousin, married founders average {kin_shape['mean_children_married']:.1f} children "
-                f"(model shape; see population/household_composition.json)")
+    if FOUNDING_AGE:
+        kin_shape = describe_founding_kin(100, seed=305000)
+        info.append(f"FOUNDING KIN (100 founders, ages from FOUNDING_AGE, the default town's seed): "
+                    f"{kin_shape['with_parent_on_record']:.0%} have a parent on record, "
+                    f"{kin_shape['in_a_union']:.0%} are in a union, "
+                    f"{kin_shape['with_aunt_or_uncle']:.0%} have an aunt or uncle, "
+                    f"{kin_shape['with_cousin']:.0%} have a first cousin; households with a co-resident spouse have "
+                    f"{kin_shape['mean_children_with_spouse']:.1f} adult children in the household on average; "
+                    f"{kin_shape['households']} households, mean {kin_shape['mean_members']:.2f} founders each "
+                    f"(drawn size {kin_shape['mean_drawn_size']:.2f}), {kin_shape['extended_share']:.0%} extended "
+                    f"(model shape; see population/household_composition.json)")
 
     _check_founding_town(errors, warnings, info)
     stats = {

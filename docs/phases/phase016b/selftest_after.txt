@@ -1,0 +1,138 @@
+bigville entities -- consistency report
+========================================
+items 252  recipes 163 (163 runnable)  buildings 35 (30 at founding)  trades 51
+crops 21  animals 8  containers 13
+items by class: component 3, furniture 5, good 32, material 179, tool 33
+
+ERRORS (0)
+  none
+
+WARNINGS (0)
+  none
+
+INFO (10)
+  FOUNDING KIN (100 founders, ages from FOUNDING_AGE, the default town's seed) (1)
+    - FOUNDING KIN (100 founders, ages from FOUNDING_AGE, the default town's seed): 100% have a parent on record, 75% are in a union, 100% have an aunt or uncle, 33% have a first cousin; households with a co-resident spouse have 1.2 adult children in the household on average; 46 households, mean 2.17 founders each (drawn size 4.50), 2% extended (model shape; see population/household_composition.json)
+  FOUNDING TOWN (1)
+    - FOUNDING TOWN: 100 residents in 28 jobs on a 52x40 map
+  FOUNDING_ANCHOR_ALIASES (1)
+    - FOUNDING_ANCHOR_ALIASES: compost_yard->farm, dairy->farm, granary->farm, root_cellar->farm name no workplace, so those buildings fall back to the market anchor (as the code did at HEAD)
+  HOUSEHOLDS (2)
+    - HOUSEHOLDS: household size (mean members): sample 4.676 vs 4.750 (tolerance 0.30; Laslett 1969 (Population Studies 23) and Laslett 1972, 4.75; Wrigley and Schofield 1981)
+    - HOUSEHOLDS: extended-family share of households: sample 0.101 vs 0.100 (tolerance 0.03; Laslett 1972, about 10-11% of households with kin)
+  TRADES (3)
+    - TRADES[collier]: works at 'charcoal_hearth', which must be built first
+    - TRADES[papermaker]: works at 'papermill', which must be built first
+    - TRADES[inkmaker]: works at 'inkhouse', which must be built first
+  TRADES with no recipe (service or gathering work) (1)
+    - TRADES with no recipe (service or gathering work): animal_keeper, banker, cellar_keeper, clerk, compost_keeper, constable, councillor, doctor, fisher, granary_keeper, innkeeper, labourer, landlord, lawyer, mayor, merchant, midwife, pastor, reporter, sanitation_keeper, servant, shepherd, shopkeeper, smoker, teacher, water_keeper
+  open recipes (anyone capable with the tools) (1)
+    - open recipes (anyone capable with the tools): bake_bread_at_home, cut_parsley, cut_rags, cut_sage, cut_thyme, gather_berries, gather_mushrooms, lift_saplings, make_compost, make_thatch, pick_apples, pick_pears, pick_plums, spin_thread, split_firewood
+
+PRODUCTION GRAPH
+  475 nodes, 859 edges -> 278 components; 12 tiers deep; acyclic after condensing loops: True
+  loops (1; a loop is a cycle such as seed -> crop -> seed):
+    - 106 items / 87 steps: ale, ash, bacon, bacon_eggs, barley, barley_seed, bean, bean_seed, bean_stew, beer, beet, beet_seed ...
+  deepest items (tier: one chain from raw nature):
+    - book (tier 11): grass -> milk -> butter -> [loop 1: 106 items] -> soot -> ink -> book
+    - boots (tier 11): grass -> milk -> butter -> [loop 1: 106 items] -> hide -> leather -> boots
+    - newspaper (tier 11): grass -> milk -> butter -> [loop 1: 106 items] -> soot -> ink -> newspaper
+    - pick (tier 11): lumber -> wood -> charcoal -> iron -> pick_head -> pick
+    - press (tier 11): lumber -> wood -> charcoal -> iron -> nails -> press
+  keystone items (recipes that become unreachable without them):
+    lumber 29, timber 28, water 28, charcoal 26, ore 26, iron 25, flour 19, salt 18, wool 17, cloth 13
+
+SYSTEMS (recipes, reference value made per batch, labour minutes per batch)
+  food          58 recipes  value    403.0 ( 30%)  labour   5935
+  textiles      25 recipes  value    362.8 ( 27%)  labour   3715
+  metal         24 recipes  value    306.5 ( 23%)  labour   2165
+  timber        27 recipes  value    121.5 (  9%)  labour   3265
+  drink          7 recipes  value     62.8 (  5%)  labour   2100
+  writing        5 recipes  value     28.8 (  2%)  labour    615
+  stone          3 recipes  value     23.7 (  2%)  labour    645
+  agriculture    8 recipes  value     10.5 (  1%)  labour    480
+  forestry       4 recipes  value      6.1 (  0%)  labour    280
+  household      1 recipes  value      2.9 (  0%)  labour     60
+  fuel           1 recipes  value      2.5 (  0%)  labour     60
+  strongest couplings (producer -> consumer: weight of inputs crossing):
+    trade -> textiles: 128.2
+    trade -> food: 65.5
+    fuel -> metal: 60.0
+    husbandry -> food: 57.6
+    agriculture -> food: 54.45
+    extraction -> food: 10.5
+    trade -> writing: 10.11
+    drink -> food: 8.8
+    metal -> timber: 7.52
+    husbandry -> textiles: 6.4
+    agriculture -> drink: 6.2
+    textiles -> writing: 3.45
+
+BALANCE (per period, BALANCE_SCENARIO)
+  food (upper bound) supply    812.0  demand    100.0  ratio  8.12
+  fuel (heat)        supply     36.0  demand     10.0  ratio  3.60
+  soil nitrogen      supply     21.3  demand      5.2  ratio  4.08
+  feed: grain        supply     54.0  demand      1.0  ratio 54.00
+  feed: grass        supply      8.0  demand      5.0  ratio  1.60
+  feed: hay          supply      4.0  demand      3.0  ratio  1.33
+  feed: nectar       supply      4.0  demand      1.0  ratio  4.00
+  feed: scraps       supply     33.3  demand      3.0  ratio 11.11
+  water              supply    260.0  demand    193.3  ratio  1.34
+  labour (minutes)   supply  48000.0  demand   3285.8  ratio 14.61
+  note: food: harvest could make 812.0 food units/period by the best recipes (an upper bound; 540.0 of it from grain)
+  note: nitrogen: 20.0 of 20.0 night soil/period can be composted -- the heap needs compostables: 2.0 ash + 30.3 scraps the animals leave (straw is also wanted as fuel and thatch)
+  note: feed: animals that eat grain compete with people for the staple
+  issues (0):
+    none
+
+JOBS (full-time equivalents needed -> holders seeded; relative weight = share of residents)
+  job              weight             N=100              N=30               N=8
+  farmer            0.043       4.28 ->   6       1.26 ->   2       0.32 ->   1
+  farm_labourer     0.016       1.59 ->   2       0.48 ->   1       0.12 ->   1
+  animal_keeper     0.003       0.25 ->   1       0.00 ->   0       0.00 ->   0
+  miller            0.003       0.31 ->   1       0.09 ->   1       0.03 ->   1
+  baker             0.004       0.42 ->   1       0.12 ->   1       0.03 ->   1
+  forester          0.000       0.00 ->   0       0.00 ->   0       0.00 ->   0
+  smith             0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  carpenter         0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  cooper            0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  mason             0.011       1.05 ->   2       0.35 ->   1       0.13 ->   1
+  leatherworker     0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  weaver            0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  tailor            0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  fisher            0.020       2.00 ->   2       0.60 ->   1       0.16 ->   1
+  butcher           0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  dairymaid         0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  innkeeper         0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  mayor             0.010       1.00 ->   1       0.44 ->   1       0.26 ->   1
+  clerk             0.016       1.60 ->   2       0.55 ->   1       0.22 ->   1
+  constable         0.010       1.00 ->   1       0.44 ->   1       0.26 ->   1
+  councillor        0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  teacher           0.016       1.60 ->   2       0.55 ->   1       0.22 ->   1
+  doctor            0.010       1.00 ->   1       0.37 ->   1       0.17 ->   1
+  midwife           0.010       1.00 ->   1       0.37 ->   1       0.17 ->   1
+  pastor            0.010       1.00 ->   1       0.44 ->   1       0.26 ->   1
+  fishmonger        0.010       1.00 ->   1       1.00 ->   1       1.00 ->   1
+  reporter          0.010       1.00 ->   1       1.00 ->   1       1.00 ->   1
+  labourer          0.000       0.00 ->  60       0.00 ->   4       0.00 ->   0
+  N=100: 100 residents, 0 holding several jobs; sustainable start: True
+  N=30: 30 residents, 0 holding several jobs; sustainable start: True
+  N=8: 8 residents, 6 holding several jobs (e.g. farmer + midwife + dairymaid); sustainable start: True
+
+PEOPLE (aptitude, talents, limitations drawn for 10000 adults; target = source rate)
+  age 35: aptitude mean 0.999 (2nd-98th pct 0.69-1.31); 22% have at least one limitation
+    dyslexia                               8.3%   target   8.7%
+    dyscalculia                            4.7%   target   5.0%
+    developmental_coordination_disorder    3.5%   target   3.3%
+    colour_vision_deficiency               4.2%   target   4.2%
+    essential_tremor                       0.4%   target   0.4%
+    adult_adhd                             2.5%   target   2.6%
+    hand_osteoarthritis                    1.9%   target   2.0%
+  age 75: aptitude mean 0.999 (2nd-98th pct 0.69-1.31); 40% have at least one limitation
+    dyslexia                               8.3%   target   8.7%
+    dyscalculia                            4.7%   target   5.0%
+    developmental_coordination_disorder    3.5%   target   3.3%
+    colour_vision_deficiency               4.2%   target   4.2%
+    essential_tremor                       5.9%   target   5.8%
+    adult_adhd                             2.5%   target   2.6%
+    hand_osteoarthritis                   19.8%   target  19.8%

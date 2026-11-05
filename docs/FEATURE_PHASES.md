@@ -100,9 +100,8 @@ published work affordances match what will run.
 
 ## Phase 003 -- Seed the 100-resident cast from JOBS
 
-**Status:** ready -- the user approved rebuilding the cast (decision 2026-11-05).
-Changing the residents the seeded-town tests are built on is expected; list
-every changed number.
+**Status:** done with Phase 016b (see History). The user approved rebuilding the cast
+(decision 2026-11-05).
 
 **Goal.** Replace the hand-written `ROLE_SPEC` counts in
 `worlds/bigville_town100_world.py` with `E.seed_jobs(100)`, mapping each job to
@@ -509,6 +508,12 @@ adapter now reads lumber regrowth 4.0 from RESOURCE_DEPOSITS (it hard-coded 3.0;
 `from_town100(data_pack=...)`; test_hamlet has no founding town. **016b ready**: merge with
 Phase 003, seed the cast from JOBS, give founders real ages and drawn households, redraw the
 Phase 009 genealogy from them, and decide `capability`/`skill` in `populate_town100`.
+**016b done** (see History): cast counts from `seed_jobs(100)`, ages from FOUNDING_AGE (APPROX),
+46 households of adult founders with one home each, genealogy drawn from the households, skill
+from each job's trade, capability from FOUNDING_CLASS. The homophily test now compares odds.
+Open for the user: 60 of 100 founders are spare labourers (adults only, no children); forester
+has zero FTE; banker, landlord, shopkeeper, servant and quarrier have no JOBS entry; seven crafts
+share workshop anchors.
 
 **Goal.** (Also from 013b review: the 100-resident map's site layout, workplace anchors, place
 labels, and fixed deposit kinds become pack data, and `from_town100`/`run_village` take the
@@ -649,3 +654,4 @@ exist, at the precision they know them -- never the world's map.
 | 012 Physical and cognitive learning | done | (this commit) | docs/phases/phase012/PHASE012_REPORT.md -- `learning` tag on every skill and metaskill; `cognitive_practice` switch (default off) with a `practice` observation in the actor's context; 378 passed |
 | 009 Kinship, households, inheritance | done | (this commit) | docs/phases/phase009/PHASE009_REPORT.md -- genealogy (bore/fathered/union_with) as world fact, held KinTerm references, KIN_TERMS/ATTRIBUTION/OBLIGATIONS, partible default custom, heirs published on death with no transfer; household draw checked against Laslett; 394 passed |
 | 016a Founding town as pack data | done | (this commit) | docs/phases/phase016a/PHASE016A_REPORT.md -- 14 founding tables (population/founding_*, world/founding_*); town digest identical except legacy adapter lumber growback 3.0 -> 4.0; 397 passed |
+| 016b + 003 Founding cast from JOBS | done | (this commit) | docs/phases/phase016b/PHASE016B_REPORT.md -- seed_jobs(100) cast, drawn ages, 46 households, genealogy from households; households 100 -> 46 in test_bigville_world_migrated; homophily test compares odds; 411 passed |

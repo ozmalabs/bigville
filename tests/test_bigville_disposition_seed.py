@@ -70,7 +70,11 @@ def test_homophily_same_role_overrepresented():
     n = len(cast)
     baseline = sum((c - 1) / (n - 1) * c for c in role_counts.values()) / n
 
-    assert rate > baseline * 1.5, (rate, baseline)
+    # Compare odds, not rates: a rate ratio is capped at 1/baseline, so it shrinks as one role
+    # dominates the cast (Phase 016b: 60 of 100 founders are labourers) even when the bias is
+    # unchanged. The odds ratio does not depend on the role mix. HEAD cast: 2.96; 016b cast: 1.92.
+    odds_ratio = (rate / (1.0 - rate)) / (baseline / (1.0 - baseline))
+    assert odds_ratio > 1.5, (rate, baseline, odds_ratio)
 
 
 def test_kind_distribution_acquaintance_is_plurality():

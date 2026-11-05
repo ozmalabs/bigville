@@ -42,11 +42,10 @@ def test_the_founding_town_is_built_from_the_bigville_pack():
     world = BigvilleWorld.from_town100()
     assert world.data_pack == BIG
     E = world.E
-    wanted = Counter()
-    for row in E.FOUNDING_ROLES:
-        wanted[row["role"]] += row["count"]
+    # Phase 016b: the role counts are the primary jobs of E.seed_jobs(100), not hand-written counts
+    wanted = Counter(resident["jobs"][0] for resident in E.seed_jobs(100)["residents"])
     assert _role_counts(world) == wanted
-    assert len(world._actors) == sum(row["count"] for row in E.FOUNDING_ROLES) == 100
+    assert len(world._actors) == E.BALANCE_SCENARIO["residents"] == 100
     assert set(world._map_layout["deposits"]) == set(E.FOUNDING_DEPOSITS)
     assert world.eng.node(world._actors["John"])["attrs"]["role"] == "mayor"
     # naming the pack explicitly gives the same town as the default
@@ -54,52 +53,51 @@ def test_the_founding_town_is_built_from_the_bigville_pack():
     assert sorted(explicit._actors) == sorted(world._actors)
 
 
-def test_a_child_pack_that_changes_the_names_and_a_role_count_builds_a_different_town(tmp_path):
+def test_a_child_pack_that_changes_the_names_and_the_jobs_builds_a_different_town(tmp_path):
     parent = load_pack(BIG)
     child_dir = tmp_path / "child_town"
     first = ["Zara", "Quill", "Mabel", "Osric", "Pell"]
-    roles = copy.deepcopy(parent["FOUNDING_ROLES"])
-    labourer = next(row for row in roles if row["role"] == "labourer")
-    carpenter = next(row for row in roles if row["role"] == "carpenter")
-    labourer["count"] -= 1          # one fewer labourer ...
-    carpenter["count"] += 1         # ... and one more carpenter: still 100 residents and 100 homes
+    # Phase 016b: role counts come from JOBS (seed_jobs), so the child changes the JOBS table: carpenters
+    # carry twice the per-100 load. Still 100 residents; the homes follow the households.
+    jobs = copy.deepcopy(parent["JOBS"])
+    jobs["carpenter"]["per_100"] = 2.0
     _write(child_dir / "pack.json", {
         "format": 1, "name": "child_town", "version": 1, "description": "test child",
         "extends": BIG,
         "tables": [
             {"name": "FOUNDING_FIRST_NAMES", "file": "population/names.json"},
-            {"name": "FOUNDING_ROLES", "file": "population/roles.json"},
+            {"name": "JOBS", "file": "frames/jobs.json"},
         ],
     })
     _write(child_dir / "population" / "names.json", {"_doc": "", "_types": {}, "tables": {
         "FOUNDING_FIRST_NAMES": first}})
-    _write(child_dir / "population" / "roles.json", {"_doc": "", "_types": {}, "tables": {
-        "FOUNDING_ROLES": roles}})
+    _write(child_dir / "frames" / "jobs.json", {"_doc": "", "_types": {}, "tables": {"JOBS": jobs}})
 
     child = BigvilleWorld.from_town100(data_pack=str(child_dir))
     default = BigvilleWorld.from_town100()
 
     assert child.data_pack == str(child_dir)
-    expected = Counter({row["role"]: row["count"] for row in parent["FOUNDING_ROLES"]})
-    expected["labourer"] -= 1
-    expected["carpenter"] += 1
+    expected = Counter(resident["jobs"][0] for resident in child.E.seed_jobs(100)["residents"])
     assert _role_counts(child) == expected
+    assert _role_counts(child)["carpenter"] > _role_counts(default)["carpenter"]
     assert len(child._actors) == 100
     # residents who are not anchored take a first name from the child's pool
     anchors = set(child.E.FOUNDING_ANCHOR_NAMES.values())
     drawn = [name for name in child._actors if name not in anchors]
     assert drawn and all(name.split()[0] in first for name in drawn)
     assert sorted(child._actors) != sorted(default._actors)
-    # the map and its sites are inherited, so they are the same as the default town's
-    assert child._map_layout["homes"] == default._map_layout["homes"]
+    # the map and its sites are inherited, so they are the same as the default town's; the homes follow
+    # the households, which follow the jobs
+    assert len(child._map_layout["homes"]) == len(child._cast100["households"])
     assert child._map_layout["deposits"] == default._map_layout["deposits"]
+    assert child._map_layout["farms"] == default._map_layout["farms"]
     # and the default town is unchanged by building the child
     assert all(name.split()[0] not in first for name in default._actors if name not in anchors)
 
 
 def test_the_hamlet_has_no_founding_town_and_from_town100_refuses_it():
     E = entities(HAMLET)
-    assert list(E.FOUNDING_ROLES) == [] and E.FOUNDING_MAP == {}
+    assert list(E.FOUNDING_JOBS) == [] and E.FOUNDING_MAP == {}
     report = E.check_consistency()
     assert report["errors"] == []
     assert any("FOUNDING TOWN: none" in str(line) for line in report["info"])

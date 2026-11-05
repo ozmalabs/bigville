@@ -1251,7 +1251,8 @@ def test_no_python_decides_the_world():
 def test_canonical_world_imports_the_map_cast_and_resource_sites():
     w = World.from_town100(seed=305000)
     assert len(w._map_cells) > 1000 and len(w._actors) == 100
-    assert len(w._households) == 100 and len(w._land) == 9
+    # Phase 016b: one household per founding household (46 at seed 305000), not one per resident (100)
+    assert len(w._households) == 46 and len(w._land) == 9
     assert set(w._resource_deposits) == {"fish", "lumber", "stone"}
     assert set(w._shops) == {"fishmonger", "carpenter", "mason", "bakery"}
     assert w.reachable(w.actor_position("John"), w.building_position("granary"))

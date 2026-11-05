@@ -1,0 +1,36 @@
+................F...............s.......................s............... [ 16%]
+........................................................................ [ 33%]
+........................................................................ [ 49%]
+........................................................................ [ 66%]
+........................................................................ [ 82%]
+........................................................................ [ 99%]
+...                                                                      [100%]
+=================================== FAILURES ===================================
+___________________ test_homophily_same_role_overrepresented ___________________
+
+    def test_homophily_same_role_overrepresented():
+        """Same-role others should be chosen at a higher rate than their share
+        of the population would predict under uniform random selection."""
+        cast = _cast()
+        by_name = {r["name"]: r for r in cast}
+        triples = sample_people_in_life(cast, SEED)
+    
+        same_role = sum(1 for h, t, _k in triples if by_name[h]["role"] == by_name[t]["role"])
+        rate = same_role / len(triples)
+    
+        # uniform-random baseline: expected same-role rate if partners were
+        # picked with NO homophily bias, i.e. (role_count-1)/(N-1) averaged.
+        from collections import Counter
+        role_counts = Counter(r["role"] for r in cast)
+        n = len(cast)
+        baseline = sum((c - 1) / (n - 1) * c for c in role_counts.values()) / n
+    
+>       assert rate > baseline * 1.5, (rate, baseline)
+E       AssertionError: (0.521505376344086, 0.3624242424242424)
+E       assert 0.521505376344086 > (0.3624242424242424 * 1.5)
+
+tests/test_bigville_disposition_seed.py:73: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_disposition_seed.py::test_homophily_same_role_overrepresented
+1 failed, 432 passed, 2 skipped in 77.67s (0:01:17)
+exit 1

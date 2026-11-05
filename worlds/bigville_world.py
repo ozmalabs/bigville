@@ -1870,7 +1870,7 @@ class BigvilleWorld:
                      cognition_factory=None, data_pack=None):
         """Build the founding town of a data pack: its map, its seeded cast of residents, and its
         institutions. The default pack is bigville (the 100-resident town of the canonical world).
-        A pack with no founding town (empty FOUNDING_ROLES) is refused by populate_town100."""
+        A pack with no founding town (empty FOUNDING_JOBS) is refused by populate_town100."""
         world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
                     cognition_factory=cognition_factory, data_pack=data_pack)
         world.populate_town100(seed=seed)
@@ -1984,8 +1984,8 @@ class BigvilleWorld:
         """
         if getattr(self, "_cast100", None) is not None:
             return self._cast100
-        if not self.E.FOUNDING_ROLES or not self.E.FOUNDING_MAP:
-            raise ValueError(f"data pack '{self.data_pack}' has no founding town (FOUNDING_ROLES or "
+        if not self.E.FOUNDING_JOBS or not self.E.FOUNDING_MAP:
+            raise ValueError(f"data pack '{self.data_pack}' has no founding town (FOUNDING_JOBS or "
                              f"FOUNDING_MAP is empty), so there is no 100-resident town to build")
         from worlds.bigville_town100_world import generate_cast100
 
@@ -2007,13 +2007,17 @@ class BigvilleWorld:
                               input_kind=chain["in"], output_kind=chain["out"])
 
         station = self.E.FOUNDING_CLASS["station_by_group"]
+        # One household per founding household (Phase 016b), on the home the map gave it. Its kind
+        # follows its head's role and group (HOUSEHOLDS).
+        by_name = {r["name"]: r for r in cast["residents"]}
+        for hh in cast["households"]:
+            head = by_name[hh["head"]]
+            self.add_household(f"household_{int(hh['index']):03d}",
+                               kind=self.household_kind_for(head["role"], head["group"]),
+                               home_cell=tuple(hh["home_cell"]))
         for record in cast["residents"]:
-            idx = int(record["index"])
             role = record["role"]
-            household_kind = self.household_kind_for(role, record["group"])
-            household = f"household_{idx:03d}"
-            self.add_household(household, kind=household_kind,
-                               home_cell=tuple(record["home_cell"]))
+            household = f"household_{int(record['household']):03d}"
             self._t100_households[record["name"]] = household
             # AFFECT_COUPLING Phase 5 (TOWN100_DISPOSITION_SWITCHON_PREREG.md,
             # ocelot repo): _scenario_character_data must be populated BEFORE
@@ -2032,15 +2036,16 @@ class BigvilleWorld:
                             "group": record["group"]},
                 "personality": {**record["params"], "emotional_core_enabled": 1.0},
             }
-            self.add_actor(record["name"], role=role, skill=0.7,
+            self.add_actor(record["name"], role=role, skill=float(record["skill"]),
                            station=station[record["group"]],
                            literacy=float(record["literacy"]),
-                           capability=0.9 if record["literacy"] else 0.55,
+                           capability=float(record["capability"]),
+                           age=float(record["age"]),
                            home_cell=tuple(record["home_cell"]),
                            work_cell=tuple(record["workplace_cell"]),
                            klass=record["class"], group=record["group"],
                            role_identity=float(record["role_identity"]), traits=record["params"],
-                           trades=self.E.CAST_ROLE_TRADES.get(role, ()))
+                           trades=tuple(record["trades"]))
             # the founding cast are real people: aptitude, talents, and limitations drawn from the
             # observed distributions (E.LIMITATION_PREVALENCE), deterministic in the map seed
             self.draw_capacities(record["name"], seed=seed)

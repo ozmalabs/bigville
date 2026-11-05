@@ -1,209 +1,184 @@
 {
-  "_doc": "Founding cast of the 100-resident town (Phase 016a). Moved from worlds/bigville_town100_world.py.\n\nFOUNDING_ROLES: one row per role of the founding cast. The counts sum to the number of residents and of founding homes. count, group, role_identity_mean and role_identity_sd are authored design choices, not census figures (APPROX). workplace is a FOUNDING_WORKPLACES key, a FOUNDING_DEPOSITS kind (fish, lumber, stone), or 'farm' (the founding farm plots). Phase 016b replaces these counts with E.seed_jobs (Phase 003).\n\nFOUNDING_CLASS.by_group: each group's [rich, middle] shares; poor is the remainder (authored, APPROX). literacy_by_class: the chance of literacy by class (authored, APPROX). station_by_group: the STATION_EDUCATION key of each group (as populate_town100 used it).\n\nFOUNDING_ANCHOR_NAMES: role -> the register name of the first resident with that role.\nFOUNDING_DRAW_BOUNDS.role_identity: the clip range of the role-identity draw.",
+  "_doc": "Founding cast of the 100-resident town (Phase 016a; reshaped in Phase 016b).\n\nFOUNDING_JOBS: one row per JOBS key (frames/jobs.json). The founding cast takes its roles and counts from E.seed_jobs(100): each resident's role is the first job that seed gives them. This table holds only what a job needs beyond the JOBS data: group (the class and station tier, a FOUNDING_CLASS.by_group key), role_identity_mean and role_identity_sd (the drawn role-identity of holders), and workplace (a FOUNDING_WORKPLACES key, a FOUNDING_DEPOSITS kind, or 'farm'). Every value is an authored design choice, not a census figure (APPROX). The workplace of the jobs with no workshop anchor in FOUNDING_WORKPLACES (smith, cooper, tailor, weaver, leatherworker, butcher, dairymaid, animal_keeper) reuses the nearest existing anchor; adding anchors would change the founding map (a follow-up, see PHASE016B_REPORT.md).\n\nFOUNDING_AGE: the founders' ages (years). A clipped Normal on its own seed stream (seed + stream). Bounds are the adult life stage (LIFE_STAGES.adult: 18 to 64). The mean and sd are APPROX: a working-age adult population of a pre-industrial village, not a measured age structure.\n\nFOUNDING_CLASS.by_group: each group's [rich, middle] shares; poor is the remainder (authored, APPROX). literacy_by_class: the chance of literacy by class (authored, APPROX). station_by_group: the STATION_EDUCATION key of each group (as populate_town100 used it). capability_by_literacy: the general capability of a literate and an unlettered founder (the values populate_town100 used at HEAD; authored, APPROX, not sourced).\n\nFOUNDING_ANCHOR_NAMES: job -> the register name of the first resident with that job. 'fishmonger' keeps the register name of the fishmonger role of 016a (Doreen Ferrety); the fishmonger job is a fixed-load shop job added to JOBS in 016b (trade: fisher), and the reporter job (trade: reporter, workplace press) too. The banker anchor (Scrooge) was dropped: the banker role has no JOBS entry, so no resident could hold the name.\nFOUNDING_DRAW_BOUNDS.role_identity: the clip range of the role-identity draw.",
   "_types": {},
   "tables": {
-    "FOUNDING_ROLES": [
-      {
-        "role": "labourer",
-        "count": 25,
-        "group": "low",
-        "role_identity_mean": 0.22,
-        "role_identity_sd": 0.06,
-        "workplace": "market"
-      },
-      {
-        "role": "farm_labourer",
-        "count": 12,
-        "group": "low",
-        "role_identity_mean": 0.2,
-        "role_identity_sd": 0.06,
-        "workplace": "farm"
-      },
-      {
-        "role": "fisher",
-        "count": 8,
-        "group": "low",
-        "role_identity_mean": 0.28,
-        "role_identity_sd": 0.06,
-        "workplace": "fish"
-      },
-      {
-        "role": "forester",
-        "count": 6,
-        "group": "low",
-        "role_identity_mean": 0.28,
-        "role_identity_sd": 0.06,
-        "workplace": "lumber"
-      },
-      {
-        "role": "quarrier",
-        "count": 5,
-        "group": "low",
-        "role_identity_mean": 0.28,
-        "role_identity_sd": 0.06,
-        "workplace": "stone"
-      },
-      {
-        "role": "servant",
-        "count": 5,
-        "group": "low",
-        "role_identity_mean": 0.25,
-        "role_identity_sd": 0.06,
-        "workplace": "manor"
-      },
-      {
-        "role": "farmer",
-        "count": 12,
+    "FOUNDING_JOBS": {
+      "farmer": {
         "group": "middle",
         "role_identity_mean": 0.6,
         "role_identity_sd": 0.08,
         "workplace": "farm"
       },
-      {
-        "role": "teacher",
-        "count": 2,
-        "group": "middle",
-        "role_identity_mean": 0.65,
-        "role_identity_sd": 0.07,
-        "workplace": "school"
+      "farm_labourer": {
+        "group": "low",
+        "role_identity_mean": 0.2,
+        "role_identity_sd": 0.06,
+        "workplace": "farm"
       },
-      {
-        "role": "reporter",
-        "count": 1,
-        "group": "middle",
-        "role_identity_mean": 0.6,
-        "role_identity_sd": 0.07,
-        "workplace": "press"
+      "animal_keeper": {
+        "group": "low",
+        "role_identity_mean": 0.25,
+        "role_identity_sd": 0.06,
+        "workplace": "farm"
       },
-      {
-        "role": "clerk",
-        "count": 2,
-        "group": "middle",
-        "role_identity_mean": 0.55,
-        "role_identity_sd": 0.07,
-        "workplace": "townhall"
-      },
-      {
-        "role": "councillor",
-        "count": 4,
-        "group": "middle",
-        "role_identity_mean": 0.62,
-        "role_identity_sd": 0.07,
-        "workplace": "townhall"
-      },
-      {
-        "role": "miller",
-        "count": 1,
+      "miller": {
         "group": "middle",
         "role_identity_mean": 0.58,
         "role_identity_sd": 0.07,
         "workplace": "mill"
       },
-      {
-        "role": "constable",
-        "count": 1,
-        "group": "middle",
-        "role_identity_mean": 0.6,
-        "role_identity_sd": 0.07,
-        "workplace": "watch"
-      },
-      {
-        "role": "midwife",
-        "count": 1,
-        "group": "middle",
-        "role_identity_mean": 0.58,
-        "role_identity_sd": 0.07,
-        "workplace": "surgery"
-      },
-      {
-        "role": "fishmonger",
-        "count": 2,
-        "group": "high",
-        "role_identity_mean": 0.88,
-        "role_identity_sd": 0.04,
-        "workplace": "fishmonger"
-      },
-      {
-        "role": "carpenter",
-        "count": 2,
-        "group": "high",
-        "role_identity_mean": 0.9,
-        "role_identity_sd": 0.04,
-        "workplace": "carpenter"
-      },
-      {
-        "role": "mason",
-        "count": 2,
-        "group": "high",
-        "role_identity_mean": 0.9,
-        "role_identity_sd": 0.04,
-        "workplace": "mason"
-      },
-      {
-        "role": "baker",
-        "count": 2,
+      "baker": {
         "group": "high",
         "role_identity_mean": 0.88,
         "role_identity_sd": 0.04,
         "workplace": "bakery"
       },
-      {
-        "role": "innkeeper",
-        "count": 1,
+      "forester": {
+        "group": "low",
+        "role_identity_mean": 0.28,
+        "role_identity_sd": 0.06,
+        "workplace": "lumber"
+      },
+      "smith": {
+        "group": "middle",
+        "role_identity_mean": 0.62,
+        "role_identity_sd": 0.07,
+        "workplace": "carpenter"
+      },
+      "carpenter": {
+        "group": "high",
+        "role_identity_mean": 0.9,
+        "role_identity_sd": 0.04,
+        "workplace": "carpenter"
+      },
+      "cooper": {
+        "group": "middle",
+        "role_identity_mean": 0.55,
+        "role_identity_sd": 0.07,
+        "workplace": "carpenter"
+      },
+      "mason": {
+        "group": "high",
+        "role_identity_mean": 0.9,
+        "role_identity_sd": 0.04,
+        "workplace": "mason"
+      },
+      "leatherworker": {
+        "group": "low",
+        "role_identity_mean": 0.3,
+        "role_identity_sd": 0.06,
+        "workplace": "market"
+      },
+      "weaver": {
+        "group": "low",
+        "role_identity_mean": 0.3,
+        "role_identity_sd": 0.06,
+        "workplace": "market"
+      },
+      "tailor": {
+        "group": "middle",
+        "role_identity_mean": 0.5,
+        "role_identity_sd": 0.07,
+        "workplace": "market"
+      },
+      "fisher": {
+        "group": "low",
+        "role_identity_mean": 0.28,
+        "role_identity_sd": 0.06,
+        "workplace": "fish"
+      },
+      "butcher": {
+        "group": "middle",
+        "role_identity_mean": 0.55,
+        "role_identity_sd": 0.07,
+        "workplace": "market"
+      },
+      "dairymaid": {
+        "group": "low",
+        "role_identity_mean": 0.2,
+        "role_identity_sd": 0.06,
+        "workplace": "farm"
+      },
+      "innkeeper": {
         "group": "high",
         "role_identity_mean": 0.85,
         "role_identity_sd": 0.04,
         "workplace": "inn"
       },
-      {
-        "role": "landlord",
-        "count": 1,
-        "group": "high",
-        "role_identity_mean": 0.93,
-        "role_identity_sd": 0.03,
-        "workplace": "estate"
-      },
-      {
-        "role": "banker",
-        "count": 1,
-        "group": "high",
-        "role_identity_mean": 0.93,
-        "role_identity_sd": 0.03,
-        "workplace": "bank"
-      },
-      {
-        "role": "shopkeeper",
-        "count": 1,
-        "group": "high",
-        "role_identity_mean": 0.9,
-        "role_identity_sd": 0.04,
-        "workplace": "store"
-      },
-      {
-        "role": "mayor",
-        "count": 1,
+      "mayor": {
         "group": "high",
         "role_identity_mean": 0.92,
         "role_identity_sd": 0.03,
         "workplace": "townhall"
       },
-      {
-        "role": "pastor",
-        "count": 1,
+      "clerk": {
+        "group": "middle",
+        "role_identity_mean": 0.55,
+        "role_identity_sd": 0.07,
+        "workplace": "townhall"
+      },
+      "constable": {
+        "group": "middle",
+        "role_identity_mean": 0.6,
+        "role_identity_sd": 0.07,
+        "workplace": "watch"
+      },
+      "councillor": {
+        "group": "middle",
+        "role_identity_mean": 0.62,
+        "role_identity_sd": 0.07,
+        "workplace": "townhall"
+      },
+      "teacher": {
+        "group": "middle",
+        "role_identity_mean": 0.65,
+        "role_identity_sd": 0.07,
+        "workplace": "school"
+      },
+      "doctor": {
+        "group": "high",
+        "role_identity_mean": 0.84,
+        "role_identity_sd": 0.05,
+        "workplace": "surgery"
+      },
+      "midwife": {
+        "group": "middle",
+        "role_identity_mean": 0.58,
+        "role_identity_sd": 0.07,
+        "workplace": "surgery"
+      },
+      "pastor": {
         "group": "high",
         "role_identity_mean": 0.82,
         "role_identity_sd": 0.05,
         "workplace": "church"
       },
-      {
-        "role": "doctor",
-        "count": 1,
+      "labourer": {
+        "group": "low",
+        "role_identity_mean": 0.22,
+        "role_identity_sd": 0.06,
+        "workplace": "market"
+      },
+      "fishmonger": {
         "group": "high",
-        "role_identity_mean": 0.84,
-        "role_identity_sd": 0.05,
-        "workplace": "surgery"
+        "role_identity_mean": 0.88,
+        "role_identity_sd": 0.04,
+        "workplace": "fishmonger"
+      },
+      "reporter": {
+        "group": "middle",
+        "role_identity_mean": 0.6,
+        "role_identity_sd": 0.07,
+        "workplace": "press"
       }
-    ],
+    },
+    "FOUNDING_AGE": {
+      "mean": 36.0,
+      "sd": 12.0,
+      "min": 18,
+      "max": 64,
+      "stream": 9016
+    },
     "FOUNDING_CLASS": {
       "by_group": {
         "high": {
@@ -228,14 +203,17 @@
         "low": "labouring",
         "middle": "middle",
         "high": "educated"
+      },
+      "capability_by_literacy": {
+        "literate": 0.9,
+        "unlettered": 0.55
       }
     },
     "FOUNDING_ANCHOR_NAMES": {
       "mayor": "John",
       "pastor": "Mary",
       "baker": "Marjorie Dough",
-      "fishmonger": "Doreen Ferrety",
-      "banker": "Scrooge"
+      "fishmonger": "Doreen Ferrety"
     },
     "FOUNDING_DRAW_BOUNDS": {
       "role_identity": {

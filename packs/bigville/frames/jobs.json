@@ -251,6 +251,20 @@
         "fixed": 0.2,
         "per_100": 0.8
       },
+      "fishmonger": {
+        "trades": [
+          "fisher"
+        ],
+        "tools": [],
+        "fixed": 1.0
+      },
+      "reporter": {
+        "trades": [
+          "reporter"
+        ],
+        "tools": [],
+        "fixed": 1.0
+      },
       "labourer": {
         "trades": [
           "labourer"
