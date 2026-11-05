@@ -6,6 +6,7 @@ from dataclasses import replace
 from bigville.api import create_game
 from bigville.backends import SimplePolicy, register_simple_profile
 from bigville.scenarios import load_scenario
+from domains import bigville_entities as E
 
 
 class _RoleChoice:
@@ -85,6 +86,24 @@ class _RoleChoice:
         return -1000
 
 
+def _recipe(name):
+    return next(r for r in E.RECIPES if r["name"] == name)
+
+
+def _qty(recipe, kind):
+    return float(dict((k, q) for k, q in recipe["in"]).get(kind, 0.0))
+
+
+MILL = {"grain": _qty(_recipe("grind_flour"), "grain"), "flour": float(_recipe("grind_flour")["out"][1])}
+BAKE = {"flour": _qty(_recipe("bake_bread"), "flour"), "water": _qty(_recipe("bake_bread"), "water"),
+        "fuel": _qty(_recipe("bake_bread"), "fuel"), "bread": float(_recipe("bake_bread")["out"][1])}
+HARVEST = float(E.CROPS["wheat"]["yield"])
+FIELD_WATER = float(E.CROPS["wheat"]["water"]) * float(E.CROPS["wheat"]["grow_periods"])
+SEED_RETURN = float(E.CROPS["wheat"].get("seed_return", 1.0))
+GRAIN_RESERVE = MILL["grain"]                      # exactly one mill run in the granary
+FLOUR_RESERVE = BAKE["flour"] - MILL["flour"]      # plus one run's flour makes one oven load
+
+
 def _game(*, seed=1414, water=6, participants=True):
     register_simple_profile("pkg14.farmer", SimplePolicy(hook=_RoleChoice("farmer"),
                                                           allow_travel=False,
@@ -113,6 +132,14 @@ def _game(*, seed=1414, water=6, participants=True):
                if participants else {"Farmer": 3.0, "Eater": 3.0})
     definition["stocks"] = {"wheat_seed": 1, "water": water + 1,
                              "bread": sum(rations.values())}
+    if participants:
+        # A mill run and an oven load are batch work (E.RECIPES: 30 grain per run, 40 flour + 20
+        # water + 6 fuel per firing), so the working village starts with a granary reserve, a sack
+        # of flour, and fuel. The traced harvest adds to that reserve.
+        definition["stocks"].update({"grain": GRAIN_RESERVE, "flour": FLOUR_RESERVE,
+                                     "wood": BAKE["fuel"],
+                                     # the crop's watering budget plus one oven load's water
+                                     "water": water + 1 + FIELD_WATER + BAKE["water"]})
     game = create_game(scenario=definition, seed=seed, autonomous=True, ticks_per_period=2)
     game.world.add_land("farm_plot_00", use="arable", soil="loam", cell=(1, 1))
     # Finite startup bread keeps the initial workers alive until the crop and
@@ -174,16 +201,24 @@ def test_work_food_and_exchange_trace_physical_provenance_and_shortage_control()
     assert fetch_rows
     assert any(any(option.get("action") == "move" and option.get("destination") == (2, 1)
                    for option in row["affordances"]["Carrier"]) for row in trace)
-    assert sum(max(0.0, row["before"]["grain_stock"] - row["after"]["grain_stock"])
-               for row in trace) == 7.0  # one delivery plus two three-grain milling batches
+    # Each harvest returns seed (seed_return) and yield grain; each mill run grinds MILL["grain"].
+    # A harvest and a mill run can fall in the same turn, so count them, not per-turn differences.
+    harvests = sum(1 for row in trace if row["after"]["seed"] > row["before"]["seed"])
+    mill_runs = sum(1 for row in trace
+                    if selected(row, "Miller").get("action") == "work"
+                    and selected(row, "Miller").get("params", {}).get("recipe") == "grind_flour")
+    bakes = sum(1 for row in trace if row["after"]["bread_stock"] > row["before"]["bread_stock"])
+    assert harvests == 2 and mill_runs == 1 and bakes == 1
     assert any(selected(row, "Carrier").get("action") == "move"
                and selected(row, "Carrier").get("params", {}).get("recipient") == "Eater"
                for row in trace)
     assert any(selected(row, "Carrier").get("action") == "transfer"
                and selected(row, "Carrier").get("params", {}).get("recipient") == "Eater"
                for row in trace)
+    # grain is conserved: reserve + harvests = town stock + carried + delivered + milled
     assert (trace[-1]["after"]["grain_stock"] + trace[-1]["after"]["carrier"]
-            + trace[-1]["after"]["eater"] + 6.0 == 8.0)
+            + trace[-1]["after"]["eater"] + mill_runs * MILL["grain"]
+            == GRAIN_RESERVE + harvests * HARVEST)
     # The Farmer remains at the plot, outside the mapped store; an explicit
     # fetch still fails at the physical reach check and leaves stock unchanged.
     assert world.actor_position("Farmer") != world.map_position_node(world._store)
@@ -210,22 +245,21 @@ def test_work_food_and_exchange_trace_physical_provenance_and_shortage_control()
                and selected(row, "Eater").get("action") == "eat"
                and selected(row, "Eater").get("params", {}).get("kind") == "bread"
                for row in trace)
-    assert world.qty("grain") == 1.0
+    assert world.qty("grain") == GRAIN_RESERVE + harvests * HARVEST - 1.0 - mill_runs * MILL["grain"]
     assert world.inventory_qty("Farmer", "grain") == 0
     assert world.inventory_qty("Carrier", "grain") == 0
     assert world.inventory_qty("Eater", "grain") == 1.0
-    # One sowed seed returns and produces eight grain: the carrier delivers
-    # one, the miller processes two three-grain batches into four flour, and
-    # one grain remains in town stock.
-    assert any(row["after"]["seed"] == 1.0 for row in trace)
+    # The one sowed seed comes back with interest (seed_return) and is sown again: the reserve and
+    # harvests feed one mill run, whose flour completes one oven load of bread.
+    assert any(row["after"]["seed"] == SEED_RETURN for row in trace)
     assert any(row["turn"] > next(row["turn"] for row in trace
-                                   if row["after"]["seed"] == 1.0)
+                                   if row["after"]["seed"] == SEED_RETURN)
                and selected(row, "Farmer").get("action") == "sow" for row in trace)
     assert world.qty("wheat_seed") == 0.0
-    assert sum(max(0.0, row["after"]["grain_stock"] - row["before"]["grain_stock"])
-               for row in trace) == 8.0
-    assert world.qty("flour") == 2.0
-    assert world.qty("bread") == 2.0
+    assert world.qty("flour") == FLOUR_RESERVE + mill_runs * MILL["flour"] - bakes * BAKE["flour"]
+    # the oven load stays in town stock except the loaf the carrier took to the Eater
+    assert world.qty("bread") == bakes * BAKE["bread"] - 1.0
+    assert world.qty("wood") == 0.0           # the firing burnt the founding fuel
     assert world.inventory_qty("Eater", "bread") == 0.0
     assert all(row["after"]["grain_stock"] >= 0 for row in trace)
 
