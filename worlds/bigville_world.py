@@ -374,7 +374,7 @@ class BigvilleWorld:
         self._store = self.eng.add_node("Store", {"name": "store"})           # holds Stock NODES, no commodity floats
         self.eng.add_edge_unchecked(self._town, "has_store", self._store)
         self._stock = {}; self._last_stock_qty = {}
-        self._actors = {}; self._items = {}; self._actions = {}; self._tools = {}
+        self._actors = {}; self._items = {}; self._actions = {}
         self._reference_specs = {}
         self._actor_references = {}
         self._actor_policies = {}
@@ -477,7 +477,6 @@ class BigvilleWorld:
         self._law_specs = self._scenario_table("laws", E.LAWS)
         self._charter_specs = self._scenario_table("charters", E.CHARTERS)
         self._item_specs = dict(E.ITEMS)   # runtime item registry (data + runtime-added)
-        self._tool_kinds = set()
         self._recipe_specs = {}            # recipe name -> its data row (data + runtime-added)
         self.set_stock("none", 1e9)
         self._install_map(map_seed, self._scenario_data.get("map") or None)
@@ -496,10 +495,6 @@ class BigvilleWorld:
             node = self.eng.add_node("ObservationSchema", {"name": name, "source": spec["source"]})
             self.eng.add_edge_unchecked(self._town, "has_observation_schema", node)
             self._observation_schemas[name] = node
-        for tk in self._tool_kinds:                     # provide the instruments the recipes call for
-            t = self.eng.add_node("Tool", {"kind": tk, "condition": 1.0, "wear": 0.02})
-            self.eng.add_edge_unchecked(self._town, "has_tool", t)
-            self._tools[tk] = t
         self._places = {}; self._containers = {}
         # Building anchors are physical sites, not just labels. Keep each
         # authored footprint clear so adjacent facades cannot overlap.
@@ -514,6 +509,10 @@ class BigvilleWorld:
             spec.update(dict(building.get("spec", {})))
             self._install_building(kind, spec, key=building.get("name"),
                                    cell=building.get("cell"))
+        # Each standing building gets the tools its trades work with (see
+        # _equip_workshop); recipes never create tools that float free of a place.
+        for place in list(self._places.values()):
+            self._equip_workshop(place, self._workshop_kit(self._place_kind(place)))
 
         # The square and its board are ordinary world entities, not a second
         # noticeboard world.  Their location is an affordance on the imported
@@ -985,7 +984,7 @@ class BigvilleWorld:
                 if job_own_tools:                       # open recipes use the worker's own tool
                     if self._held_tool(job_actor, kind) is None:
                         missing = True
-                elif not self._instrument_usable(kind):
+                elif self._worker_tool(job_actor, kind) is None:
                     missing = True
             if missing:
                 continue
@@ -1034,8 +1033,12 @@ class BigvilleWorld:
             own_tools = bool(self._recipe_specs.get(action.get("name", ""), {}).get("open"))
             for tool_use in self.eng.neighbours(job, "uses"):
                 kind = self.eng.node(tool_use)["attrs"].get("kind")
-                tool = (self._held_tool(actor_name, kind) if own_tools and actor_name in self._actors
-                        else None) or self._tools.get(kind)
+                if own_tools and actor_name in self._actors:
+                    tool = self._held_tool(actor_name, kind)
+                elif actor_name in self._actors:
+                    tool = self._worker_tool(actor_name, kind)
+                else:
+                    tool = None
                 if tool is not None:
                     ta = self.eng.node(tool)["attrs"]
                     condition = max(0.0, float(ta.get("condition", 1.0)) - float(ta.get("wear", 0.02)))
@@ -2196,7 +2199,6 @@ class BigvilleWorld:
         for tk in r.get("tools", []):                   # Y tool uses (data)
             tu = self.eng.add_node("ToolUse", {"kind": tk})
             self.eng.add_edge_unchecked(asp, "in_tool", tu)
-            self._tool_kinds.add(tk)
         if not discrete:
             self.set_stock(out_kind, self.qty(out_kind))
         self._actions[r["name"]] = asp
@@ -2257,11 +2259,14 @@ class BigvilleWorld:
     def add_recipe(self, r):
         """Add a NEW recipe/action (any inputs, any tools) as pure data (a dict) -- no code change."""
         asp = self._install_recipe(r)
-        for tk in r.get("tools", []):                   # provide any newly-required instrument
-            if tk not in self._tools:
-                t = self.eng.add_node("Tool", {"kind": tk, "condition": 1.0, "wear": 0.02})
-                self.eng.add_edge_unchecked(self._town, "has_tool", t)
-                self._tools[tk] = t
+        # A trade recipe's tools are placed at the buildings where that trade works. A trade
+        # with no building (or a building not yet standing) gets no tool here; its worker
+        # must hold one.
+        trade = r.get("requires")
+        if not r.get("open"):
+            for place in self._places.values():
+                if trade in self._building_trades(self._place_kind(place)):
+                    self._equip_workshop(place, r.get("tools", []))
         return asp
 
     def add_reference(self, reference):
@@ -4103,28 +4108,119 @@ class BigvilleWorld:
             added += 1
         return added
 
-    def _recipe_inputs_available(self, recipe):
+    def _recipe_inputs_available(self, recipe, actor):
         data = self._recipe_specs.get(recipe)
         if data is None or not self._recipe_in_season(recipe):
             return False
-        # Open (household) recipes use the worker's own tools, checked per actor in _can_attempt.
+        # Tools are per worker: a trade worker's instrument is at their workplace or in hand,
+        # and an open (household) recipe needs the worker's own tool.
         return (all((self.type_available(kind) if E.is_input_type(kind) else self.qty(kind)) >= float(qty)
                     for kind, qty in data.get("in", []))
-                and (bool(data.get("open"))
-                     or all(self._instrument_usable(kind) for kind in data.get("tools", []))))
+                and self._recipe_tools_usable(actor, recipe))
 
-    def _instrument_usable(self, kind):
-        """Whether the town physically has a working instrument of ``kind``."""
-        tool = self._tools.get(kind)
-        if tool is None or not self.eng.has_node(tool):
+    def _place_kind(self, place):
+        return self.eng.node(place)["attrs"].get("kind", "")
+
+    def _building_trades(self, kind):
+        """Trades that work in a building kind: those it provides or staffs, and those whose
+        TRADES entry names it as their workplace."""
+        spec = E.BUILDINGS.get(kind, {})
+        trades = {t for t, tspec in E.TRADES.items() if tspec.get("building") == kind}
+        for role in (spec.get("provides"), spec.get("staff_role")):
+            if role in E.TRADES:
+                trades.add(role)
+        return trades
+
+    def _workshop_kit(self, kind):
+        """Tool kinds a building of this kind holds at founding: the kit of each trade it houses, plus
+        the tools that the trade's own (non-open) recipes name. A recipe tool outside every founding
+        kit (for example a press for dairy recipes) therefore still has a physical home."""
+        kit = []
+        trades = self._building_trades(kind)
+        for trade in sorted(trades):
+            kit += list(E.TRADES[trade].get("tools", []))
+        for name in sorted(self._recipe_specs):
+            recipe = self._recipe_specs[name]
+            if recipe.get("requires") in trades and not recipe.get("open"):
+                kit += list(recipe.get("tools", []))
+        return list(dict.fromkeys(kit))
+
+    def _equip_workshop(self, place, kinds):
+        """Place one unbroken tool of each kind at a building, unless the building already holds one
+        of that kind. Idempotent, so repeated equipping never adds a second instrument."""
+        for kind in kinds:
+            present = any(self.eng.node(item)["attrs"].get("kind") == kind
+                          for item in self.eng.neighbours(place, "has_tool_item"))
+            if not present:
+                item = self._new_tool_item(kind)
+                self.eng.add_edge_unchecked(place, "has_tool_item", item)
+
+    def _workplace(self, actor):
+        """The installed building where the actor's trade works, or None (no trade, or not built)."""
+        role = self.eng.node(self._actor(actor))["attrs"].get("role", "")
+        kind = E.TRADES.get(role, {}).get("building")
+        if kind is None:
+            return None
+        if kind in self._places:
+            return self._places[kind]
+        return next((place for place in self._places.values() if self._place_kind(place) == kind), None)
+
+    def _inside_building(self, actor, place):
+        """Whether the actor stands within the building's footprint on the map."""
+        pos = self.actor_position(actor)
+        if pos is None:
             return False
-        if not self.eng.has_edge(self._town, "has_tool", tool):
-            return False
-        attrs = self.eng.node(tool)["attrs"]
-        return float(attrs.get("condition", 0.0)) > 0.0 and float(attrs.get("broken", 0.0)) != 1.0
+        for key, node in self._places.items():
+            if node == place and key in self._building_sites:
+                x, y, w, h = self._building_sites[key]
+                return x <= pos[0] < x + w and y <= pos[1] < y + h
+        return pos == self.map_position_node(place)
+
+    def _at_workplace(self, actor):
+        """The actor's workplace building if they can use its tools now. Before the clock runs
+        (setup calls) location is not checked. Once it runs, a worker who has a map position must
+        stand inside the building; a worker with no map position at all is not location-gated."""
+        place = self._workplace(actor)
+        if place is None:
+            return None
+        if (self._turn > 0 and self.actor_position(actor) is not None
+                and not self._inside_building(actor, place)):
+            return None
+        return place
+
+    @staticmethod
+    def _serviceable(item_attrs):
+        return float(item_attrs.get("condition", 0.0)) > 0.0 and float(item_attrs.get("broken", 0.0)) != 1.0
+
+    def _worker_tool(self, actor, kind):
+        """The tool of `kind` a trade worker uses now: an unbroken one at their workplace (when they
+        are there), else one they hold. None if they have neither."""
+        place = self._at_workplace(actor)
+        if place is not None:
+            for item in self.eng.neighbours(place, "has_tool_item"):
+                attrs = self.eng.node(item)["attrs"]
+                if attrs.get("kind") == kind and self._serviceable(attrs):
+                    return item
+        return self._held_tool(actor, kind)
+
+    def workshop_tool(self, kind, building=None):
+        """A tool of `kind` standing at a building: the unbroken one if there is one, else the first
+        found, else None. `building` names a building kind to look in; default is every building."""
+        found = None
+        for place in self._places.values():
+            if building is not None and self._place_kind(place) != building:
+                continue
+            for item in self.eng.neighbours(place, "has_tool_item"):
+                attrs = self.eng.node(item)["attrs"]
+                if attrs.get("kind") != kind:
+                    continue
+                if self._serviceable(attrs):
+                    return item
+                found = found if found is not None else item
+        return found
 
     def _village_start(self, actor, recipe):
-        if self.busy(actor) or not self._recipe_inputs_available(recipe):
+        if self.busy(actor) or not self._recipe_inputs_available(recipe, actor):
             return False
         return bool(self.start(actor, recipe))
 
@@ -5625,7 +5721,7 @@ class BigvilleWorld:
                        if option.get("action") == "move_object")
         for recipe in E.RECIPES:
             if (not busy and self._can_attempt(actor, recipe["name"])
-                    and self._recipe_inputs_available(recipe["name"])):
+                    and self._recipe_inputs_available(recipe["name"], actor)):
                 out_kind = recipe.get("out", [""])[0]
                 options.append({"action": "work", "kind": out_kind, "trade": "", "target": "",
                                 "recipe": recipe["name"],
@@ -6603,15 +6699,15 @@ class BigvilleWorld:
         return True
 
     def _recipe_tools_usable(self, actor, action_name):
-        """Every tool the recipe uses is physically usable: the actor's own unbroken tool for an open
-        (household) recipe, else the town's working instrument."""
+        """Every tool the recipe uses is physically usable by this actor: their own unbroken tool for an
+        open (household) recipe, else a trade tool at their workplace or in hand."""
         own_tools = bool(self._recipe_specs.get(action_name, {}).get("open"))
         for tool in self.eng.neighbours(self._actions[action_name], "in_tool"):
             kind = self.eng.node(tool)["attrs"].get("kind", "")
-            if own_tools and actor in self._actors:
+            if own_tools:
                 if self._held_tool(actor, kind) is None:
                     return False
-            elif not self._instrument_usable(kind):
+            elif self._worker_tool(actor, kind) is None:
                 return False
         return True
 
@@ -6625,8 +6721,8 @@ class BigvilleWorld:
                     return item
         return None
 
-    def give_tool(self, actor, kind, *, quality=1.0):
-        """Put a new tool of `kind` in an actor's possession (founding kit, or a gift/purchase setup)."""
+    def _new_tool_item(self, kind, *, quality=1.0):
+        """A new, unbroken ToolItem of `kind` with its wear rate and fit from the item data."""
         spec = self._item_specs.get(kind, {})
         item = self.eng.add_node("ToolItem", {"kind": kind, "weight": self.item_weight(kind),
                                                 "quality": float(quality), "condition": 1.0, "broken": 0.0,
@@ -6635,9 +6731,36 @@ class BigvilleWorld:
                                                 "use_armed": 0.0, "repair_armed": 0.0})
         fit = self.eng.add_node("ToolFit", {"mult": float(spec.get("base_mult", 1.0)) * float(quality)})
         self.eng.add_edge_unchecked(item, "fit_for", fit)
+        return item
+
+    def give_tool(self, actor, kind, *, quality=1.0):
+        """Put a new tool of `kind` in an actor's possession (founding kit, or a gift/purchase setup)."""
+        item = self._new_tool_item(kind, quality=quality)
         self.eng.add_edge_unchecked(self._actor(actor), "holds", item)
         self._refresh_carry_state(actor)
         return item
+
+    def stow_tool(self, actor, item):
+        """Put a tool the actor holds onto the shelf of their workplace building.
+
+        The worker must be at the workplace once the clock runs, and the stow is a major action."""
+        place = self._at_workplace(actor)
+        if place is None or self._item_owner_edge(actor, item) is None:
+            return False
+        if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "stow_tool"):
+            return False
+        node = self._actor(actor)
+        for edge in ("holds_in_hand", "holds_tableware", "holds"):
+            self.eng.remove_edge_unchecked(node, edge, item)
+        kind = self.eng.node(item)["attrs"].get("kind", "")
+        if kind in self._actor_tableware.get(actor, {}):
+            self._actor_tableware[actor][kind] = [held for held in self._actor_tableware[actor][kind]
+                                                  if held != item]
+        if self._actor_hands.get(actor) == item:
+            self._actor_hands[actor] = None
+        self.eng.add_edge_unchecked(place, "has_tool_item", item)
+        self._refresh_carry_state(actor)
+        return True
 
     def do(self, actor, action_name):
         """Perform an action INSTANTLY (no timer). Refused if the actor does not KNOW the recipe or is
@@ -6720,7 +6843,10 @@ class BigvilleWorld:
     def tool_fitness(self, tool):
         fits = list(self.eng.neighbours(tool, "fit_for"))
         return round(float(self.eng.node(fits[0])["attrs"]["mult"]), 4) if fits else 0.0
-    def instrument_condition(self, kind): return round(float(self.eng.node(self._tools[kind])["attrs"]["condition"]), 4)
+    def instrument_condition(self, kind):
+        """Condition of the workshop tool of `kind` (the unbroken one if several), 0.0 if none stands."""
+        item = self.workshop_tool(kind)
+        return 0.0 if item is None else round(float(self.eng.node(item)["attrs"]["condition"]), 4)
 
     # ---------------------------------------------------- clothes: dyed, worn, protective
     def dye_garment(self, dyer, garment, dye_kind):

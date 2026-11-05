@@ -1,0 +1,97 @@
+........................................................................ [ 22%]
+...........................................F............................ [ 44%]
+........................................................................ [ 66%]
+........................................................................ [ 89%]
+...........................FFFF....                                      [100%]
+=================================== FAILURES ===================================
+________________ test_a_recipe_takes_its_time_and_is_hard_work _________________
+
+    def test_a_recipe_takes_its_time_and_is_hard_work():
+        w = World(); w.add_actor("Wayland", role="smith"); w.set_stock("iron", 2); w.set_stock("charcoal", 2)
+        w.start("Wayland", "forge_knife")                  # 90 min -> 6 ticks
+        assert w.busy("Wayland") and w.newest_tool() is None, "the smith is busy -- no knife yet"
+        w.tick(3)
+        assert w.busy("Wayland") and w.newest_tool() is None, "3 ticks in, still forging"
+        w.tick(3)
+>       assert not w.busy("Wayland") and w.newest_tool() is not None, "after the full 6 ticks the knife exists"
+E       AssertionError: after the full 6 ticks the knife exists
+E       assert (not True)
+E        +  where True = busy('Wayland')
+E        +    where busy = <worlds.bigville_world.BigvilleWorld object at 0x797cc66ed950>.busy
+
+tests/test_bigville_world_migrated.py:80: AssertionError
+___ test_timed_smithing_conserves_inputs_and_has_material_and_tool_controls ____
+
+    def test_timed_smithing_conserves_inputs_and_has_material_and_tool_controls():
+>       working = _game()
+                  ^^^^^^^
+
+tests/test_simple_tools_materials_job.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _game(*, iron=1.0, charcoal=1.0, hammer_condition=1.0):
+        register_simple_profile("pkg7.smith", SimplePolicy(hook=_ChooseNails()), replace=True)
+        scenario = load_scenario("tools_materials_job")
+        game = create_game(scenario=scenario, seed=701, autonomous=True,
+                           ticks_per_period=2)
+        world = game.world
+        world.set_stock("iron", iron)
+        world.set_stock("charcoal", charcoal)
+>       world.eng.set_attr(world._tools["hammer"], "condition", hammer_condition)
+                           ^^^^^^^^^^^^
+E       AttributeError: 'BigvilleWorld' object has no attribute '_tools'
+
+tests/test_simple_tools_materials_job.py:23: AttributeError
+________________ test_job_trace_is_reproducible_for_fixed_seed _________________
+
+    def test_job_trace_is_reproducible_for_fixed_seed():
+>       assert _run(_game()) == _run(_game())
+                    ^^^^^^^
+
+tests/test_simple_tools_materials_job.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _game(*, iron=1.0, charcoal=1.0, hammer_condition=1.0):
+        register_simple_profile("pkg7.smith", SimplePolicy(hook=_ChooseNails()), replace=True)
+        scenario = load_scenario("tools_materials_job")
+        game = create_game(scenario=scenario, seed=701, autonomous=True,
+                           ticks_per_period=2)
+        world = game.world
+        world.set_stock("iron", iron)
+        world.set_stock("charcoal", charcoal)
+>       world.eng.set_attr(world._tools["hammer"], "condition", hammer_condition)
+                           ^^^^^^^^^^^^
+E       AttributeError: 'BigvilleWorld' object has no attribute '_tools'
+
+tests/test_simple_tools_materials_job.py:23: AttributeError
+___________ test_missing_tool_rejects_start_without_consuming_inputs ___________
+
+    def test_missing_tool_rejects_start_without_consuming_inputs():
+        world = BigvilleWorld()
+        world.add_actor("Smith", role="smith", skill=0.9)
+        world.set_stock("iron", 1)
+        world.set_stock("charcoal", 1)
+>       hammer = world._tools["hammer"]
+                 ^^^^^^^^^^^^
+E       AttributeError: 'BigvilleWorld' object has no attribute '_tools'
+
+tests/test_simple_tools_materials_job.py:95: AttributeError
+__ test_tool_lost_during_timed_job_blocks_completion_without_consuming_inputs __
+
+    def test_tool_lost_during_timed_job_blocks_completion_without_consuming_inputs():
+        world = BigvilleWorld()
+        world.add_actor("Smith", role="smith", skill=0.9)
+        world.set_stock("iron", 1)
+        world.set_stock("charcoal", 1)
+>       hammer = world._tools["hammer"]
+                 ^^^^^^^^^^^^
+E       AttributeError: 'BigvilleWorld' object has no attribute '_tools'
+
+tests/test_simple_tools_materials_job.py:109: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_world_migrated.py::test_a_recipe_takes_its_time_and_is_hard_work
+FAILED tests/test_simple_tools_materials_job.py::test_timed_smithing_conserves_inputs_and_has_material_and_tool_controls
+FAILED tests/test_simple_tools_materials_job.py::test_job_trace_is_reproducible_for_fixed_seed
+FAILED tests/test_simple_tools_materials_job.py::test_missing_tool_rejects_start_without_consuming_inputs
+FAILED tests/test_simple_tools_materials_job.py::test_tool_lost_during_timed_job_blocks_completion_without_consuming_inputs
+5 failed, 318 passed in 54.94s

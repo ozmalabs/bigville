@@ -39,7 +39,8 @@ physical subsystem, and the production-graph and balance self-tests.
 
 ## Phase 001 -- Workshop tool kits
 
-**Status:** ready
+**Status:** done (see History). Follow-ups recorded in the report: kits for buildings
+completed later and non-founding buildings; storage for buildingless trades' tools.
 
 **Goal.** Trade recipes currently wear a single town-wide phantom `Tool` node per
 tool kind (`self._tools`, created in `BigvilleWorld.__init__` and `add_recipe`).
@@ -359,4 +360,4 @@ with the switch off; writing rising with it on.
 
 | Phase | Status | Commit | Report |
 |---|---|---|---|
-| (none yet) | | | |
+| 001 Workshop tool kits | done | (this commit) | docs/phases/phase001/PHASE001_REPORT.md -- supervisor applied the five setup-only test edits the report proposed (tests/test_simple_tools_materials_job.py, tests/test_bigville_world_migrated.py); 323 passed |

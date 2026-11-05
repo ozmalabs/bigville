@@ -72,6 +72,8 @@ def test_adding_a_new_tool_and_recipe_is_pure_data():
 # ------------------------------------------------------ G-recipes-take-time (headline; ported from worktime)
 def test_a_recipe_takes_its_time_and_is_hard_work():
     w = World(); w.add_actor("Wayland", role="smith"); w.set_stock("iron", 2); w.set_stock("charcoal", 2)
+    x, y, _fw, _fh = w._building_sites["forge"]
+    w._move_actor_to("Wayland", (x, y))                # the forge's tools are used at the forge
     w.start("Wayland", "forge_knife")                  # 90 min -> 6 ticks
     assert w.busy("Wayland") and w.newest_tool() is None, "the smith is busy -- no knife yet"
     w.tick(3)

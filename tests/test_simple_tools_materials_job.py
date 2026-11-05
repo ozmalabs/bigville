@@ -20,7 +20,7 @@ def _game(*, iron=1.0, charcoal=1.0, hammer_condition=1.0):
     world = game.world
     world.set_stock("iron", iron)
     world.set_stock("charcoal", charcoal)
-    world.eng.set_attr(world._tools["hammer"], "condition", hammer_condition)
+    world.eng.set_attr(world.workshop_tool("hammer", building="forge"), "condition", hammer_condition)
     return game
 
 
@@ -92,8 +92,8 @@ def test_missing_tool_rejects_start_without_consuming_inputs():
     world.add_actor("Smith", role="smith", skill=0.9)
     world.set_stock("iron", 1)
     world.set_stock("charcoal", 1)
-    hammer = world._tools["hammer"]
-    world.eng.remove_edge_unchecked(world._town, "has_tool", hammer)
+    hammer = world.workshop_tool("hammer", building="forge")     # the forge's own hammer
+    world.eng.remove_edge_unchecked(world._places["forge"], "has_tool_item", hammer)
 
     assert not world.start("Smith", "forge_nails")
     assert not world.do("Smith", "forge_nails")
@@ -106,16 +106,18 @@ def test_tool_lost_during_timed_job_blocks_completion_without_consuming_inputs()
     world.add_actor("Smith", role="smith", skill=0.9)
     world.set_stock("iron", 1)
     world.set_stock("charcoal", 1)
-    hammer = world._tools["hammer"]
+    hammer = world.workshop_tool("hammer", building="forge")
+    x, y, _fw, _fh = world._building_sites["forge"]
+    world._move_actor_to("Smith", (x, y))                      # ticking runs the clock: be at the forge
 
     assert world.start("Smith", "forge_nails")
-    world.eng.remove_edge_unchecked(world._town, "has_tool", hammer)
+    world.eng.remove_edge_unchecked(world._places["forge"], "has_tool_item", hammer)
     world.tick(1)
     assert world.busy("Smith")
     assert world.qty("iron") == 1.0 and world.qty("charcoal") == 1.0
     assert world.qty("nails") == 0.0
 
-    world.eng.add_edge_unchecked(world._town, "has_tool", hammer)
+    world.eng.add_edge_unchecked(world._places["forge"], "has_tool_item", hammer)
     world.tick(1)
     assert not world.busy("Smith")
     assert world.qty("iron") == 0.0 and world.qty("charcoal") == 0.0
