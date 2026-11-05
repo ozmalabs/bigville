@@ -1,0 +1,54 @@
+{
+  "_doc": "These are the recipes whose food is cooked rather than assembled, cured, churned, or merely\npreserved. They get the same abstract requirement, while `method` remains an available description.",
+  "_types": {
+    "HEATED_FOOD_RECIPES": {
+      "": "frozenset"
+    }
+  },
+  "tables": {
+    "HEATED_FOOD_RECIPES": [
+      "bake_bread",
+      "bake_bread_at_home",
+      "bake_cake",
+      "bake_crackers",
+      "bake_flatbread",
+      "bake_honey_cake",
+      "bake_oatcakes",
+      "bake_spice_cake",
+      "brew_ale",
+      "brew_beer",
+      "brew_cider",
+      "brew_mead",
+      "make_bacon_eggs",
+      "make_bean_stew",
+      "make_cheese_pie",
+      "make_dumplings",
+      "make_fish_pie",
+      "make_fish_stew",
+      "make_fruit_jam",
+      "make_fruit_pie",
+      "make_gruel",
+      "make_lentil_stew",
+      "make_meat_pie",
+      "make_noodles",
+      "make_omelette",
+      "make_pancakes",
+      "make_pea_soup",
+      "make_pie",
+      "make_porridge",
+      "make_pottage",
+      "make_pudding",
+      "make_root_soup",
+      "make_sausage_stew",
+      "make_shepherds_pie",
+      "make_stew",
+      "make_vegetable_soup",
+      "make_yogurt",
+      "render_lard",
+      "roast_fish",
+      "roast_meat",
+      "roast_poultry",
+      "stuffed_cabbage"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "PREPARATION_METHODS_BY_HINT": {
+      "oven": [
+        "oven_baked",
+        "hearth_pot",
+        "coal_pan"
+      ],
+      "pot": [
+        "hearth_pot",
+        "oven_baked"
+      ],
+      "griddle": [
+        "coal_griddle",
+        "coal_pan"
+      ],
+      "spit": [
+        "coal_spit",
+        "oven_baked"
+      ],
+      "mash_tun": [
+        "hearth_pot"
+      ]
+    }
+  }
+}

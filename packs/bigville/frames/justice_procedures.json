@@ -1,0 +1,53 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "JUSTICE_PROCEDURES": {
+      "complaint": {
+        "actor": "resident",
+        "requires": [
+          "harm_or_claim",
+          "complainant"
+        ]
+      },
+      "investigation": {
+        "actor": "constable",
+        "requires": [
+          "complaint",
+          "witnesses",
+          "property_or_scene"
+        ]
+      },
+      "hearing": {
+        "actor": "council_or_court",
+        "requires": [
+          "notice",
+          "accused",
+          "evidence"
+        ]
+      },
+      "judgment": {
+        "actor": "council_or_court",
+        "requires": [
+          "hearing",
+          "law",
+          "record"
+        ]
+      },
+      "remedy": {
+        "actor": "constable_or_council",
+        "requires": [
+          "judgment",
+          "proportionate_penalty"
+        ]
+      },
+      "appeal": {
+        "actor": "council",
+        "requires": [
+          "judgment",
+          "new_evidence_or_error"
+        ]
+      }
+    }
+  }
+}

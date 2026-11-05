@@ -1,0 +1,23 @@
+{
+  "_doc": "Which crops a farmer sows on an arable plot: the main rotation normally, and a nitrogen-fixing\nrestorative crop when the plot's nitrogen has fallen below NITROGEN[\"restore_below\"] of capacity.",
+  "_types": {
+    "ARABLE_ROTATION": {
+      "/main": "tuple",
+      "/restorative": "tuple"
+    }
+  },
+  "tables": {
+    "ARABLE_ROTATION": {
+      "main": [
+        "wheat",
+        "barley",
+        "oats"
+      ],
+      "restorative": [
+        "bean",
+        "pea",
+        "lentil"
+      ]
+    }
+  }
+}

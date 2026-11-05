@@ -1,0 +1,59 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "GOVERNANCE_OFFICES": {
+      "mayor": {
+        "authority": "executive",
+        "records": true,
+        "appoints": [
+          "constable",
+          "clerk"
+        ]
+      },
+      "constable": {
+        "authority": "enforcement",
+        "records": true,
+        "protects": [
+          "people",
+          "property"
+        ]
+      },
+      "clerk": {
+        "authority": "records",
+        "records": true,
+        "maintains": [
+          "taxes",
+          "land",
+          "laws"
+        ]
+      },
+      "councillor": {
+        "authority": "deliberative",
+        "records": false,
+        "decides": [
+          "commons",
+          "works",
+          "emergency"
+        ]
+      },
+      "midwife": {
+        "authority": "care",
+        "records": true,
+        "supports": [
+          "birth",
+          "infant",
+          "mother"
+        ]
+      },
+      "doctor": {
+        "authority": "care",
+        "records": true,
+        "supports": [
+          "injury",
+          "disease"
+        ]
+      }
+    }
+  }
+}

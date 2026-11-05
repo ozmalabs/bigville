@@ -1,0 +1,65 @@
+{
+  "_doc": "A purchase is a conversation followed by physical transfers.  There is\ndeliberately no ``buy`` action here: the actor can say what they want,\nthen give coin and receive the good through the ordinary give action.",
+  "_types": {},
+  "tables": {
+    "MAJOR_ACTIONS": {
+      "move": {
+        "kind": "travel"
+      },
+      "give": {
+        "kind": "transfer"
+      },
+      "put": {
+        "kind": "placement"
+      },
+      "pick_up": {
+        "kind": "handling"
+      },
+      "drop": {
+        "kind": "handling"
+      },
+      "sell": {
+        "kind": "exchange"
+      },
+      "sell_labor": {
+        "kind": "exchange"
+      },
+      "work": {
+        "kind": "production"
+      },
+      "eat": {
+        "kind": "consumption"
+      },
+      "water": {
+        "kind": "agriculture"
+      },
+      "rest": {
+        "kind": "recovery"
+      },
+      "fetch": {
+        "kind": "delegated_task"
+      },
+      "build": {
+        "kind": "construction"
+      },
+      "harvest": {
+        "kind": "agriculture"
+      },
+      "sow": {
+        "kind": "agriculture"
+      },
+      "fertilise": {
+        "kind": "agriculture"
+      },
+      "tend_animals": {
+        "kind": "husbandry"
+      },
+      "maintain": {
+        "kind": "maintenance"
+      },
+      "care": {
+        "kind": "care"
+      }
+    }
+  }
+}

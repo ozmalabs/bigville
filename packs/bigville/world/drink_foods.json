@@ -1,0 +1,15 @@
+{
+  "_doc": "",
+  "_types": {
+    "DRINK_FOODS": {
+      "": "set"
+    }
+  },
+  "tables": {
+    "DRINK_FOODS": [
+      "ale",
+      "cider",
+      "mead"
+    ]
+  }
+}

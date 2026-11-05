@@ -1,0 +1,83 @@
+{
+  "_doc": "Fixtures are physical square contents, not decorative background pixels. Their offsets are\ninterpreted relative to the scenario's declared square bounds and exported to any client.",
+  "_types": {},
+  "tables": {
+    "TOWN_SQUARE_FIXTURES": [
+      {
+        "name": "north_market_stall",
+        "kind": "market_stall",
+        "offset": [
+          -4,
+          -2
+        ],
+        "goods": [
+          "bread",
+          "grain"
+        ]
+      },
+      {
+        "name": "east_market_stall",
+        "kind": "market_stall",
+        "offset": [
+          1,
+          -2
+        ],
+        "goods": [
+          "fish",
+          "cheese"
+        ]
+      },
+      {
+        "name": "west_market_stall",
+        "kind": "market_stall",
+        "offset": [
+          -1,
+          1
+        ],
+        "goods": [
+          "cloth",
+          "knife",
+          "spade"
+        ]
+      },
+      {
+        "name": "town_noticeboard",
+        "kind": "noticeboard",
+        "offset": [
+          -5,
+          0
+        ],
+        "goods": []
+      },
+      {
+        "name": "public_well",
+        "kind": "well",
+        "offset": [
+          4,
+          0
+        ],
+        "goods": [
+          "water"
+        ]
+      },
+      {
+        "name": "south_bench_west",
+        "kind": "bench",
+        "offset": [
+          -3,
+          2
+        ],
+        "goods": []
+      },
+      {
+        "name": "south_bench_east",
+        "kind": "bench",
+        "offset": [
+          2,
+          2
+        ],
+        "goods": []
+      }
+    ]
+  }
+}

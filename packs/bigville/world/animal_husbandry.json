@@ -1,0 +1,38 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "ANIMAL_HUSBANDRY": {
+      "milk": {
+        "species": "cow",
+        "product": "milk",
+        "cooldown": 1,
+        "roles": [
+          "farmer",
+          "dairymaid",
+          "animal_keeper"
+        ]
+      },
+      "shear": {
+        "species": "sheep",
+        "product": "wool",
+        "cooldown": 12,
+        "roles": [
+          "farmer",
+          "shepherd",
+          "animal_keeper"
+        ]
+      },
+      "collect_eggs": {
+        "species": "chicken",
+        "product": "eggs",
+        "cooldown": 1,
+        "roles": [
+          "farmer",
+          "farm_labourer",
+          "animal_keeper"
+        ]
+      }
+    }
+  }
+}

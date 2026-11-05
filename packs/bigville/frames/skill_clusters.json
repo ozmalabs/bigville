@@ -1,0 +1,124 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "SKILL_CLUSTERS": {
+      "metalwork": {
+        "metaskill": "craftsmanship",
+        "skills": [
+          "smithing"
+        ]
+      },
+      "woodwork": {
+        "metaskill": "craftsmanship",
+        "skills": [
+          "carpentry",
+          "sawing",
+          "coopering"
+        ]
+      },
+      "stonework": {
+        "metaskill": "craftsmanship",
+        "skills": [
+          "masonry",
+          "quarrying"
+        ]
+      },
+      "fibre": {
+        "metaskill": "craftsmanship",
+        "skills": [
+          "spinning",
+          "weaving",
+          "tailoring",
+          "dyeing"
+        ]
+      },
+      "leather": {
+        "metaskill": "craftsmanship",
+        "skills": [
+          "tanning",
+          "shoemaking"
+        ]
+      },
+      "bookcraft": {
+        "metaskill": "craftsmanship",
+        "skills": [
+          "papermaking",
+          "inkmaking",
+          "printing"
+        ]
+      },
+      "foodcraft": {
+        "metaskill": "provisioning",
+        "skills": [
+          "milling",
+          "baking",
+          "cooking",
+          "brewing",
+          "dairying",
+          "butchery",
+          "smoking",
+          "candle_making"
+        ]
+      },
+      "fields": {
+        "metaskill": "stewardship",
+        "skills": [
+          "fieldwork",
+          "composting",
+          "foraging"
+        ]
+      },
+      "beasts": {
+        "metaskill": "stewardship",
+        "skills": [
+          "husbandry",
+          "shepherding"
+        ]
+      },
+      "woods_and_water": {
+        "metaskill": "stewardship",
+        "skills": [
+          "felling",
+          "charcoal_burning",
+          "fishing"
+        ]
+      },
+      "letters": {
+        "metaskill": "letters",
+        "skills": [
+          "writing",
+          "reckoning",
+          "law"
+        ]
+      },
+      "care": {
+        "metaskill": "care",
+        "skills": [
+          "medicine",
+          "midwifery",
+          "teaching",
+          "ministry"
+        ]
+      },
+      "civic": {
+        "metaskill": "dealing",
+        "skills": [
+          "governance",
+          "policing",
+          "trading",
+          "service",
+          "storekeeping"
+        ]
+      },
+      "household": {
+        "metaskill": "toil",
+        "skills": [
+          "labour",
+          "water_drawing",
+          "sanitation"
+        ]
+      }
+    }
+  }
+}

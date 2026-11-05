@@ -1,0 +1,117 @@
+{
+  "_doc": "---------------------------------------------------------------- ANIMALS\nlivestock + working animals as DATA. `gives` maps a product -> yield; `eats` is the feed; matures\nand lifespan are in the sim's months; a draught animal has a `pull` (the weight it can haul).",
+  "_types": {},
+  "tables": {
+    "ANIMALS": {
+      "pig": {
+        "gives": {
+          "pork": 40,
+          "hide": 2
+        },
+        "eats": "scraps",
+        "matures": 6,
+        "lifespan": 15,
+        "role": "meat",
+        "ration": 2,
+        "starve_limit": 3,
+        "manure": 0.8,
+        "care_minutes": 15
+      },
+      "cow": {
+        "gives": {
+          "milk": 3,
+          "beef": 200,
+          "hide": 5
+        },
+        "eats": "grass",
+        "matures": 24,
+        "lifespan": 240,
+        "role": "dairy",
+        "ration": 4,
+        "starve_limit": 3,
+        "manure": 2.0,
+        "care_minutes": 45
+      },
+      "chicken": {
+        "gives": {
+          "eggs": 1,
+          "poultry": 2,
+          "feather": 2
+        },
+        "eats": "grain",
+        "matures": 5,
+        "lifespan": 96,
+        "role": "eggs",
+        "ration": 1,
+        "starve_limit": 4,
+        "manure": 0.1,
+        "care_minutes": 10
+      },
+      "horse": {
+        "gives": {
+          "labour": 1
+        },
+        "eats": "hay",
+        "matures": 36,
+        "lifespan": 360,
+        "role": "draught",
+        "ration": 3,
+        "starve_limit": 3,
+        "pull": 500.0,
+        "manure": 1.5,
+        "care_minutes": 30
+      },
+      "dog": {
+        "gives": {
+          "herding": 1
+        },
+        "eats": "scraps",
+        "matures": 12,
+        "lifespan": 180,
+        "role": "working",
+        "ration": 1,
+        "starve_limit": 5,
+        "care_minutes": 5
+      },
+      "cat": {
+        "gives": {
+          "ratting": 1
+        },
+        "eats": "milk",
+        "matures": 8,
+        "lifespan": 180,
+        "role": "working",
+        "ration": 1,
+        "starve_limit": 3,
+        "care_minutes": 0
+      },
+      "sheep": {
+        "gives": {
+          "wool": 4,
+          "mutton": 60
+        },
+        "eats": "grass",
+        "matures": 12,
+        "lifespan": 120,
+        "role": "wool",
+        "ration": 1,
+        "starve_limit": 3,
+        "manure": 0.6,
+        "care_minutes": 10
+      },
+      "bee": {
+        "gives": {
+          "honey": 3,
+          "wax": 1
+        },
+        "eats": "nectar",
+        "matures": 1,
+        "lifespan": 36,
+        "role": "pollination",
+        "ration": 1,
+        "starve_limit": 3,
+        "care_minutes": 5
+      }
+    }
+  }
+}

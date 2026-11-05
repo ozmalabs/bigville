@@ -1,0 +1,361 @@
+{
+  "_doc": "---------------------------------------------------------------- TRADES\na trade unifies a role with its building, its typical tools, and its baseline skill. Recipes\nreference the trade via `requires`; a building `provides` it; a tradesperson practises it with a\nskill (which sets the QUALITY of everything the trade makes). Adding a trade is a data row.\nOccupations of the cast whose work is outdoors or not tied to a catalogue building.\n`building: None` + `site` names the map work-site kind instead.",
+  "_types": {},
+  "tables": {
+    "TRADES": {
+      "smith": {
+        "building": "forge",
+        "tools": [
+          "hammer"
+        ],
+        "base_skill": 0.7
+      },
+      "woodworker": {
+        "building": "woodshop",
+        "tools": [
+          "saw"
+        ],
+        "base_skill": 0.7
+      },
+      "collier": {
+        "building": "charcoal_hearth",
+        "tools": [],
+        "base_skill": 0.6
+      },
+      "sawyer": {
+        "building": "sawpit",
+        "tools": [
+          "saw"
+        ],
+        "base_skill": 0.6
+      },
+      "miller": {
+        "building": "mill",
+        "tools": [],
+        "base_skill": 0.6
+      },
+      "cooper": {
+        "building": "cooperage",
+        "tools": [
+          "adze"
+        ],
+        "base_skill": 0.7
+      },
+      "tanner": {
+        "building": "tannery",
+        "tools": [],
+        "base_skill": 0.6
+      },
+      "cobbler": {
+        "building": "cobbler",
+        "tools": [
+          "awl"
+        ],
+        "base_skill": 0.7
+      },
+      "weaver": {
+        "building": "weavery",
+        "tools": [
+          "loom"
+        ],
+        "base_skill": 0.7
+      },
+      "tailor": {
+        "building": "tailorshop",
+        "tools": [
+          "needle"
+        ],
+        "base_skill": 0.7
+      },
+      "brewer": {
+        "building": "inn",
+        "tools": [
+          "mash_tun"
+        ],
+        "base_skill": 0.6
+      },
+      "dyer": {
+        "building": "dyehouse",
+        "tools": [
+          "dye_vat"
+        ],
+        "base_skill": 0.6
+      },
+      "papermaker": {
+        "building": "papermill",
+        "tools": [
+          "press"
+        ],
+        "base_skill": 0.6
+      },
+      "printer": {
+        "building": "printshop",
+        "tools": [
+          "printing_press"
+        ],
+        "base_skill": 0.7,
+        "literacy": 0.9,
+        "capability": 0.8
+      },
+      "inkmaker": {
+        "building": "inkhouse",
+        "tools": [],
+        "base_skill": 0.6
+      },
+      "baker": {
+        "building": "bakery",
+        "tools": [
+          "oven"
+        ],
+        "base_skill": 0.7
+      },
+      "cook": {
+        "building": "kitchen",
+        "tools": [
+          "pot"
+        ],
+        "base_skill": 0.6
+      },
+      "dairymaid": {
+        "building": "dairy",
+        "tools": [
+          "churn"
+        ],
+        "base_skill": 0.6
+      },
+      "fisher": {
+        "building": "wharf",
+        "tools": [
+          "net"
+        ],
+        "base_skill": 0.6
+      },
+      "granary_keeper": {
+        "building": "granary",
+        "tools": [],
+        "base_skill": 0.5
+      },
+      "cellar_keeper": {
+        "building": "root_cellar",
+        "tools": [],
+        "base_skill": 0.5
+      },
+      "water_keeper": {
+        "building": "wellhouse",
+        "tools": [
+          "bucket"
+        ],
+        "base_skill": 0.5
+      },
+      "sanitation_keeper": {
+        "building": "latrine",
+        "tools": [],
+        "base_skill": 0.5
+      },
+      "compost_keeper": {
+        "building": "compost_yard",
+        "tools": [],
+        "base_skill": 0.5
+      },
+      "smoker": {
+        "building": "smokehouse",
+        "tools": [],
+        "base_skill": 0.6
+      },
+      "mayor": {
+        "building": "townhall",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.9,
+        "capability": 0.9
+      },
+      "constable": {
+        "building": "watchhouse",
+        "tools": [],
+        "base_skill": 0.7
+      },
+      "clerk": {
+        "building": "townhall",
+        "tools": [
+          "quill"
+        ],
+        "base_skill": 0.7,
+        "literacy": 0.9,
+        "capability": 0.9
+      },
+      "councillor": {
+        "building": "townhall",
+        "tools": [],
+        "base_skill": 0.6,
+        "literacy": 0.8,
+        "capability": 0.8
+      },
+      "midwife": {
+        "building": "surgery",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.7,
+        "capability": 0.8
+      },
+      "doctor": {
+        "building": "surgery",
+        "tools": [],
+        "base_skill": 0.8,
+        "literacy": 0.9,
+        "capability": 0.9
+      },
+      "scribe": {
+        "building": "scriptorium",
+        "tools": [
+          "quill"
+        ],
+        "base_skill": 0.7,
+        "literacy": 0.9,
+        "capability": 0.9
+      },
+      "teacher": {
+        "building": "school",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.95,
+        "capability": 0.95
+      },
+      "butcher": {
+        "building": "shambles",
+        "tools": [
+          "cleaver"
+        ],
+        "base_skill": 0.6
+      },
+      "farmer": {
+        "building": null,
+        "site": "farm",
+        "tools": [
+          "spade",
+          "plough"
+        ],
+        "base_skill": 0.7
+      },
+      "shepherd": {
+        "building": null,
+        "site": "pasture",
+        "tools": [],
+        "base_skill": 0.6
+      },
+      "animal_keeper": {
+        "building": null,
+        "site": "pasture",
+        "tools": [],
+        "base_skill": 0.6
+      },
+      "labourer": {
+        "building": null,
+        "site": "market",
+        "tools": [],
+        "base_skill": 0.5
+      },
+      "forester": {
+        "building": null,
+        "site": "lumber",
+        "tools": [
+          "axe"
+        ],
+        "base_skill": 0.6
+      },
+      "quarrier": {
+        "building": null,
+        "site": "stone",
+        "tools": [
+          "pick"
+        ],
+        "base_skill": 0.6
+      },
+      "mason": {
+        "building": null,
+        "site": "mason",
+        "tools": [
+          "hammer"
+        ],
+        "base_skill": 0.7
+      },
+      "servant": {
+        "building": null,
+        "site": "manor",
+        "tools": [],
+        "base_skill": 0.5
+      },
+      "merchant": {
+        "building": null,
+        "site": "market",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.8,
+        "capability": 0.8
+      },
+      "innkeeper": {
+        "building": "inn",
+        "tools": [
+          "mash_tun"
+        ],
+        "base_skill": 0.7
+      },
+      "pastor": {
+        "building": "church",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.9,
+        "capability": 0.9
+      },
+      "lawyer": {
+        "building": "townhall",
+        "tools": [
+          "quill"
+        ],
+        "base_skill": 0.7,
+        "literacy": 0.95,
+        "capability": 0.9
+      },
+      "reporter": {
+        "building": "printshop",
+        "tools": [
+          "quill"
+        ],
+        "base_skill": 0.6,
+        "literacy": 0.9,
+        "capability": 0.8
+      },
+      "shopkeeper": {
+        "building": null,
+        "site": "store",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.8,
+        "capability": 0.8
+      },
+      "banker": {
+        "building": null,
+        "site": "bank",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.95,
+        "capability": 0.9
+      },
+      "landlord": {
+        "building": null,
+        "site": "estate",
+        "tools": [],
+        "base_skill": 0.7,
+        "literacy": 0.9,
+        "capability": 0.9
+      },
+      "chandler": {
+        "building": null,
+        "site": "market",
+        "tools": [
+          "pot"
+        ],
+        "base_skill": 0.6
+      }
+    }
+  }
+}

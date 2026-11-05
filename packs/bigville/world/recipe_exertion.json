@@ -1,0 +1,101 @@
+{
+  "_doc": "A recipe's PHYSICAL demand: (strength REQUIREMENT, stamina COST), in the body's normalized stat units\n(an average untrained body is ~1.0). A heavy trade DEMANDS strength you must HAVE to do it at all (a gate\n-- you cannot swing the plough-hammer if you're not strong enough), and it COSTS stamina you must SPEND\n(depleting your reserve; rest restores it). Light trades (sewing, baking, ink) are 0/0 -- no barrier.\nThe heaviest (plough, wagon) sit ABOVE an average body, so only a strong or trained smith can do them.\nheavy forge work -- above an average body: must train/be strong (str_req > 1.0)\ndemanding but within an average body's reach (str_req <= 1.0, modest cost)\nopen household work: a frail body cannot split logs or dig a compost heap",
+  "_types": {
+    "RECIPE_EXERTION": {
+      "/forge_plough": "tuple",
+      "/forge_scythe": "tuple",
+      "/make_wagon": "tuple",
+      "/make_cart": "tuple",
+      "/raise_barrel": "tuple",
+      "/smelt_iron": "tuple",
+      "/forge_knife": "tuple",
+      "/forge_nails": "tuple",
+      "/forge_pick_head": "tuple",
+      "/make_bed": "tuple",
+      "/make_table": "tuple",
+      "/rive_staves": "tuple",
+      "/burn_charcoal": "tuple",
+      "/saw_planks": "tuple",
+      "/split_firewood": "tuple",
+      "/make_compost": "tuple",
+      "/dig_ore": "tuple",
+      "/lift_saplings": "tuple"
+    }
+  },
+  "tables": {
+    "RECIPE_EXERTION": {
+      "forge_plough": [
+        1.2,
+        0.4
+      ],
+      "forge_scythe": [
+        1.1,
+        0.35
+      ],
+      "make_wagon": [
+        1.2,
+        0.4
+      ],
+      "make_cart": [
+        1.05,
+        0.35
+      ],
+      "raise_barrel": [
+        1.0,
+        0.3
+      ],
+      "smelt_iron": [
+        0.9,
+        0.15
+      ],
+      "forge_knife": [
+        0.9,
+        0.15
+      ],
+      "forge_nails": [
+        0.9,
+        0.15
+      ],
+      "forge_pick_head": [
+        0.9,
+        0.15
+      ],
+      "make_bed": [
+        0.95,
+        0.2
+      ],
+      "make_table": [
+        0.95,
+        0.2
+      ],
+      "rive_staves": [
+        0.85,
+        0.15
+      ],
+      "burn_charcoal": [
+        0.8,
+        0.2
+      ],
+      "saw_planks": [
+        0.85,
+        0.15
+      ],
+      "split_firewood": [
+        0.75,
+        0.2
+      ],
+      "make_compost": [
+        0.6,
+        0.15
+      ],
+      "dig_ore": [
+        0.9,
+        0.25
+      ],
+      "lift_saplings": [
+        0.5,
+        0.1
+      ]
+    }
+  }
+}

@@ -1,0 +1,353 @@
+{
+  "_doc": "---------------------------------------------------------------- SHARED REFERENCES\nA reference is a physical subject/predicate/object template in domain data, not a town fact or\nresident belief. `seed_roles` is retained as authoring metadata for character setup tools; the\nphysical world must not infer knowledge from role or population composition.",
+  "_types": {},
+  "tables": {
+    "SHARED_CONCEPTS": [
+      {
+        "name": "grain_in_granary",
+        "reference": {
+          "subject": "grain",
+          "predicate": "stored_in",
+          "object": "granary"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "miller",
+          "baker",
+          "cook",
+          "granary_keeper"
+        ]
+      },
+      {
+        "name": "roots_in_cellar",
+        "reference": {
+          "subject": "root_crops",
+          "predicate": "stored_in",
+          "object": "root_cellar"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "cook",
+          "granary_keeper"
+        ]
+      },
+      {
+        "name": "prepared_food_in_pantry",
+        "reference": {
+          "subject": "prepared_food",
+          "predicate": "stored_in",
+          "object": "pantry"
+        },
+        "seed_roles": [
+          "cook",
+          "baker",
+          "dairymaid",
+          "granary_keeper",
+          "innkeeper"
+        ]
+      },
+      {
+        "name": "granary_is_long_term_storage",
+        "reference": {
+          "subject": "granary",
+          "predicate": "provides",
+          "object": "long_term_storage"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "miller",
+          "granary_keeper",
+          "clerk"
+        ]
+      },
+      {
+        "name": "miller_grinds_grain",
+        "reference": {
+          "subject": "miller",
+          "predicate": "processes",
+          "object": "grain"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "miller",
+          "baker",
+          "cook"
+        ]
+      },
+      {
+        "name": "cook_needs_heat_and_containment",
+        "reference": {
+          "subject": "cooking",
+          "predicate": "requires",
+          "object": "heat_and_containment"
+        },
+        "seed_roles": [
+          "cook",
+          "baker",
+          "dairymaid"
+        ]
+      },
+      {
+        "name": "food_requires_serving_vessel",
+        "reference": {
+          "subject": "soup_or_drink",
+          "predicate": "served_with",
+          "object": "vessel_and_utensil"
+        },
+        "seed_roles": [
+          "cook",
+          "baker",
+          "dairymaid",
+          "innkeeper"
+        ]
+      },
+      {
+        "name": "constable_holds_constable_post",
+        "reference": {
+          "subject": "constable",
+          "predicate": "holds_position",
+          "object": "constable_post"
+        },
+        "seed_roles": [
+          "*"
+        ],
+        "requires_role": "constable"
+      },
+      {
+        "name": "mayor_holds_mayoral_office",
+        "reference": {
+          "subject": "mayor",
+          "predicate": "holds_position",
+          "object": "mayoral_office"
+        },
+        "seed_roles": [
+          "*"
+        ],
+        "requires_role": "mayor"
+      },
+      {
+        "name": "market_is_public_exchange",
+        "reference": {
+          "subject": "market",
+          "predicate": "is_for",
+          "object": "public_exchange"
+        },
+        "seed_roles": [
+          "*"
+        ]
+      },
+      {
+        "name": "well_provides_clean_water",
+        "reference": {
+          "subject": "well",
+          "predicate": "provides",
+          "object": "clean_water"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "water_keeper",
+          "midwife",
+          "doctor"
+        ]
+      },
+      {
+        "name": "latrine_kept_away_from_well",
+        "reference": {
+          "subject": "latrine",
+          "predicate": "kept_away_from",
+          "object": "well"
+        },
+        "seed_roles": [
+          "water_keeper",
+          "sanitation_keeper",
+          "midwife",
+          "doctor",
+          "clerk"
+        ]
+      },
+      {
+        "name": "manure_returns_to_soil",
+        "reference": {
+          "subject": "manure",
+          "predicate": "returns_to",
+          "object": "soil"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "compost_keeper",
+          "animal_keeper"
+        ]
+      },
+      {
+        "name": "crop_rotation_preserves_fertility",
+        "reference": {
+          "subject": "crop_rotation",
+          "predicate": "preserves",
+          "object": "soil_fertility"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "miller"
+        ]
+      },
+      {
+        "name": "maintenance_prevents_failure",
+        "reference": {
+          "subject": "maintenance",
+          "predicate": "prevents",
+          "object": "infrastructure_failure"
+        },
+        "seed_roles": [
+          "craftsperson",
+          "labourer",
+          "mayor",
+          "clerk"
+        ]
+      },
+      {
+        "name": "illness_requires_care_and_rest",
+        "reference": {
+          "subject": "illness",
+          "predicate": "requires",
+          "object": "care_and_rest"
+        },
+        "seed_roles": [
+          "parent",
+          "midwife",
+          "doctor",
+          "teacher"
+        ]
+      },
+      {
+        "name": "contagious_illness_requires_separation",
+        "reference": {
+          "subject": "contagious_illness",
+          "predicate": "requires",
+          "object": "separation"
+        },
+        "seed_roles": [
+          "midwife",
+          "doctor",
+          "constable",
+          "mayor"
+        ]
+      },
+      {
+        "name": "children_require_care",
+        "reference": {
+          "subject": "children",
+          "predicate": "require",
+          "object": "adult_care"
+        },
+        "seed_roles": [
+          "parent",
+          "midwife",
+          "teacher"
+        ]
+      },
+      {
+        "name": "weather_changes_work_priorities",
+        "reference": {
+          "subject": "weather",
+          "predicate": "changes",
+          "object": "work_priorities"
+        },
+        "seed_roles": [
+          "farmer",
+          "farm_labourer",
+          "forester",
+          "mayor",
+          "clerk"
+        ]
+      },
+      {
+        "name": "land_registry_records_title",
+        "reference": {
+          "subject": "land_registry",
+          "predicate": "records",
+          "object": "land_title"
+        },
+        "seed_roles": [
+          "clerk",
+          "mayor",
+          "councillor",
+          "farmer",
+          "constable"
+        ]
+      },
+      {
+        "name": "deed_is_evidence_of_transfer",
+        "reference": {
+          "subject": "deed",
+          "predicate": "is_evidence_of",
+          "object": "land_transfer"
+        },
+        "seed_roles": [
+          "clerk",
+          "mayor",
+          "councillor",
+          "farmer"
+        ]
+      },
+      {
+        "name": "registered_title_identifies_holder",
+        "reference": {
+          "subject": "registered_title",
+          "predicate": "identifies",
+          "object": "land_holder"
+        },
+        "seed_roles": [
+          "clerk",
+          "mayor",
+          "councillor",
+          "constable",
+          "farmer"
+        ]
+      },
+      {
+        "name": "land_dispute_goes_to_council",
+        "reference": {
+          "subject": "land_dispute",
+          "predicate": "goes_to",
+          "object": "council_hearing"
+        },
+        "seed_roles": [
+          "clerk",
+          "mayor",
+          "councillor",
+          "constable",
+          "farmer"
+        ]
+      },
+      {
+        "name": "paths_are_preferred_travel_surface",
+        "reference": {
+          "subject": "path",
+          "predicate": "preferred_for",
+          "object": "travel"
+        },
+        "seed_roles": [
+          "*"
+        ]
+      },
+      {
+        "name": "terrain_changes_travel_cost",
+        "reference": {
+          "subject": "terrain",
+          "predicate": "changes",
+          "object": "travel_speed_and_stamina"
+        },
+        "seed_roles": [
+          "*"
+        ]
+      }
+    ]
+  }
+}

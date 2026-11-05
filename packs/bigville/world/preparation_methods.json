@@ -1,0 +1,47 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "PREPARATION_METHODS": {
+      "oven_baked": {
+        "equipment": [
+          "oven"
+        ],
+        "prefix": "oven_baked",
+        "modifier": "even_heat"
+      },
+      "hearth_pot": {
+        "equipment": [
+          "pot",
+          "hot_coals"
+        ],
+        "prefix": "hearth_cooked",
+        "modifier": "smoky"
+      },
+      "coal_pan": {
+        "equipment": [
+          "pan",
+          "hot_coals"
+        ],
+        "prefix": "pan_cooked",
+        "modifier": "browned"
+      },
+      "coal_griddle": {
+        "equipment": [
+          "griddle",
+          "hot_coals"
+        ],
+        "prefix": "griddle_cooked",
+        "modifier": "browned"
+      },
+      "coal_spit": {
+        "equipment": [
+          "spit",
+          "hot_coals"
+        ],
+        "prefix": "spit_roasted",
+        "modifier": "fire_roasted"
+      }
+    }
+  }
+}

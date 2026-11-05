@@ -1,0 +1,35 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "FOOD_SERVICE": {
+      "soup": {
+        "container": "bowl",
+        "portion_volume": 1.0,
+        "utensils": [
+          "ladle",
+          "serving_spoon",
+          "bowl"
+        ],
+        "sources": [
+          "pot",
+          "bowl",
+          "barrel"
+        ]
+      },
+      "drink": {
+        "container": "mug",
+        "portion_volume": 1.0,
+        "utensils": [
+          "dipper",
+          "mug"
+        ],
+        "sources": [
+          "barrel",
+          "bowl",
+          "pot"
+        ]
+      }
+    }
+  }
+}

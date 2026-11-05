@@ -1,0 +1,81 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "CHARTERS": [
+      {
+        "name": "bigville_council_charter",
+        "title": "Charter of the Bigville Council",
+        "kind": "charter",
+        "scope": "bigville",
+        "origin": "giantville",
+        "immutable": true,
+        "enforcement": "bigville",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "constable",
+          "councillor",
+          "lawyer",
+          "teacher"
+        ],
+        "concepts": [
+          {
+            "name": "council_derives_authority_from_charter",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "council",
+              "predicate": "derives_authority_from",
+              "object": "charter"
+            }
+          },
+          {
+            "name": "council_makes_local_law",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "council",
+              "predicate": "makes",
+              "object": "local_law"
+            }
+          },
+          {
+            "name": "local_law_requires_notice_and_majority",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "local_law",
+              "predicate": "requires",
+              "object": "notice_and_majority"
+            }
+          },
+          {
+            "name": "justice_requires_hearing_and_record",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "justice",
+              "predicate": "requires",
+              "object": "hearing_and_record"
+            }
+          },
+          {
+            "name": "constable_investigates_council_judges",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "constable",
+              "predicate": "investigates_and_council",
+              "object": "judges"
+            }
+          },
+          {
+            "name": "judgment_is_written_before_remedy",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "judgment",
+              "predicate": "precedes",
+              "object": "remedy"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

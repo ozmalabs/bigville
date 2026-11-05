@@ -1,0 +1,28 @@
+{
+  "_doc": "basic-TASTE liking -- population mean/sd per taste. MEANS follow the robust\ninnate direction (sweet liked, bitter rejected); SDs APPROX. Bitter's real\nstructure is the taster trimodal above (this mean is the marginal).\ninnately preferred (Steiner)\ninnately rejected; taster-status trimodal",
+  "_types": {},
+  "tables": {
+    "TASTE_PREFERENCE": {
+      "sweet": {
+        "mean": 0.8,
+        "sd": 0.12
+      },
+      "salty": {
+        "mean": 0.62,
+        "sd": 0.15
+      },
+      "umami": {
+        "mean": 0.6,
+        "sd": 0.16
+      },
+      "sour": {
+        "mean": 0.42,
+        "sd": 0.18
+      },
+      "bitter": {
+        "mean": 0.3,
+        "sd": 0.22
+      }
+    }
+  }
+}

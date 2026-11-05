@@ -1,0 +1,53 @@
+{
+  "_doc": "Giantville supplies the constitutional floor and general policy. Bigville inherits these entries as\nseed data: they are immutable from within Bigville, but their enforcement is still local.",
+  "_types": {},
+  "tables": {
+    "GIANTVILLE_POLICIES": [
+      {
+        "name": "giantville_public_health_baseline",
+        "title": "Public Health Baseline",
+        "kind": "policy",
+        "scope": "giantville_and_dependencies",
+        "origin": "giantville",
+        "immutable": true,
+        "enforcement": "bigville",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "midwife",
+          "doctor",
+          "constable"
+        ],
+        "concepts": [
+          {
+            "name": "safe_water_is_public_duty",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "safe_water",
+              "predicate": "is",
+              "object": "public_duty"
+            }
+          },
+          {
+            "name": "health_officers_report_outbreaks",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "health_officer",
+              "predicate": "reports",
+              "object": "outbreak"
+            }
+          },
+          {
+            "name": "outbreak_isolation_is_authorised",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "outbreak",
+              "predicate": "authorises",
+              "object": "isolation"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

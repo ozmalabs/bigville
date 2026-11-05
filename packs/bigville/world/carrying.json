@@ -1,0 +1,12 @@
+{
+  "_doc": "Carrying is deliberately a physical threshold model, not a hard inventory\ngate.  A person can take hold of something they can barely manage; the\nconsequences are slower travel and higher exertion.  The second threshold\nis the point at which the hand cannot retain it and the object falls.",
+  "_types": {},
+  "tables": {
+    "CARRYING": {
+      "overload_ratio": 1.0,
+      "drop_ratio": 2.0,
+      "base_move_energy": 1.0,
+      "overload_energy_factor": 4.0
+    }
+  }
+}

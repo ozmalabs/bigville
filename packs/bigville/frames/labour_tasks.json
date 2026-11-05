@@ -1,0 +1,126 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "LABOUR_TASKS": {
+      "water": {
+        "seasonal": true,
+        "skills": [
+          "labourer",
+          "farmer"
+        ],
+        "inputs": [
+          "container",
+          "water_source"
+        ],
+        "outputs": [
+          "water"
+        ]
+      },
+      "farm": {
+        "seasonal": true,
+        "skills": [
+          "farmer",
+          "farm_labourer"
+        ],
+        "inputs": [
+          "land",
+          "seed",
+          "water"
+        ],
+        "outputs": [
+          "harvest"
+        ]
+      },
+      "preserve": {
+        "seasonal": true,
+        "skills": [
+          "cook",
+          "baker",
+          "dairymaid"
+        ],
+        "inputs": [
+          "food",
+          "salt",
+          "fuel"
+        ],
+        "outputs": [
+          "preserved_food"
+        ]
+      },
+      "mill": {
+        "seasonal": false,
+        "skills": [
+          "miller"
+        ],
+        "inputs": [
+          "grain",
+          "mill"
+        ],
+        "outputs": [
+          "flour"
+        ]
+      },
+      "fuel": {
+        "seasonal": true,
+        "skills": [
+          "labourer",
+          "collier",
+          "forester"
+        ],
+        "inputs": [
+          "woodlot",
+          "tool"
+        ],
+        "outputs": [
+          "fuel"
+        ]
+      },
+      "maintenance": {
+        "seasonal": false,
+        "skills": [
+          "craftsperson",
+          "labourer"
+        ],
+        "inputs": [
+          "material",
+          "tool"
+        ],
+        "outputs": [
+          "condition"
+        ]
+      },
+      "care": {
+        "seasonal": false,
+        "skills": [
+          "parent",
+          "midwife",
+          "doctor"
+        ],
+        "inputs": [
+          "time",
+          "medicine"
+        ],
+        "outputs": [
+          "health"
+        ]
+      },
+      "governance": {
+        "seasonal": false,
+        "skills": [
+          "mayor",
+          "clerk",
+          "constable",
+          "councillor"
+        ],
+        "inputs": [
+          "records",
+          "authority"
+        ],
+        "outputs": [
+          "decision"
+        ]
+      }
+    }
+  }
+}

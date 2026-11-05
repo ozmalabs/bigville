@@ -1,0 +1,23 @@
+{
+  "_doc": "Open (household) recipes are done by anyone, so they name the skill they exercise directly.\nEvery other recipe exercises its trade's main skill (recipe_skill).",
+  "_types": {},
+  "tables": {
+    "OPEN_RECIPE_SKILLS": {
+      "split_firewood": "felling",
+      "lift_saplings": "foraging",
+      "gather_berries": "foraging",
+      "gather_mushrooms": "foraging",
+      "pick_apples": "foraging",
+      "pick_pears": "foraging",
+      "pick_plums": "foraging",
+      "cut_sage": "foraging",
+      "cut_thyme": "foraging",
+      "cut_parsley": "foraging",
+      "make_compost": "composting",
+      "make_thatch": "fieldwork",
+      "spin_thread": "spinning",
+      "cut_rags": "tailoring",
+      "bake_bread_at_home": "cooking"
+    }
+  }
+}

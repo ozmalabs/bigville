@@ -1,0 +1,35 @@
+{
+  "_doc": "---------------------------------------------------------------- FOOD SERVICE\nCooking creates a Stock pile. Consumption is a separate act: a person needs a serving vessel whose\ncapacity can hold one portion, plus an appropriate utensil (or a bowl used as the scoop). A larger\nbowl/pot/barrel is a source, not a substitute for the smaller vessel the eater drinks/eats from.",
+  "_types": {},
+  "tables": {
+    "SERVING_UTENSILS": {
+      "ladle": {
+        "alternatives": [
+          "wooden_ladle",
+          "metal_ladle"
+        ],
+        "for": [
+          "soup"
+        ]
+      },
+      "serving_spoon": {
+        "alternatives": [
+          "wooden_serving_spoon",
+          "metal_serving_spoon"
+        ],
+        "for": [
+          "soup",
+          "pudding"
+        ]
+      },
+      "dipper": {
+        "alternatives": [
+          "wooden_dipper"
+        ],
+        "for": [
+          "drink"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "LOCAL_LAWS": [
+      {
+        "name": "commons_and_land_law",
+        "title": "Commons and Land Ordinance",
+        "kind": "law",
+        "scope": "village",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "constable",
+          "councillor",
+          "farmer"
+        ],
+        "concepts": [
+          {
+            "name": "commons_are_shared_resource",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "commons",
+              "predicate": "belongs_to",
+              "object": "village"
+            }
+          },
+          {
+            "name": "council_sets_grazing_rules",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "council",
+              "predicate": "sets_rules_for",
+              "object": "grazing"
+            }
+          },
+          {
+            "name": "unauthorised_enclosure_is_offence",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "unauthorised_enclosure",
+              "predicate": "is",
+              "object": "offence"
+            }
+          }
+        ]
+      },
+      {
+        "name": "public_order_law",
+        "title": "Public Order and Protection Law",
+        "kind": "law",
+        "scope": "village",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "constable",
+          "councillor"
+        ],
+        "concepts": [
+          {
+            "name": "people_and_property_are_protected",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "constable",
+              "predicate": "protects",
+              "object": "people_and_property"
+            }
+          },
+          {
+            "name": "constable_answers_to_council",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "constable",
+              "predicate": "answers_to",
+              "object": "council"
+            }
+          },
+          {
+            "name": "theft_is_reported_to_constable",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "theft",
+              "predicate": "is_reported_to",
+              "object": "constable"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

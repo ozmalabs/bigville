@@ -1,0 +1,18 @@
+{
+  "_doc": "FAVOURITE colour -- blue robustly #1; ORDERING reliable, FRACTIONS APPROX (must sum to 1)",
+  "_types": {},
+  "tables": {
+    "COLOUR_PREFERENCE": {
+      "blue": 0.33,
+      "red": 0.14,
+      "green": 0.13,
+      "purple": 0.1,
+      "black": 0.09,
+      "pink": 0.06,
+      "orange": 0.05,
+      "yellow": 0.05,
+      "white": 0.03,
+      "brown": 0.02
+    }
+  }
+}

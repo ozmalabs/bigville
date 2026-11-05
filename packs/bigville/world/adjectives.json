@@ -1,0 +1,50 @@
+{
+  "_doc": "---------------------------------------------------------------- ADJECTIVES (condition classes)\nEach item belongs to an ADJECTIVAL CLASS -- a separate class whose ordered stages describe how it\ndegrades. Condition runs 1.0 (perfect) -> 0.0 (destroyed); the adjective is the stage it has reached.",
+  "_types": {},
+  "tables": {
+    "ADJECTIVES": {
+      "metal": [
+        "pristine",
+        "worn",
+        "rusty",
+        "ruined"
+      ],
+      "perishable": [
+        "fresh",
+        "stale",
+        "rotten",
+        "putrid"
+      ],
+      "textile": [
+        "new",
+        "worn",
+        "frayed",
+        "ragged"
+      ],
+      "wood": [
+        "sound",
+        "weathered",
+        "rotten",
+        "crumbling"
+      ],
+      "leather": [
+        "supple",
+        "worn",
+        "cracked",
+        "perished"
+      ],
+      "stone": [
+        "solid",
+        "chipped",
+        "cracked",
+        "crumbling"
+      ],
+      "durable": [
+        "sound",
+        "worn",
+        "damaged",
+        "broken"
+      ]
+    }
+  }
+}

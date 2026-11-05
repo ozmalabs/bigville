@@ -1,0 +1,15 @@
+{
+  "_doc": "Gives that are services an animal performs rather than goods it yields.",
+  "_types": {
+    "ANIMAL_SERVICES": {
+      "": "frozenset"
+    }
+  },
+  "tables": {
+    "ANIMAL_SERVICES": [
+      "herding",
+      "labour",
+      "ratting"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "_doc": "a supertaster is far more averse to bitter; a non-taster barely registers it (APPROX liking means)",
+  "_types": {},
+  "tables": {
+    "BITTER_LIKING_BY_STATUS": {
+      "non_taster": 0.55,
+      "medium": 0.35,
+      "supertaster": 0.12
+    }
+  }
+}

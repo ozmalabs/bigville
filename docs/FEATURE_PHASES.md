@@ -398,7 +398,10 @@ Split into two phases.
 
 ### Phase 013a -- Pack files, compiler, and export
 
-**Status:** ready.
+**Status:** done (see History). Supervisor review: kept authored key order (sorting would change
+dict iteration order); removed the dead `_CEREAL` template (CROPS holds the expanded values);
+`tools/export_pack.py` builds from legacy modules only with `--bootstrap`; the pre-phase
+snapshot equality is a one-time record in `docs/phases/phase013a/`, not a permanent test.
 
 **Goal.**
 - Pack layout: `packs/<name>/pack.json` (manifest: `name`, `version`, `description`, `extends`
@@ -436,7 +439,7 @@ world, backend, or other test files.
 
 ### Phase 013b -- The world reads a named pack
 
-**Status:** blocked on 013a.
+**Status:** ready.
 
 **Goal.** `BigvilleWorld(data_pack=...)` and `"data_pack"` in a scenario select the pack; every
 table the world, backends, reporting, and asset generator read comes from the world's pack
@@ -604,3 +607,4 @@ exist, at the precision they know them -- never the world's map.
 | Phase | Status | Commit | Report |
 |---|---|---|---|
 | 001 Workshop tool kits | done | (this commit) | docs/phases/phase001/PHASE001_REPORT.md -- supervisor applied the five setup-only test edits the report proposed (tests/test_simple_tools_materials_job.py, tests/test_bigville_world_migrated.py); 323 passed |
+| 013a Pack files, compiler, export | done | (this commit) | docs/phases/phase013a/PHASE013A_REPORT.md -- 119 tables in packs/bigville; self-test output identical; 331 passed |

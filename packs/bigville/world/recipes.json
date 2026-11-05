@@ -1,0 +1,3611 @@
+{
+  "_doc": "---------------------------------------------------------------- RECIPES\nhow things are made / combined: inputs -> output, with difficulty and make-time. `requires` is the\ntrade/role. `fallback: True` marks a deliberately costlier way to make something (home baking) that\npeople use when the efficient maker is missing. `open: True` marks household work ANYONE may do -- no trade needed -- provided they are\nstrong and skilled enough (RECIPE_EXERTION, MIN_SKILL) and hold the recipe's tools themselves (a\ntrade recipe uses its workshop's kit instead). Everyone else buys the result, or is given it. `byproducts` ({kind: qty}) are left per batch alongside the output (milling leaves bran). Inputs and tools are deliberately variable-length. Serving vessels and utensils belong\nto FOOD_SERVICE below: they are needed when food is consumed, not when the batch is cooked.\na water-mill run; bran\nASSEMBLE = an action on two ITEM inputs (a head + a handle) using a hammer -- not special\nrecipes that EXIST but are not COMMONLY KNOWN in bigville (common: False -> must be taught or read to be made here)\n--- food / cooking ---\nA bakery oven load: one firing bakes ~60 loaves (a loaf is one resident's bread for a period) in\nabout two hours of the baker's work, on far less fuel per loaf than a household hearth -- so one\nbaker feeds a couple of hundred people, as village bakers did. Baking at home is open to anyone\nbut costs much more time and fuel per loaf.\nwhey\n--- expanded staple foods ---\n--- soups, stews, and savoury meals ---\n--- pies, dairy, and sweets ---\n--- preserving and drinks ---\n--- forestry and gathering. A recipe with no inputs is labour on the land: `gathered_from` names\nwhere it is done, and `seasons` limits when (both are data; the world checks the season). ---\n--- the smith's tools and cooking metal (smithing heat is charcoal specifically, not any fuel) ---\n--- woodwork, cooperage, masonry: workshop equipment and the oven ---\n--- fibre: spinning, linen, nets, shirts, boots, rags, quills ---\n--- butchery and dairy ---\n--- brewing, milling, condiments ---\n--- dishes that use otherwise-idle produce and spices ---\n--- household goods and soil: candles (wax or tallow), thatch, compost ---\nHuman waste is composted before it goes on a field; the compost heap also takes any scraps,\nstraw, or ash (the `compostable` type).\nAttach the abstract requirement to the dish rows without baking a particular appliance into the\nrecipe. The former appliance-specific entries are retained as `method_tools` hints for callers that\nwant a default presentation, but they are not production requirements.",
+  "_types": {},
+  "tables": {
+    "RECIPES": [
+      {
+        "name": "saw_planks",
+        "requires": "sawyer",
+        "in": [
+          [
+            "lumber",
+            1
+          ]
+        ],
+        "out": [
+          "timber",
+          2
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 20
+      },
+      {
+        "name": "burn_charcoal",
+        "requires": "collier",
+        "in": [
+          [
+            "wood",
+            4
+          ]
+        ],
+        "out": [
+          "charcoal",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 60
+      },
+      {
+        "name": "smelt_iron",
+        "requires": "smith",
+        "in": [
+          [
+            "ore",
+            2
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "iron",
+          1
+        ],
+        "difficulty": 3.0,
+        "time_minutes": 90
+      },
+      {
+        "name": "forge_nails",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "nails",
+          5
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 10,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_knife",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "knife",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 90,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "carve_rake",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "rake",
+          1
+        ],
+        "difficulty": 0.7,
+        "time_minutes": 60
+      },
+      {
+        "name": "grind_flour",
+        "requires": "miller",
+        "in": [
+          [
+            "grain",
+            30
+          ]
+        ],
+        "out": [
+          "flour",
+          20
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 45,
+        "byproducts": {
+          "scraps": 10
+        }
+      },
+      {
+        "name": "forge_pick_head",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "pick_head",
+          1
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 120,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "carve_pick_handle",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "pick_handle",
+          1
+        ],
+        "difficulty": 0.7,
+        "time_minutes": 60
+      },
+      {
+        "name": "assemble_pick",
+        "requires": "smith",
+        "in": [
+          [
+            "pick_head",
+            1
+          ],
+          [
+            "pick_handle",
+            1
+          ]
+        ],
+        "out": [
+          "pick",
+          1
+        ],
+        "difficulty": 0.5,
+        "time_minutes": 15,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_scythe",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            2
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "scythe",
+          1
+        ],
+        "difficulty": 2.5,
+        "time_minutes": 180,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "rive_staves",
+        "requires": "cooper",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "stave",
+          3
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 30,
+        "tools": [
+          "adze"
+        ]
+      },
+      {
+        "name": "raise_barrel",
+        "requires": "cooper",
+        "in": [
+          [
+            "stave",
+            6
+          ]
+        ],
+        "out": [
+          "barrel",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 120,
+        "tools": [
+          "adze"
+        ]
+      },
+      {
+        "name": "tan_hide",
+        "requires": "tanner",
+        "in": [
+          [
+            "hide",
+            2
+          ]
+        ],
+        "out": [
+          "leather",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 240
+      },
+      {
+        "name": "make_shoes",
+        "requires": "cobbler",
+        "in": [
+          [
+            "leather",
+            1
+          ]
+        ],
+        "out": [
+          "shoes",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 120,
+        "tools": [
+          "awl"
+        ]
+      },
+      {
+        "name": "weave_cloth",
+        "requires": "weaver",
+        "in": [
+          [
+            "wool",
+            3
+          ]
+        ],
+        "out": [
+          "cloth",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 180,
+        "tools": [
+          "loom"
+        ]
+      },
+      {
+        "name": "sew_coat",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            2
+          ]
+        ],
+        "out": [
+          "coat",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 150,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_cloak",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            3
+          ]
+        ],
+        "out": [
+          "cloak",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 150,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_hat",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            1
+          ]
+        ],
+        "out": [
+          "hat",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 60,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_breeches",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            2
+          ]
+        ],
+        "out": [
+          "breeches",
+          1
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 120,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_dress",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            3
+          ]
+        ],
+        "out": [
+          "dress",
+          1
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 200,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_smock",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            1
+          ]
+        ],
+        "out": [
+          "smock",
+          1
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 40,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_tunic",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            2
+          ]
+        ],
+        "out": [
+          "tunic",
+          1
+        ],
+        "difficulty": 0.9,
+        "time_minutes": 80,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_cap",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            1
+          ]
+        ],
+        "out": [
+          "cap",
+          1
+        ],
+        "difficulty": 0.5,
+        "time_minutes": 30,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "sew_apron",
+        "requires": "tailor",
+        "in": [
+          [
+            "cloth",
+            1
+          ]
+        ],
+        "out": [
+          "apron",
+          1
+        ],
+        "difficulty": 0.5,
+        "time_minutes": 30,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "make_clogs",
+        "requires": "cobbler",
+        "in": [
+          [
+            "wood",
+            2
+          ]
+        ],
+        "out": [
+          "clogs",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 60,
+        "tools": [
+          "awl"
+        ]
+      },
+      {
+        "name": "sew_gown",
+        "requires": "tailor",
+        "in": [
+          [
+            "silk",
+            3
+          ]
+        ],
+        "out": [
+          "gown",
+          1
+        ],
+        "difficulty": 2.8,
+        "time_minutes": 360,
+        "tools": [
+          "needle"
+        ],
+        "common": false
+      },
+      {
+        "name": "sew_doublet",
+        "requires": "tailor",
+        "in": [
+          [
+            "velvet",
+            2
+          ]
+        ],
+        "out": [
+          "doublet",
+          1
+        ],
+        "difficulty": 2.5,
+        "time_minutes": 300,
+        "tools": [
+          "needle"
+        ],
+        "common": false
+      },
+      {
+        "name": "sew_fur_cloak",
+        "requires": "tailor",
+        "in": [
+          [
+            "fur",
+            3
+          ]
+        ],
+        "out": [
+          "fur_cloak",
+          1
+        ],
+        "difficulty": 2.2,
+        "time_minutes": 260,
+        "tools": [
+          "needle"
+        ],
+        "common": false
+      },
+      {
+        "name": "sew_silk_shirt",
+        "requires": "tailor",
+        "in": [
+          [
+            "silk",
+            2
+          ]
+        ],
+        "out": [
+          "silk_shirt",
+          1
+        ],
+        "difficulty": 2.3,
+        "time_minutes": 240,
+        "tools": [
+          "needle"
+        ],
+        "common": false
+      },
+      {
+        "name": "sew_fine_hat",
+        "requires": "tailor",
+        "in": [
+          [
+            "velvet",
+            1
+          ]
+        ],
+        "out": [
+          "fine_hat",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 180,
+        "tools": [
+          "needle"
+        ],
+        "common": false
+      },
+      {
+        "name": "make_chair",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            2
+          ]
+        ],
+        "out": [
+          "chair",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 90,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_table",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            4
+          ]
+        ],
+        "out": [
+          "table",
+          1
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 150,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_bed",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            5
+          ]
+        ],
+        "out": [
+          "bed",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 240,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_chest",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            3
+          ]
+        ],
+        "out": [
+          "chest",
+          1
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 120,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "forge_plough",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            3
+          ],
+          [
+            "charcoal",
+            2
+          ]
+        ],
+        "out": [
+          "plough",
+          1
+        ],
+        "difficulty": 3.0,
+        "time_minutes": 240,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "make_wheel",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "wheel",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 90,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_cart",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            6
+          ],
+          [
+            "wheel",
+            2
+          ]
+        ],
+        "out": [
+          "cart",
+          1
+        ],
+        "difficulty": 2.5,
+        "time_minutes": 300,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_wagon",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            10
+          ],
+          [
+            "wheel",
+            4
+          ]
+        ],
+        "out": [
+          "wagon",
+          1
+        ],
+        "difficulty": 3.5,
+        "time_minutes": 480,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_loom",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            4
+          ]
+        ],
+        "out": [
+          "loom",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 180,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "carve_wooden_mug",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "wooden_mug",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 45,
+        "tools": [
+          "knife"
+        ]
+      },
+      {
+        "name": "forge_metal_mug",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "metal_mug",
+          1
+        ],
+        "difficulty": 1.4,
+        "time_minutes": 75,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "carve_wooden_bowl",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "wooden_bowl",
+          1
+        ],
+        "difficulty": 0.9,
+        "time_minutes": 60,
+        "tools": [
+          "knife"
+        ]
+      },
+      {
+        "name": "forge_metal_bowl",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "metal_bowl",
+          1
+        ],
+        "difficulty": 1.6,
+        "time_minutes": 90,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "carve_wooden_ladle",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "wooden_ladle",
+          1
+        ],
+        "difficulty": 0.7,
+        "time_minutes": 45,
+        "tools": [
+          "knife"
+        ]
+      },
+      {
+        "name": "forge_metal_ladle",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "metal_ladle",
+          1
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 60,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "carve_wooden_serving_spoon",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "wooden_serving_spoon",
+          1
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 35,
+        "tools": [
+          "knife"
+        ]
+      },
+      {
+        "name": "forge_metal_serving_spoon",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "metal_serving_spoon",
+          1
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 50,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "carve_wooden_dipper",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "wooden_dipper",
+          1
+        ],
+        "difficulty": 0.7,
+        "time_minutes": 40,
+        "tools": [
+          "knife"
+        ]
+      },
+      {
+        "name": "brew_ale",
+        "requires": "brewer",
+        "in": [
+          [
+            "grain",
+            3
+          ],
+          [
+            "water",
+            4
+          ]
+        ],
+        "out": [
+          "ale",
+          5
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 480,
+        "tools": [
+          "mash_tun"
+        ]
+      },
+      {
+        "name": "dye_cloth",
+        "requires": "dyer",
+        "in": [
+          [
+            "cloth",
+            1
+          ],
+          [
+            "dyestuff",
+            1
+          ],
+          [
+            "fuel",
+            1
+          ]
+        ],
+        "out": [
+          "coloured_cloth",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 120,
+        "tools": [
+          "dye_vat"
+        ]
+      },
+      {
+        "name": "make_paper",
+        "requires": "papermaker",
+        "in": [
+          [
+            "rag",
+            3
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "paper",
+          5
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 240,
+        "tools": [
+          "press"
+        ],
+        "common": false
+      },
+      {
+        "name": "print_newspaper",
+        "requires": "printer",
+        "in": [
+          [
+            "paper",
+            1
+          ],
+          [
+            "ink",
+            1
+          ]
+        ],
+        "out": [
+          "newspaper",
+          20
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 60,
+        "tools": [
+          "printing_press"
+        ]
+      },
+      {
+        "name": "make_sandwich",
+        "requires": "cook",
+        "in": [
+          [
+            "ham",
+            1
+          ],
+          [
+            "bread",
+            1
+          ]
+        ],
+        "out": [
+          "sandwich",
+          1
+        ],
+        "difficulty": 0.5,
+        "time_minutes": 10
+      },
+      {
+        "name": "make_ink",
+        "requires": "inkmaker",
+        "in": [
+          [
+            "soot",
+            1
+          ],
+          [
+            "oil",
+            1
+          ]
+        ],
+        "out": [
+          "ink",
+          3
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 120,
+        "common": false
+      },
+      {
+        "name": "bake_bread",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            40
+          ],
+          [
+            "water",
+            20
+          ]
+        ],
+        "out": [
+          "bread",
+          60
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 120,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "bake_bread_at_home",
+        "requires": "cook",
+        "open": true,
+        "fallback": true,
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "water",
+            1
+          ]
+        ],
+        "out": [
+          "bread",
+          3
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 90
+      },
+      {
+        "name": "make_pottage",
+        "requires": "cook",
+        "in": [
+          [
+            "oats",
+            1
+          ],
+          [
+            "water",
+            2
+          ],
+          [
+            "cabbage",
+            1
+          ]
+        ],
+        "out": [
+          "pottage",
+          3
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 90,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_stew",
+        "requires": "cook",
+        "in": [
+          [
+            "beef",
+            1
+          ],
+          [
+            "carrot",
+            1
+          ],
+          [
+            "onion",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "stew",
+          3
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 150,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "roast_meat",
+        "requires": "cook",
+        "in": [
+          [
+            "pork",
+            1
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "roast",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 120,
+        "tools": [
+          "spit"
+        ]
+      },
+      {
+        "name": "make_pie",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "beef",
+            1
+          ],
+          [
+            "onion",
+            1
+          ]
+        ],
+        "out": [
+          "pie",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 150,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "churn_butter",
+        "requires": "dairymaid",
+        "in": [
+          [
+            "milk",
+            4
+          ]
+        ],
+        "out": [
+          "butter",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 60,
+        "tools": [
+          "churn"
+        ]
+      },
+      {
+        "name": "make_cheese",
+        "requires": "dairymaid",
+        "in": [
+          [
+            "milk",
+            6
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "cheese",
+          2
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 240,
+        "tools": [
+          "press"
+        ],
+        "byproducts": {
+          "scraps": 2
+        }
+      },
+      {
+        "name": "salt_pork",
+        "requires": "cook",
+        "in": [
+          [
+            "pork",
+            2
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "bacon",
+          2
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 60
+      },
+      {
+        "name": "make_gruel",
+        "requires": "cook",
+        "in": [
+          [
+            "grain",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "gruel",
+          3
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 45,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_porridge",
+        "requires": "cook",
+        "in": [
+          [
+            "oats",
+            1
+          ],
+          [
+            "milk",
+            1
+          ],
+          [
+            "water",
+            1
+          ]
+        ],
+        "out": [
+          "porridge",
+          3
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 60,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "bake_oatcakes",
+        "requires": "baker",
+        "in": [
+          [
+            "oats",
+            2
+          ],
+          [
+            "flour",
+            1
+          ],
+          [
+            "water",
+            1
+          ]
+        ],
+        "out": [
+          "oatcake",
+          4
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 90,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "bake_flatbread",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "water",
+            1
+          ],
+          [
+            "oil",
+            1
+          ]
+        ],
+        "out": [
+          "flatbread",
+          4
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 75,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_pancakes",
+        "requires": "cook",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "eggs",
+            1
+          ],
+          [
+            "milk",
+            1
+          ]
+        ],
+        "out": [
+          "pancake",
+          5
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 60,
+        "tools": [
+          "griddle"
+        ]
+      },
+      {
+        "name": "make_dumplings",
+        "requires": "cook",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "eggs",
+            1
+          ],
+          [
+            "water",
+            1
+          ]
+        ],
+        "out": [
+          "dumpling",
+          6
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 90,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_noodles",
+        "requires": "cook",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "eggs",
+            1
+          ]
+        ],
+        "out": [
+          "noodles",
+          4
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 90,
+        "tools": [
+          "board"
+        ]
+      },
+      {
+        "name": "bake_crackers",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "water",
+            1
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "crackers",
+          6
+        ],
+        "difficulty": 0.9,
+        "time_minutes": 75,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_vegetable_soup",
+        "requires": "cook",
+        "in": [
+          [
+            "potato",
+            1
+          ],
+          [
+            "carrot",
+            1
+          ],
+          [
+            "onion",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "vegetable_soup",
+          4
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 100,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_root_soup",
+        "requires": "cook",
+        "in": [
+          [
+            "turnip",
+            1
+          ],
+          [
+            "parsnip",
+            1
+          ],
+          [
+            "leek",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "root_soup",
+          4
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 100,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_bean_stew",
+        "requires": "cook",
+        "in": [
+          [
+            "bean",
+            1
+          ],
+          [
+            "carrot",
+            1
+          ],
+          [
+            "onion",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "bean_stew",
+          4
+        ],
+        "difficulty": 1.1,
+        "time_minutes": 120,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_lentil_stew",
+        "requires": "cook",
+        "in": [
+          [
+            "lentil",
+            1
+          ],
+          [
+            "onion",
+            1
+          ],
+          [
+            "garlic",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "lentil_stew",
+          4
+        ],
+        "difficulty": 1.1,
+        "time_minutes": 120,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_fish_stew",
+        "requires": "cook",
+        "in": [
+          [
+            "fish",
+            1
+          ],
+          [
+            "potato",
+            1
+          ],
+          [
+            "onion",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "fish_stew",
+          3
+        ],
+        "difficulty": 1.4,
+        "time_minutes": 130,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_sausage_stew",
+        "requires": "cook",
+        "in": [
+          [
+            "sausage",
+            1
+          ],
+          [
+            "bean",
+            1
+          ],
+          [
+            "onion",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "sausage_stew",
+          4
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 125,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_bacon_eggs",
+        "requires": "cook",
+        "in": [
+          [
+            "bacon",
+            1
+          ],
+          [
+            "eggs",
+            2
+          ]
+        ],
+        "out": [
+          "bacon_eggs",
+          2
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 45,
+        "tools": [
+          "griddle"
+        ]
+      },
+      {
+        "name": "roast_poultry",
+        "requires": "cook",
+        "in": [
+          [
+            "poultry",
+            1
+          ],
+          [
+            "salt",
+            1
+          ],
+          [
+            "sage",
+            1
+          ]
+        ],
+        "out": [
+          "roast_poultry",
+          2
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 135,
+        "tools": [
+          "spit"
+        ]
+      },
+      {
+        "name": "roast_fish",
+        "requires": "cook",
+        "in": [
+          [
+            "fish",
+            1
+          ],
+          [
+            "salt",
+            1
+          ],
+          [
+            "thyme",
+            1
+          ]
+        ],
+        "out": [
+          "roast_fish",
+          2
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 90,
+        "tools": [
+          "spit"
+        ]
+      },
+      {
+        "name": "stuffed_cabbage",
+        "requires": "cook",
+        "in": [
+          [
+            "cabbage",
+            1
+          ],
+          [
+            "pork",
+            1
+          ],
+          [
+            "grain",
+            1
+          ],
+          [
+            "onion",
+            1
+          ]
+        ],
+        "out": [
+          "stuffed_cabbage",
+          4
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 160,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_omelette",
+        "requires": "cook",
+        "in": [
+          [
+            "eggs",
+            2
+          ],
+          [
+            "milk",
+            1
+          ],
+          [
+            "onion",
+            1
+          ]
+        ],
+        "out": [
+          "omelette",
+          2
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 50,
+        "tools": [
+          "griddle"
+        ]
+      },
+      {
+        "name": "make_fish_pie",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "fish",
+            1
+          ],
+          [
+            "onion",
+            1
+          ]
+        ],
+        "out": [
+          "fish_pie",
+          2
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 150,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_meat_pie",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "beef",
+            1
+          ],
+          [
+            "onion",
+            1
+          ]
+        ],
+        "out": [
+          "meat_pie",
+          2
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 150,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_shepherds_pie",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            1
+          ],
+          [
+            "mutton",
+            1
+          ],
+          [
+            "potato",
+            2
+          ],
+          [
+            "onion",
+            1
+          ]
+        ],
+        "out": [
+          "shepherds_pie",
+          3
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 180,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_cheese_pie",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "cheese",
+            1
+          ],
+          [
+            "eggs",
+            1
+          ]
+        ],
+        "out": [
+          "cheese_pie",
+          2
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 145,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_buttered_bread",
+        "requires": "cook",
+        "in": [
+          [
+            "bread",
+            1
+          ],
+          [
+            "butter",
+            1
+          ]
+        ],
+        "out": [
+          "buttered_bread",
+          2
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 10
+      },
+      {
+        "name": "make_fruit_pie",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "apple",
+            1
+          ],
+          [
+            "berry",
+            1
+          ]
+        ],
+        "out": [
+          "fruit_pie",
+          2
+        ],
+        "difficulty": 1.7,
+        "time_minutes": 150,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "bake_cake",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "eggs",
+            1
+          ],
+          [
+            "milk",
+            1
+          ],
+          [
+            "honey",
+            1
+          ]
+        ],
+        "out": [
+          "cake",
+          3
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 150,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "bake_honey_cake",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "honey",
+            1
+          ],
+          [
+            "eggs",
+            1
+          ]
+        ],
+        "out": [
+          "honey_cake",
+          3
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 130,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_pudding",
+        "requires": "cook",
+        "in": [
+          [
+            "milk",
+            2
+          ],
+          [
+            "eggs",
+            1
+          ],
+          [
+            "honey",
+            1
+          ]
+        ],
+        "out": [
+          "pudding",
+          3
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 90,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_cream_curd",
+        "requires": "dairymaid",
+        "in": [
+          [
+            "milk",
+            4
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "cream_curd",
+          2
+        ],
+        "difficulty": 1.4,
+        "time_minutes": 180,
+        "tools": [
+          "press"
+        ]
+      },
+      {
+        "name": "make_yogurt",
+        "requires": "dairymaid",
+        "in": [
+          [
+            "milk",
+            3
+          ]
+        ],
+        "out": [
+          "yogurt",
+          2
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 180,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_pickles",
+        "requires": "cook",
+        "in": [
+          [
+            "cucumber",
+            2
+          ],
+          [
+            "vinegar",
+            1
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "pickles",
+          3
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 120,
+        "tools": [
+          "barrel"
+        ]
+      },
+      {
+        "name": "make_sauerkraut",
+        "requires": "cook",
+        "in": [
+          [
+            "cabbage",
+            3
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "sauerkraut",
+          3
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 120,
+        "tools": [
+          "barrel"
+        ]
+      },
+      {
+        "name": "dry_fruit",
+        "requires": "cook",
+        "in": [
+          [
+            "apple",
+            3
+          ]
+        ],
+        "out": [
+          "dried_fruit",
+          2
+        ],
+        "difficulty": 0.7,
+        "time_minutes": 180,
+        "tools": [
+          "drying_rack"
+        ]
+      },
+      {
+        "name": "make_fruit_jam",
+        "requires": "cook",
+        "in": [
+          [
+            "berry",
+            3
+          ],
+          [
+            "sugar",
+            1
+          ]
+        ],
+        "out": [
+          "fruit_jam",
+          3
+        ],
+        "difficulty": 1.1,
+        "time_minutes": 90,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "salt_fish",
+        "requires": "cook",
+        "in": [
+          [
+            "fish",
+            2
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "salt_fish",
+          2
+        ],
+        "difficulty": 0.9,
+        "time_minutes": 75,
+        "tools": [
+          "barrel"
+        ]
+      },
+      {
+        "name": "smoke_fish",
+        "requires": "cook",
+        "in": [
+          [
+            "fish",
+            2
+          ],
+          [
+            "salt",
+            1
+          ],
+          [
+            "fuel",
+            1
+          ]
+        ],
+        "out": [
+          "smoked_fish",
+          2
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 150,
+        "tools": [
+          "smoking_rack"
+        ]
+      },
+      {
+        "name": "brew_cider",
+        "requires": "brewer",
+        "in": [
+          [
+            "apple",
+            4
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "cider",
+          5
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 360,
+        "tools": [
+          "mash_tun"
+        ]
+      },
+      {
+        "name": "brew_mead",
+        "requires": "brewer",
+        "in": [
+          [
+            "honey",
+            2
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "mead",
+          4
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 360,
+        "tools": [
+          "mash_tun"
+        ]
+      },
+      {
+        "name": "bind_book",
+        "requires": "scribe",
+        "in": [
+          [
+            "paper",
+            3
+          ],
+          [
+            "ink",
+            1
+          ]
+        ],
+        "out": [
+          "book",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 180,
+        "tools": [
+          "quill"
+        ]
+      },
+      {
+        "name": "split_firewood",
+        "requires": "forester",
+        "open": true,
+        "in": [
+          [
+            "lumber",
+            1
+          ]
+        ],
+        "out": [
+          "wood",
+          4
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 40,
+        "tools": [
+          "axe"
+        ]
+      },
+      {
+        "name": "lift_saplings",
+        "requires": "forester",
+        "open": true,
+        "in": [],
+        "out": [
+          "sapling",
+          3
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 60,
+        "gathered_from": "woodlot",
+        "seasons": [
+          "winter",
+          "spring"
+        ]
+      },
+      {
+        "name": "gather_berries",
+        "requires": "forester",
+        "open": true,
+        "in": [],
+        "out": [
+          "berry",
+          4
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 90,
+        "gathered_from": "woodlot",
+        "seasons": [
+          "summer"
+        ]
+      },
+      {
+        "name": "gather_mushrooms",
+        "requires": "forester",
+        "open": true,
+        "in": [],
+        "out": [
+          "mushroom",
+          3
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 90,
+        "gathered_from": "woodlot",
+        "seasons": [
+          "autumn"
+        ]
+      },
+      {
+        "name": "pick_apples",
+        "requires": "farmer",
+        "open": true,
+        "in": [],
+        "out": [
+          "apple",
+          6
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 90,
+        "gathered_from": "orchard",
+        "seasons": [
+          "autumn"
+        ]
+      },
+      {
+        "name": "pick_pears",
+        "requires": "farmer",
+        "open": true,
+        "in": [],
+        "out": [
+          "pear",
+          5
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 90,
+        "gathered_from": "orchard",
+        "seasons": [
+          "autumn"
+        ]
+      },
+      {
+        "name": "pick_plums",
+        "requires": "farmer",
+        "open": true,
+        "in": [],
+        "out": [
+          "plum",
+          5
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 90,
+        "gathered_from": "orchard",
+        "seasons": [
+          "summer"
+        ]
+      },
+      {
+        "name": "cut_sage",
+        "requires": "farmer",
+        "open": true,
+        "in": [],
+        "out": [
+          "sage",
+          2
+        ],
+        "difficulty": 0.3,
+        "time_minutes": 30,
+        "gathered_from": "kitchen_garden",
+        "seasons": [
+          "spring",
+          "summer"
+        ]
+      },
+      {
+        "name": "cut_thyme",
+        "requires": "farmer",
+        "open": true,
+        "in": [],
+        "out": [
+          "thyme",
+          2
+        ],
+        "difficulty": 0.3,
+        "time_minutes": 30,
+        "gathered_from": "kitchen_garden",
+        "seasons": [
+          "spring",
+          "summer"
+        ]
+      },
+      {
+        "name": "cut_parsley",
+        "requires": "farmer",
+        "open": true,
+        "in": [],
+        "out": [
+          "parsley",
+          2
+        ],
+        "difficulty": 0.3,
+        "time_minutes": 30,
+        "gathered_from": "kitchen_garden",
+        "seasons": [
+          "spring",
+          "summer"
+        ]
+      },
+      {
+        "name": "dig_ore",
+        "requires": "quarrier",
+        "in": [],
+        "out": [
+          "ore",
+          2
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 120,
+        "gathered_from": "quarry",
+        "tools": [
+          "pick"
+        ]
+      },
+      {
+        "name": "forge_hammer",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "hammer",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 90,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_saw",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "saw",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 120,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_adze",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "adze",
+          1
+        ],
+        "difficulty": 1.6,
+        "time_minutes": 100,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_awl",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "awl",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 30,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_needle",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "needle",
+          1
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 40,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_cleaver",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "cleaver",
+          1
+        ],
+        "difficulty": 1.5,
+        "time_minutes": 90,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_spade",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "spade",
+          1
+        ],
+        "difficulty": 1.4,
+        "time_minutes": 120,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_axe",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            2
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "axe",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 150,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_hinge",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "hinge",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 45,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_pot",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            2
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "pot",
+          1
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 120,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_pan",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "pan",
+          1
+        ],
+        "difficulty": 1.4,
+        "time_minutes": 90,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_griddle",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            2
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "griddle",
+          1
+        ],
+        "difficulty": 1.4,
+        "time_minutes": 90,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "forge_spit",
+        "requires": "smith",
+        "in": [
+          [
+            "iron",
+            1
+          ],
+          [
+            "charcoal",
+            1
+          ]
+        ],
+        "out": [
+          "spit",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 60,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "make_stool",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "stool",
+          1
+        ],
+        "difficulty": 0.7,
+        "time_minutes": 60,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_board",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            1
+          ]
+        ],
+        "out": [
+          "board",
+          1
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 30,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_drying_rack",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            2
+          ]
+        ],
+        "out": [
+          "drying_rack",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 90,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_smoking_rack",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            2
+          ]
+        ],
+        "out": [
+          "smoking_rack",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 90,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_press",
+        "requires": "woodworker",
+        "in": [
+          [
+            "timber",
+            4
+          ],
+          [
+            "nails",
+            4
+          ]
+        ],
+        "out": [
+          "press",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 240,
+        "tools": [
+          "saw"
+        ]
+      },
+      {
+        "name": "make_bucket",
+        "requires": "cooper",
+        "in": [
+          [
+            "stave",
+            3
+          ]
+        ],
+        "out": [
+          "bucket",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 60,
+        "tools": [
+          "adze"
+        ]
+      },
+      {
+        "name": "make_churn",
+        "requires": "cooper",
+        "in": [
+          [
+            "stave",
+            4
+          ]
+        ],
+        "out": [
+          "churn",
+          1
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 90,
+        "tools": [
+          "adze"
+        ]
+      },
+      {
+        "name": "make_mash_tun",
+        "requires": "cooper",
+        "in": [
+          [
+            "stave",
+            10
+          ]
+        ],
+        "out": [
+          "mash_tun",
+          1
+        ],
+        "difficulty": 2.2,
+        "time_minutes": 240,
+        "tools": [
+          "adze"
+        ]
+      },
+      {
+        "name": "make_dye_vat",
+        "requires": "cooper",
+        "in": [
+          [
+            "stave",
+            8
+          ]
+        ],
+        "out": [
+          "dye_vat",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 200,
+        "tools": [
+          "adze"
+        ]
+      },
+      {
+        "name": "dress_stone",
+        "requires": "mason",
+        "in": [
+          [
+            "stone",
+            1
+          ]
+        ],
+        "out": [
+          "blocks",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 45,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "build_oven",
+        "requires": "mason",
+        "in": [
+          [
+            "blocks",
+            8
+          ]
+        ],
+        "out": [
+          "oven",
+          1
+        ],
+        "difficulty": 2.0,
+        "time_minutes": 480,
+        "tools": [
+          "hammer"
+        ]
+      },
+      {
+        "name": "spin_thread",
+        "requires": "weaver",
+        "open": true,
+        "in": [
+          [
+            "wool",
+            1
+          ]
+        ],
+        "out": [
+          "thread",
+          2
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 90
+      },
+      {
+        "name": "spin_linen",
+        "requires": "weaver",
+        "in": [
+          [
+            "flax",
+            3
+          ]
+        ],
+        "out": [
+          "linen",
+          1
+        ],
+        "difficulty": 1.6,
+        "time_minutes": 240,
+        "tools": [
+          "loom"
+        ]
+      },
+      {
+        "name": "knit_net",
+        "requires": "weaver",
+        "in": [
+          [
+            "thread",
+            4
+          ]
+        ],
+        "out": [
+          "net",
+          1
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 180
+      },
+      {
+        "name": "sew_shirt",
+        "requires": "tailor",
+        "in": [
+          [
+            "linen",
+            2
+          ],
+          [
+            "thread",
+            1
+          ]
+        ],
+        "out": [
+          "shirt",
+          1
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 90,
+        "tools": [
+          "needle"
+        ]
+      },
+      {
+        "name": "cut_rags",
+        "requires": "tailor",
+        "open": true,
+        "in": [
+          [
+            "cloth",
+            1
+          ]
+        ],
+        "out": [
+          "rag",
+          6
+        ],
+        "difficulty": 0.2,
+        "time_minutes": 15
+      },
+      {
+        "name": "make_boots",
+        "requires": "cobbler",
+        "in": [
+          [
+            "leather",
+            2
+          ]
+        ],
+        "out": [
+          "boots",
+          1
+        ],
+        "difficulty": 1.8,
+        "time_minutes": 180,
+        "tools": [
+          "awl"
+        ]
+      },
+      {
+        "name": "cut_quill",
+        "requires": "scribe",
+        "in": [
+          [
+            "feather",
+            1
+          ]
+        ],
+        "out": [
+          "quill",
+          1
+        ],
+        "difficulty": 0.5,
+        "time_minutes": 15,
+        "tools": [
+          "knife"
+        ]
+      },
+      {
+        "name": "cure_ham",
+        "requires": "butcher",
+        "in": [
+          [
+            "pork",
+            3
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "ham",
+          2
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 90,
+        "tools": [
+          "cleaver"
+        ]
+      },
+      {
+        "name": "make_sausage",
+        "requires": "butcher",
+        "in": [
+          [
+            "pork",
+            2
+          ],
+          [
+            "salt",
+            1
+          ],
+          [
+            "sage",
+            0.5
+          ],
+          [
+            "pepper",
+            0.5
+          ]
+        ],
+        "out": [
+          "sausage",
+          3
+        ],
+        "difficulty": 1.3,
+        "time_minutes": 90,
+        "tools": [
+          "cleaver"
+        ]
+      },
+      {
+        "name": "render_lard",
+        "requires": "butcher",
+        "in": [
+          [
+            "pork",
+            2
+          ]
+        ],
+        "out": [
+          "lard",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 90,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "skim_cream",
+        "requires": "dairymaid",
+        "in": [
+          [
+            "milk",
+            3
+          ]
+        ],
+        "out": [
+          "cream",
+          1
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 30
+      },
+      {
+        "name": "malt_barley",
+        "requires": "brewer",
+        "in": [
+          [
+            "barley",
+            3
+          ],
+          [
+            "water",
+            1
+          ],
+          [
+            "fuel",
+            1
+          ]
+        ],
+        "out": [
+          "malt",
+          3
+        ],
+        "difficulty": 1.4,
+        "time_minutes": 240
+      },
+      {
+        "name": "brew_beer",
+        "requires": "brewer",
+        "in": [
+          [
+            "malt",
+            3
+          ],
+          [
+            "hops",
+            1
+          ],
+          [
+            "water",
+            4
+          ],
+          [
+            "yeast",
+            1
+          ]
+        ],
+        "out": [
+          "beer",
+          5
+        ],
+        "difficulty": 2.2,
+        "time_minutes": 480,
+        "tools": [
+          "mash_tun"
+        ]
+      },
+      {
+        "name": "propagate_yeast",
+        "requires": "brewer",
+        "in": [
+          [
+            "grain",
+            1
+          ],
+          [
+            "water",
+            1
+          ]
+        ],
+        "out": [
+          "yeast",
+          2
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 60
+      },
+      {
+        "name": "make_vinegar",
+        "requires": "brewer",
+        "in": [
+          [
+            "cider",
+            2
+          ]
+        ],
+        "out": [
+          "vinegar",
+          2
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 120,
+        "tools": [
+          "barrel"
+        ]
+      },
+      {
+        "name": "grind_rye",
+        "requires": "miller",
+        "in": [
+          [
+            "rye",
+            30
+          ]
+        ],
+        "out": [
+          "flour",
+          20
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 45,
+        "byproducts": {
+          "scraps": 10
+        }
+      },
+      {
+        "name": "press_linseed_oil",
+        "requires": "miller",
+        "in": [
+          [
+            "linseed",
+            3
+          ]
+        ],
+        "out": [
+          "oil",
+          1
+        ],
+        "difficulty": 1.2,
+        "time_minutes": 60,
+        "tools": [
+          "press"
+        ]
+      },
+      {
+        "name": "make_mustard",
+        "requires": "cook",
+        "in": [
+          [
+            "mustard_seed",
+            2
+          ],
+          [
+            "vinegar",
+            1
+          ]
+        ],
+        "out": [
+          "mustard",
+          2
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 30
+      },
+      {
+        "name": "make_salad",
+        "requires": "cook",
+        "in": [
+          [
+            "lettuce",
+            2
+          ],
+          [
+            "cucumber",
+            1
+          ],
+          [
+            "parsley",
+            1
+          ]
+        ],
+        "out": [
+          "salad",
+          3
+        ],
+        "difficulty": 0.4,
+        "time_minutes": 15
+      },
+      {
+        "name": "make_pea_soup",
+        "requires": "cook",
+        "in": [
+          [
+            "pea",
+            2
+          ],
+          [
+            "onion",
+            1
+          ],
+          [
+            "water",
+            2
+          ]
+        ],
+        "out": [
+          "pea_soup",
+          4
+        ],
+        "difficulty": 0.9,
+        "time_minutes": 100,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "pickle_beets",
+        "requires": "cook",
+        "in": [
+          [
+            "beet",
+            2
+          ],
+          [
+            "vinegar",
+            1
+          ],
+          [
+            "salt",
+            1
+          ]
+        ],
+        "out": [
+          "pickles",
+          3
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 90,
+        "tools": [
+          "barrel"
+        ]
+      },
+      {
+        "name": "bake_spice_cake",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            2
+          ],
+          [
+            "honey",
+            1
+          ],
+          [
+            "eggs",
+            1
+          ],
+          [
+            "cinnamon",
+            0.5
+          ],
+          [
+            "ginger",
+            0.5
+          ],
+          [
+            "nutmeg",
+            0.5
+          ]
+        ],
+        "out": [
+          "spice_cake",
+          3
+        ],
+        "difficulty": 2.2,
+        "time_minutes": 150,
+        "tools": [
+          "oven"
+        ]
+      },
+      {
+        "name": "make_candles",
+        "requires": "chandler",
+        "in": [
+          [
+            "candle_fat",
+            1
+          ],
+          [
+            "thread",
+            0.5
+          ],
+          [
+            "fuel",
+            0.5
+          ]
+        ],
+        "out": [
+          "candle",
+          1
+        ],
+        "difficulty": 0.8,
+        "time_minutes": 60,
+        "tools": [
+          "pot"
+        ]
+      },
+      {
+        "name": "make_thatch",
+        "requires": "farmer",
+        "open": true,
+        "in": [
+          [
+            "straw",
+            4
+          ]
+        ],
+        "out": [
+          "thatch",
+          2
+        ],
+        "difficulty": 0.6,
+        "time_minutes": 60
+      },
+      {
+        "name": "make_compost",
+        "requires": "farmer",
+        "open": true,
+        "in": [
+          [
+            "night_soil",
+            2
+          ],
+          [
+            "compostable",
+            2
+          ]
+        ],
+        "out": [
+          "compost",
+          3
+        ],
+        "difficulty": 0.5,
+        "time_minutes": 60,
+        "tools": [
+          "spade"
+        ]
+      }
+    ]
+  }
+}

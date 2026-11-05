@@ -1,0 +1,12 @@
+{
+  "_doc": "CILANTRO_SOAPY_FRACTION: CILANTRO 'soapy' -- OR6A2; a MINORITY. APPROX mid of the ~few%-to-~20% range.\n\nSSAT_RATE: sensory-specific satiety per repeat, for a pure variety-seeker (APPROX)\n\nNOVELTY_SWING: neophobia's push on a NOVEL food's liking (+ for neophilic, - for neophobic)\n\nMERE_EXPOSURE_GAIN: fraction of the gap to full liking that familiarity eventually closes (APPROX)\n\nMERE_EXPOSURE_DECAY: per-exposure approach rate toward that ceiling\n\nJOB_TARGET_LOAD: A production job keeps spare hands until each holder carries at most this share of a full day.",
+  "_types": {},
+  "tables": {
+    "CILANTRO_SOAPY_FRACTION": 0.13,
+    "SSAT_RATE": 0.55,
+    "NOVELTY_SWING": 0.3,
+    "MERE_EXPOSURE_GAIN": 0.6,
+    "MERE_EXPOSURE_DECAY": 0.7,
+    "JOB_TARGET_LOAD": 0.8
+  }
+}

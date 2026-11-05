@@ -1,0 +1,51 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "LAWMAKING_PROCEDURES": {
+      "proposal": {
+        "actor": "resident_or_councillor",
+        "requires": [
+          "grievance_or_need",
+          "witnessed_observation"
+        ]
+      },
+      "notice": {
+        "actor": "clerk",
+        "requires": [
+          "written_proposal",
+          "public_notice"
+        ]
+      },
+      "deliberation": {
+        "actor": "council",
+        "requires": [
+          "meeting",
+          "speakers",
+          "record"
+        ]
+      },
+      "vote": {
+        "actor": "council",
+        "requires": [
+          "quorum",
+          "majority"
+        ]
+      },
+      "promulgation": {
+        "actor": "clerk",
+        "requires": [
+          "approved_law",
+          "written_record"
+        ]
+      },
+      "effective": {
+        "actor": "council",
+        "requires": [
+          "effective_date",
+          "public_notice"
+        ]
+      }
+    }
+  }
+}

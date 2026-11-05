@@ -1,0 +1,21 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "LAND_RECORDS": {
+      "office": "records_office",
+      "register": "land_register",
+      "recorded_by": "clerk",
+      "required_fields": [
+        "parcel",
+        "holder",
+        "tenure",
+        "effective",
+        "witnesses",
+        "basis"
+      ],
+      "public_inspection": true,
+      "archive": "deed_archive"
+    }
+  }
+}

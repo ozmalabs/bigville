@@ -1,0 +1,93 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "AFFORDANCES": {
+      "draw_water": {
+        "domain": "water",
+        "requires": [
+          "water_source",
+          "container"
+        ],
+        "outputs": [
+          "water"
+        ]
+      },
+      "store_harvest": {
+        "domain": "storage",
+        "requires": [
+          "storage_place",
+          "labour"
+        ],
+        "outputs": [
+          "stored_stock"
+        ]
+      },
+      "preserve_food": {
+        "domain": "food",
+        "requires": [
+          "food",
+          "heat_or_drying",
+          "container"
+        ],
+        "outputs": [
+          "preserved_food"
+        ]
+      },
+      "compost_waste": {
+        "domain": "waste",
+        "requires": [
+          "waste_site",
+          "labour"
+        ],
+        "outputs": [
+          "compost",
+          "manure"
+        ]
+      },
+      "repair_infrastructure": {
+        "domain": "maintenance",
+        "requires": [
+          "material",
+          "skill",
+          "time"
+        ],
+        "outputs": [
+          "condition"
+        ]
+      },
+      "hold_assembly": {
+        "domain": "governance",
+        "requires": [
+          "meeting_place",
+          "participants"
+        ],
+        "outputs": [
+          "decision"
+        ]
+      },
+      "teach_reference": {
+        "domain": "knowledge",
+        "requires": [
+          "teacher",
+          "learner",
+          "shared_experience"
+        ],
+        "outputs": [
+          "resident_fact"
+        ]
+      },
+      "publish_law": {
+        "domain": "governance",
+        "requires": [
+          "authority",
+          "writer",
+          "document"
+        ],
+        "outputs": [
+          "written_law"
+        ]
+      }
+    }
+  }
+}

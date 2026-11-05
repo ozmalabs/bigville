@@ -1,0 +1,2030 @@
+{
+  "_doc": "---------------------------------------------------------------- ITEMS\nmaterials are bulk (measured piles); tools are discrete, made, and wear.\n--- materials (bulk piles) ---\n`fuel` = heat per unit (INPUT_TYPES)\nbulky\ndense: heavy, small\nburns hottest\necological cycles and maintenance materials\ndried: burn it or spread it\n`nitrogen` = N per unit spread\nlatrine waste; must be composted before use\nleft by burning fuel\n--- crop seeds (one entry per crop in CROPS; `seed: True` marks sowable stock) ---\n--- tools (discrete; verb + fitness + wear + make time/effort; composite = head+handle) ---\na batch good (bulk), not an individually-worn tool\n--- composite COMPONENTS (discrete items; a head + a handle assemble into a tool) ---\n--- additional local produce and kitchen ingredients ---\n--- prepared foods (all remain bulk Stock, so a batch can feed a household) ---\na machine bought in from outside\n--- trade materials (bulk) ---\n--- fluids (need a watertight container) ---\n--- animal products + feed (bulk) ---\ngeneric kitchen scraps (peelings, crusts, mixed leavings): animal feed, not people food.\nMeat/fish leavings are separate \"<kind>_scraps\" items, minted below from `leaves_scraps`.\n--- imported goods (from OUTSIDE bigville -- acquired by trade, not made locally) ---\n--- goods (discrete; class != material -> made as discrete items with quality + wear) ---\n--- furniture (discrete, larger) ---\n--- larger tools (discrete) ---\nTableware is reusable equipment. Consumption names the abstract vessel capability below, while\nthese variants can also be made, owned, and pressed into service via use_as_store().\n--- extracted resources and the simple shop chains (RESOURCE_DEPOSITS / SHOP_CHAINS below) ---\nfelled wood from a deposit\ndressed stone (mason)\ngeneric carpenter output\nfishmonger's dressed fish\n--- trade tools and workshop equipment named by RECIPES / TRADES. The world provides one\ninstance of each recipe tool at founding; these rows give them physical and price data.\ncooking equipment (PREPARATION_EQUIPMENT); the pot's capacity matches CONTAINERS[\"pot\"]\n--- crops and their seed added to close the brewing, linen, oil, and condiment chains ---\nflax seed: sown, or pressed for oil\nsown, or ground into mustard\nsprouted, kilned barley\nlifted from the woodlot; planted as hedge\n--- prepared foods and goods that use otherwise-idle ingredients ---",
+  "_types": {},
+  "tables": {
+    "ITEMS": {
+      "wood": {
+        "class": "material",
+        "bulk": true,
+        "fuel": 1.0
+      },
+      "timber": {
+        "class": "material",
+        "bulk": true,
+        "weight": 2.0,
+        "volume": 3.0
+      },
+      "ore": {
+        "class": "material",
+        "bulk": true
+      },
+      "iron": {
+        "class": "material",
+        "bulk": true,
+        "weight": 3.0,
+        "volume": 0.5
+      },
+      "charcoal": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 1.0,
+        "fuel": 3.0
+      },
+      "grain": {
+        "class": "material",
+        "bulk": true
+      },
+      "flour": {
+        "class": "material",
+        "bulk": true
+      },
+      "coin": {
+        "class": "material",
+        "bulk": true
+      },
+      "straw": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 2.0,
+        "fuel": 0.3,
+        "compostable": 1.0
+      },
+      "thatch": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 2.0
+      },
+      "peat": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "fuel": 1.5
+      },
+      "dung": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "fuel": 0.6,
+        "nitrogen": 0.4
+      },
+      "manure": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "nitrogen": 0.5
+      },
+      "compost": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 1.0,
+        "nitrogen": 0.6
+      },
+      "night_soil": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0
+      },
+      "ash": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 0.5,
+        "compostable": 1.0
+      },
+      "medicine": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.1,
+        "volume": 0.2,
+        "imported": true
+      },
+      "nectar": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 0.3
+      },
+      "wax": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 0.7,
+        "candle_fat": 1.0
+      },
+      "wheat_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "barley_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "oats_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "rye_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "cabbage_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "carrot_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "onion_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "potato_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "turnip_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "bean_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "pea_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "leek_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "parsnip_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "beet_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "garlic_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "lettuce_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "cucumber_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "lentil_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.2,
+        "volume": 0.3
+      },
+      "knife": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "cut",
+        "base_mult": 1.6,
+        "wear_rate": 0.1,
+        "make_minutes": 90,
+        "make_effort": 1.2,
+        "composite": false,
+        "demand_driver": "general",
+        "demand_weight": 0,
+        "base_demand": 2
+      },
+      "nails": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "fasten",
+        "base_mult": 0.8,
+        "wear_rate": 0.05,
+        "make_minutes": 10,
+        "make_effort": 1.2,
+        "composite": false,
+        "discrete": false,
+        "demand_driver": "building",
+        "demand_weight": 2,
+        "base_demand": 1
+      },
+      "hinge": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "hinge",
+        "base_mult": 1.0,
+        "wear_rate": 0.05,
+        "make_minutes": 45,
+        "make_effort": 1.2,
+        "composite": false,
+        "demand_driver": "building",
+        "demand_weight": 1.5,
+        "base_demand": 1
+      },
+      "spade": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "dig",
+        "base_mult": 1.8,
+        "wear_rate": 0.1,
+        "make_minutes": 120,
+        "make_effort": 1.2,
+        "composite": false,
+        "demand_driver": "harvest",
+        "demand_weight": 1.5,
+        "base_demand": 1
+      },
+      "rake": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "rake",
+        "base_mult": 1.2,
+        "wear_rate": 0.1,
+        "make_minutes": 60,
+        "make_effort": 0.7,
+        "composite": false,
+        "demand_driver": "harvest",
+        "demand_weight": 1.5,
+        "base_demand": 1
+      },
+      "stool": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "sit",
+        "base_mult": 0.6,
+        "wear_rate": 0.05,
+        "make_minutes": 120,
+        "make_effort": 0.7,
+        "composite": false,
+        "demand_driver": "general",
+        "demand_weight": 0,
+        "base_demand": 1
+      },
+      "pick": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "mine",
+        "base_mult": 2.0,
+        "wear_rate": 0.15,
+        "make_minutes": 120,
+        "make_effort": 1.3,
+        "composite": true,
+        "demand_driver": "building",
+        "demand_weight": 1,
+        "base_demand": 1
+      },
+      "axe": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "chop",
+        "base_mult": 2.2,
+        "wear_rate": 0.15,
+        "make_minutes": 150,
+        "make_effort": 1.3,
+        "composite": true,
+        "demand_driver": "building",
+        "demand_weight": 1,
+        "base_demand": 1
+      },
+      "scythe": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "reap",
+        "base_mult": 2.0,
+        "wear_rate": 0.2,
+        "make_minutes": 180,
+        "make_effort": 1.3,
+        "composite": true,
+        "demand_driver": "harvest",
+        "demand_weight": 3,
+        "base_demand": 1
+      },
+      "pick_head": {
+        "class": "component",
+        "part": "head",
+        "for": "pick",
+        "material": "metal",
+        "verb": "mine",
+        "base_mult": 2.0,
+        "wear_rate": 0.15
+      },
+      "pick_handle": {
+        "class": "component",
+        "part": "handle",
+        "for": "pick",
+        "material": "wood",
+        "verb": "mine",
+        "base_mult": 2.0,
+        "wear_rate": 0.15
+      },
+      "barley": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.7,
+        "volume": 1.0
+      },
+      "oats": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 1.0
+      },
+      "rye": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.7,
+        "volume": 1.0
+      },
+      "hops": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 2.0
+      },
+      "cabbage": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 2.0
+      },
+      "carrot": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 0.5
+      },
+      "onion": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.5
+      },
+      "potato": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 0.6
+      },
+      "turnip": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.7,
+        "volume": 0.7
+      },
+      "bean": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 0.4
+      },
+      "pea": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 0.3
+      },
+      "leek": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.8
+      },
+      "parsnip": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 0.6
+      },
+      "beet": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 0.6
+      },
+      "garlic": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 0.3
+      },
+      "lettuce": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.8
+      },
+      "cucumber": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 0.8
+      },
+      "apple": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 0.4,
+        "food": true
+      },
+      "pear": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 0.4,
+        "food": true
+      },
+      "plum": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 0.3,
+        "food": true
+      },
+      "berry": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.1,
+        "volume": 0.2,
+        "food": true
+      },
+      "mushroom": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 0.4,
+        "food": true
+      },
+      "lentil": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 0.4
+      },
+      "honey": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 0.7,
+        "food": true,
+        "decay": 0.01
+      },
+      "cream": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "decay": 0.04
+      },
+      "lard": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 0.8,
+        "food": true,
+        "decay": 0.04,
+        "candle_fat": 1.0
+      },
+      "vinegar": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0
+      },
+      "yeast": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 0.3
+      },
+      "sugar": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 1.0,
+        "volume": 0.8
+      },
+      "mustard": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.4,
+        "food": true
+      },
+      "mutton": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "leaves_scraps": 0.2
+      },
+      "fish": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "food": true,
+        "leaves_scraps": 0.3
+      },
+      "bacon": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "leaves_scraps": 0.1,
+        "decay": 0.03
+      },
+      "sausage": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "decay": 0.04
+      },
+      "ham": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.2,
+        "volume": 1.0,
+        "food": true,
+        "leaves_scraps": 0.15,
+        "decay": 0.03
+      },
+      "pepper": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 0.5,
+        "volume": 0.3
+      },
+      "cinnamon": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 0.3,
+        "volume": 0.3
+      },
+      "ginger": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 0.4,
+        "volume": 0.3
+      },
+      "nutmeg": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 0.3,
+        "volume": 0.2
+      },
+      "sage": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.1,
+        "volume": 0.3
+      },
+      "thyme": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.1,
+        "volume": 0.3
+      },
+      "parsley": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.1,
+        "volume": 0.3
+      },
+      "bread": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 1.0,
+        "food": true
+      },
+      "pottage": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true
+      },
+      "stew": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true
+      },
+      "roast": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true
+      },
+      "pie": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "food": true
+      },
+      "sandwich": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.5,
+        "food": true
+      },
+      "butter": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 0.8,
+        "food": true,
+        "decay": 0.05
+      },
+      "cheese": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.2,
+        "volume": 1.0,
+        "food": true,
+        "decay": 0.02
+      },
+      "gruel": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "porridge": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "oatcake": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 0.8,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "flatbread": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "pancake": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.7,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "dumpling": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.6,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "noodles": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.6,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "crackers": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 0.6,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple",
+        "decay": 0.04
+      },
+      "vegetable_soup": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "vegetable"
+      },
+      "root_soup": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "vegetable"
+      },
+      "bean_stew": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "legume"
+      },
+      "lentil_stew": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "legume"
+      },
+      "fish_stew": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "fish"
+      },
+      "fish_pie": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "fish"
+      },
+      "meat_pie": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "meat"
+      },
+      "shepherds_pie": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.9,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "meat"
+      },
+      "sausage_stew": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "meat"
+      },
+      "bacon_eggs": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 0.8,
+        "food": true,
+        "prepared": true,
+        "food_group": "meat"
+      },
+      "roast_poultry": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "meat"
+      },
+      "roast_fish": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "fish"
+      },
+      "stuffed_cabbage": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.9,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "meat"
+      },
+      "omelette": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 0.7,
+        "food": true,
+        "prepared": true,
+        "food_group": "dairy"
+      },
+      "cheese_pie": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "dairy"
+      },
+      "buttered_bread": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "staple"
+      },
+      "fruit_pie": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "fruit"
+      },
+      "cake": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "sweet"
+      },
+      "honey_cake": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "sweet"
+      },
+      "pudding": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.7,
+        "volume": 0.8,
+        "food": true,
+        "prepared": true,
+        "food_group": "dairy"
+      },
+      "cream_curd": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 0.8,
+        "food": true,
+        "prepared": true,
+        "food_group": "dairy",
+        "decay": 0.04
+      },
+      "yogurt": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 0.8,
+        "food": true,
+        "prepared": true,
+        "food_group": "dairy",
+        "decay": 0.04
+      },
+      "pickles": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.7,
+        "volume": 0.8,
+        "food": true,
+        "prepared": true,
+        "food_group": "preserve",
+        "decay": 0.01
+      },
+      "sauerkraut": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "preserve",
+        "decay": 0.01
+      },
+      "dried_fruit": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.6,
+        "food": true,
+        "prepared": true,
+        "food_group": "preserve",
+        "decay": 0.015
+      },
+      "fruit_jam": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.7,
+        "volume": 0.7,
+        "food": true,
+        "prepared": true,
+        "food_group": "preserve",
+        "decay": 0.015
+      },
+      "salt_fish": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "preserve",
+        "decay": 0.01
+      },
+      "smoked_fish": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "preserve",
+        "decay": 0.015
+      },
+      "cider": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "drink",
+        "decay": 0.02
+      },
+      "mead": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "drink",
+        "decay": 0.015
+      },
+      "book": {
+        "class": "good",
+        "material": "paper",
+        "verb": "read",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "newspaper": {
+        "class": "material",
+        "bulk": true,
+        "material": "paper",
+        "weight": 0.1,
+        "volume": 0.2,
+        "readable": true
+      },
+      "printing_press": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "print",
+        "base_mult": 1.0,
+        "wear_rate": 0.01,
+        "make_minutes": 0,
+        "make_effort": 0,
+        "composite": false,
+        "demand_driver": "general",
+        "demand_weight": 0,
+        "base_demand": 0,
+        "imported": true
+      },
+      "hide": {
+        "class": "material",
+        "bulk": true
+      },
+      "leather": {
+        "class": "material",
+        "bulk": true
+      },
+      "wool": {
+        "class": "material",
+        "bulk": true
+      },
+      "thread": {
+        "class": "material",
+        "bulk": true
+      },
+      "cloth": {
+        "class": "material",
+        "bulk": true
+      },
+      "stave": {
+        "class": "material",
+        "bulk": true
+      },
+      "water": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0
+      },
+      "ale": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "drink",
+        "decay": 0.02
+      },
+      "oil": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 0.9,
+        "volume": 1.0
+      },
+      "milk": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true
+      },
+      "pork": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "leaves_scraps": 0.2
+      },
+      "beef": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "leaves_scraps": 0.2
+      },
+      "poultry": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 1.0,
+        "food": true,
+        "leaves_scraps": 0.3
+      },
+      "eggs": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.1,
+        "volume": 0.2,
+        "food": true
+      },
+      "hay": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 3.0
+      },
+      "grass": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 2.0
+      },
+      "scraps": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 1.0,
+        "scraps": true,
+        "compostable": 1.0
+      },
+      "rag": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.3,
+        "volume": 1.0
+      },
+      "soot": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.2,
+        "volume": 0.5
+      },
+      "ink": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "paper": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 0.2,
+        "volume": 0.5
+      },
+      "dye": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "dyestuff": 1.0,
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "madder": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "dyestuff": 1.0,
+        "colour": "red",
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "woad": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "dyestuff": 1.0,
+        "colour": "blue",
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "weld": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "dyestuff": 1.0,
+        "colour": "yellow",
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "silk": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 0.5,
+        "volume": 0.3
+      },
+      "velvet": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "fur": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 2.0,
+        "volume": 1.0
+      },
+      "linen": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 0.8,
+        "volume": 0.4
+      },
+      "salt": {
+        "class": "material",
+        "bulk": true,
+        "imported": true,
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "coloured_cloth": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "clothe",
+        "base_mult": 1.0,
+        "wear_rate": 0.1
+      },
+      "shoes": {
+        "class": "good",
+        "material": "leather",
+        "verb": "walk",
+        "base_mult": 1.0,
+        "wear_rate": 0.2
+      },
+      "boots": {
+        "class": "good",
+        "material": "leather",
+        "verb": "walk",
+        "base_mult": 1.4,
+        "wear_rate": 0.15,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 1.0,
+        "station": "ordinary",
+        "finery": 2.0
+      },
+      "coat": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "warm",
+        "base_mult": 1.2,
+        "wear_rate": 0.1,
+        "garment": true,
+        "warmth": 3.0,
+        "rain": 1.0,
+        "station": "ordinary",
+        "finery": 2.0
+      },
+      "shirt": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "clothe",
+        "base_mult": 0.8,
+        "wear_rate": 0.15,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 0.0,
+        "station": "ordinary",
+        "finery": 1.0
+      },
+      "cloak": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "warm",
+        "base_mult": 1.0,
+        "wear_rate": 0.1,
+        "garment": true,
+        "warmth": 2.0,
+        "rain": 3.0,
+        "station": "ordinary",
+        "finery": 2.0
+      },
+      "hat": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "cover",
+        "base_mult": 0.6,
+        "wear_rate": 0.1,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 2.0,
+        "station": "ordinary",
+        "finery": 1.0
+      },
+      "breeches": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "clothe",
+        "base_mult": 0.8,
+        "wear_rate": 0.12,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 0.0,
+        "station": "ordinary",
+        "finery": 1.0
+      },
+      "dress": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "clothe",
+        "base_mult": 1.0,
+        "wear_rate": 0.12,
+        "garment": true,
+        "warmth": 2.0,
+        "rain": 0.0,
+        "station": "ordinary",
+        "finery": 2.0
+      },
+      "smock": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "clothe",
+        "base_mult": 0.6,
+        "wear_rate": 0.18,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 0.0,
+        "station": "plain",
+        "finery": 0.0
+      },
+      "tunic": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "clothe",
+        "base_mult": 0.7,
+        "wear_rate": 0.15,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 0.0,
+        "station": "plain",
+        "finery": 1.0
+      },
+      "cap": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "cover",
+        "base_mult": 0.5,
+        "wear_rate": 0.12,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 1.0,
+        "station": "plain",
+        "finery": 0.0
+      },
+      "apron": {
+        "class": "good",
+        "material": "cloth",
+        "verb": "clothe",
+        "base_mult": 0.5,
+        "wear_rate": 0.2,
+        "garment": true,
+        "warmth": 0.0,
+        "rain": 0.0,
+        "station": "plain",
+        "finery": 0.0
+      },
+      "clogs": {
+        "class": "good",
+        "material": "wood",
+        "verb": "walk",
+        "base_mult": 0.8,
+        "wear_rate": 0.14,
+        "garment": true,
+        "warmth": 0.0,
+        "rain": 1.0,
+        "station": "plain",
+        "finery": 0.0
+      },
+      "gown": {
+        "class": "good",
+        "material": "silk",
+        "verb": "clothe",
+        "base_mult": 1.6,
+        "wear_rate": 0.06,
+        "garment": true,
+        "warmth": 2.0,
+        "rain": 0.0,
+        "station": "fine",
+        "finery": 5.0
+      },
+      "doublet": {
+        "class": "good",
+        "material": "velvet",
+        "verb": "clothe",
+        "base_mult": 1.5,
+        "wear_rate": 0.07,
+        "garment": true,
+        "warmth": 2.0,
+        "rain": 0.0,
+        "station": "fine",
+        "finery": 4.0
+      },
+      "fur_cloak": {
+        "class": "good",
+        "material": "fur",
+        "verb": "warm",
+        "base_mult": 1.6,
+        "wear_rate": 0.05,
+        "garment": true,
+        "warmth": 4.0,
+        "rain": 2.0,
+        "station": "fine",
+        "finery": 5.0
+      },
+      "silk_shirt": {
+        "class": "good",
+        "material": "silk",
+        "verb": "clothe",
+        "base_mult": 1.4,
+        "wear_rate": 0.08,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 0.0,
+        "station": "fine",
+        "finery": 3.0
+      },
+      "fine_hat": {
+        "class": "good",
+        "material": "velvet",
+        "verb": "cover",
+        "base_mult": 1.3,
+        "wear_rate": 0.07,
+        "garment": true,
+        "warmth": 1.0,
+        "rain": 2.0,
+        "station": "fine",
+        "finery": 3.0
+      },
+      "barrel": {
+        "class": "good",
+        "material": "wood",
+        "verb": "store",
+        "base_mult": 1.4,
+        "wear_rate": 0.05,
+        "container": true,
+        "capacity": 40.0,
+        "lockable": false,
+        "watertight": true
+      },
+      "chair": {
+        "class": "furniture",
+        "material": "wood",
+        "verb": "seat",
+        "base_mult": 1.0,
+        "wear_rate": 0.05
+      },
+      "table": {
+        "class": "furniture",
+        "material": "wood",
+        "verb": "work",
+        "base_mult": 1.2,
+        "wear_rate": 0.03
+      },
+      "bed": {
+        "class": "furniture",
+        "material": "wood",
+        "verb": "rest",
+        "base_mult": 1.5,
+        "wear_rate": 0.03
+      },
+      "chest": {
+        "class": "furniture",
+        "material": "wood",
+        "verb": "store",
+        "base_mult": 1.0,
+        "wear_rate": 0.03,
+        "container": true,
+        "capacity": 20.0,
+        "lockable": true,
+        "watertight": false
+      },
+      "plough": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "till",
+        "base_mult": 2.4,
+        "wear_rate": 0.15
+      },
+      "wheel": {
+        "class": "component",
+        "part": "wheel",
+        "for": "cart",
+        "material": "wood",
+        "verb": "roll",
+        "base_mult": 1.0,
+        "wear_rate": 0.1
+      },
+      "cart": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "haul",
+        "base_mult": 2.0,
+        "wear_rate": 0.08,
+        "container": true,
+        "capacity": 80.0,
+        "max_load": 50.0,
+        "watertight": false
+      },
+      "wagon": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "haul",
+        "base_mult": 2.4,
+        "wear_rate": 0.08,
+        "container": true,
+        "capacity": 200.0,
+        "max_load": 100.0,
+        "watertight": false
+      },
+      "loom": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "weave",
+        "base_mult": 1.6,
+        "wear_rate": 0.05
+      },
+      "bucket": {
+        "class": "good",
+        "material": "wood",
+        "verb": "carry",
+        "base_mult": 1.0,
+        "wear_rate": 0.05,
+        "container": true,
+        "capacity": 8.0,
+        "lockable": false,
+        "watertight": true
+      },
+      "wooden_mug": {
+        "class": "good",
+        "material": "wood",
+        "verb": "drink",
+        "base_mult": 0.8,
+        "wear_rate": 0.05,
+        "container": true,
+        "capacity": 1.0,
+        "lockable": false,
+        "watertight": true
+      },
+      "metal_mug": {
+        "class": "good",
+        "material": "metal",
+        "verb": "drink",
+        "base_mult": 1.1,
+        "wear_rate": 0.03,
+        "container": true,
+        "capacity": 1.0,
+        "lockable": false,
+        "watertight": true
+      },
+      "wooden_bowl": {
+        "class": "good",
+        "material": "wood",
+        "verb": "serve",
+        "base_mult": 0.8,
+        "wear_rate": 0.05,
+        "container": true,
+        "capacity": 5.0,
+        "lockable": false,
+        "watertight": true
+      },
+      "metal_bowl": {
+        "class": "good",
+        "material": "metal",
+        "verb": "serve",
+        "base_mult": 1.1,
+        "wear_rate": 0.03,
+        "container": true,
+        "capacity": 5.0,
+        "lockable": false,
+        "watertight": true
+      },
+      "wooden_ladle": {
+        "class": "good",
+        "material": "wood",
+        "verb": "serve",
+        "base_mult": 0.8,
+        "wear_rate": 0.05,
+        "utensil": "ladle"
+      },
+      "metal_ladle": {
+        "class": "good",
+        "material": "metal",
+        "verb": "serve",
+        "base_mult": 1.1,
+        "wear_rate": 0.03,
+        "utensil": "ladle"
+      },
+      "wooden_serving_spoon": {
+        "class": "good",
+        "material": "wood",
+        "verb": "serve",
+        "base_mult": 0.8,
+        "wear_rate": 0.05,
+        "utensil": "serving_spoon"
+      },
+      "metal_serving_spoon": {
+        "class": "good",
+        "material": "metal",
+        "verb": "serve",
+        "base_mult": 1.1,
+        "wear_rate": 0.03,
+        "utensil": "serving_spoon"
+      },
+      "wooden_dipper": {
+        "class": "good",
+        "material": "wood",
+        "verb": "serve",
+        "base_mult": 0.8,
+        "wear_rate": 0.05,
+        "utensil": "dipper"
+      },
+      "stone": {
+        "class": "material",
+        "bulk": true,
+        "material": "stone",
+        "weight": 2.5,
+        "volume": 1.0
+      },
+      "lumber": {
+        "class": "material",
+        "bulk": true,
+        "material": "wood",
+        "weight": 1.5,
+        "volume": 2.0
+      },
+      "blocks": {
+        "class": "material",
+        "bulk": true,
+        "material": "stone",
+        "weight": 2.5,
+        "volume": 1.0
+      },
+      "furniture": {
+        "class": "material",
+        "bulk": true,
+        "material": "wood",
+        "weight": 2.0,
+        "volume": 3.0
+      },
+      "fish_ready": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.8,
+        "volume": 1.0
+      },
+      "hammer": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "strike",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 1.0,
+        "volume": 0.3
+      },
+      "saw": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "saw",
+        "base_mult": 1.0,
+        "wear_rate": 0.03,
+        "weight": 1.0,
+        "volume": 0.5
+      },
+      "adze": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "shape",
+        "base_mult": 1.0,
+        "wear_rate": 0.03,
+        "weight": 1.0,
+        "volume": 0.4
+      },
+      "awl": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "pierce",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 0.1,
+        "volume": 0.1
+      },
+      "needle": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "sew",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 0.05,
+        "volume": 0.05
+      },
+      "cleaver": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "cleave",
+        "base_mult": 1.0,
+        "wear_rate": 0.03,
+        "weight": 0.8,
+        "volume": 0.3
+      },
+      "quill": {
+        "class": "tool",
+        "material": "feather",
+        "verb": "write",
+        "base_mult": 1.0,
+        "wear_rate": 0.05,
+        "weight": 0.02,
+        "volume": 0.05
+      },
+      "net": {
+        "class": "tool",
+        "material": "cloth",
+        "verb": "fish",
+        "base_mult": 1.0,
+        "wear_rate": 0.05,
+        "weight": 2.0,
+        "volume": 2.0
+      },
+      "board": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "knead",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 1.0,
+        "volume": 1.0
+      },
+      "drying_rack": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "dry",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 3.0,
+        "volume": 4.0
+      },
+      "smoking_rack": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "smoke",
+        "base_mult": 1.0,
+        "wear_rate": 0.03,
+        "weight": 3.0,
+        "volume": 4.0
+      },
+      "churn": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "churn",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 4.0,
+        "volume": 3.0
+      },
+      "press": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "press",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 10.0,
+        "volume": 6.0
+      },
+      "mash_tun": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "mash",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 15.0,
+        "volume": 20.0
+      },
+      "dye_vat": {
+        "class": "tool",
+        "material": "wood",
+        "verb": "dye",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 15.0,
+        "volume": 20.0
+      },
+      "pot": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "boil",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 2.0,
+        "volume": 8.0,
+        "container": true,
+        "capacity": 8.0,
+        "lockable": false,
+        "watertight": true
+      },
+      "pan": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "fry",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 1.5,
+        "volume": 1.0
+      },
+      "griddle": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "fry",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 3.0,
+        "volume": 1.5
+      },
+      "spit": {
+        "class": "tool",
+        "material": "metal",
+        "verb": "roast",
+        "base_mult": 1.0,
+        "wear_rate": 0.02,
+        "weight": 2.0,
+        "volume": 1.5
+      },
+      "oven": {
+        "class": "furniture",
+        "material": "stone",
+        "verb": "bake",
+        "base_mult": 1.0,
+        "wear_rate": 0.01,
+        "weight": 200.0,
+        "volume": 20.0
+      },
+      "hops_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.1,
+        "volume": 0.2
+      },
+      "linseed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.2,
+        "volume": 0.2
+      },
+      "mustard_seed": {
+        "class": "material",
+        "bulk": true,
+        "seed": true,
+        "weight": 0.2,
+        "volume": 0.2
+      },
+      "flax": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 2.0
+      },
+      "malt": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 1.0
+      },
+      "feather": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.02,
+        "volume": 0.2
+      },
+      "sapling": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 1.0
+      },
+      "beer": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "drink",
+        "decay": 0.015
+      },
+      "salad": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.4,
+        "volume": 0.8,
+        "food": true,
+        "prepared": true,
+        "food_group": "vegetable",
+        "decay": 0.3
+      },
+      "pea_soup": {
+        "class": "material",
+        "bulk": true,
+        "weight": 1.0,
+        "volume": 1.0,
+        "food": true,
+        "prepared": true,
+        "food_group": "legume"
+      },
+      "spice_cake": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.6,
+        "volume": 0.9,
+        "food": true,
+        "prepared": true,
+        "food_group": "sweet",
+        "decay": 0.02
+      },
+      "candle": {
+        "class": "good",
+        "material": "wax",
+        "verb": "light",
+        "base_mult": 1.0,
+        "wear_rate": 0.25,
+        "weight": 0.1,
+        "volume": 0.1
+      }
+    }
+  }
+}

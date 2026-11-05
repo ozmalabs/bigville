@@ -1,0 +1,11 @@
+{
+  "_doc": "TALENT: each metaskill's specific ability beyond what aptitude explains (the part of a broad ability\nnot shared with g). Independent per metaskill; SD APPROX (a model choice), floor 0.5.",
+  "_types": {},
+  "tables": {
+    "TALENT": {
+      "mean": 1.0,
+      "sd": 0.12,
+      "floor": 0.5
+    }
+  }
+}

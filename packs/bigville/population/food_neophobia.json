@@ -1,0 +1,10 @@
+{
+  "_doc": "0=variety-seeker .. 1=routine-lover (APPROX distribution)",
+  "_types": {},
+  "tables": {
+    "FOOD_NEOPHOBIA": {
+      "mean": 0.4,
+      "sd": 0.2
+    }
+  }
+}

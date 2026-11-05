@@ -1,0 +1,80 @@
+{
+  "_doc": "Construction is separate from the catalogue of places already present when the town is\nfounded.  A project creates another instance of a catalogue building (a second granary, a new\nhouse, a barn); the building's staff, shelter, and rooms come from BUILDINGS, and the project\nadds only what raising it costs.",
+  "_types": {},
+  "tables": {
+    "BUILDING_PROJECTS": {
+      "house": {
+        "building": "house",
+        "inputs": {
+          "timber": 12,
+          "thatch": 8
+        },
+        "labour": 10.0,
+        "affordance": "shelter"
+      },
+      "barn": {
+        "building": "barn",
+        "inputs": {
+          "timber": 18,
+          "thatch": 12
+        },
+        "labour": 14.0,
+        "affordance": "house_livestock"
+      },
+      "granary": {
+        "building": "granary",
+        "inputs": {
+          "timber": 20,
+          "thatch": 15
+        },
+        "labour": 18.0,
+        "affordance": "store_dry_food"
+      },
+      "root_cellar": {
+        "building": "root_cellar",
+        "inputs": {
+          "stone": 18,
+          "timber": 10
+        },
+        "labour": 16.0,
+        "affordance": "store_root_crops"
+      },
+      "wellhouse": {
+        "building": "wellhouse",
+        "inputs": {
+          "stone": 12,
+          "timber": 6
+        },
+        "labour": 12.0,
+        "affordance": "draw_water"
+      },
+      "charcoal_hearth": {
+        "building": "charcoal_hearth",
+        "inputs": {
+          "stone": 6,
+          "timber": 4
+        },
+        "labour": 6.0,
+        "affordance": "burn_charcoal"
+      },
+      "papermill": {
+        "building": "papermill",
+        "inputs": {
+          "timber": 16,
+          "stone": 10
+        },
+        "labour": 16.0,
+        "affordance": "make_paper"
+      },
+      "inkhouse": {
+        "building": "inkhouse",
+        "inputs": {
+          "timber": 10,
+          "stone": 4
+        },
+        "labour": 8.0,
+        "affordance": "make_ink"
+      }
+    }
+  }
+}

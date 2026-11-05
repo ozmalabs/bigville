@@ -1,0 +1,33 @@
+{
+  "_doc": "The map/cast uses plain-language occupations while the craft catalogue uses production trades.\nThese bridges preserve the resident's public occupation and seed the corresponding capabilities.",
+  "_types": {
+    "CAST_ROLE_TRADES": {
+      "/carpenter": "tuple",
+      "/farm_labourer": "tuple",
+      "/farmer": "tuple",
+      "/fishmonger": "tuple",
+      "/forester": "tuple"
+    }
+  },
+  "tables": {
+    "CAST_ROLE_TRADES": {
+      "carpenter": [
+        "woodworker"
+      ],
+      "farm_labourer": [
+        "farmer"
+      ],
+      "farmer": [
+        "farmer",
+        "cook"
+      ],
+      "fishmonger": [
+        "fisher"
+      ],
+      "forester": [
+        "forester",
+        "collier"
+      ]
+    }
+  }
+}

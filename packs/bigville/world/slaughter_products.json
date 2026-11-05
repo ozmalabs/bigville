@@ -1,0 +1,22 @@
+{
+  "_doc": "`care_minutes` is the daily husbandry one animal takes (feeding, mucking out, milking).\n`manure` is what a FED animal leaves per period (collected into the store as `manure`). `gives`\nlists everything an animal can yield; SLAUGHTER_PRODUCTS are the ones taken only by killing it.",
+  "_types": {
+    "SLAUGHTER_PRODUCTS": {
+      "": "frozenset"
+    }
+  },
+  "tables": {
+    "SLAUGHTER_PRODUCTS": [
+      "bacon",
+      "beef",
+      "feather",
+      "fish",
+      "ham",
+      "hide",
+      "mutton",
+      "pork",
+      "poultry",
+      "sausage"
+    ]
+  }
+}

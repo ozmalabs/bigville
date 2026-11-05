@@ -1,0 +1,20 @@
+{
+  "_doc": "Starting literacy/capability by station in life (the world's defaults; any agent can be set higher).\nmost of the village -- low literacy\nfunctional: notes, the newspaper\ncouncil laws, accounting",
+  "_types": {},
+  "tables": {
+    "STATION_EDUCATION": {
+      "labouring": {
+        "literacy": 0.15,
+        "capability": 0.2
+      },
+      "middle": {
+        "literacy": 0.55,
+        "capability": 0.5
+      },
+      "educated": {
+        "literacy": 0.9,
+        "capability": 0.9
+      }
+    }
+  }
+}

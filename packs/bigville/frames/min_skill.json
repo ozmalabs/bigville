@@ -1,0 +1,18 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nMIN_SKILL -- the minimum skill to ATTEMPT a recipe at all (apprenticeship)\n---------------------------------------------------------------------------\nDistinct from difficulty (which sets how WELL it comes out): min_skill is the floor below which you\ncannot make the thing at all. Basic work is 0.0 -- an apprentice can attempt it (badly). Master /\nspecialist work needs real skill in the hand, which you build by APPRENTICESHIP over time: you\ncannot simply read how to be a blacksmith or a fine tailor. A recipe not listed here is 0.0.\nmaster smithing\nthe wright's heavy work\nfine tailoring (the specialist recipes -- already common:False, so learned AND skilled)",
+  "_types": {},
+  "tables": {
+    "MIN_SKILL": {
+      "forge_plough": 0.7,
+      "smelt_iron": 0.65,
+      "forge_scythe": 0.5,
+      "make_wagon": 0.7,
+      "make_cart": 0.6,
+      "sew_gown": 0.7,
+      "sew_doublet": 0.65,
+      "sew_fur_cloak": 0.6,
+      "sew_silk_shirt": 0.6,
+      "sew_fine_hat": 0.55
+    }
+  }
+}

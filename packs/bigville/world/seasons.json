@@ -1,0 +1,56 @@
+{
+  "_doc": "---------------------------------------------------------------- VILLAGE SYSTEMS\nData-driven schemas for the material, biological, infrastructural, and social systems a village\ncoordinates. These are affordances and observation schemas, not hidden town facts.",
+  "_types": {},
+  "tables": {
+    "SEASONS": {
+      "spring": {
+        "months": [
+          1,
+          2,
+          3
+        ],
+        "weather": [
+          "rain",
+          "cool",
+          "mild"
+        ]
+      },
+      "summer": {
+        "months": [
+          4,
+          5,
+          6
+        ],
+        "weather": [
+          "hot",
+          "dry",
+          "storm"
+        ]
+      },
+      "autumn": {
+        "months": [
+          7,
+          8,
+          9
+        ],
+        "weather": [
+          "cool",
+          "rain",
+          "wind"
+        ]
+      },
+      "winter": {
+        "months": [
+          10,
+          11,
+          12
+        ],
+        "weather": [
+          "cold",
+          "wet",
+          "frost"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nPROVISIONING traits -- the HUMAN CONDITION: everyone must work out food EVERY day of their\nlives; it never resolves, only renews. How well you can get AHEAD of it varies by person:\n * PLAN HORIZON -- how many days ahead you provision. A distributed trait: some think a week\n   out, some live day-to-day. APPROX distribution.\n * LARDER -- how much food you can STORE, which you must be able to AFFORD. A bigger larder +\n   coin lets you buy in bulk and hold a buffer; with a tiny larder you live hand-to-mouth and\n   are exposed the day supply fails. So provisioning is bounded by min(what you project you'll\n   need, what you can store). Larder capacity is set from wealth (a purchased/rented resource).\n---------------------------------------------------------------------------\n---------------------------------------------------------------------------\nAPTITUDE, TALENTS, AND LIMITATIONS -- how skill capacity varies between people\n---------------------------------------------------------------------------\nAPTITUDE (the meta-metaskill, general learning ability): IQ is normed to a normal distribution,\nmean 100 and SD 15 (en.wikipedia.org/wiki/Intelligence_quotient; ~2% each above 130 and below 70).\nAptitude is that scale divided by 100 -- a multiplier with mean 1.0 and SD 0.15 -- floored at 0.4.",
+  "_types": {},
+  "tables": {
+    "APTITUDE": {
+      "mean": 1.0,
+      "sd": 0.15,
+      "floor": 0.4
+    }
+  }
+}

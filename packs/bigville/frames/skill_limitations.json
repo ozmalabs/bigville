@@ -1,0 +1,97 @@
+{
+  "_doc": "Limitations: each lowers a person's working LEVEL at some skills or whole metaskills (`level`, added\nafter transfer) and/or slows how fast they LEARN them (`learn`, a multiplier). `all_learning`\nmultiplies every learning rate. Prevalence and who has them are in population.LIMITATION_PREVALENCE.",
+  "_types": {},
+  "tables": {
+    "SKILL_LIMITATIONS": {
+      "dyslexia": {
+        "skills": {
+          "writing": {
+            "level": -0.25,
+            "learn": 0.5
+          },
+          "law": {
+            "level": -0.15
+          },
+          "printing": {
+            "level": -0.1
+          }
+        },
+        "metaskills": {
+          "letters": {
+            "learn": 0.7
+          }
+        }
+      },
+      "dyscalculia": {
+        "skills": {
+          "reckoning": {
+            "level": -0.25,
+            "learn": 0.5
+          },
+          "trading": {
+            "level": -0.1
+          },
+          "storekeeping": {
+            "level": -0.1
+          }
+        }
+      },
+      "developmental_coordination_disorder": {
+        "metaskills": {
+          "craftsmanship": {
+            "level": -0.15,
+            "learn": 0.6
+          }
+        },
+        "skills": {
+          "writing": {
+            "level": -0.05
+          }
+        }
+      },
+      "colour_vision_deficiency": {
+        "skills": {
+          "dyeing": {
+            "level": -0.3
+          },
+          "foraging": {
+            "level": -0.1
+          }
+        }
+      },
+      "essential_tremor": {
+        "metaskills": {
+          "craftsmanship": {
+            "level": -0.2
+          }
+        },
+        "skills": {
+          "writing": {
+            "level": -0.15
+          },
+          "medicine": {
+            "level": -0.1
+          }
+        }
+      },
+      "adult_adhd": {
+        "all_learning": 0.85,
+        "metaskills": {
+          "letters": {
+            "level": -0.05
+          }
+        }
+      },
+      "hand_osteoarthritis": {
+        "metaskills": {
+          "craftsmanship": {
+            "level": -0.15
+          },
+          "toil": {
+            "level": -0.1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "_doc": "Where each waste stream goes. `output` is the stock it becomes at its `treatment` place; the\ncompost heap (make_compost) then turns night soil, scraps, and ash into compost for the fields.\n`per_resident` is the night soil one living resident leaves per period (kept only while a latrine\nstands; without one it is lost, and with it the nitrogen).",
+  "_types": {},
+  "tables": {
+    "WASTE_CYCLES": {
+      "human_waste": {
+        "source": "household",
+        "treatment": "latrine",
+        "output": "night_soil",
+        "risk": 0.8,
+        "per_resident": 0.2
+      },
+      "animal_manure": {
+        "source": "livestock",
+        "treatment": "compost_yard",
+        "output": "manure",
+        "risk": 0.4
+      },
+      "kitchen_scraps": {
+        "source": "kitchen",
+        "treatment": "compost_yard",
+        "output": "compost",
+        "risk": 0.2
+      },
+      "ash": {
+        "source": "hearth",
+        "treatment": "compost_yard",
+        "output": "ash",
+        "risk": 0.1
+      }
+    }
+  }
+}

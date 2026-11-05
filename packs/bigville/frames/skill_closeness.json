@@ -1,0 +1,10 @@
+{
+  "_doc": "How close two skills are (0..1): 1 for the same skill; an explicit pair below; else the same\ncluster (\"cluster\"); else clusters sharing a metaskill (\"metaskill\"); else nothing.",
+  "_types": {},
+  "tables": {
+    "SKILL_CLOSENESS": {
+      "cluster": 0.5,
+      "metaskill": 0.2
+    }
+  }
+}

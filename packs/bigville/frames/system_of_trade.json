@@ -1,0 +1,33 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nECONOMIC SYSTEMS -- how the village groups its trades\n---------------------------------------------------------------------------\nWhich economic system each trade's recipes belong to (the self-test weighs systems and their\ncoupling by this).",
+  "_types": {},
+  "tables": {
+    "SYSTEM_OF_TRADE": {
+      "farmer": "agriculture",
+      "forester": "forestry",
+      "collier": "fuel",
+      "sawyer": "timber",
+      "woodworker": "timber",
+      "cooper": "timber",
+      "smith": "metal",
+      "quarrier": "stone",
+      "mason": "stone",
+      "miller": "food",
+      "baker": "food",
+      "cook": "food",
+      "dairymaid": "food",
+      "butcher": "food",
+      "brewer": "drink",
+      "tanner": "textiles",
+      "cobbler": "textiles",
+      "weaver": "textiles",
+      "tailor": "textiles",
+      "dyer": "textiles",
+      "papermaker": "writing",
+      "printer": "writing",
+      "inkmaker": "writing",
+      "scribe": "writing",
+      "chandler": "household"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "ENCLOSURE_TYPES": {
+      "paddock": {
+        "purpose": "livestock",
+        "fence": "wooden_fence"
+      },
+      "yard": {
+        "purpose": "working_animals",
+        "fence": "wooden_fence"
+      },
+      "orchard": {
+        "purpose": "crops",
+        "fence": "hedge"
+      }
+    }
+  }
+}

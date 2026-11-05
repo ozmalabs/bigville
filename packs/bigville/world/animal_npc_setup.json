@@ -1,0 +1,117 @@
+{
+  "_doc": "Species-specific inputs for the inexpensive animal cognition backend.  These\nare preferences and identity, not permissions: the world still publishes\nadmissible animal actions and enforces movement and feeding.",
+  "_types": {
+    "ANIMAL_NPC_SETUP": {
+      "/pig/drives": "tuple",
+      "/cow/drives": "tuple",
+      "/chicken/drives": "tuple",
+      "/horse/drives": "tuple",
+      "/dog/drives": "tuple",
+      "/dog/preferred_targets": "tuple",
+      "/cat/drives": "tuple",
+      "/sheep/drives": "tuple",
+      "/bee/drives": "tuple"
+    }
+  },
+  "tables": {
+    "ANIMAL_NPC_SETUP": {
+      "pig": {
+        "role": "livestock",
+        "drives": [
+          "survival",
+          "comfort"
+        ],
+        "personality": {
+          "mood_bias": 0.2,
+          "prior_world_safe": 0.65
+        }
+      },
+      "cow": {
+        "role": "grazing_livestock",
+        "drives": [
+          "survival",
+          "comfort"
+        ],
+        "personality": {
+          "mood_bias": 0.25,
+          "prior_world_safe": 0.7
+        }
+      },
+      "chicken": {
+        "role": "poultry",
+        "drives": [
+          "survival",
+          "security"
+        ],
+        "personality": {
+          "mood_bias": 0.1,
+          "prior_world_safe": 0.55
+        }
+      },
+      "horse": {
+        "role": "draught",
+        "drives": [
+          "survival",
+          "security",
+          "duty"
+        ],
+        "personality": {
+          "mood_bias": 0.05,
+          "prior_world_safe": 0.45
+        }
+      },
+      "dog": {
+        "role": "herding_dog",
+        "drives": [
+          "care",
+          "duty",
+          "security"
+        ],
+        "preferred_targets": [
+          "cow",
+          "sheep",
+          "pig"
+        ],
+        "personality": {
+          "mood_bias": 0.15,
+          "role_identity": 0.85,
+          "prior_world_safe": 0.55
+        }
+      },
+      "cat": {
+        "role": "working_cat",
+        "drives": [
+          "survival",
+          "security"
+        ],
+        "personality": {
+          "mood_bias": 0.3,
+          "prior_world_safe": 0.5
+        }
+      },
+      "sheep": {
+        "role": "grazing_livestock",
+        "drives": [
+          "survival",
+          "security"
+        ],
+        "personality": {
+          "mood_bias": 0.15,
+          "prior_world_safe": 0.65
+        }
+      },
+      "bee": {
+        "role": "pollinator",
+        "drives": [
+          "duty",
+          "survival"
+        ],
+        "personality": {
+          "mood_bias": 0.05,
+          "role_identity": 0.75,
+          "prior_world_safe": 0.6
+        }
+      }
+    }
+  }
+}

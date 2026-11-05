@@ -1,0 +1,14 @@
+{
+  "_doc": "---------------------------------------------------------------- PREPARATION\nA dish is not intrinsically an oven product or a pot product. It needs a heat source and a way to\ncontain/support the food; the method affects the descriptive style (and can later affect taste or\nquality) without making one appliance the hidden universal requirement.",
+  "_types": {
+    "PREPARATION_REQUIREMENTS": {
+      "": "tuple"
+    }
+  },
+  "tables": {
+    "PREPARATION_REQUIREMENTS": [
+      "heat",
+      "containment"
+    ]
+  }
+}

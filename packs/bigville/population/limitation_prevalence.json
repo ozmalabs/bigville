@@ -1,0 +1,93 @@
+{
+  "_doc": "LIMITATIONS -- prevalence in a population, with the published figure each is set from. Age/sex\ndependence follows the sources; `persistence` is the share of childhood cases still present in\nadults; `given` gives a higher rate when another condition is present (comorbidity).\n5-10% of school-age children have a reading or a maths learning disorder; ~40% of children with\nthe maths disorder also have the reading one (PubMed 39827782). A Spanish primary-school sample\nfound risk of dyslexia 8.5% (Frontiers in Psychology 2025, 10.3389/fpsyg.2025.1664437).\n3-7% of children, adolescents, and adults (PubMed 30905334).\n5-6% of school-age children (PMC8448494, DSM-5); continues into adulthood in 50-70% (PMC10784181).\nred-green colour vision deficiency: up to 8% of males and 0.5% of females of Northern European\ndescent, lower elsewhere (PMC12385717).\nessential tremor: ~0.4% overall; 5.79% at age >= 65 in a meta-analysis (PubMed 34277141).\npersistent adult ADHD: 2.58% of adults, adjusted to the 2020 global population (meta-analysis,\nPubMed 33692893); 5-7% in childhood (PMC9197091).\nsymptomatic hand osteoarthritis: 8% of US adults (NHANES III, PubMed 17304684); at 71-100 years,\n26.2% of women and 13.4% of men (Framingham, PubMed 12446258). The under-50 rate is APPROX.",
+  "_types": {
+    "LIMITATION_PREVALENCE": {
+      "/essential_tremor/rate_by_age/0": "tuple",
+      "/essential_tremor/rate_by_age/1": "tuple",
+      "/adult_adhd/rate_by_age/0": "tuple",
+      "/adult_adhd/rate_by_age/1": "tuple",
+      "/hand_osteoarthritis/rate_by_age/0": "tuple",
+      "/hand_osteoarthritis/rate_by_age/1": "tuple",
+      "/hand_osteoarthritis/rate_by_age/2": "tuple",
+      "/hand_osteoarthritis/rate_by_age_sex/male/0": "tuple",
+      "/hand_osteoarthritis/rate_by_age_sex/female/0": "tuple"
+    }
+  },
+  "tables": {
+    "LIMITATION_PREVALENCE": {
+      "dyslexia": {
+        "rate": 0.07,
+        "given": {
+          "dyscalculia": 0.4
+        }
+      },
+      "dyscalculia": {
+        "rate": 0.05
+      },
+      "developmental_coordination_disorder": {
+        "rate": 0.055,
+        "persistence": 0.6
+      },
+      "colour_vision_deficiency": {
+        "rate": {
+          "male": 0.08,
+          "female": 0.005
+        }
+      },
+      "essential_tremor": {
+        "rate_by_age": [
+          [
+            0,
+            0.004
+          ],
+          [
+            65,
+            0.058
+          ]
+        ]
+      },
+      "adult_adhd": {
+        "rate_by_age": [
+          [
+            0,
+            0.06
+          ],
+          [
+            18,
+            0.026
+          ]
+        ]
+      },
+      "hand_osteoarthritis": {
+        "rate_by_age": [
+          [
+            0,
+            0.0
+          ],
+          [
+            35,
+            0.02
+          ],
+          [
+            50,
+            0.08
+          ]
+        ],
+        "rate_by_age_sex": {
+          "male": [
+            [
+              71,
+              0.134
+            ]
+          ],
+          "female": [
+            [
+              71,
+              0.262
+            ]
+          ]
+        }
+      }
+    }
+  }
+}

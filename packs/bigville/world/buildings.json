@@ -1,0 +1,323 @@
+{
+  "_doc": "---------------------------------------------------------------- BUILDINGS\nplaces, their staff/role, whether they shelter, and their rooms/affordances.\nCatalogue buildings that are NOT standing when the town is founded (`founding: False`). They\nare valid places -- a trade can name them and a BUILDING_PROJECT can raise them -- but the\nfounding town does not contain them (see founding_buildings()).",
+  "_types": {
+    "BUILDINGS": {
+      "/townhall/footprint": "tuple",
+      "/church/footprint": "tuple"
+    }
+  },
+  "tables": {
+    "BUILDINGS": {
+      "forge": {
+        "staff_role": "blacksmith",
+        "provides": "smith",
+        "sheltered": true,
+        "rooms": [
+          "smithy",
+          "clamp"
+        ]
+      },
+      "woodshop": {
+        "staff_role": "woodworker",
+        "provides": "woodworker",
+        "sheltered": true,
+        "rooms": [
+          "shop"
+        ]
+      },
+      "mill": {
+        "staff_role": "miller",
+        "provides": "miller",
+        "sheltered": true,
+        "rooms": [
+          "millroom",
+          "store"
+        ]
+      },
+      "sawpit": {
+        "staff_role": "sawyer",
+        "provides": "sawyer",
+        "sheltered": false,
+        "rooms": [
+          "pit"
+        ]
+      },
+      "cooperage": {
+        "staff_role": "cooper",
+        "provides": "cooper",
+        "sheltered": true,
+        "rooms": [
+          "workshop"
+        ]
+      },
+      "tannery": {
+        "staff_role": "tanner",
+        "provides": "tanner",
+        "sheltered": false,
+        "rooms": [
+          "pits",
+          "drying"
+        ]
+      },
+      "cobbler": {
+        "staff_role": "cobbler",
+        "provides": "cobbler",
+        "sheltered": true,
+        "rooms": [
+          "bench"
+        ]
+      },
+      "school": {
+        "staff_role": "teacher",
+        "provides": "teacher",
+        "sheltered": true,
+        "rooms": [
+          "schoolroom"
+        ]
+      },
+      "printshop": {
+        "staff_role": "printer",
+        "provides": "printer",
+        "sheltered": true,
+        "rooms": [
+          "pressroom"
+        ]
+      },
+      "weavery": {
+        "staff_role": "weaver",
+        "provides": "weaver",
+        "sheltered": true,
+        "rooms": [
+          "loomroom"
+        ]
+      },
+      "tailorshop": {
+        "staff_role": "tailor",
+        "provides": "tailor",
+        "sheltered": true,
+        "rooms": [
+          "cuttingroom"
+        ]
+      },
+      "inn": {
+        "staff_role": "innkeeper",
+        "provides": "brewer",
+        "sheltered": true,
+        "rooms": [
+          "taproom",
+          "cellar",
+          "brewhouse"
+        ]
+      },
+      "dyehouse": {
+        "staff_role": "dyer",
+        "provides": "dyer",
+        "sheltered": true,
+        "rooms": [
+          "vatroom"
+        ]
+      },
+      "bakery": {
+        "staff_role": "baker",
+        "provides": "baker",
+        "sheltered": true,
+        "rooms": [
+          "ovenroom"
+        ]
+      },
+      "kitchen": {
+        "staff_role": "cook",
+        "provides": "cook",
+        "sheltered": true,
+        "rooms": [
+          "hearthroom"
+        ]
+      },
+      "dairy": {
+        "staff_role": "dairymaid",
+        "provides": "dairymaid",
+        "sheltered": true,
+        "rooms": [
+          "churnroom"
+        ]
+      },
+      "wharf": {
+        "staff_role": "fisher",
+        "provides": "fisher",
+        "sheltered": false,
+        "rooms": [
+          "dock"
+        ]
+      },
+      "granary": {
+        "staff_role": "granary_keeper",
+        "provides": "granary",
+        "sheltered": true,
+        "rooms": [
+          "grain_floor",
+          "dry_store"
+        ]
+      },
+      "root_cellar": {
+        "staff_role": "cellar_keeper",
+        "provides": "root_storage",
+        "sheltered": true,
+        "rooms": [
+          "root_store"
+        ]
+      },
+      "wellhouse": {
+        "staff_role": "water_keeper",
+        "provides": "water",
+        "sheltered": false,
+        "rooms": [
+          "well"
+        ]
+      },
+      "latrine": {
+        "staff_role": "sanitation_keeper",
+        "provides": "sanitation",
+        "sheltered": false,
+        "rooms": [
+          "privy"
+        ]
+      },
+      "compost_yard": {
+        "staff_role": "compost_keeper",
+        "provides": "compost",
+        "sheltered": false,
+        "rooms": [
+          "heap"
+        ]
+      },
+      "smokehouse": {
+        "staff_role": "smoker",
+        "provides": "smokehouse",
+        "sheltered": true,
+        "rooms": [
+          "smoke_room"
+        ]
+      },
+      "townhall": {
+        "staff_role": "mayor",
+        "provides": "governance",
+        "sheltered": true,
+        "footprint": [
+          4,
+          4
+        ],
+        "rooms": [
+          "council_room",
+          "records_room"
+        ]
+      },
+      "church": {
+        "staff_role": "pastor",
+        "provides": "worship",
+        "sheltered": true,
+        "display_name": "Church",
+        "footprint": [
+          4,
+          4
+        ],
+        "rooms": [
+          "nave",
+          "vestry"
+        ]
+      },
+      "watchhouse": {
+        "staff_role": "constable",
+        "provides": "constable",
+        "sheltered": true,
+        "display_name": "Police Station",
+        "rooms": [
+          "watch_room",
+          "lockup"
+        ]
+      },
+      "records_office": {
+        "staff_role": "clerk",
+        "provides": "land_registry",
+        "sheltered": true,
+        "rooms": [
+          "land_register",
+          "deed_archive",
+          "public_counter"
+        ]
+      },
+      "scriptorium": {
+        "staff_role": "scribe",
+        "provides": "scribe",
+        "sheltered": true,
+        "rooms": [
+          "deskroom"
+        ]
+      },
+      "shambles": {
+        "staff_role": "butcher",
+        "provides": "butcher",
+        "sheltered": false,
+        "rooms": [
+          "killing_floor"
+        ]
+      },
+      "surgery": {
+        "staff_role": "doctor",
+        "provides": "care",
+        "sheltered": true,
+        "display_name": "Surgery",
+        "rooms": [
+          "consulting_room",
+          "sickroom",
+          "lying_in_room"
+        ]
+      },
+      "charcoal_hearth": {
+        "staff_role": "collier",
+        "provides": "collier",
+        "sheltered": false,
+        "rooms": [
+          "clamp_floor"
+        ],
+        "founding": false
+      },
+      "papermill": {
+        "staff_role": "papermaker",
+        "provides": "papermaker",
+        "sheltered": true,
+        "rooms": [
+          "vat_room",
+          "drying_loft"
+        ],
+        "founding": false
+      },
+      "inkhouse": {
+        "staff_role": "inkmaker",
+        "provides": "inkmaker",
+        "sheltered": true,
+        "rooms": [
+          "mixing_room"
+        ],
+        "founding": false
+      },
+      "house": {
+        "staff_role": "",
+        "sheltered": true,
+        "rooms": [
+          "living_room",
+          "hearth"
+        ],
+        "founding": false
+      },
+      "barn": {
+        "staff_role": "",
+        "sheltered": true,
+        "rooms": [
+          "stall",
+          "hayloft"
+        ],
+        "founding": false
+      }
+    }
+  }
+}

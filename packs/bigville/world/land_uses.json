@@ -1,0 +1,72 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "LAND_USES": {
+      "arable": {
+        "soil": [
+          "loam",
+          "clay",
+          "chalk"
+        ],
+        "supports": [
+          "crop",
+          "pasture"
+        ]
+      },
+      "kitchen_garden": {
+        "soil": [
+          "loam",
+          "clay"
+        ],
+        "supports": [
+          "vegetable",
+          "herb"
+        ]
+      },
+      "orchard": {
+        "soil": [
+          "loam",
+          "chalk"
+        ],
+        "supports": [
+          "tree_fruit",
+          "bee"
+        ]
+      },
+      "pasture": {
+        "soil": [
+          "loam",
+          "chalk"
+        ],
+        "supports": [
+          "grass",
+          "livestock"
+        ]
+      },
+      "woodlot": {
+        "soil": [
+          "loam",
+          "clay",
+          "sand"
+        ],
+        "supports": [
+          "wood",
+          "wild_food"
+        ]
+      },
+      "common": {
+        "soil": [
+          "loam",
+          "clay",
+          "sand",
+          "chalk"
+        ],
+        "supports": [
+          "gathering",
+          "grazing"
+        ]
+      }
+    }
+  }
+}

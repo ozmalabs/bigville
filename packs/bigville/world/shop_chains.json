@@ -1,0 +1,24 @@
+{
+  "_doc": "The one-input shop chains the cast's shopkeeping trades run (deliver input -> work -> sell output).\nThe map's `work` sites name where each shop stands; a trade with no work site gets no shop.",
+  "_types": {},
+  "tables": {
+    "SHOP_CHAINS": {
+      "fishmonger": {
+        "in": "fish",
+        "out": "fish_ready"
+      },
+      "carpenter": {
+        "in": "lumber",
+        "out": "furniture"
+      },
+      "mason": {
+        "in": "stone",
+        "out": "blocks"
+      },
+      "bakery": {
+        "in": "grain",
+        "out": "bread"
+      }
+    }
+  }
+}

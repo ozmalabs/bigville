@@ -1,0 +1,29 @@
+{
+  "_doc": "Renewable natural-resource deposits a map can place. `tile` names the map tile that IS the\nresource body (the deposit sits on a walkable cell beside it); stock/growback/capacity seed the\nworld's ResourceDeposit node. The kind is also the item extracted (ITEMS).",
+  "_types": {},
+  "tables": {
+    "RESOURCE_DEPOSITS": {
+      "fish": {
+        "tile": "water",
+        "stock": 60.0,
+        "growback": 3.0,
+        "capacity": 120.0,
+        "minutes_per_unit": 30
+      },
+      "lumber": {
+        "tile": "tree",
+        "stock": 60.0,
+        "growback": 4.0,
+        "capacity": 120.0,
+        "minutes_per_unit": 40
+      },
+      "stone": {
+        "tile": "wall",
+        "stock": 60.0,
+        "growback": 3.0,
+        "capacity": 120.0,
+        "minutes_per_unit": 40
+      }
+    }
+  }
+}

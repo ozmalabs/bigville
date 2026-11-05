@@ -1,0 +1,93 @@
+{
+  "_doc": "Policies and laws have two representations: a durable written document and resident-held concepts.\nEach concept is deliberately present at several abstraction levels. A resident may understand the\nprinciple without knowing the office procedure, or know the procedure without understanding its\njustification. The document is never the resident's knowledge by itself.\nPublic compatibility views: the canonical Bigville world sees the inherited and local seed data as\none law/policy book, while origin and immutability remain explicit on every entry.",
+  "_types": {},
+  "tables": {
+    "LOCAL_POLICIES": [
+      {
+        "name": "winter_food_reserve",
+        "title": "Winter Food Reserve Policy",
+        "kind": "policy",
+        "scope": "village",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "farmer",
+          "miller",
+          "granary_keeper",
+          "cook"
+        ],
+        "concepts": [
+          {
+            "name": "reserve_food_for_winter",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "village",
+              "predicate": "should_preserve",
+              "object": "food_for_winter"
+            }
+          },
+          {
+            "name": "reserve_is_administered_by_granary",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "granary_keeper",
+              "predicate": "administers",
+              "object": "winter_reserve"
+            }
+          },
+          {
+            "name": "reserve_stock_is_counted_monthly",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "reserve_stock",
+              "predicate": "is_counted",
+              "object": "monthly"
+            }
+          }
+        ]
+      },
+      {
+        "name": "water_safety_policy",
+        "title": "Water Safety Policy",
+        "kind": "policy",
+        "scope": "village",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "midwife",
+          "doctor",
+          "constable"
+        ],
+        "concepts": [
+          {
+            "name": "clean_water_protects_health",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "clean_water",
+              "predicate": "protects",
+              "object": "health"
+            }
+          },
+          {
+            "name": "well_is_kept_separate_from_latrine",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "well",
+              "predicate": "kept_separate_from",
+              "object": "latrine"
+            }
+          },
+          {
+            "name": "water_source_is_inspected_after_flood",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "water_source",
+              "predicate": "is_inspected_after",
+              "object": "flood"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "_doc": "The made foods that are liquid/semi-liquid at the point of eating. Other foods can be eaten from\nthe stock directly by the existing resident-eating loop, while these require the service affordance.",
+  "_types": {
+    "SOUP_FOODS": {
+      "": "set"
+    }
+  },
+  "tables": {
+    "SOUP_FOODS": [
+      "bean_stew",
+      "fish_stew",
+      "gruel",
+      "lentil_stew",
+      "porridge",
+      "pottage",
+      "pudding",
+      "root_soup",
+      "sausage_stew",
+      "stew",
+      "vegetable_soup"
+    ]
+  }
+}

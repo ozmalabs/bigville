@@ -23,69 +23,32 @@ from domains.shared_frames import (
     SKILL_LIMITATIONS,
 )
 
-# Starting literacy/capability by station in life (the world's defaults; any agent can be set higher).
-STATION_EDUCATION = {
-    "labouring": {"literacy": 0.15, "capability": 0.2},   # most of the village -- low literacy
-    "middle":    {"literacy": 0.55, "capability": 0.5},   # functional: notes, the newspaper
-    "educated":  {"literacy": 0.9,  "capability": 0.9},   # council laws, accounting
-}
+from domains.pack import load_pack as _load_pack
 
-
-# ---------------------------------------------------------------------------
-# NATURAL PREFERENCE DISTRIBUTIONS -- the reference for SEEDING a population's
-# innate preferences (taste, colour). A population is DRAWN from these: the
-# individual varies, the DISTRIBUTION is the fact. Grounded in real research.
-#
-# GROUNDING (fetched 2026-08 via curl; figures flagged VERIFIED vs APPROX):
-#  * BITTER taster status -- VERIFIED 25/50/25 at en.wikipedia.org/wiki/Supertaster
-#    (refs 13-14; Bartoshuk's PROP/PTC work, gene TAS2R38). Trimodal, robust.
-#  * CILANTRO 'soapy' -- VERIFIED at en.wikipedia.org/wiki/Coriander: variation in
-#    the gene OR6A2 makes a MINORITY perceive it as soapy/rotten (Eriksson et al.
-#    2012, 23andMe). Exact prevalence varies by ancestry (~a few % to ~20%); the
-#    fraction below is a rough mid-range, APPROX -- not a verified figure.
-#  * COLOUR -- VERIFIED at en.wikipedia.org/wiki/Color_preferences that children
-#    prefer red/pink & blue and cool>warm. That BLUE is the most common ADULT
-#    favourite is a robust cross-survey finding (Eysenck 1941 and later); the
-#    category fractions below are APPROX -- the ORDERING (blue #1) is the reliable
-#    part, not the exact percentages.
-#  * SWEET innate / BITTER rejected in newborns -- Steiner; Desor et al. Robust;
-#    used only as the direction of the taste means below.
-# The web-search budget was exhausted this session; the APPROX figures should be
-# re-verified against the cited studies before any quantitative claim rests on them.
-# ---------------------------------------------------------------------------
-
-# provenance strings kept in-data so the seed carries its own citations
-PREFERENCE_RESEARCH = {
-    "bitter_taster": "VERIFIED 25/50/25 -- en.wikipedia.org/wiki/Supertaster (Bartoshuk; TAS2R38 PROP/PTC)",
-    "cilantro_soapy": "VERIFIED gene OR6A2 -- en.wikipedia.org/wiki/Coriander (Eriksson et al. 2012, 23andMe); prevalence APPROX",
-    "colour_blue_first": "ordering VERIFIED-robust (Eysenck 1941 + later); fractions APPROX -- en.wikipedia.org/wiki/Color_preferences",
-    "sweet_bitter_innate": "Steiner; Desor et al. -- newborns prefer sweet, reject bitter (direction of the means)",
-}
-
-# BITTER taster status -- VERIFIED trimodal split (Bartoshuk; Wikipedia Supertaster)
-BITTER_TASTER_STATUS = {"non_taster": 0.25, "medium": 0.50, "supertaster": 0.25}
-# a supertaster is far more averse to bitter; a non-taster barely registers it (APPROX liking means)
-BITTER_LIKING_BY_STATUS = {"non_taster": 0.55, "medium": 0.35, "supertaster": 0.12}
-
-# FAVOURITE colour -- blue robustly #1; ORDERING reliable, FRACTIONS APPROX (must sum to 1)
-COLOUR_PREFERENCE = {
-    "blue": 0.33, "red": 0.14, "green": 0.13, "purple": 0.10, "black": 0.09,
-    "pink": 0.06, "orange": 0.05, "yellow": 0.05, "white": 0.03, "brown": 0.02,
-}
-
-# basic-TASTE liking -- population mean/sd per taste. MEANS follow the robust
-# innate direction (sweet liked, bitter rejected); SDs APPROX. Bitter's real
-# structure is the taster trimodal above (this mean is the marginal).
-TASTE_PREFERENCE = {
-    "sweet":  {"mean": 0.80, "sd": 0.12},   # innately preferred (Steiner)
-    "salty":  {"mean": 0.62, "sd": 0.15},
-    "umami":  {"mean": 0.60, "sd": 0.16},
-    "sour":   {"mean": 0.42, "sd": 0.18},
-    "bitter": {"mean": 0.30, "sd": 0.22},   # innately rejected; taster-status trimodal
-}
-
-# CILANTRO 'soapy' -- OR6A2; a MINORITY. APPROX mid of the ~few%-to-~20% range.
-CILANTRO_SOAPY_FRACTION = 0.13
+# Tables and constants below are read from the "bigville" data pack (packs/bigville/).
+# Their explanatory comments are in the pack files as "_doc"; domains/pack.py
+# compiles the derived entries. Functions in this module read these names unchanged.
+_PACK = _load_pack("bigville")
+STATION_EDUCATION = _PACK["STATION_EDUCATION"]
+PREFERENCE_RESEARCH = _PACK["PREFERENCE_RESEARCH"]
+BITTER_TASTER_STATUS = _PACK["BITTER_TASTER_STATUS"]
+BITTER_LIKING_BY_STATUS = _PACK["BITTER_LIKING_BY_STATUS"]
+COLOUR_PREFERENCE = _PACK["COLOUR_PREFERENCE"]
+TASTE_PREFERENCE = _PACK["TASTE_PREFERENCE"]
+CILANTRO_SOAPY_FRACTION = _PACK["CILANTRO_SOAPY_FRACTION"]
+FOOD_NEOPHOBIA = _PACK["FOOD_NEOPHOBIA"]
+SSAT_RATE = _PACK["SSAT_RATE"]
+NOVELTY_SWING = _PACK["NOVELTY_SWING"]
+MERE_EXPOSURE_GAIN = _PACK["MERE_EXPOSURE_GAIN"]
+MERE_EXPOSURE_DECAY = _PACK["MERE_EXPOSURE_DECAY"]
+PHYSIQUE = _PACK["PHYSIQUE"]
+APTITUDE = _PACK["APTITUDE"]
+TALENT = _PACK["TALENT"]
+LIMITATION_PREVALENCE = _PACK["LIMITATION_PREVALENCE"]
+PLAN_HORIZON = _PACK["PLAN_HORIZON"]
+BALANCE_SCENARIO = _PACK["BALANCE_SCENARIO"]
+JOB_REFERENCE_PER_100 = _PACK["JOB_REFERENCE_PER_100"]
+JOB_TARGET_LOAD = _PACK["JOB_TARGET_LOAD"]
 
 
 def _draw_categorical(rng, dist):
@@ -119,42 +82,6 @@ def draw_person_preferences(rng):
     return {"favourite_colour": draw_favourite_colour(rng), "bitter_status": status,
             "cilantro_soapy": bool(rng.random() < CILANTRO_SOAPY_FRACTION), "taste": taste,
             "food_neophobia": draw_food_neophobia(rng)}
-
-
-# ---------------------------------------------------------------------------
-# THE PSYCHOLOGY OF PREFERENCE -- how preference AFFECTS wellbeing, so a monotonous
-# (e.g. poor) diet is modelled, not just a static taste. Two opposing forces on
-# repetition + one distributed trait + a soft baseline:
-#  * SENSORY-SPECIFIC SATIETY (short-term) -- VERIFIED, en.wikipedia.org/wiki/
-#    Sensory-specific_satiety: 'the declining satisfaction generated by the
-#    consumption of a certain type of food, and the consequent renewal ... from a
-#    new flavour' (Rolls et al. 1981). Eating the SAME thing wears out its pleasure;
-#    variety renews it. Rate parameters below APPROX (model choices).
-#  * MERE-EXPOSURE (long-term) -- VERIFIED, en.wikipedia.org/wiki/Mere-exposure_effect
-#    (Zajonc): familiarity BUILDS liking. The counter-force -- comfort food. APPROX rate.
-#  * FOOD NEOPHOBIA (trait, distributed) -- VERIFIED, en.wikipedia.org/wiki/
-#    Food_neophobia (rejection of novel foods; Pliner & Hobden Food Neophobia Scale).
-#    High-neophobia = routine-loving, content with the same/bland, dislikes novelty;
-#    low = variety-seeking, satiates fast on monotony, likes novelty. Distribution APPROX.
-#  * HEDONIC ADAPTATION -- VERIFIED, en.wikipedia.org/wiki/Hedonic_treadmill: a soft
-#    happiness set-point; the monotony hit rides OVER the baseline (used as direction).
-# So: a routine-loving person is happy on plain repeated food; a variety-seeker on the
-# same diet suffers -- and a poor household constrained to one cheap food eats it day
-# after day, so the monotony welfare cost lands hardest on the variety-seeking poor.
-# ---------------------------------------------------------------------------
-
-PREFERENCE_RESEARCH.update({
-    "sensory_specific_satiety": "VERIFIED -- en.wikipedia.org/wiki/Sensory-specific_satiety (Rolls et al. 1981); rates APPROX",
-    "food_neophobia": "VERIFIED trait -- en.wikipedia.org/wiki/Food_neophobia (Pliner & Hobden scale); distribution APPROX",
-    "mere_exposure": "VERIFIED -- en.wikipedia.org/wiki/Mere-exposure_effect (Zajonc); rate APPROX",
-    "hedonic_adaptation": "VERIFIED (direction) -- en.wikipedia.org/wiki/Hedonic_treadmill; soft set-point",
-})
-
-FOOD_NEOPHOBIA = {"mean": 0.40, "sd": 0.20}   # 0=variety-seeker .. 1=routine-lover (APPROX distribution)
-SSAT_RATE = 0.55            # sensory-specific satiety per repeat, for a pure variety-seeker (APPROX)
-NOVELTY_SWING = 0.30        # neophobia's push on a NOVEL food's liking (+ for neophilic, - for neophobic)
-MERE_EXPOSURE_GAIN = 0.6    # fraction of the gap to full liking that familiarity eventually closes (APPROX)
-MERE_EXPOSURE_DECAY = 0.7   # per-exposure approach rate toward that ceiling
 
 
 def draw_food_neophobia(rng):
@@ -201,27 +128,6 @@ def mere_exposure_liking(base_liking, exposures):
     return float(min(1.0, base_liking + (ceiling - base_liking) * approached))
 
 
-# ---------------------------------------------------------------------------
-# PHYSIQUE -- the body's STRENGTH and STAMINA. Each is a BASE stat drawn per person
-# (population variation), an EFFECTIVE value that HEALTH modulates (a sick or injured
-# body is weaker and tires sooner), and a TRAINED component that slowly grows with USE
-# toward a ceiling RELATIVE TO the base -- your base sets both how strong you start and
-# how far training can take you. So growth is always "relative to and based on base
-# stats and variations": a higher base means a higher ceiling and larger absolute gains.
-#
-# Distributions APPROX (normalized ~1.0 units, NOT a measured population): strength and
-# stamina share a general-fitness component + independent variation, so they correlate
-# loosely (a fit person tends to be both) without collapsing to one axis -- a sprinter
-# (fast-twitch strength) and an endurance runner (slow-twitch stamina) still vary apart.
-# ---------------------------------------------------------------------------
-
-PHYSIQUE = {
-    "mean": 1.0, "sd": 0.20,        # base strength/stamina, normalized units (APPROX)
-    "shared_sd": 0.12,              # a general-fitness component common to both stats
-    "floor": 0.40,                  # nobody is at zero
-}
-
-
 def draw_physique(rng):
     """Draw a person's base strength + stamina: a shared general-fitness component plus an independent
     per-stat draw, floored. The variation IS the point -- a strong person and a weak one, a sprinter
@@ -230,55 +136,6 @@ def draw_physique(rng):
     def one():
         return float(max(PHYSIQUE["floor"], PHYSIQUE["mean"] + g + rng.normal(0.0, PHYSIQUE["sd"])))
     return {"str_base": one(), "sta_base": one()}
-
-
-# ---------------------------------------------------------------------------
-# PROVISIONING traits -- the HUMAN CONDITION: everyone must work out food EVERY day of their
-# lives; it never resolves, only renews. How well you can get AHEAD of it varies by person:
-#  * PLAN HORIZON -- how many days ahead you provision. A distributed trait: some think a week
-#    out, some live day-to-day. APPROX distribution.
-#  * LARDER -- how much food you can STORE, which you must be able to AFFORD. A bigger larder +
-#    coin lets you buy in bulk and hold a buffer; with a tiny larder you live hand-to-mouth and
-#    are exposed the day supply fails. So provisioning is bounded by min(what you project you'll
-#    need, what you can store). Larder capacity is set from wealth (a purchased/rented resource).
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# APTITUDE, TALENTS, AND LIMITATIONS -- how skill capacity varies between people
-# ---------------------------------------------------------------------------
-# APTITUDE (the meta-metaskill, general learning ability): IQ is normed to a normal distribution,
-# mean 100 and SD 15 (en.wikipedia.org/wiki/Intelligence_quotient; ~2% each above 130 and below 70).
-# Aptitude is that scale divided by 100 -- a multiplier with mean 1.0 and SD 0.15 -- floored at 0.4.
-APTITUDE = {"mean": 1.0, "sd": 0.15, "floor": 0.40}
-# TALENT: each metaskill's specific ability beyond what aptitude explains (the part of a broad ability
-# not shared with g). Independent per metaskill; SD APPROX (a model choice), floor 0.5.
-TALENT = {"mean": 1.0, "sd": 0.12, "floor": 0.50}
-
-# LIMITATIONS -- prevalence in a population, with the published figure each is set from. Age/sex
-# dependence follows the sources; `persistence` is the share of childhood cases still present in
-# adults; `given` gives a higher rate when another condition is present (comorbidity).
-LIMITATION_PREVALENCE = {
-    # 5-10% of school-age children have a reading or a maths learning disorder; ~40% of children with
-    # the maths disorder also have the reading one (PubMed 39827782). A Spanish primary-school sample
-    # found risk of dyslexia 8.5% (Frontiers in Psychology 2025, 10.3389/fpsyg.2025.1664437).
-    "dyslexia": {"rate": 0.07, "given": {"dyscalculia": 0.40}},
-    # 3-7% of children, adolescents, and adults (PubMed 30905334).
-    "dyscalculia": {"rate": 0.05},
-    # 5-6% of school-age children (PMC8448494, DSM-5); continues into adulthood in 50-70% (PMC10784181).
-    "developmental_coordination_disorder": {"rate": 0.055, "persistence": 0.6},
-    # red-green colour vision deficiency: up to 8% of males and 0.5% of females of Northern European
-    # descent, lower elsewhere (PMC12385717).
-    "colour_vision_deficiency": {"rate": {"male": 0.08, "female": 0.005}},
-    # essential tremor: ~0.4% overall; 5.79% at age >= 65 in a meta-analysis (PubMed 34277141).
-    "essential_tremor": {"rate_by_age": [(0, 0.004), (65, 0.058)]},
-    # persistent adult ADHD: 2.58% of adults, adjusted to the 2020 global population (meta-analysis,
-    # PubMed 33692893); 5-7% in childhood (PMC9197091).
-    "adult_adhd": {"rate_by_age": [(0, 0.06), (18, 0.026)]},
-    # symptomatic hand osteoarthritis: 8% of US adults (NHANES III, PubMed 17304684); at 71-100 years,
-    # 26.2% of women and 13.4% of men (Framingham, PubMed 12446258). The under-50 rate is APPROX.
-    "hand_osteoarthritis": {"rate_by_age": [(0, 0.0), (35, 0.02), (50, 0.08)],
-                            "rate_by_age_sex": {"male": [(71, 0.134)], "female": [(71, 0.262)]}},
-}
 
 
 def _age_rate(points, age):
@@ -341,9 +198,6 @@ def describe_capacity_distribution(n=10000, *, seed=1, age=35.0):
             "limitation_rates": {k: round(v, 4) for k, v in rates.items()}}
 
 
-PLAN_HORIZON = {"mean": 2.0, "sd": 1.2, "min": 1.0}   # days ahead an agent provisions (APPROX; heterogeneous)
-
-
 def draw_plan_horizon(rng):
     """A person's planning horizon (days ahead they provision) -- a distributed trait. Some plan a week
     out; some live day-to-day. Floored at 1 (you always at least sort out today)."""
@@ -354,30 +208,6 @@ def larder_for_wealth(coin, *, per_coin=0.5, floor=1.0, cap=20.0):
     """The larder capacity a given wealth can afford -- storage scales with means (floored at 1: everyone
     can keep a little; capped). The poor hold ~1 day and buy daily; the rich buy in bulk and buffer. APPROX."""
     return float(min(cap, max(floor, per_coin * float(coin))))
-
-# The founding town the balance model assumes. These mirror what worlds/bigville_world.py builds
-# for the 100-resident scenario (populate_town100 / _seed_village_crops): keep them in step.
-BALANCE_SCENARIO = {
-    "residents": 100,
-    "food_per_resident": 1.0,                 # food units eaten per resident per period
-    "staple": "bake_bread",                   # the recipe most food is assumed to come through
-    "beds": {"wheat": 27, "barley": 27, "oats": 26},
-    "plots": 8, "plot_area": 1.0, "soil": "loam",
-    "animals": {"cow": 1, "chicken": 1, "pig": 1, "sheep": 1, "horse": 1, "bee": 1, "dog": 1},
-    "pasture_area": 4.0,
-    "water_sources": ["well", "spring", "spring", "stream"],
-    "work_minutes_per_resident": 8 * 60,      # a working day per period
-}
-
-# Historical staffing per 100 residents a derived job weight should fall within. A weight outside its
-# range means a recipe's batch size or time is unrealistic, and the jobs report says so.
-#   miller -- Domesday (1086) recorded ~6,000 watermills in England for ~1.5-2 million people: ~1 mill
-#             per 300 people (historymedieval.com/watermills-a-key-tech-of-the-middle-ages). APPROX.
-#   baker  -- a village baker's large oven served the village; one baker per few hundred people. APPROX.
-JOB_REFERENCE_PER_100 = {"miller": (0.2, 0.6), "baker": (0.25, 0.6)}
-
-# A production job keeps spare hands until each holder carries at most this share of a full day.
-JOB_TARGET_LOAD = 0.8
 
 
 def scale_scenario(population):

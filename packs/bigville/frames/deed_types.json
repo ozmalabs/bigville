@@ -1,0 +1,67 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "DEED_TYPES": {
+      "grant": {
+        "parties": [
+          "grantor",
+          "grantee"
+        ],
+        "requires": [
+          "authority",
+          "parcel",
+          "witnesses"
+        ],
+        "changes": "title"
+      },
+      "sale": {
+        "parties": [
+          "seller",
+          "buyer"
+        ],
+        "requires": [
+          "consideration",
+          "parcel",
+          "witnesses"
+        ],
+        "changes": "title"
+      },
+      "lease": {
+        "parties": [
+          "lessor",
+          "lessee"
+        ],
+        "requires": [
+          "term",
+          "parcel",
+          "witnesses"
+        ],
+        "changes": "possession"
+      },
+      "inheritance": {
+        "parties": [
+          "predecessor",
+          "successor"
+        ],
+        "requires": [
+          "death_or_will",
+          "parcel",
+          "witnesses"
+        ],
+        "changes": "title"
+      },
+      "boundary": {
+        "parties": [
+          "neighbour_a",
+          "neighbour_b"
+        ],
+        "requires": [
+          "survey",
+          "witnesses"
+        ],
+        "changes": "boundary"
+      }
+    }
+  }
+}

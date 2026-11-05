@@ -1,0 +1,12 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nPHYSIQUE -- the body's STRENGTH and STAMINA. Each is a BASE stat drawn per person\n(population variation), an EFFECTIVE value that HEALTH modulates (a sick or injured\nbody is weaker and tires sooner), and a TRAINED component that slowly grows with USE\ntoward a ceiling RELATIVE TO the base -- your base sets both how strong you start and\nhow far training can take you. So growth is always \"relative to and based on base\nstats and variations\": a higher base means a higher ceiling and larger absolute gains.\n\nDistributions APPROX (normalized ~1.0 units, NOT a measured population): strength and\nstamina share a general-fitness component + independent variation, so they correlate\nloosely (a fit person tends to be both) without collapsing to one axis -- a sprinter\n(fast-twitch strength) and an endurance runner (slow-twitch stamina) still vary apart.\n---------------------------------------------------------------------------\nbase strength/stamina, normalized units (APPROX)\na general-fitness component common to both stats\nnobody is at zero",
+  "_types": {},
+  "tables": {
+    "PHYSIQUE": {
+      "mean": 1.0,
+      "sd": 0.2,
+      "shared_sd": 0.12,
+      "floor": 0.4
+    }
+  }
+}

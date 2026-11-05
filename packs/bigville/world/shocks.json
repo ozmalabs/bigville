@@ -1,0 +1,85 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "SHOCKS": {
+      "drought": {
+        "duration": [
+          2,
+          6
+        ],
+        "effects": [
+          "water_shortage",
+          "crop_failure",
+          "fire_risk"
+        ]
+      },
+      "flood": {
+        "duration": [
+          1,
+          3
+        ],
+        "effects": [
+          "crop_damage",
+          "contamination",
+          "road_damage"
+        ]
+      },
+      "blight": {
+        "duration": [
+          2,
+          5
+        ],
+        "effects": [
+          "crop_loss",
+          "seed_shortage"
+        ]
+      },
+      "livestock_disease": {
+        "duration": [
+          1,
+          4
+        ],
+        "effects": [
+          "animal_loss",
+          "milk_shortage",
+          "labour_loss"
+        ]
+      },
+      "fire": {
+        "duration": [
+          1,
+          1
+        ],
+        "effects": [
+          "building_damage",
+          "fuel_shortage",
+          "displacement"
+        ]
+      },
+      "trade_blockade": {
+        "duration": [
+          2,
+          8
+        ],
+        "effects": [
+          "import_shortage",
+          "price_rise",
+          "salt_shortage"
+        ]
+      },
+      "epidemic": {
+        "duration": [
+          2,
+          8
+        ],
+        "effects": [
+          "illness",
+          "care_shortage",
+          "labour_loss",
+          "mortality"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "_doc": "---------------------------------------------------------------- CONTAINERS\nvessels with a capacity; some lockable (a safe is a lockable container). A container is a peer\nclass of a pile -- a physical, located, claimable world-fact that holds contents.\nLong-term stores are deliberately distinct from ordinary containers. Their decay factors are\nmultipliers on the normal decay rate, so a dry, well-built granary preserves a harvest across\nseasons without making food immortal. `preferred_contents` is an affinity, not a whitelist:\npeople may put other things in the building, but unsuitable perishables keep worse there.\nAbstract vessel capabilities used when serving. The wooden/metal item variants above are the\nphysical vessels; these entries let consumption accept either material.",
+  "_types": {},
+  "tables": {
+    "CONTAINERS": {
+      "sack": {
+        "capacity": 10.0,
+        "lockable": false
+      },
+      "bucket": {
+        "capacity": 8.0,
+        "lockable": false
+      },
+      "barrel": {
+        "capacity": 40.0,
+        "lockable": false
+      },
+      "bin": {
+        "capacity": 100.0,
+        "lockable": false
+      },
+      "chest": {
+        "capacity": 20.0,
+        "lockable": true
+      },
+      "safe": {
+        "capacity": 200.0,
+        "lockable": true
+      },
+      "larder": {
+        "capacity": 100.0,
+        "lockable": false,
+        "decay_factor": 0.3,
+        "storage_class": "cool_food",
+        "mismatch_decay_factor": 2.0,
+        "preferred_contents": [
+          "bread",
+          "milk",
+          "butter",
+          "cheese",
+          "cream",
+          "fish",
+          "pork",
+          "beef",
+          "mutton",
+          "poultry",
+          "bacon",
+          "ham",
+          "sausage"
+        ]
+      },
+      "granary": {
+        "capacity": 500.0,
+        "lockable": true,
+        "decay_factor": 0.08,
+        "storage_class": "dry_grain",
+        "mismatch_decay_factor": 8.0,
+        "preferred_contents": [
+          "grain",
+          "barley",
+          "oats",
+          "rye",
+          "flour",
+          "bean",
+          "pea",
+          "lentil"
+        ]
+      },
+      "root_cellar": {
+        "capacity": 250.0,
+        "lockable": false,
+        "decay_factor": 0.15,
+        "storage_class": "root_crop",
+        "mismatch_decay_factor": 4.0,
+        "preferred_contents": [
+          "cabbage",
+          "carrot",
+          "onion",
+          "potato",
+          "turnip",
+          "leek",
+          "parsnip",
+          "beet",
+          "garlic"
+        ]
+      },
+      "pantry": {
+        "capacity": 150.0,
+        "lockable": false,
+        "decay_factor": 0.25,
+        "storage_class": "prepared_food",
+        "mismatch_decay_factor": 3.0,
+        "preferred_contents": [
+          "bread",
+          "crackers",
+          "bacon",
+          "ham",
+          "cheese",
+          "butter",
+          "pickles",
+          "sauerkraut",
+          "dried_fruit",
+          "fruit_jam",
+          "salt_fish",
+          "smoked_fish"
+        ]
+      },
+      "mug": {
+        "capacity": 1.0,
+        "lockable": false,
+        "watertight": true,
+        "alternatives": [
+          "wooden_mug",
+          "metal_mug"
+        ]
+      },
+      "bowl": {
+        "capacity": 5.0,
+        "lockable": false,
+        "watertight": true,
+        "alternatives": [
+          "wooden_bowl",
+          "metal_bowl"
+        ]
+      },
+      "pot": {
+        "capacity": 8.0,
+        "lockable": false,
+        "watertight": true
+      }
+    }
+  }
+}

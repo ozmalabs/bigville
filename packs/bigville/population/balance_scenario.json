@@ -1,0 +1,36 @@
+{
+  "_doc": "The founding town the balance model assumes. These mirror what worlds/bigville_world.py builds\nfor the 100-resident scenario (populate_town100 / _seed_village_crops): keep them in step.\nfood units eaten per resident per period\nthe recipe most food is assumed to come through\na working day per period",
+  "_types": {},
+  "tables": {
+    "BALANCE_SCENARIO": {
+      "residents": 100,
+      "food_per_resident": 1.0,
+      "staple": "bake_bread",
+      "beds": {
+        "wheat": 27,
+        "barley": 27,
+        "oats": 26
+      },
+      "plots": 8,
+      "plot_area": 1.0,
+      "soil": "loam",
+      "animals": {
+        "cow": 1,
+        "chicken": 1,
+        "pig": 1,
+        "sheep": 1,
+        "horse": 1,
+        "bee": 1,
+        "dog": 1
+      },
+      "pasture_area": 4.0,
+      "water_sources": [
+        "well",
+        "spring",
+        "spring",
+        "stream"
+      ],
+      "work_minutes_per_resident": 480
+    }
+  }
+}

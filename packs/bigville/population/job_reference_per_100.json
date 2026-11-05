@@ -1,0 +1,21 @@
+{
+  "_doc": "Historical staffing per 100 residents a derived job weight should fall within. A weight outside its\nrange means a recipe's batch size or time is unrealistic, and the jobs report says so.\n  miller -- Domesday (1086) recorded ~6,000 watermills in England for ~1.5-2 million people: ~1 mill\n            per 300 people (historymedieval.com/watermills-a-key-tech-of-the-middle-ages). APPROX.\n  baker  -- a village baker's large oven served the village; one baker per few hundred people. APPROX.",
+  "_types": {
+    "JOB_REFERENCE_PER_100": {
+      "/miller": "tuple",
+      "/baker": "tuple"
+    }
+  },
+  "tables": {
+    "JOB_REFERENCE_PER_100": {
+      "miller": [
+        0.2,
+        0.6
+      ],
+      "baker": [
+        0.25,
+        0.6
+      ]
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "_doc": "Founding provisions for the 100-resident scenario.  These are a finite bridge to the first\nharvest, not an infinite food cheat: residents and livestock still consume the physical stocks,\nand the reserve fails unless the village grows, preserves, trades, or imports replacements.\nEight days of reserve for the 100-person founding cast; the first local\nharvest is intentionally timed to replace this finite bridge.\nseed for every other crop, so each can be sown; harvest seed_return keeps them going",
+  "_types": {},
+  "tables": {
+    "STARTING_STOCK": {
+      "bread": 800.0,
+      "water": 100.0,
+      "wood": 40.0,
+      "salt": 20.0,
+      "wheat_seed": 40.0,
+      "barley_seed": 20.0,
+      "oats_seed": 20.0,
+      "potato_seed": 20.0,
+      "cabbage_seed": 20.0,
+      "carrot_seed": 20.0,
+      "onion_seed": 20.0,
+      "bean_seed": 20.0,
+      "grass": 120.0,
+      "hay": 120.0,
+      "grain": 40.0,
+      "scraps": 40.0,
+      "nectar": 40.0,
+      "rye_seed": 10.0,
+      "turnip_seed": 10.0,
+      "pea_seed": 20.0,
+      "leek_seed": 10.0,
+      "parsnip_seed": 10.0,
+      "beet_seed": 10.0,
+      "garlic_seed": 10.0,
+      "lettuce_seed": 10.0,
+      "cucumber_seed": 10.0,
+      "lentil_seed": 10.0,
+      "hops_seed": 10.0,
+      "linseed": 10.0,
+      "mustard_seed": 10.0
+    }
+  }
+}

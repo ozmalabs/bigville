@@ -1,0 +1,32 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nSOCIAL ACTIONS -- these are actions an actor can perform while retaining the\none substantial action available in a turn.  The distinction is data, not a\nspecial case in the world adapter: social contact, signalling, and consent\ndo not consume the actor's major-action slot; travelling, working, eating,\nbuilding, and carrying out an accepted task do.\n\nA request is not a world affordance.  It is a speech act carried by an\nutterance and interpreted by the listener's conversation concepts (the\ngeneric ``conversation`` seed).  Keeping ``ask`` here would let the world\nbypass comprehension and mint a request merely because an adapter called a\nmethod, which is precisely the wrong boundary for free-text conversation.",
+  "_types": {},
+  "tables": {
+    "FREE_ACTIONS": {
+      "speak": {
+        "kind": "utterance",
+        "requires_target": false
+      },
+      "write_note": {
+        "kind": "written_message",
+        "requires_target": false
+      },
+      "give_note": {
+        "kind": "handoff",
+        "requires_target": true
+      },
+      "accept": {
+        "kind": "consent",
+        "requires_target": true
+      },
+      "decline": {
+        "kind": "refusal",
+        "requires_target": true
+      },
+      "reply": {
+        "kind": "utterance",
+        "requires_target": true
+      }
+    }
+  }
+}

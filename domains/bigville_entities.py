@@ -48,9 +48,6 @@ from domains.world_affordances import (  # noqa: E402
 # Scope: this sees only the data. Behaviour that lives in world code (e.g. reading a newspaper, the
 # butcher's slaughter list, set_coin) is invisible here, so a "never used" item may still be used there.
 
-# Gives that are services an animal performs rather than goods it yields.
-ANIMAL_SERVICES = frozenset({"labour", "herding", "ratting"})
-
 
 def _item_sources():
     """kind -> sorted list of the ways it comes into existence (not counting recipes)."""

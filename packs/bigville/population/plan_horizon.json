@@ -1,0 +1,11 @@
+{
+  "_doc": "days ahead an agent provisions (APPROX; heterogeneous)",
+  "_types": {},
+  "tables": {
+    "PLAN_HORIZON": {
+      "mean": 2.0,
+      "sd": 1.2,
+      "min": 1.0
+    }
+  }
+}

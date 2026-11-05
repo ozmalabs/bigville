@@ -1,0 +1,11 @@
+{
+  "_doc": "Pasture is productive land, not just a place-marker for animals.  These\nyields are per unit of pasture area per period and become physical feed\nstocks; livestock still consumes them through the generic animal rules.",
+  "_types": {},
+  "tables": {
+    "PASTURE_YIELDS": {
+      "grass": 2.0,
+      "hay": 1.0,
+      "nectar": 1.0
+    }
+  }
+}

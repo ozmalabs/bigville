@@ -1,0 +1,174 @@
+{
+  "_doc": "The skills each trade exercises (its first is the trade's main skill, which its recipes use).",
+  "_types": {},
+  "tables": {
+    "TRADE_SKILLS": {
+      "smith": [
+        "smithing"
+      ],
+      "woodworker": [
+        "carpentry"
+      ],
+      "collier": [
+        "charcoal_burning"
+      ],
+      "sawyer": [
+        "sawing"
+      ],
+      "miller": [
+        "milling"
+      ],
+      "cooper": [
+        "coopering"
+      ],
+      "tanner": [
+        "tanning"
+      ],
+      "cobbler": [
+        "shoemaking"
+      ],
+      "weaver": [
+        "weaving",
+        "spinning"
+      ],
+      "tailor": [
+        "tailoring"
+      ],
+      "brewer": [
+        "brewing"
+      ],
+      "dyer": [
+        "dyeing"
+      ],
+      "papermaker": [
+        "papermaking"
+      ],
+      "printer": [
+        "printing",
+        "writing"
+      ],
+      "inkmaker": [
+        "inkmaking"
+      ],
+      "baker": [
+        "baking"
+      ],
+      "cook": [
+        "cooking"
+      ],
+      "dairymaid": [
+        "dairying"
+      ],
+      "fisher": [
+        "fishing"
+      ],
+      "granary_keeper": [
+        "storekeeping",
+        "reckoning"
+      ],
+      "cellar_keeper": [
+        "storekeeping"
+      ],
+      "water_keeper": [
+        "water_drawing"
+      ],
+      "sanitation_keeper": [
+        "sanitation"
+      ],
+      "compost_keeper": [
+        "composting"
+      ],
+      "smoker": [
+        "smoking"
+      ],
+      "mayor": [
+        "governance",
+        "reckoning"
+      ],
+      "constable": [
+        "policing"
+      ],
+      "clerk": [
+        "writing",
+        "reckoning"
+      ],
+      "councillor": [
+        "governance"
+      ],
+      "midwife": [
+        "midwifery"
+      ],
+      "doctor": [
+        "medicine"
+      ],
+      "scribe": [
+        "writing"
+      ],
+      "teacher": [
+        "teaching",
+        "writing"
+      ],
+      "butcher": [
+        "butchery"
+      ],
+      "farmer": [
+        "fieldwork",
+        "composting"
+      ],
+      "shepherd": [
+        "shepherding"
+      ],
+      "animal_keeper": [
+        "husbandry"
+      ],
+      "labourer": [
+        "labour"
+      ],
+      "forester": [
+        "felling",
+        "foraging"
+      ],
+      "quarrier": [
+        "quarrying"
+      ],
+      "mason": [
+        "masonry"
+      ],
+      "servant": [
+        "service"
+      ],
+      "merchant": [
+        "trading",
+        "reckoning"
+      ],
+      "innkeeper": [
+        "service",
+        "brewing"
+      ],
+      "pastor": [
+        "ministry"
+      ],
+      "lawyer": [
+        "law",
+        "writing"
+      ],
+      "reporter": [
+        "writing"
+      ],
+      "shopkeeper": [
+        "trading",
+        "reckoning"
+      ],
+      "banker": [
+        "reckoning",
+        "trading"
+      ],
+      "landlord": [
+        "reckoning"
+      ],
+      "chandler": [
+        "candle_making"
+      ]
+    }
+  }
+}

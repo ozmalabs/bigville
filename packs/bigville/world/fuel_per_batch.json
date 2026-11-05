@@ -1,0 +1,14 @@
+{
+  "_doc": "Every heated dish burns fuel: the loop below adds a `[\"fuel\", n]` typed input to each recipe in\nHEATED_FOOD_RECIPES (1 unit of heat unless listed here). Non-food heat work (dyeing, smoking,\nmalting, candle-making) names its fuel input directly in the recipe row.\n0.1 heat/loaf in an oven, 0.33 at home",
+  "_types": {},
+  "tables": {
+    "FUEL_PER_BATCH": {
+      "brew_ale": 2,
+      "brew_beer": 2,
+      "brew_cider": 2,
+      "brew_mead": 2,
+      "bake_bread": 6,
+      "bake_bread_at_home": 1
+    }
+  }
+}

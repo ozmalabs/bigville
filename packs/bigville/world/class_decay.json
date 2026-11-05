@@ -1,0 +1,15 @@
+{
+  "_doc": "how fast each class takes DAMAGE OVER TIME (per period) -- food rots fast, metal rusts slowly",
+  "_types": {},
+  "tables": {
+    "CLASS_DECAY": {
+      "perishable": 0.25,
+      "textile": 0.05,
+      "leather": 0.05,
+      "wood": 0.04,
+      "metal": 0.02,
+      "durable": 0.01,
+      "stone": 0.005
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "LAND_DISPUTES": {
+      "trespass": {
+        "remedies": [
+          "warning",
+          "compensation",
+          "injunction"
+        ]
+      },
+      "boundary": {
+        "remedies": [
+          "survey",
+          "boundary_order",
+          "compensation"
+        ]
+      },
+      "inheritance": {
+        "remedies": [
+          "title_award",
+          "shared_use",
+          "compensation"
+        ]
+      },
+      "lease_default": {
+        "remedies": [
+          "cure_period",
+          "termination",
+          "compensation"
+        ]
+      },
+      "commons_enclosure": {
+        "remedies": [
+          "removal",
+          "fine",
+          "restoration"
+        ]
+      }
+    }
+  }
+}

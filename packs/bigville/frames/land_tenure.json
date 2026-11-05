@@ -1,0 +1,47 @@
+{
+  "_doc": "---------------------------------------------------------------- LAND TENURE AND REGISTRY\nLand is a physical parcel; title, deed, lease, and dispute records are institutional objects layered\nover it. A registry entry is not automatically known by every resident: the clerk registers it, the\nparties/witnesses may know it, and others learn it by inspecting or hearing the record.",
+  "_types": {},
+  "tables": {
+    "LAND_TENURE": {
+      "freehold": {
+        "transferable": true,
+        "heritable": true,
+        "term": null,
+        "rights": [
+          "use",
+          "exclude",
+          "transfer"
+        ]
+      },
+      "lease": {
+        "transferable": false,
+        "heritable": false,
+        "term": 12,
+        "rights": [
+          "use",
+          "harvest"
+        ]
+      },
+      "commons": {
+        "transferable": false,
+        "heritable": false,
+        "term": null,
+        "rights": [
+          "use",
+          "graze",
+          "gather"
+        ]
+      },
+      "stewardship": {
+        "transferable": false,
+        "heritable": false,
+        "term": null,
+        "rights": [
+          "manage",
+          "harvest",
+          "maintain"
+        ]
+      }
+    }
+  }
+}

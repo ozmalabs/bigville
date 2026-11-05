@@ -1,0 +1,38 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "HEALTH_CONDITIONS": {
+      "healthy": {
+        "work_fraction": 1.0,
+        "food_need": 1.0,
+        "care_need": 0.0,
+        "contagious": false
+      },
+      "injured": {
+        "work_fraction": 0.35,
+        "food_need": 1.1,
+        "care_need": 0.8,
+        "contagious": false
+      },
+      "malnourished": {
+        "work_fraction": 0.5,
+        "food_need": 1.2,
+        "care_need": 0.5,
+        "contagious": false
+      },
+      "fever": {
+        "work_fraction": 0.0,
+        "food_need": 1.0,
+        "care_need": 1.0,
+        "contagious": true
+      },
+      "chronic": {
+        "work_fraction": 0.6,
+        "food_need": 1.1,
+        "care_need": 0.6,
+        "contagious": false
+      }
+    }
+  }
+}

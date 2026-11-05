@@ -1,0 +1,265 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nJOBS -- who the founding townspeople are\n---------------------------------------------------------------------------\nA JOB is what a resident is seeded as: the trades (capabilities) it carries and the tools its holder\nstarts with. Its WEIGHT -- how many full-time workers the town needs in it -- is derived, not\nguessed: the balance model says how many minutes per period each work stream takes for a town of N\n(the staple chain by trade, field work, animal care, firewood, felling, compost, fertilising), and\n`duties` says what share of each stream this job covers. Jobs the model cannot derive (crafts,\noffices, services) give a full-time-equivalent load as `fixed + per_100 * N / 100`: a village of\neight still needs someone to keep order part-time; a town of 400 needs several constables.\n\nseed_jobs(N) turns the weights into N residents. Heavy jobs get several holders; light ones are\npacked together so one person in a hamlet is farmer, constable, and smith. Spare residents go where\nthe margin is thinnest. That is only the starting point: after seeding, residents decide for\nthemselves, and `open` recipes (splitting firewood, gathering, composting) can be done by anyone\ncapable who holds the tools -- everyone else buys the result or is given it.\nproduction jobs: their load is derived from the balance model's work streams\ncrafts: full-time equivalents = fixed + per_100 * residents / 100\noffices and services\nwhoever is left: general hands, who can still do any open work they hold the tools for",
+  "_types": {},
+  "tables": {
+    "JOBS": {
+      "farmer": {
+        "trades": [
+          "farmer",
+          "cook"
+        ],
+        "tools": [
+          "spade",
+          "scythe"
+        ],
+        "duties": {
+          "field": 0.6,
+          "compost": 1.0,
+          "fertilise": 1.0
+        }
+      },
+      "farm_labourer": {
+        "trades": [
+          "farmer"
+        ],
+        "tools": [
+          "spade"
+        ],
+        "duties": {
+          "field": 0.4
+        }
+      },
+      "animal_keeper": {
+        "trades": [
+          "animal_keeper",
+          "shepherd"
+        ],
+        "tools": [],
+        "duties": {
+          "husbandry": 1.0
+        }
+      },
+      "miller": {
+        "trades": [
+          "miller"
+        ],
+        "tools": [],
+        "duties": {
+          "trade:miller": 1.0
+        }
+      },
+      "baker": {
+        "trades": [
+          "baker"
+        ],
+        "tools": [],
+        "duties": {
+          "trade:baker": 1.0
+        }
+      },
+      "forester": {
+        "trades": [
+          "forester",
+          "collier"
+        ],
+        "tools": [
+          "axe"
+        ],
+        "duties": {
+          "firewood": 1.0,
+          "felling": 1.0
+        }
+      },
+      "smith": {
+        "trades": [
+          "smith"
+        ],
+        "tools": [
+          "hammer"
+        ],
+        "fixed": 0.1,
+        "per_100": 1.0
+      },
+      "carpenter": {
+        "trades": [
+          "woodworker",
+          "sawyer"
+        ],
+        "tools": [
+          "saw"
+        ],
+        "fixed": 0.1,
+        "per_100": 1.0
+      },
+      "cooper": {
+        "trades": [
+          "cooper"
+        ],
+        "tools": [
+          "adze"
+        ],
+        "fixed": 0.05,
+        "per_100": 0.5
+      },
+      "mason": {
+        "trades": [
+          "mason",
+          "quarrier"
+        ],
+        "tools": [
+          "hammer",
+          "pick"
+        ],
+        "fixed": 0.05,
+        "per_100": 1.0
+      },
+      "leatherworker": {
+        "trades": [
+          "tanner",
+          "cobbler"
+        ],
+        "tools": [
+          "awl"
+        ],
+        "fixed": 0.05,
+        "per_100": 0.5
+      },
+      "weaver": {
+        "trades": [
+          "weaver"
+        ],
+        "tools": [],
+        "fixed": 0.05,
+        "per_100": 0.5
+      },
+      "tailor": {
+        "trades": [
+          "tailor",
+          "dyer"
+        ],
+        "tools": [
+          "needle"
+        ],
+        "fixed": 0.05,
+        "per_100": 0.5
+      },
+      "fisher": {
+        "trades": [
+          "fisher"
+        ],
+        "tools": [
+          "net"
+        ],
+        "fixed": 0.0,
+        "per_100": 2.0
+      },
+      "butcher": {
+        "trades": [
+          "butcher"
+        ],
+        "tools": [
+          "cleaver"
+        ],
+        "fixed": 0.05,
+        "per_100": 0.5
+      },
+      "dairymaid": {
+        "trades": [
+          "dairymaid"
+        ],
+        "tools": [
+          "churn"
+        ],
+        "fixed": 0.05,
+        "per_100": 0.5
+      },
+      "innkeeper": {
+        "trades": [
+          "innkeeper",
+          "brewer"
+        ],
+        "tools": [
+          "mash_tun"
+        ],
+        "fixed": 0.1,
+        "per_100": 1.0
+      },
+      "mayor": {
+        "trades": [
+          "mayor"
+        ],
+        "tools": [],
+        "fixed": 0.2,
+        "per_100": 0.8
+      },
+      "clerk": {
+        "trades": [
+          "clerk",
+          "scribe"
+        ],
+        "tools": [
+          "quill"
+        ],
+        "fixed": 0.1,
+        "per_100": 1.5
+      },
+      "constable": {
+        "trades": [
+          "constable"
+        ],
+        "tools": [],
+        "fixed": 0.2,
+        "per_100": 0.8
+      },
+      "councillor": {
+        "trades": [
+          "councillor"
+        ],
+        "tools": [],
+        "fixed": 0.1,
+        "per_100": 1.0
+      },
+      "teacher": {
+        "trades": [
+          "teacher"
+        ],
+        "tools": [],
+        "fixed": 0.1,
+        "per_100": 1.5
+      },
+      "doctor": {
+        "trades": [
+          "doctor"
+        ],
+        "tools": [],
+        "fixed": 0.1,
+        "per_100": 0.9
+      },
+      "midwife": {
+        "trades": [
+          "midwife"
+        ],
+        "tools": [],
+        "fixed": 0.1,
+        "per_100": 0.9
+      },
+      "pastor": {
+        "trades": [
+          "pastor"
+        ],
+        "tools": [],
+        "fixed": 0.2,
+        "per_100": 0.8
+      },
+      "labourer": {
+        "trades": [
+          "labourer"
+        ],
+        "tools": [
+          "axe"
+        ],
+        "spare": true
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "_doc": "Minutes of field work per crop bed: sowing and harvesting once per crop, watering every period,\nand one fertilise action (spreading NITROGEN[\"fertilise_amount\"] on a plot).",
+  "_types": {},
+  "tables": {
+    "FIELD_WORK": {
+      "sow": 20,
+      "water": 10,
+      "harvest": 30,
+      "fertilise": 30
+    }
+  }
+}

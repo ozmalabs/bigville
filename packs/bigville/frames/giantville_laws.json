@@ -1,0 +1,97 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "GIANTVILLE_LAWS": [
+      {
+        "name": "giantville_murder_law",
+        "title": "Prohibition of Murder",
+        "kind": "law",
+        "scope": "giantville_and_dependencies",
+        "origin": "giantville",
+        "immutable": true,
+        "enforcement": "bigville",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "constable",
+          "councillor"
+        ],
+        "concepts": [
+          {
+            "name": "murder_is_forbidden",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "murder",
+              "predicate": "is",
+              "object": "forbidden"
+            }
+          },
+          {
+            "name": "constable_investigates_murder",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "constable",
+              "predicate": "investigates",
+              "object": "murder"
+            }
+          },
+          {
+            "name": "murder_is_reported_and_prosecuted",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "murder",
+              "predicate": "is",
+              "object": "reported_and_prosecuted"
+            }
+          }
+        ]
+      },
+      {
+        "name": "giantville_theft_law",
+        "title": "Prohibition of Theft",
+        "kind": "law",
+        "scope": "giantville_and_dependencies",
+        "origin": "giantville",
+        "immutable": true,
+        "enforcement": "bigville",
+        "seed_roles": [
+          "mayor",
+          "clerk",
+          "constable",
+          "councillor",
+          "merchant"
+        ],
+        "concepts": [
+          {
+            "name": "theft_is_forbidden",
+            "abstraction": "principle",
+            "reference": {
+              "subject": "theft",
+              "predicate": "is",
+              "object": "forbidden"
+            }
+          },
+          {
+            "name": "constable_recognises_property_claims",
+            "abstraction": "institutional",
+            "reference": {
+              "subject": "constable",
+              "predicate": "recognises",
+              "object": "property_claims"
+            }
+          },
+          {
+            "name": "stolen_goods_are_recovered",
+            "abstraction": "operational",
+            "reference": {
+              "subject": "stolen_goods",
+              "predicate": "are",
+              "object": "recovered"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

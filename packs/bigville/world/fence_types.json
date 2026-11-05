@@ -1,0 +1,28 @@
+{
+  "_doc": "Fences and enclosures are physical map entities.  They do not impose a\nstorage or ownership policy; they only constrain animal movement while intact.",
+  "_types": {},
+  "tables": {
+    "FENCE_TYPES": {
+      "wooden_fence": {
+        "material": "timber",
+        "durability": 1.0,
+        "animal_barrier": true
+      },
+      "hedge": {
+        "material": "sapling",
+        "durability": 0.8,
+        "animal_barrier": true
+      },
+      "stone_wall": {
+        "material": "stone",
+        "durability": 1.4,
+        "animal_barrier": true
+      },
+      "gate": {
+        "material": "timber",
+        "durability": 1.0,
+        "animal_barrier": false
+      }
+    }
+  }
+}

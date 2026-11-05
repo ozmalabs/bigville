@@ -1,0 +1,36 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "SOILS": {
+      "loam": {
+        "fertility": 0.85,
+        "water_retention": 0.75,
+        "drainage": 0.65,
+        "erosion": 0.1,
+        "nitrogen": 8.0
+      },
+      "clay": {
+        "fertility": 0.75,
+        "water_retention": 0.9,
+        "drainage": 0.3,
+        "erosion": 0.08,
+        "nitrogen": 7.0
+      },
+      "sand": {
+        "fertility": 0.35,
+        "water_retention": 0.25,
+        "drainage": 0.95,
+        "erosion": 0.25,
+        "nitrogen": 3.0
+      },
+      "chalk": {
+        "fertility": 0.55,
+        "water_retention": 0.45,
+        "drainage": 0.8,
+        "erosion": 0.15,
+        "nitrogen": 5.0
+      }
+    }
+  }
+}

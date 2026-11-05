@@ -1,0 +1,25 @@
+{
+  "_doc": "META_METASKILL\n\nTRANSFER\n\nAPTITUDE_PRACTICE: learning to learn: slow, and bounded\n\nPRACTICE: to 10% above the person's base aptitude\nlevel gained per hour of practice, times the headroom (1 - level)\nextra learning speed per unit of transfer from a close skill\nextra learning speed per unit of the relevant metaskill\nmetaskill gained per hour of practice in any of its skills, times headroom\na person notices their own progress each time a level crosses a tenth\n\nMETA_FROM_SKILL: A tradesperson starts with their trade's skills at their skill level, and each metaskill those\nskills belong to at this fraction of their best level in it.\n\nLIT_FUNCTIONAL: ---------------------------------------------------------------------------\nLITERACY + GENERAL CAPABILITY -- class-graded, and raised by schooling\n---------------------------------------------------------------------------\nReading/writing and general capability (reckoning, comprehension) are NOT the trade skill in the\nhand -- a fine smith may be illiterate. They are class-graded into three tiers:\n  - labouring (farm labourers): LOW literacy -- cannot reliably read or write.\n  - middle: FUNCTIONAL literacy -- read/write notes, read the newspaper and get most of it.\n  - educated: read & understand the council LAWS and do ACCOUNTING.\nTHIS town is uppity, though: residents default to EDUCATED (the world's add_actor default) -- a\nlabouring/middle start is opt-in. Schooling raises both, for those who go and can learn. Two\nthresholds name the tiers:\nread/write notes, read the newspaper, read a written recipe\n\nLIT_EDUCATED: read & understand the council laws; keep accounts",
+  "_types": {},
+  "tables": {
+    "META_METASKILL": "aptitude",
+    "TRANSFER": {
+      "base": 0.5,
+      "meta": 0.5
+    },
+    "APTITUDE_PRACTICE": {
+      "rate": 0.0002,
+      "headroom": 0.1
+    },
+    "PRACTICE": {
+      "rate": 0.004,
+      "transfer": 1.0,
+      "meta": 1.0,
+      "meta_rate": 0.0008,
+      "event_step": 0.1
+    },
+    "META_FROM_SKILL": 0.6,
+    "LIT_FUNCTIONAL": 0.4,
+    "LIT_EDUCATED": 0.8
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "_doc": "---------------------------------------------------------------- SKILLS\nA SKILL is what a person can do with their hands or head -- carried by a person, learned by\napprenticeship, schooling, or practice, and exercised by recipes. A TRADE (below) is an organised\nway of working: a workshop, its kit, and the skills it exercises. A JOB (further below) is the\nposition a resident is seeded into, bundling trades and duties. One skill serves many trades\n(cooking: the cook, the farmer's household); one trade can exercise several skills (the weaver\nspins and weaves). `kind`: craft (made goods), land (fields, animals, woods), care (people),\noffice (governance and records), general (anyone's, with practice).",
+  "_types": {},
+  "tables": {
+    "SKILLS": {
+      "smithing": {
+        "kind": "craft"
+      },
+      "carpentry": {
+        "kind": "craft"
+      },
+      "sawing": {
+        "kind": "craft"
+      },
+      "coopering": {
+        "kind": "craft"
+      },
+      "masonry": {
+        "kind": "craft"
+      },
+      "quarrying": {
+        "kind": "land"
+      },
+      "milling": {
+        "kind": "craft"
+      },
+      "baking": {
+        "kind": "craft"
+      },
+      "cooking": {
+        "kind": "general"
+      },
+      "brewing": {
+        "kind": "craft"
+      },
+      "dairying": {
+        "kind": "craft"
+      },
+      "butchery": {
+        "kind": "craft"
+      },
+      "tanning": {
+        "kind": "craft"
+      },
+      "shoemaking": {
+        "kind": "craft"
+      },
+      "spinning": {
+        "kind": "general"
+      },
+      "weaving": {
+        "kind": "craft"
+      },
+      "tailoring": {
+        "kind": "craft"
+      },
+      "dyeing": {
+        "kind": "craft"
+      },
+      "papermaking": {
+        "kind": "craft"
+      },
+      "printing": {
+        "kind": "craft"
+      },
+      "inkmaking": {
+        "kind": "craft"
+      },
+      "candle_making": {
+        "kind": "craft"
+      },
+      "charcoal_burning": {
+        "kind": "land"
+      },
+      "fieldwork": {
+        "kind": "land"
+      },
+      "husbandry": {
+        "kind": "land"
+      },
+      "shepherding": {
+        "kind": "land"
+      },
+      "felling": {
+        "kind": "land"
+      },
+      "foraging": {
+        "kind": "general"
+      },
+      "fishing": {
+        "kind": "land"
+      },
+      "smoking": {
+        "kind": "craft"
+      },
+      "storekeeping": {
+        "kind": "general"
+      },
+      "sanitation": {
+        "kind": "general"
+      },
+      "water_drawing": {
+        "kind": "general"
+      },
+      "composting": {
+        "kind": "land"
+      },
+      "writing": {
+        "kind": "office"
+      },
+      "reckoning": {
+        "kind": "office"
+      },
+      "governance": {
+        "kind": "office"
+      },
+      "law": {
+        "kind": "office"
+      },
+      "policing": {
+        "kind": "office"
+      },
+      "teaching": {
+        "kind": "care"
+      },
+      "medicine": {
+        "kind": "care"
+      },
+      "midwifery": {
+        "kind": "care"
+      },
+      "ministry": {
+        "kind": "care"
+      },
+      "trading": {
+        "kind": "general"
+      },
+      "service": {
+        "kind": "general"
+      },
+      "labour": {
+        "kind": "general"
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "WATER_SOURCES": {
+      "well": {
+        "kind": "groundwater",
+        "yield": 40.0,
+        "quality": 0.95,
+        "seasonal": 0.1,
+        "labour": 0.2
+      },
+      "spring": {
+        "kind": "spring",
+        "yield": 60.0,
+        "quality": 0.98,
+        "seasonal": 0.15,
+        "labour": 0.1
+      },
+      "stream": {
+        "kind": "surface",
+        "yield": 100.0,
+        "quality": 0.65,
+        "seasonal": 0.4,
+        "labour": 0.3
+      },
+      "rain_cistern": {
+        "kind": "rainwater",
+        "yield": 80.0,
+        "quality": 0.75,
+        "seasonal": 0.55,
+        "labour": 0.1
+      }
+    }
+  }
+}

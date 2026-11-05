@@ -1,0 +1,79 @@
+{
+  "_doc": "",
+  "_types": {},
+  "tables": {
+    "INFRASTRUCTURE": {
+      "well": {
+        "affordance": "draw_water",
+        "maintenance": [
+          "stone",
+          "timber"
+        ],
+        "capacity": 40.0,
+        "failure_risk": 0.02
+      },
+      "latrine": {
+        "affordance": "contain_waste",
+        "maintenance": [
+          "timber"
+        ],
+        "capacity": 20.0,
+        "failure_risk": 0.05
+      },
+      "compost_yard": {
+        "affordance": "process_waste",
+        "maintenance": [
+          "timber"
+        ],
+        "capacity": 50.0,
+        "failure_risk": 0.03
+      },
+      "smokehouse": {
+        "affordance": "preserve_meat",
+        "maintenance": [
+          "stone",
+          "timber"
+        ],
+        "capacity": 30.0,
+        "failure_risk": 0.04
+      },
+      "mill": {
+        "affordance": "grind_grain",
+        "maintenance": [
+          "timber",
+          "stone",
+          "iron"
+        ],
+        "capacity": 100.0,
+        "failure_risk": 0.03
+      },
+      "granary": {
+        "affordance": "store_dry_food",
+        "maintenance": [
+          "timber",
+          "thatch"
+        ],
+        "capacity": 500.0,
+        "failure_risk": 0.02
+      },
+      "root_cellar": {
+        "affordance": "store_root_crops",
+        "maintenance": [
+          "stone",
+          "timber"
+        ],
+        "capacity": 250.0,
+        "failure_risk": 0.03
+      },
+      "road": {
+        "affordance": "move_goods",
+        "maintenance": [
+          "stone",
+          "timber"
+        ],
+        "capacity": 1.0,
+        "failure_risk": 0.04
+      }
+    }
+  }
+}

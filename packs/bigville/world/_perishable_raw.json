@@ -1,0 +1,36 @@
+{
+  "_doc": "raw produce/meat that spoil even though they are ingredients (not food-flagged dishes)",
+  "_types": {
+    "_PERISHABLE_RAW": {
+      "": "set"
+    }
+  },
+  "tables": {
+    "_PERISHABLE_RAW": [
+      "bean",
+      "beef",
+      "beet",
+      "butter",
+      "cabbage",
+      "carrot",
+      "cucumber",
+      "eggs",
+      "fish",
+      "garlic",
+      "hide",
+      "leek",
+      "lentil",
+      "lettuce",
+      "milk",
+      "mushroom",
+      "mutton",
+      "onion",
+      "parsnip",
+      "pea",
+      "pork",
+      "potato",
+      "poultry",
+      "turnip"
+    ]
+  }
+}

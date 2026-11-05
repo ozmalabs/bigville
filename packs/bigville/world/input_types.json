@@ -1,0 +1,32 @@
+{
+  "_doc": "---------------------------------------------------------------- TYPED INPUT SLOTS\nA recipe input normally names one item kind (`[\"charcoal\", 1]` -- a smith needs charcoal and\nnothing else will do). An input may instead name a TYPE from this table (`[\"fuel\", 1]`): the slot\naccepts any item carrying the type's `tag`, and the quantity is measured in the tag's units. A\nmember with tag value v supplies v units per item, so 1 fuel is 1 wood, or 1/3 charcoal, or ~3.3\nstraw. A slot may be filled from several members; the cheapest per unit (by reference value) burns\nfirst, so a cook reaches for straw and dung before the smith's charcoal. Type names must not\ncollide with item names. `byproducts` are left per unit of the slot consumed (burning leaves ash).",
+  "_types": {},
+  "tables": {
+    "INPUT_TYPES": {
+      "fuel": {
+        "tag": "fuel",
+        "measure": "heat",
+        "byproducts": {
+          "ash": 0.2,
+          "soot": 0.05
+        }
+      },
+      "fertiliser": {
+        "tag": "nitrogen",
+        "measure": "nitrogen"
+      },
+      "compostable": {
+        "tag": "compostable",
+        "measure": "units"
+      },
+      "dyestuff": {
+        "tag": "dyestuff",
+        "measure": "units"
+      },
+      "candle_fat": {
+        "tag": "candle_fat",
+        "measure": "units"
+      }
+    }
+  }
+}

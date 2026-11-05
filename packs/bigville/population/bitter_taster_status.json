@@ -1,0 +1,11 @@
+{
+  "_doc": "BITTER taster status -- VERIFIED trimodal split (Bartoshuk; Wikipedia Supertaster)",
+  "_types": {},
+  "tables": {
+    "BITTER_TASTER_STATUS": {
+      "non_taster": 0.25,
+      "medium": 0.5,
+      "supertaster": 0.25
+    }
+  }
+}

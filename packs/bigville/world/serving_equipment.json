@@ -1,0 +1,17 @@
+{
+  "_doc": "",
+  "_types": {
+    "SERVING_EQUIPMENT": {
+      "": "tuple"
+    }
+  },
+  "tables": {
+    "SERVING_EQUIPMENT": [
+      "wooden_mug",
+      "wooden_bowl",
+      "wooden_ladle",
+      "wooden_serving_spoon",
+      "wooden_dipper"
+    ]
+  }
+}
