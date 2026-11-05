@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: null; base: null; collector: the hired collector named on the obligation; kind: collection; levied_by: landlord; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false}; payees: the landlord, through the hired collector; payers: the tenant the collector reaches; purse: null; rate: {\"decided_by\": \"backend\", \"set_by\": \"collector\", \"unit\": \"share delivered (basis points)\", \"value\": null}; records: the obligation: held (collected, not yet delivered), delivered, and skimmed (held but not delivered); requires_colocation: true; schedule: when the hired collector reaches the tenant; seed_rules: [\"bc_collect_hired\", \"bc_deliver\"]; seeds: [\"bigville_coll_collect\"]; title: rent collected by a hired collector who delivers it to the landlord",
+      "name": "fiscal_hired_collection"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: rent collected by a hired collector who delivers it to the landlord. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "hired_collection",
+    "sha256": "5297427ca51b683b173d0e28e9f253a0ca31d5a24c76731275678c06ba55e343",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_hired_collection",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: pastor; base: null; kind: stipend; levied_by: church; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false, \"note\": \"a short church purse leaves the stipend or a charity payment unpaid and recorded as arrears; the church is defunct when its funds are 0 after donations have come in; losing the tied parsonage is the church's choice (FISCAL_BACKEND_OWNED fc_parsonage_precarious)\", \"unfunded_service\": \"charity\"}; payee_roles: [\"pastor\"]; payees: the pastor (stipend), and residents the church helps (charity); payers: the church funds purse, paid out by the pastor; purse: church_funds; rate: {\"decided_by\": \"backend\", \"set_by\": \"church\", \"unit\": \"coin per period\", \"value\": null}; records: the church funds ledger (stipend and charity are recorded outflows); requires_colocation: true; schedule: each period, when the pastor pays out; seed_rules: [\"fc_stipend\", \"fc_stipend_unfunded\", \"fc_charity\", \"fc_charity_unfunded\", \"fc_church_defunct\"]; seeds: [\"bigville_fisc_church\"]; title: the pastor's stipend and charity to the poor, paid from church funds",
+      "name": "fiscal_church_stipend_and_charity"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: the pastor's stipend and charity to the poor, paid from church funds. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "church_stipend_and_charity",
+    "sha256": "482c2d33cc1df6548a0721900c32269a9d1dd5d6d1328bc7f42da4abd9ab9b55",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_church_stipend_and_charity",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

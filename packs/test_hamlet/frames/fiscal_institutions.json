@@ -1,0 +1,8 @@
+{
+  "_doc": "FISCAL_INSTITUTIONS for the test hamlet (Phase 011): none. A pack with no fiscal institutions produces no fiscal seeds, and its self-test has no fiscal rules to map. See packs/bigville/frames/fiscal_institutions.json for the schema.",
+  "_types": {},
+  "tables": {
+    "FISCAL_INSTITUTIONS": {},
+    "FISCAL_BACKEND_OWNED": []
+  }
+}

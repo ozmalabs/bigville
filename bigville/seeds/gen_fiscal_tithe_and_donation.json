@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: pastor; base: {\"attr\": \"income\", \"unit\": \"coin\"}; kind: tithe; levied_by: church; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false}; payees: the church funds purse, received by the pastor; payers: a resident who has committed to tithe; purse: church_funds; rate: {\"decided_by\": \"backend\", \"set_by\": \"giver\", \"unit\": \"basis_points\", \"value\": null}; records: the church funds ledger and the obligation; requires_colocation: true; schedule: each period the giver chooses to pay; seed_rules: [\"fc_tithe\"]; seeds: [\"bigville_fisc_church\"]; title: tithe to the church, a committed share of income",
+      "name": "fiscal_tithe_and_donation"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: tithe to the church, a committed share of income. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "tithe_and_donation",
+    "sha256": "9457fd298f8d825625646679c070fd7f53025ac5004881a64419221780ae8404",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_tithe_and_donation",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

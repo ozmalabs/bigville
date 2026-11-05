@@ -1,0 +1,546 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nFISCAL_INSTITUTIONS -- taxes, rent, mortgages, tithes, stipends, wages, and collection (Phase 011)\n---------------------------------------------------------------------------\nOne entry per institution, extracted from the eight seeds named in each entry's `seeds`. An entry says\nwho levies and who pays, the base and rate (and who sets the rate), the schedule, which purse the coin\nmoves into or out of (world/fiscal.json FISCAL_PURSES), who must physically be present to collect or\nhand over the coin (`agent_role`, `requires_colocation`), what a missed payment does (`on_missed`), and the\nrule names it came from (`seed_rules`). Each seed rule name appears exactly once in these entries or in\nFISCAL_BACKEND_OWNED. Seed files stay untouched; bigville/seeds/gen_fiscal_<name>.json is generated from\nthis table by tools/generate_seeds.py.\n\nWHAT THE WORLD DOES: records each due obligation (an Obligation node with its amount, base, and rate),\nmoves coin on a payment or collection when the coin is there and the parties stand on the same cell,\nand records arrears when a payer short of coin is at the payee's cell. Nothing else happens on a miss:\nno eviction, no foreclosure, no service stops by itself.\n\nWHAT THE BACKEND DOES: sets rates and amounts (assess_obligation), decides whether to pay, collect, or\nskip a payment, collects with a hired collector, decides on eviction, foreclosure, graft, and levies. These\nchoices are in FISCAL_BACKEND_OWNED with their reasons.\n\nRates and amounts are not in this pack: a seed's numbers (council base_rate_bp, tithe_bp, rent, salary) are\nagent-set values, so `rate.value` is null. The rounding the seeds use is round_bp in domains/world_affordances.py,\nIDiv(amount*bp+5000, 10000) on whole coins.\n\nPublic spread in `knowledge.public` is authored judgement (APPROX), read by domains/knowledge.py.\nOffice conditions in `understanding_requires` name an office's authority (records, executive, deliberative), not the office, so a pack that renames offices keeps valid specs (as Phase 019).",
+  "_types": {},
+  "tables": {
+    "FISCAL_INSTITUTIONS": {
+      "council_tax": {
+        "title": "council tax on the taxable base",
+        "kind": "levy",
+        "levied_by": "council",
+        "payers": "residents with a taxable base (the `taxable` attribute)",
+        "payees": "the treasury purse, received by the clerk-treasurer",
+        "base": {
+          "attr": "taxable",
+          "unit": "coin"
+        },
+        "rate": {
+          "unit": "basis_points",
+          "set_by": "council",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "when the payer chooses to pay, face to face with the clerk (no automatic debit)",
+        "purse": "treasury",
+        "agent_role": "clerk",
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false,
+          "unfunded_service": "treasury_salaries"
+        },
+        "records": "the treasury ledger: purse.recorded moves with every payment; purse discrepancy = coin - recorded",
+        "seeds": [
+          "bigville_fisc_state",
+          "bigville_clerk_treasurer"
+        ],
+        "seed_rules": [
+          "fs_collect",
+          "ct_collect",
+          "ct_reconcile"
+        ],
+        "knowledge": {
+          "topics": [
+            "civic_procedure"
+          ],
+          "public": 0.9,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "any": [
+                {
+                  "authority": "records"
+                },
+                {
+                  "authority": "executive"
+                },
+                {
+                  "authority": "deliberative"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "treasury_salaries": {
+        "title": "salaries paid from the treasury",
+        "kind": "payroll",
+        "levied_by": "council",
+        "payers": "the treasury purse, paid out by the clerk-treasurer",
+        "payees": "salaried office holders (mayor, constable, clerk)",
+        "payee_roles": [
+          "mayor",
+          "constable",
+          "clerk"
+        ],
+        "base": null,
+        "rate": {
+          "unit": "coin per period",
+          "set_by": "council",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "each period, when the clerk pays out",
+        "purse": "treasury",
+        "agent_role": "clerk",
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false,
+          "unfunded_service": "school_fund",
+          "note": "a short purse leaves the salary unpaid and recorded as arrears; the treasury is depleted when its coin is 0 after taxes have come in"
+        },
+        "records": "the treasury ledger (a salary is a recorded outflow)",
+        "seeds": [
+          "bigville_fisc_state",
+          "bigville_clerk_treasurer"
+        ],
+        "seed_rules": [
+          "fs_pay_salary",
+          "fs_salary_unfunded",
+          "fs_treasury_empty",
+          "ct_pay_clerk"
+        ],
+        "knowledge": {
+          "topics": [
+            "civic_procedure"
+          ],
+          "public": 0.1,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "any": [
+                {
+                  "authority": "records"
+                },
+                {
+                  "authority": "executive"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "rent_and_tenancy": {
+        "title": "rent paid by a tenant to a landlord",
+        "kind": "rent",
+        "levied_by": "landlord",
+        "payers": "the tenant of a rental",
+        "payees": "the landlord, or a hired collector acting for the landlord",
+        "base": null,
+        "rate": {
+          "unit": "coin per period",
+          "set_by": "landlord",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "each period, handed to the landlord or to the hired collector",
+        "purse": null,
+        "agent_role": null,
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false,
+          "note": "a missed rent is recorded as arrears on the obligation and nothing else changes; eviction is the landlord's choice (FISCAL_BACKEND_OWNED bf_evict)"
+        },
+        "records": "the obligation: amount, paid, periods_paid, arrears",
+        "seeds": [
+          "bigville_coll_collect",
+          "bigville_fin_tenure"
+        ],
+        "seed_rules": [
+          "bc_collect_self",
+          "bc_collect_miss",
+          "bf_rent_pay",
+          "bf_rent_miss"
+        ],
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "mortgage": {
+        "title": "mortgage repaid to a lender",
+        "kind": "loan",
+        "levied_by": "lender",
+        "payers": "the homeowner who holds the mortgage",
+        "payees": "the lender (no bank exists in the world yet; bigville_fin_bank is out of scope)",
+        "base": {
+          "attr": "balance",
+          "unit": "coin",
+          "note": "the balance the interest rate applies to; the backend adds the principal part to the amount it assesses"
+        },
+        "rate": {
+          "unit": "basis_points",
+          "set_by": "lender",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "each period, handed to the lender",
+        "purse": null,
+        "agent_role": null,
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false,
+          "note": "a missed payment is recorded as arrears; the seed's balance accrual on a miss is a lender's term applied by the backend, and foreclosure is the lender's choice (bf_foreclose)"
+        },
+        "records": "the obligation: amount, paid, periods_paid, arrears",
+        "seeds": [
+          "bigville_fin_tenure"
+        ],
+        "seed_rules": [
+          "bf_mortgage_pay",
+          "bf_mortgage_miss"
+        ],
+        "knowledge": {
+          "topics": [
+            "land_law"
+          ],
+          "public": 0.4,
+          "after_years": 0,
+          "understanding_requires": [
+            {
+              "literacy": "functional"
+            }
+          ]
+        }
+      },
+      "tithe_and_donation": {
+        "title": "tithe to the church, a committed share of income",
+        "kind": "tithe",
+        "levied_by": "church",
+        "payers": "a resident who has committed to tithe",
+        "payees": "the church funds purse, received by the pastor",
+        "base": {
+          "attr": "income",
+          "unit": "coin"
+        },
+        "rate": {
+          "unit": "basis_points",
+          "set_by": "giver",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "each period the giver chooses to pay",
+        "purse": "church_funds",
+        "agent_role": "pastor",
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false
+        },
+        "records": "the church funds ledger and the obligation",
+        "seeds": [
+          "bigville_fisc_church"
+        ],
+        "seed_rules": [
+          "fc_tithe"
+        ],
+        "knowledge": {
+          "topics": [
+            "faith_and_teaching"
+          ],
+          "public": 0.7,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "church_stipend_and_charity": {
+        "title": "the pastor's stipend and charity to the poor, paid from church funds",
+        "kind": "stipend",
+        "levied_by": "church",
+        "payers": "the church funds purse, paid out by the pastor",
+        "payees": "the pastor (stipend), and residents the church helps (charity)",
+        "payee_roles": [
+          "pastor"
+        ],
+        "base": null,
+        "rate": {
+          "unit": "coin per period",
+          "set_by": "church",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "each period, when the pastor pays out",
+        "purse": "church_funds",
+        "agent_role": "pastor",
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false,
+          "unfunded_service": "charity",
+          "note": "a short church purse leaves the stipend or a charity payment unpaid and recorded as arrears; the church is defunct when its funds are 0 after donations have come in; losing the tied parsonage is the church's choice (FISCAL_BACKEND_OWNED fc_parsonage_precarious)"
+        },
+        "records": "the church funds ledger (stipend and charity are recorded outflows)",
+        "seeds": [
+          "bigville_fisc_church"
+        ],
+        "seed_rules": [
+          "fc_stipend",
+          "fc_stipend_unfunded",
+          "fc_charity",
+          "fc_charity_unfunded",
+          "fc_church_defunct"
+        ],
+        "knowledge": {
+          "topics": [
+            "faith_and_teaching"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "wages": {
+        "title": "wages paid by an employer to a worker",
+        "kind": "wage",
+        "levied_by": "employer",
+        "payers": "the employer",
+        "payees": "the worker, such as a hired collector",
+        "base": null,
+        "rate": {
+          "unit": "coin per period",
+          "set_by": "employer and worker",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "each period, by agreement",
+        "purse": null,
+        "agent_role": null,
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false
+        },
+        "records": "the obligation: amount, paid, periods_paid, arrears",
+        "seeds": [
+          "bigville_coll_collect"
+        ],
+        "seed_rules": [
+          "bc_pay_wage"
+        ],
+        "knowledge": {
+          "topics": [
+            "trade_and_stores"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "hired_collection": {
+        "title": "rent collected by a hired collector who delivers it to the landlord",
+        "kind": "collection",
+        "levied_by": "landlord",
+        "payers": "the tenant the collector reaches",
+        "payees": "the landlord, through the hired collector",
+        "base": null,
+        "rate": {
+          "unit": "share delivered (basis points)",
+          "set_by": "collector",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "when the hired collector reaches the tenant",
+        "purse": null,
+        "agent_role": null,
+        "collector": "the hired collector named on the obligation",
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false
+        },
+        "records": "the obligation: held (collected, not yet delivered), delivered, and skimmed (held but not delivered)",
+        "seeds": [
+          "bigville_coll_collect"
+        ],
+        "seed_rules": [
+          "bc_collect_hired",
+          "bc_deliver"
+        ],
+        "knowledge": {
+          "topics": [
+            "trade_and_stores"
+          ],
+          "public": 0.1,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "school_fund": {
+        "title": "the schoolmaster's pay, which decides whether the school is open",
+        "kind": "funding",
+        "levied_by": "council",
+        "payers": "the treasury purse",
+        "payees": "the schoolmaster",
+        "base": null,
+        "rate": {
+          "unit": "coin per period",
+          "set_by": "council",
+          "decided_by": "backend",
+          "value": null
+        },
+        "schedule": "with the schoolmaster's salary",
+        "purse": "treasury",
+        "agent_role": "clerk",
+        "requires_colocation": true,
+        "on_missed": {
+          "arrears": true,
+          "eviction": false,
+          "foreclosure": false,
+          "note": "the school is open when the schoolmaster was paid and closed when he was not; the world does not publish that state yet"
+        },
+        "records": "the schoolmaster's salary obligation",
+        "seeds": [
+          "bigville_school_fund"
+        ],
+        "seed_rules": [
+          "sc_school_open",
+          "sc_school_close"
+        ],
+        "knowledge": {
+          "topics": [
+            "faith_and_teaching"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      }
+    },
+    "FISCAL_BACKEND_OWNED": [
+      {
+        "rule": "fs_set_tax",
+        "seed": "bigville_fisc_state",
+        "owner": "backend",
+        "reason": "the council decides the rate; the world records an assessment (assess_obligation) and never sets one"
+      },
+      {
+        "rule": "fs_graft",
+        "seed": "bigville_fisc_state",
+        "owner": "backend",
+        "reason": "graft is a choice to take treasury coin without an obligation; the world has no purse withdrawal (Phase 041)"
+      },
+      {
+        "rule": "fs_levy",
+        "seed": "bigville_fisc_state",
+        "owner": "backend",
+        "reason": "one resident levying coin from another is a social choice, not an institution in the data"
+      },
+      {
+        "rule": "bf_foreclose",
+        "seed": "bigville_fin_tenure",
+        "owner": "backend",
+        "reason": "foreclosure is the lender's choice; the world records arrears and does not take the house"
+      },
+      {
+        "rule": "bf_evict",
+        "seed": "bigville_fin_tenure",
+        "owner": "backend",
+        "reason": "eviction is the landlord's choice; the world records arrears and does not remove the tenant"
+      },
+      {
+        "rule": "bf_homeless_affect",
+        "seed": "bigville_fin_tenure",
+        "owner": "backend",
+        "reason": "distress is a resident's affect, which belongs to cognition"
+      },
+      {
+        "rule": "bf_owner_equity",
+        "seed": "bigville_fin_tenure",
+        "owner": "backend",
+        "reason": "an owner's equity is a valuation the resident holds; the pack has no appraisal"
+      },
+      {
+        "rule": "bf_mortgagor_equity",
+        "seed": "bigville_fin_tenure",
+        "owner": "backend",
+        "reason": "a mortgagor's equity is a valuation the resident holds; the pack has no appraisal"
+      },
+      {
+        "rule": "bf_appreciate",
+        "seed": "bigville_fin_tenure",
+        "owner": "backend",
+        "reason": "a change in house value is a market judgement, not a physical fact"
+      },
+      {
+        "rule": "bf_rent_raise",
+        "seed": "bigville_fin_tenure",
+        "owner": "backend",
+        "reason": "a landlord's choice to raise rent (a rate setting) and the coercion it carries"
+      },
+      {
+        "rule": "lm_wage",
+        "seed": "bigville_labour",
+        "owner": "backend",
+        "reason": "the seed's job wage (revenue less crowding) is a market figure residents read; no world wage is paid from it"
+      },
+      {
+        "rule": "lm_switch",
+        "seed": "bigville_labour",
+        "owner": "backend",
+        "reason": "a resident chooses to change work, given the wage gap and role identity"
+      },
+      {
+        "rule": "ec_extract",
+        "seed": "bigville_econloop",
+        "owner": "backend",
+        "reason": "production by workers is part of the economic loop, not an institution; the physical stock is in the pack's CROPS and RESOURCE_DEPOSITS"
+      },
+      {
+        "rule": "ec_price_glut",
+        "seed": "bigville_econloop",
+        "owner": "backend",
+        "reason": "a price falling on a glut is an outcome of sellers and buyers; the world has no price-setting rule"
+      },
+      {
+        "rule": "ec_price_scarce",
+        "seed": "bigville_econloop",
+        "owner": "backend",
+        "reason": "a price rising on scarcity is an outcome of sellers and buyers; the world has no price-setting rule"
+      },
+      {
+        "rule": "ec_wage",
+        "seed": "bigville_econloop",
+        "owner": "backend",
+        "reason": "the derived market wage is information for residents; the wage they pay is their own choice"
+      },
+      {
+        "rule": "ec_switch",
+        "seed": "bigville_econloop",
+        "owner": "backend",
+        "reason": "a resident chooses to move to a better-paid trade"
+      },
+      {
+        "rule": "fc_donate_occasional",
+        "seed": "bigville_fisc_church",
+        "owner": "backend",
+        "reason": "giving when flush is a resident's choice; the transfer itself is an ordinary pay_obligation to church_funds"
+      },
+      {
+        "rule": "fc_parsonage_precarious",
+        "seed": "bigville_fisc_church",
+        "owner": "backend",
+        "reason": "ending the tie to the parsonage is the church's choice; the world has no tied-housing record"
+      },
+      {
+        "rule": "fc_counsel",
+        "seed": "bigville_fisc_church",
+        "owner": "backend",
+        "reason": "co-regulation changes a resident's affect, which belongs to cognition"
+      }
+    ]
+  }
+}

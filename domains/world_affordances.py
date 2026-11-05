@@ -78,6 +78,26 @@ PROMPT_SELECTION = _PACK["PROMPT_SELECTION"]
 MEMORY_GIST = _PACK["MEMORY_GIST"]
 CARRYING = _PACK["CARRYING"]
 SEASONS = _PACK["SEASONS"]
+# Phase 011: the purses (coin containers held by an office or job) and the fiscal payment and collection
+# actions (their physical checks). Empty in a pack with no fiscal institutions. The institutions are in
+# frames/fiscal_institutions.json, bound in shared_frames.py.
+FISCAL_PURSES = _PACK["FISCAL_PURSES"]
+FISCAL_ACTIONS = _PACK["FISCAL_ACTIONS"]
+
+
+def round_bp(amount, bp):
+    """Whole coins: `amount` times `bp` basis points, rounded half up. The seeds' IDiv(amount*bp+5000, 10000).
+
+    Both arguments must be whole numbers (fiscal amounts are whole coins; a fraction would be cut silently
+    otherwise), `amount` not negative, and `bp` in 0..10000. Pure: no world, no state."""
+    if isinstance(amount, bool) or isinstance(bp, bool):
+        raise ValueError("round_bp takes whole numbers, not booleans")
+    a, b = float(amount), float(bp)
+    if not (a.is_integer() and b.is_integer()):
+        raise ValueError(f"round_bp needs whole coins and basis points, got {amount!r} and {bp!r}")
+    if a < 0 or not 0 <= b <= 10000:
+        raise ValueError(f"round_bp needs amount >= 0 and 0 <= bp <= 10000, got {amount!r} and {bp!r}")
+    return (int(a) * int(b) + 5000) // 10000
 WEATHER = _PACK["WEATHER"]
 WATER_SOURCES = _PACK["WATER_SOURCES"]
 FUEL_SOURCES = _PACK["FUEL_SOURCES"]

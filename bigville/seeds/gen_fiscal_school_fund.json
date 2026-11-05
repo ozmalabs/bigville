@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: clerk; base: null; kind: funding; levied_by: council; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false, \"note\": \"the school is open when the schoolmaster was paid and closed when he was not; the world does not publish that state yet\"}; payees: the schoolmaster; payers: the treasury purse; purse: treasury; rate: {\"decided_by\": \"backend\", \"set_by\": \"council\", \"unit\": \"coin per period\", \"value\": null}; records: the schoolmaster's salary obligation; requires_colocation: true; schedule: with the schoolmaster's salary; seed_rules: [\"sc_school_open\", \"sc_school_close\"]; seeds: [\"bigville_school_fund\"]; title: the schoolmaster's pay, which decides whether the school is open",
+      "name": "fiscal_school_fund"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: the schoolmaster's pay, which decides whether the school is open. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "school_fund",
+    "sha256": "b432a40c279676e3b3f050b83e94f133f9c19b8cbf2bb5d6e6393d56ad125fa1",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_school_fund",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

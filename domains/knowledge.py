@@ -408,6 +408,10 @@ def derive_knowledge(person, pack):
                                              list(spec.get("understanding_requires", [])))
     for name, spec in pack.GOVERNANCE_OFFICES.items():
         out[f"office:{name}"] = _spec_row(P, "office", name, spec.get("knowledge", {}), [{"office": name}])
+    for name, row in pack.FISCAL_INSTITUTIONS.items():
+        # Phase 011: fiscal institutions are knowable like laws; their public spread and understanding are authored.
+        know = row.get("knowledge", {})
+        out[f"fiscal:{name}"] = _spec_row(P, "fiscal", name, know, list(know.get("understanding_requires", [])))
     for name, spec in pack.KIN_TERMS.items():
         know = spec.get("knowledge", {})
         aware, notes = _public_awareness(P, know)
@@ -541,7 +545,8 @@ def check_knowledge(pack, errors, warnings, info):
     for table_name, table in (("BUILDINGS", pack.BUILDINGS), ("RESOURCE_DEPOSITS", pack.RESOURCE_DEPOSITS),
                               ("WATER_SOURCES", pack.WATER_SOURCES), ("GATHERING_SITES", pack.GATHERING_SITES),
                               ("ANIMALS", pack.ANIMALS),
-                              ("GOVERNANCE_OFFICES", pack.GOVERNANCE_OFFICES), ("KIN_TERMS", pack.KIN_TERMS)):
+                              ("GOVERNANCE_OFFICES", pack.GOVERNANCE_OFFICES), ("KIN_TERMS", pack.KIN_TERMS),
+                              ("FISCAL_INSTITUTIONS", pack.FISCAL_INSTITUTIONS)):
         for name, row in table.items():
             where = f"{table_name} {name}"
             if "knowledge" not in row:

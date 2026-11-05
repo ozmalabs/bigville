@@ -529,6 +529,87 @@ def _check_generated_seeds(errors):
         errors.append(f"generated seeds: {problem}")
 
 
+def check_fiscal(institutions, backend_owned, purses, actions, errors, warnings, info, *,
+                 offices=(), jobs=(), seed_dir=None):
+    """Phase 011: the fiscal tables, as pure data (no world).
+
+    Every rule of the seed files named by the institutions appears exactly once, either in an institution's
+    `seed_rules` or in `backend_owned`; the rules in a seed file are the ones mapped to it. Purse holders and
+    the roles an institution names are offices or jobs. A purse an institution names exists. Each backend-owned
+    rule says why. `seed_dir` (None to skip) is where the seed files are read."""
+    import json as _json
+    roles = set(offices) | set(jobs)
+    for name, spec in purses.items():
+        if spec.get("holder_role") not in roles:
+            errors.append(f"FISCAL_PURSES[{name}].holder_role: '{spec.get('holder_role')}' is not an office or a job")
+        opening = spec.get("opening_coin", 0)
+        if not isinstance(opening, (int, float)) or isinstance(opening, bool) or opening < 0 or float(opening) % 1:
+            errors.append(f"FISCAL_PURSES[{name}].opening_coin: must be a whole number of coins, 0 or more")
+        if not str(spec.get("description", "")).strip():
+            errors.append(f"FISCAL_PURSES[{name}]: no description")
+    for name, spec in actions.items():
+        if not str(spec.get("description", "")).strip():
+            errors.append(f"FISCAL_ACTIONS[{name}]: no description (the LLM prompt lists it)")
+    mapped = {}
+    for name, spec in institutions.items():
+        where = f"FISCAL_INSTITUTIONS[{name}]"
+        for key in ("title", "kind", "payers", "payees", "schedule", "purse", "agent_role", "requires_colocation",
+                    "on_missed", "seeds", "seed_rules", "knowledge"):
+            if key not in spec:
+                errors.append(f"{where}: missing '{key}'")
+        if spec.get("purse") is not None and spec.get("purse") not in purses:
+            errors.append(f"{where}.purse: '{spec.get('purse')}' is not a FISCAL_PURSES entry")
+        if spec.get("agent_role") is not None and spec.get("agent_role") not in roles:
+            errors.append(f"{where}.agent_role: '{spec.get('agent_role')}' is not an office or a job")
+        for role in spec.get("payee_roles", []):
+            if role not in roles:
+                errors.append(f"{where}.payee_roles: '{role}' is not an office or a job")
+        if not isinstance(spec.get("requires_colocation"), bool):
+            errors.append(f"{where}.requires_colocation: must be true or false")
+        if not spec.get("seeds") or not spec.get("seed_rules"):
+            errors.append(f"{where}: needs the seed files and seed rules it came from")
+        for rule in spec.get("seed_rules", []):
+            mapped.setdefault(rule, []).append(f"{name}")
+    for row in backend_owned:
+        rule = row.get("rule", "")
+        if row.get("owner") != "backend":
+            errors.append(f"FISCAL_BACKEND_OWNED[{rule}]: owner must be 'backend'")
+        if not str(row.get("reason", "")).strip():
+            errors.append(f"FISCAL_BACKEND_OWNED[{rule}]: no reason")
+        mapped.setdefault(rule, []).append("backend")
+    for rule, where in sorted(mapped.items()):
+        if len(where) > 1:
+            errors.append(f"FISCAL rule '{rule}' is mapped more than once: {', '.join(where)}")
+    if seed_dir is None:
+        return
+    seeds = {s for spec in institutions.values() for s in spec.get("seeds", [])}
+    seeds |= {row.get("seed", "") for row in backend_owned}
+    in_files = set()
+    for seed in sorted(seeds):
+        path = _os.path.join(seed_dir, f"{seed}.json")
+        if not _os.path.isfile(path):
+            errors.append(f"FISCAL seed file missing: {seed}.json in {seed_dir}")
+            continue
+        with open(path, encoding="utf-8") as fh:
+            rules = [r["name"] for r in _json.load(fh).get("rules", [])]
+        for rule in rules:
+            in_files.add(rule)
+            if rule not in mapped:
+                errors.append(f"FISCAL seed {seed}: rule '{rule}' is not mapped to an institution or backend-owned")
+    for rule in sorted(mapped):
+        if rule not in in_files:
+            errors.append(f"FISCAL rule '{rule}' is mapped but is not in any seed file read")
+    info.append(f"FISCAL: {len(institutions)} institutions, {len(mapped)} seed rules mapped "
+                f"({len(backend_owned)} backend-owned), {len(purses)} purses")
+
+
+def _check_fiscal(errors, warnings, info):
+    """Phase 011: the canonical pack's fiscal tables, with its seed files read from bigville/seeds/."""
+    seed_dir = _generated_seeds.CANONICAL_SEED_DIR if _WORLD_PACK.name == _generated_seeds.CANONICAL_PACK else None
+    check_fiscal(FISCAL_INSTITUTIONS, FISCAL_BACKEND_OWNED, FISCAL_PURSES, FISCAL_ACTIONS, errors, warnings, info,
+                 offices=GOVERNANCE_OFFICES, jobs=JOBS, seed_dir=seed_dir)
+
+
 def check_consistency():
     """Check every cross-reference and production pipeline in the entity data.
 
@@ -1175,6 +1256,7 @@ def check_consistency():
     _check_burial(errors, warnings, info)
     _check_prompt_instructions(errors, warnings, info)
     _check_generated_seeds(errors)
+    _check_fiscal(errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

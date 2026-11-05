@@ -1,0 +1,67 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nFISCAL physical parts (Phase 011): purses and the payment and collection actions\n---------------------------------------------------------------------------\nFISCAL_PURSES: a purse is a container of coin that the world opens at founding, attached to the town. It\nis held by an office or job (`holder_role`): the clerk-treasurer keeps the treasury, the pastor keeps the\nchurch funds. A purse keeps a ledger of what it recorded in and out (`recorded`), so its coin and its books\ncan be compared. `opening_coin` is 0: the seeds give no opening figure (APPROX, an empty purse at founding).\n\nFISCAL_ACTIONS: the physical checks each action makes. A payment or collection moves whole coins\n(round_bp in domains/world_affordances.py does the arithmetic that needs rounding). The actions do not decide:\nwhether to pay, how much a rate is, whom to collect from, or whether to deliver. A refused attempt names a\nphysical reason; a payer short of coin at the payee's cell records one missed period as arrears.\nDescriptions are for the LLM prompt and the self-test.",
+  "_types": {},
+  "tables": {
+    "FISCAL_PURSES": {
+      "treasury": {
+        "title": "the council's treasury",
+        "kind": "council",
+        "holder_role": "clerk",
+        "opening_coin": 0,
+        "description": "Coin the council holds for public payroll and receives from tax. The clerk-treasurer holds it and keeps its ledger."
+      },
+      "church_funds": {
+        "title": "the church funds",
+        "kind": "church",
+        "holder_role": "pastor",
+        "opening_coin": 0,
+        "description": "Coin the church holds from tithes and donations, for the pastor's stipend and charity. The pastor holds it."
+      }
+    },
+    "FISCAL_ACTIONS": {
+      "assess_obligation": {
+        "major": false,
+        "description": "Record that one party owes another a fixed amount, or round_bp(base, rate_bp) of a base, per period under a fiscal institution. The rate and amount are chosen by an agent; the world records them and checks only that the parties exist and the numbers are whole coins.",
+        "checks": [
+          "institution is in FISCAL_INSTITUTIONS",
+          "debtor and creditor exist (a resident or a purse; not two purses; not the same party)",
+          "amount or base and rate are whole coins, rate in 0..10000",
+          "a hired collector is a resident, not the debtor, and only for a resident debtor"
+        ],
+        "record": "an Obligation node: institution, debtor, creditor, amount, base, rate_bp, collector, and counters for paid, arrears, held, delivered, skimmed"
+      },
+      "pay_obligation": {
+        "major": true,
+        "description": "Hand one period's amount of an obligation to its creditor (or into a purse), face to face. The payer is the debtor, or for a purse debtor its holder; the receiver is the creditor, or for a purse creditor its holder.",
+        "checks": [
+          "the acting resident is the debtor (or the purse holder for a purse debtor)",
+          "the receiver is the creditor (or the purse holder for a purse creditor)",
+          "acting resident and receiver stand on the same cell"
+        ],
+        "on_short": "when the paying side has less coin than the amount, no coin moves and one period is recorded as arrears",
+        "record": "coin moves between the two sides; the obligation's paid and periods_paid rise; a Transaction is recorded; a purse's recorded ledger moves with the coin"
+      },
+      "collect": {
+        "major": true,
+        "description": "Collect one period of an obligation from its debtor, who must be on the collector's cell. The collector may be the creditor, a hired collector named on the obligation, or the holder of a purse creditor.",
+        "checks": [
+          "the debtor is a resident on the collector's cell",
+          "the collector is the creditor, the named hired collector, or the purse holder for a purse creditor"
+        ],
+        "on_short": "when the debtor has less coin than the amount, no coin moves and one period is recorded as arrears; a debtor on another cell is not reached and nothing is recorded",
+        "record": "coin moves to the creditor, or to the hired collector's own coin as held (owed on to the creditor); paid and periods_paid rise"
+      },
+      "deliver_collected": {
+        "major": true,
+        "description": "A hired collector hands on the coin held for the creditor, a share of it in basis points. The collector keeps the rest, which is recorded as skimmed.",
+        "checks": [
+          "the acting resident is the hired collector named on the obligation",
+          "the share is in 0..10000",
+          "the collector has the coin to deliver",
+          "the collector stands on the same cell as the creditor (or the creditor's purse holder)"
+        ],
+        "record": "the delivered share moves from the collector's coin to the creditor; held is cleared; delivered and skimmed are recorded"
+      }
+    }
+  }
+}

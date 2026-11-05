@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: clerk; base: {\"attr\": \"taxable\", \"unit\": \"coin\"}; kind: levy; levied_by: council; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false, \"unfunded_service\": \"treasury_salaries\"}; payees: the treasury purse, received by the clerk-treasurer; payers: residents with a taxable base (the `taxable` attribute); purse: treasury; rate: {\"decided_by\": \"backend\", \"set_by\": \"council\", \"unit\": \"basis_points\", \"value\": null}; records: the treasury ledger: purse.recorded moves with every payment; purse discrepancy = coin - recorded; requires_colocation: true; schedule: when the payer chooses to pay, face to face with the clerk (no automatic debit); seed_rules: [\"fs_collect\", \"ct_collect\", \"ct_reconcile\"]; seeds: [\"bigville_fisc_state\", \"bigville_clerk_treasurer\"]; title: council tax on the taxable base",
+      "name": "fiscal_council_tax"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: council tax on the taxable base. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "council_tax",
+    "sha256": "69ba50a0ab4646ea476ff40ed9072a6baa45857d0cb9fba75376054e00d1929f",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_council_tax",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

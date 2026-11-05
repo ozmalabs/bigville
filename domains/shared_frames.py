@@ -64,6 +64,11 @@ KIN_TERMS = _PACK["KIN_TERMS"]
 KIN_ATTRIBUTION = _PACK["KIN_ATTRIBUTION"]
 KIN_OBLIGATIONS = _PACK["KIN_OBLIGATIONS"]
 INHERITANCE_CUSTOM = _PACK["INHERITANCE_CUSTOM"]
+# Fiscal institutions (Phase 011): one entry per institution, with the seed rules it was extracted from.
+# Each seed rule is in one entry's seed_rules or in FISCAL_BACKEND_OWNED (the rules the backend decides).
+# The physical purses and actions are in world_affordances (FISCAL_PURSES, FISCAL_ACTIONS).
+FISCAL_INSTITUTIONS = _PACK["FISCAL_INSTITUTIONS"]
+FISCAL_BACKEND_OWNED = _PACK["FISCAL_BACKEND_OWNED"]
 
 
 def trade_skills(trade):

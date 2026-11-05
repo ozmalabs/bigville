@@ -21,8 +21,9 @@ Which tables feed which files:
     KIN_TERMS                         gen_kinship
     RECIPES (know-how)                gen_recipes
     SHARED_CONCEPTS                   gen_shared_concepts
+    FISCAL_INSTITUTIONS               gen_fiscal_<name>                                      (one per institution)
     TERRAIN_MOVEMENT                  bigville_terrain_movement (replaces the hand-written seed of this id)
-A pack with no fiscal table (the bigville pack has none) produces no fiscal seeds.
+A pack with no fiscal institutions (FISCAL_INSTITUTIONS empty, as in test_hamlet) produces no fiscal seeds.
 
 Only `CANONICAL_PACK` writes to `CANONICAL_SEED_DIR`, the directory the Ocelot adapter loads Bigville
 seeds from. The self-test runs the check for that pack alone; other packs are generated into a
@@ -200,6 +201,12 @@ def plan(pack):
     concepts = [_concept(rec["name"], _triple(rec.get("reference")), "shared") for rec in pack["SHARED_CONCEPTS"]]
     add("gen_shared_concepts", ("SHARED_CONCEPTS",), pack["SHARED_CONCEPTS"], concepts, [],
         "Shared concepts that residents can hold in common.")
+
+    # Fiscal institutions (Phase 011): one seed per institution, its levy, base, purse, and the seed rules it came from.
+    for name, rec in pack["FISCAL_INSTITUTIONS"].items():
+        concepts = [_concept(f"fiscal_{name}", _describe(rec), "fiscal_institution")]
+        add(f"gen_fiscal_{name}", ("FISCAL_INSTITUTIONS",), rec, concepts, [],
+            f"Fiscal institution: {rec.get('title', name)}.", record=name)
 
     # Terrain movement: the hand-written seed of the same id is replaced (see REPLACED_HAND_WRITTEN).
     terrain = pack["TERRAIN_MOVEMENT"]

@@ -58,7 +58,7 @@ def test_regenerating_is_byte_identical(tmp_path):
     G.write_seeds(load_pack("bigville"), str(first))
     G.write_seeds(load_pack("bigville"), str(second))
     assert _read_dir(first) == _read_dir(second)
-    assert len(os.listdir(first)) == len(G.expected_files(load_pack("bigville"))) == 22
+    assert len(os.listdir(first)) == len(G.expected_files(load_pack("bigville"))) == 31
 
 
 def test_the_committed_seeds_are_what_the_pack_produces():

@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: clerk; base: null; kind: payroll; levied_by: council; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false, \"note\": \"a short purse leaves the salary unpaid and recorded as arrears; the treasury is depleted when its coin is 0 after taxes have come in\", \"unfunded_service\": \"school_fund\"}; payee_roles: [\"mayor\", \"constable\", \"clerk\"]; payees: salaried office holders (mayor, constable, clerk); payers: the treasury purse, paid out by the clerk-treasurer; purse: treasury; rate: {\"decided_by\": \"backend\", \"set_by\": \"council\", \"unit\": \"coin per period\", \"value\": null}; records: the treasury ledger (a salary is a recorded outflow); requires_colocation: true; schedule: each period, when the clerk pays out; seed_rules: [\"fs_pay_salary\", \"fs_salary_unfunded\", \"fs_treasury_empty\", \"ct_pay_clerk\"]; seeds: [\"bigville_fisc_state\", \"bigville_clerk_treasurer\"]; title: salaries paid from the treasury",
+      "name": "fiscal_treasury_salaries"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: salaries paid from the treasury. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "treasury_salaries",
+    "sha256": "ff2b8f6ee5f490462789b04d10361678b67450407eaef5b4a6fe72e32c90bb86",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_treasury_salaries",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

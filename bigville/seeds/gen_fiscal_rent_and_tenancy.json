@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: null; base: null; kind: rent; levied_by: landlord; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false, \"note\": \"a missed rent is recorded as arrears on the obligation and nothing else changes; eviction is the landlord's choice (FISCAL_BACKEND_OWNED bf_evict)\"}; payees: the landlord, or a hired collector acting for the landlord; payers: the tenant of a rental; purse: null; rate: {\"decided_by\": \"backend\", \"set_by\": \"landlord\", \"unit\": \"coin per period\", \"value\": null}; records: the obligation: amount, paid, periods_paid, arrears; requires_colocation: true; schedule: each period, handed to the landlord or to the hired collector; seed_rules: [\"bc_collect_self\", \"bc_collect_miss\", \"bf_rent_pay\", \"bf_rent_miss\"]; seeds: [\"bigville_coll_collect\", \"bigville_fin_tenure\"]; title: rent paid by a tenant to a landlord",
+      "name": "fiscal_rent_and_tenancy"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: rent paid by a tenant to a landlord. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "rent_and_tenancy",
+    "sha256": "c13dfd75ff803ffe98dfab3b3fc57a8f762a3e6a4810eba80939b7a6c2e35267",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_rent_and_tenancy",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

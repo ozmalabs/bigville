@@ -23,6 +23,7 @@ from bigville.scenarios import load_scenario
 from domains.data_view import entities as _entities_view  # noqa: E402
 from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
 from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
+from domains.world_affordances import round_bp  # noqa: E402
 
 DEFAULT_DATA_PACK = "bigville"
 
@@ -3835,6 +3836,204 @@ class BigvilleWorld:
         """Retired: use an explicit coin transfer chosen by the backend."""
         return False
 
+    # ---------------------------------------------------- fiscal purses and obligations (Phase 011)
+    # The world records what is owed, moves whole coins when the parties stand together and the coin is
+    # there, and records arrears when a payment or collection falls short. It never sets a rate, decides
+    # to pay, evicts, forecloses, or takes a house: those choices are the backend's (FISCAL_BACKEND_OWNED).
+    # A purse and an obligation are graph nodes of their own type with scalar attributes only.
+    def found_purse(self, name, holder):
+        """Open the purse `name` (FISCAL_PURSES) and give it to `holder`, a resident whose role is the
+        purse's holder_role. Returns the purse node, or None when the name is unknown, already open, or the
+        holder does not fit."""
+        spec = self.E.FISCAL_PURSES.get(name)
+        if spec is None or name in self._actors or self._purse_node(name) is not None:
+            return None
+        if holder not in self._actors or self.eng.node(self._actors[holder])["attrs"].get("role") != spec["holder_role"]:
+            return None
+        opening = float(spec.get("opening_coin", 0))
+        purse = self.eng.add_node("Purse", {"name": name, "kind": spec.get("kind", ""), "holder": holder,
+                                            "coin": opening, "recorded": opening})
+        self.eng.add_edge_unchecked(self._town, "has_purse", purse)
+        self.eng.add_edge_unchecked(self._actors[holder], "holds_purse", purse)
+        return purse
+
+    def _purse_node(self, name):
+        for node in self.eng.nodes("Purse"):
+            if self.eng.node(node)["attrs"].get("name") == name:
+                return node
+        return None
+
+    def _fiscal_party(self, ref):
+        """(kind, node) for a resident name or an open purse name, else None. A name that is both is refused."""
+        is_resident = isinstance(ref, str) and ref in self._actors
+        purse = self._purse_node(ref) if isinstance(ref, str) else None
+        if is_resident == (purse is not None):
+            return None
+        return ("resident", self._actors[ref]) if is_resident else ("purse", purse)
+
+    def _party_location(self, party):
+        """The cell where a party's coin is handed over: a resident's cell, or a purse holder's cell."""
+        kind, node = party
+        attrs = self.eng.node(node)["attrs"]
+        return self.actor_position(attrs["holder"] if kind == "purse" else attrs["name"])
+
+    def _acts_for(self, actor, party):
+        """True when resident `actor` is the party itself, or the holder of the party's purse."""
+        if not isinstance(actor, str) or actor not in self._actors:
+            return False
+        kind, node = party
+        attrs = self.eng.node(node)["attrs"]
+        return actor == (attrs["holder"] if kind == "purse" else attrs["name"])
+
+    def _move_fiscal_coin(self, source, target, amount):
+        """Move `amount` whole coins from one party to another. A purse's recorded ledger moves with its coin."""
+        for party, delta in ((source, -amount), (target, amount)):
+            kind, node = party
+            attrs = self.eng.node(node)["attrs"]
+            self.eng.set_attr(node, "coin", float(attrs.get("coin", 0.0)) + delta)
+            if kind == "purse":
+                self.eng.set_attr(node, "recorded", float(attrs.get("recorded", 0.0)) + delta)
+
+    def _obligation_attrs(self, obligation):
+        try:
+            record = self.eng.node(obligation)
+        except (KeyError, TypeError, ValueError):
+            return None
+        return record["attrs"] if record["type"] == "Obligation" else None
+
+    def _record_arrears(self, obligation):
+        attrs = self._obligation_attrs(obligation)
+        self.eng.set_attr(obligation, "arrears", float(attrs["arrears"]) + 1.0)
+
+    def assess_obligation(self, institution, debtor, creditor, *, amount=None, base=None, rate_bp=None,
+                          collector=None):
+        """Record that `debtor` owes `creditor` one period of `institution` (FISCAL_INSTITUTIONS).
+
+        Give either a whole-coin `amount`, or a whole-coin `base` and a `rate_bp` (0..10000), which the world
+        rounds with round_bp. The agent chooses the figures; the world checks only that the parties exist,
+        are not the same party, and that the numbers are whole coins. Returns the Obligation node, or None.
+        """
+        if institution not in self.E.FISCAL_INSTITUTIONS:
+            return None
+        d, c = self._fiscal_party(debtor), self._fiscal_party(creditor)
+        if d is None or c is None or d[1] == c[1] or (d[0] == "purse" and c[0] == "purse"):
+            return None
+        try:
+            from_rate = amount is None
+            if from_rate:
+                if base is None or rate_bp is None:
+                    return None
+                amount = round_bp(base, rate_bp)
+            else:
+                amount = round_bp(amount, 10000)   # whole, not negative: round_bp returns it unchanged
+        except ValueError:
+            return None
+        if collector is not None:
+            hired = self._fiscal_party(collector)
+            if d[0] != "resident" or hired is None or hired[0] != "resident" or collector == debtor:
+                return None
+        node = self.eng.add_node("Obligation", {
+            "institution": institution, "debtor": debtor, "creditor": creditor,
+            "debtor_kind": d[0], "creditor_kind": c[0], "collector": collector or "",
+            "base": float(base) if from_rate else 0.0,
+            "rate_bp": float(rate_bp) if from_rate else 0.0,
+            "amount": float(amount), "paid": 0.0, "periods_paid": 0.0, "arrears": 0.0,
+            "held": 0.0, "delivered": 0.0, "skimmed": 0.0})
+        self.eng.add_edge_unchecked(self._town, "has_obligation", node)
+        return node
+
+    def pay_obligation(self, actor, obligation):
+        """Hand one period of `obligation` from its debtor to its creditor, face to face.
+
+        `actor` is the debtor, or the holder of a purse debtor. A receiver elsewhere refuses the payment and
+        nothing is recorded. A payer short of coin, with the receiver present, records one period of arrears
+        and moves no coin. Otherwise the coin moves, the obligation's paid and periods_paid rise, and a
+        Transaction is recorded. Returns True only when coin moved.
+        """
+        attrs = self._obligation_attrs(obligation)
+        if attrs is None:
+            return False
+        payer, receiver = self._fiscal_party(attrs["debtor"]), self._fiscal_party(attrs["creditor"])
+        if payer is None or receiver is None or payer[1] == receiver[1] or not self._acts_for(actor, payer):
+            return False
+        here = self._party_location(payer)
+        if here is None or here != self._party_location(receiver):
+            return False
+        amount = float(attrs["amount"])
+        if self.eng.node(payer[1])["attrs"].get("coin", 0.0) < amount:
+            self._record_arrears(obligation)
+            return False
+        self._move_fiscal_coin(payer, receiver, amount)
+        self.eng.set_attr(obligation, "paid", float(attrs["paid"]) + amount)
+        self.eng.set_attr(obligation, "periods_paid", float(attrs["periods_paid"]) + 1.0)
+        self._record_transaction(attrs["institution"], attrs["debtor"], attrs["creditor"], "coin", 1.0, amount)
+        return True
+
+    def collect(self, collector, obligation):
+        """Collect one period of `obligation` from its debtor, who must stand on the collector's cell.
+
+        The collector is the creditor (or the holder of a purse creditor) or the hired collector named on the
+        obligation. Coin goes to the creditor, or to the hired collector as held until deliver. A debtor short
+        of coin, reached on the collector's cell, records one period of arrears. A debtor on another cell is
+        not reached and nothing is recorded. Returns True only when coin moved.
+        """
+        attrs = self._obligation_attrs(obligation)
+        if attrs is None or collector not in self._actors:
+            return False
+        debtor, creditor = self._fiscal_party(attrs["debtor"]), self._fiscal_party(attrs["creditor"])
+        if debtor is None or creditor is None or debtor[0] != "resident" or debtor[1] == creditor[1]:
+            return False
+        hired = attrs["collector"]
+        if not (collector == hired or self._acts_for(collector, creditor)):
+            return False
+        here = self.actor_position(collector)
+        if here is None or here != self._party_location(debtor):
+            return False
+        amount = float(attrs["amount"])
+        if self.eng.node(debtor[1])["attrs"].get("coin", 0.0) < amount:
+            self._record_arrears(obligation)
+            return False
+        if hired and collector == hired:
+            self._move_fiscal_coin(debtor, ("resident", self._actors[collector]), amount)
+            self.eng.set_attr(obligation, "held", float(attrs["held"]) + amount)
+        else:
+            self._move_fiscal_coin(debtor, creditor, amount)
+        self.eng.set_attr(obligation, "paid", float(attrs["paid"]) + amount)
+        self.eng.set_attr(obligation, "periods_paid", float(attrs["periods_paid"]) + 1.0)
+        return True
+
+    def deliver_collected(self, collector, obligation, share_bp=10000):
+        """The hired collector hands on `share_bp` basis points of the coin held for the creditor.
+
+        The share is round_bp(held, share_bp) and moves from the collector's coin to the creditor, who must
+        stand with the collector. The rest of the held coin stays with the collector and is recorded as
+        skimmed. Returns True only when coin was delivered.
+        """
+        attrs = self._obligation_attrs(obligation)
+        if attrs is None or not attrs["collector"] or collector != attrs["collector"] or collector not in self._actors:
+            return False
+        creditor = self._fiscal_party(attrs["creditor"])
+        if creditor is None:
+            return False
+        try:
+            held = float(attrs["held"])
+            if held <= 0.0:
+                return False
+            delivered = float(round_bp(held, share_bp))
+        except ValueError:
+            return False
+        here = self.actor_position(collector)
+        if here is None or here != self._party_location(creditor):
+            return False
+        if self.eng.node(self._actors[collector])["attrs"].get("coin", 0.0) < delivered:
+            return False
+        self._move_fiscal_coin(("resident", self._actors[collector]), creditor, delivered)
+        self.eng.set_attr(obligation, "held", 0.0)
+        self.eng.set_attr(obligation, "delivered", float(attrs["delivered"]) + delivered)
+        self.eng.set_attr(obligation, "skimmed", float(attrs["skimmed"]) + held - delivered)
+        self._record_transaction(attrs["institution"], collector, attrs["creditor"], "coin", 1.0, delivered)
+        return True
+
     def _record_transaction(self, kind, actor, target, good, quantity, value):
         node = self.eng.add_node("Transaction", {"kind": kind, "actor": str(actor), "target": str(target),
                                                    "good": str(good), "quantity": float(quantity),
@@ -7418,6 +7617,15 @@ class BigvilleWorld:
                 return self.sow(actor, crop, land=land) is not None
             finally:
                 self._major_dispatch = False
+        if action in ("pay_obligation", "collect", "deliver_collected"):
+            obligation = kwargs.get("obligation", args[0] if args else None)
+            if self._obligation_attrs(obligation) is None or not self._claim_major_action(actor, action):
+                return False
+            if action == "pay_obligation":
+                return self.pay_obligation(actor, obligation)
+            if action == "collect":
+                return self.collect(actor, obligation)
+            return self.deliver_collected(actor, obligation, kwargs.get("share_bp", args[1] if len(args) > 1 else 10000))
         if action == "complete_request":
             request = kwargs.get("request", args[0] if args else None)
             return self.complete_request(actor, request, result=kwargs.get("result", ""))

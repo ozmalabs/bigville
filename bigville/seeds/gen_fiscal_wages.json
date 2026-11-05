@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: null; base: null; kind: wage; levied_by: employer; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false}; payees: the worker, such as a hired collector; payers: the employer; purse: null; rate: {\"decided_by\": \"backend\", \"set_by\": \"employer and worker\", \"unit\": \"coin per period\", \"value\": null}; records: the obligation: amount, paid, periods_paid, arrears; requires_colocation: true; schedule: each period, by agreement; seed_rules: [\"bc_pay_wage\"]; seeds: [\"bigville_coll_collect\"]; title: wages paid by an employer to a worker",
+      "name": "fiscal_wages"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: wages paid by an employer to a worker. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "wages",
+    "sha256": "98853e70348f0053b9058760b69c528891ed877e74cb479da75ce1ddbdb34349",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_wages",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

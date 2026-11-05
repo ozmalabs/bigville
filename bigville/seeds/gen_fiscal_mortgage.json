@@ -1,0 +1,27 @@
+{
+  "concepts": [
+    {
+      "category": "fiscal_institution",
+      "definition": "agent_role: null; base: {\"attr\": \"balance\", \"note\": \"the balance the interest rate applies to; the backend adds the principal part to the amount it assesses\", \"unit\": \"coin\"}; kind: loan; levied_by: lender; on_missed: {\"arrears\": true, \"eviction\": false, \"foreclosure\": false, \"note\": \"a missed payment is recorded as arrears; the seed's balance accrual on a miss is a lender's term applied by the backend, and foreclosure is the lender's choice (bf_foreclose)\"}; payees: the lender (no bank exists in the world yet; bigville_fin_bank is out of scope); payers: the homeowner who holds the mortgage; purse: null; rate: {\"decided_by\": \"backend\", \"set_by\": \"lender\", \"unit\": \"basis_points\", \"value\": null}; records: the obligation: amount, paid, periods_paid, arrears; requires_colocation: true; schedule: each period, handed to the lender; seed_rules: [\"bf_mortgage_pay\", \"bf_mortgage_miss\"]; seeds: [\"bigville_fin_tenure\"]; title: mortgage repaid to a lender",
+      "name": "fiscal_mortgage"
+    }
+  ],
+  "depends_on": [],
+  "description": "Fiscal institution: mortgage repaid to a lender. Generated from the 'bigville' pack (FISCAL_INSTITUTIONS). Do not edit: regenerate with tools/generate_seeds.py.",
+  "edges": [],
+  "generated_from": {
+    "format": 1,
+    "generator": "tools/generate_seeds.py",
+    "pack": "bigville",
+    "record": "mortgage",
+    "sha256": "8d235b8c09307c7bc446e8dc34e5d0e82121c422a779cb4faa3766745fbfe7ea",
+    "tables": [
+      "FISCAL_INSTITUTIONS"
+    ]
+  },
+  "id": "gen_fiscal_mortgage",
+  "nodes": [],
+  "rules": [],
+  "self_load_only": true,
+  "version": "1.0.0"
+}

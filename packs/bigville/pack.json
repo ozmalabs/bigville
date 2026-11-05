@@ -724,6 +724,22 @@
     {
       "name": "SPEECH_WEATHER",
       "file": "frames/speech_lexicon.json"
+    },
+    {
+      "name": "FISCAL_PURSES",
+      "file": "world/fiscal.json"
+    },
+    {
+      "name": "FISCAL_ACTIONS",
+      "file": "world/fiscal.json"
+    },
+    {
+      "name": "FISCAL_INSTITUTIONS",
+      "file": "frames/fiscal_institutions.json"
+    },
+    {
+      "name": "FISCAL_BACKEND_OWNED",
+      "file": "frames/fiscal_institutions.json"
     }
   ]
 }

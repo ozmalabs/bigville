@@ -322,8 +322,14 @@ household (data, APPROX).
 
 ## Phase 011 -- Fiscal institutions as data
 
-**Status:** ready (decision 2026-11-05: the institutions are already designed;
-pull them out of the code into the data).
+**Status:** done (see History). FISCAL_INSTITUTIONS (9 entries) and FISCAL_BACKEND_OWNED (20 rules) map
+all 44 rules of the eight seeds exactly once (tested); purses and the action checks are in
+`world/fiscal.json`; `round_bp` matches the seeds' IDiv formula. World: `found_purse`,
+`assess_obligation`, `pay_obligation`, `collect`, `deliver_collected` (one payment action for every
+institution); coin moves only face to face; a short payer at the payee records arrears and nothing
+else. Nine `gen_fiscal_*` seeds generated. Supervisor fix: office clauses use authority conditions,
+so the Phase 015 renamed-office fixture stays clean. Open: purses are not opened at founding; the
+actions are in FISCAL_ACTIONS, not MAJOR_ACTIONS, so no backend chooses them yet.
 
 **Goal.** Taxes, rent, mortgages, tithes, wages, and collection are designed as
 graph-rule seeds -- `seeds/bigville_fisc_state.json`, `bigville_clerk_treasurer`,
@@ -720,3 +726,4 @@ exist, at the precision they know them -- never the world's map.
 | 007 Balance scenario from the world | done | (this commit) | docs/phases/phase007/PHASE007_REPORT.md -- balance_scenario() from the built town; grain beds 61 -> 80 to match the scenario (barley/oats seed 27/26); 520 passed |
 | 008 Animal life cycle | done | (this commit) | docs/phases/phase008/PHASE008_REPORT.md -- ageing, breeding in shared enclosures when fed, gestation, death at lifespan; pig lifespan 15 -> 180 months; 546 passed |
 | 010 Death, burial, graveyard | done | (this commit) | docs/phases/phase010/PHASE010_REPORT.md -- corpse item on death, graveyard, dig_grave/bury/make_coffin, unburied-body household risk; Phase 004 layout digest updated for the graveyard site; 571 passed |
+| 011 Fiscal institutions as data | done | (this commit) | docs/phases/phase011/PHASE011_REPORT.md -- 44 seed rules mapped to 9 institutions or the backend; purses, obligations, face-to-face payment and arrears; round_bp; generated seeds 22 -> 31; 609 passed |

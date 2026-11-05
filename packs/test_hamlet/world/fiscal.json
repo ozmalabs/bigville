@@ -1,0 +1,8 @@
+{
+  "_doc": "FISCAL physical parts for the test hamlet (Phase 011): no purses and no fiscal actions are configured. See packs/bigville/world/fiscal.json for the schema.",
+  "_types": {},
+  "tables": {
+    "FISCAL_PURSES": {},
+    "FISCAL_ACTIONS": {}
+  }
+}
