@@ -507,7 +507,11 @@ def test_reference_priors_are_explicit_private_character_memory():
     assert list(world.eng.neighbours(world._town, "has_reference")) == []
     assert game._context("Ada").observations["known_references"] == ["grain_in_granary"]
     assert game._context("Ben").observations["known_references"] == []
-    assert game.dump_held_state("Ada")["memories"][-1]["kind"] == "reference_knowledge"
+    # Ada may also hold recipe priors for her trade; the reference prior is one private memory.
+    assert any(memory["kind"] == "reference_knowledge"
+               for memory in game.dump_held_state("Ada")["memories"])
+    assert not any(memory["kind"] == "reference_knowledge"
+                   for memory in game.dump_held_state("Ben")["memories"])
 
     world.add_actor("Clerk", role="clerk")
     assert game._context("Ben").observations["known_references"] == []

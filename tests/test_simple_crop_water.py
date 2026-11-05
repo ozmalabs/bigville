@@ -4,6 +4,7 @@ from __future__ import annotations
 from bigville.api import create_game
 from bigville.backends import SimplePolicy, register_simple_profile
 from bigville.scenarios import load_scenario
+from domains import bigville_entities as E
 
 
 class _FarmChoice:
@@ -81,8 +82,9 @@ def test_crop_sow_water_grow_harvest_and_no_water_control():
                and float(entry["crop_after"]["age"]) < 4.0)
     first_harvest = next(entry for entry in trace if entry["stocks_after"]["grain"] > 0)
     assert first_harvest["crop_before"]["age"] >= 4.0
-    # Harvest returns one seed; the backend then chooses to sow it again.
-    assert any(entry["stocks_after"]["seed"] == 1.0 for entry in trace)
+    # Harvest returns the crop's data-defined seed; the backend then chooses to sow it again.
+    seed_return = float(E.CROPS["wheat"].get("seed_return", 1.0))
+    assert any(entry["stocks_after"]["seed"] == seed_return for entry in trace)
 
     dry = _game(water=0.0)
     dry_trace = _run(dry, turns=8)

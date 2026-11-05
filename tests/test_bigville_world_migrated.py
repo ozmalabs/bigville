@@ -1431,20 +1431,27 @@ def test_completed_canonical_job_output_stays_in_physical_town_stock():
     w = World.from_town100(seed=305000)
     baker = next(name for name, node in w._actors.items()
                  if w.eng.node(node)["attrs"].get("role") == "baker")
+    recipe = next(r for r in E.RECIPES if r["name"] == "bake_bread")
+    need = {kind: float(qty) for kind, qty in recipe["in"]}
     # The seeded village has water but no flour in the shared store; supply a
-    # physical input pile so this checks a completed job rather than a pending one.
-    w.set_stock("flour", 2)
+    # physical input pile (and fuel for the oven) so this checks a completed
+    # job rather than a pending one. Quantities come from the recipe data.
+    w.set_stock("flour", need["flour"])
+    w.set_stock("water", max(w.qty("water"), need["water"]))
+    w.set_stock("charcoal", w.qty("charcoal") + need["fuel"])
     inventory_before = w.inventory(baker)
     bread_before, flour_before, water_before = w.qty("bread"), w.qty("flour"), w.qty("water")
+    fuel_before = w.type_available("fuel")
 
     assert w.do(baker, "bake_bread")
 
-    assert w.qty("bread") == bread_before + 3.0
-    assert w.qty("flour") == flour_before - 2.0
-    assert w.qty("water") == water_before - 1.0
+    assert w.qty("bread") == bread_before + float(recipe["out"][1])
+    assert w.qty("flour") == flour_before - need["flour"]
+    assert w.qty("water") == water_before - need["water"]
+    assert w.type_available("fuel") == pytest.approx(fuel_before - need["fuel"])
     assert w.inventory(baker) == inventory_before
     assert (w.qty("bread") + w.inventory(baker).get("bread", 0.0)
-            == bread_before + inventory_before.get("bread", 0.0) + 3.0)
+            == bread_before + inventory_before.get("bread", 0.0) + float(recipe["out"][1]))
 
 
 def test_canonical_newspaper_is_observation_based_and_readable():
