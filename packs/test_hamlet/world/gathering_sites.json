@@ -1,0 +1,7 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 004): GATHERING_SITES. Empty: the hamlet has no gathering recipes and no founding map sites, so the table exists only to satisfy the bound name. Entries and their sources are in packs/bigville/world/gathering_sites.json.",
+  "_types": {},
+  "tables": {
+    "GATHERING_SITES": {}
+  }
+}

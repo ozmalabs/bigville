@@ -388,6 +388,42 @@ def _check_knowledge(errors, warnings, info):
     knowledge_shares_flags(shares, pack, errors, warnings)
 
 
+def _check_gathering_sites(errors, warnings, info):
+    """Phase 004: each gathering recipe names a site the pack has, each site is a sane renewable stock, and
+    each site has an anchor on the founding map."""
+    W, H = FOUNDING_MAP.get("width"), FOUNDING_MAP.get("height")
+    gathering = {r["name"]: r for r in RECIPES if r.get("gathered_from")}
+    used = {r["gathered_from"] for r in gathering.values()}
+    for name, r in gathering.items():
+        kind = r["gathered_from"]
+        if kind not in GATHERING_SITES:
+            errors.append(f"RECIPES[{name}].gathered_from: '{kind}' is not a GATHERING_SITES kind")
+            continue
+        if r["in"]:
+            errors.append(f"RECIPES[{name}]: a gathering recipe takes no inputs, but it has {len(r['in'])}")
+        if float(r["out"][1]) > float(GATHERING_SITES[kind]["capacity"]):
+            warnings.append(f"RECIPES[{name}]: one batch ({r['out'][1]}) exceeds the {kind} site's capacity, "
+                            f"so the site can never supply it")
+    for kind, spec in GATHERING_SITES.items():
+        where = f"GATHERING_SITES[{kind}]"
+        stock, growback, capacity = (float(spec.get(k, -1.0)) for k in ("stock", "growback", "capacity"))
+        if capacity <= 0.0:
+            errors.append(f"{where}: capacity must be above zero")
+        if not 0.0 <= stock <= capacity:
+            errors.append(f"{where}: stock must be between 0 and capacity")
+        if growback < 0.0:
+            errors.append(f"{where}: growback must be zero or more")
+        if kind not in used:
+            warnings.append(f"{where}: no gathering recipe names this site")
+        anchor = spec.get("anchor")
+        if not (isinstance(anchor, list) and len(anchor) == 2):
+            errors.append(f"{where}: anchor must be a cell [x, y]")
+        elif not FOUNDING_MAP:
+            info.append(f"{where}: this pack has no founding map, so no site is placed")
+        elif not (0 <= anchor[0] < W and 0 <= anchor[1] < H):
+            errors.append(f"{where}: anchor {anchor} is off the founding map")
+
+
 def _check_prompt_instructions(errors, warnings, info):
     """Phase 018: the LLM prompt tables and speech lexicon. Each action has a description, the response
     fields are the ones the backend parses, the selection caps are positive, the standing types and gist
@@ -1031,6 +1067,7 @@ def check_consistency():
 
     _check_founding_town(errors, warnings, info)
     _check_knowledge(errors, warnings, info)
+    _check_gathering_sites(errors, warnings, info)
     _check_prompt_instructions(errors, warnings, info)
     _check_generated_seeds(errors)
     stats = {

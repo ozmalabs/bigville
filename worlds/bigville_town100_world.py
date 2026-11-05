@@ -319,6 +319,16 @@ def build_town_100(seed=SEED_DEFAULT, entities=None):
         grid[c[1]][c[0]] = FLOOR
         layout["homes"].append(c)
 
+    # gathering sites (Phase 004): placed after every other feature, so no existing home, workplace, farm
+    # plot, deposit, or building moves. Each site takes the nearest free grass cell of the founding
+    # component to its anchor (data: world/gathering_sites.json).
+    layout["sites"] = {}
+    for kind, spec in E.GATHERING_SITES.items():
+        pool = [c for c in ordered if grid[c[1]][c[0]] == GRASS and c not in used]
+        site = _nearest(pool, tuple(spec["anchor"]))
+        used.add(site)
+        layout["sites"][kind] = site
+
     # affordances (viewer-facing landmark list)
     market = layout["work"]["market"]
     affordances = [{"name": sq["label"], "kind": "square", "x": market[0], "y": market[1]}]

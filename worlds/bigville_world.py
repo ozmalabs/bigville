@@ -420,6 +420,7 @@ class BigvilleWorld:
         self._land_cells = {}
         self._household_cells = {}
         self._resource_deposits = {}
+        self._gathering_sites = {}          # Phase 004: gathering kind -> its ResourceDeposit-style site node
         self._shops = {}
         self._actor_inventories = {}
         self._actor_tableware = {}
@@ -1527,7 +1528,7 @@ class BigvilleWorld:
                 warnings.append(f"less than four days of animal feed: {feed}")
 
         capability_gaps = [name for name in self._actors
-                           if not any(self._can_attempt(name, action)
+                           if not any(self._capable(name, action)
                                       for action in self._actions)]
         essential_actions = ("grind_flour", "bake_bread", "make_pottage")
         essential_recipe_gaps = [action for action in essential_actions
@@ -2000,6 +2001,7 @@ class BigvilleWorld:
             self.add_deposit(kind, tuple(cell), stock=float(deposit.get("stock", 60.0)),
                              growback=float(deposit.get("growback", 3.0)),
                              capacity=float(deposit.get("capacity", 120.0)))
+        self._place_gathering_sites(layout)
         self.add_store(tuple(layout["work"]["market"]), tuple(self.E.RESOURCE_DEPOSITS))
         for trade, chain in self.E.SHOP_CHAINS.items():
             if trade in layout["work"]:
@@ -2937,6 +2939,84 @@ class BigvilleWorld:
         self.eng.set_attr(n, "stock", float(attrs["stock"]) - amount)
         self.set_stock(kind, self.qty(kind) + amount)
         return amount
+
+    # ---------------------------------------------------- gathering sites (Phase 004)
+    def add_gathering_site(self, kind, cell, *, stock=None, growback=None, capacity=None):
+        """Place the site that a gathering recipe's `gathered_from` names, on a walkable cell.
+        Stock, growback, and capacity default to the pack's GATHERING_SITES row. The founding town places
+        its own sites (see _place_gathering_sites); a bare or scenario world adds one here."""
+        if kind not in self.E.GATHERING_SITES:
+            raise ValueError(f"'{kind}' is not a GATHERING_SITES kind in data pack '{self.data_pack}'")
+        if kind in self._gathering_sites:
+            raise ValueError(f"gathering site '{kind}' is already placed")
+        row = self.E.GATHERING_SITES[kind]
+        cell = tuple(cell)
+        assert cell in self._map_cells, f"gathering site cell {cell} not walkable"
+        capacity = float(row["capacity"] if capacity is None else capacity)
+        stock = float(row["stock"] if stock is None else stock)
+        growback = float(row["growback"] if growback is None else growback)
+        n = self.eng.add_node("ResourceDeposit", {"kind": kind, "stock": stock, "growback": growback,
+                                                    "capacity": capacity, "epoch": 0.0, "gathering": 1.0})
+        self.eng.add_edge_unchecked(self._town, "has_gathering_site", n)
+        self._attach_at_cell(n, cell)
+        self._gathering_sites[kind] = {"node": n, "cell": cell}
+        return n
+
+    def _place_gathering_sites(self, layout):
+        """Place the founding map's gathering sites (layout["sites"], from build_town_100)."""
+        for kind, cell in layout.get("sites", {}).items():
+            self.add_gathering_site(kind, tuple(cell))
+
+    def gathering_site_cell(self, kind):
+        """The cell of the site a gathering kind names, or None if no site is placed."""
+        site = self._gathering_sites.get(kind)
+        return None if site is None else site["cell"]
+
+    def gathering_stock(self, kind):
+        """The stock left at a gathering site, or None if no site is placed."""
+        site = self._gathering_sites.get(kind)
+        if site is None:
+            return None
+        return round(float(self.eng.node(site["node"])["attrs"]["stock"]), 4)
+
+    def _site_has_batch(self, kind, recipe_name):
+        """True if the site of `kind` holds one batch of `recipe_name`'s output (location not checked)."""
+        site = self._gathering_sites.get(kind)
+        if site is None:
+            return False
+        batch = float(self._recipe_specs[recipe_name]["out"][1])
+        return float(self.eng.node(site["node"])["attrs"]["stock"]) + 1e-9 >= batch
+
+    def _site_supplies(self, kind, recipe_name, cell):
+        """True if the site of `kind` stands on `cell` and holds one batch of `recipe_name`'s output."""
+        site = self._gathering_sites.get(kind)
+        if site is None or cell is None or tuple(cell) != site["cell"]:
+            return False
+        return self._site_has_batch(kind, recipe_name)
+
+    def _at_gathering_site(self, actor, recipe_name):
+        """A gathering recipe is admissible only for an actor standing on the site of its kind, with a
+        batch of stock there. A recipe with no gathered_from is not bound to a site."""
+        kind = self._recipe_specs.get(recipe_name, {}).get("gathered_from")
+        if not kind:
+            return True
+        return self._site_supplies(kind, recipe_name, self.actor_position(actor))
+
+    def _draw_gathering_site(self, kind, recipe_name):
+        """A batch of a gathering recipe is taken from its site's stock as the job opens."""
+        site = self._gathering_sites[kind]
+        batch = float(self._recipe_specs[recipe_name]["out"][1])
+        stock = float(self.eng.node(site["node"])["attrs"]["stock"])
+        self.eng.set_attr(site["node"], "stock", stock - batch)
+
+    def _regrow_gathering_sites(self):
+        """Once a period (a day, TIME.ticks_per_period), each gathering site regrows by its growback, up to
+        its capacity."""
+        for site in self._gathering_sites.values():
+            a = self.eng.node(site["node"])["attrs"]
+            self.eng.set_attr(site["node"], "stock",
+                              min(float(a["capacity"]), float(a["stock"]) + float(a["growback"])))
+            self.eng.set_attr(site["node"], "epoch", float(a.get("epoch", 0.0)) + 1.0)
 
     def add_store(self, cell, kinds=()):
         cell = tuple(cell)
@@ -6177,6 +6257,18 @@ class BigvilleWorld:
         # the cognition policy decides whether to use them.
         options.extend(option for option in self.physical_object_affordances(actor)
                        if option.get("action") == "move_object")
+        # A gathering site is reached by a move option, as a farm plot is. A resident who could gather there
+        # (capable, with inputs and tools, and the site holding a batch) but stands elsewhere is offered the
+        # walk. On the site, the work option from the loop below is offered instead.
+        if not busy:
+            for kind, site in self._gathering_sites.items():
+                if self.actor_position(actor) == site["cell"] or not reachable_destination(site["cell"]):
+                    continue
+                if any(self._capable(actor, name) and self._site_has_batch(kind, name)
+                       and self._recipe_inputs_available(name, actor)
+                       for name, spec in self._recipe_specs.items() if spec.get("gathered_from") == kind):
+                    options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
+                                    "target": target_key(site["cell"]), "score": 0.0})
         for recipe in self.E.RECIPES:
             if (not busy and self._can_attempt(actor, recipe["name"])
                     and self._recipe_inputs_available(recipe["name"], actor)):
@@ -6989,13 +7081,19 @@ class BigvilleWorld:
     def recipe_min_skill(self, action_name):
         return round(float(self.eng.node(self._actions[action_name])["attrs"].get("min_skill", 0.0)), 4)
     def can_make(self, actor, action_name):
-        """Whether the actor could make it mechanically: skilled enough to attempt."""
-        return self._can_attempt(actor, action_name)
+        """Whether the actor could make it mechanically: skilled enough to attempt (a gathering recipe
+        also needs its site; see _can_attempt)."""
+        return self._capable(actor, action_name)
+
 
     # ---------------------------------------------------- do an action (the ONE engine)
     def _open_job(self, actor, action_name, remaining):
         asp = self._actions[action_name]
         action_attrs = self.eng.node(asp)["attrs"]
+        site_kind = self._recipe_specs.get(action_name, {}).get("gathered_from")
+        if site_kind:
+            # A gathering batch is taken from its site as the job opens (do/start have already checked it).
+            self._draw_gathering_site(site_kind, action_name)
         job = self.eng.add_node("Job", {"remaining": float(remaining), "last_tick": 0.0,
                                         "min_quality": 1.0, "item_inputs": 0.0,
                                         "canonical_actor": str(actor)})
@@ -7169,10 +7267,15 @@ class BigvilleWorld:
             self._sync_main_skill(actor)
 
     def _can_attempt(self, actor, action_name):
+        """Whether the actor may start this recipe now: capable (see _capable), and, for a gathering
+        recipe, standing on the site of its kind with a batch of stock (see _at_gathering_site)."""
+        return self._capable(actor, action_name) and self._at_gathering_site(actor, action_name)
+
+    def _capable(self, actor, action_name):
         """Admissibility depends on mechanical capability, not assumed knowledge: the actor must be
         SKILLED enough and (for seasonal gathering) it must be the right season. Open (household)
         recipes also need a body strong enough for the work and the recipe's tools in the actor's
-        own hands."""
+        own hands. Location and site stock are not part of capability (see _can_attempt)."""
         if not (action_name in self._actions and self._skilled_enough(actor, action_name)
                 and self._recipe_in_season(action_name)):
             return False
@@ -7290,6 +7393,7 @@ class BigvilleWorld:
             self._advance_calendar()
             if int(float(self.eng.node(self._town)["attrs"].get("day", 0.0))) > old_day:
                 self._daily_life_tick()
+                self._regrow_gathering_sites()
             self._job_tick_armed = True
             self._run()
             self._job_tick_armed = False

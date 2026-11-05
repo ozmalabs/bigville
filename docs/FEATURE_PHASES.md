@@ -118,7 +118,12 @@ seeded-town tests pass with any changed counts explained.
 
 ## Phase 004 -- Located gathering and land-based work
 
-**Status:** ready
+**Status:** done (see History). GATHERING_SITES (woodlot, orchard, kitchen_garden, quarry; APPROX)
+are placed on free cells of the founding map after everything else, so no existing placement moves;
+`add_gathering_site` for bare worlds. Gathering needs the actor on the site with a batch in stock;
+the batch is taken when the job opens; sites regrow daily. A `move` option to reach a site was
+added to the affordances. Open: the fish, lumber and stone deposits never regrow in `BigvilleWorld`
+(their growback rule is only in unloaded seeds); map art for the new sites is not drawn.
 
 **Goal.** Gathering recipes (`gathered_from`: woodlot, orchard, kitchen_garden,
 quarry) can be done anywhere today. Add a map site per `gathered_from` kind as a
@@ -681,3 +686,4 @@ exist, at the precision they know them -- never the world's map.
 | 019 Derived knowledge priors | done | (this commit) | docs/phases/phase019/PHASE019_REPORT.md -- domains/knowledge.py derive_knowledge; knowledge specs replace seed_roles; implied history on its own stream (20 founders gain former-trade levels); awareness/understanding/location memories; 434 passed |
 | 017 Generated Ocelot seeds | done | (this commit) | docs/phases/phase017/PHASE017_REPORT.md -- domains/generated_seeds.py + tools/generate_seeds.py; 22 files in bigville/seeds with generated_from headers; staleness check in the self-test; 447 passed |
 | 018 Generated LLM instructions | done | (this commit) | docs/phases/phase018/PHASE018_REPORT.md -- prompts from the pack, bounded memory selection, derived laws in world_frames, speech lexicon in the pack; prompt schema 1 -> 2 in test_bigville_backends; 464 passed |
+| 004 Located gathering | done | (this commit) | docs/phases/phase004/PHASE004_REPORT.md -- GATHERING_SITES placed without moving existing sites; site-gated gathering with daily regrowth; 483 passed |

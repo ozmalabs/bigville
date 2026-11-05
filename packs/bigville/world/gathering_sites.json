@@ -1,0 +1,76 @@
+{
+  "_doc": "Gathering sites (Phase 004): the map places one site per `gathered_from` kind a recipe names (RECIPES in world/recipes.json). A gathering recipe is admissible only for an actor standing on the site of its kind, with at least the recipe's out_qty of site stock. Each batch draws its out_qty from the site's stock when the job opens; the stock regrows by `growback` once per period (one day, TIME.ticks_per_period) and is capped at `capacity`. Units are the gathered goods themselves (berries, saplings, apples, ore), summed over the recipes of that kind, not a separate currency.\n\nEach site is a ResourceDeposit-style node (the same node and placement mechanism as RESOURCE_DEPOSITS in resource_deposits.json), but it is a separate table: a site has no tile body to extract, is not an item, and must not enter the item pipeline (RESOURCE_DEPOSITS is read as item sources).\n\n`anchor` is an authored cell [x, y]. The map builder (worlds/bigville_town100_world.py build_town_100) places the site on the walkable GRASS cell of the founding component nearest to the anchor that no other site, deposit, home, workplace, farm plot, or building uses. Sites are placed after every other map feature, so no existing placement moves. The anchors are chosen by hand (the layout is authored, with no real-world source): the woodlot beside the forest body and the quarry beside the rock face, the orchard and kitchen garden on open grass.\n\nSOURCES. Stock, growback, and capacity have no published source for these sites: APPROX. They are sized from the recipe yields (out_qty 2 to 6 per batch) and from the RESOURCE_DEPOSITS scale (stock 60, growback 3 to 4, capacity 120), so one site supports about one batch per day at its growback. Public-knowledge spreads are APPROX, set by analogy with the lumber and stone deposits.",
+  "_types": {},
+  "tables": {
+    "GATHERING_SITES": {
+      "woodlot": {
+        "anchor": [
+          29,
+          3
+        ],
+        "stock": 60.0,
+        "growback": 6.0,
+        "capacity": 120.0,
+        "knowledge": {
+          "topics": [
+            "fuel_and_light"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "orchard": {
+        "anchor": [
+          38,
+          22
+        ],
+        "stock": 60.0,
+        "growback": 6.0,
+        "capacity": 120.0,
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.6,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "kitchen_garden": {
+        "anchor": [
+          10,
+          23
+        ],
+        "stock": 40.0,
+        "growback": 4.0,
+        "capacity": 60.0,
+        "knowledge": {
+          "topics": [
+            "agriculture"
+          ],
+          "public": 0.8,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "quarry": {
+        "anchor": [
+          42,
+          10
+        ],
+        "stock": 40.0,
+        "growback": 3.0,
+        "capacity": 80.0,
+        "knowledge": {
+          "topics": [
+            "carpentry_and_building"
+          ],
+          "public": 0.4,
+          "after_years": 3,
+          "understanding_requires": []
+        }
+      }
+    }
+  }
+}

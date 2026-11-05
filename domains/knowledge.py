@@ -416,7 +416,7 @@ def derive_knowledge(person, pack):
         out[f"kin_term:{name}"] = _row("kin_term", name, aware or held, 1.0 if held else 0.0, notes)
     for name, spec in KNOWABLE_PLACES.items():
         out[f"place:{name}"] = _place_row(P, name, spec)
-    for table in (pack.BUILDINGS, pack.RESOURCE_DEPOSITS, pack.WATER_SOURCES):
+    for table in (pack.BUILDINGS, pack.RESOURCE_DEPOSITS, pack.WATER_SOURCES, pack.GATHERING_SITES):
         for name, row in table.items():
             know = row.get("knowledge", {})
             if not know.get("personal"):
@@ -471,7 +471,8 @@ def check_knowledge(pack, errors, warnings, info):
     offices = set(pack.GOVERNANCE_OFFICES)
     authorities = {row.get("authority") for row in pack.GOVERNANCE_OFFICES.values()}
     infos = []
-    places = set(pack.BUILDINGS) | set(pack.RESOURCE_DEPOSITS) | set(pack.WATER_SOURCES) | set(KNOWABLE_PLACES)
+    places = (set(pack.BUILDINGS) | set(pack.RESOURCE_DEPOSITS) | set(pack.WATER_SOURCES)
+              | set(pack.GATHERING_SITES) | set(KNOWABLE_PLACES))
     jobs = set(pack.JOBS)
     topics = set(KNOWLEDGE_TOPICS)
 
@@ -538,7 +539,8 @@ def check_knowledge(pack, errors, warnings, info):
             check_spec(where, row["knowledge"])
         check_seed_roles_gone(where, row)
     for table_name, table in (("BUILDINGS", pack.BUILDINGS), ("RESOURCE_DEPOSITS", pack.RESOURCE_DEPOSITS),
-                              ("WATER_SOURCES", pack.WATER_SOURCES), ("ANIMALS", pack.ANIMALS),
+                              ("WATER_SOURCES", pack.WATER_SOURCES), ("GATHERING_SITES", pack.GATHERING_SITES),
+                              ("ANIMALS", pack.ANIMALS),
                               ("GOVERNANCE_OFFICES", pack.GOVERNANCE_OFFICES), ("KIN_TERMS", pack.KIN_TERMS)):
         for name, row in table.items():
             where = f"{table_name} {name}"

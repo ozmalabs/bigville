@@ -40,6 +40,8 @@ BUILDINGS = _PACK["BUILDINGS"]
 TOWN_SQUARE_FIXTURES = _PACK["TOWN_SQUARE_FIXTURES"]
 BUILDING_PROJECTS = _PACK["BUILDING_PROJECTS"]
 RESOURCE_DEPOSITS = _PACK["RESOURCE_DEPOSITS"]
+# Phase 004: the gathering sites a gathering recipe's `gathered_from` names (empty in a pack with none).
+GATHERING_SITES = _PACK["GATHERING_SITES"]
 # The founding town's map and sites (Phase 016a). Empty in a pack with no founding town.
 FOUNDING_MAP = _PACK["FOUNDING_MAP"]
 FOUNDING_DEPOSITS = _PACK["FOUNDING_DEPOSITS"]
