@@ -356,6 +356,135 @@ with the switch off; writing rising with it on.
 
 ---
 
+# Programme B: everything in the data, generated seeds and instructions
+
+**Decision 2026-11-05.** All world content -- laws, institutions, roles, procedures, parameters,
+and the founding town -- lives in the data, not the code. Ocelot seeds and LLM backend
+instructions are GENERATED from that data, so a different scenario runs by swapping the data
+pack. The code is mechanics only: it reads the pack, validates actions, and records facts.
+
+Survey findings this programme acts on (2026-11-05):
+- The world imports one data set at module level (`from domains import bigville_entities as E`,
+  `worlds/bigville_world.py:23`). A scenario can override stocks, actors, buildings, policies,
+  laws, charters, map, and subsystem switches, but not items, recipes, skills, crops,
+  procedures, offices, or population distributions.
+- The 184 seed JSON files are never executed here (`BigvilleGraph.settle()` is a no-op; loading
+  records an id only). They are hand-written, and `seeds/` and `bigville/seeds/` have drifted
+  (`bigville_action_decide`, `bigville_actor_decision` differ; one file is only in each).
+- Content still in code: role sets and household mapping in `populate_town100`
+  (`bigville_world.py` ~1996-2068), the founding land/tenure spec, `_require_clerk`, shop and
+  stock prices, `add_actor` defaults ("this town is uppity"), care/injury numbers, the
+  document-kind literacy gate, the village production autopilot (`_village_work_tick`, roles and
+  the grain reserve), `MINUTES_PER_TICK`, Town initial defaults, the engine seed list, the
+  townspeople relationship map, `worlds/bigville_town100_world.py` (`ROLE_SPEC`, `_PARAM_SPEC`,
+  names, anchors, building sites, the resource-mixture constants), speech chatter in
+  `bigville/runtime.py` (~251-270), and the single hardcoded LLM system prompt
+  (`bigville/backends/prompts.py:62`).
+- `LAWMAKING_PROCEDURES`, `JUSTICE_PROCEDURES`, and `GOVERNANCE_OFFICES` are described in data but
+  never consulted by the civic methods.
+
+Order: 013 first (everything else writes into the pack it defines). 014-016 move content.
+017-018 generate seeds and instructions. Phases 002-012 above continue afterwards, writing into
+the pack.
+
+## Phase 013 -- Data packs
+
+**Status:** blocked -- needs the user's decision on the pack format (see Open decision below).
+
+**Goal.** The world takes its data from a named DATA PACK instead of a module-level import:
+`BigvilleWorld(data_pack="bigville")`, or `"data_pack"` in a scenario. The current
+`domains/` modules become the `bigville` pack. A pack may extend another pack and override
+individual tables. Every `E.` read in the world, backends, reporting, and asset generator goes
+through the world's pack. `from domains import bigville_entities as E` keeps working as the
+default pack's view. The self-test runs against any pack:
+`python3 -m domains.check --pack <name>`.
+
+**Acceptance.** A small test pack (a handful of items, recipes, one building, one trade, one
+law) boots a world, runs a recipe, and passes the self-test, with no change to world code. The
+existing suite passes unchanged.
+
+**Open decision.** (a) Packs as Python modules (today's form; derived tables such as scraps and
+fuel slots stay as code in the pack), with a JSON export for other tools. Smallest change.
+(b) Packs as declarative JSON/TOML files, with the derived tables computed by a pack compiler in
+code. Truly "swap the files", easy to diff and to generate, and lets an LLM or a non-programmer
+author a scenario; a bigger move. Recommendation: (b), done as 013 = compiler + Python-to-file
+export of today's data, so the files are produced from the current modules once and then become
+the source.
+
+## Phase 014 -- World mechanics parameters into the pack
+
+**Status:** blocked on 013.
+
+**Goal.** Move the numeric and policy constants still in `worlds/bigville_world.py` into the pack:
+tick length, Town initial defaults, actor defaults (skill, station, coin, reputation, age),
+injury/treatment/care amounts, starvation limit, shop and stock price defaults, the
+document-kind literacy gates, the engine seed list, the relationship-kind map. Each gets a
+named table; the code reads it.
+
+**Acceptance.** `grep` for each listed constant in world code finds only reads of pack tables;
+the suite passes unchanged.
+
+## Phase 015 -- Roles, offices, and procedures from the pack
+
+**Status:** blocked on 013.
+
+**Goal.** Replace hardcoded role literals with pack lookups: household kind by role (in
+`HOUSEHOLDS`), registrar and other authorities from `GOVERNANCE_OFFICES`, worker selection in
+`_village_work_tick` from JOBS/LABOUR_TASKS, the grain reserve from the `winter_food_reserve`
+policy's parameters. Make `LAWMAKING_PROCEDURES` and `JUSTICE_PROCEDURES` scenario-overridable
+and record each civic action (proposal, vote, meeting, case, statement) with the procedure stage
+it corresponds to -- records only; deciding validity stays with residents (boundary audit).
+
+**Acceptance.** A test pack with renamed offices (e.g. "reeve" for mayor, "notary" for clerk)
+runs land registration and a council vote without code changes.
+
+## Phase 016 -- The founding town as pack data
+
+**Status:** blocked on 013; merge with Phase 003 (seeding the cast from JOBS).
+
+**Goal.** Move `bigville_town100_world.py`'s content (role counts -> JOBS seeding, personality
+`_PARAM_SPEC`, name pools and anchor names, work anchors, building sites, map layout parameters,
+resource-mixture constants with their citations) into the pack's population and scenario data.
+`from_town100` becomes "build the pack's founding town".
+
+**Acceptance.** The 100-resident town is built from pack data; changed seeded-town test numbers
+are listed (expected, per Phase 003's decision).
+
+## Phase 017 -- Generated Ocelot seeds
+
+**Status:** blocked on 013.
+
+**Goal.** A generator (`tools/generate_seeds.py`, deterministic) writes Ocelot seed JSON from the
+pack: concept and frame seeds for laws, policies, charters, procedures, offices, skills and
+trades, kin terms, fiscal institutions, recipes as know-how, and shared concepts, in the existing
+seed schema (`id`, `version`, `description`, `depends_on`, `nodes`, `edges`, `concepts`,
+`rules`). Generated files carry a `generated_from` header (pack name and a content hash) and go
+in one canonical directory. Reconcile `seeds/` and `bigville/seeds/` into that one directory
+(the four known differences decided in the report). Hand-written cognition seeds (decision,
+speech, affect) stay hand-written unless their content is pack data. A check (in the self-test
+and a test) fails if generated seeds are stale relative to the pack.
+
+**Acceptance.** Regenerating is byte-identical; editing a law in the pack and regenerating
+changes exactly that law's seed; the staleness check catches an unregenerated edit.
+
+## Phase 018 -- Generated LLM instructions
+
+**Status:** blocked on 013.
+
+**Goal.** `PromptBuilder` builds its system instructions from the pack: the world's premise and
+name, the action vocabulary (`MAJOR_ACTIONS`, `FREE_ACTIONS`, with descriptions added to the
+pack), and the boundary rules (validated proposals, no invented facts). The private part carries
+only what that resident HOLDS -- their seeded and learned frames (laws they know, kin terms they
+use, skills they have) -- never the pack's world facts, so an LLM resident cannot "cheat" by
+reading how the world works. Move the speech chatter and weather phrases from `runtime.py` into
+the pack. Record the prompt schema version and the pack hash in each prompt record.
+
+**Acceptance.** Tests show: the system prompt changes when the pack's actions change; a resident
+who has not been seeded a law does not see it; a different pack yields a different premise with
+no code change.
+
+---
+
 ## History
 
 | Phase | Status | Commit | Report |
