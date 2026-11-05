@@ -328,10 +328,14 @@ matching the seeds' formula; self-test checks the new tables.
 
 ## Phase 012 -- Physical and cognitive skill learning
 
-**Status:** ready (decision 2026-11-05: physical skill learning always remains a
-world subsystem; cognitive skill learning is optional, because it is harder to
-model and because leaving it to the backend stops LLM backends from "cheating"
-by having the world grant understanding).
+**Status:** done (see History). Decision 2026-11-05: physical skill learning always remains a
+world subsystem; cognitive skill learning is optional, because it is harder to model and because
+leaving it to the backend stops LLM backends from "cheating" by having the world grant
+understanding. Supervisor review: practice observations carry recipe, turn and day, and
+`BigvilleGame._context` publishes each actor's new ones as `observations["practice"]` for one
+turn. Open: borderline classifications (writing, storekeeping, trading, policing, medicine
+cognitive; midwifery, cooking, service physical) await confirmation; observation nodes are not
+pruned in long runs; the publication cursor is not checkpointed.
 
 **Goal.** Split skills by kind of learning:
 - Tag every skill in `shared_frames.SKILLS` with `"learning": "physical"` or
@@ -630,3 +634,4 @@ exist, at the precision they know them -- never the world's map.
 | 014 World mechanics parameters | done | (this commit) | docs/phases/phase014/PHASE014_REPORT.md -- TIME, TOWN_INITIAL, ACTOR_DEFAULTS, CARE, PRICE_DEFAULTS, DOCUMENT_LITERACY, ENGINE_SEEDS, RESIDENT_SEEDS, RELATIONSHIP_KINDS tables; ticks_per_period read from TIME; 351 passed |
 | 015 Roles, offices, procedures | done | (this commit) | docs/phases/phase015/PHASE015_REPORT.md -- HOUSEHOLDS roles/groups/fallback, GOVERNANCE_OFFICES registrar, LABOUR_TASKS worker_roles (+bake), winter reserve parameters, scenario `procedures`, civic records carry stage; fixture tests/fixtures/phase015_offices (reeve/notary); 364 passed |
 | 002 Recipe inputs from own stock | done | (this commit) | docs/phases/phase002/PHASE002_REPORT.md -- draw order own -> accessible container at cell -> store; drawn_from on Need; affordance uses the same planner; 373 passed |
+| 012 Physical and cognitive learning | done | (this commit) | docs/phases/phase012/PHASE012_REPORT.md -- `learning` tag on every skill and metaskill; `cognitive_practice` switch (default off) with a `practice` observation in the actor's context; 378 passed |

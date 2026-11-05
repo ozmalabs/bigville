@@ -292,6 +292,11 @@ class BigvilleWorld:
         # Hands get better with practice: completed work consolidates into skill levels at the
         # end of each period (E.practice_gain). Off, levels change only when set explicitly.
         "practice": True,
+        # Understanding (skills tagged learning="cognitive") consolidates only when this is on.
+        # Off, completed cognitive work still logs its minutes, the world leaves the levels alone,
+        # and it publishes the practice to the actor as a "practice" observation, so the resident's
+        # backend decides what it learned. Physical skills consolidate under "practice" regardless.
+        "cognitive_practice": False,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -1053,6 +1058,14 @@ class BigvilleWorld:
                     log = dict(self.eng.node(actor_node)["attrs"].get("skill_practice", {}))
                     log[practised] = log.get(practised, 0.0) + float(action.get("time_minutes", 0.0))
                     self.eng.set_attr(actor_node, "skill_practice", log)
+                    if (self.E.skill_learning(practised) == "cognitive"
+                            and not self.physical_subsystems.get("cognitive_practice", False)):
+                        # The world does not model this learning, so the practice goes to the actor.
+                        self.record_observation(actor_name, "practice", skill=practised,
+                                                minutes=float(action.get("time_minutes", 0.0)),
+                                                learning="cognitive", recipe=action.get("name", ""),
+                                                turn=int(self._turn),
+                                                day=float(self.calendar().get("day") or 0.0))
                 self.eng.set_attr(actor_node, "busy", 0.0)
                 self.eng.remove_edge_unchecked(actor_node, "on_job", job)
 
@@ -2298,7 +2311,15 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._actors[observer], "made_observation", obs)
         return obs
 
-    # ---------------------------------------------------- calendar, weather, and public observations
+    def actor_observations(self, actor, kind=None):
+        """The observations this resident made (their own record, not a town fact), oldest first."""
+        self._actor(actor)
+        out = []
+        for node in self.eng.neighbours(self._actors[actor], "made_observation"):
+            attrs = dict(self.eng.node(node)["attrs"])
+            if kind is None or attrs.get("kind") == kind:
+                out.append(attrs)
+        return out
     def calendar(self):
         """Read the canonical clock without turning time into a town fact."""
         a = self.eng.node(self._town)["attrs"]
@@ -5981,7 +6002,12 @@ class BigvilleWorld:
                 options.append({"action": "work", "kind": out_kind, "trade": "", "target": "",
                                 "recipe": recipe["name"],
                                 "score": 0.0})
-        options.append({"action": "rest", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
+        # Rest is afforded only when the same reserve threshold that gates
+        # physical recovery says it can apply. A resident with a full reserve
+        # idles by proposing no major action; do not publish a rest choice that
+        # enactment will reject as a no-op.
+        if self.stamina_reserve(actor) < 0.8:
+            options.append({"action": "rest", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
         # Target keys are intentionally opaque and may be rebuilt on every
         # observation.  Expose the physical destination alongside a movement
         # affordance so a cognition backend can safely retain a route across
@@ -6917,7 +6943,12 @@ class BigvilleWorld:
             levels = self._levels(actor)
             metas = dict(a.get("metaskill_levels", {}))
             person = self._person(actor)
+            cognitive_on = bool(self.physical_subsystems.get("cognitive_practice", False))
             for skill, minutes in sorted(log.items()):
+                # Off, cognitive practice is not consolidated: its levels and the aptitude gain it would
+                # have carried (learning to learn) stay unchanged. The minutes are dropped with the log.
+                if self.E.skill_learning(skill) == "cognitive" and not cognitive_on:
+                    continue
                 before = float(levels.get(skill, 0.0))
                 gain, meta_gain, aptitude_gain = self.E.practice_gain(levels, metas, skill, minutes, person)
                 person["aptitude"] += aptitude_gain

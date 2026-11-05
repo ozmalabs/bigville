@@ -60,6 +60,14 @@
           "dispute"
         ],
         "source": "governance"
+      },
+      "practice": {
+        "subjects": [
+          "skill",
+          "minutes",
+          "learning"
+        ],
+        "source": "residents"
       }
     }
   }

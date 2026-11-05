@@ -403,6 +403,12 @@ def check_consistency():
     for skill in SKILLS:
         if len(clustered.get(skill, [])) != 1:
             errors.append(f"SKILLS[{skill}]: in {len(clustered.get(skill, []))} clusters (must be exactly 1)")
+    for skill, spec in SKILLS.items():
+        if spec.get("learning") not in LEARNING_KINDS:
+            errors.append(f"SKILLS[{skill}]: learning must be 'physical' or 'cognitive' (got {spec.get('learning')!r})")
+    for meta, spec in METASKILLS.items():
+        if spec.get("learning") not in LEARNING_KINDS:
+            errors.append(f"METASKILLS[{meta}]: learning must be 'physical' or 'cognitive' (got {spec.get('learning')!r})")
     for meta, spec in METASKILLS.items():
         if not any(c["metaskill"] == meta for c in SKILL_CLUSTERS.values()):
             warnings.append(f"METASKILLS[{meta}]: no cluster belongs to it")

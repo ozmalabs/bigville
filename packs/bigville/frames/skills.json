@@ -1,145 +1,191 @@
 {
-  "_doc": "---------------------------------------------------------------- SKILLS\nA SKILL is what a person can do with their hands or head -- carried by a person, learned by\napprenticeship, schooling, or practice, and exercised by recipes. A TRADE (below) is an organised\nway of working: a workshop, its kit, and the skills it exercises. A JOB (further below) is the\nposition a resident is seeded into, bundling trades and duties. One skill serves many trades\n(cooking: the cook, the farmer's household); one trade can exercise several skills (the weaver\nspins and weaves). `kind`: craft (made goods), land (fields, animals, woods), care (people),\noffice (governance and records), general (anyone's, with practice).",
+  "_doc": "---------------------------------------------------------------- SKILLS\nA SKILL is what a person can do with their hands or head -- carried by a person, learned by\napprenticeship, schooling, or practice, and exercised by recipes. A TRADE (below) is an organised\nway of working: a workshop, its kit, and the skills it exercises. A JOB (further below) is the\nposition a resident is seeded into, bundling trades and duties. One skill serves many trades\n(cooking: the cook, the farmer's household); one trade can exercise several skills (the weaver\nspins and weaves). `kind`: craft (made goods), land (fields, animals, woods), care (people),\noffice (governance and records), general (anyone's, with practice). `learning` (Phase 012): physical = the hand and body learn it by practice, so the world always consolidates it; cognitive = understanding, which the world consolidates only when the cognitive_practice subsystem is on (otherwise the practice is published to the resident).",
   "_types": {},
   "tables": {
     "SKILLS": {
       "smithing": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "carpentry": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "sawing": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "coopering": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "masonry": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "quarrying": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "milling": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "baking": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "cooking": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "physical"
       },
       "brewing": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "dairying": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "butchery": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "tanning": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "shoemaking": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "spinning": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "physical"
       },
       "weaving": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "tailoring": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "dyeing": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "papermaking": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "printing": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "inkmaking": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "candle_making": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "charcoal_burning": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "fieldwork": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "husbandry": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "shepherding": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "felling": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "foraging": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "physical"
       },
       "fishing": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "smoking": {
-        "kind": "craft"
+        "kind": "craft",
+        "learning": "physical"
       },
       "storekeeping": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "cognitive"
       },
       "sanitation": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "physical"
       },
       "water_drawing": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "physical"
       },
       "composting": {
-        "kind": "land"
+        "kind": "land",
+        "learning": "physical"
       },
       "writing": {
-        "kind": "office"
+        "kind": "office",
+        "learning": "cognitive"
       },
       "reckoning": {
-        "kind": "office"
+        "kind": "office",
+        "learning": "cognitive"
       },
       "governance": {
-        "kind": "office"
+        "kind": "office",
+        "learning": "cognitive"
       },
       "law": {
-        "kind": "office"
+        "kind": "office",
+        "learning": "cognitive"
       },
       "policing": {
-        "kind": "office"
+        "kind": "office",
+        "learning": "cognitive"
       },
       "teaching": {
-        "kind": "care"
+        "kind": "care",
+        "learning": "cognitive"
       },
       "medicine": {
-        "kind": "care"
+        "kind": "care",
+        "learning": "cognitive"
       },
       "midwifery": {
-        "kind": "care"
+        "kind": "care",
+        "learning": "physical"
       },
       "ministry": {
-        "kind": "care"
+        "kind": "care",
+        "learning": "cognitive"
       },
       "trading": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "cognitive"
       },
       "service": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "physical"
       },
       "labour": {
-        "kind": "general"
+        "kind": "general",
+        "learning": "physical"
       }
     }
   }

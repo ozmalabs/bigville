@@ -1,35 +1,42 @@
 {
-  "_doc": "---------------------------------------------------------------- SKILL CLUSTERS AND METASKILLS\nSkills sit in CLUSTERS of related practice (woodwork: carpentry, sawing, coopering), and each\ncluster belongs to a METASKILL -- a person-level capacity that carries across a whole family of\nskills (craftsmanship: the hand and eye for making things, whatever the material).\n\nEach person holds a LEVEL per skill (0..1) and per metaskill (0..1). Working at a skill draws on\nthe person's CLOSEST held skill as well as their own level in it:\n  effective = own + (1 - own) * transfer * (TRANSFER[\"base\"] + TRANSFER[\"meta\"] * metaskill)\n  transfer  = max over the person's other skills of (their level * closeness to this one)\nso a master baker cooks well before she has ever cooked, and does so better the more of a cook's\ngeneral kitchen sense (the provisioning metaskill) she has. Practice raises the level, faster the\nmore there is to transfer and the stronger the metaskill:\n  gain per hour = PRACTICE[\"rate\"] * (1 - own) * (1 + PRACTICE[\"transfer\"] * transfer\n                                                    + PRACTICE[\"meta\"] * metaskill)\nand every hour of practice also raises the skill's metaskill a little (PRACTICE[\"meta_rate\"]).\nAbove the metaskills sits one META-METASKILL, APTITUDE: general learning ability (the psychometric\ng, which correlates with every broad ability -- the \"positive manifold\"). It is a multiplier near 1\nthat speeds learning and sharpens a metaskill's use, by how much that metaskill depends on general\nability (its `g_loading`, 0..1): reading and reckoning lean on it heavily, hand-skill and heavy toil\nlittle. A person also has a TALENT per metaskill (their innate lean, a multiplier near 1) and may\nhave LIMITATIONS (SKILL_LIMITATIONS) that lower levels and slow learning. How these are distributed\nacross people is in population.\n\nThese are how skill works -- the rules of the world's bodies and hands. Which skills a person has,\nand how well, is theirs; nobody else knows it except by watching their work.\n\ng_loading grounding (APPROX, model choices on the direction of the evidence): broad abilities sit\nunder g in the Cattell-Horn-Carroll / three-stratum model (Carroll 1993); verbal/crystallised and\nquantitative abilities load highest; neuromotor scores correlate only weakly with intelligence\n(r = 0.15-0.37 in 7-18 year olds, PubMed 23410213), so hand-skill and toil load lowest.",
+  "_doc": "---------------------------------------------------------------- SKILL CLUSTERS AND METASKILLS\nSkills sit in CLUSTERS of related practice (woodwork: carpentry, sawing, coopering), and each\ncluster belongs to a METASKILL -- a person-level capacity that carries across a whole family of\nskills (craftsmanship: the hand and eye for making things, whatever the material).\n\nEach person holds a LEVEL per skill (0..1) and per metaskill (0..1). Working at a skill draws on\nthe person's CLOSEST held skill as well as their own level in it:\n  effective = own + (1 - own) * transfer * (TRANSFER[\"base\"] + TRANSFER[\"meta\"] * metaskill)\n  transfer  = max over the person's other skills of (their level * closeness to this one)\nso a master baker cooks well before she has ever cooked, and does so better the more of a cook's\ngeneral kitchen sense (the provisioning metaskill) she has. Practice raises the level, faster the\nmore there is to transfer and the stronger the metaskill:\n  gain per hour = PRACTICE[\"rate\"] * (1 - own) * (1 + PRACTICE[\"transfer\"] * transfer\n                                                    + PRACTICE[\"meta\"] * metaskill)\nand every hour of practice also raises the skill's metaskill a little (PRACTICE[\"meta_rate\"]).\nAbove the metaskills sits one META-METASKILL, APTITUDE: general learning ability (the psychometric\ng, which correlates with every broad ability -- the \"positive manifold\"). It is a multiplier near 1\nthat speeds learning and sharpens a metaskill's use, by how much that metaskill depends on general\nability (its `g_loading`, 0..1): reading and reckoning lean on it heavily, hand-skill and heavy toil\nlittle. A person also has a TALENT per metaskill (their innate lean, a multiplier near 1) and may\nhave LIMITATIONS (SKILL_LIMITATIONS) that lower levels and slow learning. How these are distributed\nacross people is in population.\n\nThese are how skill works -- the rules of the world's bodies and hands. Which skills a person has,\nand how well, is theirs; nobody else knows it except by watching their work.\n\ng_loading grounding (APPROX, model choices on the direction of the evidence): broad abilities sit\nunder g in the Cattell-Horn-Carroll / three-stratum model (Carroll 1993); verbal/crystallised and\nquantitative abilities load highest; neuromotor scores correlate only weakly with intelligence\n(r = 0.15-0.37 in 7-18 year olds, PubMed 23410213), so hand-skill and toil load lowest. `learning` (Phase 012): the mode of the skills in the metaskill's clusters, by majority; descriptive only, the world gates on each skill's own `learning`.",
   "_types": {},
   "tables": {
     "METASKILLS": {
       "craftsmanship": {
         "description": "hand and eye for making things in any material",
-        "g_loading": 0.3
+        "g_loading": 0.3,
+        "learning": "physical"
       },
       "provisioning": {
         "description": "judgement of food, fire, and timing in the kitchen and the dairy",
-        "g_loading": 0.4
+        "g_loading": 0.4,
+        "learning": "physical"
       },
       "stewardship": {
         "description": "reading land, weather, plants, and beasts",
-        "g_loading": 0.4
+        "g_loading": 0.4,
+        "learning": "physical"
       },
       "letters": {
         "description": "symbols, records, and abstract reasoning",
-        "g_loading": 0.8
+        "g_loading": 0.8,
+        "learning": "cognitive"
       },
       "care": {
         "description": "attending to bodies, minds, and souls",
-        "g_loading": 0.5
+        "g_loading": 0.5,
+        "learning": "cognitive"
       },
       "dealing": {
         "description": "persuasion, order, and trust between people",
-        "g_loading": 0.5
+        "g_loading": 0.5,
+        "learning": "cognitive"
       },
       "toil": {
         "description": "the technique and endurance of heavy, plain work",
-        "g_loading": 0.15
+        "g_loading": 0.15,
+        "learning": "physical"
       }
     }
   }

@@ -61,6 +61,8 @@ class BigvilleGame:
         # One-turn, observer-specific records of directly visible object
         # movement. These describe physical evidence, not the actor's intent.
         self._physical_events: dict[str, list[dict[str, Any]]] = {}
+        # Per actor: (turn, start, end) of the practice observations that turn's contexts carry.
+        self._published_practice: dict[str, tuple[int | None, int, int]] = {}
         self._animal_backends: dict[str, AnimalNPCBackend] = {}
         self._animal_decisions: dict[str, dict[str, Any]] = {}
         for name, character in self.characters.items():
@@ -435,6 +437,16 @@ class BigvilleGame:
                 "documents": read_documents,
             },
         }
+        # The actor's own practice records (Phase 012): cognitive work the world does not turn
+        # into skill, each carried by the contexts of one turn so the backend decides what was
+        # learned. Every _context call within a turn returns the same records.
+        practice = self.world.actor_observations(actor, "practice")
+        turn = int(self.world._turn)
+        last_turn, start, end = self._published_practice.get(actor, (None, 0, 0))
+        if last_turn != turn:
+            start, end = end, len(practice)
+            self._published_practice[actor] = (turn, start, end)
+        observations["practice"] = [dict(record) for record in practice[start:end]]
         active = self._continuations.get(actor)
         if active is not None:
             observations["continuation"] = active.request.to_dict()

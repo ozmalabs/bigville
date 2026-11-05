@@ -87,6 +87,17 @@ def skill_metaskill(skill):
     return SKILL_CLUSTERS[cluster]["metaskill"] if cluster else None
 
 
+# How a skill is learned (Phase 012). "physical": the hand and body learn it by practice, and the world
+# always consolidates that practice into levels. "cognitive": understanding, which the world consolidates
+# only when the `cognitive_practice` subsystem is on; otherwise the practice is published to the actor.
+LEARNING_KINDS = ("physical", "cognitive")
+
+
+def skill_learning(skill):
+    """'physical' or 'cognitive' (the pack's `learning` tag), or None for an unknown skill."""
+    return SKILLS.get(skill, {}).get("learning")
+
+
 def skill_closeness(a, b):
     """How much practice of skill `a` carries to skill `b` (symmetric, 0..1)."""
     if a == b:
