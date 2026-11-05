@@ -395,6 +395,27 @@ def check_consistency():
             errors.append(f"RECIPES[{r['name']}]: exercises no skill")
     for skill in sorted(set(SKILLS) - used_skills):
         warnings.append(f"SKILLS[{skill}]: no trade or open recipe exercises it")
+    clustered = {}
+    for cluster, spec in SKILL_CLUSTERS.items():
+        if spec["metaskill"] not in METASKILLS:
+            errors.append(f"SKILL_CLUSTERS[{cluster}]: unknown metaskill '{spec['metaskill']}'")
+        for skill in spec["skills"]:
+            if skill not in SKILLS:
+                errors.append(f"SKILL_CLUSTERS[{cluster}]: unknown skill '{skill}'")
+            clustered.setdefault(skill, []).append(cluster)
+    for skill in SKILLS:
+        if len(clustered.get(skill, [])) != 1:
+            errors.append(f"SKILLS[{skill}]: in {len(clustered.get(skill, []))} clusters (must be exactly 1)")
+    for meta in METASKILLS:
+        if not any(spec["metaskill"] == meta for spec in SKILL_CLUSTERS.values()):
+            warnings.append(f"METASKILLS[{meta}]: no cluster belongs to it")
+    for (a, b), value in SKILL_AFFINITY.items():
+        if a not in SKILLS or b not in SKILLS:
+            errors.append(f"SKILL_AFFINITY[{a}, {b}]: unknown skill")
+        if not 0.0 < float(value) < 1.0:
+            errors.append(f"SKILL_AFFINITY[{a}, {b}]: closeness {value} must be between 0 and 1")
+        if (b, a) in SKILL_AFFINITY:
+            errors.append(f"SKILL_AFFINITY[{a}, {b}]: listed in both directions")
     open_recipes = sorted(r["name"] for r in RECIPES if r.get("open"))
     info.append(f"open recipes (anyone capable with the tools): {', '.join(open_recipes)}")
     for name, spec in WASTE_CYCLES.items():

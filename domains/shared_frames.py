@@ -90,6 +90,154 @@ def job_skills(job):
     return out
 
 
+# ---------------------------------------------------------------- SKILL CLUSTERS AND METASKILLS
+# Skills sit in CLUSTERS of related practice (woodwork: carpentry, sawing, coopering), and each
+# cluster belongs to a METASKILL -- a person-level capacity that carries across a whole family of
+# skills (craftsmanship: the hand and eye for making things, whatever the material).
+#
+# Each person holds a LEVEL per skill (0..1) and per metaskill (0..1). Working at a skill draws on
+# the person's CLOSEST held skill as well as their own level in it:
+#   effective = own + (1 - own) * transfer * (TRANSFER["base"] + TRANSFER["meta"] * metaskill)
+#   transfer  = max over the person's other skills of (their level * closeness to this one)
+# so a master baker cooks well before she has ever cooked, and does so better the more of a cook's
+# general kitchen sense (the provisioning metaskill) she has. Practice raises the level, faster the
+# more there is to transfer and the stronger the metaskill:
+#   gain per hour = PRACTICE["rate"] * (1 - own) * (1 + PRACTICE["transfer"] * transfer
+#                                                     + PRACTICE["meta"] * metaskill)
+# and every hour of practice also raises the skill's metaskill a little (PRACTICE["meta_rate"]).
+# These are how skill works -- the rules of the world's bodies and hands. Which skills a person has,
+# and how well, is theirs; nobody else knows it except by watching their work.
+METASKILLS = {
+    "craftsmanship": "hand and eye for making things in any material",
+    "provisioning":  "judgement of food, fire, and timing in the kitchen and the dairy",
+    "stewardship":   "reading land, weather, plants, and beasts",
+    "letters":       "symbols, records, and abstract reasoning",
+    "care":          "attending to bodies, minds, and souls",
+    "dealing":       "persuasion, order, and trust between people",
+    "toil":          "the technique and endurance of heavy, plain work",
+}
+
+SKILL_CLUSTERS = {
+    "metalwork": {"metaskill": "craftsmanship", "skills": ["smithing"]},
+    "woodwork":  {"metaskill": "craftsmanship", "skills": ["carpentry", "sawing", "coopering"]},
+    "stonework": {"metaskill": "craftsmanship", "skills": ["masonry", "quarrying"]},
+    "fibre":     {"metaskill": "craftsmanship", "skills": ["spinning", "weaving", "tailoring", "dyeing"]},
+    "leather":   {"metaskill": "craftsmanship", "skills": ["tanning", "shoemaking"]},
+    "bookcraft": {"metaskill": "craftsmanship", "skills": ["papermaking", "inkmaking", "printing"]},
+    "foodcraft": {"metaskill": "provisioning",
+                  "skills": ["milling", "baking", "cooking", "brewing", "dairying", "butchery",
+                             "smoking", "candle_making"]},
+    "fields":    {"metaskill": "stewardship", "skills": ["fieldwork", "composting", "foraging"]},
+    "beasts":    {"metaskill": "stewardship", "skills": ["husbandry", "shepherding"]},
+    "woods_and_water": {"metaskill": "stewardship", "skills": ["felling", "charcoal_burning", "fishing"]},
+    "letters":   {"metaskill": "letters", "skills": ["writing", "reckoning", "law"]},
+    "care":      {"metaskill": "care", "skills": ["medicine", "midwifery", "teaching", "ministry"]},
+    "civic":     {"metaskill": "dealing", "skills": ["governance", "policing", "trading", "service",
+                                                     "storekeeping"]},
+    "household": {"metaskill": "toil", "skills": ["labour", "water_drawing", "sanitation"]},
+}
+
+# How close two skills are (0..1): 1 for the same skill; an explicit pair below; else the same
+# cluster ("cluster"); else clusters sharing a metaskill ("metaskill"); else nothing.
+SKILL_CLOSENESS = {"cluster": 0.5, "metaskill": 0.2}
+SKILL_AFFINITY = {
+    ("baking", "cooking"): 0.7, ("milling", "baking"): 0.4, ("brewing", "baking"): 0.4,
+    ("dairying", "cooking"): 0.5, ("butchery", "cooking"): 0.4, ("smoking", "butchery"): 0.5,
+    ("carpentry", "coopering"): 0.7, ("carpentry", "sawing"): 0.6, ("spinning", "weaving"): 0.7,
+    ("weaving", "tailoring"): 0.5, ("tanning", "shoemaking"): 0.6, ("tailoring", "shoemaking"): 0.4,
+    ("masonry", "quarrying"): 0.6, ("husbandry", "shepherding"): 0.8, ("husbandry", "dairying"): 0.4,
+    ("fieldwork", "composting"): 0.7, ("fieldwork", "foraging"): 0.4, ("felling", "charcoal_burning"): 0.5,
+    ("felling", "sawing"): 0.4, ("writing", "printing"): 0.5, ("writing", "law"): 0.4,
+    ("reckoning", "trading"): 0.5, ("reckoning", "storekeeping"): 0.5, ("medicine", "midwifery"): 0.7,
+    ("labour", "fieldwork"): 0.3, ("labour", "felling"): 0.3, ("labour", "quarrying"): 0.3,
+}
+
+TRANSFER = {"base": 0.5, "meta": 0.5}
+PRACTICE = {
+    "rate": 0.004,         # level gained per hour of practice, times the headroom (1 - level)
+    "transfer": 1.0,       # extra learning speed per unit of transfer from a close skill
+    "meta": 1.0,           # extra learning speed per unit of the relevant metaskill
+    "meta_rate": 0.0008,   # metaskill gained per hour of practice in any of its skills, times headroom
+    "event_step": 0.1,     # a person notices their own progress each time a level crosses a tenth
+}
+# A tradesperson starts with their trade's skills at their skill level, and each metaskill those
+# skills belong to at this fraction of their best level in it.
+META_FROM_SKILL = 0.6
+
+_SKILL_CLUSTER = {skill: cluster for cluster, spec in SKILL_CLUSTERS.items() for skill in spec["skills"]}
+
+
+def skill_cluster(skill):
+    return _SKILL_CLUSTER.get(skill)
+
+
+def skill_metaskill(skill):
+    cluster = _SKILL_CLUSTER.get(skill)
+    return SKILL_CLUSTERS[cluster]["metaskill"] if cluster else None
+
+
+def skill_closeness(a, b):
+    """How much practice of skill `a` carries to skill `b` (symmetric, 0..1)."""
+    if a == b:
+        return 1.0
+    pair = SKILL_AFFINITY.get((a, b), SKILL_AFFINITY.get((b, a)))
+    if pair is not None:
+        return float(pair)
+    ca, cb = _SKILL_CLUSTER.get(a), _SKILL_CLUSTER.get(b)
+    if ca and ca == cb:
+        return float(SKILL_CLOSENESS["cluster"])
+    if ca and cb and SKILL_CLUSTERS[ca]["metaskill"] == SKILL_CLUSTERS[cb]["metaskill"]:
+        return float(SKILL_CLOSENESS["metaskill"])
+    return 0.0
+
+
+def skill_transfer(levels, skill):
+    """(transfer, source): the best carry-over to `skill` from a person's OTHER skills."""
+    best, source = 0.0, None
+    for held, level in levels.items():
+        if held == skill:
+            continue
+        t = float(level) * skill_closeness(held, skill)
+        if t > best:
+            best, source = t, held
+    return best, source
+
+
+def effective_skill(levels, metas, skill):
+    """A person's working level at `skill`: their own, lifted by transfer and the metaskill."""
+    own = float(levels.get(skill, 0.0))
+    transfer, _ = skill_transfer(levels, skill)
+    meta = float(metas.get(skill_metaskill(skill), 0.0))
+    lift = transfer * (TRANSFER["base"] + TRANSFER["meta"] * meta)
+    return min(1.0, own + (1.0 - own) * lift)
+
+
+def practice_gain(levels, metas, skill, minutes):
+    """(skill gain, metaskill gain) from `minutes` of practice at `skill`."""
+    hours = float(minutes) / 60.0
+    own = float(levels.get(skill, 0.0))
+    transfer, _ = skill_transfer(levels, skill)
+    meta_name = skill_metaskill(skill)
+    meta = float(metas.get(meta_name, 0.0))
+    speed = 1.0 + PRACTICE["transfer"] * transfer + PRACTICE["meta"] * meta
+    gain = min(1.0 - own, PRACTICE["rate"] * hours * (1.0 - own) * speed)
+    meta_gain = min(1.0 - meta, PRACTICE["meta_rate"] * hours * (1.0 - meta)) if meta_name else 0.0
+    return gain, meta_gain
+
+
+def initial_skill_levels(trades, level):
+    """({skill: level}, {metaskill: level}) for someone practised in `trades` at `level`."""
+    levels, metas = {}, {}
+    for trade in trades:
+        for skill in TRADE_SKILLS.get(trade, ()):
+            levels[skill] = max(levels.get(skill, 0.0), float(level))
+    for skill, lv in levels.items():
+        meta = skill_metaskill(skill)
+        if meta:
+            metas[meta] = max(metas.get(meta, 0.0), META_FROM_SKILL * lv)
+    return levels, metas
+
+
 # ---------------------------------------------------------------- TRADES
 # a trade unifies a role with its building, its typical tools, and its baseline skill. Recipes
 # reference the trade via `requires`; a building `provides` it; a tradesperson practises it with a

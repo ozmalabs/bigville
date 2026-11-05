@@ -279,6 +279,9 @@ class BigvilleWorld:
         "metabolism": True,
         "ecology": True,
         "decay": True,
+        # Hands get better with practice: completed work consolidates into skill levels at the
+        # end of each period (E.practice_gain). Off, levels change only when set explicitly.
+        "practice": True,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -989,7 +992,8 @@ class BigvilleWorld:
             # Read component quality before consuming those physical nodes.
             actor_name = str(ja.get("canonical_actor", ""))
             actor_node = self._actors.get(actor_name)
-            quality = float(self.eng.node(actor_node)["attrs"].get("skill", 0.0)) if actor_node else 0.0
+            recipe_row = self._recipe_specs.get(action.get("name", ""), {})
+            quality = self.recipe_skill_level(actor_name, recipe_row) if actor_node else 0.0
             part_qualities = [float(self.eng.node(item)["attrs"].get("quality", quality))
                               for kind_type, _, item, _ in inputs
                               if kind_type == "item" and item is not None and self.eng.has_node(item)]
@@ -1041,6 +1045,11 @@ class BigvilleWorld:
             self.eng.set_attr(job, "complete", 1.0)
             self.eng.set_attr(job, "remaining", 0.0)
             if actor_node is not None:
+                practised = E.recipe_skill(recipe_row) if recipe_row else None
+                if practised:
+                    log = dict(self.eng.node(actor_node)["attrs"].get("skill_practice", {}))
+                    log[practised] = log.get(practised, 0.0) + float(action.get("time_minutes", 0.0))
+                    self.eng.set_attr(actor_node, "skill_practice", log)
                 self.eng.set_attr(actor_node, "busy", 0.0)
                 self.eng.remove_edge_unchecked(actor_node, "on_job", job)
 
@@ -1213,6 +1222,8 @@ class BigvilleWorld:
                             self.eng.set_attr(item, "condition", max(0.0, float(ia.get("condition", 1.0)) - decay))
                             if float(self.eng.node(item)["attrs"].get("condition", 0.0)) <= 0.0:
                                 self.eng.set_attr(item, "broken", 1.0)
+            if self.physical_subsystems.get("practice", False):
+                self._consolidate_practice()
             for name, callback in self._physical_subsystem_extensions.items():
                 if self.physical_subsystems.get(name, False):
                     callback(self, 1)
@@ -4711,6 +4722,11 @@ class BigvilleWorld:
                                         "klass": klass, "group": group,
                                         "trade": next(iter(trades), role),
                                         "trades": ",".join((role,) + tuple(trades)),
+                                        # a level per skill and per metaskill (E.initial_skill_levels),
+                                        # and minutes of practice awaiting consolidation this period
+                                        "skill_levels": E.initial_skill_levels((role,) + tuple(trades), skill)[0],
+                                        "metaskill_levels": E.initial_skill_levels((role,) + tuple(trades), skill)[1],
+                                        "skill_practice": {},
                                         "role_identity": float(role_identity if role_identity is not None else 0.0),
                                         "work_fraction": float(stage["work_fraction"]),
                                         "care_need": float(stage["care"]), "food_need": float(stage["food"]),
@@ -6435,11 +6451,92 @@ class BigvilleWorld:
         return True
 
     def _skilled_enough(self, actor, action_name):
-        """An actor can only attempt a recipe they are SKILLED enough for -- their skill must reach the
-        recipe's min_skill floor. Reading the recipe is not enough; the hand needs the training."""
-        skill = float(self.eng.node(self._actors[actor])["attrs"]["skill"])
+        """An actor can only attempt a recipe they are SKILLED enough for -- their working level at the
+        recipe's skill (their own, lifted by a close skill and the metaskill) must reach its min_skill
+        floor. Reading the recipe is not enough; the hand needs the training."""
+        level = self.recipe_skill_level(actor, self._recipe_specs.get(action_name, {}))
         floor = float(self.eng.node(self._actions[action_name])["attrs"].get("min_skill", 0.0))
-        return skill >= floor
+        return level + 1e-9 >= floor
+
+    # ---------------------------------------------------- skill levels, clusters, metaskills
+    def _levels(self, actor):
+        """The actor's skill levels, with their role's main skill read from the legacy scalar `skill`
+        (the scalar stays authoritative for that skill; practice writes both)."""
+        a = self.eng.node(self._actors[actor])["attrs"]
+        levels = dict(a.get("skill_levels", {}))
+        main = (E.trade_skills(a.get("role", "")) or [None])[0]
+        if main is not None:
+            levels[main] = float(a.get("skill", levels.get(main, 0.0)))
+        return levels
+
+    def skill_levels(self, actor):
+        return {k: round(float(v), 4) for k, v in self._levels(actor).items()}
+
+    def metaskill_levels(self, actor):
+        return {k: round(float(v), 4) for k, v in
+                self.eng.node(self._actors[actor])["attrs"].get("metaskill_levels", {}).items()}
+
+    def skill_level(self, actor, skill):
+        """The actor's own level at a skill (0 if never learned)."""
+        return self.skill_levels(actor).get(skill, 0.0)
+
+    def effective_skill(self, actor, skill):
+        """The actor's working level at a skill: own level, lifted by their closest skill and metaskill."""
+        a = self.eng.node(self._actors[actor])["attrs"]
+        return round(E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill), 4)
+
+    def recipe_skill_level(self, actor, recipe):
+        """Working level for a recipe row (its skill per E.recipe_skill); a recipe with no named skill
+        falls back to the actor's main skill."""
+        skill = E.recipe_skill(recipe) if recipe else None
+        if skill is None:
+            return float(self.eng.node(self._actors[actor])["attrs"].get("skill", 0.0))
+        return self.effective_skill(actor, skill)
+
+    def set_skill_level(self, actor, skill, level):
+        """Set an actor's own level at a skill (setup, or a backend recording what they have learned)."""
+        assert skill in E.SKILLS, f"unknown skill: {skill}"
+        node = self._actors[actor]
+        levels = self._levels(actor)
+        levels[skill] = max(0.0, min(1.0, float(level)))
+        self.eng.set_attr(node, "skill_levels", levels)
+        self._sync_main_skill(actor)
+        return levels[skill]
+
+    def _sync_main_skill(self, actor):
+        """Keep the legacy scalar `skill` equal to the level of the actor's role's main skill."""
+        node = self._actors[actor]
+        a = self.eng.node(node)["attrs"]
+        main = (E.trade_skills(a.get("role", "")) or [None])[0]
+        if main is not None:
+            self.eng.set_attr(node, "skill", float(a.get("skill_levels", {}).get(main, a.get("skill", 0.0))))
+
+    def _consolidate_practice(self):
+        """End of period: turn each actor's logged practice into skill and metaskill levels."""
+        step = float(E.PRACTICE["event_step"])
+        for actor, node in self._actors.items():
+            a = self.eng.node(node)["attrs"]
+            log = a.get("skill_practice", {})
+            if not log:
+                continue
+            levels = self._levels(actor)
+            metas = dict(a.get("metaskill_levels", {}))
+            for skill, minutes in sorted(log.items()):
+                before = float(levels.get(skill, 0.0))
+                gain, meta_gain = E.practice_gain(levels, metas, skill, minutes)
+                levels[skill] = before + gain
+                meta = E.skill_metaskill(skill)
+                if meta:
+                    metas[meta] = float(metas.get(meta, 0.0)) + meta_gain
+                # the worker notices their own progress when they cross a tenth
+                if int(levels[skill] / step) > int(before / step):
+                    self.create_event("learned_skill", subject=actor,
+                                      detail=f"{actor} grew more skilled at {skill}.",
+                                      observer=actor, severity=0.15)
+            self.eng.set_attr(node, "skill_levels", levels)
+            self.eng.set_attr(node, "metaskill_levels", metas)
+            self.eng.set_attr(node, "skill_practice", {})
+            self._sync_main_skill(actor)
 
     def _can_attempt(self, actor, action_name):
         """Admissibility depends on mechanical capability, not assumed knowledge: the actor must be
