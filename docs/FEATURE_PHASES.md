@@ -383,33 +383,66 @@ Survey findings this programme acts on (2026-11-05):
 - `LAWMAKING_PROCEDURES`, `JUSTICE_PROCEDURES`, and `GOVERNANCE_OFFICES` are described in data but
   never consulted by the civic methods.
 
-Order: 013 first (everything else writes into the pack it defines). 014-016 move content.
+Order: 013a then 013b first (everything else writes into the pack it defines). 014-016 move content.
 019 derives what each resident knows. 017-018 generate seeds and instructions from it. Phases 002-012 above continue afterwards, writing into
 the pack.
 
 ## Phase 013 -- Data packs
 
-**Status:** blocked -- needs the user's decision on the pack format (see Open decision below).
+**Decision 2026-11-05: option (b).** Packs are declarative JSON files; the derived tables are
+computed by a pack compiler in code. Today's data is exported to files once, and from then on the
+files are the source. JSON (not TOML) because the standard library reads and writes it and it is
+easy to generate.
 
-**Goal.** The world takes its data from a named DATA PACK instead of a module-level import:
-`BigvilleWorld(data_pack="bigville")`, or `"data_pack"` in a scenario. The current
-`domains/` modules become the `bigville` pack. A pack may extend another pack and override
-individual tables. Every `E.` read in the world, backends, reporting, and asset generator goes
-through the world's pack. `from domains import bigville_entities as E` keeps working as the
-default pack's view. The self-test runs against any pack:
-`python3 -m domains.check --pack <name>`.
+Split into two phases.
 
-**Acceptance.** A small test pack (a handful of items, recipes, one building, one trade, one
-law) boots a world, runs a recipe, and passes the self-test, with no change to world code. The
-existing suite passes unchanged.
+### Phase 013a -- Pack files, compiler, and export
 
-**Open decision.** (a) Packs as Python modules (today's form; derived tables such as scraps and
-fuel slots stay as code in the pack), with a JSON export for other tools. Smallest change.
-(b) Packs as declarative JSON/TOML files, with the derived tables computed by a pack compiler in
-code. Truly "swap the files", easy to diff and to generate, and lets an LLM or a non-programmer
-author a scenario; a bigger move. Recommendation: (b), done as 013 = compiler + Python-to-file
-export of today's data, so the files are produced from the current modules once and then become
-the source.
+**Status:** ready.
+
+**Goal.**
+- Pack layout: `packs/<name>/pack.json` (manifest: `name`, `version`, `description`, `extends`
+  (optional parent pack), and the list of table files) plus one JSON file per table, grouped in
+  `world/`, `frames/`, `population/` subdirectories (e.g. `packs/bigville/world/items.json`,
+  `packs/bigville/frames/laws.json`). One table per file keeps diffs readable.
+- `domains/pack.py`: `load_pack(name)` reads the manifest and files, applies `extends` (a child
+  table replaces, or with `"merge": true` in the manifest entry, updates its parent's table by key),
+  restores types JSON cannot hold (tuples, frozensets, tuple dict keys such as `SKILL_AFFINITY`'s
+  pairs) from a per-table schema note, and runs the COMPILER: the derivations currently done at
+  module import (scrap items from `leaves_scraps`, their SCARCITY entries, fuel slots added to
+  heated recipes, preparation methods and `method_tools`, `seed_return` defaults, the
+  POLICIES/LAWS concatenation and their `origin` defaults, and any other import-time loops --
+  find them all). Compiling must be idempotent.
+- Export: `tools/export_pack.py` writes today's tables to `packs/bigville/` as BASE data -- with
+  derived entries removed (e.g. no `*_scraps` items, no added fuel slots), so the files hold what
+  an author writes and the compiler adds the rest. Sorted keys, 2-space indent, deterministic.
+- `domains/world_affordances.py`, `shared_frames.py`, `population.py` keep every public name, but
+  their TABLES now come from `load_pack("bigville")`; their FUNCTIONS (scarcity, effective_skill,
+  seed_jobs, ...) stay as code. `bigville_entities` still combines them.
+
+**Write scope.** `domains/` (all four modules plus new `pack.py`), new `packs/bigville/`, new
+`tools/export_pack.py`, a new `tests/test_phase013a_packs.py`; your report directory. Do not edit
+world, backend, or other test files.
+
+**Acceptance.**
+- A test (and a check you run) shows every public table in the combined view is EQUAL to its
+  value before this phase (capture the before-values from `git show HEAD:...` into a temporary
+  module, or from a JSON snapshot you write in your report directory first).
+- `python3 tools/export_pack.py` is byte-identical when rerun; compiling the export reproduces
+  the tables exactly.
+- A test shows a child pack that `extends` bigville and overrides one table (e.g. adds one item
+  and one law) loads with that change and everything else inherited.
+- Self-test identical to before (diff its output); full suite passes unchanged.
+
+### Phase 013b -- The world reads a named pack
+
+**Status:** blocked on 013a.
+
+**Goal.** `BigvilleWorld(data_pack=...)` and `"data_pack"` in a scenario select the pack; every
+table the world, backends, reporting, and asset generator read comes from the world's pack
+rather than the module-level default. `python3 -m domains.check --pack <name>` runs the self-test
+on any pack. A small test pack (a few items and recipes, one building, one trade, one law) boots
+a world, runs a recipe, and passes the self-test with no code change.
 
 ## Phase 014 -- World mechanics parameters into the pack
 
