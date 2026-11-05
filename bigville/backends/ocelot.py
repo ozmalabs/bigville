@@ -1,13 +1,23 @@
-"""Optional graph-cognition adapter.
-
-The name is retained as a compatibility label for callers that select an
-Ocelot-style backend.  This package does not import or bundle Ocelot; an
-external provider can replace this adapter through the backend factory API.
-"""
+"""Adapter for a real Ocelot resident, never the local fallback mind."""
 from __future__ import annotations
 
+from importlib import import_module
 from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorResponse, ProposedAction
+
+
+class OcelotUnavailableError(RuntimeError):
+    """Ocelot was selected but its resident provider is unavailable."""
+
+
+def ocelot_resident_class():
+    try:
+        return import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+    except (ImportError, AttributeError) as exc:
+        raise OcelotUnavailableError(
+            "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+            "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+        ) from exc
 
 
 class OcelotBackend:
@@ -18,6 +28,12 @@ class OcelotBackend:
     requires_conversational_interface = False
 
     def __init__(self, world, character: CharacterDefinition):
+        resident_type = ocelot_resident_class()
+        if not isinstance(world.actor_mind(character.name), resident_type):
+            raise OcelotUnavailableError(
+                f"Ocelot backend for {character.name!r} requires a real "
+                "BigvilleOcelotResident; construct the world with its cognition_factory."
+            )
         self.world = world
         self.character = character
 

@@ -51,7 +51,7 @@ def test_room_starts_boxed_and_does_not_synthesize_setup():
 
 def test_actor_ticks_can_move_objects_without_creating_game_meaning():
     experiment = create_board_game(scenario="monopoly_four_players", seed=1,
-                                   backend="ocelot")
+                                   backend="simple")
     result = experiment.run(ticks=8)
     kinds = {event["kind"] for event in result["event_log"]}
     assert "actor_tick" in kinds
@@ -79,6 +79,8 @@ def test_world_object_affordances_are_generic_and_can_move_any_object():
     }
 
     box = next(item for item in world.physical_objects() if item["kind"] == "box")
+    # A direct handover requires adjacent residents even in this small room.
+    world._move_actor_to("Bob", world.actor_position("Alice"))
     assert world.move_physical_object_as_actor("Alice", box["id"], "Bob")
     moved = next(item for item in world.physical_objects() if item["id"] == box["id"])
     assert moved["location"] == "Bob"
@@ -134,19 +136,12 @@ def test_standalone_ocelot_label_does_not_fake_document_understanding():
     assert len(list(mind.s.nodes("ComprehensionResidual"))) == 1
 
 
-def test_ocelot_ticks_are_decisions_not_a_hidden_game_driver():
-    experiment = create_board_game(scenario="monopoly_four_players", seed=1,
-                                   backend="ocelot")
-    assert {backend.kind for backend in experiment.backends.values()} == {"ocelot"}
-    result = experiment.run(ticks=12)
-    assert result["turn"] == 12
-    assert result["finished"] is False
-    assert result["utterances"]
-    assert all(utterance["text"] for utterance in result["utterances"])
-    assert all(utterance["target"] in {"Alice", "Bob", "Cara", "Dan"}
-               for utterance in result["utterances"])
-    for backend in experiment.backends.values():
-        held = backend.dump_held_state().to_dict()
-        assert held["backend"] == "ocelot"
-    assert not list(experiment.physical_world.eng.nodes("Property"))
-    assert not list(experiment.physical_world.eng.nodes("MonopolyGame"))
+def test_ocelot_selection_requires_real_provider(monkeypatch):
+    import pytest
+    from bigville.backends.ocelot import OcelotUnavailableError
+    import bigville.backends.ocelot as adapter
+    def unavailable(_name):
+        raise ModuleNotFoundError("ocelot unavailable")
+    monkeypatch.setattr(adapter, "import_module", unavailable)
+    with pytest.raises(OcelotUnavailableError):
+        create_board_game(scenario="monopoly_four_players", backend="ocelot")

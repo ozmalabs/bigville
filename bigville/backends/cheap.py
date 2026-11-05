@@ -1,7 +1,8 @@
 """A deterministic, inexpensive backend for standalone game NPCs."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
+from typing import Callable
 
 from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
@@ -19,6 +20,65 @@ class NPCGoal:
     status: str = "active"
 
 
+@dataclass(frozen=True)
+class SimplePolicy:
+    """Scenario-specific preferences applied only to published affordances."""
+
+    rest_energy_threshold: float = 35.0
+    action_bonuses: dict[str, float] = field(default_factory=dict)
+    goal_priorities: dict[str, float] = field(default_factory=dict)
+    hook: object | None = None
+    # Moving carried goods to another resident is a social choice.  Keep it
+    # opt-in so physical affordances alone do not cause unsolicited gifts.
+    allow_transfers: bool = False
+    # Town stock fetches are cognition choices that need a task or scenario
+    # preference; publishing the physical option alone does not create desire.
+    allow_stock_fetches: bool = False
+    stock_fetch_kinds: tuple[str, ...] = ()
+    # Moving arbitrary room objects is also a scenario-specific social choice;
+    # the bounded default policy leaves newly published object actions alone.
+    allow_object_moves: bool = False
+    # Movement is an explicit scenario choice for actors that should remain
+    # at their authored station or home while other actors navigate to them.
+    allow_travel: bool = True
+    # Recipe affordances stay physically published; a resident's policy may
+    # still decline work that is irrelevant to its scenario task.
+    allow_work: bool = True
+
+
+# Scenario actors may name an explicitly registered backend profile. These
+# profiles affect choice only; they do not add affordances or change world rules.
+_SIMPLE_PROFILES: dict[str, SimplePolicy | Callable[[], SimplePolicy]] = {
+    "default": SimplePolicy(),
+}
+
+
+def register_simple_profile(name: str, policy: SimplePolicy | Callable[[], SimplePolicy], *, replace=False):
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("simple profile name must be a non-empty string")
+    if not isinstance(policy, SimplePolicy) and not callable(policy):
+        raise TypeError("simple profile must be a SimplePolicy or zero-argument factory")
+    if name in _SIMPLE_PROFILES and not replace:
+        raise ValueError(f"Simple profile already registered: {name}")
+    _SIMPLE_PROFILES[name] = policy
+
+
+def simple_profile_names() -> set[str]:
+    return set(_SIMPLE_PROFILES)
+
+
+def simple_policy_for(profile: str | None = None) -> SimplePolicy:
+    name = profile or "default"
+    try:
+        configured = _SIMPLE_PROFILES[name]
+    except KeyError as exc:
+        raise ValueError(f"Unknown simple policy profile: {name}") from exc
+    policy = configured() if callable(configured) and not isinstance(configured, SimplePolicy) else configured
+    if not isinstance(policy, SimplePolicy):
+        raise TypeError(f"Simple profile factory {name!r} did not return SimplePolicy")
+    return policy
+
+
 class DeterministicBackend:
     """A small NPC policy over the world's already-derived affordances.
 
@@ -34,10 +94,11 @@ class DeterministicBackend:
     understands_raw_speech = False
     requires_conversational_interface = True
 
-    def __init__(self, character: CharacterDefinition):
+    def __init__(self, character: CharacterDefinition, *, policy: SimplePolicy | None = None):
         self.character = character
+        self.policy = policy or SimplePolicy()
         self.last_choice: dict = {}
-        self.rest_energy_threshold = 35.0
+        self.rest_energy_threshold = self.policy.rest_energy_threshold
         self.goals: list[NPCGoal] = []
         self.current_goal: NPCGoal | None = None
         self.last_speech_turn = -100
@@ -46,16 +107,95 @@ class DeterministicBackend:
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self._update_goals(context)
+        hunger = float(context.observations.get("hunger", 0.0))
+        energy = float(context.observations.get("energy", 100.0))
+        known_recipes = {
+            str(memory.content.get("recipe"))
+            for memory in self.character.memories
+            if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
+            and memory.content.get("recipe")
+        }
+        carried_food_kinds = {
+            str(option.get("kind")) for option in context.affordances
+            if option.get("action") == "eat" and option.get("kind")
+        }
         options = [o for o in context.affordances
-                   if o.get("action") not in {"rest", ""}]
+                   if o.get("action") not in {"rest", ""}
+                   and (self.policy.allow_transfers or o.get("action") != "transfer")
+                   and (o.get("stock_source") != "town" or
+                        (self.policy.allow_stock_fetches and
+                         (not self.policy.stock_fetch_kinds or
+                          o.get("kind") in self.policy.stock_fetch_kinds)))
+                   and (self.policy.allow_travel or o.get("action") != "move")
+                   and (self.policy.allow_work or o.get("action") != "work")
+                   and (o.get("action") != "work" or str(o.get("recipe", "")) in known_recipes)
+                   and (self.policy.allow_object_moves or o.get("action") != "move_object")
+                   # A reachable pantry is only useful to this resident when
+                   # they have a food goal. The world publishes the physical
+                   # stock source; hunger supplies the backend's motivation.
+                   and not (o.get("physical_source") == "container"
+                            and o.get("action") in {"fetch", "move"} and hunger <= 0)
+                   and not (o.get("physical_source") == "container"
+                            and ((o.get("action") == "fetch"
+                                  and str(o.get("kind", "")) in carried_food_kinds)
+                                 or (o.get("action") == "move"
+                                     and str(o.get("fetch_kind", "")) in carried_food_kinds)))
+                   and not (o.get("action") == "eat" and hunger <= 0)]
+        # Professional identity guides the cheap resident's task selection.
+        # These remain visible physical affordances for every cognition
+        # backend; simple actors favor the tasks matching their seeded work.
+        role = str(self.character.identity.get("role", "resident"))
+        preferred_tasks = {
+            "farmer": {"tend_animals", "water", "harvest", "sow"},
+            "farm_labourer": {"tend_animals", "water", "harvest", "sow", "build", "maintain"},
+            "mason": {"build", "maintain"}, "carpenter": {"build", "maintain"},
+            "woodworker": {"build", "maintain"}, "labourer": {"build", "maintain"},
+            "doctor": {"care"}, "midwife": {"care"},
+        }
+        task_actions = {"tend_animals", "water", "harvest", "sow", "build", "maintain", "care"}
+        preferred = preferred_tasks.get(role, set())
+        # Recovery must compete with ordinary work and travel. Immediate food
+        # takes precedence when hungry; otherwise an exhausted body rests.
+        if energy < self.rest_energy_threshold and not (hunger > 0 and
+                any(o.get("action") == "eat" for o in options)):
+            rest = next((o for o in context.affordances if o.get("action") == "rest"), None)
+            if rest is not None:
+                options = [rest]
         # PSI/CAN weights the already-admissible options.  The durable goal
         # state remains useful as a modest task salience bonus, but it never
         # bypasses world legality.
         weighted_options = []
+        hungry_without_food = hunger > 0 and not any(
+            option.get("action") == "eat" for option in options
+        )
         for option in options:
             candidate = dict(option)
+            # Seeded occupation is a preference held by this cognition policy,
+            # not a restriction on what bodies can physically do.
+            role_bonus = 24.0 if option.get("action") in preferred else 0.0
+            if option.get("action") in task_actions and option.get("action") not in preferred:
+                role_bonus = -24.0
+            if option.get("action") in {"fetch", "move"} and option.get("trade"):
+                trade = str(option.get("trade"))
+                role_bonus = (24.0 if role in {trade, "baker" if trade == "bakery" else trade}
+                              else -24.0)
+            # Hunger changes the resident's valuation of a physically
+            # published household food source. The world only labels the
+            # observed container/source and its contents; it does not decide
+            # that the resident should eat or fetch. A held edible option wins
+            # through the ordinary eat goal, avoiding duplicate stockpiling.
+            food_response_bonus = 0.0
+            if hungry_without_food and option.get("physical_source") == "container":
+                if option.get("action") == "fetch" or (
+                    option.get("action") == "move" and option.get("fetch_kind")
+                ):
+                    food_response_bonus = 100.0
             candidate["score"] = (float(candidate.get("score", 0.0))
                                    + self._goal_bonus(candidate)
+                                   + food_response_bonus
+                                   + role_bonus
+                                   + float(self.policy.action_bonuses.get(candidate.get("action"), 0.0))
+                                   + self._hook_bonus(context, candidate)
                                    + (3.0 if candidate.get("path_preferred") else 0.0))
             weighted_options.append(candidate)
         choice = self.model.choose(context, weighted_options)
@@ -92,6 +232,12 @@ class DeterministicBackend:
             continuation=continuation,
         )
 
+    def _hook_bonus(self, context, option):
+        hook = self.policy.hook
+        if hook is None:
+            return 0.0
+        return float(hook.score_adjustment(self, context, dict(option)))
+
     def _update_goals(self, context: ActorContext):
         observations = context.observations
         calendar = observations.get("calendar", {}) or {}
@@ -121,6 +267,7 @@ class DeterministicBackend:
         if not candidates:
             candidates.append(("observe", 5.0, "no urgent affordance is available"))
         candidates.sort(key=lambda item: (-item[1], item[0]))
+        candidates.sort(key=lambda item: (-float(self.policy.goal_priorities.get(item[0], 0.0)), -item[1], item[0]))
         kind, priority, reason = candidates[0]
         if self.current_goal is None or self.current_goal.kind != kind:
             self.current_goal = NPCGoal(kind, priority, reason, context.turn)

@@ -6,6 +6,7 @@ the data/logic separation.
 from __future__ import annotations
 
 import os
+import heapq
 import sys
 import pytest
 
@@ -16,6 +17,7 @@ for _p in (os.path.join(_ROOT, "runners", "dsl", "python"), _ROOT):
 
 from worlds.bigville_world import BigvilleWorld as World      # noqa: E402
 from domains import bigville_entities as E                    # noqa: E402
+from bigville.game import BigvilleGame                         # noqa: E402
 
 
 def _town():
@@ -157,7 +159,7 @@ def test_the_parts_are_consumed_and_the_hammer_wears_in_assembly():
     assert w.instrument_condition("hammer") < hammer_before, "the hammer wore, like any tool used in any action"
 
 
-# ------------------------------------------------------ G-observed-demand (headline; ported produce)
+# ------------------------------------------------------ Legacy observed-demand cognition is retired
 def _smith():
     w = World(); w.add_actor("Smith", role="smith", skill=0.8)
     for k in ("iron", "charcoal", "timber", "ore"):
@@ -165,24 +167,18 @@ def _smith():
     return w
 
 
-def test_the_maker_makes_what_he_believes_will_sell_from_observation():
-    big = _smith(); big.observe("Smith", harvest=0.9, building=0.1, storage=0.1)
-    assert big.belief("Smith") > 0.4 and big.decide("Smith") == "forge_scythe", \
-        "observing a big harvest -> belief up -> he decides to make scythes"
-    boom = _smith(); boom.observe("Smith", harvest=0.1, building=0.9, storage=0.1)
-    assert boom.decide("Smith") == "forge_nails", "a building boom -> he makes nails instead (makers diverge on belief)"
+def test_world_does_not_store_actor_demand_beliefs_or_choose_recipes():
+    w = _smith()
+    attrs = w.eng.node(w._actors["Smith"])["attrs"]
+    assert not {"belief_harvest", "belief_building", "belief_storage", "will_make", "want_qty"} & attrs.keys()
+    assert not any(hasattr(w, name) for name in ("observe", "belief", "will_make", "want_qty", "produce_run"))
 
 
-def test_the_run_scales_with_demand_and_an_unsold_glut_cools_the_belief():
-    w = _smith(); w.observe("Smith", harvest=0.9); w.decide("Smith"); q1 = w.want_qty("Smith")
-    w.observe("Smith", harvest=0.9); w.decide("Smith"); q2 = w.want_qty("Smith")
-    assert q2 > q1, "a stronger read of demand -> a bigger production run"
-
-    glut = _smith(); glut.observe("Smith", harvest=0.9); glut.decide("Smith"); glut.produce_run("Smith")
-    glut.sell("Smith", 0); glut.observe("Smith", harvest=0.9)
-    sold = _smith(); sold.observe("Smith", harvest=0.9); sold.decide("Smith"); sold.produce_run("Smith")
-    sold.sell("Smith", 999); sold.observe("Smith", harvest=0.9)
-    assert glut.belief("Smith") < sold.belief("Smith"), "an unsold pile cools his belief vs a clean sell-through"
+def test_observation_and_recipe_choice_are_owned_by_cognition_backend():
+    w = _smith()
+    w._run()
+    attrs = w.eng.node(w._actors["Smith"])["attrs"]
+    assert not {"belief_harvest", "belief_building", "belief_storage", "will_make", "want_qty"} & attrs.keys()
 
 
 # ------------------------------------------------------ G-buildings-from-data (headline; folded in)
@@ -354,10 +350,23 @@ def test_animals_are_data_driven():
 
 
 # ------------------------------------------------------ G-animals-eat-and-starve (headline)
+def _place_animal_feed_for_test(world, animals):
+    """Give the store feed a physical map location and place animals within reach."""
+    cell = world.map_position_node(world._store)
+    if cell is None:
+        cell = next(iter(world._map_cells))
+        world.eng.add_edge_unchecked(world._store, "at_cell", world._map_cells[cell])
+    for animal in animals:
+        world._attach_at_cell(world._animals[animal], cell)
+
+
 def test_animals_eat_their_feed_and_starve_without_it():
     fed = World(); fed.add_animal("Dobbin", "horse"); fed.set_stock("hay", 20)
+    _place_animal_feed_for_test(fed, ["Dobbin"])
+    fed_game = BigvilleGame(fed, autonomous=True)
     for _ in range(5):
         fed.pass_period()
+        fed_game.animal_turn()
     assert fed.animal_alive("Dobbin") and fed.animal_hunger("Dobbin") == 0.0, "a fed horse stays alive and satisfied"
     assert fed.qty("hay") == 5.0, "it eats its ration each period (3/period * 5 = 15 of 20)"
 
@@ -373,11 +382,15 @@ def test_farmers_can_milk_cows_and_shear_sheep_with_data_defined_cooldowns():
     w.add_animal("Daisy", "cow")
     w.add_animal("Woolly", "sheep")
     w.set_stock("grass", 100)
+    _place_animal_feed_for_test(w, ["Daisy", "Woolly"])
+    game = BigvilleGame(w, autonomous=True)
     assert w.milk("Farmer", "Daisy") == 3.0 and w.qty("milk") == 3.0
     assert w.milk("Farmer", "Daisy") == 0.0, "a cow cannot be milked twice in one period"
     assert w.shear("Farmer", "Woolly") == 4.0 and w.qty("wool") == 4.0
     assert w.shear("Farmer", "Woolly") == 0.0, "shearing has a regrowth cooldown"
-    w.pass_period(12)
+    for _ in range(12):
+        w.pass_period()
+        game.animal_turn()
     assert w.milk("Farmer", "Daisy") == 3.0 and w.shear("Farmer", "Woolly") == 4.0
 
 
@@ -411,49 +424,56 @@ def test_goods_from_outside_bigville_are_imported_and_used_locally():
 
 
 # ------------------------------------------------------ G-recipes-exist-but-may-not-be-known (headline)
-def test_a_recipe_exists_but_may_not_be_known_and_is_taught_or_written():
+def test_recipe_explanations_and_reading_do_not_write_learner_knowledge():
     w = World()
     assert "make_ink" in w.recipe_names(), "make_ink is a real recipe -- it exists"
-    # a common recipe is known by its trade
+    # Conventional craft priors are created by the game/backend setup.
     w.add_tradesperson("Smith", "smith"); w.set_stock("iron", 10); w.set_stock("charcoal", 10)
-    assert w.knows("Smith", "forge_knife"), "a smith commonly knows forge_knife"
-    # but make_ink is not commonly known in bigville -- an inkmaker cannot make it yet
+    game = BigvilleGame(w, autonomous=True)
+    smith_recipes = {m.content.get("recipe") for m in game.characters["Smith"].memories
+                     if m.kind == "recipe_knowledge"}
+    assert "forge_knife" in smith_recipes
+    assert not w.knows("Smith", "forge_knife"), "private priors are not world knowledge edges"
+    # make_ink is not seeded as a common recipe for an inkmaker.
     w.add_tradesperson("Inky", "inkmaker"); w.set_stock("soot", 10); w.set_stock("oil", 10)
-    assert not w.knows("Inky", "make_ink"), "make_ink is not common knowledge here"
-    assert w.do("Inky", "make_ink") is False and w.qty("ink") == 0.0, "he cannot make what he does not know"
-    # TAUGHT: a master who knows it teaches him
+    assert not w.knows("Inky", "make_ink"), "the world does not infer private recipe knowledge"
+    # Knowledge is not a world-side action gate: physical inputs and tools are.
+    assert w.can_make("Inky", "make_ink")
+    assert any(option.get("action") == "work" and option.get("recipe") == "make_ink"
+               for option in w.actor_affordances("Inky"))
+    assert w.do("Inky", "make_ink") is True and w.qty("ink") > 0.0
+    # Explanations and written records remain observable but do not decide learning.
     w.add_tradesperson("Master", "inkmaker")
-    w.eng.add_edge_unchecked(w._actors["Master"], "knows", w._actions["make_ink"])   # a visiting master knows it
-    w.teach("Master", "Inky", "make_ink")
-    assert w.knows("Inky", "make_ink") and w.do("Inky", "make_ink") and w.qty("ink") == 3.0, "taught the recipe, he can make ink"
-    # WRITTEN DOWN: the master writes it; a scribe reads it and learns
+    w.eng.add_edge_unchecked(w._actors["Master"], "knows", w._actions["make_ink"])
+    assert w.teach("Master", "Inky", "make_ink") is False
+    assert not w.knows("Inky", "make_ink")
     rec = w.write_recipe("Master", "make_ink"); w.add_tradesperson("Scribe", "inkmaker")
-    w.read_recipe("Scribe", rec)
-    assert w.knows("Scribe", "make_ink"), "a recipe written down can be read to learn it"
+    assert w.read_recipe("Scribe", rec) == "make_ink"
+    assert not w.knows("Scribe", "make_ink"), "reading returns evidence; cognition decides what is learned"
 
 
 # ------------------------------------------------------ G-resident-facts-are-dynamic (headline)
-def test_shared_references_are_templates_and_resident_facts_are_seeded_dynamically():
+def test_shared_references_are_physical_templates_not_role_seeded_beliefs():
     w = World()
     w.add_actor("Hand", role="hand")
     assert "grain_in_granary" in w.reference_names(), "the reference template is domain data"
     assert list(w.eng.neighbours(w._town, "has_reference")) == [], "the town does not own resident facts"
     assert not w.knows_reference("Hand", "grain_in_granary")
-    assert w.knows_reference("Hand", "market_is_public_exchange")
+    assert not w.knows_reference("Hand", "market_is_public_exchange")
 
     w.add_actor("Farmer", role="farmer")
-    assert w.knows_reference("Farmer", "grain_in_granary")
+    assert not w.knows_reference("Farmer", "grain_in_granary")
     assert not w.knows_reference("Hand", "grain_in_granary")
     assert w.reference_data("grain_in_granary") == {
         "subject": "grain", "predicate": "stored_in", "object": "granary"
     }
 
-    # The office reference is public only once that office-holder exists; seeding updates existing residents.
+    # Office presence is a physical fact and does not install a belief in residents.
     assert not w.knows_reference("Hand", "constable_holds_constable_post")
     w.add_actor("Constable", role="constable")
-    assert w.knows_reference("Hand", "constable_holds_constable_post")
-    assert w.teach_reference("Farmer", "Hand", "grain_in_granary")
-    assert w.knows_reference("Hand", "grain_in_granary")
+    assert not w.knows_reference("Hand", "constable_holds_constable_post")
+    assert w.teach_reference("Farmer", "Hand", "grain_in_granary") is False
+    assert not w.knows_reference("Hand", "grain_in_granary"), "an explanation does not write the listener's knowledge"
 
 
 def test_village_systems_and_layered_written_laws_are_data_driven():
@@ -479,12 +499,7 @@ def test_village_systems_and_layered_written_laws_are_data_driven():
     law = w.write_document("Clerk", "public_order_law", kind="law")
     assert law is not None and not w.knows_law("Worker", "public_order_law")
     assert w.read_document("Worker", law) == "public_order_law"
-    assert w.knows_law("Worker", "public_order_law")
-    assert {"principle", "institutional", "operational"} <= {
-        w.eng.node(n)["attrs"].get("abstraction")
-        for n in w.eng.neighbours(w._actors["Worker"], "knows_reference")
-        if w.eng.node(n)["attrs"].get("source_name") == "public_order_law"
-    }
+    assert not w.knows_law("Worker", "public_order_law"), "reading exposes inscription, not meaning"
 
 
 def test_giantville_core_laws_are_inherited_and_locally_enforced():
@@ -514,16 +529,11 @@ def test_council_charter_defines_lawmaking_and_justice():
     assert {"complaint", "investigation", "hearing", "judgment", "remedy", "appeal"} <= set(w.justice_procedures())
     document = w.write_document("Clerk", "bigville_council_charter", kind="charter")
     assert document is not None
-    assert w.knows_charter("Councillor", "bigville_council_charter"), "council members receive the charter concepts"
+    assert not w.knows_charter("Councillor", "bigville_council_charter"), "office does not infer held concepts"
     w.add_actor("Resident", role="labourer", station="educated")
     assert not w.knows_charter("Resident", "bigville_council_charter")
     assert w.read_document("Resident", document) == "bigville_council_charter"
-    assert w.knows_charter("Resident", "bigville_council_charter")
-    assert {"principle", "institutional", "operational"} <= {
-        w.eng.node(n)["attrs"].get("abstraction")
-        for n in w.eng.neighbours(w._actors["Councillor"], "knows_reference")
-        if w.eng.node(n)["attrs"].get("source_name") == "bigville_council_charter"
-    }
+    assert not w.knows_charter("Resident", "bigville_council_charter")
 
 
 def test_records_office_registers_land_titles_and_disputes():
@@ -539,22 +549,55 @@ def test_records_office_registers_land_titles_and_disputes():
     title = w.register_land("Clerk", "north_field", "farm", holder_kind="household", witnesses=("Farmer",))
     assert w.land_owner("north_field") == "farm"
     assert w.land_tenure("north_field") == "freehold"
-    assert w.knows_land_title("Farmer", "north_field")
-    assert not w.knows_land_title("Buyer", "north_field")
+    assert not w.eng.neighbours(w._actors["Farmer"], "knows_land_title"), "creating a record does not install cognition in the world graph"
+    assert not w.eng.neighbours(w._actors["Buyer"], "knows_land_title")
 
     deed = w.write_deed("Clerk", "sale", "north_field", from_holder="farm", to_holder="Buyer",
                         witnesses=("Farmer",), consideration=12.0)
     assert w.eng.node(deed)["attrs"]["registered"] == 0.0
     assert w.land_owner("north_field") == "farm", "writing a deed does not change title"
+    # Competing claims do not prevent an identical physical deed record.
+    other_deed = w.write_deed("Buyer", "sale", "north_field", from_holder="Buyer", to_holder="Farmer",
+                              witnesses=("Buyer",), consideration=12.0)
     w.register_deed("Clerk", deed)
-    assert w.land_owner("north_field") == "Buyer"
-    assert w.knows_land_title("Farmer", "north_field"), "a deed witness learns the registered transfer"
-    assert w.knows_land_title("Buyer", "north_field")
+    w.register_deed("Buyer", other_deed)
+    assert w.land_owner("north_field") == "farm", "recording a deed is not an authoritative title transfer"
+    assert not w.eng.neighbours(w._actors["Farmer"], "knows_land_title")
+    assert not w.eng.neighbours(w._actors["Buyer"], "knows_land_title")
+    w.inspect_land_record("Farmer", "north_field")
+    assert not w.eng.neighbours(w._actors["Farmer"], "knows_land_title"), "observation alone does not assign belief"
+    w.inspect_land_record("Buyer", "north_field")
     assert w.read_deed("Farmer", deed) == "deed:1"
 
     dispute = w.file_land_dispute("Farmer", "north_field", kind="boundary", against="Buyer", grounds="old boundary marker")
-    w.resolve_land_dispute("Clerk", dispute, outcome="survey_required", remedy="survey")
-    assert w.eng.node(dispute)["attrs"]["status"] == "resolved"
+    before_title = w.land_record("north_field")
+    first_statement = w.resolve_land_dispute("Buyer", dispute, outcome="the boundary is mine", winner="Buyer", remedy="move the marker")
+    second_statement = w.resolve_land_dispute("Farmer", dispute, outcome="the field is mine", winner="Farmer", remedy="leave the marker")
+    assert w.eng.node(first_statement)["attrs"]["speaker"] == "Buyer"
+    assert w.eng.node(first_statement)["attrs"]["reported_outcome"] == "the boundary is mine"
+    assert w.eng.node(second_statement)["attrs"]["claimed_winner"] == "Farmer"
+    assert w.eng.node(dispute)["attrs"]["status"] == "open"
+    assert w.eng.node(dispute)["attrs"]["outcome"] == ""
+    assert w.land_record("north_field") == before_title, "recorded interpretations do not adjudicate title"
+
+
+def test_case_verdicts_are_attributed_statements_not_world_resolutions():
+    w = World()
+    w.add_actor("Complainant", role="farmer", station="educated")
+    w.add_actor("Respondent", role="farmer", station="educated")
+    w.add_actor("Witness", role="farmer", station="educated")
+    case = w.file_case("Complainant", "Respondent", charge="trespass", law="field access", evidence="boundary marker")
+
+    before = dict(w.eng.node(case)["attrs"])
+    first = w.resolve_case("Witness", case, verdict="guilty", remedy="ban access")
+    second = w.resolve_case("Respondent", case, verdict="not guilty", remedy="none")
+
+    assert w.eng.node(first)["attrs"]["speaker"] == "Witness"
+    assert w.eng.node(first)["attrs"]["reported_verdict"] == "guilty"
+    assert w.eng.node(second)["attrs"]["speaker"] == "Respondent"
+    assert w.eng.node(second)["attrs"]["reported_verdict"] == "not guilty"
+    assert w.eng.node(case)["attrs"] == before, "case records remain evidence; a statement is not a binding outcome"
+    assert w.eng.neighbours(case, "has_statement") == [first, second]
 
 
 # ------------------------------------------------------ G-crops-and-food (headline)
@@ -602,8 +645,9 @@ def test_a_book_is_made_records_a_recipe_and_teaches_the_reader():
     w.eng.add_edge_unchecked(w._actors["Master"], "knows", w._actions["make_ink"])
     w.write_in_book("Master", book, "make_ink")
     assert w.book_recipe(book) == "make_ink", "the master writes a recipe he knows into the book"
-    w.add_tradesperson("Student", "inkmaker"); w.read_book("Student", book)
-    assert w.knows("Student", "make_ink"), "a reader learns the recipe from the book"
+    w.add_tradesperson("Student", "inkmaker")
+    assert w.read_book("Student", book) == "make_ink"
+    assert not w.knows("Student", "make_ink"), "reading is an observation, not a world-side learning outcome"
 
 
 # ------------------------------------------------------ G-crop-lifecycle (headline)
@@ -648,7 +692,7 @@ def test_residents_get_hungry_eat_food_and_starve_without_it():
     fed.add_actor("Baker", role="baker", home_cell=(1, 1))
     assert fed.stock_person("Baker", "bread", 1, price=1)
     assert fed.purchase_utterance("Tom", "Baker", "bread", 1)
-    assert fed.give("Tom", "Baker", "bread", 1, payment_kind="coin", payment_amount=1)
+    assert fed.give("Baker", "Tom", "bread", 1, payment_kind="coin", payment_amount=1)
     assert fed.inventory("Tom")["bread"] == 1.0
     assert fed.hunger("Tom") == 2.0, "buying does not feed him"
     assert fed.eat("Tom", "bread") and fed.hunger("Tom") == 0.0, "an explicit eat action feeds him"
@@ -659,7 +703,7 @@ def test_residents_get_hungry_eat_food_and_starve_without_it():
     assert not starved.is_alive("Nell"), "with no food the resident starves past the limit"
 
 
-def test_purchase_is_preceded_by_a_free_market_utterance():
+def test_legacy_buy_does_not_force_speech_or_transfer_goods():
     w = World()
     w.add_actor("Tom", role="hand", home_cell=(1, 1))
     w.add_actor("Baker", role="baker", home_cell=(1, 1))
@@ -669,21 +713,17 @@ def test_purchase_is_preceded_by_a_free_market_utterance():
     w.tick()
     w.actor_tick("Tom")  # the automatic rest/move was Tom's prior turn
 
-    assert w.buy("Tom", "bakery", 1)
+    assert not w.buy("Tom", "bakery", 1)
     purchase_utterances = [
         node for node in w._utterances.values()
         if w.eng.node(node)["attrs"].get("market_trade") == "bakery"
     ]
-    assert len(purchase_utterances) == 1
-    speech = w.eng.node(purchase_utterances[0])["attrs"]
-    assert speech["content"] == "Could I buy some bread from Baker?"
-    assert w.actor_turn_state("Tom")["major_action_used"]
-    transaction = next(node for node in w._transactions.values()
-                       if w.eng.node(node)["attrs"].get("kind") == "purchase")
-    assert w.eng.has_edge(transaction, "preceded_by", purchase_utterances[0])
+    assert purchase_utterances == []
+    assert w.inventory("Baker")["bread"] == 1.0
+    assert w.inventory("Tom").get("bread", 0.0) == 0.0
 
 
-def test_purchase_is_a_speech_then_give_not_a_buy_action():
+def test_give_moves_goods_without_purchase_speech_or_automatic_payment():
     w = World()
     w.add_actor("Tom", role="hand", home_cell=(1, 1))
     w.add_actor("Baker", role="baker", home_cell=(1, 1))
@@ -696,11 +736,11 @@ def test_purchase_is_a_speech_then_give_not_a_buy_action():
     assert "give" in E.MAJOR_ACTIONS
     w.tick()  # open a live turn; Tom is not hungry, so the mind rests
     w.actor_tick("Tom")
-    assert w.purchase_utterance("Tom", "Baker", "bread", 1)
-    assert w.major_action("Tom", "give", recipient="Baker", kind="bread",
+    before_coin = w.coin("Tom")
+    assert w.major_action("Baker", "give", recipient="Tom", kind="bread",
                           amount=1, payment_kind="coin", payment_amount=1)
-    assert w.inventory("Tom")["bread"] == 1.0 and w.coin("Tom") == 1.0
-    assert w.actor_turn_state("Tom")["major_action_kind"] == "give"
+    assert w.inventory("Tom")["bread"] == 1.0 and w.coin("Tom") == before_coin
+    assert w.actor_turn_state("Baker")["major_action_kind"] == "give"
     with pytest.raises(ValueError):
         w.major_action("Tom", "buy", trade="bakery", amount=1)
 
@@ -717,7 +757,7 @@ def test_purchase_is_between_people_and_needs_no_shop():
 
     utterance = w.purchase_utterance("Tom", "Baker", "bread", 1)
     assert w.eng.has_edge(utterance, "to", w._actors["Baker"])
-    assert w.major_action("Tom", "give", recipient="Baker", kind="bread",
+    assert w.major_action("Baker", "give", recipient="Tom", kind="bread",
                           amount=1, payment_kind="coin", payment_amount=1)
     assert w.inventory("Tom")["bread"] == 1.0
 
@@ -740,6 +780,56 @@ def test_market_expectation_names_the_place_and_good_not_the_attendant():
     assert w.eng.has_edge(utterance, "to", w._actors["Stranger"])
 
 
+def test_normal_actor_affordances_do_not_turn_seeded_sale_terms_into_purchase_intent():
+    w = World()
+    w.add_actor("Ada", role="hand", home_cell=(0, 0))
+    w.add_actor("Baker", role="baker", home_cell=(0, 0))
+    w.set_coin("Ada", 50)
+    w.stock_person("Baker", "bread", 1, price=1, willing=True)
+
+    cheap = w.actor_affordances("Ada")
+    w.eng.set_attr(w._actors["Baker"], "sell_price", 50.0)
+    w.eng.set_attr(w._actors["Baker"], "sell_willing", 0.0)
+    dear_and_unwilling = w.actor_affordances("Ada")
+
+    # Legacy market helpers still consume these fields explicitly, but the
+    # ordinary cognition path receives no world-selected purchase action,
+    # willingness gate, or price-derived score.
+    assert not any(option["action"] == "give" for option in cheap)
+    assert not any(option["action"] == "give" for option in dear_and_unwilling)
+    assert cheap == dear_and_unwilling
+
+
+def test_actor_options_offer_only_physical_carried_goods_transfer():
+    w = World()
+    w.add_actor("Ada", role="hand", home_cell=(0, 0))
+    w.add_actor("Ben", role="hand", home_cell=(0, 0))
+    w.set_stock("apple", 1)
+    w.stock_person("Ada", "apple", 1, price=999, willing=False)
+
+    options = w.actor_affordances("Ada")
+    transfer = next(option for option in options if option["action"] == "transfer")
+    assert transfer["kind"] == "apple"
+    assert transfer["recipient"] == "Ben"
+    assert "trade" not in transfer or transfer["trade"] == ""
+    assert transfer["score"] == 0.0
+
+
+def test_household_food_fetch_is_published_without_a_hunger_goal():
+    w = World()
+    w.add_actor("Ada", role="hand", home_cell=(0, 0))
+    w.set_stock("bread", 2)
+    w.add_container("larder", kind="larder", holds=["bread"], cell=(0, 0))
+    w.fill("Ada", "larder", "bread", 2)
+    assert w.fetch("Ada", "bread", 1, source="larder")
+    w.eng.set_attr(w._actors["Ada"], "hunger", 0.0)
+
+    options = w.actor_affordances("Ada")
+
+    assert any(option["action"] == "fetch" and option["kind"] == "bread"
+               for option in options)
+
+
 def test_put_is_a_major_action_from_a_resident_inventory_into_a_container():
     w = World()
     w.add_actor("Tom", role="hand")
@@ -747,7 +837,7 @@ def test_put_is_a_major_action_from_a_resident_inventory_into_a_container():
     w.add_shop("bakery", (1, 1), input_kind="grain", output_kind="bread", price=1)
     w.set_stock("bread", 2)
     assert w.stock_person("Baker", "bread", 1, price=1)
-    assert w.buy("Tom", "bakery", 1)  # setup compatibility wrapper, on turn zero
+    assert w.give("Baker", "Tom", "bread", 1)  # explicit physical setup transfer
     w.add_container("granary_store", kind="granary", holds=())
     w.tick()  # open a live turn
     w.actor_tick("Tom")
@@ -815,7 +905,7 @@ def test_soup_consumption_requires_held_serving_equipment():
     w.add_shop("kitchen", (1, 1), input_kind="grain", output_kind="gruel", price=1)
     assert w.stock_person("Cook", "gruel", 1, price=1)
     assert w.purchase_utterance("Tom", "Cook", "gruel", 1)
-    assert w.give("Tom", "Cook", "gruel", 1, payment_kind="coin", payment_amount=1)
+    assert w.give("Cook", "Tom", "gruel", 1, payment_kind="coin", payment_amount=1)
     assert not w.eat("Tom", "gruel"), "a bowl meal cannot be consumed bare-handed"
     w.give_tableware("Tom", "wooden_bowl")
     w.give_tableware("Tom", "wooden_ladle")
@@ -975,13 +1065,19 @@ def test_there_are_plain_clothes_and_fine_clothes():
 # ------------------------------------------------------ G-fine-tailoring-is-a-specialist-skill (headline)
 def test_fine_tailoring_is_a_learned_specialist_skill():
     w = World(); w.add_tradesperson("Tessa", "tailor"); w.set_stock("cloth", 10); w.set_stock("silk", 6)
-    assert w.knows("Tessa", "sew_smock"), "every tailor commonly knows plain sewing"
-    assert not w.knows("Tessa", "sew_gown"), "fine tailoring is NOT common knowledge -- it must be learned"
-    assert w.do("Tessa", "sew_gown") is False and w.qty("silk") == 6.0, "an untaught tailor cannot sew a gown"
+    game = BigvilleGame(w, autonomous=True)
+    tailor_recipes = {m.content.get("recipe") for m in game.characters["Tessa"].memories
+                      if m.kind == "recipe_knowledge"}
+    assert "sew_smock" in tailor_recipes, "the configured backend catalog includes plain sewing"
+    assert "sew_gown" not in tailor_recipes, "fine tailoring is not a default private prior"
+    w.eng.set_attr(w._actors["Tessa"], "skill", 0.5)
+    assert w.do("Tessa", "sew_gown") is False and w.qty("silk") == 6.0, "insufficient mechanical skill blocks the work"
     w.add_tradesperson("Margery", "tailor")
     w.eng.add_edge_unchecked(w._actors["Margery"], "knows", w._actions["sew_gown"])   # a master already knows it
-    w.teach("Margery", "Tessa", "sew_gown")
-    assert w.knows("Tessa", "sew_gown"), "taught the fine craft, Tessa now knows it"
+    assert w.teach("Margery", "Tessa", "sew_gown") is False
+    assert not w.knows("Tessa", "sew_gown"), "the world records no assumed learning"
+    assert w.do("Tessa", "sew_gown") is False and w.qty("silk") == 6.0, "an explanation does not alter physical skill"
+    w.eng.set_attr(w._actors["Tessa"], "skill", 0.7)
     g = w.forge("Tessa", "sew_gown")
     assert w.garment_station(g) == "fine", "and can sew a fine gown"
 
@@ -1056,7 +1152,7 @@ def test_you_cannot_read_your_way_to_a_blacksmiths_hand():
 
 
 # ------------------------------------------------------ G-apprenticeship-builds-skill (headline)
-def test_apprenticeship_builds_the_skill_to_cross_the_floor():
+def test_apprenticeship_is_observed_but_does_not_infer_skill_gain():
     w = World()
     w.add_actor("Margery", role="tailor", skill=0.85)   # a master
     w.add_actor("Nan", role="tailor", skill=0.3)        # an apprentice who has read the recipe
@@ -1064,14 +1160,10 @@ def test_apprenticeship_builds_the_skill_to_cross_the_floor():
     w.eng.add_edge_unchecked(w._actors["Nan"], "knows", w._actions["sew_gown"])
     assert not w.can_make("Nan", "sew_gown"), "at first she is far below the floor"
     w.apprentice("Nan", "Margery")
-    for _ in range(8):                                   # skill rises toward the master's, one step a period
+    for _ in range(8):
         w.pass_period()
-    assert w.skill("Nan") >= w.recipe_min_skill("sew_gown"), "apprenticed under a master, her skill crosses the floor"
-    assert w.can_make("Nan", "sew_gown"), "and she can finally sew a gown"
-    g = w.forge("Nan", "sew_gown")
-    assert w.tool_kind(g) == "gown" and w.tool_quality(g) == w.skill("Nan"), "the gown's quality is her EARNED skill"
-    # a learner never outstrips their master
-    assert w.skill("Nan") <= w.skill("Margery"), "you learn up to your master, not beyond"
+    assert w.skill("Nan") == 0.3
+    assert not w.can_make("Nan", "sew_gown")
 
 
 # ------------------------------------------------------ G-townsfolk-default-uppity (headline)
@@ -1090,38 +1182,53 @@ def test_townsfolk_default_uppity_but_the_tiers_still_exist():
 
 
 # ------------------------------------------------------ G-written-knowledge-needs-literacy (headline)
-def test_written_knowledge_needs_literacy_the_illiterate_must_be_taught():
+def test_written_recipe_observation_does_not_write_learner_knowledge():
     w = World()
     w.add_tradesperson("Scribe", "scribe")                          # literate by craft
     w.eng.add_edge_unchecked(w._actors["Scribe"], "knows", w._actions["forge_knife"])
     rec = w.write_recipe("Scribe", "forge_knife")
     assert rec is not None, "the literate scribe can write the recipe down"
     w.add_actor("Hob", role="hand", station="labouring")            # a rare illiterate labourer
-    assert w.read_recipe("Hob", rec) is None and not w.knows("Hob", "forge_knife"), \
-        "the labourer cannot read it -- the written word is closed to him"
-    # a labourer can only be TAUGHT (orally), never read his way in
-    w.teach("Scribe", "Hob", "forge_knife")
-    assert w.knows("Hob", "forge_knife"), "but he can be taught the recipe by word of mouth"
+    assert w.read_recipe("Hob", rec) == "forge_knife" and not w.knows("Hob", "forge_knife"), \
+        "the world exposes the physical inscription without deciding comprehension"
+    # Explanations do not mutate the learner's world-side knowledge.
+    assert w.teach("Scribe", "Hob", "forge_knife") is False
+    assert not w.knows("Hob", "forge_knife")
     w.add_tradesperson("Merek", "cooper", station="middle")         # functional literacy
-    assert w.read_recipe("Merek", rec) == "forge_knife" and w.knows("Merek", "forge_knife"), \
-        "the functionally-literate cooper reads it and learns it"
+    assert w.read_recipe("Merek", rec) == "forge_knife" and not w.knows("Merek", "forge_knife"), \
+        "the functionally-literate cooper can inspect the written record without an inferred learning outcome"
 
 
 # ------------------------------------------------------ G-school-raises-literacy (headline)
-def test_school_raises_a_labourer_through_the_tiers_if_they_can_learn():
+def test_school_attendance_and_lessons_do_not_infer_literacy():
     w = World()
-    w.add_actor("Schoolmaster", role="teacher", station="educated")
-    w.add_actor("Hob", role="hand", station="labouring")            # a labourer who starts unable to read
+    w.add_actor("Schoolmaster", role="teacher", station="educated", home_cell=(1, 1))
+    w.add_actor("Hob", role="hand", station="labouring", home_cell=(1, 1))
+    # The minimal test world has no map cells; place both residents on one
+    # shared cell to exercise the physical lesson API.
+    w._actor_positions.update({"Schoolmaster": (1, 1), "Hob": (1, 1)})
     assert not w.can_read("Hob"), "before school, the labourer cannot read"
     w.enrol("Hob", "Schoolmaster")
-    w.pass_period(3)
-    assert w.can_read("Hob") and w.literacy_tier("Hob") == "functional", "a few terms of school -> functional literacy"
-    w.pass_period(6)
-    assert w.literacy_tier("Hob") == "educated" and w.can_read_law("Hob"), "kept at school -> educated (reads the laws)"
-    # one who CANNOT learn does not progress, however long they attend
+    before = w.literacy("Hob")
+    # The legacy institutional lesson records delivery but leaves comprehension
+    # and literacy to the learner backend.
+    assert w.school_lesson("Schoolmaster", "Hob")
+    assert w.literacy("Hob") == before
+    w.add_actor("Visitor", role="hand", home_cell=(1, 1))
+    w._actor_positions["Visitor"] = (1, 1)
+    assert w.school_lesson("Visitor", "Hob"), "co-presence, not title, gates physical delivery"
+    w.pass_period(9)
+    assert w.literacy("Hob") == before and not w.can_read("Hob")
+    # An unable-to-learn flag likewise does not cause an inferred outcome.
     w.add_actor("Dull", role="hand", learn=0.0); w.enrol("Dull", "Schoolmaster")
     before = w.literacy("Dull"); w.pass_period(5)
     assert w.literacy("Dull") == before, "if you cannot learn, school does not raise you"
+
+
+def test_waste_processing_is_not_role_gated():
+    w = World()
+    w.add_actor("Visitor", role="visitor")
+    assert w.process_waste("Visitor", amount=2.0) == "compost"
 
 
 # ------------------------------------------------------ G-no-python-decision (source audit)
@@ -1190,8 +1297,8 @@ def test_map_entities_have_home_work_land_and_building_anchors():
 def test_terrain_movement_is_seeded_and_exposed_to_affordances():
     w = World.from_town100()
     assert "bigville_terrain_movement" in w.eng.seed_manifests
-    assert w.knows_reference("John", "paths_are_preferred_travel_surface")
-    assert w.knows_reference("John", "terrain_changes_travel_cost")
+    assert not w.knows_reference("John", "paths_are_preferred_travel_surface")
+    assert not w.knows_reference("John", "terrain_changes_travel_cost")
     assert w.terrain_movement_rules()["path"]["speed"] > w.terrain_movement_rules()["grass"]["speed"]
     assert w.terrain_movement_rules()["path"]["stamina_multiplier"] < w.terrain_movement_rules()["grass"]["stamina_multiplier"]
     cell = next(c for c in w._map_cells if w.terrain_state(c)["terrain"] == "path")
@@ -1207,6 +1314,47 @@ def test_weighted_travel_prefers_the_seeded_fast_surface_when_available():
     assert w.travel_time(start, destination) <= w.distance(start, destination)
     move_options = [option for option in w.actor_affordances("John") if option["action"] == "move"]
     assert move_options and all("terrain_speed" in option for option in move_options)
+
+
+def test_weighted_route_edge_costs_match_terrain_state_through_partial_wear():
+    w = World.from_town100()
+    cells = sorted(w._map_cells)
+    destination = cells[len(cells) // 2]
+
+    def assert_route_matches_reference():
+        # The public read-off is the reference edge weight; compare both the
+        # optimized scalar read and the complete cached route field against it.
+        assert all(w._terrain_move_time(cell) == w.terrain_state(cell)["move_time"]
+                   for cell in cells)
+        reference = {destination: 0.0}
+        frontier = [(0.0, destination)]
+        while frontier:
+            cost, cell = heapq.heappop(frontier)
+            if cost > reference.get(cell, float("inf")):
+                continue
+            for neighbour in ((cell[0] + 1, cell[1]), (cell[0] - 1, cell[1]),
+                              (cell[0], cell[1] + 1), (cell[0], cell[1] - 1)):
+                if neighbour not in w._map_cells:
+                    continue
+                candidate = cost + float(w.terrain_state(neighbour)["move_time"])
+                if candidate < reference.get(neighbour, float("inf")):
+                    reference[neighbour] = candidate
+                    heapq.heappush(frontier, (candidate, neighbour))
+        assert all(w.travel_time(cell, destination) == reference.get(cell)
+                   for cell in cells)
+
+    assert_route_matches_reference()
+    worn_cells = 0
+    for cell, node in w._map_cells.items():
+        base = str(w.eng.node(node)["attrs"].get("base_terrain", "grass"))
+        if base in E.TERRAIN_WEAR:
+            w._advance_wear(node, .37)
+            worn_cells += 1
+    assert worn_cells
+    # Movement costs changed, so compare a freshly computed field for the
+    # changed terrain state rather than reusing previously cached routes.
+    w._travel_time_fields.clear()
+    assert_route_matches_reference()
 
 
 def test_winding_paths_are_orthogonally_continuous_through_corners():
@@ -1276,6 +1424,26 @@ def test_seeded_town_time_does_not_communal_feed_residents():
     assert all(w.hunger(name) == 1.0 for name in w._actors)
 
 
+def test_completed_canonical_job_output_stays_in_physical_town_stock():
+    w = World.from_town100(seed=305000)
+    baker = next(name for name, node in w._actors.items()
+                 if w.eng.node(node)["attrs"].get("role") == "baker")
+    # The seeded village has water but no flour in the shared store; supply a
+    # physical input pile so this checks a completed job rather than a pending one.
+    w.set_stock("flour", 2)
+    inventory_before = w.inventory(baker)
+    bread_before, flour_before, water_before = w.qty("bread"), w.qty("flour"), w.qty("water")
+
+    assert w.do(baker, "bake_bread")
+
+    assert w.qty("bread") == bread_before + 3.0
+    assert w.qty("flour") == flour_before - 2.0
+    assert w.qty("water") == water_before - 1.0
+    assert w.inventory(baker) == inventory_before
+    assert (w.qty("bread") + w.inventory(baker).get("bread", 0.0)
+            == bread_before + inventory_before.get("bread", 0.0) + 3.0)
+
+
 def test_canonical_newspaper_is_observation_based_and_readable():
     w = World.from_town100(seed=305000)
     reporter = next(name for name, node in w._actors.items()
@@ -1287,24 +1455,60 @@ def test_canonical_newspaper_is_observation_based_and_readable():
     copy = w.give_newspaper(reader, edition)
     articles = w.read_newspaper(reader, copy)
     assert articles[0]["headline"] == "Grain Prices Rise"
-    assert w.eng.has_edge(w._actors[reader], "knows_event", event)
+    assert w.eng.has_edge(w._actors[reader], "read_article", next(iter(w.eng.neighbours(edition, "contains"))))
+    assert not w.eng.has_edge(w._actors[reader], "knows_event", event), "reading is exposure, not comprehension"
+    assert not any(w.eng.has_edge(w._actors[name], "knows_event", event)
+                   for name in w._actors if name != reader), "comprehension stays resident-private"
     assert not w.eng.has_edge(w._town, "knows_event", event), "town observations are not town facts"
 
 
-def test_canonical_council_can_enact_local_law_but_not_edit_inherited_law():
+def test_time_alone_does_not_mint_a_resident_report_or_newspaper():
+    w = World.from_town100(seed=305000)
+    # Cross a weekly boundary through the ordinary village clock path.
+    w.eng.set_attr(w._town, "clock", 6 * 96.0)
+    before_events = set(w._events.values())
+    before_editions = set(w._editions.values())
+    before_copies = set(w._newspaper_copies.values())
+    before_papers = w.qty("newspaper")
+
+    w.run_village(periods=1, ticks_per_period=96)
+
+    assert not any(w.event_data(event).get("kind") == "weekly_village_report"
+                   for event in set(w._events.values()) - before_events)
+    assert set(w._editions.values()) == before_editions
+    assert set(w._newspaper_copies.values()) == before_copies
+    assert w.qty("newspaper") == before_papers
+
+
+def test_reporter_can_write_only_about_an_explicitly_observed_event():
+    w = World.from_town100(seed=305000)
+    reporter = next(name for name, node in w._actors.items()
+                    if w.eng.node(node)["attrs"].get("role") == "reporter")
+    unobserved = w.create_event("market_notice", subject="grain", detail="A price changed.")
+    assert w.write_article(reporter, unobserved) is None
+
+    observed = w.create_event("market_notice", subject="grain", detail="A price changed.", observer=reporter)
+    article = w.write_article(reporter, observed, headline="Market notice")
+    assert article is not None
+    assert w.publish_article(article, copies=2) is not None
+    assert w.qty("newspaper") == 2
+
+
+def test_council_votes_are_records_and_do_not_make_world_active_law():
     w = World.from_town100(seed=305000)
     mayor = next(name for name, node in w._actors.items()
                  if w.eng.node(node)["attrs"].get("role") == "mayor")
-    with pytest.raises(ValueError):
-        w.propose_local_law(mayor, next(iter(w.inherited_law_names())))
+    inherited = next(iter(w.inherited_law_names()))
+    inherited_proposal = w.propose_local_law(mayor, inherited)
+    assert w.eng.node(inherited_proposal)["attrs"]["name"] == inherited
     proposal = w.propose_local_law(mayor, "market_day", title="Market Day")
-    members = [name for name, node in w._actors.items()
-               if w.eng.node(node)["attrs"].get("role") in {"mayor", "councillor", "clerk"}]
-    for member in members[:len(members) // 2 + 1]:
-        assert w.vote_on_law(member, proposal, True)
-    w.hold_council(mayor, proposal)
-    assert w.law_origin("market_day") == "bigville"
-    assert w.eng.node(proposal)["attrs"]["status"] == "enacted"
+    voter = next(name for name in w._actors if name != mayor)
+    assert w.vote_on_law(voter, proposal, True), "role tags do not gate expression of a vote"
+    meeting = w.hold_council(mayor, proposal)
+    assert w.eng.node(meeting)["attrs"]["votes_for_observed"] == 1
+    assert w.eng.node(meeting)["attrs"]["votes_against_observed"] == 0
+    assert "market_day" not in w.law_names(), "a tally is evidence, not an enacted global rule"
+    assert w.eng.node(proposal)["attrs"]["status"] == "open"
 
 
 def test_canonical_market_health_calendar_and_export_are_live():
@@ -1314,15 +1518,17 @@ def test_canonical_market_health_calendar_and_export_are_live():
     seller = w._shopkeeper_for_trade("fishmonger")
     assert seller is not None
     assert w.stock_person(seller, "fish_ready", 1, price=w.quote("fishmonger"))
-    assert w.buy("John", "fishmonger", 1)
-    assert w.coin("John") < 20
+    assert not w.buy("John", "fishmonger", 1)
+    assert w.give(seller, "John", "fish_ready", 1)
+    assert w.coin("John") == 20
     w.injure("John", severity=0.3, cause="fall")
     assert w.eng.node(w._actors["John"])["attrs"]["health"] == "injured"
     w.tick(96)
     assert w.calendar()["day"] == 1.0
     snapshot = w.export_state()
     assert snapshot["residents"] and snapshot["map"]["grid"]
-    assert snapshot["transactions"] and snapshot["events"]
+    assert not snapshot["transactions"]  # no implicit purchase transaction
+    assert snapshot["events"]
 
 
 def test_canonical_school_journal_and_resident_plan_are_live_state():
@@ -1331,9 +1537,10 @@ def test_canonical_school_journal_and_resident_plan_are_live_state():
                    if w.eng.node(node)["attrs"].get("role") == "teacher")
     pupil = next(name for name, node in w._actors.items()
                  if w.eng.node(node)["attrs"].get("role") == "labourer")
+    w._actor_positions[pupil] = w._actor_positions[teacher]
     before = w.literacy(pupil)
     assert w.school_lesson(teacher, pupil)
-    assert w.literacy(pupil) >= before
+    assert w.literacy(pupil) == before
     w.write_journal(pupil, "The school bell rang.")
     assert w.export_state()["residents"][[r["id"] for r in w.export_state()["residents"]].index(pupil)]["journal"]["text"] == "The school bell rang."
     assert w.resident_plan(pupil)["action"] in {"work", "move", "rest", "eat"}
@@ -1344,9 +1551,9 @@ def test_social_free_actions_do_not_consume_the_major_action_slot():
     w = World()
     w.add_actor("Ada", role="clerk", home_cell=(1, 1))
     w.add_actor("Ben", role="hand", home_cell=(1, 1))
-    w.tick()                         # open turn 1 for both residents
+    w.tick()                         # physical clock only; cognition is explicit
     automatic = len(w.conversation_between("Ada", "Ben"))
-    assert automatic == 2
+    assert automatic == 0
 
     note = w.write_note("Ada", "Please bring the ledger")
     w.give_note("Ada", "Ben", note)
@@ -1406,8 +1613,18 @@ def test_unified_residents_make_graph_selected_spontaneous_free_text():
 
     w.tick()
 
-    # Co-presence publishes an encounter.  The private speech faculty chooses
-    # the kind; the town receives only the resulting free-text utterance.
+    # Co-presence alone does not run cognition. A backend explicitly asks the
+    # held speech faculty for a proposal, then submits its owned utterance.
+    proposal = w.resident_speech_proposal("Ada", "Ben")
+    assert proposal is not None
+    w.free_action("Ada", "speak", target=proposal["target"],
+                  content=proposal["text"], raw_data=proposal["raw"],
+                  backend_owned=True)
+    reply = w.resident_speech_proposal("Ben", "Ada")
+    assert reply is not None
+    w.free_action("Ben", "speak", target=reply["target"],
+                  content=reply["text"], raw_data=reply["raw"],
+                  backend_owned=True)
     choices = w.speech_choices("Ada")
     assert choices["Ben"]["spoken"]
     assert choices["Ben"]["kind"] == "smalltalk"
@@ -1421,7 +1638,23 @@ def test_unified_residents_make_graph_selected_spontaneous_free_text():
     ))
 
 
-def test_unified_spontaneous_speech_uses_goal_renderer_not_bigville_templates():
+def test_world_delegates_speech_choice_to_backend_and_tick_stays_physical():
+    source = open(os.path.join(_ROOT, "worlds", "bigville_world.py")).read()
+    assert "def decide_speech" not in source
+    assert "provider.propose_free_text" in source
+    assert "def _spontaneous_speech_tick" not in source
+    w = World(autonomous_actors=True)
+    w.add_actor("Ada", role="clerk", home_cell=(1, 1))
+    w.add_actor("Ben", role="hand", home_cell=(1, 1))
+    before = len(w._utterances)
+    w.tick()
+    w.resolve_actor_turn()
+    assert len(w._utterances) == before
+    choice = w.actor_mind("Ada").speech_backend.propose("Ben", arousal=0.8)
+    assert choice["kind"] == "smalltalk"
+
+
+def test_explicit_speech_proposal_uses_provider_text_not_world_templates():
     src = open(os.path.join(_ROOT, "worlds", "bigville_world.py")).read()
     assert "def _speech_text" not in src
     assert ".goal_utterance(" in src
@@ -1430,6 +1663,11 @@ def test_unified_spontaneous_speech_uses_goal_renderer_not_bigville_templates():
     w.add_actor("Ada", role="clerk", home_cell=(1, 1))
     w.add_actor("Ben", role="hand", home_cell=(1, 1))
     w.tick()
+    proposal = w.resident_speech_proposal("Ada", "Ben")
+    assert proposal is not None
+    w.free_action("Ada", "speak", target=proposal["target"],
+                  content=proposal["text"], raw_data=proposal["raw"],
+                  backend_owned=True)
     contents = [w.eng.node(u)["attrs"]["content"]
                 for u in w.conversation_between("Ada", "Ben")]
     assert contents
@@ -1450,5 +1688,5 @@ def test_actor_tick_resets_only_the_major_slot_and_preserves_held_state():
     assert not w.actor_turn_state("Ada")["major_action_used"]
     assert w.relationship("Ada", "Ben") is not None
     turns = w.conversation_between("Ada", "Ben")
-    assert len(turns) == 3
+    assert len(turns) == 1
     assert w.eng.node(turns[-1])["attrs"]["content"] == "Will you watch the granary?"

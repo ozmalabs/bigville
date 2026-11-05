@@ -21,39 +21,11 @@ from bigville.runtime import (BigvilleGraph, WorldAdapter, boot_core,
                                load_seeds_into, manifest_for)
 from bigville.scenarios import load_scenario
 from domains import bigville_entities as E               # noqa: E402
-from worlds.bigville_bond_world import KNOBS as BOND_KNOBS, SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
-from worlds.bigville_speech_world import (  # noqa: E402
-    ENCOUNTER_DEFAULTS as SPEECH_ENCOUNTER_DEFAULTS,
-    KIND_LABEL as SPEECH_KIND_LABEL,
-    SPEECH_MENU,
-    _OPT_KEYS as SPEECH_OPTION_KEYS,
-)
+from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
+from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 
 MINUTES_PER_TICK = 15.0
 
-# How strongly a held tie_strength lowers the bar to initiate smalltalk --
-# effective_threshold = loquacity_threshold / (1.0 + ACCOMMODATION_GAIN *
-# tie_strength), the same multiplicative-coupling shape decide_speech
-# already uses for share_salience * tie_strength.  Pilot-measured (not
-# guessed), isolating just this mechanism (a resident population with
-# arousal ~ Uniform(0,1), loquacity_threshold=1.0, tie_strength=3.0 vs.
-# 0.0): gain=0.5 already separates the two conditions (75.9% vs 90.0%
-# smalltalk-clearing rate); gain=2.0 widens that to 75.9% vs 95.9% (+20pp)
-# without saturating to a trivial 100%, so the effect stays measurable
-# rather than maxed out.  See the Rung 2 report for the important caveat:
-# in the live decide_speech branch ladder, any relationship carrying
-# positive strength (via set_relationship) also sets affect_affection > 0,
-# which already wins the branch ABOVE this one (greeting) -- this gain is
-# real and correctly wired, but the branch it feeds is only reached when
-# tie_strength is nonzero without a coexisting positive affect_affection.
-ACCOMMODATION_GAIN = 2.0
-
-# seeds/bigville_townspeople_50.json's 22 relationship triples name six edge
-# kinds; set_relationship only distinguishes "feud" (routes to resentment,
-# not affection) from everything else (routes to affection/tie_strength).
-# rival_of maps to feud with a NEGATIVE strength so it reads as a real
-# rivalry (affect_resentment rises, tie_strength/affection stay at zero);
-# every other kind is a positive tie, graded by how close the label reads.
 TOWNSPEOPLE_50_RELATIONSHIP_KIND = {
     "rival_of": ("feud", -0.8),
     "friend_of": ("friend", 0.9),
@@ -103,10 +75,10 @@ class BigvilleOcelotActor:
                 ("Belief", {"name": "world_is_physical"})):
             node = self.s.add_node(type_name, attrs)
             self.inner.add_edge_unchecked(self.agent, "holds", node)
-        self.speech_options = []
         self.speech_bonds = {}
         self.speech_encounters = {}
         self.speech_choices = {}
+        self.speech_backend = DeterministicSpeechBackend(self)
         # How many times THIS resident has told a given listener about a
         # given event -- common ground is per-dyad (Clark & Brennan 1991),
         # so retelling a DIFFERENT listener the same news stays undamped.
@@ -125,128 +97,6 @@ class BigvilleOcelotActor:
         # language machinery and models addressee uptake.
         self.voice = WorldAdapter(seeds=())
         self._voice_targets = {}
-        self._mint_speech_menu()
-
-    def _mint_speech_menu(self):
-        """Install this resident's held speech-option vocabulary."""
-        for option in SPEECH_MENU:
-            attrs = {key: 0.0 for key in SPEECH_OPTION_KEYS}
-            attrs.update(option)
-            node = self.s.add_node("SpeechOption", attrs)
-            self.speech_options.append(node)
-
-    def _speech_bond(self, target, relationship=None):
-        """Mirror the resident's directed relationship model into its mind."""
-        bond = self.speech_bonds.get(target)
-        if bond is None:
-            attrs = dict(BOND_SLOTS)
-            attrs.update(BOND_KNOBS)
-            attrs.update({"holder_name": self.name, "toward_name": str(target),
-                          "prior_kind": "chosen"})
-            bond = self.s.add_node("Bond", attrs)
-            self.inner.add_edge_unchecked(self.agent, "holds_bond", bond)
-            target_node = self.s.add_node("Townsperson", {"name": str(target)})
-            self.inner.add_edge_unchecked(bond, "toward", target_node)
-            self.speech_bonds[target] = bond
-
-        # Relationship state is world I/O.  The speech rule reads the copied
-        # slots; it still owns the selection of a speech option.
-        if relationship:
-            strength = float(relationship.get("strength", 0.0))
-            kind = str(relationship.get("kind", "acquaintance"))
-            self.s.set_attr(bond, "tie_strength", max(0.0, strength))
-            self.s.set_attr(bond, "affect_affection", max(0.0, strength))
-            self.s.set_attr(bond, "affect_resentment",
-                            max(0.0, -strength) if kind == "feud" else 0.0)
-            self.s.set_attr(bond, "prior_kind", kind)
-        return bond
-
-    def decide_speech(self, target, *, relationship=None, obligation=False,
-                      fpp_is_greeting=False, fpp_is_question=False,
-                      share_salience=0.0, goal_pressure=0.0, stranger=False,
-                      arousal=0.4, loquacity_threshold=1.0):
-        """Run the held spontaneous-speech faculty for one physical encounter.
-
-        The caller only supplies observed encounter inputs.  The chosen kind
-        comes back from ``bigville_speech_decide`` and is not selected here.
-        """
-        bond = self._speech_bond(target, relationship)
-        old = self.speech_encounters.get(target)
-        if old is not None:
-            self.inner.remove_node(old)
-        attrs = dict(SPEECH_ENCOUNTER_DEFAULTS)
-        attrs.update({
-            "obligation": 1.0 if obligation else 0.0,
-            "fpp_is_greeting": 1.0 if fpp_is_greeting else 0.0,
-            "fpp_is_question": 1.0 if fpp_is_question else 0.0,
-            "share_salience": float(share_salience),
-            "goal_pressure": float(goal_pressure),
-            "stranger": 1.0 if stranger else 0.0,
-            "speaker_arousal": float(arousal),
-            "loquacity_threshold": float(loquacity_threshold),
-            "decide_armed": 1.0,
-            "chosen_speech_code": -1.0,
-            "absence_minted": 0.0,
-        })
-        encounter = self.s.add_node("Encounter", attrs)
-        self.inner.add_edge_unchecked(encounter, "at_bond", bond)
-        self.speech_encounters[target] = encounter
-        # The cognition backend owns this choice.  The standalone default is
-        # deliberately small and deterministic, but it still reads the held
-        # bond/encounter graph rather than a town schedule or speech template.
-        ea = self.s.node(encounter)["attrs"]
-        ba = self.s.node(bond)["attrs"]
-        tie_strength = max(0.0, float(ba.get("tie_strength", 0.0)))
-        # Accommodation: the closer the held tie, the lower the bar to open
-        # smalltalk unprompted -- the same multiplicative-coupling shape as
-        # share_salience * tie_strength just above, one new knob
-        # (ACCOMMODATION_GAIN), zero new state.
-        effective_threshold = float(loquacity_threshold) / (1.0 + ACCOMMODATION_GAIN * tie_strength)
-        if fpp_is_question:
-            code = 6                         # answer
-        elif obligation:
-            code = 1                         # greeting/acknowledgement
-        elif stranger:
-            code = 0                         # silence with an unknown person
-        elif float(ba.get("affect_resentment", 0.0)) > 0.5:
-            code = 3                         # barb
-        elif float(share_salience) * tie_strength > 0.2:
-            code = 5                         # share
-        elif float(goal_pressure) > 0.2:
-            code = 7                         # request/goal opening
-        elif fpp_is_greeting or (float(ba.get("affect_affection", 0.0)) > 0.0
-                                  and self.speech_choices.get(target, {}).get("kind") != "greeting"):
-            # A held friendship is a standing REASON to greet, not a standing
-            # INSTRUCTION to greet every single encounter -- once this pair's
-            # last exchange was itself a greeting, affection alone no longer
-            # outranks the accommodation-gated smalltalk branch below, so a
-            # bonded pair can actually reach it instead of greeting forever.
-            code = 1
-        elif float(arousal) >= effective_threshold * 0.25:
-            code = 2
-        else:
-            code = 0
-        self.s.set_attr(encounter, "chosen_speech_code", float(code))
-        kind = SPEECH_KIND_LABEL.get(code, "undecided")
-        choice = {"target": target, "code": code, "kind": kind,
-                  "spoken": code not in (-1, 0), "encounter": encounter}
-        if choice["spoken"]:
-            utterance = self.s.add_node("Utterance", {
-                "speaker_arousal": attrs["speaker_arousal"],
-                "base_loudness": 1.0, "loud_arousal_gain": 0.6,
-                "max_loudness": 100.0, "loudness_on": 1.0,
-                "choice_on": 1.0, "loud_armed": 1.0,
-                "chosen_loudness": 0.0, "eff_loudness": 0.0,
-            })
-            self.inner.add_edge_unchecked(utterance, "spoken_by", self.agent)
-            loud = min(float(self.s.node(utterance)["attrs"].get("max_loudness", 100.0)),
-                       float(self.s.node(utterance)["attrs"].get("base_loudness", 1.0))
-                       + float(self.s.node(utterance)["attrs"].get("loud_arousal_gain", 0.6))
-                       * float(arousal))
-            self.s.set_attr(utterance, "eff_loudness", loud)
-            choice["loudness"] = loud
-        self.speech_choices[target] = choice
-        return choice
 
     #: Converts a terrain stamina multiplier into affordance-score units. The one
     #: scalar in this valuation; the SHAPE around it -- proportional to both the
@@ -425,11 +275,61 @@ class BigvilleOcelotActor:
 
 
 class BigvilleWorld:
-    def __init__(self, *, map_seed=305000, autonomous_actors=True, scenario=None,
-                 cognition_factory=None):
+    PHYSICAL_SUBSYSTEM_DEFAULTS = {
+        "metabolism": True,
+        "ecology": True,
+        "decay": True,
+    }
+
+    def _validate_physical_subsystems(self, configured):
+        if not isinstance(configured, dict):
+            raise TypeError("physical_subsystems must be a mapping of names to booleans")
+        known = set(self.PHYSICAL_SUBSYSTEM_DEFAULTS) | set(self._physical_subsystem_extensions)
+        unknown = sorted(set(configured) - known)
+        if unknown:
+            raise ValueError(f"Unknown physical subsystem(s): {', '.join(map(str, unknown))}")
+        result = dict(self.PHYSICAL_SUBSYSTEM_DEFAULTS)
+        result.update({name: False for name in self._physical_subsystem_extensions})
+        for name, enabled in configured.items():
+            if not isinstance(enabled, bool):
+                raise TypeError(f"physical_subsystems.{name} must be a boolean")
+            result[name] = enabled
+        return result
+
+    def register_physical_subsystem(self, name, callback, *, enabled=False):
+        """Register a future period-driven physical subsystem.
+
+        The callback receives ``(world, 1)`` once for each elapsed period. Register before
+        advancing time; custom names can also be enabled in scenario config
+        when the callback is supplied to the constructor.
+        """
+        name = str(name)
+        if not name or name in self.PHYSICAL_SUBSYSTEM_DEFAULTS or name in self._physical_subsystem_extensions:
+            raise ValueError(f"Invalid or duplicate physical subsystem: {name}")
+        if not callable(callback):
+            raise TypeError("physical subsystem callback must be callable")
+        if not isinstance(enabled, bool):
+            raise TypeError("enabled must be a boolean")
+        self._physical_subsystem_extensions[name] = callback
+        self.physical_subsystems[name] = enabled
+
+    def __init__(self, *, map_seed=305000, autonomous_actors=False, scenario=None,
+                 cognition_factory=None, physical_subsystems=None,
+                 physical_subsystem_extensions=None):
         scenario_definition = load_scenario(scenario) if scenario is not None else None
         self._scenario_data = scenario_definition.to_dict() if scenario_definition else {
             "id": "bigville", "name": "Bigville", "metadata": {"domain": "village"}}
+        # These switches gate only their named physical period effects. Extension
+        # callbacks are opt-in and receive the number of elapsed periods.
+        self._physical_subsystem_extensions = dict(physical_subsystem_extensions or {})
+        if any(not callable(callback) for callback in self._physical_subsystem_extensions.values()):
+            raise TypeError("physical subsystem extensions must be callable")
+        configured_subsystems = self._scenario_data.get("physical_subsystems", {})
+        if physical_subsystems is not None:
+            if "physical_subsystems" in self._scenario_data:
+                raise ValueError("physical_subsystems may be specified either in the scenario or constructor")
+            configured_subsystems = physical_subsystems
+        self.physical_subsystems = self._validate_physical_subsystems(configured_subsystems)
         # Optional external cognition seam.  Bigville remains installable
         # without Ocelot; an Ocelot host supplies a callable name -> mind.
         self._cognition_factory = cognition_factory
@@ -438,10 +338,14 @@ class BigvilleWorld:
             for actor in self._scenario_data.get("actors", [])
             if actor.get("name") and actor.get("backend")
         }
+        self._scenario_simple_profiles = {
+            str(actor.get("name")): str(actor.get("simple_profile"))
+            for actor in self._scenario_data.get("actors", [])
+            if actor.get("name") and actor.get("simple_profile")
+        }
         self._scenario_character_data = {}
         self.eng = BigvilleGraph()
         self.eng.load_seed_manifest(manifest_for("bigville_action_general"), None)   # the ONE making engine
-        self.eng.load_seed_manifest(manifest_for("bigville_action_decide"), None)    # observed-demand decision
         self.eng.load_seed_manifest(manifest_for("bigville_action_container"), None) # containers + lock/key
         self.eng.load_seed_manifest(manifest_for("bigville_action_animal"), None)    # animals eat / starve
         self.eng.load_seed_manifest(manifest_for("bigville_action_merchant"), None)  # a merchant delivers goods
@@ -475,13 +379,9 @@ class BigvilleWorld:
         self._deeds = {}
         self._titles = {}
         self._land_disputes = {}
-        self._actor_land_titles = {}
         self._households = {}
         self._infrastructure = {}
         self._animals = {}
-        self._animal_minds = {}
-        self._animal_decisions = {}
-        self._animal_targets = {}
         self._fences = {}
         self._enclosures = {}
         self._enclosure_cells = {}
@@ -527,9 +427,9 @@ class BigvilleWorld:
         # for this tick; the physical Effort events remain individually
         # represented in the graph.
         self._actor_tick_in_progress = False
-        # The normal canonical world lets its private Ocelot minds act during
-        # tick().  Game sessions disable this and submit proposals through the
-        # backend API instead; the physical world remains identical.
+        # Retained for compatibility with older constructors. World ticks do
+        # not select resident behavior; unattended cognition belongs to
+        # BigvilleGame and its configured backends.
         self._autonomous_actors = bool(autonomous_actors)
         self._conversation_adapter = None
         self._building_projects = {}
@@ -559,7 +459,6 @@ class BigvilleWorld:
         self._conversations = {}
         self._utterances = {}
         self._speech_events = []
-        self._purchase_utterances = {}
         self._market_expectation_specs = {}
         self._actor_market_expectations = {}
         self._requests = {}
@@ -701,8 +600,18 @@ class BigvilleWorld:
                 for object_id, node in self._physical_objects.items()
                 if self.eng.has_node(node)]
 
-    def _physical_object_accessible(self, actor, location, seen=()):
+    def _physical_object_accessible(self, actor, location, seen=(), object_id=None):
         location = str(location)
+        # Scenario objects may opt into map-backed placement with `cell`,
+        # `x`/`y`, or a containing object that has such a placement. Keep the
+        # legacy room labels (`table`/`world`) global when no cell is authored.
+        cell = (self._physical_location_cell(object_id)
+                if object_id is not None else None) or self._physical_location_cell(location)
+        if cell is not None:
+            actor_cell = self.actor_position(actor)
+            if actor_cell is None or self.distance(actor_cell, cell) is None \
+                    or self.distance(actor_cell, cell) > 1:
+                return False
         if location == actor or location in {"table", "world"}:
             return True
         if location in seen or location not in self._physical_objects:
@@ -714,12 +623,43 @@ class BigvilleWorld:
         return parent is not None and self._physical_object_accessible(
             actor, parent, seen + (location,))
 
+    def _physical_location_cell(self, location, seen=()):
+        """Return an authored map cell for an object/actor location if present."""
+        location = str(location)
+        if location in seen:
+            return None
+        if location in self._actors:
+            return self.actor_position(location)
+        if location not in self._physical_objects:
+            return None
+        # Current containment/holding determines where an object is. Its
+        # authored placement is only used while it sits at a shared location.
+        parent = self._physical_object_locations.get(location)
+        if parent in self._actors:
+            return self.actor_position(parent)
+        if parent in self._physical_objects:
+            return self._physical_location_cell(parent, seen + (location,))
+        attrs = self.eng.node(self._physical_objects[location])["attrs"]
+        cell = attrs.get("cell")
+        if isinstance(cell, (list, tuple)) and len(cell) == 2:
+            try:
+                return int(cell[0]), int(cell[1])
+            except (TypeError, ValueError):
+                return None
+        if "x" in attrs and "y" in attrs:
+            try:
+                return int(attrs["x"]), int(attrs["y"])
+            except (TypeError, ValueError):
+                return None
+        return None
+
     def physical_object_observations(self, actor):
         """Return the physical objects visible from an actor's location."""
         if actor not in self._actors:
             return []
         return [item for item in self.physical_objects()
-                if self._physical_object_accessible(actor, item.get("location", "world"))]
+                if self._physical_object_accessible(actor, item.get("location", "world"),
+                                                    object_id=item["id"])]
 
     def move_physical_object(self, object_id, location):
         """Move an ordinary object; no game-specific admissibility is applied."""
@@ -764,7 +704,9 @@ class BigvilleWorld:
         if actor not in self._actors:
             return []
         if destinations is None:
-            destinations = [name for name in self._actors if name != actor]
+            # Self is a physical destination too: taking an accessible room
+            # object into one's hands is movement, with no ownership ruling.
+            destinations = list(self._actors)
             destinations += ["table", "world"]
             # A destination is another actor or an authored physical
             # container.  Ordinary objects remain movable, but the world
@@ -779,11 +721,38 @@ class BigvilleWorld:
         options = []
         for item in self.physical_objects():
             location = str(item.get("location", "world"))
-            if not self._physical_object_accessible(actor, location):
+            if not self._physical_object_accessible(actor, location, object_id=item["id"]):
                 continue
             for destination in destinations:
                 if destination == location:
                     continue
+                if destination in self._actors:
+                    here, there = self.actor_position(actor), self.actor_position(destination)
+                    if (here is None or there is None or self.distance(here, there) is None
+                            or self.distance(here, there) > 1):
+                        continue
+                elif destination not in {"table", "world"}:
+                    if destination not in self._physical_objects:
+                        continue
+                    if not self._physical_object_accessible(
+                            actor, destination, object_id=destination):
+                        continue
+                    destination_attrs = self.eng.node(
+                        self._physical_objects[destination])["attrs"]
+                    if ("open" in destination_attrs
+                            and not bool(destination_attrs.get("open"))):
+                        continue
+                    # Do not publish moves that would create a containment cycle.
+                    cursor, seen = destination, set()
+                    cyclic = False
+                    while cursor in self._physical_objects and cursor not in seen:
+                        if cursor == item["id"]:
+                            cyclic = True
+                            break
+                        seen.add(cursor)
+                        cursor = self._physical_object_locations.get(cursor, "")
+                    if cyclic:
+                        continue
                 options.append({
                     "action": "move_object",
                     "object_id": item["id"],
@@ -813,7 +782,8 @@ class BigvilleWorld:
         if object_id not in self._physical_objects:
             return False
         if not self._physical_object_accessible(
-                actor, self._physical_object_locations.get(object_id, "world")):
+                actor, self._physical_object_locations.get(object_id, "world"),
+                object_id=object_id):
             return False
         node = self._physical_objects[object_id]
         attrs = self.eng.node(node)["attrs"]
@@ -833,6 +803,54 @@ class BigvilleWorld:
         """
         if actor not in self._actors:
             return False
+        object_id = self.resolve_physical_object_id(object_id)
+        if object_id not in self._physical_objects:
+            return False
+        source = self._physical_object_locations.get(object_id, "world")
+        if not self._physical_object_accessible(actor, source, object_id=object_id):
+            return False
+        destination = self.resolve_physical_object_id(destination)
+        if destination not in {"table", "world", *self._actors} \
+                and destination not in self._physical_objects:
+            return False
+        if destination in self._physical_objects:
+            # A container cannot be moved inside itself or any of its own
+            # descendants; reject before changing either location index.
+            cursor = destination
+            seen = set()
+            while cursor in self._physical_objects and cursor not in seen:
+                if cursor == object_id:
+                    return False
+                seen.add(cursor)
+                cursor = self._physical_object_locations.get(cursor, "")
+        if destination in self._physical_objects and not self._physical_object_accessible(
+                actor, destination):
+            return False
+        # A coordinate-backed source or destination makes the handover
+        # spatial. Both endpoints must be within one walkable step of the actor.
+        actor_cell = self.actor_position(actor)
+        endpoint_cells = [self._physical_location_cell(object_id),
+                          self._physical_location_cell(source)]
+        if destination in self._physical_objects:
+            endpoint_cells.append(self._physical_location_cell(destination))
+        elif destination in self._actors:
+            endpoint_cells.append(self.actor_position(destination))
+        if any(cell is not None for cell in endpoint_cells):
+            for cell in endpoint_cells:
+                if cell is not None and (actor_cell is None
+                        or self.distance(actor_cell, cell) is None
+                        or self.distance(actor_cell, cell) > 1):
+                    return False
+        # A carried/contained object's authored cell is its last shared-place
+        # position. Persist the current physical position when it is dropped
+        # into a shared room location so later reach checks use the drop site.
+        if destination in {"table", "world"}:
+            drop_cell = self._physical_location_cell(object_id)
+            if drop_cell is None:
+                drop_cell = self._physical_location_cell(source)
+            if drop_cell is not None:
+                self.eng.set_attr(self._physical_objects[object_id], "cell",
+                                  list(drop_cell))
         return self.move_physical_object(object_id, destination)
 
     def _install_square_fixtures(self):
@@ -869,7 +887,6 @@ class BigvilleWorld:
         # ported world mechanics that used to be supplied by graph rules.
         self._resolve_jobs()
         self._resolve_actor_events()
-        self._resolve_observations_and_decisions()
         self._resolve_clothing_and_bodies()
         self._resolve_period_effects()
         # Stock piles are intentionally bulk physical nodes, but a new harvest
@@ -886,7 +903,6 @@ class BigvilleWorld:
             if kind in before and qty > before[kind] and attrs.get("perishable", 0.0) == 1.0:
                 self.eng.set_attr(node, "condition", 1.0)
             self._last_stock_qty[kind] = qty
-        self._claim_canonical_job_outputs()
         self._record_unlogged_deaths()
 
     def _job_input(self, job, kind, is_item=False):
@@ -948,6 +964,15 @@ class BigvilleWorld:
                     inputs.append(("bulk", kind, None, qty))
                 else:
                     inputs.append(("bulk", kind, None, qty))
+            # Validate the required instruments before consuming any of the
+            # recipe inputs. A tool can be removed or broken while a timed job
+            # is underway, so the start-time check alone is not sufficient.
+            # Leave the job armed at zero remaining: it can finish later if
+            # the instrument is restored, without losing its materials.
+            for tool_use in self.eng.neighbours(job, "uses"):
+                kind = self.eng.node(tool_use)["attrs"].get("kind", "")
+                if not self._instrument_usable(kind):
+                    missing = True
             if missing:
                 continue
             # Read component quality before consuming those physical nodes.
@@ -1075,33 +1100,6 @@ class BigvilleWorld:
             for option in self.eng.neighbours(node, "has_option"):
                 pass
 
-    def _resolve_observations_and_decisions(self):
-        for actor, node in self._actors.items():
-            attrs = self.eng.node(node)["attrs"]
-            if float(attrs.get("observe_armed", 0.0)) == 1.0:
-                for driver, signal in (("harvest", "observed_harvest"), ("building", "observed_building"),
-                                       ("storage", "observed_storage")):
-                    old = float(attrs.get("belief_" + driver, 0.0))
-                    observed = float(self.eng.node(self._town)["attrs"].get(signal, 0.0))
-                    glut_penalty = 0.25 if float(attrs.get("unsold", 0.0)) > 0.0 else 0.0
-                    self.eng.set_attr(node, "belief_" + driver,
-                                      old * (0.5 - glut_penalty) + observed * 0.5)
-                self.eng.set_attr(node, "observe_armed", 0.0)
-            if float(attrs.get("decide_armed", 0.0)) == 1.0:
-                scores = {}
-                for recipe in E.RECIPES:
-                    if recipe.get("requires") not in set(str(attrs.get("trades", "")).split(",")):
-                        continue
-                    out = recipe["out"][0]
-                    spec = self._item_specs.get(out, {})
-                    driver = spec.get("demand_driver", "")
-                    scores[recipe["name"]] = float(attrs.get("belief_" + driver, 0.0)) * float(spec.get("demand_weight", 1.0))
-                if scores:
-                    chosen = max(scores, key=scores.get)
-                    self.eng.set_attr(node, "will_make", chosen)
-                    self.eng.set_attr(node, "want_qty", max(1.0, scores[chosen] * 5.0))
-                self.eng.set_attr(node, "decide_armed", 0.0)
-
     def _resolve_clothing_and_bodies(self):
         town = self.eng.node(self._town)["attrs"]
         for actor, node in self._actors.items():
@@ -1138,117 +1136,66 @@ class BigvilleWorld:
         steps = int(period - self._resolved_period)
         self._resolved_period = period
         for _ in range(steps):
-            for name, node in self._animals.items():
-                aa = self.eng.node(node)["attrs"]
-                if float(aa.get("alive", 0.0)) != 1.0:
-                    continue
-                feed = aa.get("eats", ""); ration = float(aa.get("ration", 1.0))
-                if self.qty(feed) >= ration:
-                    self.set_stock(feed, self.qty(feed) - ration); self.eng.set_attr(node, "hunger", 0.0)
-                else:
-                    hunger = float(aa.get("hunger", 0.0)) + 1.0; self.eng.set_attr(node, "hunger", hunger)
+            if self.physical_subsystems["metabolism"]:
+                for name, node in self._animals.items():
+                    aa = self.eng.node(node)["attrs"]
+                    if float(aa.get("alive", 0.0)) != 1.0:
+                        continue
+                    # Metabolism changes the animal's condition only. Feed is
+                    # consumed by an explicit animal action at an accessible pile.
+                    hunger = float(aa.get("hunger", 0.0)) + 1.0
+                    self.eng.set_attr(node, "hunger", hunger)
                     if hunger >= float(aa.get("starve_limit", 3.0)):
                         self.eng.set_attr(node, "alive", 0.0)
-            for actor, node in self._actors.items():
-                aa = self.eng.node(node)["attrs"]
-                if float(aa.get("alive", 0.0)) != 1.0:
-                    continue
-                hunger = float(aa.get("hunger", 0.0)) + 1.0
-                self.eng.set_attr(node, "hunger", hunger)
-                if hunger > float(aa.get("starve_limit", 4.0)):
-                    self.eng.set_attr(node, "alive", 0.0)
-            for crop in list(self._living_crops()):
-                ca = self.eng.node(crop)["attrs"]
-                if float(ca.get("water_armed", 0.0)) == 1.0:
-                    self.eng.set_attr(crop, "thirst", 0.0); self.eng.set_attr(crop, "water_armed", 0.0)
-                else:
-                    thirst = float(ca.get("thirst", 0.0)) + 1.0; self.eng.set_attr(crop, "thirst", thirst)
-                    if thirst > float(ca.get("wilt", 2.0)):
-                        self.eng.set_attr(crop, "alive", 0.0)
-                if self.crop_alive(crop):
-                    self.eng.set_attr(crop, "age", float(ca.get("age", 0.0)) + 1.0)
+                for actor, node in self._actors.items():
+                    aa = self.eng.node(node)["attrs"]
+                    if float(aa.get("alive", 0.0)) != 1.0:
+                        continue
+                    hunger = float(aa.get("hunger", 0.0)) + 1.0
+                    self.eng.set_attr(node, "hunger", hunger)
+                    if hunger > float(aa.get("starve_limit", 4.0)):
+                        self.eng.set_attr(node, "alive", 0.0)
+            if self.physical_subsystems["ecology"]:
+                for crop in list(self._living_crops()):
+                    ca = self.eng.node(crop)["attrs"]
+                    if float(ca.get("water_armed", 0.0)) == 1.0:
+                        self.eng.set_attr(crop, "thirst", 0.0); self.eng.set_attr(crop, "water_armed", 0.0)
+                    else:
+                        thirst = float(ca.get("thirst", 0.0)) + 1.0; self.eng.set_attr(crop, "thirst", thirst)
+                        if thirst > float(ca.get("wilt", 2.0)):
+                            self.eng.set_attr(crop, "alive", 0.0)
+                    if self.crop_alive(crop):
+                        self.eng.set_attr(crop, "age", float(ca.get("age", 0.0)) + 1.0)
             # Freshness/condition is a property of the physical pile.  A
             # storage class changes the rate, never admissibility.
-            for stock in self.eng.nodes("Stock"):
-                sa = self.eng.node(stock)["attrs"]
-                if float(sa.get("perishable", 0.0)) != 1.0 or float(sa.get("qty", 0.0)) <= 0.0:
-                    continue
-                rate = float(sa.get("decay", 0.0)) * float(sa.get("storage_factor", 1.0))
-                condition = max(0.0, float(sa.get("condition", 1.0)) - rate)
-                self.eng.set_attr(stock, "condition", condition)
-                if condition <= 0.0:
-                    self.eng.set_attr(stock, "qty", 0.0)
-            for item in self.eng.nodes("ToolItem"):
-                ia = self.eng.node(item)["attrs"]
-                kind = ia.get("kind", "")
-                if kind in self._item_specs:
-                    decay = E.decay_rate(kind)
-                    if decay:
-                        self.eng.set_attr(item, "condition", max(0.0, float(ia.get("condition", 1.0)) - decay))
-                        if float(self.eng.node(item)["attrs"].get("condition", 0.0)) <= 0.0:
-                            self.eng.set_attr(item, "broken", 1.0)
-            # Apprenticeship and schooling are held relationships, not body
-            # states, and progress only when the period actually advances.
-            for learner in self._actors:
-                node = self._actors[learner]; la = self.eng.node(node)["attrs"]
-                masters = self.eng.neighbours(node, "apprenticed_to")
-                if masters:
-                    master_skill = float(self.eng.node(masters[0])["attrs"].get("skill", 0.0))
-                    old_skill = float(la.get("skill", 0.0))
-                    new_skill = min(master_skill, old_skill + 0.05)
-                    self.eng.set_attr(node, "skill", new_skill)
-                    # A first-person, self-observed learning event -- mirrors
-                    # injure's own one-line create_event pattern, but closes
-                    # the gap injure/_record_death_event leave open (neither
-                    # passes observer=actor): the learner is their own
-                    # witness to their own progress.  Guarded on an actual
-                    # increase so a capped apprentice (skill == master_skill)
-                    # does not mint an event every period for no real change.
-                    if new_skill > old_skill:
-                        trade = str(la.get("trade", "") or la.get("role", ""))
-                        self.create_event("learned_skill", subject=learner,
-                                          detail=f"{learner} grew more skilled at {trade}.",
-                                          observer=learner, severity=0.15)
-                teachers = self.eng.neighbours(node, "attends")
-                if teachers and float(la.get("learn", 0.0)) > 0:
-                    teacher = self.eng.node(teachers[0])["attrs"]
-                    old_literacy = float(la.get("literacy", 0.0))
-                    new_literacy = min(float(teacher.get("literacy", 1.0)), old_literacy + 0.2)
-                    self.eng.set_attr(node, "literacy", new_literacy)
-                    self.eng.set_attr(node, "capability", min(float(teacher.get("capability", 1.0)), float(la.get("capability", 0.0)) + 0.2))
-                    if new_literacy > old_literacy:
-                        self.create_event("learned_lesson", subject=learner,
-                                          detail=f"{learner} learned to read a little better.",
-                                          observer=learner, severity=0.15)
-
-    def _claim_canonical_job_outputs(self):
-        """Move completed canonical production into the maker's physical carrier.
-
-        The generic action rules correctly produce bulk output in the town's
-        physical stock.  In the integrated village, however, a baker or cook
-        must then possess the result before another resident can speak to them
-        and receive it.  This adapter step is deliberately a physical transfer
-        into the actor's carrier, not an economic or shop transaction.
-        """
-        if not getattr(self, "_cast100", None):
-            return
-        for job in list(self.eng.nodes("Job")):
-            attrs = self.eng.node(job)["attrs"]
-            if float(attrs.get("remaining", 1.0)) > 0.0 or float(attrs.get("canonical_output_claimed", 0.0)) == 1.0:
-                continue
-            actor = attrs.get("canonical_actor", "")
-            kind = attrs.get("canonical_output_kind", "")
-            amount = float(attrs.get("canonical_output_qty", 0.0))
-            if actor not in self._actors or not kind or amount <= 0.0:
-                self.eng.set_attr(job, "canonical_output_claimed", 1.0)
-                continue
-            if self._move_stock_to_inventory(actor, kind, amount):
-                self.eng.set_attr(job, "canonical_output_claimed", 1.0)
-                self.eng.set_attr(self._actor(actor), "sell_willing", 1.0)
-                trade = next((trade for trade, shop in self._shops.items()
-                              if self.eng.node(shop)["attrs"].get("output_kind") == kind), None)
-                if trade is not None:
-                    self.eng.set_attr(self._actor(actor), "sell_price", self.quote(trade))
+            if self.physical_subsystems["decay"]:
+                for stock in self.eng.nodes("Stock"):
+                    sa = self.eng.node(stock)["attrs"]
+                    if float(sa.get("perishable", 0.0)) != 1.0 or float(sa.get("qty", 0.0)) <= 0.0:
+                        continue
+                    rate = float(sa.get("decay", 0.0)) * float(sa.get("storage_factor", 1.0))
+                    condition = max(0.0, float(sa.get("condition", 1.0)) - rate)
+                    self.eng.set_attr(stock, "condition", condition)
+                    if condition <= 0.0:
+                        self.eng.set_attr(stock, "qty", 0.0)
+                for item in self.eng.nodes("ToolItem"):
+                    ia = self.eng.node(item)["attrs"]
+                    kind = ia.get("kind", "")
+                    if kind in self._item_specs:
+                        decay = E.decay_rate(kind)
+                        if decay:
+                            self.eng.set_attr(item, "condition", max(0.0, float(ia.get("condition", 1.0)) - decay))
+                            if float(self.eng.node(item)["attrs"].get("condition", 0.0)) <= 0.0:
+                                self.eng.set_attr(item, "broken", 1.0)
+            for name, callback in self._physical_subsystem_extensions.items():
+                if self.physical_subsystems.get(name, False):
+                    callback(self, 1)
+            # Apprenticeship and schooling remain physical/social
+            # relationships. Period advancement must not infer a learner's
+            # understanding or change held capability; that choice belongs to
+            # the resident's cognitive backend.
+            # ``attends`` and ``apprenticed_to`` remain observable relation
+            # edges. No period effect is applied to either learner here.
 
     def _cleanup_village_transients(self):
         """Bound graph growth from completed work and old turn bookkeeping.
@@ -1333,6 +1280,8 @@ class BigvilleWorld:
             layout.setdefault("w", len(grid[0]))
             layout.setdefault("h", len(grid))
             layout.setdefault("work", {})
+            layout["work"] = {name: tuple(cell) if isinstance(cell, list) else cell
+                               for name, cell in layout["work"].items()}
             layout.setdefault("homes", [])
             affordances = [dict(affordance) for affordance in scenario_map.get("affordances", [])]
         self._map_grid, self._map_layout = grid, layout
@@ -1527,11 +1476,12 @@ class BigvilleWorld:
             if demand and feed_days[feed] < 4.0:
                 warnings.append(f"less than four days of animal feed: {feed}")
 
-        capability_gaps = [name for name, node in self._actors.items()
-                           if not list(self.eng.neighbours(node, "knows"))]
+        capability_gaps = [name for name in self._actors
+                           if not any(self._can_attempt(name, action)
+                                      for action in self._actions)]
         essential_actions = ("grind_flour", "bake_bread", "make_pottage")
         essential_recipe_gaps = [action for action in essential_actions
-                                 if not any(self.knows(name, action) for name in self._actors)]
+                                 if action not in self._actions]
         if essential_recipe_gaps:
             warnings.append("essential food-production capabilities are unseeded")
         return {
@@ -1635,6 +1585,28 @@ class BigvilleWorld:
                                        + (worn["stamina_multiplier"]
                                           - fresh["stamina_multiplier"]) * blend)}
 
+    def _terrain_move_time(self, cell):
+        """Read only the edge cost used by weighted routing.
+
+        ``travel_time`` explores many cells for each destination, and does not
+        need the terrain label, speed, or stamina fields returned by
+        ``terrain_state``. Keep its movement-cost interpolation identical
+        while avoiding a temporary four-field dictionary for every explored
+        edge.
+        """
+        if not isinstance(cell, tuple) or cell not in self._map_cells:
+            return float(E.TERRAIN_MOVEMENT["grass"]["move_time"])
+        attrs = self.eng.node(self._map_cells[cell])["attrs"]
+        base = str(attrs.get("base_terrain", attrs.get("terrain", "grass")))
+        wear = float(attrs.get("wear", 0.0))
+        record = E.TERRAIN_WEAR.get(base)
+        if record is None or wear <= 0.0:
+            return float(attrs.get("move_time", 1.0))
+        worn = E.TERRAIN_MOVEMENT.get(str(record["wears_to"]), E.TERRAIN_MOVEMENT["grass"])
+        fresh = E.TERRAIN_MOVEMENT.get(base, E.TERRAIN_MOVEMENT["grass"])
+        blend = min(1.0, max(0.0, wear))
+        return fresh["move_time"] + (worn["move_time"] - fresh["move_time"]) * blend
+
     # ------------------------------------------------------------- terrain wear
     def _wear_record(self, cell_node):
         """The TERRAIN_WEAR record governing this cell, or None if it is inert."""
@@ -1718,7 +1690,7 @@ class BigvilleWorld:
                     neighbour = (nx, ny)
                     if neighbour not in self._map_cells:
                         continue
-                    step = float(self.terrain_state(neighbour).get("move_time", 1.0))
+                    step = self._terrain_move_time(neighbour)
                     candidate = cost + step
                     if candidate < field.get(neighbour, float("inf")):
                         field[neighbour] = candidate
@@ -1844,7 +1816,7 @@ class BigvilleWorld:
         return self._actor_positions.get(actor)
 
     @classmethod
-    def from_town100(cls, seed=305000, *, autonomous_actors=True,
+    def from_town100(cls, seed=305000, *, autonomous_actors=False,
                      cognition_factory=None):
         """Build the canonical world with the expanded map and seeded 100-person cast."""
         world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
@@ -1853,7 +1825,7 @@ class BigvilleWorld:
         return world
 
     @classmethod
-    def from_scenario(cls, scenario, *, seed=305000, autonomous_actors=True,
+    def from_scenario(cls, scenario, *, seed=305000, autonomous_actors=False,
                       cognition_factory=None):
         """Build any compact or large scenario from data.
 
@@ -1867,11 +1839,17 @@ class BigvilleWorld:
             data = dict(actor)
             name = data.pop("name")
             backend = data.pop("backend", None)
+            simple_profile = data.pop("simple_profile", None)
             world._scenario_character_data[name] = {
                 "identity": dict(data.get("identity", {})),
                 "personality": dict(data.get("personality", {})),
                 "memories": list(data.get("memories", [])),
                 "held_frames": list(data.get("held_frames", data.get("frames", []))),
+                # Explicitly authored private beliefs belong to character setup,
+                # never to role/population inference by the physical world.
+                "reference_priors": list(data.get("reference_priors", [])),
+                "recipe_priors": (list(data["recipe_priors"])
+                                  if "recipe_priors" in data else None),
             }
             supported = {
                 "role", "skill", "station", "literacy", "capability", "learn",
@@ -1883,10 +1861,12 @@ class BigvilleWorld:
             world.add_actor(name, **kwargs)
             if backend:
                 world._scenario_actor_backends[name] = str(backend)
+            if simple_profile:
+                world._scenario_simple_profiles[name] = str(simple_profile)
         return world
 
     @classmethod
-    def from_townspeople_50(cls, *, seed=305000, autonomous_actors=True,
+    def from_townspeople_50(cls, *, seed=305000, autonomous_actors=False,
                             cognition_factory=None):
         """Build the hand-authored 50-resident register, relationships included.
 
@@ -2059,12 +2039,12 @@ class BigvilleWorld:
         # recipes by the canonical job bridge above.
         bakers = [name for name, node in self._actors.items()
                   if self.eng.node(node)["attrs"].get("role") == "baker"]
-        bakery_price = self.quote("bakery") if "bakery" in self._shops else 1.0
         for baker in bakers:
             if self.qty("bread") <= 0.0:
                 break
-            self.stock_person(baker, "bread", min(40.0, self.qty("bread")),
-                              price=bakery_price, willing=True)
+            # Seed finite carried stock as a physical inventory fact.  Whether
+            # its holder offers or sells it belongs to that resident's mind.
+            self._move_stock_to_inventory(baker, "bread", min(40.0, self.qty("bread")))
         # Seed the first rotation so the founding bread reserve is connected to actual local
         # production.  Later sowing, watering, harvesting, milling, and cooking remain actions.
         for index, crop in enumerate(E.STARTING_CROPS):
@@ -2138,10 +2118,6 @@ class BigvilleWorld:
         if discrete:                                    # carry the item's tool data onto the action
             attrs.update(verb=out.get("verb", ""), base_mult=float(out.get("base_mult", 1.0)),
                          wear_rate=float(out.get("wear_rate", 0.0)), decay=E.decay_rate(out_kind))
-        # carry the output's DEMAND data onto the action (for the pd_decide collapse)
-        attrs.update(out_driver=out.get("demand_driver", ""),
-                     out_demand_weight=float(out.get("demand_weight", 0.0)),
-                     out_base_demand=float(out.get("base_demand", 0.0)))
         asp = self.eng.add_node("ActionSpec", attrs)
         self.eng.add_edge_unchecked(self._town, "has_actionspec", asp)
         for kind, qty in r["in"]:                       # N input needs (data)
@@ -2195,22 +2171,11 @@ class BigvilleWorld:
                 t = self.eng.add_node("Tool", {"kind": tk, "condition": 1.0, "wear": 0.02})
                 self.eng.add_edge_unchecked(self._town, "has_tool", t)
                 self._tools[tk] = t
-        if r.get("common") is not False:                # a new COMMON recipe is common knowledge for its trade
-            for name, a in self._actors.items():
-                if self.eng.node(a)["attrs"].get("role") == r.get("requires"):
-                    self.eng.add_edge_unchecked(a, "knows", asp)
         return asp
 
     def add_reference(self, reference):
-        """Add a shared reference and seed it only to eligible existing residents."""
+        """Register a physical reference template without assigning resident beliefs."""
         self._register_reference(reference)
-        present_roles = {self.eng.node(a)["attrs"].get("role", "") for a in self._actors.values()}
-        roles = set(reference.get("seed_roles", ()))
-        for actor in self._actors.values():
-            role = self.eng.node(actor)["attrs"].get("role", "")
-            if ("*" in roles or role in roles) and \
-                    (not reference.get("requires_role") or reference["requires_role"] in present_roles):
-                self._seed_reference(actor, reference)
         return reference["name"]
 
     # ---------------------------------------------------- village schemas and material institutions
@@ -2354,27 +2319,7 @@ class BigvilleWorld:
         articles = list(self.eng.neighbours(edition, "contains"))
         for article in articles:
             self.eng.add_edge_unchecked(self._actors[reader], "read_article", article)
-            for event in self.eng.neighbours(article, "about"):
-                self.eng.add_edge_unchecked(self._actors[reader], "knows_event", event)
         return [dict(self.eng.node(article)["attrs"]) for article in articles]
-
-    def _publish_village_weekly(self):
-        """Print a factual weekly account from a reporter's live observations."""
-        reporters = [name for name, node in self._actors.items()
-                     if self.eng.node(node)["attrs"].get("role") == "reporter"
-                     and self.is_alive(name)]
-        if not reporters:
-            return None
-        reporter = reporters[0]
-        food = sum(self.qty(k) for k, spec in self._item_specs.items() if spec.get("food") and k in self._stock)
-        event = self.create_event("weekly_village_report", subject="Bigville",
-                                  detail=(f"The village holds {food:.0f} edible rations, "
-                                          f"{len(self._living_crops())} living crops, and "
-                                          f"{sum(self.animal_alive(n) for n in self._animals)} living animals."),
-                                  observer=reporter, public=True)
-        return self.print_newspaper(reporter, event,
-                                    headline=f"The Week in Bigville: {int(self.calendar()['day'])}",
-                                    copies=20)
 
     def add_household(self, name, *, kind="landless_household", assets=None, home_cell=None):
         spec = E.HOUSEHOLDS[kind]
@@ -2444,33 +2389,9 @@ class BigvilleWorld:
         assert self.eng.node(self._actors[clerk])["attrs"].get("role") == "clerk", \
             f"{clerk} is not the village clerk"
 
-    def _seed_land_title_fact(self, actor_node, land, title):
-        actor_facts = self._actor_land_titles.setdefault(actor_node, {})
-        title_id = self.eng.node(title)["attrs"]["record_id"]
-        if title_id in actor_facts:
-            return actor_facts[title_id]
-        ta = self.eng.node(title)["attrs"]
-        fact = self.eng.add_node("Fact", {"name": f"title_{title_id}", "kind": "resident_land_title",
-                                           "abstraction": "operational", "subject": land,
-                                           "predicate": "held_by", "object": ta["holder"],
-                                           "tenure": ta["tenure"], "record_id": title_id})
-        self.eng.add_edge_unchecked(actor_node, "knows_land_title", fact)
-        actor_facts[title_id] = fact
-        return fact
-
-    def _seed_title_knowledge(self, land, title, names):
-        recipients = set(names)
-        for name in list(recipients):
-            if name in self._actors:
-                self._seed_land_title_fact(self._actors[name], land, title)
-            elif name in self._households:
-                for member in self.household_members(name):
-                    if member in self._actors:
-                        self._seed_land_title_fact(self._actors[member], land, title)
-
     def _register_title(self, clerk, land, holder, *, holder_kind=None, tenure="freehold",
                         basis="grant", effective=None, witnesses=(), deed=None, occupant=None):
-        self._require_clerk(clerk)
+        # Role labels do not make a register entry authoritative.
         assert land in self._land and tenure in E.LAND_TENURE
         holder_node, resolved_kind = self._holder_node(holder, holder_kind)
         old = self._titles.get(land)
@@ -2491,20 +2412,18 @@ class BigvilleWorld:
         if old is not None:
             self.eng.add_edge_unchecked(title, "supersedes", old)
         self._titles[land] = title
-        self._seed_title_knowledge(land, title, {clerk, holder, *witnesses})
         return title
 
     def register_land(self, clerk, land, holder, *, holder_kind=None, tenure="freehold",
                       basis="grant", effective=None, witnesses=()):
-        """Create the initial registered title for a parcel."""
+        """Create an initial title record; readers form their own interpretation."""
         assert land not in self._titles, f"{land} already has a registered title"
         return self._register_title(clerk, land, holder, holder_kind=holder_kind, tenure=tenure,
                                      basis=basis, effective=effective, witnesses=witnesses)
 
     def write_deed(self, clerk, deed_type, land, *, from_holder="", to_holder="", witnesses=(),
                    term=None, consideration=0.0, notes=""):
-        """Create a physical deed; it changes no title until the clerk registers it."""
-        self._require_clerk(clerk)
+        """Create a physical deed record, independent of the writer's role."""
         assert deed_type in E.DEED_TYPES and land in self._land
         deed_id = f"deed:{len(self._deeds) + 1}"
         deed = self.eng.add_node("WrittenDeed", {"record_id": deed_id, "kind": "deed",
@@ -2520,29 +2439,12 @@ class BigvilleWorld:
         return deed
 
     def register_deed(self, clerk, deed):
-        """Register a deed at the records office and materialise its title consequence."""
-        self._require_clerk(clerk)
+        """Append a deed to the register as evidence, without deciding title."""
         attrs = self.eng.node(deed)["attrs"]
         assert attrs.get("registered") == 0.0 and attrs["parcel"] in self._land
-        deed_type = attrs["deed_type"]
-        to_holder = attrs.get("to_holder", "")
-        from_holder = attrs.get("from_holder", "")
-        assert to_holder in self._actors or to_holder in self._households, "deed needs a known receiving holder"
-        current = self._titles.get(attrs["parcel"])
-        if deed_type != "grant":
-            assert current is not None, "non-grant deed needs an existing title"
-            assert from_holder == self.eng.node(current)["attrs"].get("holder"), \
-                "only the registered holder can transfer or lease the parcel"
-        tenure = "lease" if deed_type == "lease" else "freehold"
-        occupant = to_holder if deed_type == "lease" else ""
-        title_holder = from_holder if deed_type == "lease" else to_holder
-        title = self._register_title(clerk, attrs["parcel"], title_holder, tenure=tenure,
-                                     basis=deed_type, witnesses=tuple(filter(None, attrs.get("witnesses", "").split(","))),
-                                     deed=deed, occupant=occupant)
         self.eng.set_attr(deed, "registered", 1.0)
-        self.eng.add_edge_unchecked(deed, "produced_title", title)
-        self._seed_title_knowledge(attrs["parcel"], title, {clerk, from_holder, to_holder})
-        return title
+        self.eng.add_edge_unchecked(self._town, "has_registered_deed", deed)
+        return deed
 
     def read_deed(self, reader, deed):
         """Read a deed from the archive; reading the deed is distinct from holding its title."""
@@ -2556,8 +2458,6 @@ class BigvilleWorld:
                                            "registered": attrs.get("registered", 0.0)})
         self.eng.add_edge_unchecked(self._actors[reader], "knows_deed", fact)
         self.eng.add_edge_unchecked(self._actors[reader], "read_deed", deed)
-        if attrs.get("registered") == 1.0 and attrs["parcel"] in self._titles:
-            self._seed_land_title_fact(self._actors[reader], attrs["parcel"], self._titles[attrs["parcel"]])
         return attrs["record_id"]
 
     def title_record(self, land): return self._titles.get(land)
@@ -2576,18 +2476,11 @@ class BigvilleWorld:
             return None
         return dict(self.eng.node(title)["attrs"])
 
-    def knows_land_title(self, actor, land):
-        title = self._titles.get(land)
-        if title is None:
-            return False
-        record_id = self.eng.node(title)["attrs"]["record_id"]
-        return record_id in self._actor_land_titles.get(self._actors[actor], {})
-
     def inspect_land_record(self, reader, land):
-        """Public inspection creates a resident-owned fact about the current registered title."""
+        """Observe the public register; observation alone does not assign belief."""
         assert land in self._land and self._titles.get(land) is not None
         assert self._can_read(reader), f"{reader} cannot read the land register"
-        self._seed_land_title_fact(self._actors[reader], land, self._titles[land])
+        self.eng.add_edge_unchecked(self._actors[reader], "inspected_land_record", self._titles[land])
         return self.land_record(land)
 
     def file_land_dispute(self, complainant, land, *, kind="boundary", against="", grounds=""):
@@ -2604,16 +2497,27 @@ class BigvilleWorld:
         return n
 
     def resolve_land_dispute(self, adjudicator, dispute, *, outcome, winner="", remedy=""):
-        role = self.eng.node(self._actors[adjudicator])["attrs"].get("role")
-        assert role in {"mayor", "councillor", "clerk"}, "only a local authority can resolve a land dispute"
+        """Record a resident's interpretation of a land dispute.
+
+        Kept under its historical name for callers, this does not resolve the
+        dispute globally, change title, or apply a remedy. Those are decisions
+        residents may make and actions they may separately take.
+        """
+        speaker = self._actors[adjudicator]
         attrs = self.eng.node(dispute)["attrs"]
-        assert attrs.get("status") == "open"
-        self.eng.set_attr(dispute, "status", "resolved")
-        self.eng.set_attr(dispute, "outcome", outcome)
-        self.eng.set_attr(dispute, "winner", winner)
-        self.eng.set_attr(dispute, "remedy", remedy)
-        self.eng.add_edge_unchecked(self._actors[adjudicator], "resolved_dispute", dispute)
-        return dispute
+        statement_id = f"land-dispute-statement:{len(self.eng.neighbours(dispute, 'has_statement')) + 1}"
+        statement = self.eng.add_node("LandDisputeStatement", {
+            "record_id": statement_id,
+            "speaker": adjudicator,
+            "reported_outcome": str(outcome),
+            "claimed_winner": str(winner),
+            "suggested_remedy": str(remedy),
+            "day": float(self.calendar()["day"]),
+        })
+        self.eng.add_edge_unchecked(dispute, "has_statement", statement)
+        self.eng.add_edge_unchecked(self._town, "has_land_dispute_statement", statement)
+        self.eng.add_edge_unchecked(speaker, "made_land_dispute_statement", statement)
+        return statement
 
     def add_water_source(self, name, *, kind="well", capacity=None):
         spec = E.WATER_SOURCES[kind]
@@ -2647,9 +2551,6 @@ class BigvilleWorld:
         if name not in self._infrastructure:
             return False
         attrs = self.eng.node(self._actors[operator])["attrs"]
-        roles = {str(attrs.get("role", "")), *filter(None, str(attrs.get("trades", "")).split(","))}
-        if not roles.intersection({"craftsperson", "carpenter", "woodworker", "mason", "labourer", "farm_labourer"}):
-            return False
         node = self._infrastructure[name]
         if self._turn > 0 and self.actor_position(operator) != self.map_position_node(node):
             return False
@@ -2789,13 +2690,10 @@ class BigvilleWorld:
                    and self.actor_position(name) == cell]
         if kind is not None:
             offered = [name for name in present
-                       if float(self.eng.node(self._actors[name])["attrs"].get("sell_willing", 0.0)) == 1.0
-                       and self.inventory_qty(name, kind) >= 1.0]
+                       if self.inventory_qty(name, kind) >= 1.0]
             if offered:
                 return offered[0]
-            # Being present is not enough to make a person a seller.  The
-            # shop convention tells the buyer where to go; the actual person
-            # must be there and visibly holding the offered good.
+            # This lookup reports only physical presence and possession.
             return None
         return present[0] if present else None
 
@@ -3012,47 +2910,6 @@ class BigvilleWorld:
         self._refresh_carry_state(recipient)
         return True
 
-    def _shop_give(self, giver, trade, kind, amount, *, payment_kind="coin", payment_amount=0.0):
-        """Compatibility route: use the conventional shop to find its person."""
-        shop = self.eng.node(self._shops[trade])["attrs"]
-        amount = max(0.0, float(amount))
-        price = amount * float(shop.get("price", 0.0))
-        output = shop["output_kind"]
-        payment_amount = price if payment_amount is None else max(0.0, float(payment_amount))
-        seller = self._market_counterparty(giver, trade, kind)
-        if seller is None or kind != output:
-            return False
-        return self._person_purchase(giver, seller, kind, amount,
-                                      payment_kind=payment_kind,
-                                      payment_amount=payment_amount,
-                                      trade=trade)
-
-    def _person_purchase(self, buyer, seller, kind, amount, *, payment_kind="coin",
-                         payment_amount=None, trade=None):
-        """Complete a spoken person-to-person purchase through physical give."""
-        self._actor(buyer); self._actor(seller)
-        amount = max(0.0, float(amount))
-        seller_attrs = self.eng.node(self._actor(seller))["attrs"]
-        price = amount * float(seller_attrs.get("sell_price", 0.0))
-        payment_amount = price if payment_amount is None else max(0.0, float(payment_amount))
-        speech = self._purchase_utterances.get((buyer, seller, kind))
-        if (payment_kind != "coin" or speech is None
-                or float(seller_attrs.get("sell_willing", 1.0)) != 1.0
-                or self.coin(buyer) < payment_amount
-                or self.inventory_qty(seller, kind) < amount
-                or (self._turn > 0 and self.actor_position(buyer) != self.actor_position(seller))):
-            return False
-        if not self._move_inventory_to_inventory(seller, buyer, kind, amount):
-            return False
-        self.set_coin(buyer, self.coin(buyer) - payment_amount)
-        self.set_coin(seller, self.coin(seller) + payment_amount)
-        self.eng.add_edge_unchecked(self._actor(seller), "gave", self._actor(buyer))
-        self.eng.add_edge_unchecked(self._actor(buyer), "gave", self._actor(seller))
-        transaction = self._record_transaction("purchase", buyer, seller, kind, amount, payment_amount)
-        self.eng.add_edge_unchecked(transaction, "preceded_by", speech)
-        self._purchase_utterances.pop((buyer, seller, kind), None)
-        return True
-
     def _give_discrete_item(self, giver, recipient, item):
         if self._item_owner_edge(giver, item) is None:
             return False
@@ -3064,22 +2921,17 @@ class BigvilleWorld:
 
     def give(self, giver, recipient, kind, amount=1.0, *, payment_kind=None,
              payment_amount=None):
-        """Give a held good or coin to a resident, or use give for a purchase.
+        """Physically hand a held good or coin to a nearby resident.
 
-        Purchases are person-to-person: an utterance to the seller precedes a
-        physical transfer. A shop argument is only a location convention that
-        resolves to the person working there.
+        Legacy payment arguments are accepted for call compatibility but have
+        no world-side agreement semantics. The cognition layer must choose any
+        payment as a separate physical transfer.
         """
         amount = max(0.0, float(amount))
         if amount <= 0.0:
             return False
         if recipient in self._shops:
-            self._actor(giver)
-            if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(giver, "give"):
-                return False
-            return self._shop_give(giver, recipient, kind, amount,
-                                   payment_kind=payment_kind or "coin",
-                                   payment_amount=payment_amount)
+            return False
         self._actor(giver); self._actor(recipient)
         if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(giver, "give"):
             return False
@@ -3087,10 +2939,6 @@ class BigvilleWorld:
             return False
         if not isinstance(kind, str):
             return self._give_discrete_item(giver, recipient, kind)
-        if payment_kind == "coin":
-            return self._person_purchase(giver, recipient, kind, amount,
-                                          payment_kind=payment_kind,
-                                          payment_amount=payment_amount)
         if kind == "coin":
             if self.coin(giver) < amount:
                 return False
@@ -3112,42 +2960,55 @@ class BigvilleWorld:
         self.eng.add_edge_unchecked(self._actor(giver), "gave", self._actor(recipient))
         return True
 
-    def buy(self, buyer, trade, amount=1.0):
-        """Compatibility wrapper; ``buy`` is not a resident action.
+    def _physical_transfer_precheck(self, source, recipient, kind, amount=1.0):
+        if source not in self._actors or recipient not in self._actors:
+            return False
+        if (self.actor_position(source) is None
+                or self.actor_position(source) != self.actor_position(recipient)):
+            return False
+        if isinstance(kind, str):
+            try:
+                amount = float(amount)
+            except (TypeError, ValueError):
+                return False
+            if amount <= 0.0:
+                return False
+            if kind == "coin":
+                return self.coin(source) >= amount
+            return (self.inventory_qty(source, kind) >= amount
+                    and self.used_volume(self._actor_inventories[recipient])
+                    + amount * self.item_volume(kind)
+                    <= self.capacity(self._actor_inventories[recipient]) + 1e-9)
+        return self._item_owner_edge(source, kind) is not None
 
-        Live resident plans use a purchase utterance followed by ``give``.
-        This wrapper remains for small setup callers and delegates to exactly
-        that transfer path, recording ``give`` once the clock is running.
+    def _physical_transfer(self, source, recipient, kind, amount=1.0):
+        """Move an already-held physical good or object between nearby people.
+
+        This deliberately has no trade, price, willingness, ownership, or
+        utterance semantics.  The caller supplies the direction explicitly;
+        world facts are limited to reach, possession, and the existing
+        inventory capacity checks.
         """
-        self._actor(buyer)
-        if trade not in self._shops:
+        if not self._physical_transfer_precheck(source, recipient, kind, amount):
             return False
-        shop = self.eng.node(self._shops[trade])["attrs"]
-        amount = max(0.0, float(amount))
-        price = amount * float(shop.get("price", 0.0))
-        output = shop.get("output_kind", "")
-        if self.coin(buyer) < price:
-            return False
-        seller = self._market_counterparty(buyer, trade, output)
-        # Setup-time compatibility calls may resolve the conventional worker
-        # before the clock has opened physical turns.  This does not create a
-        # transaction or bypass live co-location; it only lets fixtures seed a
-        # resident's inventory through the old convenience spelling.
-        if seller is None and self._turn == 0:
-            candidate = self._shopkeeper_for_trade(trade)
-            if candidate is not None and self.inventory_qty(candidate, output) >= amount:
-                seller = candidate
-        if seller is None:
-            return False
-        if not self._major_dispatch:
-            if self._turn > 0 and self.actor_turn_state(buyer)["major_action_used"]:
-                return False
-            utterance = self.purchase_utterance(buyer, seller, output, amount)
-            if utterance is False:
-                return False
-            self.eng.set_attr(utterance, "market_trade", str(trade))
-        return self.give(buyer, seller, output, amount,
-                         payment_kind="coin", payment_amount=price)
+        # Reuse the compatibility implementation for the actual conserved
+        # movement, but bypass its second turn-budget claim; transfer already
+        # claimed the source actor's slot.
+        old_dispatch = self._major_dispatch
+        self._major_dispatch = True
+        try:
+            return self.give(source, recipient, kind, amount)
+        finally:
+            self._major_dispatch = old_dispatch
+
+    def buy(self, buyer, trade, amount=1.0):
+        """Retired compatibility name; purchase is a cognition choice.
+
+        This method intentionally cannot create speech, decide acceptance, or
+        move goods or coins. Use an explicit backend-selected transfer for
+        each physical movement.
+        """
+        return False
 
     def purchase_utterance(self, buyer, seller, kind=None, amount=1.0):
         """Speak a purchase proposal to a person, without completing it.
@@ -3194,7 +3055,6 @@ class BigvilleWorld:
         if trade is not None:
             self.eng.set_attr(utterance, "market_trade", str(trade))
         self.eng.set_attr(utterance, "market_quantity", float(amount))
-        self._purchase_utterances[(buyer, seller, kind)] = utterance
         self._speech_events.append({
             "turn": int(self._turn), "speaker": buyer, "target": seller,
             "kind": "purchase", "content": content,
@@ -3203,46 +3063,17 @@ class BigvilleWorld:
         return utterance
 
     def sell_to_shop(self, seller, trade, kind, amount=1.0):
-        shop = self.eng.node(self._shops[trade])["attrs"]
-        amount = max(0.0, float(amount))
-        if shop.get("input_kind") != kind or self.inventory_qty(seller, kind) < amount:
-            return False
-        if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(seller, "sell"):
-            return False
-        price = amount * float(shop.get("price", 0.0)) * 0.5
-        if float(shop.get("coin", 0.0)) < price:
-            return False
-        if not self._move_inventory_to_stock(seller, kind, amount):
-            return False
-        self.eng.set_attr(self._shops[trade], "coin", float(shop.get("coin", 0.0)) - price)
-        self.set_coin(seller, self.coin(seller) + price)
-        self._record_transaction("sale", seller, trade, kind, amount, price)
-        # A self-observed trade-completion event -- same pattern as
-        # produce_run above, sized to the sale's own coin value rather than
-        # a fixed severity so a bigger sale is a mildly bigger piece of news.
-        self.create_event("sold_goods", subject=seller,
-                          detail=f"{seller} sold {kind} at the {trade}.",
-                          observer=seller, severity=min(0.5, 0.05 + price * 0.01))
-        return True
+        """Retired settlement helper; sale terms and acceptance belong to agents.
+
+        Goods and coins can still move through separately chosen physical
+        transfers. A shop is not an agent, so this compatibility API cannot
+        infer that it accepts goods or choose a price.
+        """
+        return False
 
     def sell_labor(self, actor, trade, wage=2.0):
-        """Sell one labour shift to a shop as an explicit actor action.
-
-        The shop pays from its accumulated coin; this is the small founding
-        labour market that lets residents continue buying food after their
-        starting coin is spent.  It is not a town-wide wage side effect.
-        """
-        shop_node = self._shops.get(trade)
-        if shop_node is None:
-            return False
-        shop = self.eng.node(shop_node)["attrs"]
-        wage = max(0.0, float(wage))
-        if float(shop.get("coin", 0.0)) < wage:
-            return False
-        self.eng.set_attr(shop_node, "coin", float(shop.get("coin", 0.0)) - wage)
-        self.set_coin(actor, self.coin(actor) + wage)
-        self._record_transaction("labor", actor, trade, "labor", 1.0, wage)
-        return True
+        """Retired: labor agreement and wage terms require agent choices."""
+        return False
 
     def give_food(self, giver, recipient, kind, amount=1.0):
         """Transfer owned food between residents; it is not a town-wide ration."""
@@ -3406,15 +3237,8 @@ class BigvilleWorld:
         return True
 
     def pay_wage(self, employer, worker, amount):
-        amount = max(0.0, float(amount))
-        if self.coin(employer) < amount:
-            return False
-        self.set_coin(employer, self.coin(employer) - amount)
-        self.set_coin(worker, self.coin(worker) + amount)
-        attrs = self.eng.node(self._actors[worker])["attrs"]
-        self.eng.set_attr(self._actors[worker], "wage_due", max(0.0, float(attrs.get("wage_due", 0.0)) - amount))
-        self._record_transaction("wage", employer, worker, "coin", amount, amount)
-        return True
+        """Retired: use an explicit coin transfer chosen by the backend."""
+        return False
 
     def _record_transaction(self, kind, actor, target, good, quantity, value):
         node = self.eng.add_node("Transaction", {"kind": kind, "actor": str(actor), "target": str(target),
@@ -3426,8 +3250,8 @@ class BigvilleWorld:
 
     # ---------------------------------------------------- civic process and justice
     def propose_local_law(self, author, name, *, title=None, scope="bigville", concepts=()):
-        if name in self._law_specs and self.law_origin(name) == "giantville":
-            raise ValueError("inherited Giantville laws cannot be edited locally")
+        # A proposal records what a resident said; it does not edit the
+        # inherited registry or resolve the proposal's legal meaning.
         proposal = self.eng.add_node("LawProposal", {"name": name, "title": title or name.replace("_", " ").title(),
                                                         "scope": scope, "status": "open", "votes_for": 0.0,
                                                         "votes_against": 0.0, "author": author})
@@ -3439,39 +3263,25 @@ class BigvilleWorld:
         return proposal
 
     def vote_on_law(self, voter, proposal, support):
-        role = self.eng.node(self._actors[voter])["attrs"].get("role")
-        if role not in {"mayor", "councillor", "clerk"}:
-            return False
-        if self.eng.node(proposal)["attrs"].get("status") != "open":
-            return False
+        # A vote is an actor's recorded expression. The world does not decide
+        # who is entitled to vote or whether a proposal remains votable.
         edge = "voted_for" if support else "voted_against"
         self.eng.add_edge_unchecked(self._actors[voter], edge, proposal)
         return True
 
     def hold_council(self, chair=None, proposal=None):
-        members = [name for name, node in self._actors.items()
-                   if self.eng.node(node)["attrs"].get("role") in {"mayor", "councillor", "clerk"}]
-        meeting = self.eng.add_node("CouncilMeeting", {"day": float(self.calendar()["day"]), "quorum": float(len(members)),
-                                                         "chair": chair or (members[0] if members else "")})
+        # Persist the convening and any observed tally as records only. Quorum,
+        # enactment, and promulgation are interpretations for residents.
+        meeting = self.eng.add_node("CouncilMeeting", {"day": float(self.calendar()["day"]),
+                                                         "chair": chair or ""})
         self.eng.add_edge_unchecked(self._town, "has_meeting", meeting)
-        for name in members:
-            self.eng.add_edge_unchecked(meeting, "has_member", self._actors[name])
         self._meetings[f"meeting:{len(self._meetings) + 1}"] = meeting
         if proposal is not None:
-            attrs = self.eng.node(proposal)["attrs"]
             votes_for = len(self.eng.in_neighbours(proposal, "voted_for"))
             votes_against = len(self.eng.in_neighbours(proposal, "voted_against"))
-            self.eng.set_attr(proposal, "votes_for", float(votes_for))
-            self.eng.set_attr(proposal, "votes_against", float(votes_against))
-            if votes_for > votes_against and votes_for >= max(1, len(members) // 2 + 1):
-                name = attrs["name"]
-                self._law_specs[name] = {"name": name, "title": attrs["title"], "scope": attrs["scope"],
-                                         "origin": "bigville", "immutable": False, "enforcement": "bigville",
-                                         "concepts": [dict(self.eng.node(c)["attrs"]) for c in self.eng.neighbours(proposal, "has_concept")]}
-                self.eng.set_attr(proposal, "status", "enacted")
-                self._seed_written_documents()
-            else:
-                self.eng.set_attr(proposal, "status", "rejected")
+            self.eng.set_attr(meeting, "proposal", str(self.eng.node(proposal)["attrs"].get("name", "")))
+            self.eng.set_attr(meeting, "votes_for_observed", float(votes_for))
+            self.eng.set_attr(meeting, "votes_against_observed", float(votes_against))
         return meeting
 
     def file_case(self, complainant, respondent, *, charge, law="", evidence=""):
@@ -3485,17 +3295,25 @@ class BigvilleWorld:
         return case
 
     def resolve_case(self, adjudicator, case, *, verdict, remedy=""):
-        if self.eng.node(self._actors[adjudicator])["attrs"].get("role") not in {"mayor", "constable", "clerk", "councillor"}:
-            raise ValueError("only a local authority may resolve a Bigville case")
-        attrs = self.eng.node(case)["attrs"]
-        if attrs.get("status") != "open":
-            return False
-        self.eng.set_attr(case, "status", "resolved")
-        self.eng.set_attr(case, "verdict", str(verdict))
-        self.eng.set_attr(case, "remedy", str(remedy))
-        self.eng.set_attr(case, "resolved_day", float(self.calendar()["day"]))
-        self.eng.add_edge_unchecked(self._actors[adjudicator], "resolved_case", case)
-        return True
+        """Record a resident's case interpretation without making it binding.
+
+        The legacy method name does not grant institutional authority: any
+        resident may state a verdict or proposed remedy, and the case remains
+        open until residents themselves choose what to believe or do.
+        """
+        speaker = self._actors[adjudicator]
+        statement_id = f"case-statement:{len(self.eng.neighbours(case, 'has_statement')) + 1}"
+        statement = self.eng.add_node("CaseStatement", {
+            "record_id": statement_id,
+            "speaker": adjudicator,
+            "reported_verdict": str(verdict),
+            "suggested_remedy": str(remedy),
+            "day": float(self.calendar()["day"]),
+        })
+        self.eng.add_edge_unchecked(case, "has_statement", statement)
+        self.eng.add_edge_unchecked(self._town, "has_case_statement", statement)
+        self.eng.add_edge_unchecked(speaker, "made_case_statement", statement)
+        return statement
 
     def map_position_node(self, node):
         attrs = self.eng.node(node)["attrs"]
@@ -3546,9 +3364,6 @@ class BigvilleWorld:
         return table[name]
 
     def _seed_bundle(self, actor, bundle):
-        for concept in E.all_reference_templates():
-            if concept.get("source_name") == bundle["name"]:
-                self._seed_reference(actor, concept)
         understood = self.eng.add_node("PolicyUnderstanding", {"name": bundle["name"], "kind": bundle["kind"]})
         self.eng.add_edge_unchecked(actor, "understands", understood)
         self._actor_policies.setdefault(actor, set()).add(bundle["name"])
@@ -3579,7 +3394,6 @@ class BigvilleWorld:
             return None
         if attrs.get("kind") == "policy" and not self.can_read(reader):
             return None
-        self._seed_bundle(self._actors[reader], self._bundle(attrs["name"], attrs["kind"]))
         self.eng.add_edge_unchecked(self._actors[reader], "read_document", document)
         return attrs["name"]
 
@@ -3701,7 +3515,12 @@ class BigvilleWorld:
         return dict(self.eng.node(self._building_projects[key])["attrs"])
 
     def advance_building(self, project, builder, *, labour=1.0):
-        """Spend materials and labour on a project; completion mints a Place node."""
+        """Spend materials and labour on a project; completion mints a Place node.
+
+        A successful work step returns ``True`` while the project remains in
+        progress, and the created Place when the step completes the project.
+        ``None`` means that no work was accepted.
+        """
         assert project in self._building_projects and builder in self._actors
         project_cells = list(self.eng.neighbours(self._building_projects[project], "at_cell"))
         project_cell = self.map_position_node(project_cells[0]) if project_cells else None
@@ -3715,20 +3534,26 @@ class BigvilleWorld:
         if attrs["status"] == "complete":
             return self._places.get(attrs["name"])
         spec = E.BUILDING_PROJECTS[attrs["project"]]
-        labour = min(float(labour), float(attrs["labour"]) - float(attrs["progress"]))
+        starting_progress = float(attrs["progress"])
+        total_labour = float(attrs["labour"])
+        labour = min(float(labour), total_labour - starting_progress)
         if labour <= 0:
             return None
         scale = labour / float(attrs["labour"])
         required = {k: float(v) * scale for k, v in spec.get("inputs", {}).items()}
-        if any(self.qty(k) < q for k, q in required.items()):
+        if any(self.qty(k) + 1e-9 < q for k, q in required.items()):
             return None
         for kind, qty in required.items():
-            self.set_stock(kind, self.qty(kind) - qty)
-        self.eng.set_attr(n, "progress", float(attrs["progress"]) + labour)
+            # Repeated fractional costs can leave a tiny negative remainder
+            # (or make the final exact cost appear unavailable) through
+            # floating point roundoff.
+            self.set_stock(kind, max(0.0, self.qty(kind) - qty))
+        new_progress = starting_progress + labour
+        self.eng.set_attr(n, "progress", new_progress)
         self.eng.add_edge_unchecked(self._actors[builder], "worked_on", n)
-        if float(attrs["progress"]) + labour + 1e-9 < float(attrs["labour"]):
+        if new_progress + 1e-9 < total_labour:
             self.eng.set_attr(n, "status", "under_construction")
-            return None
+            return True
         self.eng.set_attr(n, "status", "complete")
         building_kind = attrs["building"]
         base = dict(E.BUILDINGS.get(building_kind, {
@@ -3918,8 +3743,14 @@ class BigvilleWorld:
             viable, key=lambda cell: self.distance(cell, destination)
             if self.distance(cell, destination) is not None else 10**9))
 
-    def _animal_setup(self, species):
-        return dict(getattr(E, "ANIMAL_NPC_SETUP", {}).get(species, {}))
+    def _animal_move_to_neighbor(self, name, destination):
+        """Apply one adjacent animal step, enforcing the published movement boundary."""
+        current = self.animal_position(name)
+        destination = tuple(destination)
+        if (current is None or abs(current[0] - destination[0]) + abs(current[1] - destination[1]) != 1
+                or destination not in self._map_cells or not self._animal_allowed_cell(name, destination)):
+            return current
+        return self._move_animal_to(name, destination)
 
     def add_animal(self, name, species, *, cell=None, household=None, land=None, enclosure=None):
         spec = E.ANIMALS[species]
@@ -3944,10 +3775,6 @@ class BigvilleWorld:
             if enclosure not in self._enclosures:
                 raise KeyError(f"unknown enclosure: {enclosure}")
             self.eng.add_edge_unchecked(a, "kept_in", self._enclosures[enclosure])
-        from bigville.backends.animal import AnimalNPCBackend
-        self._animal_minds[name] = AnimalNPCBackend(name, species, self._animal_setup(species))
-        self._animal_decisions[name] = {}
-        self._animal_targets[name] = {}
         return a
 
     def animal_affordances(self, name):
@@ -3955,42 +3782,40 @@ class BigvilleWorld:
             raise KeyError(f"unknown animal: {name}")
         attrs = self.eng.node(self._animals[name])["attrs"]
         if float(attrs.get("alive", 0.0)) != 1.0:
-            return [{"action": "stay", "score": 0.0, "concepts": ["security"]}]
-        setup = self._animal_setup(attrs.get("species", ""))
+            return [{"action": "stay"}]
         position = self.animal_position(name)
         enclosure = self.animal_enclosure(name)
-        allowed = self._enclosure_cells.get(enclosure, set()) if enclosure else set(self._map_cells)
         options = []
-        if position not in allowed and allowed:
-            target = min(allowed, key=lambda cell: self.distance(position, cell)
-                         if self.distance(position, cell) is not None else 10**9)
-            options.append({"action": "move", "target": target, "score": 48.0,
-                            "concepts": ["security", "survival"]})
-        if float(attrs.get("hunger", 0.0)) > 0.0 and self.qty(attrs.get("eats", "")) >= float(attrs.get("ration", 1.0)):
-            options.append({"action": "eat", "kind": attrs.get("eats", ""), "score": 40.0,
-                            "concepts": ["survival"]})
-        if attrs.get("species") in {"cow", "sheep", "pig", "horse"} and position in allowed:
-            options.append({"action": "graze", "score": 22.0,
-                            "concepts": ["survival", "comfort"]})
-        if attrs.get("species") == "dog":
-            targets = []
-            for target, target_node in self._animals.items():
-                target_attrs = self.eng.node(target_node)["attrs"]
-                if (target != name and float(target_attrs.get("alive", 0.0)) == 1.0
-                        and target_attrs.get("species") in setup.get("preferred_targets", ())):
-                    targets.append((target, self.animal_position(target)))
-            targets.sort(key=lambda pair: pair[0])
-            if targets and targets[0][1] is not None:
-                target, target_pos = targets[0]
-                target_enclosure = self.animal_enclosure(target)
-                escaped = (target_enclosure and self.enclosure_intact(target_enclosure)
-                           and target_pos not in self._enclosure_cells.get(target_enclosure, set()))
+        if position is not None:
+            adjacent = ((position[0] + 1, position[1]), (position[0] - 1, position[1]),
+                        (position[0], position[1] + 1), (position[0], position[1] - 1))
+            for cell in adjacent:
+                if cell in self._map_cells and self._animal_allowed_cell(name, cell):
+                    options.append({"action": "move", "target": cell})
+        store_cell = self.map_position_node(self._store)
+        feed_reachable = (position is not None and store_cell is not None
+                          and self.distance(position, store_cell) is not None
+                          and self.distance(position, store_cell) <= 1)
+        if (feed_reachable and self.qty(attrs.get("eats", "")) >= float(attrs.get("ration", 1.0))):
+            options.append({"action": "eat", "kind": attrs.get("eats", "")})
+        # Herding is a possible animal action whenever another living animal
+        # can physically be moved toward an enclosure. Which target matters
+        # to this animal is a backend preference, not a world affordance.
+        for target, target_node in sorted(self._animals.items()):
+            if target == name:
+                continue
+            target_attrs = self.eng.node(target_node)["attrs"]
+            target_enclosure = self.animal_enclosure(target) or enclosure
+            if (float(target_attrs.get("alive", 0.0)) == 1.0
+                    and target_enclosure in self._enclosures
+                    and self.animal_position(target) is not None):
                 options.append({"action": "herd", "target": target,
-                                "score": 65.0 if escaped else 31.0,
-                                "concepts": ["duty", "care"]})
-        options.append({"action": "stay", "score": 0.0, "concepts": ["security", "comfort"]})
-        self._animal_targets[name] = {str(option.get("target")): option.get("target")
-                                      for option in options if option.get("target") is not None}
+                                "target_species": target_attrs.get("species", ""),
+                                "target_escaped": bool(
+                                    self.enclosure_intact(target_enclosure)
+                                    and self.animal_position(target) not in
+                                    self._enclosure_cells.get(target_enclosure, set()))})
+        options.append({"action": "stay"})
         return options
 
     def _herd(self, dog, target):
@@ -4013,35 +3838,38 @@ class BigvilleWorld:
         self.eng.add_edge_unchecked(self._animals[dog], "herded", self._animals[target])
         return True
 
-    def animal_tick(self):
-        """Run one species-configured animal decision per living animal."""
-        from bigville.backends.protocol import ActorContext
-        for name, node in self._animals.items():
-            if not self.animal_alive(name):
-                continue
+    def apply_animal_action(self, name, action, params=None):
+        """Validate and enact one backend-selected animal action physically."""
+        if name not in self._animals:
+            raise KeyError(f"unknown animal: {name}")
+        node = self._animals[name]
+        if not self.animal_alive(name):
+            return False
+        action = str(action or "stay")
+        params = dict(params or {})
+        options = self.animal_affordances(name)
+        if not any(option.get("action") == action
+                   and {key: value for key, value in option.items()
+                        if key in {"target", "kind"}} ==
+                   {key: value for key, value in params.items()
+                    if key in {"target", "kind"}}
+                   for option in options):
+            return False
+        self.eng.set_attr(node, "last_npc_action", action)
+        target = params.get("target")
+        if action == "move" and target is not None:
+            before = self.animal_position(name)
+            return self._animal_move_to_neighbor(name, tuple(target)) != before
+        if action == "herd" and target in self._animals:
+            return self._herd(name, target)
+        if action == "eat":
+            kind = str(params.get("kind", ""))
             attrs = self.eng.node(node)["attrs"]
-            mind = self._animal_minds.get(name)
-            if mind is None:
-                continue
-            context = ActorContext(
-                mind.character, int(self._turn),
-                {"hunger": float(attrs.get("hunger", 0.0)),
-                 "insecurity": 1.0 if not self._animal_allowed_cell(name, self.animal_position(name)) else 0.0,
-                 "social_pressure": 0.0, "arousal": 0.4},
-                self.animal_affordances(name))
-            response = mind.decide(context)
-            choice = dict(mind.last_choice)
-            self._animal_decisions[name] = choice
-            plan = response.major_action
-            self.eng.set_attr(node, "last_npc_action", plan.action if plan else "stay")
-            if plan is None:
-                continue
-            target = plan.params.get("target")
-            if plan.action == "move" and target is not None:
-                self._animal_step_toward(name, tuple(target))
-            elif plan.action == "herd" and target in self._animals:
-                self._herd(name, target)
-        return {name: dict(choice) for name, choice in self._animal_decisions.items()}
+            ration = float(attrs.get("ration", 1.0))
+            self.set_stock(kind, self.qty(kind) - ration)
+            self.eng.set_attr(node, "hunger", 0.0)
+            return True
+        return action == "stay"
 
     def _husbandry_yield(self, actor, animal, task):
         """Perform one data-defined animal-care yield with a period cooldown."""
@@ -4054,10 +3882,6 @@ class BigvilleWorld:
         aa = self.eng.node(an)["attrs"]
         assert aa["species"] == spec["species"], f"{task} requires a {spec['species']}"
         assert float(aa.get("alive", 0.0)) == 1.0, f"{animal} is not alive"
-        actor_attrs = self.eng.node(self._actors[actor])["attrs"]
-        roles = {actor_attrs.get("role", ""), actor_attrs.get("trade", "")}
-        roles.update(filter(None, actor_attrs.get("trades", "").split(",")))
-        assert roles.intersection(spec["roles"]), f"{actor} is not trained for {task}"
         period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
         epoch_key = f"{task}_epoch"
         last = float(aa.get(epoch_key, -float(spec["cooldown"])))
@@ -4169,7 +3993,18 @@ class BigvilleWorld:
         data = next((r for r in E.RECIPES if r["name"] == recipe), None)
         if data is None:
             return False
-        return all(self.qty(kind) >= float(qty) for kind, qty in data.get("in", []))
+        return (all(self.qty(kind) >= float(qty) for kind, qty in data.get("in", []))
+                and all(self._instrument_usable(kind) for kind in data.get("tools", [])))
+
+    def _instrument_usable(self, kind):
+        """Whether the town physically has a working instrument of ``kind``."""
+        tool = self._tools.get(kind)
+        if tool is None or not self.eng.has_node(tool):
+            return False
+        if not self.eng.has_edge(self._town, "has_tool", tool):
+            return False
+        attrs = self.eng.node(tool)["attrs"]
+        return float(attrs.get("condition", 0.0)) > 0.0 and float(attrs.get("broken", 0.0)) != 1.0
 
     def _village_start(self, actor, recipe):
         if self.busy(actor) or not self._recipe_inputs_available(recipe):
@@ -4291,8 +4126,6 @@ class BigvilleWorld:
             # Retire execution-only graph state once per workday, rather than
             # scanning the whole graph on every 15-minute engine tick.
             self._cleanup_village_transients()
-            if int(self.calendar()["day"]) % 7 == 0:
-                self._publish_village_weekly()
             self.record_report_snapshot(label=f"clock:{int(self.calendar()['clock'])}")
         return self.sanity_report()
 
@@ -4303,7 +4136,7 @@ class BigvilleWorld:
         food as a side effect of time passing.  Those are actor actions.
         """
         for _ in range(int(n)):
-            if getattr(self, "_cast100", None):
+            if self.physical_subsystems["ecology"] and getattr(self, "_cast100", None):
                 self._draw_village_water()
                 self._draw_village_pasture()
             self._advance_infrastructure()
@@ -4330,6 +4163,8 @@ class BigvilleWorld:
         spec = E.CROPS[crop]
         if spec["season"] != self.season():
             return None                                     # out of season -- nothing is sown
+        if self.qty(spec["seed"]) < 1.0:
+            return None                                     # another actor may have used the last seed
         self.set_stock(spec["seed"], max(0.0, self.qty(spec["seed"]) - 1.0))    # a seed is used
         c = self.eng.add_node("Crop", {"crop": crop, "age": 0.0, "thirst": 0.0, "thirst_epoch": 0.0,
                                        "alive": 1.0, "water": float(spec["water"]), "wilt": float(spec["wilt"]),
@@ -4459,25 +4294,22 @@ class BigvilleWorld:
             self.eng.remove_node(stock)
         self._run()
 
-    # ---------------------------------------------------- books (physical, record a recipe, read to learn)
+    # ---------------------------------------------------- books (physical records; cognition owns learning)
     def write_in_book(self, author, book, recipe):
-        """An author who KNOWS a recipe writes it into a made book (a physical record with weight).
-        Refused (None) if the author cannot write (below functional literacy)."""
-        assert self.knows(author, recipe), f"{author} does not know {recipe}"
-        if not self._can_read(author):
-            return None
+        """Write recipe content into a made book (a physical record with weight)."""
         self.eng.set_attr(book, "recipe", recipe)
         self.eng.add_edge_unchecked(self._actors[author], "wrote", book)
+        self.create_event("recipe_written", subject=author,
+                          detail=f"{author} wrote {recipe} in a book.",
+                          observer=author, severity=0.05)
         return book
 
     def read_book(self, reader, book):
-        """Read a book -- a LITERATE reader learns the recipe written in it. Refused (None, no learning)
-        if the reader cannot read (below functional literacy)."""
-        if not self._can_read(reader):
-            return None
+        """Return the inscription as an observation; comprehension is learner-owned."""
         recipe = self.eng.node(book)["attrs"].get("recipe", "")
-        if recipe:
-            self.eng.add_edge_unchecked(self._actors[reader], "knows", self._actions[recipe])
+        self.create_event("recipe_read", subject=reader,
+                          detail=f"{reader} inspected a book containing {recipe}.",
+                          observer=reader, severity=0.02)
         return recipe
 
     def book_recipe(self, book): return self.eng.node(book)["attrs"].get("recipe", "")
@@ -4682,10 +4514,6 @@ class BigvilleWorld:
                                         # reading/writing + general capability (class-graded; raised at school)
                                         "literacy": lit, "capability": cap, "learn": float(learn), "school_epoch": 0.0,
 
-                                        # observed-demand decision state
-                                        "decide_armed": 0.0, "observe_armed": 0.0, "will_make": "",
-                                        "want_qty": 0.0, "last_driver": "", "unsold": 0.0,
-                                        "belief_harvest": 0.0, "belief_building": 0.0, "belief_storage": 0.0,
                                         # container-op state
                                         "fill_armed": 0.0, "fill_amount": 0.0, "fill_kind": "",
                                         "empty_armed": 0.0, "empty_amount": 0.0, "empty_kind": "",
@@ -4749,27 +4577,21 @@ class BigvilleWorld:
         for trade in self._market_expectation_specs:
             self._seed_market_expectation(name, trade)
         self._turn_actions.setdefault(name, [])
-        self._made = getattr(self, "_made", {}); self._made[name] = 0
-        present_roles = {self.eng.node(existing)["attrs"].get("role", "") for existing in self._actors.values()}
-        for existing in self._actors.values():
-            existing_role = self.eng.node(existing)["attrs"].get("role", "")
-            for reference in E.shared_concepts_for(existing_role, present_roles):
-                self._seed_reference(existing, reference)
-        recipe_roles = {role, *trades}
-        for r in E.RECIPES:                              # a resident KNOWS their trade's COMMON recipes
-            if r.get("requires") in recipe_roles and r.get("common") is not False:
-                self.eng.add_edge_unchecked(a, "knows", self._actions[r["name"]])
         return a
 
-    # ---------------------------------------------------- recipe knowledge (taught + written down)
+    # ---------------------------------------------------- recipe belief compatibility queries
     def knows(self, actor, recipe):
         return self.eng.has_edge(self._actors[actor], "knows", self._actions[recipe])
 
     def teach(self, teacher, learner, recipe):
-        """A resident who KNOWS a recipe teaches it to another -- the learner now knows it."""
-        if self.knows(teacher, recipe):
-            self.eng.add_edge_unchecked(self._actors[learner], "knows", self._actions[recipe])
-        return self.knows(learner, recipe)
+        """Record an attempted explanation without deciding what the learner learned."""
+        if (teacher not in self._actors or learner not in self._actors
+                or recipe not in self._actions):
+            return False
+        self.create_event("recipe_explained", subject=teacher,
+                          detail=f"{teacher} explained {recipe} to {learner}.",
+                          observer=teacher, severity=0.05)
+        return False
 
     # ---------------------------------------------------- unified social graph
     def _actor(self, name):
@@ -5040,8 +4862,6 @@ class BigvilleWorld:
         return event
 
     def diagnose(self, doctor, patient, condition="fever"):
-        if self.eng.node(self._actors[doctor])["attrs"].get("role") not in {"doctor", "midwife"}:
-            return False
         self.eng.set_attr(self._actors[patient], "disease", condition)
         self.eng.set_attr(self._actors[patient], "health", condition)
         illness = self.eng.add_node("Illness", {"patient": patient, "condition": condition,
@@ -5051,8 +4871,6 @@ class BigvilleWorld:
         return illness
 
     def treat(self, doctor, patient, *, medicine=0.0):
-        if self.eng.node(self._actors[doctor])["attrs"].get("role") not in {"doctor", "midwife"}:
-            return False
         if medicine and self.qty("medicine") < medicine:
             return False
         if medicine:
@@ -5068,9 +4886,6 @@ class BigvilleWorld:
     def care_for(self, caregiver, patient):
         """Perform one co-located care action for an injured or ill resident."""
         if caregiver not in self._actors or patient not in self._actors:
-            return False
-        role = self.eng.node(self._actors[caregiver])["attrs"].get("role")
-        if role not in {"doctor", "midwife"}:
             return False
         if self._turn > 0 and self.actor_position(caregiver) != self.actor_position(patient):
             return False
@@ -5155,6 +4970,8 @@ class BigvilleWorld:
 
     def _daily_life_tick(self):
         """Advance age and mild recovery at dawn; severe outcomes remain explicit actions."""
+        if not self.physical_subsystems["metabolism"]:
+            return
         for name, node in self._actors.items():
             a = self.eng.node(node)["attrs"]
             if float(a.get("alive", 1.0)) != 1.0:
@@ -5187,29 +5004,31 @@ class BigvilleWorld:
         return source
 
     def process_waste(self, operator, kind="kitchen_scraps", amount=1.0):
-        role = self.eng.node(self._actors[operator])["attrs"].get("role")
-        if role not in {"farmer", "farm_labourer", "labourer", "compost_keeper"}:
-            return False
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(operator, "process_waste"):
             return False
         return self.add_waste(kind, amount)
 
     def school_lesson(self, teacher, pupil, *, subject="literacy"):
-        """Run one institutional lesson; learning remains held by the pupil."""
-        if self.eng.node(self._actors[teacher])["attrs"].get("role") != "teacher":
+        """Record a bounded lesson delivery; understanding is backend-owned.
+
+        The legacy world API cannot return a learner's cognitive decision, so
+        this records only the physical lesson and leaves literacy/capability
+        untouched. Interactive sessions should deliver lesson content through
+        speech and let the pupil backend decide whether to retain it.
+        """
+        pa = self.eng.node(self._actors[pupil])["attrs"]
+        teacher_pos = self.actor_position(teacher)
+        pupil_pos = self.actor_position(pupil)
+        distance = self.distance(teacher_pos, pupil_pos) if teacher_pos is not None and pupil_pos is not None else None
+        if (float(pa.get("alive", 1.0)) != 1.0
+                or teacher_pos is None or pupil_pos is None
+                or (teacher_pos != pupil_pos and (distance is None or distance > 1))):
             return False
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(teacher, "teach"):
             return False
-        ta = self.eng.node(self._actors[teacher])["attrs"]
-        pa = self.eng.node(self._actors[pupil])["attrs"]
-        if float(pa.get("alive", 1.0)) != 1.0 or float(pa.get("learn", 0.0)) <= 0.0:
-            return False
-        field = "literacy" if subject == "literacy" else "capability"
-        ceiling = float(ta.get(field, 0.0))
-        value = float(pa.get(field, 0.0))
-        self.eng.set_attr(self._actors[pupil], field, min(ceiling, value + 0.02 * float(pa.get("learn", 1.0))))
-        self.eng.set_attr(self._actors[pupil], "school_epoch", float(self.calendar()["day"]))
-        self.eng.add_edge_unchecked(self._actors[pupil], "learned_from", self._actors[teacher])
+        self.create_event("lesson_delivered", subject=teacher,
+                          detail=f"{teacher} delivered a {subject} lesson to {pupil}.",
+                          observer=teacher, severity=0.05)
         return True
 
     def write_journal(self, author, text=""):
@@ -5269,116 +5088,127 @@ class BigvilleWorld:
         # work pulses.  Recipe-start options are suppressed below while busy.
         busy = self.busy(actor)
         options = []
-        hungry = float(attrs.get("hunger", 0.0)) > 0.0
-        held_food = any(spec.get("food") and self.inventory_qty(actor, kind) >= 1.0
-                        for kind, spec in self._item_specs.items())
         for kind, spec in self._item_specs.items():
             if spec.get("food") and self.inventory_qty(actor, kind) >= 1.0:
                 if spec.get("prepared") and self._serving_equipment(actor, kind) is None:
                     continue
                 options.append({"action": "eat", "kind": kind, "trade": "", "recipe": "", "target": "",
-                                "score": 100.0 if hungry else -1.0})
-        # A seller is a resident, not a shop.  A shop may be a useful local
-        # convention for where a seller usually works, but it is not required
-        # for a purchase or for this affordance to exist.
-        if hungry and not held_food:
-            # Hunger can be met from a physical household store, but only by
-            # travelling to it and fetching the held stock first.
-            for container, (container_node, _) in self._containers.items():
-                if self.eng.node(container_node)["attrs"].get("kind") == "carrier":
-                    continue
-                kind = next((kind for kind, spec in self._item_specs.items()
-                             if spec.get("food") and self.contents(container, kind) >= 1.0), None)
-                if kind is None:
-                    continue
-                destination = self.container_position(container)
-                if destination is None:
-                    continue
-                if self.actor_position(actor) == destination and self._inventory_can_receive(actor, kind):
-                    key = target_key(container)
-                    options.append({"action": "fetch", "kind": kind, "trade": "", "recipe": "",
-                                    "target": key, "score": 98.0})
-                elif reachable_destination(destination):
-                    key = target_key(destination)
+                                "score": 0.0})
+        # Publishing a sale is an economic decision, not a physical affordance.
+        # The resident's cognition can observe nearby people and choose whether
+        # to propose a physical transfer; the world must not turn a seeded
+        # sell_willing/sell_price pair into a buyer plan.
+        #
+        # Transfer affordances below describe only a co-located, capacity-safe
+        # movement of stock already carried by this actor.  They carry no
+        # willingness, price, purchase, or seller-acceptance semantics.
+        # The carried stock is invariant while publishing choices for each
+        # possible recipient, so inspect the actor's inventory once here.
+        carried_kinds = [kind for kind in self._item_specs
+                         if self.inventory_qty(actor, kind) >= 1.0]
+        for recipient, recipient_node in self._actors.items():
+            if recipient == actor or not self.is_alive(recipient):
+                continue
+            recipient_position = self.actor_position(recipient)
+            if recipient_position is None:
+                continue
+            recipient_kinds = [kind for kind in carried_kinds
+                               if self._inventory_can_receive(recipient, kind)]
+            if not recipient_kinds:
+                continue
+            if recipient_position != self.actor_position(actor):
+                # Route choices are published only when the actor already
+                # carries something this particular resident can physically
+                # receive. Cognition still chooses whether and whom to visit;
+                # this does not create a transfer or assign the carried good.
+                if reachable_destination(recipient_position):
+                    key = target_key(recipient_position)
                     options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
-                                    "target": key, "score": 98.0})
-                break
-            for seller, seller_node in self._actors.items():
-                if seller == actor or not self.is_alive(seller):
+                                    "target": key, "destination": recipient_position,
+                                    "recipient": recipient, "score": 0.0})
+                continue
+            for kind in recipient_kinds:
+                key = target_key(recipient)
+                options.append({"action": "transfer", "kind": kind,
+                                "trade": "", "recipe": "", "target": key,
+                                "recipient": recipient,
+                                "score": 0.0})
+
+        # A household store exposes its physical fetch/travel affordance
+        # independently of hunger. Whether the resident wants food (and
+        # whether to eat it now) belongs to cognition, which already observes
+        # hunger. Stock, reachability, and receiving capacity remain physical
+        # gates here; cognition decides whether carried food makes another
+        # fetch redundant.
+        for container, (container_node, _) in self._containers.items():
+            if self.eng.node(container_node)["attrs"].get("kind") == "carrier":
+                continue
+            kind = next((kind for kind, spec in self._item_specs.items()
+                         if spec.get("food") and self.contents(container, kind) >= 1.0), None)
+            if kind is None:
+                continue
+            destination = self.container_position(container)
+            if destination is None:
+                continue
+            if self.actor_position(actor) == destination and self._inventory_can_receive(actor, kind):
+                key = target_key(container)
+                options.append({"action": "fetch", "kind": kind, "trade": "", "recipe": "",
+                                "physical_source": "container", "source_container": container,
+                                "target": key, "score": 0.0})
+            elif reachable_destination(destination):
+                key = target_key(destination)
+                options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
+                                "physical_source": "container", "source_container": container,
+                                "fetch_kind": kind,
+                                "target": key, "score": 0.0})
+            break
+        # Shop stocks and prices remain available to explicit compatibility
+        # helpers, but the normal cognition path does not turn them into
+        # purchases or steer residents to buy goods.  A resident can travel to
+        # physical workplaces through the ordinary map affordance below.
+
+        # Town stock is a physical source for any carried item, including
+        # recipe ingredients.  Publish only the handling and travel choices:
+        # task relevance belongs to the actor's cognition, and stock remains
+        # in the store until a selected fetch succeeds.
+        market_cell = self.map_position_node(self._store)
+        if market_cell is not None:
+            for kind in self._item_specs:
+                if self.qty(kind) < 1.0 or not self._inventory_can_receive(actor, kind):
                     continue
-                seller_attrs = self.eng.node(seller_node)["attrs"]
-                if float(seller_attrs.get("sell_willing", 0.0)) != 1.0:
+                if any(option.get("action") == "fetch" and option.get("kind") == kind
+                       for option in options):
                     continue
-                for kind, spec in self._item_specs.items():
-                    if (not spec.get("food") or self.inventory_qty(seller, kind) < 1.0
-                            or not self._inventory_can_receive(actor, kind)):
-                        continue
-                    price = float(seller_attrs.get("sell_price", 0.0))
-                    seller_position = self.actor_position(seller)
-                    if seller_position is None:
-                        continue
-                    co_located = self.actor_position(actor) == seller_position
-                    if not co_located and not reachable_destination(seller_position):
-                        continue
-                    key = target_key(seller if co_located else seller_position)
-                    options.append({"action": "give" if co_located else "move", "kind": kind,
-                                    "trade": seller, "recipe": "", "target": key,
-                                    "score": (92.0 - price) if co_located else 96.0})
-        for trade, shop_node in self._shops.items():
-            shop = self.eng.node(shop_node)["attrs"]
-            price = float(shop.get("price", 0.0))
-            output = shop.get("output_kind", "")
-            if (not held_food
-                    and self._at_shop(actor, trade)
-                    and self._market_counterparty(actor, trade, output) is not None
-                    and self.coin(actor) >= price
-                    and self.qty(output) >= 1.0
-                    and self._inventory_can_receive(actor, output)):
-                options.append({"action": "give", "kind": output, "trade": trade, "recipe": "", "target": "",
-                                "score": (90.0 - price) if hungry else -price})
-            elif (hungry and not held_food
-                  and self._item_specs.get(output, {}).get("food")
-                  and self.qty(output) >= 1.0
-                  and (self.coin(actor) >= price
-                       or float(shop.get("coin", 0.0)) >= 2.0)
-                  and self.actor_position(actor) != self.shop_position(trade)
-                  and reachable_destination(self.shop_position(trade))):
-                # Food is not teleported to the resident.  Reaching the shop
-                # is the resident's major movement choice; only then can a
-                # heard purchase utterance be followed by give().
-                key = target_key(self.shop_position(trade))
-                options.append({"action": "move", "kind": "", "trade": trade, "recipe": "",
-                                "target": key, "score": 96.0})
+                if self.actor_position(actor) == market_cell:
+                    key = target_key(("store", kind))
+                    options.append({"action": "fetch", "kind": kind, "trade": "", "recipe": "",
+                                    "stock_source": "town",
+                                    "target": key, "score": 0.0})
+                elif reachable_destination(market_cell):
+                    key = target_key(market_cell)
+                    options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
+                                    "target": key, "destination": market_cell, "score": 0.0})
 
         # A tradesperson who has made or is collecting a good must physically
         # fetch it from the mapped store before carrying it to other people.
-        roles = set(str(attrs.get("trades", "")).split(","))
         market_cell = self.map_position_node(self._store)
         if market_cell is not None:
             for trade, shop_node in self._shops.items():
                 output = self.eng.node(shop_node)["attrs"].get("output_kind", "")
                 if output not in self._item_specs or self.qty(output) < 1.0:
                     continue
-                trade_names = roles | {str(attrs.get("role", ""))}
-                if trade not in trade_names and not (trade == "bakery" and "baker" in trade_names):
-                    continue
+                # Output collection is a physical carrying opportunity. Trade
+                # identity can influence cognition, but does not grant access.
                 if (self.actor_position(actor) == market_cell
                         and self._inventory_can_receive(actor, output)):
                     key = target_key(("store", output))
                     options.append({"action": "fetch", "kind": output, "trade": trade, "recipe": "",
-                                    "target": key, "score": 17.0})
-                elif not hungry and not held_food and reachable_destination(market_cell):
+                                    "target": key, "score": 0.0})
+                elif reachable_destination(market_cell):
                     key = target_key(market_cell)
                     options.append({"action": "move", "kind": "", "trade": trade, "recipe": "",
-                                    "target": key, "score": 13.0})
+                                    "target": key, "score": 0.0})
                 break
-        if hungry and not any(option["action"] in {"eat", "give"} for option in options):
-            for trade, shop_node in self._shops.items():
-                if (self._at_shop(actor, trade)
-                        and float(self.eng.node(shop_node)["attrs"].get("coin", 0.0)) >= 2.0):
-                    options.append({"action": "sell_labor", "kind": "", "trade": trade,
-                                    "recipe": "", "target": "", "score": 95.0})
-
         # Physical household storage is an ordinary carrying choice.  A
         # resident may put any held food into any accessible container; the
         # container's storage class only changes decay, never permission.
@@ -5395,29 +5225,16 @@ class BigvilleWorld:
                 if self.actor_position(actor) == destination and self._can_put(actor, container, kind):
                     key = target_key(container)
                     options.append({"action": "put", "kind": kind, "trade": "", "recipe": "",
-                                    "target": key, "score": 5.0})
-                elif (not hungry and self._container_can_receive(container, kind)
+                                    "target": key, "score": 0.0})
+                elif (self._container_can_receive(container, kind)
                       and reachable_destination(destination)):
                     key = target_key(destination)
                     options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
-                                    "target": key, "score": 7.0})
+                                    "target": key, "score": 0.0})
                 break
-        # Workplaces are observed map facts, but travelling to one is still a
-        # resident choice.  Publish one step of that journey as an ordinary
-        # affordance; the actor's Ocelot chooses it when no more urgent
-        # sustenance or farm action outranks it.  Without this, canonical
-        # residents stay forever at their unique home cells and the speech
-        # faculty never gets a physical encounter with another resident.
-        work_x = attrs.get("work_x")
-        work_y = attrs.get("work_y")
-        if work_x is not None and work_y is not None:
-            work_cell = (int(round(float(work_x))), int(round(float(work_y))))
-            if (self.actor_position(actor) != work_cell and work_cell in self._map_cells
-                    and reachable_destination(work_cell)):
-                key = target_key(work_cell)
-                options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
-                                "target": key, "score": 15.0})
-        if roles & {"farmer", "farm_labourer"}:
+        # Work coordinates describe an authored goal rather than a physical
+        # property of the destination. Do not publish them as a special route.
+        if self._actors:
             for animal, animal_node in self._animals.items():
                 aa = self.eng.node(animal_node)["attrs"]
                 species = aa.get("species")
@@ -5434,7 +5251,7 @@ class BigvilleWorld:
                         continue
                     key = target_key(animal if self.actor_position(actor) == animal_cell else animal_cell)
                     options.append({"action": "tend_animals", "kind": task, "trade": "", "recipe": "",
-                                    "target": key, "score": 34.0 if self.actor_position(actor) == animal_cell else 16.0})
+                                    "target": key, "animal": animal, "score": 0.0})
             for crop in self._living_crops():
                 crop_attrs = self.eng.node(crop)["attrs"]
                 if (float(crop_attrs.get("thirst", 0.0)) > 0.0
@@ -5444,7 +5261,7 @@ class BigvilleWorld:
                         key = target_key(crop if self.actor_position(actor) == destination else destination)
                         options.append({"action": "water" if self.actor_position(actor) == destination else "move",
                                         "kind": "", "trade": "", "recipe": "",
-                                        "target": key, "score": 30.0 if self.actor_position(actor) == destination else 14.0})
+                                        "target": key, "crop_node": int(crop), "score": 0.0})
             for crop in self._living_crops():
                 if self.crop_mature(crop):
                     destination = self.map_position_node(crop)
@@ -5452,7 +5269,7 @@ class BigvilleWorld:
                         key = target_key(crop if self.actor_position(actor) == destination else destination)
                         options.append({"action": "harvest" if self.actor_position(actor) == destination else "move",
                                         "kind": "", "trade": "", "recipe": "",
-                                        "target": key, "score": 35.0 if self.actor_position(actor) == destination else 14.0})
+                                        "target": key, "crop_node": int(crop), "score": 0.0})
             # A mapped parcel can contain many beds.  The parcel's occupancy
             # is not a one-crop gate; each sowing is its own physical Crop
             # affordance on that parcel.
@@ -5467,12 +5284,13 @@ class BigvilleWorld:
                                              else destination)
                             options.append({"action": "sow" if self.actor_position(actor) == destination else "move",
                                             "kind": "", "trade": "", "recipe": "",
-                                            "target": key, "score": 25.0 if self.actor_position(actor) == destination else 12.0})
+                                            "target": key, "sow_kind": crop_name,
+                                            "land": land_name, "score": 0.0})
                         break
 
         # Construction projects are physical places and require a resident
         # builder to travel there before spending materials and labour.
-        if roles & {"mason", "carpenter", "woodworker", "labourer", "farm_labourer"}:
+        if self._building_projects or self._infrastructure:
             for project, project_node in self._building_projects.items():
                 data = self.eng.node(project_node)["attrs"]
                 if data.get("status") == "complete":
@@ -5480,7 +5298,8 @@ class BigvilleWorld:
                 spec = E.BUILDING_PROJECTS[data["project"]]
                 remaining = max(0.0, float(data["labour"]) - float(data["progress"]))
                 scale = (min(1.0, remaining) / float(data["labour"])) if data.get("labour") else 0.0
-                if any(self.qty(kind) < float(qty) * scale for kind, qty in spec.get("inputs", {}).items()):
+                if any(self.qty(kind) + 1e-9 < float(qty) * scale
+                       for kind, qty in spec.get("inputs", {}).items()):
                     continue
                 cells = list(self.eng.neighbours(project_node, "at_cell"))
                 destination = self.map_position_node(cells[0]) if cells else None
@@ -5490,7 +5309,7 @@ class BigvilleWorld:
                     continue
                 key = target_key(project if self.actor_position(actor) == destination else destination)
                 options.append({"action": "build", "kind": "", "trade": "", "recipe": project,
-                                "target": key, "score": 18.0 if self.actor_position(actor) == destination else 8.0})
+                                "target": key, "project": project, "score": 0.0})
             for name, infra_node in self._infrastructure.items():
                 if self.infrastructure_condition(name) >= 0.8:
                     continue
@@ -5504,13 +5323,16 @@ class BigvilleWorld:
                     continue
                 key = target_key(name if self.actor_position(actor) == destination else destination)
                 options.append({"action": "maintain", "kind": "", "trade": "", "recipe": "",
-                                "target": key, "score": 20.0 if self.actor_position(actor) == destination else 9.0})
+                                "target": key, "name": name, "score": 0.0})
 
-        if attrs.get("role") in {"doctor", "midwife"}:
+        if self._actors:
             for patient, patient_node in self._actors.items():
                 if patient == actor or not self.is_alive(patient):
                     continue
                 pa = self.eng.node(patient_node)["attrs"]
+                # Mirror care_for's physical precondition: it accepts an
+                # ill/injured resident, or one whose hunger has reached the
+                # threshold that makes the aid action applicable.
                 needs_care = (pa.get("health") != "healthy"
                               or float(pa.get("injury", 0.0)) > 0.0
                               or float(pa.get("hunger", 0.0)) >= 2.0)
@@ -5523,15 +5345,21 @@ class BigvilleWorld:
                     continue
                 key = target_key(patient if self.actor_position(actor) == destination else destination)
                 options.append({"action": "care", "kind": "", "trade": "", "recipe": "",
-                                "target": key, "score": 38.0 if self.actor_position(actor) == destination else 20.0})
+                                "target": key, "patient": patient, "score": 0.0})
                 break
+        # Ordinary object movement is a physical option, not a purchase,
+        # permission check, or interpretation of ownership.  Keep these
+        # choices in the same backend affordance boundary as other actions;
+        # the cognition policy decides whether to use them.
+        options.extend(option for option in self.physical_object_affordances(actor)
+                       if option.get("action") == "move_object")
         for recipe in E.RECIPES:
-            if (not busy and recipe.get("requires") in roles and self.knows(actor, recipe["name"])
+            if (not busy and self._skilled_enough(actor, recipe["name"])
                     and self._recipe_inputs_available(recipe["name"])):
                 out_kind = recipe.get("out", [""])[0]
                 options.append({"action": "work", "kind": out_kind, "trade": "", "target": "",
                                 "recipe": recipe["name"],
-                                "score": 12.0 if out_kind in {"bread", "gruel"} else 10.0})
+                                "score": 0.0})
         options.append({"action": "rest", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
         # Target keys are intentionally opaque and may be rebuilt on every
         # observation.  Expose the physical destination alongside a movement
@@ -5564,7 +5392,11 @@ class BigvilleWorld:
         # cost is published per option; how much that cost BITES depends on how
         # depleted this particular body is, which is a world fact the mind
         # cannot observe for itself. Mechanical translation, no decision.
-        mind.publish_body_state(self.stamina_reserve(actor))
+        publish_body = getattr(mind, "publish_body_state", None)
+        if callable(publish_body):
+            publish_body(self.stamina_reserve(actor))
+        else:
+            mind.s.set_attr(mind.agent, "stamina_reserve", self.stamina_reserve(actor))
         mind.replace_options(self._actor_options(actor))
         choice = mind.decide()
         self._actor_decisions[actor] = dict(choice)
@@ -5601,24 +5433,21 @@ class BigvilleWorld:
         if plan["action"] == "give":
             target = self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._actors:
-                seller = target
-                seller_attrs = self.eng.node(self._actor(seller))["attrs"]
-                if self.purchase_utterance(actor, seller, plan["kind"], 1.0) is False:
-                    return False
-                return self.major_action(actor, "give", recipient=seller,
-                                         kind=plan["kind"], amount=1.0,
-                                         payment_kind="coin",
-                                         payment_amount=float(seller_attrs.get("sell_price", 0.0)))
-            trade = plan.get("trade", "")
-            if self.purchase_utterance(actor, trade, 1.0) is False:
-                return False
-            shop = self.eng.node(self._shops[trade])["attrs"]
-            return self.major_action(actor, "give", recipient=trade,
-                                     kind=plan["kind"], amount=1.0,
-                                     payment_kind="coin",
-                                     payment_amount=float(shop.get("price", 0.0)))
-        if plan["action"] == "sell_labor":
-            return self.major_action(actor, "sell_labor", trade=plan["trade"], amount=2.0)
+                return self.major_action(actor, "give", recipient=target,
+                                         kind=plan["kind"], amount=plan.get("amount", 1.0))
+            # A shop is not a physical recipient. Purchase intent, speech,
+            # acceptance, and any payment are choices owned by cognition.
+            return False
+        if plan["action"] in {"transfer", "take"}:
+            if plan["action"] == "transfer":
+                recipient = plan.get("recipient") or self._actor_targets[actor].get(plan.get("target", ""))
+                return self.major_action(actor, "transfer", source=actor,
+                                         recipient=recipient, kind=plan.get("kind"),
+                                         amount=plan.get("amount", 1.0))
+            return self.major_action(
+                actor, plan["action"], source=plan.get("source"),
+                recipient=plan.get("recipient"), kind=plan.get("kind"),
+                amount=plan.get("amount", 1.0))
         if plan["action"] == "rest":
             # Rest is a real major action, but a healthy resident's default
             # idle option is not a physical rest event.  This prevents every
@@ -5636,10 +5465,15 @@ class BigvilleWorld:
         if plan["action"] == "work":
             return self.major_action(actor, "start", action_name=plan["recipe"])
         if plan["action"] == "move":
-            target = self._actor_targets[actor].get(plan.get("target", ""),
-                                                    plan.get("destination"))
+            target = plan.get("destination")
+            if target is None:
+                target = self._actor_targets[actor].get(plan.get("target", ""))
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
+        if plan["action"] == "move_object":
+            return self.major_action(actor, "move_object",
+                                     object_id=plan.get("object_id", plan.get("item")),
+                                     destination=plan.get("destination", plan.get("target")))
         if plan["action"] == "put":
             target = self._actor_targets[actor].get(plan.get("target", ""))
             if target is not None:
@@ -5649,45 +5483,44 @@ class BigvilleWorld:
             source = target if target in self._containers else None
             return self.major_action(actor, "fetch", kind=plan["kind"], amount=1.0, source=source)
         if plan["action"] == "tend_animals":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+            target = plan.get("animal") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._animals:
                 return self.major_action(actor, "tend_animals", animal=target, task=plan["kind"])
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] == "build":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+            target = plan.get("project") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._building_projects:
                 return self.major_action(actor, "build", project=target, labour=1.0)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] == "maintain":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+            target = plan.get("name") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._infrastructure:
                 return self.major_action(actor, "maintain", name=target, labour=1.0)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] == "care":
-            target = self._actor_targets[actor].get(plan.get("target", ""))
+            target = plan.get("patient") or self._actor_targets[actor].get(plan.get("target", ""))
             if target in self._actors:
                 return self.major_action(actor, "care", patient=target)
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if plan["action"] in {"water", "harvest", "sow"}:
             target = self._actor_targets[actor].get(plan.get("target", ""))
+            if plan["action"] in {"water", "harvest"}:
+                crop_node = plan.get("crop_node")
+                if crop_node is not None and crop_node in {int(node) for node in self._crops.values()}:
+                    target = crop_node
+            elif plan.get("sow_kind") and plan.get("land"):
+                target = (plan["sow_kind"], plan["land"])
             if target is not None:
                 return self.major_action(actor, plan["action"], target=target)
         return False
 
     def resolve_actor_turn(self):
-        """Settle deferred physical effects and publish autonomous speech.
-
-        Interactive ``BigvilleGame`` sessions set ``_autonomous_actors`` false
-        and route every actor through its selected backend.  In that mode the
-        world must not create an extra cognition pass or an unowned utterance.
-        """
+        """Settle deferred physical effects after an explicitly submitted turn."""
         self._run()
-        if self._autonomous_actors:
-            self._spontaneous_speech_tick()
 
     def _ocelot_actor_tick(self):
         """Pump each private mind and enact major choices plus free speech."""
@@ -5759,195 +5592,100 @@ class BigvilleWorld:
                 best_salience, best_event = salience, event
         return best_salience, best_event
 
-    def _hear_gossip(self, listener, speaker, event):
-        """Fold a heard ``share`` into the listener's own held belief, and
-        give the listener their own second-hand standing to re-tell it.
+    def _speech_provider(self, actor):
+        """Return the resident supplied speech provider or local cognition."""
+        mind = self._actor_minds[actor]
+        provider = getattr(mind, "speech_backend", None)
+        if provider is not None and callable(getattr(provider, "propose", None)):
+            return provider
+        # Explicit integration seam for an externally installed Ocelot mind.
+        external = getattr(mind, "speech_provider", None)
+        if external is not None and callable(getattr(external, "propose", None)):
+            return external
+        return DeterministicSpeechBackend(mind)
 
-        Mirrors ``BigvilleBondWorld.hear_gossip`` plus its ``tick()``
-        gossip-application step: gossip is evidence weighted by the
-        source's trustworthiness, never ground truth, so a listener who
-        distrusts the speaker barely moves; one who trusts them moves more.
-        The trust weight is further discounted by the SPEAKER's own
-        confidence in the story -- 1.0 if they witnessed it, their own
-        inherited ``heard_events`` strength if they only heard it too -- so
-        a multi-hop chain's influence compounds MULTIPLICATIVELY (DeGroot
-        1974), the way a real rumor's credibility degrades hop by hop.
+    def resident_free_text_proposal(self, actor, context):
+        """External Ocelot seam: forward situated observations to its provider.
+
+        An installed provider owns the returned text and raw meaning. A
+        graph-only Ocelot resident may omit this capability and remain silent.
         """
-        subject = str(self.eng.node(event)["attrs"].get("subject", ""))
-        if not subject or subject == listener or subject not in self._actors:
-            return
-        mind = self._actor_minds[listener]
-        speaker_mind = self._actor_minds[speaker]
-        speaker_confidence = (1.0 if event in self.eng.neighbours(self._actors[speaker], "observed_event")
-                              else speaker_mind.heard_events.get(event, {}).get("strength", 1.0))
-        source_bond = mind._speech_bond(speaker)
-        source_trust = float(mind.s.node(source_bond)["attrs"].get("belief_trust", 0.0))
-        about_bond = mind._speech_bond(subject)
-        # Injury/death are the only live event kinds today; their severity
-        # is a magnitude of harm, so the reported content is negative news
-        # about its subject until a signed-valence event field exists.
-        content_valence = -float(self.eng.node(event)["attrs"].get("severity", 0.0))
-        weight = BOND_KNOBS["gossip_weight"] * source_trust * speaker_confidence
-        attrs = mind.s.node(about_bond)["attrs"]
-        mind.s.set_attr(about_bond, "belief_trust",
-                        float(attrs.get("belief_trust", 0.0)) + content_valence * weight)
-        day = float(self.eng.node(self._town)["attrs"].get("day", 0.0))
-        mind.heard_events[event] = {"day_heard": day,
-                                    "strength": source_trust * speaker_confidence}
+        self._actor(actor)
+        mind = self._actor_minds[actor]
+        provider = getattr(mind, "speech_provider", None)
+        propose = getattr(provider, "propose_free_text", None)
+        if not callable(propose):
+            propose = getattr(mind, "propose_free_text", None)
+        if not callable(propose):
+            return None
+        return propose(context)
 
-    def _speech_goal(self, target, kind, event=None, speaker=None):
-        """Build a grounded communicative meaning for a speech occasion.
+    def resident_speech_proposal(self, speaker, target):
+        """Ask a resident provider for complete speech to a situated target.
 
-        Ocelot selects the occasion.  This bridge contributes only concepts
-        already available in the town observation; ``WorldAdapter`` owns the
-        graph-resident goal, rendering, and addressee uptake.
-
-        ``speaker`` is optional context threaded through by the callers that
-        already hold it, mirroring how ``target`` is passed: it lets
-        ``smalltalk`` draw on the speaker's own trade (idiolect) instead of
-        always defaulting to weather, and lets ``share`` mark whether the
-        news is about the speaker themselves (first-person) rather than a
-        third party.  Callers that omit it keep the prior, unconditional
-        behaviour exactly (no ``self`` key on the meaning, weather-only
-        smalltalk) -- this is additive context, not a new required input.
-        """
-        town = self.eng.node(self._town)["attrs"]
-        weather = str(town.get("weather", "clear"))
-        if kind == "greeting":
-            return {"greeting": {"of": str(target)}}
-        if kind == "smalltalk":
-            trade = ""
-            if speaker is not None and speaker in self._actors:
-                sa = self.eng.node(self._actors[speaker])["attrs"]
-                trade = str(sa.get("trade", "") or sa.get("role", ""))
-            if trade:
-                return {"topic": {"of": trade}}
-            return {"weather": {"of": weather}}
-        if kind == "barb":
-            return {"warning": {"of": str(target)}}
-        if kind == "hedged":
-            return {"uncertainty": {"of": "work"}}
-        if kind == "share":
-            if event is not None:
-                ea = self.eng.node(event)["attrs"]
-                subject = str(ea.get("subject", ""))
-                payload = {"kind": str(ea.get("kind", "")), "subject": subject,
-                          "detail": str(ea.get("detail", ""))}
-                if speaker is not None:
-                    payload["self"] = (subject == str(speaker))
-                return {"news": {"of": payload}}
-            return {"news": {"of": {"village": {"weather": weather}}}}
-        if kind == "answer":
-            return {"acknowledgement": {"of": str(target)}}
-        if kind == "request":
-            return {"request": {"of": str(target)}}
-        if kind == "offer":
-            return {"offer": {"to": str(target)}}
-        if kind == "question":
-            return {"question": {"of": str(target)}}
-        if kind == "thanks":
-            return {"thanks": {"to": str(target)}}
-        if kind == "apology":
-            return {"apology": {"to": str(target)}}
-        if kind == "farewell":
-            return {"farewell": {"to": str(target)}}
-        if kind == "complaint":
-            return {"complaint": {"to": str(target)}}
-        if kind == "promise":
-            return {"promise": {"to": str(target)}}
-        return None
-
-    def resident_speech_proposal(self, speaker, target=None):
-        """Ask the resident's Ocelot cognition for one owned speech proposal.
-
-        This is the backend bridge used by interactive sessions.  The private
-        mind chooses whether and how to speak, produces the surface text, and
-        returns its own opaque meaning payload.  The world does not render the
-        meaning and does not infer an action from it.
+        The provider owns the speech act, meaning and surface text. The world
+        supplies observed encounter facts and returns the proposal; a caller
+        must explicitly enact it through the ordinary speak action.
         """
         self._actor(speaker)
-        if target is None:
-            position = self.actor_position(speaker)
-            candidates = [name for name in self._actors
-                          if name != speaker and self.is_alive(name)
-                          and self.actor_position(name) == position]
-            target = sorted(candidates)[0] if candidates else None
-        if target is None or target not in self._actors or not self.is_alive(target):
+        if (target not in self._actors or target == speaker
+                or not self.is_alive(target)
+                or self.actor_position(speaker) != self.actor_position(target)):
             return None
         share_salience, share_event = self._speech_share_event(speaker, target)
         attrs = self.eng.node(self._actors[speaker])["attrs"]
-        choice = self._actor_minds[speaker].decide_speech(
-            target, relationship=self._speech_relationship(speaker, target),
-            stranger=False, share_salience=share_salience,
-            arousal=float(attrs.get("arousal", 0.4)),
-            loquacity_threshold=float(attrs.get("loquacity_threshold", 1.0)))
-        if not choice["spoken"]:
-            return None
-        event = share_event if choice["kind"] == "share" else None
-        meaning = self._speech_goal(target, choice["kind"], event=event, speaker=speaker)
-        if meaning is None:
-            return None
-        text = self._actor_minds[speaker].goal_utterance(target, meaning)
-        if not text:
-            return None
-        return {
-            "target": target,
-            "text": str(text),
-            "raw": {"act": choice["kind"], "target": str(target),
-                    "meaning": meaning},
-            "loudness": max(1.0, choice.get("loudness", 1.0)),
+        context = {
+            "weather": str(self.eng.node(self._town)["attrs"].get("weather", "clear")),
+            "trade": str(attrs.get("trade", "") or attrs.get("role", "")),
+            "event": None,
+            "event_ref": share_event,
         }
+        if share_event is not None:
+            event_attrs = self.eng.node(share_event)["attrs"]
+            context["event"] = {
+                "kind": str(event_attrs.get("kind", "")),
+                "subject": str(event_attrs.get("subject", "")),
+                "detail": str(event_attrs.get("detail", "")),
+                "self": str(event_attrs.get("subject", "")) == str(speaker),
+            }
+        encounter = {
+            "relationship": self._speech_relationship(speaker, target),
+            "stranger": False,
+            "share_salience": share_salience,
+            "arousal": float(attrs.get("arousal", 0.4)),
+            "loquacity_threshold": float(attrs.get("loquacity_threshold", 1.0)),
+        }
+        provider = self._speech_provider(speaker)
+        if isinstance(provider, DeterministicSpeechBackend):
+            return provider.propose_free_text(target, context=context,
+                                              encounter=encounter)
+        propose = getattr(provider, "propose_free_text", None)
+        if not callable(propose):
+            return None
+        return propose({"target": target, "encounter": encounter, **context})
 
-    def _spontaneous_speech_tick(self):
-        """Publish co-presence encounters and let each resident decide freely."""
-        by_position = {}
-        for actor in list(self._actors):
-            if self.is_alive(actor) and self.actor_position(actor) is not None:
-                by_position.setdefault(self.actor_position(actor), []).append(actor)
-        for present in by_position.values():
-            if len(present) < 2:
-                continue
-            # A crowd is a physical opportunity, not an instruction to run a
-            # private cognition pass for every ordered pair.  Form one observed
-            # encounter per occupied cell and let both residents' speech
-            # faculties decide their own turns.  The random pairing gives a
-            # crowd changing conversational partners without a world schedule.
-            speaker, target = self._rng.sample(present, 2)
-            for speaker, target in ((speaker, target), (target, speaker)):
-                share_salience, share_event = self._speech_share_event(speaker, target)
-                choice = self._actor_minds[speaker].decide_speech(
-                    target, relationship=self._speech_relationship(speaker, target),
-                    stranger=False, share_salience=share_salience,
-                    arousal=float(self.eng.node(self._actors[speaker])["attrs"].get("arousal", 0.4)),
-                    loquacity_threshold=float(self.eng.node(self._actors[speaker])["attrs"].get(
-                        "loquacity_threshold", 1.0)))
-                if not choice["spoken"]:
-                    continue
-                event = share_event if choice["kind"] == "share" else None
-                meaning = self._speech_goal(target, choice["kind"], event=event, speaker=speaker)
-                if meaning is None:
-                    continue
-                content = self._actor_minds[speaker].goal_utterance(target, meaning)
-                if not content:
-                    continue
-                # The private Ocelot voice produced both representations.  A
-                # world record stores them; it does not template or translate
-                # the meaning after cognition has returned.
-                utterance = self.speak(
-                    speaker, target, content,
-                    loudness=max(1.0, choice.get("loudness", 1.0)),
-                    raw_data={"act": choice["kind"], "target": str(target),
-                              "meaning": meaning},
-                    backend_owned=True)
-                heard = bool(self.eng.node(utterance)["attrs"].get("heard", 0.0))
-                self._speech_events.append({
-                    "turn": int(self._turn), "speaker": speaker, "target": target,
-                    "kind": choice["kind"], "content": content, "heard": heard,
-                })
-                if choice["kind"] == "share" and heard and event is not None:
-                    self._hear_gossip(target, speaker, event)
-                    told = self._actor_minds[speaker].told_events
-                    told[(target, event)] = told.get((target, event), 0) + 1
+    def enact_speech_proposal(self, speaker, proposal):
+        """Enact the text and meaning already proposed by a speech provider."""
+        if not isinstance(proposal, dict) or not proposal.get("text"):
+            return None
+        target = proposal.get("target")
+        if (target not in self._actors or not self.is_alive(speaker)
+                or not self.is_alive(target)
+                or self.actor_position(speaker) != self.actor_position(target)):
+            return None
+        utterance = self.speak(
+            speaker, target, str(proposal["text"]),
+            loudness=max(1.0, float(proposal.get("loudness", 1.0))),
+            raw_data=proposal.get("raw"), backend_owned=True)
+        heard = bool(self.eng.node(utterance)["attrs"].get("heard", 0.0))
+        act = (proposal.get("raw") or {}).get("act")
+        # The world establishes that the utterance was physically heard.
+        # Belief uptake, confidence, and memory/retention are private
+        # recipient cognition; do not infer them from delivery here.
+        self._speech_events.append({"turn": int(self._turn), "speaker": speaker,
+                                    "target": target, "kind": str(act or ""),
+                                    "content": str(proposal["text"]), "heard": heard})
+        return utterance
 
     def speech_choices(self, actor):
         """Read the resident's latest graph-native speech choices."""
@@ -6031,8 +5769,7 @@ class BigvilleWorld:
                 "stocks": {kind: self.qty(kind) for kind in sorted(self._stock) if kind != "none"},
                 "animals": [{"id": name, **dict(self.eng.node(node)["attrs"]),
                              "position": self.map_position_node(node),
-                             "enclosure": self.animal_enclosure(name),
-                             "npc_decision": dict(self._animal_decisions.get(name, {}))}
+                             "enclosure": self.animal_enclosure(name)}
                             for name, node in self._animals.items()],
                 "fences": [{"id": name, **dict(self.eng.node(node)["attrs"]),
                             "position": self.map_position_node(node)}
@@ -6118,15 +5855,28 @@ class BigvilleWorld:
             recipient = kwargs.get("recipient", kwargs.get("target", args[0] if args else None))
             kind = kwargs.get("kind", args[1] if len(args) > 1 else None)
             amount = kwargs.get("amount", args[2] if len(args) > 2 else 1.0)
-            if recipient is None or kind is None or not self._claim_major_action(actor, "give"):
+            if (recipient not in self._actors or kind is None
+                    or actor not in self._actors
+                    or not self._physical_transfer_precheck(actor, recipient, kind, amount)
+                    or not self._claim_major_action(actor, "give")):
                 return False
-            self._major_dispatch = True
-            try:
-                return self.give(actor, recipient, kind, amount,
-                                 payment_kind=kwargs.get("payment_kind"),
-                                 payment_amount=kwargs.get("payment_amount"))
-            finally:
-                self._major_dispatch = False
+            return self._physical_transfer(actor, recipient, kind, amount)
+        if action == "transfer":
+            source = kwargs.get("source", args[0] if args else None)
+            recipient = kwargs.get("recipient", args[1] if len(args) > 1 else None)
+            kind = kwargs.get("kind", args[2] if len(args) > 2 else None)
+            amount = kwargs.get("amount", args[3] if len(args) > 3 else 1.0)
+            if (source is None or recipient is None or kind is None
+                    or actor != source
+                    or not self._physical_transfer_precheck(source, recipient, kind, amount)
+                    or not self._claim_major_action(actor, action)):
+                return False
+            return self._physical_transfer(source, recipient, kind, amount)
+        if action == "take":
+            # A resident's carried stock is not unattended merely because a
+            # backend can name its holder.  Taking held goods needs an explicit
+            # contested physical mechanism; this action does not invent one.
+            return False
         if action == "put":
             container = kwargs.get("container", args[0] if args else None)
             kind = kwargs.get("kind", args[1] if len(args) > 1 else None)
@@ -6320,29 +6070,30 @@ class BigvilleWorld:
                 if self.eng.node(n)["attrs"].get("abstraction") == abstraction}
 
     def teach_reference(self, teacher, learner, name):
-        """Transfer a reference held by one resident to another."""
-        if self.knows_reference(teacher, name):
-            self._seed_reference(self._actors[learner], self._reference_specs[name])
-        return self.knows_reference(learner, name)
+        """Record an explanation without writing learner-held knowledge."""
+        if (teacher not in self._actors or learner not in self._actors
+                or name not in self._reference_specs):
+            return False
+        self.create_event("reference_explained", subject=teacher,
+                          detail=f"{teacher} explained {name} to {learner}.",
+                          observer=teacher, severity=0.05)
+        return False
 
     def write_recipe(self, author, recipe):
-        """Write a known recipe down -- a Recipe record anyone LITERATE can later read to learn it.
-        Refused (None) if the author cannot write (below functional literacy)."""
-        assert self.knows(author, recipe), f"{author} does not know {recipe} to write it"
-        if not self._can_read(author):
-            return None                                 # a labourer's low literacy -- cannot write it down
+        """Create a physical Recipe record containing the supplied inscription."""
         rec = self.eng.add_node("WrittenRecipe", {"recipe": recipe})
         self.eng.add_edge_unchecked(self._actors[author], "wrote", rec)
+        self.create_event("recipe_written", subject=author,
+                          detail=f"{author} wrote down {recipe}.",
+                          observer=author, severity=0.05)
         return rec
 
     def read_recipe(self, reader, record):
-        """Read a written recipe -- a LITERATE reader learns it. Refused (None, no learning) if the
-        reader cannot read (below functional literacy). Knowing it is still not being able to MAKE it
-        (master work needs the skill -- apprenticeship)."""
-        if not self._can_read(reader):
-            return None                                 # cannot read it -- must be TAUGHT instead (orally)
+        """Return written recipe content as an observation; do not infer learning."""
         recipe = self.eng.node(record)["attrs"]["recipe"]
-        self.eng.add_edge_unchecked(self._actors[reader], "knows", self._actions[recipe])
+        self.create_event("recipe_read", subject=reader,
+                          detail=f"{reader} inspected a written recipe record.",
+                          observer=reader, severity=0.02)
         return recipe
 
     # ---------------------------------------------------- apprenticeship (skill built under a master)
@@ -6387,52 +6138,8 @@ class BigvilleWorld:
     def recipe_min_skill(self, action_name):
         return round(float(self.eng.node(self._actions[action_name])["attrs"].get("min_skill", 0.0)), 4)
     def can_make(self, actor, action_name):
-        """Whether the actor could make it right now -- knows it AND is skilled enough."""
+        """Whether the actor could make it mechanically: skilled enough to attempt."""
         return self._can_attempt(actor, action_name)
-
-    # ---------------------------------------------------- observed-demand production loop
-    def observe(self, maker, *, harvest=None, building=None, storage=None):
-        """The maker OBSERVES the town's signals and updates his beliefs (po_observe)."""
-        for k, v in (("observed_harvest", harvest), ("observed_building", building),
-                     ("observed_storage", storage)):
-            if v is not None:
-                self.eng.set_attr(self._town, k, float(v))
-        self.eng.set_attr(self._actors[maker], "observe_armed", 1.0); self._run()
-
-    def decide(self, maker):
-        """The maker DECIDES what and how many to make from his beliefs (pd_decide collapse)."""
-        self.eng.set_attr(self._actors[maker], "decide_armed", 1.0); self._run()
-        return self.will_make(maker)
-
-    def produce_run(self, maker):
-        """Make want_qty of the decided action; returns how many were produced."""
-        m = self._actors[maker]
-        qty = int(round(float(self.eng.node(m)["attrs"]["want_qty"])))
-        made = 0
-        for _ in range(qty):
-            before = len(list(self.eng.neighbours(self._town, "has_tool_item")))
-            self.do(maker, self.will_make(maker))
-            made += len(list(self.eng.neighbours(self._town, "has_tool_item"))) - before
-        self._made[maker] += made
-        if made > 0:
-            # A self-observed production event, mirroring injure's own
-            # one-line create_event pattern with observer=actor -- the maker
-            # is their own witness to their own completed work.
-            recipe = str(self.will_make(maker))
-            self.create_event("produced_goods", subject=maker,
-                              detail=f"{maker} finished making {made} {recipe}.",
-                              observer=maker, severity=0.1)
-        return made
-
-    def sell(self, maker, n):
-        unsold = max(0, self._made[maker] - int(n))
-        self.eng.set_attr(self._actors[maker], "unsold", float(unsold))
-        return unsold
-
-    def belief(self, maker, driver="harvest"):
-        return round(float(self.eng.node(self._actors[maker])["attrs"][f"belief_{driver}"]), 4)
-    def will_make(self, maker): return self.eng.node(self._actors[maker])["attrs"].get("will_make", "")
-    def want_qty(self, maker): return round(float(self.eng.node(self._actors[maker])["attrs"]["want_qty"]), 4)
 
     # ---------------------------------------------------- do an action (the ONE engine)
     def _open_job(self, actor, action_name, remaining):
@@ -6440,10 +6147,7 @@ class BigvilleWorld:
         action_attrs = self.eng.node(asp)["attrs"]
         job = self.eng.add_node("Job", {"remaining": float(remaining), "last_tick": 0.0,
                                         "min_quality": 1.0, "item_inputs": 0.0,
-                                        "canonical_actor": str(actor),
-                                        "canonical_output_kind": str(action_attrs.get("out_kind", "")),
-                                        "canonical_output_qty": float(action_attrs.get("out_qty", 0.0)),
-                                        "canonical_output_claimed": 0.0})
+                                        "canonical_actor": str(actor)})
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
         self.eng.add_edge_unchecked(job, "runs", asp)
         self.eng.set_attr(self._actors[actor], "busy", 1.0)
@@ -6458,8 +6162,8 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(job, "uses", jt)
 
     def _knows_or_none(self, actor, action_name):
-        """An actor can only attempt a recipe they KNOW (a graph fact). Returns False if they don't."""
-        return self.eng.has_edge(self._actors[actor], "knows", self._actions[action_name])
+        """Compatibility hook; world action admissibility does not inspect beliefs."""
+        return True
 
     def _skilled_enough(self, actor, action_name):
         """An actor can only attempt a recipe they are SKILLED enough for -- their skill must reach the
@@ -6469,13 +6173,16 @@ class BigvilleWorld:
         return skill >= floor
 
     def _can_attempt(self, actor, action_name):
-        """Admissible to attempt iff the actor KNOWS the recipe AND is SKILLED enough for it."""
-        return self._knows_or_none(actor, action_name) and self._skilled_enough(actor, action_name)
+        """Admissibility depends on mechanical capability, not assumed knowledge."""
+        return action_name in self._actions and self._skilled_enough(actor, action_name)
 
     def do(self, actor, action_name):
         """Perform an action INSTANTLY (no timer). Refused if the actor does not KNOW the recipe or is
         not SKILLED enough (below its min_skill floor)."""
         if not self._can_attempt(actor, action_name):
+            return False
+        if not all(self._instrument_usable(self.eng.node(tool)["attrs"].get("kind", ""))
+                   for tool in self.eng.neighbours(self._actions[action_name], "in_tool")):
             return False
         # Calls made before the first simulation tick remain convenient setup
         # operations.  Once the clock is running, a direct craft is a major
@@ -6488,6 +6195,9 @@ class BigvilleWorld:
     def start(self, actor, action_name):
         """START a TIMED action; refused if the actor does not know OR is not skilled enough for it."""
         if not self._can_attempt(actor, action_name):
+            return False
+        if not all(self._instrument_usable(self.eng.node(tool)["attrs"].get("kind", ""))
+                   for tool in self.eng.neighbours(self._actions[action_name], "in_tool")):
             return False
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "start"):
             return False
@@ -6512,16 +6222,11 @@ class BigvilleWorld:
             self._job_tick_armed = True
             self._run()
             self._job_tick_armed = False
-            self.animal_tick()
-            # The town advances time. In normal mode each resident's private
-            # Ocelot graph selects its own action; an interactive game mode
-            # submits equivalent proposals through CognitionBackend instead.
-            if self._autonomous_actors:
-                self._ocelot_actor_tick()
-            else:
-                self._run()
-            # Last, so every crossing this turn -- including the autonomous ones
-            # above -- is counted before untrodden ground grows back.
+            # A world tick advances physical time only. Animal and resident
+            # decisions are submitted by an explicit game/backend session.
+            self._run()
+            # Last, so every crossing this turn is counted before untrodden
+            # ground grows back.
             self._terrain_recovery_tick()
 
     def run_turns(self, n=1):

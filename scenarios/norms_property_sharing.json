@@ -1,0 +1,27 @@
+{
+  "id": "norms_property_sharing",
+  "name": "Shared Pantry and Property Policies",
+  "description": "Two residents occupy the same room with one physically accessible shared food store. The scenario deliberately assigns no legal or ownership meaning to access.",
+  "map": {
+    "grid": [
+      ["wall", "wall", "wall", "wall", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "wall", "wall", "wall", "wall"]
+    ],
+    "layout": {"w": 5, "h": 5, "homes": [[2, 2], [2, 2]]}
+  },
+  "actors": [
+    {"name": "Ada", "role": "hand", "backend": "simple", "home_cell": [2, 2]},
+    {"name": "Ben", "role": "hand", "backend": "simple", "home_cell": [2, 2]}
+  ],
+  "initial": {"hour": 7.0, "weather": "clear", "temperature": 18.0},
+  "physical_subsystems": {"metabolism": false, "ecology": false, "decay": false},
+  "metadata": {
+    "experiment": "package_13_norms_and_enforcement",
+    "observation_scope": "actor",
+    "property_policy": "agent-held scenario interpretation; none is enforced by the room",
+    "sharing_policy": "agent-held scenario interpretation; access remains physical"
+  }
+}

@@ -1,12 +1,12 @@
-"""The gossip drive already existed (sp_choose_utterance's bond-weighted, salience-gated
+"""The share drive already existed (sp_choose_utterance's bond-weighted, salience-gated
 ``share`` option) but fired into two dead ends: share_salience was never computed from real
 observations in the live speech tick, the content that reached speech was a hardcoded weather
 placeholder, and nothing on the listening end updated the listener's own held belief. This
 file gates the three live bridges that close those gaps: ``_speech_share_event`` (salience +
 winning Event, computed from real ``observed_event`` data), ``_speech_goal``'s ``share`` branch
-(renders the real event, not weather), and ``_hear_gossip`` (the listener's belief_trust toward
-the event's subject moves, weighted by trust in the source -- gossip is evidence, never ground
-truth). It also gates the retelling-decay follow-up: dedup is per-(listener, event), never
+(renders the real event, not weather). The world records physical hearing only: recipient
+belief uptake and memory are private cognition, not an automatic world rule. It also gates
+the retelling-decay follow-up: dedup is per-(listener, event), never
 global (Clark & Brennan 1991's common ground is per-dyad), and its decay rate scales toward 1
 (slower decline) as severity rises (Rime 2009: initial intensity predicts the slope) -- so
 high-salience news gets retold MORE before tapering, never deduplicated harder.
@@ -22,6 +22,17 @@ for _p in (os.path.join(_ROOT, "runners", "dsl", "python"), _ROOT):
         sys.path.insert(0, _p)
 
 from worlds.bigville_world import BigvilleWorld as World      # noqa: E402
+from bigville.backends.speech import DeterministicSpeechBackend # noqa: E402
+
+
+def _meaning(world, target, kind, event=None):
+    context = {"weather": world.eng.node(world._town)["attrs"].get("weather", "clear")}
+    if event is not None:
+        attrs = world.eng.node(event)["attrs"]
+        context["event"] = {"kind": str(attrs.get("kind", "")),
+                            "subject": str(attrs.get("subject", "")),
+                            "detail": str(attrs.get("detail", ""))}
+    return DeterministicSpeechBackend._meaning(target, kind, context=context)
 
 
 def _town():
@@ -77,7 +88,7 @@ def test_the_most_severe_of_several_recent_events_wins():
 def test_the_share_meaning_carries_the_real_event_not_weather():
     w = _town()
     event = w.injure("Colm", severity=0.4, cause="a fall")
-    meaning = w._speech_goal("Bryony", "share", event=event)
+    meaning = _meaning(w, "Bryony", "share", event=event)
     assert meaning == {"news": {"of": {"kind": "injury", "subject": "Colm",
                                        "detail": "Colm was injured (a fall)."}}}
     assert "weather" not in str(meaning)
@@ -85,48 +96,46 @@ def test_the_share_meaning_carries_the_real_event_not_weather():
 
 def test_the_share_meaning_still_falls_back_to_weather_with_no_event():
     w = _town()
-    meaning = w._speech_goal("Bryony", "share", event=None)
+    meaning = _meaning(w, "Bryony", "share", event=None)
     assert meaning == {"news": {"of": {"village": {"weather": "clear"}}}}
 
 
-# --------------------------------------------------- G3: listener uptake moves a held belief
-def test_hearing_shared_news_moves_the_listeners_belief_about_its_subject():
+# --------------------------------------------------- G3: hearing is not belief uptake
+def test_same_heard_message_preserves_divergent_recipient_beliefs():
     w = _town()
     event = w.injure("Colm", severity=0.4, cause="a fall")
-    # The listener must already trust the speaker for gossip to move anything --
-    # gossip is evidence weighted by the source, never ground truth.
-    mind = w._actor_minds["Bryony"]
-    speaker_bond = mind._speech_bond("Anselm")
-    mind.s.set_attr(speaker_bond, "belief_trust", 1.0)
-    subject_bond = mind._speech_bond("Colm")
-    before = float(mind.s.node(subject_bond)["attrs"].get("belief_trust", 0.0))
-    w._hear_gossip("Bryony", "Anselm", event)
-    after = float(mind.s.node(subject_bond)["attrs"].get("belief_trust", 0.0))
-    assert after != before, "an injury heard from a trusted source should move belief_trust"
-    assert after < before, "injury news is negative; a trusted report should move it down"
+    w._move_actor_to("Anselm", (5, 5))
+    w._move_actor_to("Bryony", (5, 5))
+    w._move_actor_to("Dara", (5, 5))
+    w.observe_event("Anselm", event)
+    listeners = [w._actor_minds[name] for name in ("Bryony", "Dara")]
+    bonds = [mind.speech_backend._bond("Colm") for mind in listeners]
+    listeners[0].s.set_attr(bonds[0], "belief_trust", -0.7)
+    listeners[1].s.set_attr(bonds[1], "belief_trust", 0.4)
+    proposal = {"target": "Bryony", "text": "Colm was hurt in a fall.",
+                "raw": {"act": "share"}, "event": event}
+    w.enact_speech_proposal("Anselm", proposal)
+    # Deliver the identical report to Dara. Delivery changes neither mind;
+    # their distinct prior interpretations stay private to each backend.
+    proposal["target"] = "Dara"
+    w.enact_speech_proposal("Anselm", proposal)
+    assert listeners[0].s.node(bonds[0])["attrs"]["belief_trust"] == -0.7
+    assert listeners[1].s.node(bonds[1])["attrs"]["belief_trust"] == 0.4
+    assert listeners[0].heard_events == listeners[1].heard_events == {}
 
 
-def test_gossip_from_a_fully_distrusted_source_barely_moves_belief():
+def test_an_unobserved_event_does_not_create_recipient_inference():
     w = _town()
-    event = w.injure("Colm", severity=0.4, cause="a fall")
-    # Anselm's default bond has belief_trust == 0.0 -- the untouched, unearned default.
-    mind = w._actor_minds["Bryony"]
-    subject_bond = mind._speech_bond("Colm")
-    before = float(mind.s.node(subject_bond)["attrs"].get("belief_trust", 0.0))
-    w._hear_gossip("Bryony", "Anselm", event)
-    after = float(mind.s.node(subject_bond)["attrs"].get("belief_trust", 0.0))
-    assert after == before, "zero source trust must carry zero evidentiary weight"
-
-
-def test_gossip_never_updates_a_listener_hearing_about_themselves():
-    w = _town()
-    event = w.injure("Bryony", severity=0.4, cause="a fall")
-    mind = w._actor_minds["Bryony"]
-    speaker_bond = mind._speech_bond("Anselm")
-    mind.s.set_attr(speaker_bond, "belief_trust", 1.0)
-    # Bryony hearing gossip ABOUT Bryony must not mint a self-directed Bond.
-    w._hear_gossip("Bryony", "Anselm", event)
-    assert "Bryony" not in w._actor_minds["Bryony"].speech_bonds
+    event = w.injure("Colm", severity=0.9, cause="a fall")
+    w._move_actor_to("Anselm", (5, 5))
+    w._move_actor_to("Bryony", (5, 5))
+    listener = w._actor_minds["Bryony"]
+    about = listener.speech_backend._bond("Colm")
+    listener.s.set_attr(about, "belief_trust", 0.25)
+    w.enact_speech_proposal("Anselm", {"target": "Bryony", "text": "Colm was hurt.",
+                                         "raw": {"act": "share"}, "event": event})
+    assert listener.s.node(about)["attrs"]["belief_trust"] == 0.25
+    assert listener.heard_events == {}
 
 
 # --------------------------------------------------- G4: retelling decay, not binary dedup
@@ -179,7 +188,7 @@ def test_a_more_severe_event_decays_more_slowly_than_a_mild_one():
     assert (severe_expected / severe_base) > (mild_expected / mild_base)
 
 
-def test_hearing_a_share_increments_the_speakers_told_count_for_that_listener():
+def test_hearing_a_share_records_delivery_without_updating_speaker_retention():
     w = _town()
     w.set_relationship("Anselm", "Bryony", kind="friend", strength=1.0, mutual=True)
     w._move_actor_to("Anselm", (5, 5))
@@ -187,39 +196,31 @@ def test_hearing_a_share_increments_the_speakers_told_count_for_that_listener():
     event = w.injure("Colm", severity=0.6, cause="a fall")
     w.observe_event("Anselm", event)
     for _ in range(5):
-        w._spontaneous_speech_tick()
+        proposal = w.resident_speech_proposal("Anselm", "Bryony")
+        if proposal is not None:
+            w.enact_speech_proposal("Anselm", proposal)
     told = w._actor_minds["Anselm"].told_events.get(("Bryony", event), 0)
-    assert told > 0, "at least one heard share should have incremented the retelling count"
+    assert told == 0
+    assert any(item["heard"] and item["target"] == "Bryony"
+               for item in w._speech_events)
 
 
-# --------------------------------------------------- G5: second-hand spread through the network
-def test_hearing_gossip_gives_the_listener_standing_to_retell_it():
+# --------------------------------------------------- G5: no world-owned second-hand inference
+def test_heard_report_does_not_mint_secondhand_memory_or_retelling_standing():
     w = _town()
     event = w.injure("Colm", severity=0.4, cause="a fall")
     w.observe_event("Anselm", event)                          # Anselm is first-hand
     bmind = w._actor_minds["Bryony"]
-    src = bmind._speech_bond("Anselm")
+    src = bmind.speech_backend._bond("Anselm")
     bmind.s.set_attr(src, "belief_trust", 0.8)
-    w._hear_gossip("Bryony", "Anselm", event)
-    assert event in bmind.heard_events
-    salience, won = w._speech_share_event("Bryony", "Dara")   # can Bryony now retell it?
-    assert won == event
-    assert salience > 0.0
-
-
-def test_secondhand_strength_compounds_multiplicatively_across_two_hops():
-    w = _town()
-    event = w.injure("Colm", severity=0.4, cause="a fall")
+    w._move_actor_to("Anselm", (5, 5))
+    w._move_actor_to("Bryony", (5, 5))
     w.observe_event("Anselm", event)
-    bmind = w._actor_minds["Bryony"]
-    bmind.s.set_attr(bmind._speech_bond("Anselm"), "belief_trust", 0.8)
-    w._hear_gossip("Bryony", "Anselm", event)
-    assert bmind.heard_events[event]["strength"] == 0.8       # 1.0 (witnessed) * 0.8
-
-    dmind = w._actor_minds["Dara"]
-    dmind.s.set_attr(dmind._speech_bond("Bryony"), "belief_trust", 0.5)
-    w._hear_gossip("Dara", "Bryony", event)
-    assert abs(dmind.heard_events[event]["strength"] - 0.4) < 1e-9   # 0.8 * 0.5 -- DeGroot compounding
+    w.enact_speech_proposal("Anselm", {"target": "Bryony", "text": "Colm fell.",
+                                         "raw": {"act": "share"}, "event": event})
+    assert event not in bmind.heard_events
+    salience, won = w._speech_share_event("Bryony", "Dara")   # can Bryony now retell it?
+    assert won is None and salience == 0.0
 
 
 def test_a_disconnected_bystander_never_learns_the_event_at_all():
@@ -232,28 +233,3 @@ def test_a_disconnected_bystander_never_learns_the_event_at_all():
     salience, won = w._speech_share_event("Dara", "Bryony")
     assert salience == 0.0 and won is None
     assert w._actor_minds["Dara"].heard_events == {}
-
-
-def test_secondhand_relay_moves_belief_less_than_a_firsthand_report():
-    w = _town()
-    event = w.injure("Colm", severity=0.4, cause="a fall")
-    w.observe_event("Anselm", event)
-
-    bmind = w._actor_minds["Bryony"]
-    bmind.s.set_attr(bmind._speech_bond("Anselm"), "belief_trust", 1.0)
-    b_subject_bond = bmind._speech_bond("Colm")
-    w._hear_gossip("Bryony", "Anselm", event)          # first-hand relay, full trust
-    b_moved = abs(float(bmind.s.node(b_subject_bond)["attrs"]["belief_trust"]))
-
-    dmind = w._actor_minds["Dara"]
-    dmind.s.set_attr(dmind._speech_bond("Bryony"), "belief_trust", 0.5)   # an imperfect second hop
-    d_subject_bond = dmind._speech_bond("Colm")
-    w._hear_gossip("Dara", "Bryony", event)
-    d_moved = abs(float(dmind.s.node(d_subject_bond)["attrs"]["belief_trust"]))
-
-    assert d_moved < b_moved, (
-        "Bryony fully internalised the story (confidence 1.0, having heard "
-        "it from a fully-trusted first-hand witness), but Dara's own only "
-        "partial trust in Bryony must still discount what Dara ends up "
-        "believing -- an ADDITIONAL hop always adds an ADDITIONAL discount, "
-        "even from a fully-confident teller")

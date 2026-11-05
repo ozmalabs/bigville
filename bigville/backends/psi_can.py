@@ -26,7 +26,9 @@ class PsiState:
         observations = getattr(context, "observations", {}) or {}
         hunger = _clamp(float(observations.get("hunger", 0.0)) / 4.0)
         energy = observations.get("energy")
-        fatigue = _clamp(1.0 - float(energy)) if energy is not None else 0.0
+        # Bigville publishes energy on a 0-100 scale.
+        energy = float(energy) if energy is not None else None
+        fatigue = _clamp(1.0 - energy / 100.0) if energy is not None else 0.0
         health = observations.get("health", "healthy")
         illness = _clamp(float(observations.get("illness", 0.0)))
         if health not in {"healthy", "well", 1, 1.0, True}:

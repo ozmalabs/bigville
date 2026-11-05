@@ -44,6 +44,24 @@ import worlds.bigville_world as bw                             # noqa: E402
 from worlds.bigville_world import BigvilleWorld as World        # noqa: E402
 from worlds.bigville_world import BigvilleOcelotActor           # noqa: E402
 from bigville.runtime import _realize_meaning                   # noqa: E402
+from bigville.backends.speech import DeterministicSpeechBackend # noqa: E402
+
+
+def _meaning(world, target, kind, event=None, speaker=None):
+    town = world.eng.node(world._town)["attrs"]
+    context = {"weather": town.get("weather", "clear")}
+    if speaker is not None:
+        attrs = world.eng.node(world._actors[speaker])["attrs"]
+        context["trade"] = str(attrs.get("trade", "") or attrs.get("role", ""))
+    if event is not None:
+        attrs = world.eng.node(event)["attrs"]
+        payload = {"kind": str(attrs.get("kind", "")),
+                   "subject": str(attrs.get("subject", "")),
+                   "detail": str(attrs.get("detail", ""))}
+        if speaker is not None:
+            payload["self"] = payload["subject"] == str(speaker)
+        context["event"] = payload
+    return DeterministicSpeechBackend._meaning(target, kind, context=context)
 
 
 def _town():
@@ -58,8 +76,8 @@ def _town():
 # ============================================================ R1a: role/trade smalltalk
 def test_smalltalk_content_reflects_the_speakers_own_trade():
     w = _town()
-    smith_meaning = w._speech_goal("Bryony", "smalltalk", speaker="Anselm")
-    baker_meaning = w._speech_goal("Anselm", "smalltalk", speaker="Dara")
+    smith_meaning = _meaning(w, "Bryony", "smalltalk", speaker="Anselm")
+    baker_meaning = _meaning(w, "Anselm", "smalltalk", speaker="Dara")
     assert smith_meaning == {"topic": {"of": "smith"}}
     assert baker_meaning == {"topic": {"of": "baker"}}
     assert "weather" not in str(smith_meaning) and "weather" not in str(baker_meaning)
@@ -71,12 +89,12 @@ def test_smalltalk_falls_back_to_weather_with_no_speaker_or_unknown_trade():
     w = _town()
     # No speaker at all -- the legacy, pre-Rung-1 call shape (existing callers that
     # never learn about `speaker` keep behaving exactly as before).
-    legacy = w._speech_goal("Bryony", "smalltalk")
+    legacy = _meaning(w, "Bryony", "smalltalk")
     assert legacy == {"weather": {"of": "clear"}}
     # A speaker with no role/trade at all still degrades to weather, not a crash.
     w.eng.set_attr(w._actors["Anselm"], "trade", "")
     w.eng.set_attr(w._actors["Anselm"], "role", "")
-    blank = w._speech_goal("Bryony", "smalltalk", speaker="Anselm")
+    blank = _meaning(w, "Bryony", "smalltalk", speaker="Anselm")
     assert blank == {"weather": {"of": "clear"}}
 
 
@@ -90,17 +108,17 @@ def test_forcing_a_constant_trade_collapses_smalltalk_to_indistinguishable_outpu
     w = _town()
     for name in ("Anselm", "Bryony", "Colm", "Dara"):
         w.eng.set_attr(w._actors[name], "trade", "smith")
-    utterances = {name: _realize_meaning(w._speech_goal("Dara", "smalltalk", speaker=name))
+    utterances = {name: _realize_meaning(_meaning(w, "Dara", "smalltalk", speaker=name))
                   for name in ("Anselm", "Bryony", "Colm")}
     assert len(set(utterances.values())) == 1, (
         "a forced-constant trade must make smalltalk indistinguishable by speaker "
         f"identity, got: {utterances}")
     # And the converse: letting trade vary re-differentiates it (the mechanism is
     # doing real work, not just always collapsing).
-    varied = {name: _realize_meaning(w._speech_goal("Dara", "smalltalk", speaker=name))
+    varied = {name: _realize_meaning(_meaning(w, "Dara", "smalltalk", speaker=name))
               for name in ("Anselm", "Bryony", "Colm", "Dara")}
     w2 = _town()
-    varied2 = {name: _realize_meaning(w2._speech_goal("Dara", "smalltalk", speaker=name))
+    varied2 = {name: _realize_meaning(_meaning(w2, "Dara", "smalltalk", speaker=name))
                for name in ("Anselm", "Bryony", "Colm")}
     assert len(set(varied2.values())) > 1, "distinct trades should differentiate smalltalk"
 
@@ -111,7 +129,7 @@ def test_a_residents_own_event_renders_first_person():
     event = w.create_event("learned_skill", subject="Anselm",
                            detail="Anselm grew more skilled at smith.",
                            observer="Anselm", severity=0.15)
-    meaning = w._speech_goal("Bryony", "share", event=event, speaker="Anselm")
+    meaning = _meaning(w, "Bryony", "share", event=event, speaker="Anselm")
     assert meaning["news"]["of"]["self"] is True
     text = _realize_meaning(meaning)
     assert text == "I grew more skilled at smith.", text
@@ -125,7 +143,7 @@ def test_a_relayed_event_about_someone_else_stays_third_person():
                            observer="Anselm", severity=0.15)
     # Bryony re-telling Anselm's news to Colm: Bryony is the speaker, Anselm the
     # subject -- the discriminator must NOT collapse to first person here.
-    meaning = w._speech_goal("Colm", "share", event=event, speaker="Bryony")
+    meaning = _meaning(w, "Colm", "share", event=event, speaker="Bryony")
     assert meaning["news"]["of"]["self"] is False
     text = _realize_meaning(meaning)
     assert text == "I heard that Anselm grew more skilled at smith.", text
@@ -142,32 +160,28 @@ def test_omitting_the_discriminator_renders_the_wrong_third_person_form():
     event = w.create_event("learned_skill", subject="Anselm",
                            detail="Anselm grew more skilled at smith.",
                            observer="Anselm", severity=0.15)
-    broken_meaning = w._speech_goal("Bryony", "share", event=event)  # no speaker=...
+    broken_meaning = _meaning(w, "Bryony", "share", event=event)  # no speaker=...
     assert "self" not in broken_meaning["news"]["of"]
     broken_text = _realize_meaning(broken_meaning)
     assert broken_text == "I heard that Anselm grew more skilled at smith.", broken_text
     # The fixed form, same event, same speaker -- genuinely different rendering.
-    fixed_text = _realize_meaning(w._speech_goal("Bryony", "share", event=event, speaker="Anselm"))
+    fixed_text = _realize_meaning(_meaning(w, "Bryony", "share", event=event, speaker="Anselm"))
     assert fixed_text != broken_text
     assert fixed_text == "I grew more skilled at smith."
 
 
 # ========================= R1b: new self-observed events join the unified share pool
-def test_skill_progress_mints_a_self_observed_event_the_speaker_can_share():
+def test_apprenticeship_does_not_mint_an_unobserved_learning_event():
     w = World(autonomous_actors=False)
     w.add_actor("Anselm", role="smith", skill=0.5)
     w.add_actor("Master", role="smith", skill=0.9)
     w.add_actor("Bryony", role="collier")
     w.apprentice("Anselm", "Master")
     w.pass_period(1)
-    assert w.skill("Anselm") > 0.5
-    # Zero changes to _speech_share_event -- this event lands in the SAME pool
-    # observed_event/injure events already use.
+    assert w.skill("Anselm") == 0.5
     salience, won = w._speech_share_event("Anselm", "Bryony")
-    assert salience > 0.0
-    assert won is not None
-    assert w.eng.node(won)["attrs"]["kind"] == "learned_skill"
-    assert w.eng.node(won)["attrs"]["subject"] == "Anselm"
+    assert salience == 0.0
+    assert won is None
 
 
 def test_a_capped_apprentice_does_not_mint_a_new_event_every_period():
@@ -184,44 +198,62 @@ def test_a_capped_apprentice_does_not_mint_a_new_event_every_period():
         "the delta guard must not mint an event anyway")
 
 
-def test_literacy_progress_mints_a_self_observed_event():
+def test_school_attendance_does_not_mint_an_unobserved_lesson_event():
     w = World(autonomous_actors=False)
     w.add_actor("Pupil", role="labourer", literacy=0.0, learn=1.0)
     w.add_actor("Teacher", role="teacher", literacy=1.0, capability=1.0)
     w.enrol("Pupil", "Teacher")
     w.pass_period(1)
-    assert w.literacy("Pupil") > 0.0
+    assert w.literacy("Pupil") == 0.0
     events = w.eng.neighbours(w._actors["Pupil"], "observed_event")
-    assert len(events) == 1
-    assert w.eng.node(events[0])["attrs"]["kind"] == "learned_lesson"
+    assert len(events) == 0
 
 
-def test_finishing_a_production_run_mints_a_self_observed_event():
+def test_production_requires_an_explicit_physical_action():
     w = World()
     w.add_actor("Smith", role="smith", skill=0.8)
     for kind in ("iron", "charcoal", "timber", "ore"):
         w.set_stock(kind, 50)
-    w.observe("Smith", harvest=0.9)
-    w.decide("Smith")
-    made = w.produce_run("Smith")
-    assert made > 0
-    events = w.eng.neighbours(w._actors["Smith"], "observed_event")
-    kinds = [w.eng.node(e)["attrs"]["kind"] for e in events]
-    assert "produced_goods" in kinds
+    before = len(list(w.eng.neighbours(w._town, "has_tool_item")))
+    w.forge("Smith", "forge_scythe")
+    after = len(list(w.eng.neighbours(w._town, "has_tool_item")))
+    assert after > before
 
 
-def test_a_completed_sale_mints_a_self_observed_event():
+def test_legacy_shop_sale_does_not_choose_price_or_settle_exchange():
     w = World()
     w.add_actor("Farmer", role="farmer")
     w.add_shop("bakery", (1, 1), input_kind="grain", output_kind="bread", price=1)
     w.eng.set_attr(w._shops["bakery"], "coin", 100.0)
     w.set_stock("grain", 20)
     w.stock_person("Farmer", "grain", 10, price=1.0, willing=True)
+    before = (w.inventory_qty("Farmer", "grain"), w.coin("Farmer"),
+              float(w.eng.node(w._shops["bakery"])["attrs"].get("coin", 0.0)))
     ok = w.sell_to_shop("Farmer", "bakery", "grain", 5)
-    assert ok
-    events = w.eng.neighbours(w._actors["Farmer"], "observed_event")
-    kinds = [w.eng.node(e)["attrs"]["kind"] for e in events]
-    assert "sold_goods" in kinds
+    assert not ok
+    assert before == (w.inventory_qty("Farmer", "grain"), w.coin("Farmer"),
+                      float(w.eng.node(w._shops["bakery"])["attrs"].get("coin", 0.0)))
+    assert not w._transactions
+
+
+def test_labor_and_wage_compatibility_paths_do_not_settle_normative_payments():
+    w = World()
+    w.add_actor("Worker", role="laborer")
+    w.add_actor("Employer", role="employer")
+    w.add_shop("bakery", (1, 1), input_kind="grain", output_kind="bread", price=9)
+    w.eng.set_attr(w._shops["bakery"], "coin", 20.0)
+    w.set_coin("Worker", 1.0)
+    w.set_coin("Employer", 10.0)
+    w.eng.set_attr(w._actors["Worker"], "wage_due", 4.0)
+    before = (w.coin("Worker"), w.coin("Employer"),
+              float(w.eng.node(w._shops["bakery"])["attrs"]["coin"]),
+              float(w.eng.node(w._actors["Worker"])["attrs"]["wage_due"]))
+    assert not w.sell_labor("Worker", "bakery", wage=1000)
+    assert not w.pay_wage("Employer", "Worker", 4)
+    assert before == (w.coin("Worker"), w.coin("Employer"),
+                      float(w.eng.node(w._shops["bakery"])["attrs"]["coin"]),
+                      float(w.eng.node(w._actors["Worker"])["attrs"]["wage_due"]))
+    assert not w._transactions
 
 
 # ========================================================= R2 prerequisite: relationships
@@ -288,22 +320,22 @@ def test_zero_gain_collapses_the_smalltalk_rate_gap_between_tie_conditions():
         for _ in range(n):
             arousal = rng.uniform(0.0, 1.0)
             mind = BigvilleOcelotActor("A")
-            bond = mind._speech_bond("B", None)
+            bond = mind.speech_backend._bond("B", None)
             mind.s.set_attr(bond, "tie_strength", tie)
             mind.s.set_attr(bond, "affect_affection", 0.0)
-            choice = mind.decide_speech("B", relationship=None, arousal=arousal,
-                                        loquacity_threshold=1.0)
+            choice = mind.speech_backend.propose("B", relationship=None, arousal=arousal,
+                                                 loquacity_threshold=1.0)
             if choice["kind"] == "smalltalk":
                 hits += 1
         return hits / n
 
-    old_gain = bw.ACCOMMODATION_GAIN
-    bw.ACCOMMODATION_GAIN = 0.0
+    old_gain = DeterministicSpeechBackend.accommodation_gain
+    DeterministicSpeechBackend.accommodation_gain = 0.0
     try:
         zero_tie = smalltalk_rate(0.0)
         high_tie = smalltalk_rate(3.0)
     finally:
-        bw.ACCOMMODATION_GAIN = old_gain
+        DeterministicSpeechBackend.accommodation_gain = old_gain
     assert zero_tie == high_tie, (
         "gain=0.0 must fully collapse the tie-strength coupling back to the "
         f"current baseline (independent of interlocutor identity): {zero_tie} vs {high_tie}")
@@ -320,16 +352,16 @@ def test_nonzero_gain_measurably_raises_the_smalltalk_rate_for_a_high_tie():
         for _ in range(n):
             arousal = rng.uniform(0.0, 1.0)
             mind = BigvilleOcelotActor("A")
-            bond = mind._speech_bond("B", None)
+            bond = mind.speech_backend._bond("B", None)
             mind.s.set_attr(bond, "tie_strength", tie)
             mind.s.set_attr(bond, "affect_affection", 0.0)
-            choice = mind.decide_speech("B", relationship=None, arousal=arousal,
-                                        loquacity_threshold=1.0)
+            choice = mind.speech_backend.propose("B", relationship=None, arousal=arousal,
+                                                 loquacity_threshold=1.0)
             if choice["kind"] == "smalltalk":
                 hits += 1
         return hits / n
 
-    assert bw.ACCOMMODATION_GAIN > 0.0, "the shipped gain must be a real, nonzero value"
+    assert DeterministicSpeechBackend.accommodation_gain > 0.0, "the shipped gain must be a real, nonzero value"
     zero_tie = smalltalk_rate(0.0)
     high_tie = smalltalk_rate(3.0)
     assert high_tie > zero_tie + 0.1, (
@@ -337,11 +369,8 @@ def test_nonzero_gain_measurably_raises_the_smalltalk_rate_for_a_high_tie():
         f"{zero_tie:.3f} -> {high_tie:.3f}")
 
 
-def test_full_pathway_via_spontaneous_speech_tick_reaches_smalltalk_for_a_tied_pair():
-    """The REQUIRED real, run, end-to-end measurement (matching the gossip work's
-    own pattern: run _spontaneous_speech_tick() N times and compare observed
-    rates) -- using an ACTUAL set_relationship-populated tie, not the isolated
-    mechanism above.
+def test_explicit_backend_proposals_reach_smalltalk_for_a_tied_pair():
+    """Measure repeated explicit backend proposals using a real held tie.
 
     First measured run of this test found the coupling correctly wired but
     end-to-end INERT: decide_speech's pre-existing greeting branch
@@ -368,10 +397,12 @@ def test_full_pathway_via_spontaneous_speech_tick_reaches_smalltalk_for_a_tied_p
             w.set_relationship("Anselm", "Bryony", kind="friend", strength=tie_strength, mutual=True)
         kinds = {}
         for _ in range(n):
-            w._spontaneous_speech_tick()
+            proposal = w.resident_speech_proposal("Anselm", "Bryony")
             choice = w._actor_minds["Anselm"].speech_choices.get("Bryony")
             if choice is not None:
                 kinds[choice["kind"]] = kinds.get(choice["kind"], 0) + 1
+            if proposal is not None:
+                w.enact_speech_proposal("Anselm", proposal)
         return kinds
 
     zero_tie_kinds = run_and_count(0.0)

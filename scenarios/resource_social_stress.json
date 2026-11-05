@@ -1,0 +1,36 @@
+{
+  "id": "resource_social_stress",
+  "name": "Resource and Social Stress",
+  "description": "Four residents share a physically accessible, finite pantry. Package 15 applies a fixed mid-run bread loss to compare backend-held sharing and self-prioritizing policies.",
+  "map": {
+    "grid": [
+      ["wall", "wall", "wall", "wall", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "floor", "floor", "floor", "wall"],
+      ["wall", "wall", "wall", "wall", "wall"]
+    ],
+    "layout": {"w": 5, "h": 5, "homes": [[2, 2], [2, 2], [2, 2], [2, 2]]}
+  },
+  "actors": [
+    {"name": "Ada", "role": "hand", "backend": "simple", "simple_profile": "pkg15.sharing", "home_cell": [2, 2]},
+    {"name": "Ben", "role": "hand", "backend": "simple", "simple_profile": "pkg15.sharing", "home_cell": [2, 2]},
+    {"name": "Cy", "role": "hand", "backend": "simple", "simple_profile": "pkg15.self_priority", "home_cell": [2, 2]},
+    {"name": "Dee", "role": "hand", "backend": "simple", "simple_profile": "pkg15.self_priority", "home_cell": [2, 2]}
+  ],
+  "initial": {"hour": 7.0, "weather": "clear", "temperature": 18.0},
+  "physical_subsystems": {"metabolism": true, "ecology": false, "decay": false},
+  "metadata": {
+    "experiment": "package_15_resource_and_social_stress",
+    "observation_scope": "actor; only situated events and delivered messages",
+    "period_every_turns": 2,
+    "fixed_physical_setup": {"pantry_cell": [2, 2], "initial_bread": 12, "initial_hunger": 0.65},
+    "shock": {"turn": 2, "operation": "remove 4 bread from pantry", "reason": "predeclared supply loss", "applies_identically_to_both_policies": true},
+    "policies": {
+      "pkg15.sharing": "Backend-held policy: consider other residents' observed hunger and make voluntary offers/transfers when carrying surplus.",
+      "pkg15.self_priority": "Backend-held policy: prioritize the actor's own observed hunger and retain carried food unless choosing to eat it."
+    },
+    "seeds": [15001, 15002, 15003],
+    "action_budget_turns": 16
+  }
+}

@@ -65,6 +65,10 @@ physical objects differently, or ignore them entirely.
 To run the same held game through the Ocelot cognition adapter, use
 `backend="ocelot"`. The physical room is still the only world-engine state;
 Ocelot receives the held frame and owns its speech output.
+Ocelot and its dependencies must be available on `PYTHONPATH`; this selection
+fails if the real provider is unavailable. Use `backend="simple"` for the
+lightweight local policy. The current Ocelot seed loader requires the working
+directory to be the Ocelot checkout.
 
 ```python
 experiment = create_board_game(scenario="monopoly_four_players", seed=1,
