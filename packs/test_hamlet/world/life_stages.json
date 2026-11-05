@@ -1,0 +1,43 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): LIFE_STAGES. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "LIFE_STAGES": {
+      "infant": {
+        "age_min": 0,
+        "age_max": 3,
+        "work_fraction": 0.0,
+        "care": 1.0,
+        "food": 0.35
+      },
+      "child": {
+        "age_min": 4,
+        "age_max": 12,
+        "work_fraction": 0.25,
+        "care": 0.5,
+        "food": 0.6
+      },
+      "youth": {
+        "age_min": 13,
+        "age_max": 17,
+        "work_fraction": 0.65,
+        "care": 0.1,
+        "food": 0.8
+      },
+      "adult": {
+        "age_min": 18,
+        "age_max": 64,
+        "work_fraction": 1.0,
+        "care": 0.0,
+        "food": 1.0
+      },
+      "elder": {
+        "age_min": 65,
+        "age_max": 99,
+        "work_fraction": 0.35,
+        "care": 0.2,
+        "food": 0.85
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): SCARCITY. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "SCARCITY": {
+      "coin": 1.0,
+      "water": 0.5,
+      "grain": 1.0,
+      "flour": 1.2,
+      "bread": 1.5
+    }
+  }
+}

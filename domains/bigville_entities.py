@@ -569,8 +569,9 @@ def _processes():
     for kind, spec in ITEMS.items():
         if spec.get("imported"):
             procs.append({"name": f"import:{kind}", "system": "trade", "in": [["coin", scarcity(kind)]], "out": [[kind, 1]]})
-    procs.append({"name": "residents", "system": "household", "in": [["food", 1]],
-                  "out": [[WASTE_CYCLES["human_waste"]["output"], WASTE_CYCLES["human_waste"]["per_resident"]]]})
+    if "human_waste" in WASTE_CYCLES:   # a pack without a waste cycle has no residents' waste process
+        procs.append({"name": "residents", "system": "household", "in": [["food", 1]],
+                      "out": [[WASTE_CYCLES["human_waste"]["output"], WASTE_CYCLES["human_waste"]["per_resident"]]]})
     procs.append({"name": "fertilise", "system": "agriculture",
                   "in": [[NITROGEN["fertiliser_type"], 1]], "out": [["soil_nitrogen", 1]]})
     return procs
@@ -779,7 +780,7 @@ def analyse_systems():
             issues.append(f"GLUT {name}: supply {supply:.1f} vs demand {demand:.1f} per period "
                           f"({ratio:.1f}x -- the constraint may be too loose to matter)")
     for crop, spec in CROPS.items():
-        if float(spec.get("seed_return", 1.0)) <= 1.0 and crop in BALANCE_SCENARIO["beds"]:
+        if float(spec.get("seed_return", 1.0)) <= 1.0 and crop in BALANCE_SCENARIO.get("beds", {}):
             issues.append(f"BREAK-EVEN seed for {crop}: a harvest returns {spec.get('seed_return', 1.0)} seed per "
                           f"seed sown, so every bed lost to wilting shrinks the seed stock for good")
     # recipes that cost much more than the cheapest way to make the same thing

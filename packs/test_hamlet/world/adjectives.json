@@ -1,0 +1,50 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): ADJECTIVES. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "ADJECTIVES": {
+      "metal": [
+        "pristine",
+        "worn",
+        "rusty",
+        "ruined"
+      ],
+      "perishable": [
+        "fresh",
+        "stale",
+        "rotten",
+        "putrid"
+      ],
+      "textile": [
+        "new",
+        "worn",
+        "frayed",
+        "ragged"
+      ],
+      "wood": [
+        "sound",
+        "weathered",
+        "rotten",
+        "crumbling"
+      ],
+      "leather": [
+        "supple",
+        "worn",
+        "cracked",
+        "perished"
+      ],
+      "stone": [
+        "solid",
+        "chipped",
+        "cracked",
+        "crumbling"
+      ],
+      "durable": [
+        "sound",
+        "worn",
+        "damaged",
+        "broken"
+      ]
+    }
+  }
+}

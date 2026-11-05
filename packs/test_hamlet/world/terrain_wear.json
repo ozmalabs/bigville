@@ -1,0 +1,20 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): TERRAIN_WEAR. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "TERRAIN_WEAR": {
+      "grass": {
+        "wears_to": "path",
+        "passes_to_form": 40.0,
+        "ticks_to_fade": 400.0,
+        "load_sensitive": true
+      },
+      "tree": {
+        "wears_to": "grass",
+        "passes_to_form": 120.0,
+        "ticks_to_fade": 600.0,
+        "load_sensitive": true
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): APTITUDE_PRACTICE, LIT_EDUCATED, LIT_FUNCTIONAL, META_FROM_SKILL, META_METASKILL, PRACTICE, TRANSFER. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "META_METASKILL": "aptitude",
+    "TRANSFER": {
+      "base": 0.5,
+      "meta": 0.5
+    },
+    "APTITUDE_PRACTICE": {
+      "rate": 0.0002,
+      "headroom": 0.1
+    },
+    "PRACTICE": {
+      "rate": 0.004,
+      "transfer": 1.0,
+      "meta": 1.0,
+      "meta_rate": 0.0008,
+      "event_step": 0.1
+    },
+    "META_FROM_SKILL": 0.6,
+    "LIT_FUNCTIONAL": 0.4,
+    "LIT_EDUCATED": 0.8
+  }
+}

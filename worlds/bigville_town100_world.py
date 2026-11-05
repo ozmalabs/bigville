@@ -52,7 +52,9 @@ import worlds.bigville_sim_world as _sim                              # noqa: E4
 from worlds.bigville_sim_world import (                              # noqa: E402
     GRASS, PATH, WALL, FLOOR, SQUARE, TREE, WATER, SOLID, TILE_NAME)
 from worlds.bigville_trade_world import BigvilleTradeWorld           # noqa: E402
-from domains import bigville_entities as E                          # noqa: E402
+from domains.data_view import entities as _entities_view           # noqa: E402
+from bigville.scenarios import load_scenario                        # noqa: E402
+from worlds.bigville_world import requested_data_pack               # noqa: E402
 
 W100, H100 = 52, 40
 SEED_DEFAULT = 305000
@@ -60,7 +62,14 @@ SEED_DEFAULT = 305000
 # resource body -> the tile that IS the body (deposit sits on a walkable cell
 # orthogonally adjacent to one of these), from the entity data's RESOURCE_DEPOSITS.
 _TILE_BY_NAME = {name: tile for tile, name in TILE_NAME.items()}
-_BODY_TILE = {kind: _TILE_BY_NAME[spec["tile"]] for kind, spec in E.RESOURCE_DEPOSITS.items()}
+
+
+_TOWN100_DEPOSITS = ("fish", "lumber", "stone")
+
+
+def _body_tiles(entities):
+    """Resource body kind -> tile, from one pack's RESOURCE_DEPOSITS (the world's view, or the default)."""
+    return {kind: _TILE_BY_NAME[spec["tile"]] for kind, spec in entities.RESOURCE_DEPOSITS.items()}
 
 # ---------------------------------------------------------------- the role model
 # (role, count, group, ri_mean, ri_sd, workplace_kind). Sums to 100.
@@ -344,7 +353,7 @@ _BUILDING_SITES = {
 }
 
 
-def build_town_100(seed=SEED_DEFAULT):
+def build_town_100(seed=SEED_DEFAULT, entities=None):
     """Return (grid, affordances, layout). Deterministic in `seed`. build_town()
     (the 30x18 town) is untouched -- this is a separate builder."""
     W, H = W100, H100
@@ -397,7 +406,7 @@ def build_town_100(seed=SEED_DEFAULT):
               "building_sites": dict(_BUILDING_SITES),
               "square": {"x": 18, "y": 15, "w": 11, "h": 7, "center": (23, 18)}}
     ordered = sorted(comp)
-    for kind, tile in _BODY_TILE.items():
+    for kind, tile in _body_tiles(entities if entities is not None else _entities_view()).items():
         cell = next(c for c in ordered if _adj_body(grid, c[0], c[1], tile))
         layout["deposits"][kind] = cell
         layout["work"][kind] = cell            # fisher/forester/quarrier work here
@@ -440,7 +449,7 @@ def build_town_100(seed=SEED_DEFAULT):
     for kind, label in _KINDNAME.items():
         cx, cy = layout["work"][kind]
         affordances.append({"name": label, "kind": kind, "x": cx, "y": cy})
-    for kind in ("fish", "lumber", "stone"):
+    for kind in layout["deposits"]:          # the deposits the pack's RESOURCE_DEPOSITS placed
         cx, cy = layout["deposits"][kind]
         affordances.append({"name": "%s deposit" % kind, "kind": "deposit_%s" % kind,
                             "x": cx, "y": cy})
@@ -583,9 +592,22 @@ class BigvilleTown100World(BigvilleTradeWorld):
                      "mason": ("stone", "blocks"),
                      "bakery": ("grain", "bread")}
 
-    def __init__(self, seed=SEED_DEFAULT, **kw):
+    def __init__(self, seed=SEED_DEFAULT, *, data_pack=None, **kw):
         self.t100_seed = seed
-        grid, aff, layout = build_town_100(seed)
+        # The town's entity data comes from one pack (the constructor's data_pack, or the scenario's).
+        # The map's bodies are read from it before super().__init__, which builds the base worlds
+        # (none of which read entity tables).
+        scenario = kw.get("scenario")
+        scenario_data = load_scenario(scenario).to_dict() if scenario is not None else None
+        self.data_pack = requested_data_pack(data_pack, scenario_data)
+        self.E = _entities_view(self.data_pack)
+        # The map places these three deposits and the town's fixed workplaces (see build_town_100).
+        # A pack without them cannot host this town.
+        missing = [kind for kind in _TOWN100_DEPOSITS if kind not in self.E.RESOURCE_DEPOSITS]
+        if missing:
+            raise ValueError(f"BigvilleTown100World places the deposits {list(_TOWN100_DEPOSITS)}; "
+                             f"data pack '{self.data_pack}' has no {missing}")
+        grid, aff, layout = build_town_100(seed, self.E)
         self.t100_layout = layout
         # inject the expanded map by rebinding build_town for the super().__init__
         # chain (mechanical world setup; build_town itself is never edited).

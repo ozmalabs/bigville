@@ -13,7 +13,7 @@ from domains.pack import load_pack as _load_pack
 # Tables and constants below are read from the "bigville" data pack (packs/bigville/).
 # Their explanatory comments are in the pack files as "_doc"; domains/pack.py
 # compiles the derived entries. Functions in this module read these names unchanged.
-_PACK = _load_pack("bigville")
+_PACK = _load_pack(globals().get("_PACK_NAME", "bigville"))   # data_view seeds _PACK_NAME
 SKILLS = _PACK["SKILLS"]
 TRADE_SKILLS = _PACK["TRADE_SKILLS"]
 OPEN_RECIPE_SKILLS = _PACK["OPEN_RECIPE_SKILLS"]

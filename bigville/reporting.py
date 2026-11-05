@@ -14,7 +14,7 @@ import random
 from statistics import median
 from typing import Any
 
-from domains import bigville_entities as E
+from domains.data_view import world_entities
 
 
 def _round(value: float, places: int = 4) -> float:
@@ -67,6 +67,7 @@ class SimulationReporter:
         self.world = world
 
     def _actor_rows(self) -> list[dict[str, Any]]:
+        E = world_entities(self.world)
         rows = []
         for name, node in sorted(self.world._actors.items()):
             attrs = self.world.eng.node(node)["attrs"]
@@ -159,6 +160,7 @@ class SimulationReporter:
         return exact
 
     def economy(self) -> dict[str, Any]:
+        E = world_entities(self.world)
         stock = {}
         total_value = 0.0
         food_qty = 0.0

@@ -1,0 +1,12 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): CARRYING. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "CARRYING": {
+      "overload_ratio": 1.0,
+      "drop_ratio": 2.0,
+      "base_move_energy": 1.0,
+      "overload_energy_factor": 4.0
+    }
+  }
+}

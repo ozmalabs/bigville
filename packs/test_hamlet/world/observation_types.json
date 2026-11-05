@@ -1,0 +1,66 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): OBSERVATION_TYPES. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "OBSERVATION_TYPES": {
+      "weather": {
+        "subjects": [
+          "season",
+          "rain",
+          "temperature",
+          "wind"
+        ],
+        "source": "environment"
+      },
+      "soil": {
+        "subjects": [
+          "fertility",
+          "moisture",
+          "erosion"
+        ],
+        "source": "land"
+      },
+      "storage": {
+        "subjects": [
+          "quantity",
+          "condition",
+          "capacity"
+        ],
+        "source": "container"
+      },
+      "health": {
+        "subjects": [
+          "illness",
+          "injury",
+          "mortality"
+        ],
+        "source": "residents"
+      },
+      "labour": {
+        "subjects": [
+          "available_time",
+          "skill",
+          "fatigue",
+          "care"
+        ],
+        "source": "households"
+      },
+      "prices": {
+        "subjects": [
+          "scarcity",
+          "price",
+          "imports"
+        ],
+        "source": "market"
+      },
+      "authority": {
+        "subjects": [
+          "office",
+          "compliance",
+          "dispute"
+        ],
+        "source": "governance"
+      }
+    }
+  }
+}

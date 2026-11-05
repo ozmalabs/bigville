@@ -1,0 +1,12 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): PHYSIQUE. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "PHYSIQUE": {
+      "mean": 1.0,
+      "sd": 0.2,
+      "shared_sd": 0.12,
+      "floor": 0.4
+    }
+  }
+}

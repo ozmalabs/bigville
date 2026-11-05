@@ -1,0 +1,23 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): HUNGER_PER_STAMINA, LABOUR_RATE, NITROGEN, SCRAP_DECAY, SCRAP_SCARCITY_FACTOR, SCRAP_WEIGHT_FACTOR, TRAIN_HEADROOM, TRAIN_RATE. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "SCRAP_WEIGHT_FACTOR": 0.5,
+    "SCRAP_SCARCITY_FACTOR": 0.15,
+    "SCRAP_DECAY": 0.35,
+    "NITROGEN": {
+      "capacity_per_area": 12.0,
+      "mineralisation_per_area": 0.1,
+      "leaching": 0.01,
+      "yield_floor": 0.3,
+      "fertiliser_type": "fertiliser",
+      "fertilise_amount": 2.0,
+      "fertilise_below": 0.6,
+      "restore_below": 0.4
+    },
+    "LABOUR_RATE": 0.02,
+    "TRAIN_HEADROOM": 0.4,
+    "TRAIN_RATE": 0.12,
+    "HUNGER_PER_STAMINA": 1.0
+  }
+}

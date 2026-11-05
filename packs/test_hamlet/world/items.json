@@ -1,0 +1,34 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): ITEMS. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "ITEMS": {
+      "coin": {
+        "class": "material",
+        "bulk": true
+      },
+      "water": {
+        "class": "material",
+        "bulk": true,
+        "fluid": true,
+        "weight": 1.0,
+        "volume": 1.0
+      },
+      "grain": {
+        "class": "material",
+        "bulk": true
+      },
+      "flour": {
+        "class": "material",
+        "bulk": true
+      },
+      "bread": {
+        "class": "material",
+        "bulk": true,
+        "weight": 0.5,
+        "volume": 1.0,
+        "food": true
+      }
+    }
+  }
+}

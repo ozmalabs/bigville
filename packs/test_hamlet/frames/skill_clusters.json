@@ -1,0 +1,15 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): SKILL_CLUSTERS. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "SKILL_CLUSTERS": {
+      "food_crafts": {
+        "metaskill": "craftsmanship",
+        "skills": [
+          "baking",
+          "milling"
+        ]
+      }
+    }
+  }
+}

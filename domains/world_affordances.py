@@ -17,7 +17,7 @@ from domains.pack import load_pack as _load_pack
 # Tables and constants below are read from the "bigville" data pack (packs/bigville/).
 # Their explanatory comments are in the pack files as "_doc"; domains/pack.py
 # compiles the derived entries. Functions in this module read these names unchanged.
-_PACK = _load_pack("bigville")
+_PACK = _load_pack(globals().get("_PACK_NAME", "bigville"))   # data_view seeds _PACK_NAME
 ITEMS = _PACK["ITEMS"]
 SCRAP_WEIGHT_FACTOR = _PACK["SCRAP_WEIGHT_FACTOR"]
 SCRAP_SCARCITY_FACTOR = _PACK["SCRAP_SCARCITY_FACTOR"]
@@ -434,7 +434,11 @@ def _recipe_unit_cost(r):
 
 def _balance_flows(sc):
     """Per-period supply and demand of a town's coupled flows under scenario `sc` (see
-    population.BALANCE_SCENARIO). Returns (flows, notes, work): work is {stream: minutes per period}."""
+    population.BALANCE_SCENARIO). Returns (flows, notes, work): work is {stream: minutes per period}.
+    A pack with no balance scenario (an empty `sc`, as a pack without a founding town may have) has no
+    flows and no work: the model is a calibration of the founding town, and it is optional."""
+    if not sc or "beds" not in sc:
+        return {}, ["no balance scenario in this pack (BALANCE_SCENARIO is empty)"], {}
     flows, notes, work = {}, [], {}
     beds = sc["beds"]
     harvest = {}

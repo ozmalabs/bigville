@@ -1125,4 +1125,19 @@ def main():
 
 
 if __name__ == "__main__":
+    import argparse
+    _parser = argparse.ArgumentParser(description="Regenerate the Bigville art sheets from one data pack.")
+    _parser.add_argument("--pack", default="bigville",
+                         help="pack whose ITEMS and BUILDINGS are drawn (a name under packs/, or a directory)")
+    _parser.add_argument("--out", default=None,
+                         help="directory for the sheets and manifest.json (default: this directory). "
+                              "Required with a pack other than bigville, so the game's assets are not overwritten.")
+    _args = _parser.parse_args()
+    if _args.pack != "bigville" and _args.out is None:
+        _parser.error("--pack other than bigville needs --out DIR")
+    from domains.data_view import entities as _entities_for_pack
+    E = _entities_for_pack(_args.pack)
+    if _args.out is not None:
+        HERE = os.path.abspath(_args.out)
+        os.makedirs(HERE, exist_ok=True)
     main()

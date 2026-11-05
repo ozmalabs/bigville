@@ -14,6 +14,7 @@ from .backends.protocol import ActorContinuation, ProposedAction
 from .backends.protocol import communication_capabilities
 from .character import CharacterDefinition, FrameSeed, MemoryRecord
 from worlds.bigville_bond_world import BigvilleBondWorld
+from domains.data_view import world_entities
 
 
 @dataclass
@@ -70,7 +71,7 @@ class BigvilleGame:
 
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
-        from domains import bigville_entities as entities
+        entities = world_entities(self.world)
         setups = getattr(entities, "ANIMAL_NPC_SETUP", {})
         for name in self.world._animals:
             if name in self._animal_backends:
@@ -241,7 +242,7 @@ class BigvilleGame:
         self._sync_backend_metadata()
 
     def _characters_from_world(self):
-        from domains import bigville_entities as entities
+        entities = world_entities(self.world)
         characters = {}
         scenario_characters = getattr(self.world, "_scenario_character_data", {})
         for name, node in self.world._actors.items():

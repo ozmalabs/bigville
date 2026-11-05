@@ -1,0 +1,44 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): RECIPES. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "RECIPES": [
+      {
+        "name": "mill_flour",
+        "requires": "baker",
+        "in": [
+          [
+            "grain",
+            1
+          ]
+        ],
+        "out": [
+          "flour",
+          1
+        ],
+        "difficulty": 0.5,
+        "time_minutes": 10
+      },
+      {
+        "name": "bake_bread",
+        "requires": "baker",
+        "in": [
+          [
+            "flour",
+            1
+          ],
+          [
+            "water",
+            1
+          ]
+        ],
+        "out": [
+          "bread",
+          2
+        ],
+        "difficulty": 1.0,
+        "time_minutes": 30
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): STATION_EDUCATION. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "STATION_EDUCATION": {
+      "labouring": {
+        "literacy": 0.15,
+        "capability": 0.2
+      },
+      "middle": {
+        "literacy": 0.55,
+        "capability": 0.5
+      },
+      "educated": {
+        "literacy": 0.9,
+        "capability": 0.9
+      }
+    }
+  }
+}

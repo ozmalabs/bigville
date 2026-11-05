@@ -1,0 +1,13 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): STARTING_STOCK. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "STARTING_STOCK": {
+      "coin": 20.0,
+      "water": 100.0,
+      "grain": 40.0,
+      "flour": 0.0,
+      "bread": 0.0
+    }
+  }
+}

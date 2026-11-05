@@ -445,7 +445,9 @@ world, backend, or other test files.
 
 ### Phase 013b -- The world reads a named pack
 
-**Status:** ready.
+**Status:** done (see History). Review decisions: an empty BALANCE_SCENARIO means "no founding
+balance model" for now; views of one pack share table objects (nothing mutates them); the map's
+site layout, place labels, and `from_town100`'s pack argument move to Phase 016.
 
 **Goal.** `BigvilleWorld(data_pack=...)` and `"data_pack"` in a scenario select the pack; every
 table the world, backends, reporting, and asset generator read comes from the world's pack
@@ -484,7 +486,9 @@ runs land registration and a council vote without code changes.
 
 **Status:** blocked on 013; merge with Phase 003 (seeding the cast from JOBS).
 
-**Goal.** Move `bigville_town100_world.py`'s content (role counts -> JOBS seeding, personality
+**Goal.** (Also from 013b review: the 100-resident map's site layout, workplace anchors, place
+labels, and fixed deposit kinds become pack data, and `from_town100`/`run_village` take the
+world's pack.) Move `bigville_town100_world.py`'s content (role counts -> JOBS seeding, personality
 `_PARAM_SPEC`, name pools and anchor names, work anchors, building sites, map layout parameters,
 resource-mixture constants with their citations) into the pack's population and scenario data.
 `from_town100` becomes "build the pack's founding town".
@@ -614,3 +618,4 @@ exist, at the precision they know them -- never the world's map.
 |---|---|---|---|
 | 001 Workshop tool kits | done | (this commit) | docs/phases/phase001/PHASE001_REPORT.md -- supervisor applied the five setup-only test edits the report proposed (tests/test_simple_tools_materials_job.py, tests/test_bigville_world_migrated.py); 323 passed |
 | 013a Pack files, compiler, export | done | (this commit) | docs/phases/phase013a/PHASE013A_REPORT.md -- 119 tables in packs/bigville; self-test output identical; 331 passed |
+| 013b World reads a named pack | done | (this commit) | docs/phases/phase013b/PHASE013B_REPORT.md -- data_view per-pack module views; domains.check --pack; packs/test_hamlet; 340 passed |

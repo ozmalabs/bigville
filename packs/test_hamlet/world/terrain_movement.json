@@ -1,0 +1,43 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): TERRAIN_MOVEMENT. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "TERRAIN_MOVEMENT": {
+      "grass": {
+        "speed": 1.0,
+        "move_time": 1.0,
+        "stamina_multiplier": 1.0
+      },
+      "path": {
+        "speed": 1.35,
+        "move_time": 0.75,
+        "stamina_multiplier": 0.65
+      },
+      "floor": {
+        "speed": 1.05,
+        "move_time": 0.95,
+        "stamina_multiplier": 0.9
+      },
+      "square": {
+        "speed": 1.15,
+        "move_time": 0.85,
+        "stamina_multiplier": 0.8
+      },
+      "tree": {
+        "speed": 0.45,
+        "move_time": 2.2,
+        "stamina_multiplier": 2.0
+      },
+      "water": {
+        "speed": 0.0,
+        "move_time": 999.0,
+        "stamina_multiplier": 4.0
+      },
+      "wall": {
+        "speed": 0.0,
+        "move_time": 999.0,
+        "stamina_multiplier": 4.0
+      }
+    }
+  }
+}

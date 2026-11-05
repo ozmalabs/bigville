@@ -1,0 +1,122 @@
+ITEMS                        world/items.json                   boots; mill_flour ran
+SCRAP_WEIGHT_FACTOR          world/constants.json               scalar (not emptied)
+SCRAP_SCARCITY_FACTOR        world/constants.json               scalar (not emptied)
+SCRAP_DECAY                  world/constants.json               scalar (not emptied)
+INPUT_TYPES                  world/input_types.json             boots; mill_flour ran
+CONTAINERS                   world/containers.json              already empty
+SERVING_UTENSILS             world/serving_utensils.json        already empty
+SERVING_EQUIPMENT            world/serving_equipment.json       already empty
+FOOD_SERVICE                 world/food_service.json            already empty
+SOUP_FOODS                   world/soup_foods.json              already empty
+DRINK_FOODS                  world/drink_foods.json             already empty
+PREPARATION_REQUIREMENTS     world/preparation_requirements.json already empty
+PREPARATION_EQUIPMENT        world/preparation_equipment.json   already empty
+PREPARATION_METHODS          world/preparation_methods.json     already empty
+PREPARATION_METHODS_BY_HINT  world/preparation_methods_by_hint.json already empty
+HEATED_FOOD_RECIPES          world/heated_food_recipes.json     already empty
+FUEL_PER_BATCH               world/fuel_per_batch.json          already empty
+RECIPES                      world/recipes.json                 boots; mill_flour refused
+BUILDINGS                    world/buildings.json               boots; mill_flour ran
+TOWN_SQUARE_FIXTURES         world/town_square_fixtures.json    already empty
+BUILDING_PROJECTS            world/building_projects.json       already empty
+RESOURCE_DEPOSITS            world/resource_deposits.json       already empty
+SHOP_CHAINS                  world/shop_chains.json             already empty
+TERRAIN_MOVEMENT             world/terrain_movement.json        FAILS: KeyError: KeyError: 'grass'
+TERRAIN_WEAR                 world/terrain_wear.json            boots; mill_flour ran
+ANIMALS                      world/animals.json                 already empty
+SLAUGHTER_PRODUCTS           world/slaughter_products.json      already empty
+ANIMAL_NPC_SETUP             world/animal_npc_setup.json        already empty
+FENCE_TYPES                  world/fence_types.json             already empty
+ENCLOSURE_TYPES              world/enclosure_types.json         already empty
+ANIMAL_HUSBANDRY             world/animal_husbandry.json        already empty
+CROPS                        world/crops.json                   already empty
+FIELD_WORK                   world/field_work.json              already empty
+ARABLE_ROTATION              world/arable_rotation.json         already empty
+NITROGEN                     world/constants.json               boots; mill_flour ran
+STARTING_STOCK               world/starting_stock.json          boots; mill_flour ran
+STARTING_CROPS               world/starting_crops.json          already empty
+FREE_ACTIONS                 world/free_actions.json            boots; mill_flour ran
+MAJOR_ACTIONS                world/major_actions.json           boots; mill_flour ran
+CARRYING                     world/carrying.json                FAILS: KeyError: KeyError: 'overload_ratio'
+SEASONS                      world/seasons.json                 boots; mill_flour ran
+WEATHER                      world/weather.json                 boots; mill_flour ran
+WATER_SOURCES                world/water_sources.json           already empty
+FUEL_SOURCES                 world/fuel_sources.json            already empty
+SOILS                        world/soils.json                   already empty
+LAND_USES                    world/land_uses.json               already empty
+PASTURE_YIELDS               world/pasture_yields.json          already empty
+WASTE_CYCLES                 world/waste_cycles.json            already empty
+LIFE_STAGES                  world/life_stages.json             FAILS: KeyError: KeyError: 'adult'
+HEALTH_CONDITIONS            world/health_conditions.json       FAILS: KeyError: KeyError: 'healthy'
+INFRASTRUCTURE               world/infrastructure.json          already empty
+SHOCKS                       world/shocks.json                  boots; mill_flour ran
+AFFORDANCES                  world/affordances.json             boots; mill_flour ran
+OBSERVATION_TYPES            world/observation_types.json       boots; mill_flour ran
+ADJECTIVES                   world/adjectives.json              boots; mill_flour ran
+CLASS_DECAY                  world/class_decay.json             FAILS: KeyError: KeyError: 'durable'
+_PERISHABLE_RAW              world/_perishable_raw.json         already empty
+SCARCITY                     world/scarcity.json                boots; mill_flour ran
+LABOUR_RATE                  world/constants.json               scalar (not emptied)
+TRAIN_HEADROOM               world/constants.json               scalar (not emptied)
+TRAIN_RATE                   world/constants.json               scalar (not emptied)
+RECIPE_EXERTION              world/recipe_exertion.json         already empty
+HUNGER_PER_STAMINA           world/constants.json               scalar (not emptied)
+SKILLS                       frames/skills.json                 boots; mill_flour ran
+TRADE_SKILLS                 frames/trade_skills.json           boots; mill_flour ran
+OPEN_RECIPE_SKILLS           frames/open_recipe_skills.json     already empty
+METASKILLS                   frames/metaskills.json             boots; mill_flour ran
+META_METASKILL               frames/constants.json              scalar (not emptied)
+SKILL_LIMITATIONS            frames/skill_limitations.json      already empty
+SKILL_CLUSTERS               frames/skill_clusters.json         boots; mill_flour ran
+SKILL_CLOSENESS              frames/skill_closeness.json        FAILS: KeyError: KeyError: 'cluster'
+SKILL_AFFINITY               frames/skill_affinity.json         already empty
+TRANSFER                     frames/constants.json              FAILS: KeyError: KeyError: 'base'
+APTITUDE_PRACTICE            frames/constants.json              boots; mill_flour ran
+PRACTICE                     frames/constants.json              boots; mill_flour ran
+META_FROM_SKILL              frames/constants.json              scalar (not emptied)
+TRADES                       frames/trades.json                 boots; mill_flour ran
+LAND_TENURE                  frames/land_tenure.json            already empty
+LAND_RECORDS                 frames/land_records.json           already empty
+DEED_TYPES                   frames/deed_types.json             already empty
+LAND_DISPUTES                frames/land_disputes.json          already empty
+SHARED_CONCEPTS              frames/shared_concepts.json        already empty
+LOCAL_POLICIES               frames/local_policies.json         already empty
+LOCAL_LAWS                   frames/local_laws.json             boots; mill_flour ran
+GIANTVILLE_POLICIES          frames/giantville_policies.json    already empty
+GIANTVILLE_LAWS              frames/giantville_laws.json        already empty
+LAWMAKING_PROCEDURES         frames/lawmaking_procedures.json   already empty
+JUSTICE_PROCEDURES           frames/justice_procedures.json     already empty
+CHARTERS                     frames/charters.json               already empty
+CAST_ROLE_TRADES             frames/cast_role_trades.json       already empty
+HOUSEHOLDS                   frames/households.json             already empty
+LABOUR_TASKS                 frames/labour_tasks.json           already empty
+GOVERNANCE_OFFICES           frames/governance_offices.json     already empty
+MIN_SKILL                    frames/min_skill.json              already empty
+LIT_FUNCTIONAL               frames/constants.json              scalar (not emptied)
+LIT_EDUCATED                 frames/constants.json              scalar (not emptied)
+SYSTEM_OF_TRADE              frames/system_of_trade.json        already empty
+JOBS                         frames/jobs.json                   boots; mill_flour ran
+STATION_EDUCATION            population/station_education.json  FAILS: KeyError: KeyError: 'labouring'
+PREFERENCE_RESEARCH          population/preference_research.json already empty
+BITTER_TASTER_STATUS         population/bitter_taster_status.json already empty
+BITTER_LIKING_BY_STATUS      population/bitter_liking_by_status.json already empty
+COLOUR_PREFERENCE            population/colour_preference.json  already empty
+TASTE_PREFERENCE             population/taste_preference.json   already empty
+CILANTRO_SOAPY_FRACTION      population/constants.json          scalar (not emptied)
+FOOD_NEOPHOBIA               population/food_neophobia.json     boots; mill_flour ran
+SSAT_RATE                    population/constants.json          scalar (not emptied)
+NOVELTY_SWING                population/constants.json          scalar (not emptied)
+MERE_EXPOSURE_GAIN           population/constants.json          scalar (not emptied)
+MERE_EXPOSURE_DECAY          population/constants.json          scalar (not emptied)
+PHYSIQUE                     population/physique.json           boots; mill_flour ran
+APTITUDE                     population/aptitude.json           boots; mill_flour ran
+TALENT                       population/talent.json             boots; mill_flour ran
+LIMITATION_PREVALENCE        population/limitation_prevalence.json already empty
+PLAN_HORIZON                 population/plan_horizon.json       boots; mill_flour ran
+BALANCE_SCENARIO             population/balance_scenario.json   already empty
+JOB_REFERENCE_PER_100        population/job_reference_per_100.json already empty
+JOB_TARGET_LOAD              population/constants.json          scalar (not emptied)
+ANIMAL_SERVICES              world/animal_services.json         already empty
+
+tables checked: 119; boot needs content in: 8
+  TERRAIN_MOVEMENT, CARRYING, LIFE_STAGES, HEALTH_CONDITIONS, CLASS_DECAY, SKILL_CLOSENESS, TRANSFER, STATION_EDUCATION

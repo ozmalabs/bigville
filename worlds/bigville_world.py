@@ -20,11 +20,30 @@ from pathlib import Path
 from bigville.runtime import (BigvilleGraph, WorldAdapter, boot_core,
                                load_seeds_into, manifest_for)
 from bigville.scenarios import load_scenario
-from domains import bigville_entities as E               # noqa: E402
+from domains.data_view import entities as _entities_view  # noqa: E402
 from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
 from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 
 MINUTES_PER_TICK = 15.0
+DEFAULT_DATA_PACK = "bigville"
+
+
+def requested_data_pack(data_pack=None, scenario_data=None):
+    """The data pack a world reads. `data_pack` (constructor) and the scenario's "data_pack" are
+    alternatives: giving both is an error, as for physical_subsystems. Default: "bigville"."""
+    scenario_data = scenario_data or {}
+    if data_pack is not None and "data_pack" in scenario_data:
+        raise ValueError("data_pack may be specified either in the scenario or constructor")
+    if data_pack is not None:
+        if not isinstance(data_pack, str) or not data_pack:
+            raise TypeError("data_pack must be a pack name or directory")
+        return data_pack
+    configured = scenario_data.get("data_pack")
+    if configured is None:
+        return DEFAULT_DATA_PACK
+    if not isinstance(configured, str) or not configured:
+        raise TypeError("scenario data_pack must be a pack name or directory")
+    return configured
 
 TOWNSPEOPLE_50_RELATIONSHIP_KIND = {
     "rival_of": ("feud", -0.8),
@@ -318,10 +337,13 @@ class BigvilleWorld:
 
     def __init__(self, *, map_seed=305000, autonomous_actors=False, scenario=None,
                  cognition_factory=None, physical_subsystems=None,
-                 physical_subsystem_extensions=None):
+                 physical_subsystem_extensions=None, data_pack=None):
         scenario_definition = load_scenario(scenario) if scenario is not None else None
         self._scenario_data = scenario_definition.to_dict() if scenario_definition else {
             "id": "bigville", "name": "Bigville", "metadata": {"domain": "village"}}
+        # Every entity table and rule this world reads comes from one data pack (see domains/data_view.py).
+        self.data_pack = requested_data_pack(data_pack, self._scenario_data)
+        self.E = _entities_view(self.data_pack)
         # These switches gate only their named physical period effects. Extension
         # callbacks are opt-in and receive the number of elapsed periods.
         self._physical_subsystem_extensions = dict(physical_subsystem_extensions or {})
@@ -473,25 +495,25 @@ class BigvilleWorld:
         self._major_dispatch = False
         self._next_home_index = 0
         self._next_farm_index = 0
-        self._policy_specs = self._scenario_table("policies", E.POLICIES)
-        self._law_specs = self._scenario_table("laws", E.LAWS)
-        self._charter_specs = self._scenario_table("charters", E.CHARTERS)
-        self._item_specs = dict(E.ITEMS)   # runtime item registry (data + runtime-added)
+        self._policy_specs = self._scenario_table("policies", self.E.POLICIES)
+        self._law_specs = self._scenario_table("laws", self.E.LAWS)
+        self._charter_specs = self._scenario_table("charters", self.E.CHARTERS)
+        self._item_specs = dict(self.E.ITEMS)   # runtime item registry (data + runtime-added)
         self._recipe_specs = {}            # recipe name -> its data row (data + runtime-added)
         self.set_stock("none", 1e9)
         self._install_map(map_seed, self._scenario_data.get("map") or None)
         self._install_physical_objects()
-        for kind, spec in E.ITEMS.items():
+        for kind, spec in self.E.ITEMS.items():
             self._install_item(kind, spec)
-        for r in E.RECIPES:
+        for r in self.E.RECIPES:
             self._install_recipe(r)
-        for reference in E.all_reference_templates():
+        for reference in self.E.all_reference_templates():
             self._register_reference(reference)
-        for name, spec in E.AFFORDANCES.items():
+        for name, spec in self.E.AFFORDANCES.items():
             node = self.eng.add_node("Affordance", {"name": name, "domain": spec["domain"]})
             self.eng.add_edge_unchecked(self._town, "has_affordance", node)
             self._affordances[name] = node
-        for name, spec in E.OBSERVATION_TYPES.items():
+        for name, spec in self.E.OBSERVATION_TYPES.items():
             node = self.eng.add_node("ObservationSchema", {"name": name, "source": spec["source"]})
             self.eng.add_edge_unchecked(self._town, "has_observation_schema", node)
             self._observation_schemas[name] = node
@@ -502,10 +524,10 @@ class BigvilleWorld:
         scenario_buildings = self._scenario_data.get("buildings")
         if scenario_buildings is None:
             scenario_buildings = [{"kind": kind, "spec": spec}
-                                  for kind, spec in E.founding_buildings().items()]
+                                  for kind, spec in self.E.founding_buildings().items()]
         for building in scenario_buildings:
             kind = str(building.get("kind", "place"))
-            spec = dict(E.BUILDINGS.get(kind, {}))
+            spec = dict(self.E.BUILDINGS.get(kind, {}))
             spec.update(dict(building.get("spec", {})))
             self._install_building(kind, spec, key=building.get("name"),
                                    cell=building.get("cell"))
@@ -862,7 +884,7 @@ class BigvilleWorld:
         center = tuple(square.get("center", ()))
         if len(center) != 2:
             return
-        for fixture in E.TOWN_SQUARE_FIXTURES:
+        for fixture in self.E.TOWN_SQUARE_FIXTURES:
             offset = fixture.get("offset", (0, 0))
             cell = (int(center[0]) + int(offset[0]), int(center[1]) + int(offset[1]))
             node = self.eng.add_node("SquareFixture", {
@@ -1048,7 +1070,7 @@ class BigvilleWorld:
             self.eng.set_attr(job, "complete", 1.0)
             self.eng.set_attr(job, "remaining", 0.0)
             if actor_node is not None:
-                practised = E.recipe_skill(recipe_row) if recipe_row else None
+                practised = self.E.recipe_skill(recipe_row) if recipe_row else None
                 if practised:
                     log = dict(self.eng.node(actor_node)["attrs"].get("skill_practice", {}))
                     log[practised] = log.get(practised, 0.0) + float(action.get("time_minutes", 0.0))
@@ -1220,7 +1242,7 @@ class BigvilleWorld:
                     ia = self.eng.node(item)["attrs"]
                     kind = ia.get("kind", "")
                     if kind in self._item_specs:
-                        decay = E.decay_rate(kind)
+                        decay = self.E.decay_rate(kind)
                         if decay:
                             self.eng.set_attr(item, "condition", max(0.0, float(ia.get("condition", 1.0)) - decay))
                             if float(self.eng.node(item)["attrs"].get("condition", 0.0)) <= 0.0:
@@ -1299,7 +1321,7 @@ class BigvilleWorld:
         from worlds.bigville_town100_world import build_town_100
         from worlds.bigville_sim_world import SOLID as SOLID_TILES, TILE_NAME
         if scenario_map is None:
-            grid, affordances, layout = build_town_100(seed)
+            grid, affordances, layout = build_town_100(seed, self.E)
         else:
             terrain_codes = {"grass": 0, "path": 1, "wall": 2, "floor": 3,
                              "square": 4, "tree": 5, "water": 6}
@@ -1332,7 +1354,7 @@ class BigvilleWorld:
         for y, row in enumerate(grid):
             for x, tile in enumerate(row):
                 terrain = TILE_NAME.get(tile, "grass")
-                movement = E.TERRAIN_MOVEMENT.get(terrain, E.TERRAIN_MOVEMENT["grass"])
+                movement = self.E.TERRAIN_MOVEMENT.get(terrain, self.E.TERRAIN_MOVEMENT["grass"])
                 walkable = tile not in solid
                 cell = self.eng.add_node("MapCell", {"x": float(x), "y": float(y), "tile": float(tile),
                                                       "terrain": terrain,
@@ -1499,9 +1521,9 @@ class BigvilleWorld:
                           for name in self._actors
                           for kind, spec in self._item_specs.items() if spec.get("food")))
         food_days = food_qty / len(alive) if alive else 0.0
-        shelf_lives = [self.stock_condition(kind) / E.decay_rate(kind)
+        shelf_lives = [self.stock_condition(kind) / self.E.decay_rate(kind)
                        for kind, spec in self._item_specs.items()
-                       if spec.get("food") and self.qty(kind) > 0 and E.decay_rate(kind) > 0]
+                       if spec.get("food") and self.qty(kind) > 0 and self.E.decay_rate(kind) > 0]
         food_shelf_life = min(shelf_lives) if shelf_lives else float("inf")
         if alive and food_days < 4.0:
             warnings.append("less than four resident-rations of edible stock are available")
@@ -1596,16 +1618,16 @@ class BigvilleWorld:
 
     def terrain_movement_rules(self):
         """Return the seeded movement records used by map cells and actions."""
-        return {name: dict(values) for name, values in E.TERRAIN_MOVEMENT.items()}
+        return {name: dict(values) for name, values in self.E.TERRAIN_MOVEMENT.items()}
 
     def terrain_state(self, cell):
         """Return the movement read-off for a map cell, including its terrain name."""
         if not isinstance(cell, tuple) or cell not in self._map_cells:
-            return {"terrain": "unknown", **dict(E.TERRAIN_MOVEMENT["grass"])}
+            return {"terrain": "unknown", **dict(self.E.TERRAIN_MOVEMENT["grass"])}
         attrs = self.eng.node(self._map_cells[cell])["attrs"]
         base = str(attrs.get("base_terrain", attrs.get("terrain", "grass")))
         wear = float(attrs.get("wear", 0.0))
-        record = E.TERRAIN_WEAR.get(base)
+        record = self.E.TERRAIN_WEAR.get(base)
         if record is None or wear <= 0.0:
             terrain = str(attrs.get("terrain", base))
             return {"terrain": terrain,
@@ -1615,8 +1637,8 @@ class BigvilleWorld:
         # Part-worn ground is part-easier. Interpolating the movement read-off across
         # the accumulator -- rather than switching it at the end -- is what lets traffic
         # recruit traffic: the first crossings make the next ones cheaper.
-        worn = E.TERRAIN_MOVEMENT.get(str(record["wears_to"]), E.TERRAIN_MOVEMENT["grass"])
-        fresh = E.TERRAIN_MOVEMENT.get(base, E.TERRAIN_MOVEMENT["grass"])
+        worn = self.E.TERRAIN_MOVEMENT.get(str(record["wears_to"]), self.E.TERRAIN_MOVEMENT["grass"])
+        fresh = self.E.TERRAIN_MOVEMENT.get(base, self.E.TERRAIN_MOVEMENT["grass"])
         blend = min(1.0, max(0.0, wear))
         return {"terrain": str(attrs.get("terrain", base)),
                 "speed": fresh["speed"] + (worn["speed"] - fresh["speed"]) * blend,
@@ -1635,15 +1657,15 @@ class BigvilleWorld:
         edge.
         """
         if not isinstance(cell, tuple) or cell not in self._map_cells:
-            return float(E.TERRAIN_MOVEMENT["grass"]["move_time"])
+            return float(self.E.TERRAIN_MOVEMENT["grass"]["move_time"])
         attrs = self.eng.node(self._map_cells[cell])["attrs"]
         base = str(attrs.get("base_terrain", attrs.get("terrain", "grass")))
         wear = float(attrs.get("wear", 0.0))
-        record = E.TERRAIN_WEAR.get(base)
+        record = self.E.TERRAIN_WEAR.get(base)
         if record is None or wear <= 0.0:
             return float(attrs.get("move_time", 1.0))
-        worn = E.TERRAIN_MOVEMENT.get(str(record["wears_to"]), E.TERRAIN_MOVEMENT["grass"])
-        fresh = E.TERRAIN_MOVEMENT.get(base, E.TERRAIN_MOVEMENT["grass"])
+        worn = self.E.TERRAIN_MOVEMENT.get(str(record["wears_to"]), self.E.TERRAIN_MOVEMENT["grass"])
+        fresh = self.E.TERRAIN_MOVEMENT.get(base, self.E.TERRAIN_MOVEMENT["grass"])
         blend = min(1.0, max(0.0, wear))
         return fresh["move_time"] + (worn["move_time"] - fresh["move_time"]) * blend
 
@@ -1651,7 +1673,7 @@ class BigvilleWorld:
     def _wear_record(self, cell_node):
         """The TERRAIN_WEAR record governing this cell, or None if it is inert."""
         base = str(self.eng.node(cell_node)["attrs"].get("base_terrain", ""))
-        return E.TERRAIN_WEAR.get(base)
+        return self.E.TERRAIN_WEAR.get(base)
 
     def _advance_wear(self, cell_node, delta):
         """Move a cell's wear accumulator and republish its terrain read-off."""
@@ -1666,7 +1688,7 @@ class BigvilleWorld:
         # still its seeded terrain, merely easier to cross.
         terrain = str(record["wears_to"]) if wear >= 1.0 else base
         self.eng.set_attr(cell_node, "terrain", terrain)
-        movement = E.TERRAIN_MOVEMENT.get(terrain, E.TERRAIN_MOVEMENT["grass"])
+        movement = self.E.TERRAIN_MOVEMENT.get(terrain, self.E.TERRAIN_MOVEMENT["grass"])
         for key in ("speed", "move_time", "stamina_multiplier"):
             self.eng.set_attr(cell_node, key, float(movement[key]))
 
@@ -1784,17 +1806,17 @@ class BigvilleWorld:
         weight = self.carried_weight(actor)
         capacity = self.carrying_capacity(actor)
         ratio = weight / capacity if capacity > 0.0 else float("inf")
-        overload = max(0.0, ratio - float(E.CARRYING["overload_ratio"]))
+        overload = max(0.0, ratio - float(self.E.CARRYING["overload_ratio"]))
         interval = max(1, int(math.ceil(ratio))) if math.isfinite(ratio) else 999999
         speed = 1.0 / interval
-        effort = float(E.CARRYING["base_move_energy"]) * (
-            1.0 + float(E.CARRYING["overload_energy_factor"]) * overload)
+        effort = float(self.E.CARRYING["base_move_energy"]) * (
+            1.0 + float(self.E.CARRYING["overload_energy_factor"]) * overload)
         return {"weight": round(weight, 4), "capacity": round(capacity, 4),
-                "ratio": round(ratio, 4), "overloaded": ratio > float(E.CARRYING["overload_ratio"]),
-                "drop_threshold": round(capacity * float(E.CARRYING["drop_ratio"]), 4),
+                "ratio": round(ratio, 4), "overloaded": ratio > float(self.E.CARRYING["overload_ratio"]),
+                "drop_threshold": round(capacity * float(self.E.CARRYING["drop_ratio"]), 4),
                 "speed": round(speed, 4), "move_interval": interval,
                 "move_energy": round(effort, 4),
-                "will_drop": ratio > float(E.CARRYING["drop_ratio"])}
+                "will_drop": ratio > float(self.E.CARRYING["drop_ratio"])}
 
     def _refresh_carry_state(self, actor):
         state = self.carry_state(actor)
@@ -1944,7 +1966,7 @@ class BigvilleWorld:
         and the jobs' starting tools in their own hands. Returns the seed plan plus the resident
         names; what they do afterwards is up to them. Raises ValueError if the jobs need more people
         than `population` (E.check_job_seed explains why)."""
-        plan = E.seed_jobs(int(population))
+        plan = self.E.seed_jobs(int(population))
         if plan["short"]:
             raise ValueError(f"the jobs need {int(population) + plan['short']} residents; "
                              f"only {int(population)} were asked for")
@@ -1954,7 +1976,7 @@ class BigvilleWorld:
             counts[primary] = counts.get(primary, 0) + 1
             name = f"{prefix or primary}_{counts[primary] if not prefix else len(names) + 1}"
             role = resident["trades"][0]
-            skill = float(E.TRADES.get(role, {}).get("base_skill", 0.7))
+            skill = float(self.E.TRADES.get(role, {}).get("base_skill", 0.7))
             self.add_actor(name, role=role, skill=skill, trades=tuple(resident["trades"][1:]))
             self.eng.set_attr(self._actors[name], "jobs", ",".join(resident["jobs"]))
             self.draw_capacities(name, seed=capacity_seed)
@@ -1981,12 +2003,12 @@ class BigvilleWorld:
         self._t100_farms = []
 
         for kind, cell in layout.get("deposits", {}).items():
-            deposit = E.RESOURCE_DEPOSITS.get(kind, {})
+            deposit = self.E.RESOURCE_DEPOSITS.get(kind, {})
             self.add_deposit(kind, tuple(cell), stock=float(deposit.get("stock", 60.0)),
                              growback=float(deposit.get("growback", 3.0)),
                              capacity=float(deposit.get("capacity", 120.0)))
-        self.add_store(tuple(layout["work"]["market"]), tuple(E.RESOURCE_DEPOSITS))
-        for trade, chain in E.SHOP_CHAINS.items():
+        self.add_store(tuple(layout["work"]["market"]), tuple(self.E.RESOURCE_DEPOSITS))
+        for trade, chain in self.E.SHOP_CHAINS.items():
             if trade in layout["work"]:
                 self.add_shop(trade, tuple(layout["work"][trade]),
                               input_kind=chain["in"], output_kind=chain["out"])
@@ -2032,11 +2054,11 @@ class BigvilleWorld:
                            work_cell=tuple(record["workplace_cell"]),
                            klass=record["class"], group=record["group"],
                            role_identity=float(record["role_identity"]), traits=record["params"],
-                           trades=E.CAST_ROLE_TRADES.get(role, ()))
+                           trades=self.E.CAST_ROLE_TRADES.get(role, ()))
             # the founding cast are real people: aptitude, talents, and limitations drawn from the
             # observed distributions (E.LIMITATION_PREVALENCE), deterministic in the map seed
             self.draw_capacities(record["name"], seed=seed)
-            for tableware in E.SERVING_EQUIPMENT:
+            for tableware in self.E.SERVING_EQUIPMENT:
                 self.give_tableware(record["name"], tableware)
             self.assign_household(record["name"], household)
 
@@ -2099,7 +2121,7 @@ class BigvilleWorld:
                 self.add_animal(f"{species}_{index}", species, cell=pasture_cell,
                                 household=farm_household, land="village_pasture",
                                 enclosure="village_paddock")
-        for kind, qty in E.STARTING_STOCK.items():
+        for kind, qty in self.E.STARTING_STOCK.items():
             self.set_stock(kind, qty)
         # The reserve is physical stock, but food intended for sale must be
         # carried by actual residents.  Seed the first two bakery workers with
@@ -2115,7 +2137,7 @@ class BigvilleWorld:
             self._move_stock_to_inventory(baker, "bread", min(40.0, self.qty("bread")))
         # Seed the first rotation so the founding bread reserve is connected to actual local
         # production.  Later sowing, watering, harvesting, milling, and cooking remain actions.
-        for index, crop in enumerate(E.STARTING_CROPS):
+        for index, crop in enumerate(self.E.STARTING_CROPS):
             if index < len(self._t100_farms) and farmers:
                 self.sow(farmers[index % len(farmers)]["name"], crop,
                          land=f"farm_plot_{index:02d}")
@@ -2168,7 +2190,7 @@ class BigvilleWorld:
         n = self.eng.add_node("ItemSpec", {"kind": kind, **{k: (float(v) if not isinstance(v, bool)
                                                                and isinstance(v, (int, float)) else v)
                                                              for k, v in spec.items()}})
-        self.eng.set_attr(n, "scarcity", E.scarcity(kind))   # the raw material's general scarcity (data)
+        self.eng.set_attr(n, "scarcity", self.E.scarcity(kind))   # the raw material's general scarcity (data)
         self.eng.add_edge_unchecked(self._town, "has_itemspec", n)
         self._items[kind] = n
         return n
@@ -2181,18 +2203,18 @@ class BigvilleWorld:
         attrs = {"name": r["name"], "requires": r.get("requires", ""), "out_kind": out_kind,
                  "out_qty": float(out_qty), "out_discrete": 1.0 if discrete else 0.0,
                  "difficulty": float(r.get("difficulty", 1.0)), "time_minutes": float(r.get("time_minutes", 0.0)),
-                 "min_skill": E.min_skill(r["name"]),   # the skill FLOOR to attempt it (apprenticeship)
+                 "min_skill": self.E.min_skill(r["name"]),   # the skill FLOOR to attempt it (apprenticeship)
                  "common": 0.0 if r.get("common") is False else 1.0}   # commonly known by the trade, or must be learned
         if discrete:                                    # carry the item's tool data onto the action
             attrs.update(verb=out.get("verb", ""), base_mult=float(out.get("base_mult", 1.0)),
-                         wear_rate=float(out.get("wear_rate", 0.0)), decay=E.decay_rate(out_kind))
+                         wear_rate=float(out.get("wear_rate", 0.0)), decay=self.E.decay_rate(out_kind))
         asp = self.eng.add_node("ActionSpec", attrs)
         self.eng.add_edge_unchecked(self._town, "has_actionspec", asp)
         for kind, qty in r["in"]:                       # N input needs (data)
             icls = self._item_specs.get(kind, {}).get("class")
             is_item = 1.0 if icls not in (None, "material") and self._item_specs.get(kind, {}).get("discrete", True) else 0.0
             need_attrs = {"kind": kind, "qty": float(qty), "is_item": is_item}
-            if E.is_input_type(kind):                   # a TYPE slot: any member item fills it
+            if self.E.is_input_type(kind):                   # a TYPE slot: any member item fills it
                 need_attrs.update(slot_type=kind, is_item=0.0)
             need = self.eng.add_node("Need", need_attrs)
             self.eng.add_edge_unchecked(asp, "in_need", need)
@@ -2208,18 +2230,18 @@ class BigvilleWorld:
     # ---------------------------------------------------- typed input slots
     def type_available(self, type_name):
         """Units of a type slot (heat for fuel, nitrogen for fertiliser, ...) the store can supply."""
-        return round(sum(self.qty(kind) * units for kind, units in E.type_members(type_name)), 4)
+        return round(sum(self.qty(kind) * units for kind, units in self.E.type_members(type_name)), 4)
 
     def _consume_type(self, type_name, qty):
         """Fill `qty` units of a type slot from store stock and leave its byproducts.
 
         Returns the {kind: amount} actually burnt/used, or None (and changes nothing) if short."""
-        plan = E.type_plan(type_name, qty, self.qty)
+        plan = self.E.type_plan(type_name, qty, self.qty)
         if plan is None:
             return None
         for kind, amount in plan:
             self.set_stock(kind, self.qty(kind) - amount)
-        for kind, amount in E.type_byproducts(type_name, qty).items():
+        for kind, amount in self.E.type_byproducts(type_name, qty).items():
             self.set_stock(kind, self.qty(kind) + amount)
         return dict(plan)
 
@@ -2276,14 +2298,14 @@ class BigvilleWorld:
 
     # ---------------------------------------------------- village schemas and material institutions
     def affordance_data(self, name):
-        return dict(E.AFFORDANCES[name])
+        return dict(self.E.AFFORDANCES[name])
 
     def observation_schema(self, name):
-        return dict(E.OBSERVATION_TYPES[name])
+        return dict(self.E.OBSERVATION_TYPES[name])
 
     def set_weather(self, weather):
         """Set an environmental condition; residents may observe it, but it is not a resident fact."""
-        spec = E.WEATHER[weather]
+        spec = self.E.WEATHER[weather]
         self.eng.set_attr(self._town, "weather", weather)
         self.eng.set_attr(self._town, "rain", float(spec["rain"]))
         self.eng.set_attr(self._town, "temperature", float(spec["temperature"]))
@@ -2324,10 +2346,10 @@ class BigvilleWorld:
             self._set_daily_weather(day, season)
 
     def _set_daily_weather(self, day, season):
-        options = E.SEASONS.get(season, {}).get("weather", ("clear",))
+        options = self.E.SEASONS.get(season, {}).get("weather", ("clear",))
         # Deterministic weather is still variable: the map seed controls it,
         # and the resulting weather remains an observation residents must make.
-        options = tuple(option for option in options if option in E.WEATHER)
+        options = tuple(option for option in options if option in self.E.WEATHER)
         weather = options[self._rng.randrange(len(options))] if options else "clear"
         self.set_weather(weather)
 
@@ -2405,7 +2427,7 @@ class BigvilleWorld:
     def read_newspaper(self, reader, copy):
         if copy not in self.eng.nodes() or not self.eng.has_edge(self._actors[reader], "holds", copy):
             return None
-        if float(self.eng.node(self._actors[reader])["attrs"].get("literacy", 0.0)) < E.LIT_FUNCTIONAL:
+        if float(self.eng.node(self._actors[reader])["attrs"].get("literacy", 0.0)) < self.E.LIT_FUNCTIONAL:
             return None
         editions = list(self.eng.neighbours(copy, "of_edition"))
         if not editions:
@@ -2417,7 +2439,7 @@ class BigvilleWorld:
         return [dict(self.eng.node(article)["attrs"]) for article in articles]
 
     def add_household(self, name, *, kind="landless_household", assets=None, home_cell=None):
-        spec = E.HOUSEHOLDS[kind]
+        spec = self.E.HOUSEHOLDS[kind]
         h = self.eng.add_node("Household", {"name": name, "kind": kind,
                                              "food_need": 0.0, "water_need": 0.0,
                                              "fuel_need": 0.0, "shelter": 1.0,
@@ -2451,9 +2473,9 @@ class BigvilleWorld:
                 for n in self.eng.neighbours(h, "has_member")}
 
     def add_land(self, name, *, use="arable", soil="loam", area=1.0, cell=None, household=None):
-        assert use in E.LAND_USES and soil in E.SOILS
-        spec = E.SOILS[soil]
-        capacity = float(E.NITROGEN["capacity_per_area"]) * float(area)
+        assert use in self.E.LAND_USES and soil in self.E.SOILS
+        spec = self.E.SOILS[soil]
+        capacity = float(self.E.NITROGEN["capacity_per_area"]) * float(area)
         n = self.eng.add_node("Land", {"name": name, "use": use, "soil": soil,
                                         "area": float(area), "fertility": float(spec["fertility"]),
                                         "moisture": 0.0, "erosion": float(spec["erosion"]), "fallow": 0.0,
@@ -2490,7 +2512,7 @@ class BigvilleWorld:
     def _register_title(self, clerk, land, holder, *, holder_kind=None, tenure="freehold",
                         basis="grant", effective=None, witnesses=(), deed=None, occupant=None):
         # Role labels do not make a register entry authoritative.
-        assert land in self._land and tenure in E.LAND_TENURE
+        assert land in self._land and tenure in self.E.LAND_TENURE
         holder_node, resolved_kind = self._holder_node(holder, holder_kind)
         old = self._titles.get(land)
         if old is not None:
@@ -2522,7 +2544,7 @@ class BigvilleWorld:
     def write_deed(self, clerk, deed_type, land, *, from_holder="", to_holder="", witnesses=(),
                    term=None, consideration=0.0, notes=""):
         """Create a physical deed record, independent of the writer's role."""
-        assert deed_type in E.DEED_TYPES and land in self._land
+        assert deed_type in self.E.DEED_TYPES and land in self._land
         deed_id = f"deed:{len(self._deeds) + 1}"
         deed = self.eng.add_node("WrittenDeed", {"record_id": deed_id, "kind": "deed",
                                                   "deed_type": deed_type, "parcel": land,
@@ -2582,7 +2604,7 @@ class BigvilleWorld:
         return self.land_record(land)
 
     def file_land_dispute(self, complainant, land, *, kind="boundary", against="", grounds=""):
-        assert land in self._land and kind in E.LAND_DISPUTES
+        assert land in self._land and kind in self.E.LAND_DISPUTES
         dispute_id = f"dispute:{len(self._land_disputes) + 1}"
         n = self.eng.add_node("LandDispute", {"record_id": dispute_id, "parcel": land, "kind": kind,
                                                "complainant": complainant, "against": against,
@@ -2618,7 +2640,7 @@ class BigvilleWorld:
         return statement
 
     def add_water_source(self, name, *, kind="well", capacity=None):
-        spec = E.WATER_SOURCES[kind]
+        spec = self.E.WATER_SOURCES[kind]
         n = self.eng.add_node("WaterSource", {"name": name, "kind": kind,
                                                "capacity": float(capacity if capacity is not None else spec["yield"]),
                                                "quality": float(spec["quality"]), "available": 1.0})
@@ -2629,7 +2651,7 @@ class BigvilleWorld:
         return n
 
     def add_infrastructure(self, name, *, kind, condition=1.0):
-        spec = E.INFRASTRUCTURE[kind]
+        spec = self.E.INFRASTRUCTURE[kind]
         n = self.eng.add_node("Infrastructure", {"name": name, "kind": kind,
                                                   "condition": float(condition),
                                                   "capacity": float(spec["capacity"]),
@@ -2652,7 +2674,7 @@ class BigvilleWorld:
         node = self._infrastructure[name]
         if self._turn > 0 and self.actor_position(operator) != self.map_position_node(node):
             return False
-        spec = E.INFRASTRUCTURE[self.eng.node(node)["attrs"]["kind"]]
+        spec = self.E.INFRASTRUCTURE[self.eng.node(node)["attrs"]["kind"]]
         amount = min(float(labour), max(0.0, 1.0 - self.infrastructure_condition(name)))
         if amount <= 0.0:
             return False
@@ -2668,7 +2690,7 @@ class BigvilleWorld:
         return True
 
     def add_shock(self, name, *, kind, duration=None):
-        spec = E.SHOCKS[kind]
+        spec = self.E.SHOCKS[kind]
         d = duration if duration is not None else spec["duration"][0]
         n = self.eng.add_node("Shock", {"name": name, "kind": kind, "remaining": float(d),
                                          "active": 1.0, "effects": ",".join(spec["effects"])})
@@ -3312,7 +3334,7 @@ class BigvilleWorld:
             return False
         if self.inventory_qty(actor, kind) < 1.0:
             return False
-        service = E.food_service(kind)
+        service = self.E.food_service(kind)
         if service is not None:
             if vessel is None or utensil is None:
                 return False
@@ -3323,13 +3345,13 @@ class BigvilleWorld:
                 if source not in self._containers or self.contents(source, kind) < 1.0:
                     return False
                 source_kind = self.eng.node(self._containers[source][0])["attrs"].get("kind", "")
-            if not E.can_serve(kind, vessel, utensil, source_kind=source_kind):
+            if not self.E.can_serve(kind, vessel, utensil, source_kind=source_kind):
                 return False
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "eat"):
             return False
         stock = self._inventory_stock(actor, kind)
         self.eng.set_attr(stock, "qty", self.inventory_qty(actor, kind) - 1.0)
-        leftover = E.scrap_kind(kind)
+        leftover = self.E.scrap_kind(kind)
         if leftover is not None:                         # the bones/rind stay in the eater's hands
             fraction = float(self._item_specs[kind]["leaves_scraps"])
             scraps = self._inventory_stock(actor, leftover, create=True)
@@ -3449,8 +3471,8 @@ class BigvilleWorld:
     def law_immutable(self, name): return bool(self._law_specs[name].get("immutable", False))
     def law_enforcement(self, name): return self._law_specs[name].get("enforcement", "bigville")
 
-    def lawmaking_procedures(self): return {k: dict(v) for k, v in E.LAWMAKING_PROCEDURES.items()}
-    def justice_procedures(self): return {k: dict(v) for k, v in E.JUSTICE_PROCEDURES.items()}
+    def lawmaking_procedures(self): return {k: dict(v) for k, v in self.E.LAWMAKING_PROCEDURES.items()}
+    def justice_procedures(self): return {k: dict(v) for k, v in self.E.JUSTICE_PROCEDURES.items()}
 
     def policy_concepts(self, name):
         return [dict(c) for c in self._policy_specs[name]["concepts"]]
@@ -3502,7 +3524,7 @@ class BigvilleWorld:
 
     def _knows_bundle(self, actor, name):
         known = self.known_references(actor)
-        required = {c["name"] for c in E.all_reference_templates() if c.get("source_name") == name}
+        required = {c["name"] for c in self.E.all_reference_templates() if c.get("source_name") == name}
         return bool(required) and required <= known
 
     def knows_policy(self, actor, name):
@@ -3524,7 +3546,7 @@ class BigvilleWorld:
     def set_stock(self, kind, qty):
         w, v, fl = self._phys(kind)
         food = 1.0 if self._item_specs.get(kind, {}).get("food") else 0.0
-        perishable = 1.0 if E.adjectival(kind) == "perishable" else 0.0
+        perishable = 1.0 if self.E.adjectival(kind) == "perishable" else 0.0
         if kind in self._stock:
             self.eng.set_attr(self._stock[kind], "qty", float(qty))
         else:
@@ -3533,7 +3555,7 @@ class BigvilleWorld:
                                             "weight": w, "volume": v, "fluid": fl, "food": food, "colour": colour,
                                             # spoilage: a perishable pile has a freshness that decays over time
                                             "perishable": perishable, "condition": 1.0,
-                                            "decay": E.decay_rate(kind), "decay_epoch": 0.0})
+                                            "decay": self.E.decay_rate(kind), "decay_epoch": 0.0})
             self.eng.add_edge_unchecked(self._store, "stock", s)
             self._stock[kind] = s
         return self._stock[kind]
@@ -3542,29 +3564,29 @@ class BigvilleWorld:
     def tool_adjective(self, tool):
         """The adjective describing a discrete tool at its current condition (pristine/worn/rusty/...)."""
         a = self.eng.node(tool)["attrs"]
-        return E.adjective(a["kind"], a["condition"])
+        return self.E.adjective(a["kind"], a["condition"])
 
     def stock_adjective(self, kind):
         """The adjective describing a perishable stock (fresh/stale/rotten/putrid)."""
-        return E.adjective(kind, self.eng.node(self._stock[kind])["attrs"].get("condition", 1.0))
+        return self.E.adjective(kind, self.eng.node(self._stock[kind])["attrs"].get("condition", 1.0))
 
     def stock_condition(self, kind):
         return round(float(self.eng.node(self._stock[kind])["attrs"].get("condition", 1.0)), 4)
     def stored_condition(self, container, kind):
         return round(float(self.eng.node(self._containers[container][1][kind])["attrs"].get("condition", 1.0)), 4)
     def stored_adjective(self, container, kind):
-        return E.adjective(kind, self.eng.node(self._containers[container][1][kind])["attrs"].get("condition", 1.0))
+        return self.E.adjective(kind, self.eng.node(self._containers[container][1][kind])["attrs"].get("condition", 1.0))
     def item_wear_rate(self, kind): return float(self._item_specs.get(kind, {}).get("wear_rate", 0.0))
-    def item_decay_rate(self, kind): return E.decay_rate(kind)
-    def adjectival_class(self, kind): return E.adjectival(kind)
+    def item_decay_rate(self, kind): return self.E.decay_rate(kind)
+    def adjectival_class(self, kind): return self.E.adjectival(kind)
 
     # ------------------------------- BACKEND value read-offs (for the operator; NOT an agent input)
     # scarcity is a raw-material fact a seller knows; reference_value is an analyst baseline the human
     # holds the market's discovered price against -- the agents price for themselves, the market clears.
-    def scarcity(self, kind): return E.scarcity(kind)
-    def reference_value(self, kind): return E.reference_value(kind)
-    def material_value(self, kind): return E.material_value(kind)
-    def embodied_labour(self, kind): return E.embodied_labour(kind)
+    def scarcity(self, kind): return self.E.scarcity(kind)
+    def reference_value(self, kind): return self.E.reference_value(kind)
+    def material_value(self, kind): return self.E.material_value(kind)
+    def embodied_labour(self, kind): return self.E.embodied_labour(kind)
 
     # ---------------------------------------------------- buildings (from the BUILDINGS data)
     def _install_building(self, kind, spec, *, key=None, cell=None):
@@ -3596,7 +3618,7 @@ class BigvilleWorld:
 
     def propose_building(self, project, *, site=None, sponsor=None, name=None):
         """Create a data-driven building project at a map site."""
-        spec = E.BUILDING_PROJECTS[project]
+        spec = self.E.BUILDING_PROJECTS[project]
         if site is None:
             site = self._anchor_for_building(spec.get("building", project))
         site = tuple(site)
@@ -3636,7 +3658,7 @@ class BigvilleWorld:
         attrs = self.eng.node(n)["attrs"]
         if attrs["status"] == "complete":
             return self._places.get(attrs["name"])
-        spec = E.BUILDING_PROJECTS[attrs["project"]]
+        spec = self.E.BUILDING_PROJECTS[attrs["project"]]
         starting_progress = float(attrs["progress"])
         total_labour = float(attrs["labour"])
         labour = min(float(labour), total_labour - starting_progress)
@@ -3659,7 +3681,7 @@ class BigvilleWorld:
             return True
         self.eng.set_attr(n, "status", "complete")
         building_kind = attrs["building"]
-        base = dict(E.BUILDINGS.get(building_kind, {
+        base = dict(self.E.BUILDINGS.get(building_kind, {
             "staff_role": spec.get("staff_role", ""), "sheltered": spec.get("sheltered", False),
             "rooms": spec.get("rooms", [])}))
         site_nodes = list(self.eng.neighbours(n, "at_cell"))
@@ -3674,7 +3696,7 @@ class BigvilleWorld:
     # ---------------------------------------------------- containers (volume capacity, many kinds, fluids)
     def _vessel_data(self, kind):
         """Capacity, watertightness, and decay_factor of a vessel kind, from the data (or CONTAINERS)."""
-        spec = self._item_specs.get(kind, {}) or E.CONTAINERS.get(kind, {})
+        spec = self._item_specs.get(kind, {}) or self.E.CONTAINERS.get(kind, {})
         return (float(spec.get("capacity", 10.0)), 1.0 if spec.get("watertight") else 0.0,
                 float(spec.get("decay_factor", 1.0)))
 
@@ -3686,7 +3708,7 @@ class BigvilleWorld:
         for k, v in (("capacity", cap), ("watertight", wt), ("decay_factor", df), ("max_load", ml),
                      ("lock_id", float(lock_id)), ("locked", 1.0 if locked else 0.0)):
             self.eng.set_attr(node, k, v)
-        storage_class = (self._item_specs.get(kind, {}) or E.CONTAINERS.get(kind, {})).get("storage_class")
+        storage_class = (self._item_specs.get(kind, {}) or self.E.CONTAINERS.get(kind, {})).get("storage_class")
         if storage_class:
             self.eng.set_attr(node, "storage_class", storage_class)
         self.eng.add_edge_unchecked(self._town, "has_container", node)
@@ -3699,16 +3721,16 @@ class BigvilleWorld:
     def _new_inner_stock(self, container_node, container_kind, kind):
         """Create a content pile without restricting what the container may hold."""
         w, vol, fl = self._phys(kind)
-        per = 1.0 if E.adjectival(kind) == "perishable" else 0.0
+        per = 1.0 if self.E.adjectival(kind) == "perishable" else 0.0
         # A pile created during a later period is fresh now.  Starting its
         # decay clock at zero would make the periodic decay rule age it once
         # for every elapsed period immediately, often spoiling a just-bought
         # resident inventory before the resident can consume it.
         current_period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
-        base_factor = float((self._item_specs.get(container_kind, {}) or E.CONTAINERS.get(container_kind, {})).get("decay_factor", 1.0))
+        base_factor = float((self._item_specs.get(container_kind, {}) or self.E.CONTAINERS.get(container_kind, {})).get("decay_factor", 1.0))
         inner = self.eng.add_node("Stock", {"kind": kind, "qty": 0.0, "weight": w, "volume": vol, "fluid": fl,
-                                            "perishable": per, "condition": 1.0, "decay": E.decay_rate(kind),
-                                            "storage_factor": base_factor * E.storage_decay_factor(container_kind, kind),
+                                            "perishable": per, "condition": 1.0, "decay": self.E.decay_rate(kind),
+                                            "storage_factor": base_factor * self.E.storage_decay_factor(container_kind, kind),
                                             "decay_epoch": current_period})
         self.eng.add_edge_unchecked(container_node, "contains", inner)
         return inner
@@ -3739,7 +3761,7 @@ class BigvilleWorld:
     # ---------------------------------------------------- fences, enclosures, and animal NPCs
     def add_fence(self, name, *, cell=None, kind="wooden_fence", enclosure=None,
                   gate=False):
-        spec = E.FENCE_TYPES[kind]
+        spec = self.E.FENCE_TYPES[kind]
         node = self.eng.add_node("Fence", {
             "name": str(name), "kind": str(kind), "material": spec.get("material", ""),
             "durability": float(spec.get("durability", 1.0)), "condition": 1.0,
@@ -3757,7 +3779,7 @@ class BigvilleWorld:
         return node
 
     def add_enclosure(self, name, cells, *, kind="paddock", fence_kind=None, gates=()):
-        spec = E.ENCLOSURE_TYPES[kind]
+        spec = self.E.ENCLOSURE_TYPES[kind]
         selected = {tuple(cell) for cell in cells if tuple(cell) in self._map_cells}
         if not selected:
             raise ValueError("an enclosure needs at least one walkable cell")
@@ -3869,7 +3891,7 @@ class BigvilleWorld:
         return self._move_animal_to(name, destination)
 
     def add_animal(self, name, species, *, cell=None, household=None, land=None, enclosure=None):
-        spec = E.ANIMALS[species]
+        spec = self.E.ANIMALS[species]
         a = self.eng.add_node("Animal", {"name": name, "species": species, "role": spec.get("role", ""),
                                          "pull": float(spec.get("pull", 0.0)), "alive": 1.0,
                                          "matures": float(spec.get("matures", 0)), "lifespan": float(spec.get("lifespan", 0)),
@@ -3984,7 +4006,7 @@ class BigvilleWorld:
             ration = float(attrs.get("ration", 1.0))
             self._consume_feed(kind, ration)           # a diet (e.g. scraps) may draw on several stocks
             self.eng.set_attr(node, "hunger", 0.0)
-            manure = float(E.ANIMALS.get(attrs.get("species", ""), {}).get("manure", 0.0))
+            manure = float(self.E.ANIMALS.get(attrs.get("species", ""), {}).get("manure", 0.0))
             if manure > 0.0:                            # a fed animal leaves manure to be collected
                 self.set_stock("manure", self.qty("manure") + manure)
             return True
@@ -3996,7 +4018,7 @@ class BigvilleWorld:
         if (self._turn > 0
                 and self.actor_position(actor) != self.map_position_node(self._animals[animal])):
             return 0.0
-        spec = E.ANIMAL_HUSBANDRY[task]
+        spec = self.E.ANIMAL_HUSBANDRY[task]
         an = self._animals[animal]
         aa = self.eng.node(an)["attrs"]
         assert aa["species"] == spec["species"], f"{task} requires a {spec['species']}"
@@ -4007,7 +4029,7 @@ class BigvilleWorld:
         if period - last < float(spec["cooldown"]):
             return 0.0
         product = spec["product"]
-        amount = float(E.ANIMALS[aa["species"]].get("gives", {}).get(product, 0.0))
+        amount = float(self.E.ANIMALS[aa["species"]].get("gives", {}).get(product, 0.0))
         if amount <= 0.0:
             return 0.0
         self.set_stock(product, self.qty(product) + amount)
@@ -4046,7 +4068,7 @@ class BigvilleWorld:
             return 0.0
         area = float(self.eng.node(pasture)["attrs"].get("area", 0.0))
         produced = 0.0
-        for kind, per_area in E.PASTURE_YIELDS.items():
+        for kind, per_area in self.E.PASTURE_YIELDS.items():
             if kind not in self._stock:
                 continue
             amount = area * float(per_area)
@@ -4099,7 +4121,7 @@ class BigvilleWorld:
         land_names = [name for name in self._land if name.startswith("farm_plot_")]
         while len(self._living_crops()) < target:
             crop = crops[added % len(crops)]
-            seed = E.CROPS[crop]["seed"]
+            seed = self.E.CROPS[crop]["seed"]
             if self.qty(seed) < 1.0:
                 break
             land = land_names[added % len(land_names)]
@@ -4114,7 +4136,7 @@ class BigvilleWorld:
             return False
         # Tools are per worker: a trade worker's instrument is at their workplace or in hand,
         # and an open (household) recipe needs the worker's own tool.
-        return (all((self.type_available(kind) if E.is_input_type(kind) else self.qty(kind)) >= float(qty)
+        return (all((self.type_available(kind) if self.E.is_input_type(kind) else self.qty(kind)) >= float(qty)
                     for kind, qty in data.get("in", []))
                 and self._recipe_tools_usable(actor, recipe))
 
@@ -4124,10 +4146,10 @@ class BigvilleWorld:
     def _building_trades(self, kind):
         """Trades that work in a building kind: those it provides or staffs, and those whose
         TRADES entry names it as their workplace."""
-        spec = E.BUILDINGS.get(kind, {})
-        trades = {t for t, tspec in E.TRADES.items() if tspec.get("building") == kind}
+        spec = self.E.BUILDINGS.get(kind, {})
+        trades = {t for t, tspec in self.E.TRADES.items() if tspec.get("building") == kind}
         for role in (spec.get("provides"), spec.get("staff_role")):
-            if role in E.TRADES:
+            if role in self.E.TRADES:
                 trades.add(role)
         return trades
 
@@ -4138,7 +4160,7 @@ class BigvilleWorld:
         kit = []
         trades = self._building_trades(kind)
         for trade in sorted(trades):
-            kit += list(E.TRADES[trade].get("tools", []))
+            kit += list(self.E.TRADES[trade].get("tools", []))
         for name in sorted(self._recipe_specs):
             recipe = self._recipe_specs[name]
             if recipe.get("requires") in trades and not recipe.get("open"):
@@ -4158,7 +4180,7 @@ class BigvilleWorld:
     def _workplace(self, actor):
         """The installed building where the actor's trade works, or None (no trade, or not built)."""
         role = self.eng.node(self._actor(actor))["attrs"].get("role", "")
-        kind = E.TRADES.get(role, {}).get("building")
+        kind = self.E.TRADES.get(role, {}).get("building")
         if kind is None:
             return None
         if kind in self._places:
@@ -4372,7 +4394,7 @@ class BigvilleWorld:
                      if land in self._land else None)
         if self._turn > 0 and land_cell is not None and self.actor_position(sower) != land_cell:
             return None
-        spec = E.CROPS[crop]
+        spec = self.E.CROPS[crop]
         if spec["season"] != self.season():
             return None                                     # out of season -- nothing is sown
         if self.qty(spec["seed"]) < 1.0:
@@ -4428,13 +4450,13 @@ class BigvilleWorld:
             factor = self.crop_nitrogen_factor(crop_node)
             harvested = float(a["yield"]) * factor
             self.set_stock(a["harvest"], self.qty(a["harvest"]) + harvested)
-            for kind, qty in E.CROPS[a["crop"]].get("byproducts", {}).items():
+            for kind, qty in self.E.CROPS[a["crop"]].get("byproducts", {}).items():
                 self.set_stock(kind, self.qty(kind) + float(qty) * factor)
             # Harvesting is also the seed loop that makes a farm renewable.
             # The returned seed is a physical reserve, not a hidden crop
             # respawn; sowing still consumes it and remains seasonal.
-            seed = E.CROPS[a["crop"]]["seed"]
-            self.set_stock(seed, self.qty(seed) + float(E.CROPS[a["crop"]].get("seed_return", 1.0)))
+            seed = self.E.CROPS[a["crop"]]["seed"]
+            self.set_stock(seed, self.qty(seed) + float(self.E.CROPS[a["crop"]].get("seed_return", 1.0)))
             self.eng.set_attr(crop_node, "alive", 0.0)
             self.eng.remove_edge_unchecked(self._town, "has_crop", crop_node)
             return round(harvested, 4)
@@ -4455,7 +4477,7 @@ class BigvilleWorld:
         wanted = float(a.get("n_wanted", 0.0))
         if wanted <= 0.0:
             return 1.0
-        floor = float(E.NITROGEN["yield_floor"])
+        floor = float(self.E.NITROGEN["yield_floor"])
         return floor + (1.0 - floor) * min(1.0, float(a.get("n_supplied", 0.0)) / wanted)
 
     def _advance_soil_nitrogen(self):
@@ -4466,9 +4488,9 @@ class BigvilleWorld:
             if capacity <= 0.0:
                 continue
             nitrogen = float(a.get("nitrogen", 0.0))
-            nitrogen += float(E.NITROGEN["mineralisation_per_area"]) * float(a.get("area", 1.0))
-            drainage = float(E.SOILS.get(a.get("soil", ""), {}).get("drainage", 0.5))
-            nitrogen -= nitrogen * float(E.NITROGEN["leaching"]) * drainage
+            nitrogen += float(self.E.NITROGEN["mineralisation_per_area"]) * float(a.get("area", 1.0))
+            drainage = float(self.E.SOILS.get(a.get("soil", ""), {}).get("drainage", 0.5))
+            nitrogen -= nitrogen * float(self.E.NITROGEN["leaching"]) * drainage
             self.eng.set_attr(node, "nitrogen", min(capacity, max(0.0, nitrogen)))
 
     def _crop_draw_nitrogen(self, crop):
@@ -4495,7 +4517,7 @@ class BigvilleWorld:
             return 0.0
         alive = sum(1 for node in self._actors.values()
                     if float(self.eng.node(node)["attrs"].get("alive", 0.0)) == 1.0)
-        amount = alive * float(E.WASTE_CYCLES["human_waste"].get("per_resident", 0.0))
+        amount = alive * float(self.E.WASTE_CYCLES["human_waste"].get("per_resident", 0.0))
         if amount > 0.0:
             self.set_stock("night_soil", self.qty("night_soil") + amount)
         return amount
@@ -4510,10 +4532,10 @@ class BigvilleWorld:
         cell = self.map_position_node(node)
         if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
             return 0.0
-        type_name = E.NITROGEN["fertiliser_type"]
+        type_name = self.E.NITROGEN["fertiliser_type"]
         la = self.eng.node(node)["attrs"]
         room = float(la.get("nitrogen_capacity", 0.0)) - float(la.get("nitrogen", 0.0))
-        amount = min(float(amount if amount is not None else E.NITROGEN["fertilise_amount"]),
+        amount = min(float(amount if amount is not None else self.E.NITROGEN["fertilise_amount"]),
                      room, self.type_available(type_name))
         if amount <= 0.0:
             return 0.0
@@ -4529,11 +4551,11 @@ class BigvilleWorld:
         """The crop a farmer would sow on this parcel now: a restorative legume when its nitrogen is
         low, else the main rotation -- the first in season with seed in store."""
         low = (land in self._land
-               and self.land_nitrogen_fraction(land) < float(E.NITROGEN["restore_below"]))
+               and self.land_nitrogen_fraction(land) < float(self.E.NITROGEN["restore_below"]))
         groups = ("restorative", "main") if low else ("main",)
         for group in groups:
-            for crop in E.ARABLE_ROTATION[group]:
-                spec = E.CROPS[crop]
+            for crop in self.E.ARABLE_ROTATION[group]:
+                spec = self.E.CROPS[crop]
                 if spec["season"] == self.season() and self.qty(spec["seed"]) >= 1.0:
                     return crop
         return None
@@ -4558,12 +4580,12 @@ class BigvilleWorld:
 
     def _feed_qty(self, eats):
         """Store stock available to an animal with diet `eats` (a scraps diet takes any scraps)."""
-        return sum(self.qty(kind) for kind in E.feed_kinds(eats))
+        return sum(self.qty(kind) for kind in self.E.feed_kinds(eats))
 
     def _consume_feed(self, eats, ration):
         """Draw `ration` from the stocks that diet accepts, in the data's preference order."""
         remaining = float(ration)
-        for kind in E.feed_kinds(eats):
+        for kind in self.E.feed_kinds(eats):
             take = min(remaining, self.qty(kind))
             if take > 0:
                 self.set_stock(kind, self.qty(kind) - take)
@@ -4574,7 +4596,7 @@ class BigvilleWorld:
 
     def give_product(self, animal, product):
         """The animal yields one of its products (a cow's milk, a chicken's eggs) into the store."""
-        spec = E.ANIMALS[self.eng.node(self._animals[animal])["attrs"]["species"]]
+        spec = self.E.ANIMALS[self.eng.node(self._animals[animal])["attrs"]["species"]]
         yield_ = float(spec.get("gives", {}).get(product, 0.0))
         if yield_ > 0:
             self.set_stock(product, self.qty(product) + yield_)
@@ -4597,8 +4619,8 @@ class BigvilleWorld:
         if float(self.eng.node(an)["attrs"]["alive"]) != 1.0:
             return {}
         got = {}
-        for product, qty in E.ANIMALS[self.eng.node(an)["attrs"]["species"]]["gives"].items():
-            if product in E.SLAUGHTER_PRODUCTS:
+        for product, qty in self.E.ANIMALS[self.eng.node(an)["attrs"]["species"]]["gives"].items():
+            if product in self.E.SLAUGHTER_PRODUCTS:
                 self.set_stock(product, self.qty(product) + float(qty)); got[product] = float(qty)
         self.eng.set_attr(an, "alive", 0.0)
         return got
@@ -4646,7 +4668,7 @@ class BigvilleWorld:
     def book_recipe(self, book): return self.eng.node(book)["attrs"].get("recipe", "")
 
     def animal_role(self, animal): return self.eng.node(self._animals[animal])["attrs"]["role"]
-    def animal_gives(self, species): return dict(E.ANIMALS[species]["gives"])
+    def animal_gives(self, species): return dict(self.E.ANIMALS[species]["gives"])
     def animal_pull(self, animal): return round(float(self.eng.node(self._animals[animal])["attrs"]["pull"]), 4)
 
     def use_as_store(self, name, item, holds, *, lock_id=0.0, locked=False):
@@ -4797,9 +4819,9 @@ class BigvilleWorld:
         Townsfolk are UPPITY -- educated by default; `station` (labouring/middle/educated) or an
         explicit literacy/capability sets a lower tier, and literate trades (scribe, teacher) carry
         their own in the TRADES data."""
-        t = E.TRADES.get(trade, {})
+        t = self.E.TRADES.get(trade, {})
         s = skill if skill is not None else float(t.get("base_skill", 0.7))
-        prof = E.STATION_EDUCATION.get(station, E.STATION_EDUCATION["educated"])
+        prof = self.E.STATION_EDUCATION.get(station, self.E.STATION_EDUCATION["educated"])
         lit = literacy if literacy is not None else float(t.get("literacy", prof["literacy"]))
         cap = capability if capability is not None else float(t.get("capability", prof["capability"]))
         return self.add_actor(name, role=trade, skill=s, literacy=lit, capability=cap)
@@ -4810,11 +4832,11 @@ class BigvilleWorld:
         """Add a resident. LITERACY + general CAPABILITY are class-graded (station), but this town is
         UPPITY -- residents default to EDUCATED. `station` (labouring/middle/educated) or an explicit
         literacy/capability picks a lower tier; `learn` is the aptitude that scales schooling (0 = cannot learn)."""
-        prof = E.STATION_EDUCATION.get(station, E.STATION_EDUCATION["labouring"])
+        prof = self.E.STATION_EDUCATION.get(station, self.E.STATION_EDUCATION["labouring"])
         lit = prof["literacy"] if literacy is None else float(literacy)
         cap = prof["capability"] if capability is None else float(capability)
-        stage = E.LIFE_STAGES.get(life_stage, E.LIFE_STAGES["adult"])
-        healthy = E.HEALTH_CONDITIONS["healthy"]
+        stage = self.E.LIFE_STAGES.get(life_stage, self.E.LIFE_STAGES["adult"])
+        healthy = self.E.HEALTH_CONDITIONS["healthy"]
         a = self.eng.add_node("Agent", {"name": name, "role": role, "skill": float(skill),
                                         "age": float(age), "life_stage": life_stage, "health": "healthy",
                                         "health_value": 1.0, "disease": "", "injury": 0.0,
@@ -4824,8 +4846,8 @@ class BigvilleWorld:
                                         "trades": ",".join((role,) + tuple(trades)),
                                         # a level per skill and per metaskill (E.initial_skill_levels),
                                         # and minutes of practice awaiting consolidation this period
-                                        "skill_levels": E.initial_skill_levels((role,) + tuple(trades), skill)[0],
-                                        "metaskill_levels": E.initial_skill_levels((role,) + tuple(trades), skill)[1],
+                                        "skill_levels": self.E.initial_skill_levels((role,) + tuple(trades), skill)[0],
+                                        "metaskill_levels": self.E.initial_skill_levels((role,) + tuple(trades), skill)[1],
                                         "skill_practice": {},
                                         # the meta-metaskill, metaskill talents, and limitations
                                         # (average and unlimited unless drawn: draw_capacities)
@@ -5331,13 +5353,13 @@ class BigvilleWorld:
                 self.eng.set_attr(node, "health_value", health)
                 if health <= 0.0:
                     self.record_death(name, cause=str(a.get("disease")))
-            age_stage = next((stage for stage, spec in E.LIFE_STAGES.items()
+            age_stage = next((stage for stage, spec in self.E.LIFE_STAGES.items()
                               if float(spec["age_min"]) <= age <= float(spec["age_max"])), "elder")
             if age_stage != a.get("life_stage"):
                 self.eng.set_attr(node, "life_stage", age_stage)
 
     def add_waste(self, kind="kitchen_scraps", amount=1.0):
-        cycle = E.WASTE_CYCLES[kind]
+        cycle = self.E.WASTE_CYCLES[kind]
         source = cycle["output"] if cycle["output"] in self._stock else "compost"
         if source in self._stock:
             self.set_stock(source, self.qty(source) + float(amount))
@@ -5385,7 +5407,7 @@ class BigvilleWorld:
 
     def _serving_equipment(self, actor, kind):
         """Return a legal held vessel/utensil pair, if one is observed."""
-        service = E.food_service(kind)
+        service = self.E.food_service(kind)
         if service is None:
             return None
         vessels = [k for k in self._actor_tableware.get(actor, {})
@@ -5394,7 +5416,7 @@ class BigvilleWorld:
                     if self._has_tableware(actor, k) and self._item_specs.get(k, {}).get("utensil")]
         for vessel in vessels:
             for utensil in utensils:
-                if E.can_serve(kind, vessel, utensil):
+                if self.E.can_serve(kind, vessel, utensil):
                     return vessel, utensil
         return None
 
@@ -5587,12 +5609,12 @@ class BigvilleWorld:
             for animal, animal_node in self._animals.items():
                 aa = self.eng.node(animal_node)["attrs"]
                 species = aa.get("species")
-                task = next((name for name, spec in E.ANIMAL_HUSBANDRY.items()
+                task = next((name for name, spec in self.E.ANIMAL_HUSBANDRY.items()
                              if spec["species"] == species), "")
                 if not task or not self.animal_alive(animal):
                     continue
                 period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
-                cooldown = float(E.ANIMAL_HUSBANDRY[task]["cooldown"])
+                cooldown = float(self.E.ANIMAL_HUSBANDRY[task]["cooldown"])
                 if period - float(aa.get(f"{task}_epoch", -cooldown)) < cooldown:
                     continue
                 animal_cell = self.map_position_node(animal_node)
@@ -5637,9 +5659,9 @@ class BigvilleWorld:
                                         "target": key, "sow_kind": crop_name,
                                         "land": land_name, "score": 0.0})
             # Fertilise the most depleted plot below the threshold, if there is fertiliser to spread.
-            fertiliser = E.NITROGEN["fertiliser_type"]
+            fertiliser = self.E.NITROGEN["fertiliser_type"]
             hungry_plots = [name for name in farm_plots
-                            if self.land_nitrogen_fraction(name) < float(E.NITROGEN["fertilise_below"])]
+                            if self.land_nitrogen_fraction(name) < float(self.E.NITROGEN["fertilise_below"])]
             if hungry_plots and self.type_available(fertiliser) >= 1.0:
                 land_name = min(hungry_plots, key=lambda name: (self.land_nitrogen_fraction(name), name))
                 destination = self.map_position_node(self._land[land_name])
@@ -5658,7 +5680,7 @@ class BigvilleWorld:
                 data = self.eng.node(project_node)["attrs"]
                 if data.get("status") == "complete":
                     continue
-                spec = E.BUILDING_PROJECTS[data["project"]]
+                spec = self.E.BUILDING_PROJECTS[data["project"]]
                 remaining = max(0.0, float(data["labour"]) - float(data["progress"]))
                 scale = (min(1.0, remaining) / float(data["labour"])) if data.get("labour") else 0.0
                 if any(self.qty(kind) + 1e-9 < float(qty) * scale
@@ -5677,7 +5699,7 @@ class BigvilleWorld:
             for name, infra_node in self._infrastructure.items():
                 if self.infrastructure_condition(name) >= 0.8:
                     continue
-                infra_spec = E.INFRASTRUCTURE[self.eng.node(infra_node)["attrs"]["kind"]]
+                infra_spec = self.E.INFRASTRUCTURE[self.eng.node(infra_node)["attrs"]["kind"]]
                 if any(self.qty(kind) < 1.0 for kind in infra_spec.get("maintenance", ())):
                     continue
                 destination = self.map_position_node(infra_node)
@@ -5719,7 +5741,7 @@ class BigvilleWorld:
         # the cognition policy decides whether to use them.
         options.extend(option for option in self.physical_object_affordances(actor)
                        if option.get("action") == "move_object")
-        for recipe in E.RECIPES:
+        for recipe in self.E.RECIPES:
             if (not busy and self._can_attempt(actor, recipe["name"])
                     and self._recipe_inputs_available(recipe["name"], actor)):
                 out_kind = recipe.get("out", [""])[0]
@@ -6114,7 +6136,7 @@ class BigvilleWorld:
         for kind in sorted(self._places):
             position = self.building_position(kind)
             x, y = position if position else (0, 0)
-            spec = E.BUILDINGS.get(kind, {})
+            spec = self.E.BUILDINGS.get(kind, {})
             footprint = spec.get("footprint", spec.get("size", (3, 3)))
             if isinstance(footprint, (int, float)):
                 footprint = (int(footprint), int(footprint))
@@ -6371,7 +6393,7 @@ class BigvilleWorld:
                 return False
             self._major_dispatch = True
             try:
-                if task not in E.ANIMAL_HUSBANDRY:
+                if task not in self.E.ANIMAL_HUSBANDRY:
                     return False
                 return self._husbandry_yield(actor, animal, task) > 0.0
             finally:
@@ -6497,20 +6519,20 @@ class BigvilleWorld:
     # ---------------------------------------------------- literacy + schooling (reading/writing, education)
     def _lit(self, actor): return float(self.eng.node(self._actors[actor])["attrs"].get("literacy", 0.0))
     def _cap(self, actor): return float(self.eng.node(self._actors[actor])["attrs"].get("capability", 0.0))
-    def _can_read(self, actor): return self._lit(actor) >= E.LIT_FUNCTIONAL
+    def _can_read(self, actor): return self._lit(actor) >= self.E.LIT_FUNCTIONAL
 
     def literacy(self, actor): return round(self._lit(actor), 4)
     def capability(self, actor): return round(self._cap(actor), 4)
-    def literacy_tier(self, actor): return E.literacy_tier(self._lit(actor))
+    def literacy_tier(self, actor): return self.E.literacy_tier(self._lit(actor))
     def can_read(self, actor):
         """Functional literacy -- read/write a note, read a written recipe, read the newspaper."""
         return self._can_read(actor)
     def can_read_law(self, actor):
         """Read AND understand the council laws -- only the well educated (needs high capability)."""
-        return self._cap(actor) >= E.LIT_EDUCATED and self._lit(actor) >= E.LIT_EDUCATED
+        return self._cap(actor) >= self.E.LIT_EDUCATED and self._lit(actor) >= self.E.LIT_EDUCATED
     def can_account(self, actor):
         """Keep accounts (reckoning) -- only the well educated."""
-        return self._cap(actor) >= E.LIT_EDUCATED
+        return self._cap(actor) >= self.E.LIT_EDUCATED
     def can_learn(self, actor): return float(self.eng.node(self._actors[actor])["attrs"].get("learn", 0.0)) > 0.0
 
     def enrol(self, pupil, teacher):
@@ -6568,7 +6590,7 @@ class BigvilleWorld:
         (the scalar stays authoritative for that skill; practice writes both)."""
         a = self.eng.node(self._actors[actor])["attrs"]
         levels = dict(a.get("skill_levels", {}))
-        main = (E.trade_skills(a.get("role", "")) or [None])[0]
+        main = (self.E.trade_skills(a.get("role", "")) or [None])[0]
         if main is not None:
             levels[main] = float(a.get("skill", levels.get(main, 0.0)))
         return levels
@@ -6600,10 +6622,10 @@ class BigvilleWorld:
             self.eng.set_attr(node, "aptitude", float(aptitude))
             self.eng.set_attr(node, "aptitude_base", float(aptitude))
         if talents is not None:
-            assert set(talents) <= set(E.METASKILLS), f"unknown metaskill in {talents}"
+            assert set(talents) <= set(self.E.METASKILLS), f"unknown metaskill in {talents}"
             self.eng.set_attr(node, "talents", {k: float(v) for k, v in talents.items()})
         if limitations is not None:
-            assert set(limitations) <= set(E.SKILL_LIMITATIONS), f"unknown limitation in {limitations}"
+            assert set(limitations) <= set(self.E.SKILL_LIMITATIONS), f"unknown limitation in {limitations}"
             self.eng.set_attr(node, "limitations", sorted(limitations))
         return self._person(actor)
 
@@ -6614,7 +6636,7 @@ class BigvilleWorld:
         import numpy as np
         rng = np.random.default_rng((int(seed) * 1_000_003) ^ zlib.crc32(str(actor).encode()))
         age = float(self.eng.node(self._actors[actor])["attrs"].get("age", 30.0))
-        drawn = E.draw_person_capacities(rng, age=age, sex=sex)
+        drawn = self.E.draw_person_capacities(rng, age=age, sex=sex)
         return self.set_capacities(actor, aptitude=drawn["aptitude"], talents=drawn["talents"],
                                    limitations=drawn["limitations"])
 
@@ -6622,20 +6644,20 @@ class BigvilleWorld:
         """The actor's working level at a skill: own level, lifted by their closest skill through the
         metaskill (sharpened by aptitude), lowered by any limitations."""
         a = self.eng.node(self._actors[actor])["attrs"]
-        return round(E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill,
+        return round(self.E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill,
                                        self._person(actor)), 4)
 
     def recipe_skill_level(self, actor, recipe):
         """Working level for a recipe row (its skill per E.recipe_skill); a recipe with no named skill
         falls back to the actor's main skill."""
-        skill = E.recipe_skill(recipe) if recipe else None
+        skill = self.E.recipe_skill(recipe) if recipe else None
         if skill is None:
             return float(self.eng.node(self._actors[actor])["attrs"].get("skill", 0.0))
         return self.effective_skill(actor, skill)
 
     def set_skill_level(self, actor, skill, level):
         """Set an actor's own level at a skill (setup, or a backend recording what they have learned)."""
-        assert skill in E.SKILLS, f"unknown skill: {skill}"
+        assert skill in self.E.SKILLS, f"unknown skill: {skill}"
         node = self._actors[actor]
         levels = self._levels(actor)
         levels[skill] = max(0.0, min(1.0, float(level)))
@@ -6647,13 +6669,13 @@ class BigvilleWorld:
         """Keep the legacy scalar `skill` equal to the level of the actor's role's main skill."""
         node = self._actors[actor]
         a = self.eng.node(node)["attrs"]
-        main = (E.trade_skills(a.get("role", "")) or [None])[0]
+        main = (self.E.trade_skills(a.get("role", "")) or [None])[0]
         if main is not None:
             self.eng.set_attr(node, "skill", float(a.get("skill_levels", {}).get(main, a.get("skill", 0.0))))
 
     def _consolidate_practice(self):
         """End of period: turn each actor's logged practice into skill and metaskill levels."""
-        step = float(E.PRACTICE["event_step"])
+        step = float(self.E.PRACTICE["event_step"])
         for actor, node in self._actors.items():
             a = self.eng.node(node)["attrs"]
             log = a.get("skill_practice", {})
@@ -6664,10 +6686,10 @@ class BigvilleWorld:
             person = self._person(actor)
             for skill, minutes in sorted(log.items()):
                 before = float(levels.get(skill, 0.0))
-                gain, meta_gain, aptitude_gain = E.practice_gain(levels, metas, skill, minutes, person)
+                gain, meta_gain, aptitude_gain = self.E.practice_gain(levels, metas, skill, minutes, person)
                 person["aptitude"] += aptitude_gain
                 levels[skill] = before + gain
-                meta = E.skill_metaskill(skill)
+                meta = self.E.skill_metaskill(skill)
                 if meta:
                     metas[meta] = float(metas.get(meta, 0.0)) + meta_gain
                 # the worker notices their own progress when they cross a tenth
@@ -6691,7 +6713,7 @@ class BigvilleWorld:
             return False
         recipe = self._recipe_specs.get(action_name, {})
         if recipe.get("open"):
-            strength_needed, _stamina = E.recipe_exertion(action_name)
+            strength_needed, _stamina = self.E.recipe_exertion(action_name)
             if self.strength(actor) + 1e-9 < strength_needed:
                 return False
             if any(self._held_tool(actor, tool) is None for tool in recipe.get("tools", [])):
@@ -6727,7 +6749,7 @@ class BigvilleWorld:
         item = self.eng.add_node("ToolItem", {"kind": kind, "weight": self.item_weight(kind),
                                                 "quality": float(quality), "condition": 1.0, "broken": 0.0,
                                                 "wear": float(spec.get("wear_rate", 0.02)),
-                                                "decay": E.decay_rate(kind),
+                                                "decay": self.E.decay_rate(kind),
                                                 "use_armed": 0.0, "repair_armed": 0.0})
         fit = self.eng.add_node("ToolFit", {"mult": float(spec.get("base_mult", 1.0)) * float(quality)})
         self.eng.add_edge_unchecked(item, "fit_for", fit)

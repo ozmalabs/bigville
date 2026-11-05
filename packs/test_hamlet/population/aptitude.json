@@ -1,0 +1,11 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): APTITUDE. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "APTITUDE": {
+      "mean": 1.0,
+      "sd": 0.15,
+      "floor": 0.4
+    }
+  }
+}

@@ -1,0 +1,485 @@
+{
+  "format": 1,
+  "name": "test_hamlet",
+  "version": 1,
+  "description": "Standalone test pack: a hamlet with one baker, one building, two recipes. Does not extend bigville. Every bound table name is present.",
+  "extends": null,
+  "tables": [
+    {
+      "name": "ITEMS",
+      "file": "world/items.json"
+    },
+    {
+      "name": "SCRAP_WEIGHT_FACTOR",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "SCRAP_SCARCITY_FACTOR",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "SCRAP_DECAY",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "INPUT_TYPES",
+      "file": "world/input_types.json"
+    },
+    {
+      "name": "CONTAINERS",
+      "file": "world/containers.json"
+    },
+    {
+      "name": "SERVING_UTENSILS",
+      "file": "world/serving_utensils.json"
+    },
+    {
+      "name": "SERVING_EQUIPMENT",
+      "file": "world/serving_equipment.json"
+    },
+    {
+      "name": "FOOD_SERVICE",
+      "file": "world/food_service.json"
+    },
+    {
+      "name": "SOUP_FOODS",
+      "file": "world/soup_foods.json"
+    },
+    {
+      "name": "DRINK_FOODS",
+      "file": "world/drink_foods.json"
+    },
+    {
+      "name": "PREPARATION_REQUIREMENTS",
+      "file": "world/preparation_requirements.json"
+    },
+    {
+      "name": "PREPARATION_EQUIPMENT",
+      "file": "world/preparation_equipment.json"
+    },
+    {
+      "name": "PREPARATION_METHODS",
+      "file": "world/preparation_methods.json"
+    },
+    {
+      "name": "PREPARATION_METHODS_BY_HINT",
+      "file": "world/preparation_methods_by_hint.json"
+    },
+    {
+      "name": "HEATED_FOOD_RECIPES",
+      "file": "world/heated_food_recipes.json"
+    },
+    {
+      "name": "FUEL_PER_BATCH",
+      "file": "world/fuel_per_batch.json"
+    },
+    {
+      "name": "RECIPES",
+      "file": "world/recipes.json"
+    },
+    {
+      "name": "BUILDINGS",
+      "file": "world/buildings.json"
+    },
+    {
+      "name": "TOWN_SQUARE_FIXTURES",
+      "file": "world/town_square_fixtures.json"
+    },
+    {
+      "name": "BUILDING_PROJECTS",
+      "file": "world/building_projects.json"
+    },
+    {
+      "name": "RESOURCE_DEPOSITS",
+      "file": "world/resource_deposits.json"
+    },
+    {
+      "name": "SHOP_CHAINS",
+      "file": "world/shop_chains.json"
+    },
+    {
+      "name": "TERRAIN_MOVEMENT",
+      "file": "world/terrain_movement.json"
+    },
+    {
+      "name": "TERRAIN_WEAR",
+      "file": "world/terrain_wear.json"
+    },
+    {
+      "name": "ANIMALS",
+      "file": "world/animals.json"
+    },
+    {
+      "name": "SLAUGHTER_PRODUCTS",
+      "file": "world/slaughter_products.json"
+    },
+    {
+      "name": "ANIMAL_NPC_SETUP",
+      "file": "world/animal_npc_setup.json"
+    },
+    {
+      "name": "FENCE_TYPES",
+      "file": "world/fence_types.json"
+    },
+    {
+      "name": "ENCLOSURE_TYPES",
+      "file": "world/enclosure_types.json"
+    },
+    {
+      "name": "ANIMAL_HUSBANDRY",
+      "file": "world/animal_husbandry.json"
+    },
+    {
+      "name": "CROPS",
+      "file": "world/crops.json"
+    },
+    {
+      "name": "FIELD_WORK",
+      "file": "world/field_work.json"
+    },
+    {
+      "name": "ARABLE_ROTATION",
+      "file": "world/arable_rotation.json"
+    },
+    {
+      "name": "NITROGEN",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "STARTING_STOCK",
+      "file": "world/starting_stock.json"
+    },
+    {
+      "name": "STARTING_CROPS",
+      "file": "world/starting_crops.json"
+    },
+    {
+      "name": "FREE_ACTIONS",
+      "file": "world/free_actions.json"
+    },
+    {
+      "name": "MAJOR_ACTIONS",
+      "file": "world/major_actions.json"
+    },
+    {
+      "name": "CARRYING",
+      "file": "world/carrying.json"
+    },
+    {
+      "name": "SEASONS",
+      "file": "world/seasons.json"
+    },
+    {
+      "name": "WEATHER",
+      "file": "world/weather.json"
+    },
+    {
+      "name": "WATER_SOURCES",
+      "file": "world/water_sources.json"
+    },
+    {
+      "name": "FUEL_SOURCES",
+      "file": "world/fuel_sources.json"
+    },
+    {
+      "name": "SOILS",
+      "file": "world/soils.json"
+    },
+    {
+      "name": "LAND_USES",
+      "file": "world/land_uses.json"
+    },
+    {
+      "name": "PASTURE_YIELDS",
+      "file": "world/pasture_yields.json"
+    },
+    {
+      "name": "WASTE_CYCLES",
+      "file": "world/waste_cycles.json"
+    },
+    {
+      "name": "LIFE_STAGES",
+      "file": "world/life_stages.json"
+    },
+    {
+      "name": "HEALTH_CONDITIONS",
+      "file": "world/health_conditions.json"
+    },
+    {
+      "name": "INFRASTRUCTURE",
+      "file": "world/infrastructure.json"
+    },
+    {
+      "name": "SHOCKS",
+      "file": "world/shocks.json"
+    },
+    {
+      "name": "AFFORDANCES",
+      "file": "world/affordances.json"
+    },
+    {
+      "name": "OBSERVATION_TYPES",
+      "file": "world/observation_types.json"
+    },
+    {
+      "name": "ADJECTIVES",
+      "file": "world/adjectives.json"
+    },
+    {
+      "name": "CLASS_DECAY",
+      "file": "world/class_decay.json"
+    },
+    {
+      "name": "_PERISHABLE_RAW",
+      "file": "world/_perishable_raw.json"
+    },
+    {
+      "name": "SCARCITY",
+      "file": "world/scarcity.json"
+    },
+    {
+      "name": "LABOUR_RATE",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "TRAIN_HEADROOM",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "TRAIN_RATE",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "RECIPE_EXERTION",
+      "file": "world/recipe_exertion.json"
+    },
+    {
+      "name": "HUNGER_PER_STAMINA",
+      "file": "world/constants.json"
+    },
+    {
+      "name": "SKILLS",
+      "file": "frames/skills.json"
+    },
+    {
+      "name": "TRADE_SKILLS",
+      "file": "frames/trade_skills.json"
+    },
+    {
+      "name": "OPEN_RECIPE_SKILLS",
+      "file": "frames/open_recipe_skills.json"
+    },
+    {
+      "name": "METASKILLS",
+      "file": "frames/metaskills.json"
+    },
+    {
+      "name": "META_METASKILL",
+      "file": "frames/constants.json"
+    },
+    {
+      "name": "SKILL_LIMITATIONS",
+      "file": "frames/skill_limitations.json"
+    },
+    {
+      "name": "SKILL_CLUSTERS",
+      "file": "frames/skill_clusters.json"
+    },
+    {
+      "name": "SKILL_CLOSENESS",
+      "file": "frames/skill_closeness.json"
+    },
+    {
+      "name": "SKILL_AFFINITY",
+      "file": "frames/skill_affinity.json"
+    },
+    {
+      "name": "TRANSFER",
+      "file": "frames/constants.json"
+    },
+    {
+      "name": "APTITUDE_PRACTICE",
+      "file": "frames/constants.json"
+    },
+    {
+      "name": "PRACTICE",
+      "file": "frames/constants.json"
+    },
+    {
+      "name": "META_FROM_SKILL",
+      "file": "frames/constants.json"
+    },
+    {
+      "name": "TRADES",
+      "file": "frames/trades.json"
+    },
+    {
+      "name": "LAND_TENURE",
+      "file": "frames/land_tenure.json"
+    },
+    {
+      "name": "LAND_RECORDS",
+      "file": "frames/land_records.json"
+    },
+    {
+      "name": "DEED_TYPES",
+      "file": "frames/deed_types.json"
+    },
+    {
+      "name": "LAND_DISPUTES",
+      "file": "frames/land_disputes.json"
+    },
+    {
+      "name": "SHARED_CONCEPTS",
+      "file": "frames/shared_concepts.json"
+    },
+    {
+      "name": "LOCAL_POLICIES",
+      "file": "frames/local_policies.json"
+    },
+    {
+      "name": "LOCAL_LAWS",
+      "file": "frames/local_laws.json"
+    },
+    {
+      "name": "GIANTVILLE_POLICIES",
+      "file": "frames/giantville_policies.json"
+    },
+    {
+      "name": "GIANTVILLE_LAWS",
+      "file": "frames/giantville_laws.json"
+    },
+    {
+      "name": "LAWMAKING_PROCEDURES",
+      "file": "frames/lawmaking_procedures.json"
+    },
+    {
+      "name": "JUSTICE_PROCEDURES",
+      "file": "frames/justice_procedures.json"
+    },
+    {
+      "name": "CHARTERS",
+      "file": "frames/charters.json"
+    },
+    {
+      "name": "CAST_ROLE_TRADES",
+      "file": "frames/cast_role_trades.json"
+    },
+    {
+      "name": "HOUSEHOLDS",
+      "file": "frames/households.json"
+    },
+    {
+      "name": "LABOUR_TASKS",
+      "file": "frames/labour_tasks.json"
+    },
+    {
+      "name": "GOVERNANCE_OFFICES",
+      "file": "frames/governance_offices.json"
+    },
+    {
+      "name": "MIN_SKILL",
+      "file": "frames/min_skill.json"
+    },
+    {
+      "name": "LIT_FUNCTIONAL",
+      "file": "frames/constants.json"
+    },
+    {
+      "name": "LIT_EDUCATED",
+      "file": "frames/constants.json"
+    },
+    {
+      "name": "SYSTEM_OF_TRADE",
+      "file": "frames/system_of_trade.json"
+    },
+    {
+      "name": "JOBS",
+      "file": "frames/jobs.json"
+    },
+    {
+      "name": "STATION_EDUCATION",
+      "file": "population/station_education.json"
+    },
+    {
+      "name": "PREFERENCE_RESEARCH",
+      "file": "population/preference_research.json"
+    },
+    {
+      "name": "BITTER_TASTER_STATUS",
+      "file": "population/bitter_taster_status.json"
+    },
+    {
+      "name": "BITTER_LIKING_BY_STATUS",
+      "file": "population/bitter_liking_by_status.json"
+    },
+    {
+      "name": "COLOUR_PREFERENCE",
+      "file": "population/colour_preference.json"
+    },
+    {
+      "name": "TASTE_PREFERENCE",
+      "file": "population/taste_preference.json"
+    },
+    {
+      "name": "CILANTRO_SOAPY_FRACTION",
+      "file": "population/constants.json"
+    },
+    {
+      "name": "FOOD_NEOPHOBIA",
+      "file": "population/food_neophobia.json"
+    },
+    {
+      "name": "SSAT_RATE",
+      "file": "population/constants.json"
+    },
+    {
+      "name": "NOVELTY_SWING",
+      "file": "population/constants.json"
+    },
+    {
+      "name": "MERE_EXPOSURE_GAIN",
+      "file": "population/constants.json"
+    },
+    {
+      "name": "MERE_EXPOSURE_DECAY",
+      "file": "population/constants.json"
+    },
+    {
+      "name": "PHYSIQUE",
+      "file": "population/physique.json"
+    },
+    {
+      "name": "APTITUDE",
+      "file": "population/aptitude.json"
+    },
+    {
+      "name": "TALENT",
+      "file": "population/talent.json"
+    },
+    {
+      "name": "LIMITATION_PREVALENCE",
+      "file": "population/limitation_prevalence.json"
+    },
+    {
+      "name": "PLAN_HORIZON",
+      "file": "population/plan_horizon.json"
+    },
+    {
+      "name": "BALANCE_SCENARIO",
+      "file": "population/balance_scenario.json"
+    },
+    {
+      "name": "JOB_REFERENCE_PER_100",
+      "file": "population/job_reference_per_100.json"
+    },
+    {
+      "name": "JOB_TARGET_LOAD",
+      "file": "population/constants.json"
+    },
+    {
+      "name": "ANIMAL_SERVICES",
+      "file": "world/animal_services.json"
+    }
+  ]
+}

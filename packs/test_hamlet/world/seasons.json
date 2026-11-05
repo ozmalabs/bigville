@@ -1,0 +1,56 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): SEASONS. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "SEASONS": {
+      "spring": {
+        "months": [
+          1,
+          2,
+          3
+        ],
+        "weather": [
+          "rain",
+          "cool",
+          "mild"
+        ]
+      },
+      "summer": {
+        "months": [
+          4,
+          5,
+          6
+        ],
+        "weather": [
+          "hot",
+          "dry",
+          "storm"
+        ]
+      },
+      "autumn": {
+        "months": [
+          7,
+          8,
+          9
+        ],
+        "weather": [
+          "cool",
+          "rain",
+          "wind"
+        ]
+      },
+      "winter": {
+        "months": [
+          10,
+          11,
+          12
+        ],
+        "weather": [
+          "cold",
+          "wet",
+          "frost"
+        ]
+      }
+    }
+  }
+}

@@ -28,7 +28,7 @@ from domains.pack import load_pack as _load_pack
 # Tables and constants below are read from the "bigville" data pack (packs/bigville/).
 # Their explanatory comments are in the pack files as "_doc"; domains/pack.py
 # compiles the derived entries. Functions in this module read these names unchanged.
-_PACK = _load_pack("bigville")
+_PACK = _load_pack(globals().get("_PACK_NAME", "bigville"))   # data_view seeds _PACK_NAME
 STATION_EDUCATION = _PACK["STATION_EDUCATION"]
 PREFERENCE_RESEARCH = _PACK["PREFERENCE_RESEARCH"]
 BITTER_TASTER_STATUS = _PACK["BITTER_TASTER_STATUS"]
@@ -214,6 +214,8 @@ def scale_scenario(population):
     """BALANCE_SCENARIO resized to a town of `population` working residents."""
     import math
     base = BALANCE_SCENARIO
+    if not base:   # a pack without a founding balance scenario
+        return {}
     f = float(population) / float(base["residents"])
     beds = {c: max(1, int(round(n * f))) for c, n in base["beds"].items()}
     # water: the town opens sources (in the founding town's order) until they cover its fields and
@@ -248,7 +250,8 @@ def job_requirements(population):
     """{job: full-time workers needed} for a town of `population`, plus the work streams behind it."""
     sc = scale_scenario(population)
     flows, notes, work = _balance_flows(sc)
-    day = float(sc["work_minutes_per_resident"])
+    # With no balance scenario `work` is empty, so this divisor is never used (it avoids a KeyError).
+    day = float(sc.get("work_minutes_per_resident", 1.0))
     fte = {}
     for job, spec in JOBS.items():
         load = sum(float(share) * work.get(stream, 0.0) / day for stream, share in spec.get("duties", {}).items())

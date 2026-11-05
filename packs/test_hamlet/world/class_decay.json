@@ -1,0 +1,15 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): CLASS_DECAY. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_types": {},
+  "tables": {
+    "CLASS_DECAY": {
+      "perishable": 0.25,
+      "textile": 0.05,
+      "leather": 0.05,
+      "wood": 0.04,
+      "metal": 0.02,
+      "durable": 0.01,
+      "stone": 0.005
+    }
+  }
+}
