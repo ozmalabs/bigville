@@ -71,7 +71,9 @@ concern); tool ownership and theft.
 
 ## Phase 002 -- Recipe inputs from the worker's own stock
 
-**Status:** ready (independent of 001)
+**Status:** done (see History). Follow-ups from the report: an item need with qty 2 consumes one
+item; `_job_input` ignores building shelves and takes any resident's held item; the village policy
+still gates `make_gruel`/`grind_flour` on store stock; `fertilise` still draws from the store only.
 
 **Goal.** Recipes take inputs only from the town store today (`qty()` in
 `_resolve_jobs`), while finished goods go to the maker's inventory in the
@@ -627,3 +629,4 @@ exist, at the precision they know them -- never the world's map.
 | 013b World reads a named pack | done | (this commit) | docs/phases/phase013b/PHASE013B_REPORT.md -- data_view per-pack module views; domains.check --pack; packs/test_hamlet; 340 passed |
 | 014 World mechanics parameters | done | (this commit) | docs/phases/phase014/PHASE014_REPORT.md -- TIME, TOWN_INITIAL, ACTOR_DEFAULTS, CARE, PRICE_DEFAULTS, DOCUMENT_LITERACY, ENGINE_SEEDS, RESIDENT_SEEDS, RELATIONSHIP_KINDS tables; ticks_per_period read from TIME; 351 passed |
 | 015 Roles, offices, procedures | done | (this commit) | docs/phases/phase015/PHASE015_REPORT.md -- HOUSEHOLDS roles/groups/fallback, GOVERNANCE_OFFICES registrar, LABOUR_TASKS worker_roles (+bake), winter reserve parameters, scenario `procedures`, civic records carry stage; fixture tests/fixtures/phase015_offices (reeve/notary); 364 passed |
+| 002 Recipe inputs from own stock | done | (this commit) | docs/phases/phase002/PHASE002_REPORT.md -- draw order own -> accessible container at cell -> store; drawn_from on Need; affordance uses the same planner; 373 passed |

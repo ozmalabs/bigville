@@ -952,33 +952,22 @@ class BigvilleWorld:
                 continue
             asp = asp_nodes[0]
             action = self.eng.node(asp)["attrs"]
-            # Check every input before changing anything.  An unfulfilled job
-            # stays busy and can be completed after the missing good arrives.
-            inputs = []
-            missing = False
+            # Plan every input before changing anything. Each bulk unit comes from the worker's own
+            # stock, then an accessible container at their cell, then the store (see `_plan_inputs`).
+            # An unfulfilled job stays busy and can be completed after the missing good arrives.
+            job_actor = str(ja.get("canonical_actor", ""))
+            need_specs = []
             for need in self.eng.neighbours(job, "need"):
                 na = self.eng.node(need)["attrs"]
-                kind, qty = na.get("kind", ""), float(na.get("qty", 0.0))
-                if na.get("slot_type"):
-                    if self.type_available(na["slot_type"]) + 1e-9 < qty:
-                        missing = True
-                    inputs.append(("type", na["slot_type"], need, qty))
-                elif float(na.get("is_item", 0.0)) == 1.0:
-                    item = self._job_input(job, kind, True)
-                    if item is None:
-                        missing = True
-                    inputs.append(("item", kind, item, qty))
-                elif self.qty(kind) < qty:
-                    missing = True
-                    inputs.append(("bulk", kind, None, qty))
-                else:
-                    inputs.append(("bulk", kind, None, qty))
+                need_specs.append((need, na.get("kind", ""), float(na.get("qty", 0.0)),
+                                   float(na.get("is_item", 0.0)) == 1.0, na.get("slot_type", "")))
+            plans = self._plan_inputs(job_actor, [(k, q, i, s) for _, k, q, i, s in need_specs])
+            missing = plans is None
             # Validate the required instruments before consuming any of the
             # recipe inputs. A tool can be removed or broken while a timed job
             # is underway, so the start-time check alone is not sufficient.
             # Leave the job armed at zero remaining: it can finish later if
             # the instrument is restored, without losing its materials.
-            job_actor = str(ja.get("canonical_actor", ""))
             job_own_tools = (bool(self._recipe_specs.get(action.get("name", ""), {}).get("open"))
                              and job_actor in self._actors)
             for tool_use in self.eng.neighbours(job, "uses"):
@@ -995,18 +984,27 @@ class BigvilleWorld:
             actor_node = self._actors.get(actor_name)
             recipe_row = self._recipe_specs.get(action.get("name", ""), {})
             quality = self.recipe_skill_level(actor_name, recipe_row) if actor_node else 0.0
-            part_qualities = [float(self.eng.node(item)["attrs"].get("quality", quality))
-                              for kind_type, _, item, _ in inputs
-                              if kind_type == "item" and item is not None and self.eng.has_node(item)]
-            for kind_type, kind, item, qty in inputs:
-                if kind_type == "bulk":
-                    self.set_stock(kind, self.qty(kind) - qty)
-                elif kind_type == "type":
-                    used = self._consume_type(kind, qty) or {}
+            part_qualities = [float(self.eng.node(detail)["attrs"].get("quality", quality))
+                              for mode, detail in plans
+                              if mode == "item" and self.eng.has_node(detail)]
+            for (need, kind, qty, _is_item, slot_type), (mode, detail) in zip(need_specs, plans):
+                if mode == "bulk":
+                    self._take_draws(job_actor, kind, detail)
+                    self._record_drawn_from(need, [(kind, src, units) for src, units in detail])
+                elif mode == "type":
+                    used, entries = {}, []
+                    for member, draws in detail:
+                        self._take_draws(job_actor, member, draws)
+                        used[member] = sum(units for _, units in draws)
+                        entries += [(member, src, units) for src, units in draws]
+                    self._record_drawn_from(need, entries)
+                    for byproduct, amount in self.E.type_byproducts(slot_type, qty).items():
+                        self.set_stock(byproduct, self.qty(byproduct) + amount)
                     # record which members filled the slot, for inspection
-                    self.eng.set_attr(item, "filled_with",
+                    self.eng.set_attr(need, "filled_with",
                                       ";".join(f"{k}:{round(v, 4)}" for k, v in used.items()))
                 else:
+                    item = detail
                     self.eng.remove_edge_unchecked(self._town, "has_tool_item", item)
                     for owner in list(self._actors.values()):
                         for edge in ("holds_in_hand", "holds_tableware", "holds"):
@@ -2202,9 +2200,13 @@ class BigvilleWorld:
         return asp
 
     # ---------------------------------------------------- typed input slots
-    def type_available(self, type_name):
-        """Units of a type slot (heat for fuel, nitrogen for fertiliser, ...) the store can supply."""
-        return round(sum(self.qty(kind) * units for kind, units in self.E.type_members(type_name)), 4)
+    def type_available(self, type_name, actor=None):
+        """Units of a type slot (heat for fuel, nitrogen for fertiliser, ...) that can be drawn.
+
+        Without `actor` only the town store counts. With `actor`, the worker's own stock and the
+        accessible containers at their cell count too, in the same draw order a recipe uses."""
+        return round(sum(self._bulk_available(actor, kind) * units
+                         for kind, units in self.E.type_members(type_name)), 4)
 
     def _consume_type(self, type_name, qty):
         """Fill `qty` units of a type slot from store stock and leave its byproducts.
@@ -4199,14 +4201,140 @@ class BigvilleWorld:
         return added
 
     def _recipe_inputs_available(self, recipe, actor):
+        """Whether the recipe's inputs can be drawn for `actor` right now, by the same plan a job
+        uses when it completes (see `_plan_inputs`), and whether its tools are usable."""
         data = self._recipe_specs.get(recipe)
         if data is None or not self._recipe_in_season(recipe):
             return False
         # Tools are per worker: a trade worker's instrument is at their workplace or in hand,
         # and an open (household) recipe needs the worker's own tool.
-        return (all((self.type_available(kind) if self.E.is_input_type(kind) else self.qty(kind)) >= float(qty)
-                    for kind, qty in data.get("in", []))
-                and self._recipe_tools_usable(actor, recipe))
+        needs = [self._input_need(kind, qty) for kind, qty in data.get("in", [])]
+        return self._plan_inputs(actor, needs) is not None and self._recipe_tools_usable(actor, recipe)
+
+    def _input_need(self, kind, qty):
+        """One recipe input as (kind, qty, is_item, slot_type), classified as `_install_recipe` does."""
+        if self.E.is_input_type(kind):
+            return (kind, float(qty), False, kind)
+        icls = self._item_specs.get(kind, {}).get("class")
+        is_item = icls not in (None, "material") and bool(self._item_specs.get(kind, {}).get("discrete", True))
+        return (kind, float(qty), is_item, "")
+
+    def _bulk_sources(self, actor, kind):
+        """Where a bulk unit is drawn from, in order: the worker's own inventory, then each container
+        standing on the worker's current cell that the worker may access, then the town store.
+
+        A source is ("own", carrier), ("box", container) or ("store", None). Containers without a
+        mapped cell are never at the worker's cell, so they are not drawn on. An actor who is not a
+        resident (or a call with no actor) draws from the store only."""
+        sources = []
+        if actor in self._actors and actor in self._actor_inventories:
+            sources.append(("own", self._actor_inventories[actor]))
+            cell = self.actor_position(actor)
+            carriers = set(self._actor_inventories.values())
+            if cell is not None:
+                for name in self._containers:
+                    if name in carriers or self.container_position(name) != cell:
+                        continue
+                    if self._container_accessible(actor, name):
+                        sources.append(("box", name))
+        sources.append(("store", None))
+        return sources
+
+    def _source_qty(self, src, kind):
+        label, name = src
+        return self.qty(kind) if label == "store" else self.contents(name, kind)
+
+    def _source_label(self, src):
+        label, name = src
+        return "box:" + name if label == "box" else label
+
+    def _bulk_available(self, actor, kind):
+        """Units of a bulk kind the actor can draw on right now, across every source."""
+        return round(sum(self._source_qty(src, kind) for src in self._bulk_sources(actor, kind)), 4)
+
+    def _draw_units(self, actor, kind, amount, claimed):
+        """Plan `amount` units of `kind` in source order, after `claimed` units already promised to
+        earlier inputs of the same job. Returns [(source, units)], or None if the sources fall short.
+        Changes nothing; the caller records the claim."""
+        draws, remaining = [], float(amount)
+        for src in self._bulk_sources(actor, kind):
+            if remaining <= 1e-6:
+                break
+            have = max(0.0, self._source_qty(src, kind) - claimed.get((src, kind), 0.0))
+            take = min(have, remaining)
+            if take > 1e-9:
+                draws.append((src, take))
+                remaining -= take
+        return draws if remaining <= 1e-6 else None
+
+    @staticmethod
+    def _claim(claimed, kind, draws):
+        for src, units in draws:
+            claimed[(src, kind)] = claimed.get((src, kind), 0.0) + units
+
+    def _plan_input(self, actor, need, claimed):
+        """Plan one input need against the units `claimed` by earlier needs. Returns
+        ("item", item), ("bulk", draws) or ("type", [(member, draws), ...]), or None if short.
+        `claimed` is updated only when the input fits."""
+        kind, qty, is_item, slot_type = need
+        if slot_type:
+            local = dict(claimed)
+            plan = self.E.type_plan(slot_type, qty, lambda member: sum(
+                max(0.0, self._source_qty(src, member) - local.get((src, member), 0.0))
+                for src in self._bulk_sources(actor, member)))
+            if plan is None:
+                return None
+            members = []
+            for member, amount in plan:
+                draws = self._draw_units(actor, member, amount, local)
+                if draws is None:
+                    return None
+                self._claim(local, member, draws)
+                members.append((member, draws))
+            claimed.clear()
+            claimed.update(local)
+            return ("type", members)
+        if is_item:
+            item = self._job_input(None, kind, True)
+            return None if item is None else ("item", item)
+        draws = self._draw_units(actor, kind, qty, claimed)
+        if draws is None:
+            return None
+        self._claim(claimed, kind, draws)
+        return ("bulk", draws)
+
+    def _plan_inputs(self, actor, needs):
+        """Plan every input of one job, in order: `needs` is [(kind, qty, is_item, slot_type)].
+
+        Returns one plan per need (see `_plan_input`), or None if any need is short. Nothing is
+        drawn here. The job takes exactly these units when it completes, and inputs are planned
+        and taken one job at a time, so a unit counted for one job is gone before the next job
+        plans. Two jobs cannot both count the same held units."""
+        claimed, plans = {}, []
+        for need in needs:
+            plan = self._plan_input(actor, need, claimed)
+            if plan is None:
+                return None
+            plans.append(plan)
+        return plans
+
+    def _take_draws(self, actor, kind, draws):
+        """Remove planned units from their sources (store, carrier, or container)."""
+        for src, units in draws:
+            label, name = src
+            if label == "store":
+                self.set_stock(kind, self.qty(kind) - units)
+            else:
+                inner = self._containers[name][1][kind]
+                self.eng.set_attr(inner, "qty", self.contents(name, kind) - units)
+        if any(src[0] == "own" for src, _ in draws):
+            self._refresh_carry_state(actor)
+
+    def _record_drawn_from(self, need, entries):
+        """Write on the Job's Need node where each unit came from: "kind:source=units;..."."""
+        self.eng.set_attr(need, "drawn_from", ";".join(
+            f"{kind}:{self._source_label(src)}={round(units, 4)}"
+            for kind, src, units in entries if units > 1e-9))
 
     def _place_kind(self, place):
         return self.eng.node(place)["attrs"].get("kind", "")
@@ -6670,7 +6798,7 @@ class BigvilleWorld:
             a = self.eng.node(need)["attrs"]
             jn = self.eng.add_node("Need", {"kind": a["kind"], "qty": float(a["qty"]), "met": 0.0,
                                             "is_item": float(a.get("is_item", 0.0)),
-                                            "slot_type": a.get("slot_type", "")})
+                                            "slot_type": a.get("slot_type", ""), "drawn_from": ""})
             self.eng.add_edge_unchecked(job, "need", jn)
         for tu in self.eng.neighbours(asp, "in_tool"):
             a = self.eng.node(tu)["attrs"]
