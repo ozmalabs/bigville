@@ -461,6 +461,9 @@ class BigvilleWorld:
         self._report_history = []
         self._journals = {}
         self._rng = random.Random(int(map_seed))
+        # Animal births derive their sexes from this seed (see _give_birth), so births keep no RNG state
+        # of their own and never shift `_rng`.
+        self._animal_life_seed = int(map_seed)
         # Unified social graph.  These are world-mediated records; beliefs,
         # intentions, and relationship models remain on the resident edges and
         # attributes rather than being smuggled into body state.
@@ -1188,6 +1191,10 @@ class BigvilleWorld:
         self._resolved_period = period
         for _ in range(steps):
             if self.physical_subsystems["metabolism"]:
+                # Fed = the animal ate since the last period (its hunger is zero before this period's
+                # metabolism adds one). Breeding uses this, not the hunger after the period.
+                fed = {name: float(self.eng.node(node)["attrs"].get("hunger", 0.0)) <= 0.0
+                       for name, node in self._animals.items() if self.animal_alive(name)}
                 for name, node in self._animals.items():
                     aa = self.eng.node(node)["attrs"]
                     if float(aa.get("alive", 0.0)) != 1.0:
@@ -1197,7 +1204,7 @@ class BigvilleWorld:
                     hunger = float(aa.get("hunger", 0.0)) + 1.0
                     self.eng.set_attr(node, "hunger", hunger)
                     if hunger >= float(aa.get("starve_limit", 3.0)):
-                        self.eng.set_attr(node, "alive", 0.0)
+                        self._record_animal_death(node, "starvation")
                 for actor, node in self._actors.items():
                     aa = self.eng.node(node)["attrs"]
                     if float(aa.get("alive", 0.0)) != 1.0:
@@ -1208,6 +1215,7 @@ class BigvilleWorld:
                         self.eng.set_attr(node, "alive", 0.0)
                 self._collect_night_soil()
                 self._burn_household_heat()
+                self._advance_animal_life(fed)
             if self.physical_subsystems["ecology"]:
                 self._advance_soil_nitrogen()
                 for crop in list(self._living_crops()):
@@ -4397,15 +4405,26 @@ class BigvilleWorld:
             return current
         return self._move_animal_to(name, destination)
 
-    def add_animal(self, name, species, *, cell=None, household=None, land=None, enclosure=None):
+    def add_animal(self, name, species, *, cell=None, household=None, land=None, enclosure=None,
+                   sex=None, age_days=None):
+        """Add a living animal. `sex` defaults to the species' founding_sex; `age_days` defaults to the
+        species' maturity (a founding animal is adult). Both are life-cycle facts (Phase 008)."""
         spec = self.E.ANIMALS[species]
+        sex = str(spec["founding_sex"] if sex is None else sex)
+        if sex not in ("male", "female"):
+            raise ValueError(f"an animal's sex is 'male' or 'female', not {sex!r}")
+        age = float(spec["matures"]) * self._animal_month_days() if age_days is None else float(age_days)
         a = self.eng.add_node("Animal", {"name": name, "species": species, "role": spec.get("role", ""),
                                          "pull": float(spec.get("pull", 0.0)), "alive": 1.0,
                                          "matures": float(spec.get("matures", 0)), "lifespan": float(spec.get("lifespan", 0)),
                                          # feeding state (data-driven): what it eats, how much, and its starve limit
                                          "hunger": 0.0, "hunger_epoch": 0.0, "eats": spec.get("eats", ""),
                                          "ration": float(spec.get("ration", 1)), "starve_limit": float(spec.get("starve_limit", 3)),
-                                         "last_npc_action": "", "npc_model": "psi_can_weighted"})
+                                         "last_npc_action": "", "npc_model": "psi_can_weighted",
+                                         # life cycle: age in days (one period), breeding state, and the record of birth and death
+                                         "sex": sex, "age_days": age, "gestating_days": 0.0, "sire": "", "dam": "",
+                                         "births": 0.0, "conceived_age": -1.0e9, "born_period": self._town_period(),
+                                         "death_cause": "", "death_period": -1.0})
         self.eng.add_edge_unchecked(self._town, "has_animal", a)
         self._animals = getattr(self, "_animals", {}); self._animals[name] = a
         if cell is None and household in self._household_cells:
@@ -4421,6 +4440,113 @@ class BigvilleWorld:
                 raise KeyError(f"unknown enclosure: {enclosure}")
             self.eng.add_edge_unchecked(a, "kept_in", self._enclosures[enclosure])
         return a
+
+    # ---------------------------------------------------- animal life cycle (Phase 008)
+    def _town_period(self):
+        return float(self.eng.node(self._town)["attrs"].get("period", 0.0))
+
+    def _animal_month_days(self):
+        """One sim month: the calendar year split into twelve (TIME.days_per_year / 12 = 30 days)."""
+        return float(self.E.TIME["days_per_year"]) / 12.0
+
+    def _is_mature(self, attrs):
+        return float(attrs.get("age_days", 0.0)) >= float(self.E.ANIMALS[attrs["species"]]["matures"]) * self._animal_month_days()
+
+    def _record_animal_death(self, node, cause):
+        """Mark an animal dead, with why and when. Other animal deaths are recorded the same way."""
+        self.eng.set_attr(node, "alive", 0.0)
+        self.eng.set_attr(node, "death_cause", str(cause))
+        self.eng.set_attr(node, "death_period", self._town_period())
+
+    def _advance_animal_life(self, fed):
+        """One period of animal life: ageing, death at lifespan, births after gestation, and conception.
+
+        `fed` maps each animal alive at the start of the period to whether it had eaten since the last
+        period (hunger zero before this period's metabolism). A female breeds only when she is mature, fed,
+        not already carrying, past her breeding interval, and shares an enclosure with a mature, fed male
+        of her species. The sire is the first such male by name, and dams are considered in name order,
+        so breeding is deterministic. Breeding is a physical event: the world does not choose a mate.
+        """
+        # 1. Ageing, and death at the lifespan.
+        for name in sorted(self._animals):
+            if not self.animal_alive(name):
+                continue
+            node = self._animals[name]
+            attrs = self.eng.node(node)["attrs"]
+            age = float(attrs.get("age_days", 0.0)) + 1.0
+            self.eng.set_attr(node, "age_days", age)
+            if age >= float(self.E.ANIMALS[attrs["species"]]["lifespan"]) * self._animal_month_days():
+                self._record_animal_death(node, "old_age")
+        # 2. Gestation: a carrying dam gives birth when the gestation is complete.
+        for name in sorted(self._animals):
+            if not self.animal_alive(name):
+                continue
+            node = self._animals[name]
+            carrying = float(self.eng.node(node)["attrs"].get("gestating_days", 0.0))
+            if carrying <= 0.0:
+                continue
+            carrying -= 1.0
+            self.eng.set_attr(node, "gestating_days", max(0.0, carrying))
+            if carrying <= 0.0:
+                self._give_birth(name)
+        # 3. Conception.
+        for dam in sorted(self._animals):
+            if not self.animal_alive(dam) or not fed.get(dam, False):
+                continue
+            node = self._animals[dam]
+            attrs = self.eng.node(node)["attrs"]
+            spec = self.E.ANIMALS[attrs["species"]]
+            if (not spec.get("breeds") or attrs.get("sex") != "female" or not self._is_mature(attrs)
+                    or float(attrs.get("gestating_days", 0.0)) > 0.0):
+                continue
+            if float(attrs["age_days"]) - float(attrs["conceived_age"]) < float(spec["breeding_interval_days"]):
+                continue
+            enclosure = self.animal_enclosure(dam)
+            if enclosure is None:
+                continue
+            sire = next((male for male in sorted(self._animals)
+                         if male != dam and self.animal_alive(male) and fed.get(male, False)
+                         and self.eng.node(self._animals[male])["attrs"].get("species") == attrs["species"]
+                         and self.eng.node(self._animals[male])["attrs"].get("sex") == "male"
+                         and self._is_mature(self.eng.node(self._animals[male])["attrs"])
+                         and self.animal_enclosure(male) == enclosure), None)
+            if sire is None:
+                continue
+            self.eng.set_attr(node, "gestating_days", float(spec["gestation_days"]))
+            self.eng.set_attr(node, "sire", sire)
+            self.eng.set_attr(node, "conceived_age", float(attrs["age_days"]))
+
+    def _give_birth(self, dam):
+        """Add the litter of `dam` at her place, in her household, on her land, and in her enclosure.
+
+        Each young is a new Animal with age zero. Its sex is a pure function of the map seed, the dam, her
+        litter number, and the index within the litter; the NPC setup for its species is applied when the
+        game next syncs animal backends.
+        """
+        node = self._animals[dam]
+        attrs = self.eng.node(node)["attrs"]
+        spec = self.E.ANIMALS[attrs["species"]]
+        cell = self.animal_position(dam)
+        enclosure = self.animal_enclosure(dam)
+        household = next((name for name, hnode in self._households.items()
+                          if self.eng.has_edge(hnode, "keeps_animal", node)), None)
+        land = next((name for name, lnode in self._land.items() if self.eng.has_edge(node, "grazes_on", lnode)), None)
+        period = int(self._town_period())
+        litter_no = int(float(attrs.get("births", 0.0)))
+        self.eng.set_attr(node, "births", float(litter_no + 1))
+        for index in range(int(spec["litter"])):
+            # The sex is a pure function of the map seed, the dam, her litter number, and the index, so a
+            # restored checkpoint gives the same sexes as an uninterrupted run.
+            draw = random.Random(f"{self._animal_life_seed}:{dam}:{litter_no}:{index}").random()
+            sex = "male" if draw < float(spec["birth_male_share"]) else "female"
+            young = f"{attrs['species']}_b{period}_{len(self._animals) + 1}"
+            while young in self._animals:
+                young += "_"
+            self.add_animal(young, attrs["species"], cell=cell, household=household, land=land,
+                            enclosure=enclosure, sex=sex, age_days=0.0)
+            young_node = self._animals[young]
+            self.eng.set_attr(young_node, "dam", dam)
+            self.eng.set_attr(young_node, "sire", attrs["sire"])
 
     def animal_affordances(self, name):
         if name not in self._animals:

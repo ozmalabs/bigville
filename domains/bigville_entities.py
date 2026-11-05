@@ -626,6 +626,33 @@ def check_consistency():
         for field in ("eats", "ration", "starve_limit", "matures", "lifespan", "role"):
             if field not in spec:
                 errors.append(f"ANIMALS[{species}]: missing '{field}'")
+        if spec.get("founding_sex") not in ("male", "female"):
+            errors.append(f"ANIMALS[{species}]: founding_sex must be 'male' or 'female'")
+        if not isinstance(spec.get("breeds"), bool):
+            errors.append(f"ANIMALS[{species}]: 'breeds' must be true or false")
+        if float(spec.get("lifespan", 0)) <= float(spec.get("matures", 0)):
+            errors.append(f"ANIMALS[{species}]: lifespan must be longer than matures")
+        life_fields = ("gestation_days", "litter", "breeding_interval_days", "birth_male_share")
+        if spec.get("breeds"):
+            for field in life_fields:
+                if field not in spec:
+                    errors.append(f"ANIMALS[{species}]: a breeding species needs '{field}'")
+            if all(field in spec for field in life_fields):
+                if float(spec["gestation_days"]) < 1:
+                    errors.append(f"ANIMALS[{species}]: gestation_days must be at least 1")
+                if int(spec["litter"]) != spec["litter"] or spec["litter"] < 1:
+                    errors.append(f"ANIMALS[{species}]: litter must be a whole number of at least 1")
+                if float(spec["breeding_interval_days"]) < float(spec["gestation_days"]):
+                    errors.append(f"ANIMALS[{species}]: breeding_interval_days is shorter than gestation_days")
+                if not 0.0 <= float(spec["birth_male_share"]) <= 1.0:
+                    errors.append(f"ANIMALS[{species}]: birth_male_share must be between 0 and 1")
+            approx = spec.get("approx", [])
+            if not isinstance(approx, list) or any(field not in life_fields for field in approx):
+                errors.append(f"ANIMALS[{species}]: 'approx' must list only life-cycle fields {list(life_fields)}")
+        else:
+            present = [field for field in life_fields + ("approx",) if field in spec]
+            if present:
+                errors.append(f"ANIMALS[{species}]: a species that does not breed has no {present}")
         for product in spec.get("gives", {}):
             if product not in items and product not in ANIMAL_SERVICES:
                 errors.append(f"ANIMALS[{species}].gives: '{product}' is neither an item nor a service")

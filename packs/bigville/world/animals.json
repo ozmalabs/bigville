@@ -1,5 +1,5 @@
 {
-  "_doc": "---------------------------------------------------------------- ANIMALS\nlivestock + working animals as DATA. `gives` maps a product -> yield; `eats` is the feed; matures\nand lifespan are in the sim's months; a draught animal has a `pull` (the weight it can haul).",
+  "_doc": "---------------------------------------------------------------- ANIMALS\nlivestock + working animals as DATA. `gives` maps a product -> yield; `eats` is the feed; matures\nand lifespan are in the sim's months (one month = TIME.days_per_year / 12 = 30 days; one period is one\nday). A draught animal has a `pull` (the weight it can haul).\n\nLIFE CYCLE (Phase 008). `founding_sex` is the sex of an animal the founding town is given (or of one\nadded without a stated sex). `breeds` false means the species does not breed pairwise in this model (a\nbee colony is one animal here, and its growth is not modelled). For a breeding species:\n  gestation_days         days from conception to birth (a chicken's 21 days is the incubation of\n                         a clutch; the model treats hatching as the birth)\n  litter                 young per birth (an integer average; the model does not draw litter sizes)\n  breeding_interval_days the least days from one conception to the next (a dam is not bred again\n                         until this has passed; it covers the gestation and the rest after a birth)\n  birth_male_share       the share of births that are male (drawn from the animal-life stream)\n`approx` names the life-cycle figures that are APPROX: they are recalled from the standard references\nbelow and were not re-checked against the texts (no source access in Phase 008). The references are\nHafez & Hafez, Reproduction in Farm Animals (7th ed., 2000), for livestock gestation and litter\nfigures; the Merck Veterinary Manual's companion-animal and poultry sections for dog, cat, and\nchicken; and standard dairy and sheep husbandry practice for the calving and lambing intervals.\nPig lifespan (supervisor, Phase 008): 180 months (15 years, APPROX), corrected from 15; the other species' lifespans are natural lifespans in months, and 15 months made a fed founding pig die of old age on day 270.",
   "_types": {},
   "tables": {
     "ANIMALS": {
@@ -10,12 +10,24 @@
         },
         "eats": "scraps",
         "matures": 6,
-        "lifespan": 15,
+        "lifespan": 180,
         "role": "meat",
         "ration": 2,
         "starve_limit": 3,
         "manure": 0.8,
         "care_minutes": 15,
+        "founding_sex": "female",
+        "breeds": true,
+        "gestation_days": 114,
+        "litter": 10,
+        "breeding_interval_days": 150,
+        "birth_male_share": 0.5,
+        "approx": [
+          "gestation_days",
+          "litter",
+          "breeding_interval_days",
+          "birth_male_share"
+        ],
         "knowledge": {
           "topics": [
             "animal_husbandry"
@@ -44,6 +56,18 @@
         "starve_limit": 3,
         "manure": 2.0,
         "care_minutes": 45,
+        "founding_sex": "female",
+        "breeds": true,
+        "gestation_days": 283,
+        "litter": 1,
+        "breeding_interval_days": 365,
+        "birth_male_share": 0.5,
+        "approx": [
+          "gestation_days",
+          "litter",
+          "breeding_interval_days",
+          "birth_male_share"
+        ],
         "knowledge": {
           "topics": [
             "animal_husbandry"
@@ -72,6 +96,18 @@
         "starve_limit": 4,
         "manure": 0.1,
         "care_minutes": 10,
+        "founding_sex": "female",
+        "breeds": true,
+        "gestation_days": 21,
+        "litter": 8,
+        "breeding_interval_days": 90,
+        "birth_male_share": 0.5,
+        "approx": [
+          "gestation_days",
+          "litter",
+          "breeding_interval_days",
+          "birth_male_share"
+        ],
         "knowledge": {
           "topics": [
             "animal_husbandry"
@@ -99,6 +135,18 @@
         "pull": 500.0,
         "manure": 1.5,
         "care_minutes": 30,
+        "founding_sex": "female",
+        "breeds": true,
+        "gestation_days": 340,
+        "litter": 1,
+        "breeding_interval_days": 365,
+        "birth_male_share": 0.5,
+        "approx": [
+          "gestation_days",
+          "litter",
+          "breeding_interval_days",
+          "birth_male_share"
+        ],
         "knowledge": {
           "topics": [
             "animal_husbandry"
@@ -124,6 +172,18 @@
         "ration": 1,
         "starve_limit": 5,
         "care_minutes": 5,
+        "founding_sex": "female",
+        "breeds": true,
+        "gestation_days": 63,
+        "litter": 6,
+        "breeding_interval_days": 180,
+        "birth_male_share": 0.5,
+        "approx": [
+          "gestation_days",
+          "litter",
+          "breeding_interval_days",
+          "birth_male_share"
+        ],
         "knowledge": {
           "topics": [
             "animal_husbandry"
@@ -144,6 +204,18 @@
         "ration": 1,
         "starve_limit": 3,
         "care_minutes": 0,
+        "founding_sex": "female",
+        "breeds": true,
+        "gestation_days": 65,
+        "litter": 4,
+        "breeding_interval_days": 120,
+        "birth_male_share": 0.5,
+        "approx": [
+          "gestation_days",
+          "litter",
+          "breeding_interval_days",
+          "birth_male_share"
+        ],
         "knowledge": {
           "topics": [
             "animal_husbandry"
@@ -166,6 +238,18 @@
         "starve_limit": 3,
         "manure": 0.6,
         "care_minutes": 10,
+        "founding_sex": "female",
+        "breeds": true,
+        "gestation_days": 147,
+        "litter": 1,
+        "breeding_interval_days": 365,
+        "birth_male_share": 0.5,
+        "approx": [
+          "gestation_days",
+          "litter",
+          "breeding_interval_days",
+          "birth_male_share"
+        ],
         "knowledge": {
           "topics": [
             "animal_husbandry"
@@ -192,6 +276,8 @@
         "ration": 1,
         "starve_limit": 3,
         "care_minutes": 5,
+        "founding_sex": "female",
+        "breeds": false,
         "knowledge": {
           "topics": [
             "animal_husbandry"
