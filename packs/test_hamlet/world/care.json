@@ -1,0 +1,20 @@
+{
+  "_doc": "CARE: injury, treatment, care, recovery, and starvation parameters. Health_value runs 0-1 (1 = fully healthy); injury is a severity 0-1 that heals over days; hunger is a count of unmet meals, and starve_limit is the hunger at which a resident dies of hunger. injury_severity: the default severity of an injure() call. treat_health_gain: health_value a treat() adds. treat_health_base: health_value assumed for a resident with none recorded (never reached: add_actor always sets one). care_injury_relief and care_health_gain: one co-located care action removes this much injury and adds this much health_value. care_hunger_need: a resident at or above this hunger needs care. malnourished_hunger: at or above this hunger a resident's health reads malnourished. daily_injury_recovery and recovered_injury_below: each dawn an injury falls by daily_injury_recovery and counts as healed at or below recovered_injury_below. daily_health_recovery: each dawn health_value rises by this much while injured. disease_health_loss: each dawn health_value falls by this much while a disease is recorded. starve_limit: hunger at which a resident starves (the default for add_actor). All are model parameters, not sourced figures (APPROX).",
+  "_types": {},
+  "tables": {
+    "CARE": {
+      "injury_severity": 0.25,
+      "treat_health_gain": 0.25,
+      "treat_health_base": 0.5,
+      "care_injury_relief": 0.2,
+      "care_health_gain": 0.1,
+      "care_hunger_need": 2.0,
+      "malnourished_hunger": 2.0,
+      "daily_injury_recovery": 0.05,
+      "recovered_injury_below": 0.05,
+      "daily_health_recovery": 0.02,
+      "disease_health_loss": 0.05,
+      "starve_limit": 4.0
+    }
+  }
+}

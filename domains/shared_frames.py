@@ -52,6 +52,9 @@ JOBS = _PACK["JOBS"]
 POLICIES = _PACK["POLICIES"]
 LAWS = _PACK["LAWS"]
 _SKILL_CLUSTER = _PACK["_SKILL_CLUSTER"]
+# How a townspeople seed's relationship labels become held ties (Phase 014).
+RELATIONSHIP_KINDS = _PACK["RELATIONSHIP_KINDS"]
+RELATIONSHIP_DEFAULT = _PACK["RELATIONSHIP_DEFAULT"]
 
 
 def trade_skills(trade):

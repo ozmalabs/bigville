@@ -1,0 +1,12 @@
+{
+  "_doc": "PRICE_DEFAULTS: the price and opening defaults the world uses when a caller does not give them. shop_price: the coin price of a shop's goods (per unit). shop_is_open: 1 if a new shop is expected to be open (the market expectation seeded for residents). stock_price: the asking price of goods a person puts up for sale. labour_wage: the wage default of the retired sell_labor call. Model defaults, not sourced prices (APPROX).",
+  "_types": {},
+  "tables": {
+    "PRICE_DEFAULTS": {
+      "shop_price": 2.0,
+      "shop_is_open": 1,
+      "stock_price": 1.0,
+      "labour_wage": 2.0
+    }
+  }
+}

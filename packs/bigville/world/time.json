@@ -1,0 +1,21 @@
+{
+  "_doc": "TIME: the simulation clock. One clock tick is 15 simulated minutes, so a day is 96 ticks; a timed job lasts ceil(minutes / minutes_per_tick) ticks. The day and year lengths are the simulation's own calendar convention (a 360-day year split by season_start_day), not a sourced calendar (APPROX). season_start_day gives the first day of each season within that year. ticks_per_period is the default number of ticks the village runner advances per published period (one day, as before the move).",
+  "_types": {},
+  "tables": {
+    "TIME": {
+      "minutes_per_tick": 15.0,
+      "ticks_per_day": 96,
+      "ticks_per_period": 96,
+      "hours_per_day": 24.0,
+      "start_hour": 6.0,
+      "days_per_week": 7,
+      "days_per_year": 360,
+      "season_start_day": {
+        "spring": 0,
+        "summer": 90,
+        "autumn": 180,
+        "winter": 270
+      }
+    }
+  }
+}

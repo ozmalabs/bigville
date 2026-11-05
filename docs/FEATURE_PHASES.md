@@ -457,7 +457,10 @@ a world, runs a recipe, and passes the self-test with no code change.
 
 ## Phase 014 -- World mechanics parameters into the pack
 
-**Status:** blocked on 013.
+**Status:** done (see History). Supervisor review: `BigvilleGame`, `create_game` and the scenario
+runner now default `ticks_per_period` to "world" (read from the pack's TIME); `None` still means
+"no period passes". `village_eval.TICKS_PER_PERIOD` is preregistered and stays. Known mismatch
+kept: `TOWN_INITIAL.temperature` is 15.0 while weather uses a 0-1 scale.
 
 **Goal.** Move the numeric and policy constants still in `worlds/bigville_world.py` into the pack:
 tick length, Town initial defaults, actor defaults (skill, station, coin, reputation, age),
@@ -619,3 +622,4 @@ exist, at the precision they know them -- never the world's map.
 | 001 Workshop tool kits | done | (this commit) | docs/phases/phase001/PHASE001_REPORT.md -- supervisor applied the five setup-only test edits the report proposed (tests/test_simple_tools_materials_job.py, tests/test_bigville_world_migrated.py); 323 passed |
 | 013a Pack files, compiler, export | done | (this commit) | docs/phases/phase013a/PHASE013A_REPORT.md -- 119 tables in packs/bigville; self-test output identical; 331 passed |
 | 013b World reads a named pack | done | (this commit) | docs/phases/phase013b/PHASE013B_REPORT.md -- data_view per-pack module views; domains.check --pack; packs/test_hamlet; 340 passed |
+| 014 World mechanics parameters | done | (this commit) | docs/phases/phase014/PHASE014_REPORT.md -- TIME, TOWN_INITIAL, ACTOR_DEFAULTS, CARE, PRICE_DEFAULTS, DOCUMENT_LITERACY, ENGINE_SEEDS, RESIDENT_SEEDS, RELATIONSHIP_KINDS tables; ticks_per_period read from TIME; 351 passed |

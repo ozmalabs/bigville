@@ -30,7 +30,7 @@ def create_world(*, scenario="town100", seed=305000, autonomous_actors=False,
 
 def create_game(*, scenario="town100", seed=305000, player=None,
                 default_backend="cheap", backend_factories=None,
-                cognition_factory=None, autonomous=False, ticks_per_period=96):
+                cognition_factory=None, autonomous=False, ticks_per_period="world"):
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:

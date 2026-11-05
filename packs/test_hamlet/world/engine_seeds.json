@@ -1,0 +1,26 @@
+{
+  "_doc": "ENGINE_SEEDS: the seeded graph rules the world loads into its making engine, in load order (scenario seeds are loaded after these). RESIDENT_SEEDS: the seeded rules every resident's own mind loads for choosing and speaking (loaded in this order). RESIDENT_CONCEPT_SEEDS: the speech-act vocabulary a resident's mind holds. Each id names a seed file in seeds/ or bigville/seeds/ (checked by the self-test). Loading a seed records its id; the seed rules are not executed here.",
+  "_types": {},
+  "tables": {
+    "ENGINE_SEEDS": [
+      "bigville_action_general",
+      "bigville_action_container",
+      "bigville_action_animal",
+      "bigville_action_merchant",
+      "bigville_action_life",
+      "bigville_action_decay",
+      "bigville_action_clothing",
+      "bigville_action_skill",
+      "bigville_terrain_movement",
+      "bigville_body"
+    ],
+    "RESIDENT_SEEDS": [
+      "bigville_actor_decision",
+      "bigville_speech_decide",
+      "bigville_loud_comm"
+    ],
+    "RESIDENT_CONCEPT_SEEDS": [
+      "conversation"
+    ]
+  }
+}

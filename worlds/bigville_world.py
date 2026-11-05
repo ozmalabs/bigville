@@ -24,7 +24,6 @@ from domains.data_view import entities as _entities_view  # noqa: E402
 from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
 from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 
-MINUTES_PER_TICK = 15.0
 DEFAULT_DATA_PACK = "bigville"
 
 
@@ -45,15 +44,6 @@ def requested_data_pack(data_pack=None, scenario_data=None):
         raise TypeError("scenario data_pack must be a pack name or directory")
     return configured
 
-TOWNSPEOPLE_50_RELATIONSHIP_KIND = {
-    "rival_of": ("feud", -0.8),
-    "friend_of": ("friend", 0.9),
-    "spouse_of": ("friend", 1.0),
-    "parent_of": ("friend", 1.0),
-    "allied_with": ("friend", 0.7),
-    "charmed": ("friend", 0.5),
-}
-
 
 class BigvilleOcelotActor:
     """One resident mind, backed by an independent private cognition graph.
@@ -61,24 +51,25 @@ class BigvilleOcelotActor:
     This is deliberately a small host wrapper.  The resident's choice is made
     by the seeded ``bigville_actor_decision`` rule over the affordances the
     world publishes; the wrapper only provides the graph and runs one native
-    cognition pass.
+    cognition pass. Its seed list is the pack's RESIDENT_SEEDS (the default
+    pack when no ``data_pack`` is given, so a mind also works without a world).
     """
 
-    def __init__(self, name):
+    def __init__(self, name, data_pack=None):
         self.name = str(name)
         self.s, self.agent = boot_core()
         self.inner = self.s._inner
-        self.inner.load_seed_manifest(manifest_for("bigville_actor_decision"), self.agent)
+        resident = _entities_view(data_pack)
         # The speech faculty is held by the resident as graph data.  The town
         # publishes encounters; these rules decide whether this resident
         # speaks and what kind of turn it makes.  No clock or Python schedule
         # is part of that choice.
-        self.inner.load_seed_manifest(manifest_for("bigville_speech_decide"), self.agent)
-        self.inner.load_seed_manifest(manifest_for("bigville_loud_comm"), self.agent)
+        for seed_id in resident.RESIDENT_SEEDS:
+            self.inner.load_seed_manifest(manifest_for(seed_id), self.agent)
         # Keep the speech-act vocabulary (including request/question) in the
         # resident's conceptual graph.  It interprets free text; it is not
         # a Bigville affordance.
-        load_seeds_into(self.s, self.agent, ["conversation"])
+        load_seeds_into(self.s, self.agent, resident.RESIDENT_CONCEPT_SEEDS)
         self.s.set_attr(self.agent, "name", self.name)
         self.s.set_attr(self.agent, "chosen_action", "")
         self.s.set_attr(self.agent, "chosen_kind", "")
@@ -370,29 +361,16 @@ class BigvilleWorld:
         }
         self._scenario_character_data = {}
         self.eng = BigvilleGraph()
-        self.eng.load_seed_manifest(manifest_for("bigville_action_general"), None)   # the ONE making engine
-        self.eng.load_seed_manifest(manifest_for("bigville_action_container"), None) # containers + lock/key
-        self.eng.load_seed_manifest(manifest_for("bigville_action_animal"), None)    # animals eat / starve
-        self.eng.load_seed_manifest(manifest_for("bigville_action_merchant"), None)  # a merchant delivers goods
-        self.eng.load_seed_manifest(manifest_for("bigville_action_life"), None)      # crops grow; residents eat
-        self.eng.load_seed_manifest(manifest_for("bigville_action_decay"), None)     # wear over time + spoilage
-        self.eng.load_seed_manifest(manifest_for("bigville_action_clothing"), None)  # clothes: dyed, worn, protective
-        self.eng.load_seed_manifest(manifest_for("bigville_action_skill"), None)     # apprenticeship: skill grows under a master
-        self.eng.load_seed_manifest(manifest_for("bigville_terrain_movement"), None) # terrain speed, effort, and path preference
-        # Physical exertion belongs to the resident's Body layer.  Movement
-        # and carrying must feed Effort into bd_exert_cost rather than invent
-        # a second Agent-level energy ledger.
-        self.eng.load_seed_manifest(manifest_for("bigville_body"), None)
+        # The making engine and the rules each physical subsystem needs, in load order (the pack's
+        # ENGINE_SEEDS). Exertion belongs to the resident's Body layer: movement and carrying feed
+        # Effort into bd_exert_cost rather than a second Agent-level energy ledger.
+        for seed_id in self.E.ENGINE_SEEDS:
+            self.eng.load_seed_manifest(manifest_for(seed_id), None)
         for seed_id in self._scenario_data.get("seeds", []):
             self.eng.load_seed_manifest(manifest_for(str(seed_id)), None)
         initial = dict(self._scenario_data.get("initial", {}))
-        self._town = self.eng.add_node("Town", {"name": self._scenario_data.get("name", "Bigville"), "clock": 0.0, "period": 0.0,
-                                                "day": 0.0, "hour": 6.0, "week": 0.0, "year": 1.0,
-                                                "season": "spring", "observed_harvest": 0.0,
-                                                "observed_building": 0.0, "observed_storage": 0.0,
-                                                "weather": "clear", "rain": 0.0,
-                                                "temperature": 15.0, "cold": 0.0, "wet": 0.0,
-                                                "firewood_demand": 1.0, **initial})   # the weather clothes protect against
+        self._town = self.eng.add_node("Town", {"name": self._scenario_data.get("name", "Bigville"),
+                                                **dict(self.E.TOWN_INITIAL), **initial})   # the weather clothes protect against
         self._store = self.eng.add_node("Store", {"name": "store"})           # holds Stock NODES, no commodity floats
         self.eng.add_edge_unchecked(self._town, "has_store", self._store)
         self._stock = {}; self._last_stock_qty = {}
@@ -1210,7 +1188,7 @@ class BigvilleWorld:
                         continue
                     hunger = float(aa.get("hunger", 0.0)) + 1.0
                     self.eng.set_attr(node, "hunger", hunger)
-                    if hunger > float(aa.get("starve_limit", 4.0)):
+                    if hunger > float(aa.get("starve_limit", self.E.CARE["starve_limit"])):
                         self.eng.set_attr(node, "alive", 0.0)
                 self._collect_night_soil()
             if self.physical_subsystems["ecology"]:
@@ -1954,8 +1932,8 @@ class BigvilleWorld:
             src, tgt = str(edge["src"]), str(edge["tgt"])
             if src not in world._actors or tgt not in world._actors:
                 continue
-            kind, strength = TOWNSPEOPLE_50_RELATIONSHIP_KIND.get(
-                str(edge["edge"]), ("acquaintance", 0.5))
+            tie = world.E.RELATIONSHIP_KINDS.get(str(edge["edge"]), world.E.RELATIONSHIP_DEFAULT)
+            kind, strength = tie["kind"], float(tie["strength"])
             world.set_relationship(src, tgt, kind=kind, strength=strength)
         return world
 
@@ -2331,18 +2309,22 @@ class BigvilleWorld:
     def _advance_calendar(self):
         a = self.eng.node(self._town)["attrs"]
         clock = float(a.get("clock", 0.0))
-        day = int(clock // 96)
-        hour = 6.0 + (clock % 96.0) * 0.25
-        year_day = day % 360
-        season = ("spring" if year_day < 90 else "summer" if year_day < 180
-                  else "autumn" if year_day < 270 else "winter")
+        time = self.E.TIME
+        ticks_per_day = float(time["ticks_per_day"])
+        day = int(clock // ticks_per_day)
+        hour = float(time["start_hour"]) + (clock % ticks_per_day) * (float(time["hours_per_day"]) / ticks_per_day)
+        year_day = day % int(time["days_per_year"])
+        season = None
+        for name, start in time["season_start_day"].items():
+            if year_day >= int(start):
+                season = name
         self.eng.set_attr(self._town, "day", float(day))
-        self.eng.set_attr(self._town, "hour", hour % 24.0)
-        self.eng.set_attr(self._town, "week", float(day // 7))
-        self.eng.set_attr(self._town, "year", float(day // 360 + 1))
+        self.eng.set_attr(self._town, "hour", hour % float(time["hours_per_day"]))
+        self.eng.set_attr(self._town, "week", float(day // int(time["days_per_week"])))
+        self.eng.set_attr(self._town, "year", float(day // int(time["days_per_year"]) + 1))
         if season != a.get("season"):
             self.eng.set_attr(self._town, "season", season)
-        if abs(hour % 24.0 - 6.0) < 1e-9:
+        if abs(hour % float(time["hours_per_day"]) - float(time["start_hour"])) < 1e-9:
             self._set_daily_weather(day, season)
 
     def _set_daily_weather(self, day, season):
@@ -2738,7 +2720,11 @@ class BigvilleWorld:
         return self._store
 
     def add_shop(self, trade, cell, *, input_kind, output_kind, recipe_in=1.0,
-                 recipe_out=1.0, price=2.0, is_open=1):
+                 recipe_out=1.0, price=None, is_open=None):
+        if price is None:
+            price = self.E.PRICE_DEFAULTS["shop_price"]
+        if is_open is None:
+            is_open = self.E.PRICE_DEFAULTS["shop_is_open"]
         cell = tuple(cell)
         assert cell in self._map_cells, f"shop cell {cell} not walkable"
         shop = self.eng.add_node("Shop", {"trade": trade, "input_kind": input_kind,
@@ -2839,8 +2825,10 @@ class BigvilleWorld:
                 candidates.append(name)
         return next((name for name in candidates if self.is_alive(name)), None) or (candidates[0] if candidates else None)
 
-    def stock_person(self, seller, kind, amount, *, price=1.0, willing=True):
+    def stock_person(self, seller, kind, amount, *, price=None, willing=True):
         """Put a physical good in a person's inventory as a voluntary offer."""
+        if price is None:
+            price = self.E.PRICE_DEFAULTS["stock_price"]
         self._actor(seller)
         if not self._move_stock_to_inventory(seller, kind, amount):
             return False
@@ -3191,7 +3179,7 @@ class BigvilleWorld:
         """
         return False
 
-    def sell_labor(self, actor, trade, wage=2.0):
+    def sell_labor(self, actor, trade, wage=None):
         """Retired: labor agreement and wage terms require agent choices."""
         return False
 
@@ -3493,13 +3481,21 @@ class BigvilleWorld:
         self.eng.add_edge_unchecked(actor, "understands", understood)
         self._actor_policies.setdefault(actor, set()).add(bundle["name"])
 
+    def _can_meet_document_literacy(self, actor, kind):
+        """True when the resident meets the literacy the pack's DOCUMENT_LITERACY sets for this kind.
+        A kind with no entry has no literacy gate."""
+        tier = self.E.DOCUMENT_LITERACY.get(kind)
+        if tier is None:
+            return True
+        if tier == "functional":
+            return self.can_read(actor)
+        return self.can_read_law(actor)
+
     def write_document(self, author, name, *, kind="policy"):
         """Create a physical written policy/law record; the document is not knowledge until read."""
         assert name in {"policy": self._policy_specs, "law": self._law_specs,
                         "charter": self._charter_specs}[kind]
-        if kind in ("law", "charter") and not self.can_read_law(author):
-            return None
-        if kind == "policy" and not self.can_read(author):
+        if not self._can_meet_document_literacy(author, kind):
             return None
         bundle = self._bundle(name, kind)
         doc = self.eng.add_node("WrittenDocument", {"name": name, "kind": kind,
@@ -3515,9 +3511,7 @@ class BigvilleWorld:
 
     def read_document(self, reader, document):
         attrs = self.eng.node(document)["attrs"]
-        if attrs.get("kind") in ("law", "charter") and not self.can_read_law(reader):
-            return None
-        if attrs.get("kind") == "policy" and not self.can_read(reader):
+        if not self._can_meet_document_literacy(reader, attrs.get("kind")):
             return None
         self.eng.add_edge_unchecked(self._actors[reader], "read_document", document)
         return attrs["name"]
@@ -4339,12 +4333,15 @@ class BigvilleWorld:
             if not self.actor_turn_state(name)["major_action_used"]:
                 self._village_start(name, "bake_bread")     # starts only if a full oven load is in store
 
-    def run_village(self, periods=1, *, ticks_per_period=96):
+    def run_village(self, periods=1, *, ticks_per_period=None):
         """Advance the seeded village while each resident decides independently.
 
         ``tick`` pumps private Ocelot minds; this method supplies only the
-        world clock and the publication cadence.
+        world clock and the publication cadence. ``ticks_per_period`` defaults
+        to the pack's TIME ticks_per_period.
         """
+        if ticks_per_period is None:
+            ticks_per_period = self.E.TIME["ticks_per_period"]
         if not getattr(self, "_cast100", None):
             raise ValueError("run_village requires BigvilleWorld.from_town100()")
         if periods and not self._report_history:
@@ -4814,24 +4811,32 @@ class BigvilleWorld:
     def item_volume(self, kind): return self._phys(kind)[1]
     def is_fluid(self, kind): return self._phys(kind)[2] == 1.0
 
-    def add_tradesperson(self, name, trade, *, skill=None, station="educated", literacy=None, capability=None):
+    def add_tradesperson(self, name, trade, *, skill=None, station=None, literacy=None, capability=None):
         """Add a tradesperson: role = the trade, skill from the TRADES table (unifies trade + skill).
         Townsfolk are UPPITY -- educated by default; `station` (labouring/middle/educated) or an
         explicit literacy/capability sets a lower tier, and literate trades (scribe, teacher) carry
-        their own in the TRADES data."""
+        their own in the TRADES data. The defaults come from the pack's ACTOR_DEFAULTS."""
         t = self.E.TRADES.get(trade, {})
-        s = skill if skill is not None else float(t.get("base_skill", 0.7))
+        station = self.E.ACTOR_DEFAULTS["station"] if station is None else station
+        s = skill if skill is not None else float(t.get("base_skill", self.E.ACTOR_DEFAULTS["skill"]))
         prof = self.E.STATION_EDUCATION.get(station, self.E.STATION_EDUCATION["educated"])
         lit = literacy if literacy is not None else float(t.get("literacy", prof["literacy"]))
         cap = capability if capability is not None else float(t.get("capability", prof["capability"]))
         return self.add_actor(name, role=trade, skill=s, literacy=lit, capability=cap)
 
-    def add_actor(self, name, *, role, skill=0.7, station="educated", literacy=None, capability=None,
-                  learn=1.0, home_cell=None, work_cell=None, klass="", age=30.0,
-                  life_stage="adult", role_identity=None, group="", traits=None, trades=()):
+    def add_actor(self, name, *, role, skill=None, station=None, literacy=None, capability=None,
+                  learn=None, home_cell=None, work_cell=None, klass="", age=None,
+                  life_stage=None, role_identity=None, group="", traits=None, trades=()):
         """Add a resident. LITERACY + general CAPABILITY are class-graded (station), but this town is
         UPPITY -- residents default to EDUCATED. `station` (labouring/middle/educated) or an explicit
-        literacy/capability picks a lower tier; `learn` is the aptitude that scales schooling (0 = cannot learn)."""
+        literacy/capability picks a lower tier; `learn` is the aptitude that scales schooling (0 = cannot learn).
+        Every default that is not given comes from the pack's ACTOR_DEFAULTS (and CARE for starvation)."""
+        defaults = self.E.ACTOR_DEFAULTS
+        skill = defaults["skill"] if skill is None else skill
+        station = defaults["station"] if station is None else station
+        learn = defaults["learn"] if learn is None else learn
+        age = defaults["age"] if age is None else age
+        life_stage = defaults["life_stage"] if life_stage is None else life_stage
         prof = self.E.STATION_EDUCATION.get(station, self.E.STATION_EDUCATION["labouring"])
         lit = prof["literacy"] if literacy is None else float(literacy)
         cap = prof["capability"] if capability is None else float(capability)
@@ -4839,8 +4844,10 @@ class BigvilleWorld:
         healthy = self.E.HEALTH_CONDITIONS["healthy"]
         a = self.eng.add_node("Agent", {"name": name, "role": role, "skill": float(skill),
                                         "age": float(age), "life_stage": life_stage, "health": "healthy",
-                                        "health_value": 1.0, "disease": "", "injury": 0.0,
-                                        "coin": 10.0, "wage_due": 0.0, "reputation": 0.5,
+                                        "health_value": float(defaults["health_value"]), "disease": "",
+                                        "injury": float(defaults["injury"]),
+                                        "coin": float(defaults["coin"]), "wage_due": 0.0,
+                                        "reputation": float(defaults["reputation"]),
                                         "klass": klass, "group": group,
                                         "trade": next(iter(trades), role),
                                         "trades": ",".join((role,) + tuple(trades)),
@@ -4851,7 +4858,8 @@ class BigvilleWorld:
                                         "skill_practice": {},
                                         # the meta-metaskill, metaskill talents, and limitations
                                         # (average and unlimited unless drawn: draw_capacities)
-                                        "aptitude": 1.0, "aptitude_base": 1.0, "talents": {},
+                                        "aptitude": float(defaults["aptitude"]),
+                                        "aptitude_base": float(defaults["aptitude"]), "talents": {},
                                         "limitations": [],
                                         "role_identity": float(role_identity if role_identity is not None else 0.0),
                                         "work_fraction": float(stage["work_fraction"]),
@@ -4869,7 +4877,8 @@ class BigvilleWorld:
                                         "turn": 0.0, "major_action_used": 0.0,
                                         "major_action_kind": "", "last_major_action": "",
                                         # residents get hungry, eat food, and starve without it
-                                        "hunger": 0.0, "hunger_epoch": 0.0, "alive": 1.0, "starve_limit": 4.0,
+                                        "hunger": 0.0, "hunger_epoch": 0.0, "alive": 1.0,
+                                        "starve_limit": float(self.E.CARE["starve_limit"]),
                                         "death_event": -1.0, "death_recorded": 0.0,
                                         "eat_armed": 0.0,
                                         "appr_epoch": 0.0,   # apprenticeship: skill grows under a master
@@ -4884,16 +4893,17 @@ class BigvilleWorld:
         self._actors[name] = a
         self._alive_snapshot[name] = True
         body = self.eng.add_node("Body", {
-            "health": 1.0, "mood": 0.5, "satiety": 0.0,
+            "health": float(defaults["body"]["health"]), "mood": float(defaults["body"]["mood"]), "satiety": 0.0,
             "last_food": -1.0, "food_run": 0.0,
-            "str_base": 1.0, "sta_base": 1.0, "str_train": 0.0,
+            "str_base": float(defaults["body"]["str_base"]), "sta_base": float(defaults["body"]["sta_base"]),
+            "str_train": 0.0,
             "sta_train": 0.0, "strength": 1.0, "stamina": 1.0,
-            "stats_dirty": 0.0, "stamina_reserve": 1.0})
+            "stats_dirty": 0.0, "stamina_reserve": float(defaults["body"]["stamina_reserve"])})
         self.eng.add_edge_unchecked(a, "has_body", body)
         self._bodies[name] = body
         self._actor_minds[name] = (
             self._cognition_factory(name) if self._cognition_factory is not None
-            else BigvilleOcelotActor(name))
+            else BigvilleOcelotActor(name, data_pack=self.data_pack))
         # Character identity, memories, personality, and held frame seeds are
         # resident-owned cognition inputs.  The physical world does not
         # interpret them; an external cognition provider may opt into the
@@ -4909,7 +4919,8 @@ class BigvilleWorld:
         # behalf.  The inventory is an ordinary physical carrier so quantity
         # and capacity remain inspectable graph state.
         inventory_name = f"inventory:{name}"
-        self.add_carrier(inventory_name, holds=(), max_load=50.0, capacity=50.0)
+        self.add_carrier(inventory_name, holds=(), max_load=float(defaults["inventory_max_load"]),
+                         capacity=float(defaults["inventory_capacity"]))
         self.eng.add_edge_unchecked(a, "holds_inventory", self._containers[inventory_name][0])
         self._actor_inventories[name] = inventory_name
         self._actor_tableware[name] = {}
@@ -5212,7 +5223,9 @@ class BigvilleWorld:
         return list(self.eng.neighbours(self._actor(actor), "received_request"))
 
     # ---------------------------------------------------- health, life history, and ecology
-    def injure(self, actor, *, severity=0.25, cause="accident"):
+    def injure(self, actor, *, severity=None, cause="accident"):
+        if severity is None:
+            severity = self.E.CARE["injury_severity"]
         node = self._actors[actor]
         a = self.eng.node(node)["attrs"]
         health = max(0.0, float(a.get("health_value", 1.0)) - float(severity))
@@ -5241,7 +5254,8 @@ class BigvilleWorld:
         self.eng.set_attr(node, "health", "healthy")
         self.eng.set_attr(node, "disease", "")
         self.eng.set_attr(node, "injury", 0.0)
-        self.eng.set_attr(node, "health_value", min(1.0, float(self.eng.node(node)["attrs"].get("health_value", 0.5)) + 0.25))
+        self.eng.set_attr(node, "health_value", min(1.0, float(self.eng.node(node)["attrs"].get(
+            "health_value", self.E.CARE["treat_health_base"])) + float(self.E.CARE["treat_health_gain"])))
         self.eng.add_edge_unchecked(self._actors[doctor], "treated", node)
         return True
 
@@ -5253,14 +5267,16 @@ class BigvilleWorld:
             return False
         attrs = self.eng.node(self._actors[patient])["attrs"]
         if (attrs.get("health") == "healthy" and float(attrs.get("injury", 0.0)) <= 0.0
-                and float(attrs.get("hunger", 0.0)) < 2.0):
+                and float(attrs.get("hunger", 0.0)) < float(self.E.CARE["care_hunger_need"])):
             return False
         medicine = 1.0 if self.qty("medicine") >= 1.0 and attrs.get("disease") else 0.0
         if medicine:
             return self.treat(caregiver, patient, medicine=medicine)
-        self.eng.set_attr(self._actors[patient], "injury", max(0.0, float(attrs.get("injury", 0.0)) - 0.2))
+        care = self.E.CARE
+        self.eng.set_attr(self._actors[patient], "injury",
+                          max(0.0, float(attrs.get("injury", 0.0)) - float(care["care_injury_relief"])))
         self.eng.set_attr(self._actors[patient], "health_value",
-                          min(1.0, float(attrs.get("health_value", 1.0)) + 0.1))
+                          min(1.0, float(attrs.get("health_value", 1.0)) + float(care["care_health_gain"])))
         if float(self.eng.node(self._actors[patient])["attrs"].get("injury", 0.0)) <= 0.0:
             self.eng.set_attr(self._actors[patient], "health", "healthy")
         self.eng.add_edge_unchecked(self._actors[caregiver], "cared_for", self._actors[patient])
@@ -5293,7 +5309,7 @@ class BigvilleWorld:
         cause = attrs.get("death_cause") or attrs.get("last_cause")
         if cause:
             return str(cause)
-        if float(attrs.get("hunger", 0.0)) >= float(attrs.get("starve_limit", 4.0)):
+        if float(attrs.get("hunger", 0.0)) >= float(attrs.get("starve_limit", self.E.CARE["starve_limit"])):
             return "starvation"
         return "unknown"
 
@@ -5338,18 +5354,20 @@ class BigvilleWorld:
             a = self.eng.node(node)["attrs"]
             if float(a.get("alive", 1.0)) != 1.0:
                 continue
-            age = float(a.get("age", 30.0)) + 1.0 / 360.0
+            age = float(a.get("age", self.E.ACTOR_DEFAULTS["age"])) + 1.0 / float(self.E.TIME["days_per_year"])
             self.eng.set_attr(node, "age", age)
             injury = float(a.get("injury", 0.0))
+            care = self.E.CARE
             if injury > 0.0:
-                self.eng.set_attr(node, "injury", max(0.0, injury - 0.05))
-                self.eng.set_attr(node, "health_value", min(1.0, float(a.get("health_value", 1.0)) + 0.02))
-                if injury <= 0.05:
+                self.eng.set_attr(node, "injury", max(0.0, injury - float(care["daily_injury_recovery"])))
+                self.eng.set_attr(node, "health_value",
+                                  min(1.0, float(a.get("health_value", 1.0)) + float(care["daily_health_recovery"])))
+                if injury <= float(care["recovered_injury_below"]):
                     self.eng.set_attr(node, "health", "healthy")
-            if float(a.get("hunger", 0.0)) >= 2.0:
+            if float(a.get("hunger", 0.0)) >= float(care["malnourished_hunger"]):
                 self.eng.set_attr(node, "health", "malnourished")
             if a.get("disease"):
-                health = max(0.0, float(a.get("health_value", 1.0)) - 0.05)
+                health = max(0.0, float(a.get("health_value", 1.0)) - float(care["disease_health_loss"]))
                 self.eng.set_attr(node, "health_value", health)
                 if health <= 0.0:
                     self.record_death(name, cause=str(a.get("disease")))
@@ -5722,7 +5740,7 @@ class BigvilleWorld:
                 # threshold that makes the aid action applicable.
                 needs_care = (pa.get("health") != "healthy"
                               or float(pa.get("injury", 0.0)) > 0.0
-                              or float(pa.get("hunger", 0.0)) >= 2.0)
+                              or float(pa.get("hunger", 0.0)) >= float(self.E.CARE["care_hunger_need"]))
                 if not needs_care:
                     continue
                 destination = self.actor_position(patient)
@@ -6808,7 +6826,7 @@ class BigvilleWorld:
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "start"):
             return False
         mins = float(self.eng.node(self._actions[action_name])["attrs"]["time_minutes"])
-        self._open_job(actor, action_name, math.ceil(mins / MINUTES_PER_TICK)); self._run()
+        self._open_job(actor, action_name, math.ceil(mins / float(self.E.TIME["minutes_per_tick"]))); self._run()
         return True
 
     def tick(self, n=1):

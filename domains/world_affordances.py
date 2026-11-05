@@ -82,6 +82,18 @@ TRAIN_RATE = _PACK["TRAIN_RATE"]
 RECIPE_EXERTION = _PACK["RECIPE_EXERTION"]
 HUNGER_PER_STAMINA = _PACK["HUNGER_PER_STAMINA"]
 ANIMAL_SERVICES = _PACK["ANIMAL_SERVICES"]
+# World mechanics parameters (Phase 014): the clock, the town's starting state, a resident's
+# starting state, care and starvation, default prices, the literacy gate for each written kind,
+# and the seeded rules the world and a resident's mind load.
+TIME = _PACK["TIME"]
+TOWN_INITIAL = _PACK["TOWN_INITIAL"]
+ACTOR_DEFAULTS = _PACK["ACTOR_DEFAULTS"]
+CARE = _PACK["CARE"]
+PRICE_DEFAULTS = _PACK["PRICE_DEFAULTS"]
+DOCUMENT_LITERACY = _PACK["DOCUMENT_LITERACY"]
+ENGINE_SEEDS = _PACK["ENGINE_SEEDS"]
+RESIDENT_SEEDS = _PACK["RESIDENT_SEEDS"]
+RESIDENT_CONCEPT_SEEDS = _PACK["RESIDENT_CONCEPT_SEEDS"]
 
 
 def scrap_kind(kind):

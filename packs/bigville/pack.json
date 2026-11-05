@@ -480,6 +480,50 @@
     {
       "name": "ANIMAL_SERVICES",
       "file": "world/animal_services.json"
+    },
+    {
+      "name": "TIME",
+      "file": "world/time.json"
+    },
+    {
+      "name": "TOWN_INITIAL",
+      "file": "world/town_initial.json"
+    },
+    {
+      "name": "ACTOR_DEFAULTS",
+      "file": "world/actor_defaults.json"
+    },
+    {
+      "name": "CARE",
+      "file": "world/care.json"
+    },
+    {
+      "name": "PRICE_DEFAULTS",
+      "file": "world/prices.json"
+    },
+    {
+      "name": "DOCUMENT_LITERACY",
+      "file": "world/document_literacy.json"
+    },
+    {
+      "name": "ENGINE_SEEDS",
+      "file": "world/engine_seeds.json"
+    },
+    {
+      "name": "RESIDENT_SEEDS",
+      "file": "world/engine_seeds.json"
+    },
+    {
+      "name": "RESIDENT_CONCEPT_SEEDS",
+      "file": "world/engine_seeds.json"
+    },
+    {
+      "name": "RELATIONSHIP_KINDS",
+      "file": "frames/relationship_kinds.json"
+    },
+    {
+      "name": "RELATIONSHIP_DEFAULT",
+      "file": "frames/relationship_kinds.json"
     }
   ]
 }

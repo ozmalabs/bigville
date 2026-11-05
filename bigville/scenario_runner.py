@@ -70,7 +70,7 @@ def _observed_contexts(game):
         world._actor_targets.update(actor_targets)
 
 
-def run_scenario(scenario, *, seed=305000, turns=1, ticks_per_period=96,
+def run_scenario(scenario, *, seed=305000, turns=1, ticks_per_period="world",
                  backend=None, default_backend="simple"):
     """Run a fixed number of real game turns and return a JSON-safe trace.
 
@@ -125,7 +125,7 @@ def run_scenario(scenario, *, seed=305000, turns=1, ticks_per_period=96,
                                             if period_changed else None)})
         initial = final
     trace = {"schema": "bigville/scenario-trace/1", "scenario": world._scenario_data.get("id"),
-            "seed": seed, "turns_requested": turns, "ticks_per_period": ticks_per_period,
+            "seed": seed, "turns_requested": turns, "ticks_per_period": game.ticks_per_period,
             "backend_override": backend, "default_backend": default_backend,
             "initial_state": initial_state,
             "steps": steps, "final_state": _compact_state(world)}
@@ -139,12 +139,14 @@ def main(argv=None):
     parser.add_argument("scenario", help="scenario id or JSON path")
     parser.add_argument("--seed", type=int, default=305000)
     parser.add_argument("--turns", type=int, default=1)
-    parser.add_argument("--ticks-per-period", type=int, default=96)
+    parser.add_argument("--ticks-per-period", type=int, default=None,
+                        help="clock ticks per period (default: the world's TIME table)")
     parser.add_argument("--backend", help="override every actor backend")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     trace = run_scenario(args.scenario, seed=args.seed, turns=args.turns,
-                         ticks_per_period=args.ticks_per_period,
+                         ticks_per_period=(args.ticks_per_period
+                                           if args.ticks_per_period is not None else "world"),
                          backend=args.backend)
     encoded = json.dumps(trace, indent=2, sort_keys=True)
     if args.output:

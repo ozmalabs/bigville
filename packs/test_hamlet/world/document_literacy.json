@@ -1,0 +1,11 @@
+{
+  "_doc": "DOCUMENT_LITERACY: the literacy a resident needs to write or read each kind of written document. 'functional' is LIT_FUNCTIONAL (reads and writes notes, a policy, a written recipe); 'educated' is the level that reads and understands the council laws and charters (LIT_EDUCATED together with the capability threshold of can_read_law). A kind not listed here has no literacy gate. The kinds are the three written kinds: policy, law, charter.",
+  "_types": {},
+  "tables": {
+    "DOCUMENT_LITERACY": {
+      "policy": "functional",
+      "law": "educated",
+      "charter": "educated"
+    }
+  }
+}

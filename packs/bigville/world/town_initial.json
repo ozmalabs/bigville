@@ -1,0 +1,24 @@
+{
+  "_doc": "TOWN_INITIAL: the Town node's attributes at the start of a world, before any scenario 'initial' overrides them (a scenario's initial values replace these). Clock is in ticks (see TIME). The temperature 15.0 is the starting value as the code had it; the weather table's temperature is on a 0-1 scale, so the first daily weather replaces it. weather 'clear' must be a key of WEATHER and season 'spring' a key of SEASONS (checked by the self-test).",
+  "_types": {},
+  "tables": {
+    "TOWN_INITIAL": {
+      "clock": 0.0,
+      "period": 0.0,
+      "day": 0.0,
+      "hour": 6.0,
+      "week": 0.0,
+      "year": 1.0,
+      "season": "spring",
+      "observed_harvest": 0.0,
+      "observed_building": 0.0,
+      "observed_storage": 0.0,
+      "weather": "clear",
+      "rain": 0.0,
+      "temperature": 15.0,
+      "cold": 0.0,
+      "wet": 0.0,
+      "firewood_demand": 1.0
+    }
+  }
+}

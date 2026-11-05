@@ -1,0 +1,27 @@
+{
+  "_doc": "ACTOR_DEFAULTS: the starting state of a resident added with add_actor, where the caller does not give a value. skill is the general trade skill level (0-1). station picks a literacy and capability tier from STATION_EDUCATION; this town is uppity, so residents default to educated (a labouring or middle start is opt-in). learn is the aptitude that scales schooling (0 = cannot learn). age is in years. coin is in coin units. reputation runs 0-1. aptitude is the learning-to-learn level (1 = average). inventory_max_load and inventory_capacity are the limits of the resident's own carried inventory (50 each, as before the move). body holds the starting values of the resident's Body node. These are model parameters, not sourced figures (APPROX).",
+  "_types": {},
+  "tables": {
+    "ACTOR_DEFAULTS": {
+      "skill": 0.7,
+      "station": "educated",
+      "learn": 1.0,
+      "age": 30.0,
+      "life_stage": "adult",
+      "coin": 10.0,
+      "reputation": 0.5,
+      "aptitude": 1.0,
+      "health_value": 1.0,
+      "injury": 0.0,
+      "inventory_max_load": 50.0,
+      "inventory_capacity": 50.0,
+      "body": {
+        "health": 1.0,
+        "mood": 0.5,
+        "str_base": 1.0,
+        "sta_base": 1.0,
+        "stamina_reserve": 1.0
+      }
+    }
+  }
+}

@@ -37,7 +37,12 @@ class BigvilleGame:
                  characters: dict[str, CharacterDefinition] | None = None,
                  backends: dict[str, Any] | None = None,
                  continuations: bool = True, autonomous: bool = False,
-                 ticks_per_period: int | None = 96):
+                 ticks_per_period: int | str | None = "world"):
+        if ticks_per_period == "world":
+            # Read the period length from the world's data pack (TIME); worlds
+            # without a pack keep the historical 96-tick day.
+            time = getattr(getattr(world, "E", None), "TIME", None) or {}
+            ticks_per_period = int(time.get("ticks_per_period", 96))
         if ticks_per_period is not None and (not isinstance(ticks_per_period, int) or isinstance(ticks_per_period, bool) or ticks_per_period < 1):
             raise ValueError("ticks_per_period must be a positive integer or None")
         if autonomous and player is not None:

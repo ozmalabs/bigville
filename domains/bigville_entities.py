@@ -521,6 +521,86 @@ def check_consistency():
         if float(spec.get("seed_return", 1.0)) <= 0.0:
             warnings.append(f"PIPELINE crop: '{crop}' is not renewable -- its harvest returns no '{spec['seed']}'")
 
+    # -- world mechanics parameters (Phase 014): the clock, starting state, care, prices, gates -----
+    def _num(where, value, lo=None, hi=None):
+        try:
+            x = float(value)
+        except (TypeError, ValueError):
+            errors.append(f"{where}: '{value}' is not a number")
+            return
+        if (lo is not None and x < lo) or (hi is not None and x > hi):
+            errors.append(f"{where}: {x} is outside [{lo}, {hi}]")
+
+    clock = TIME
+    _num("TIME: minutes_per_tick", clock["minutes_per_tick"], lo=1e-9)
+    for key in ("ticks_per_day", "ticks_per_period", "days_per_week", "days_per_year"):
+        if not isinstance(clock[key], int) or isinstance(clock[key], bool) or clock[key] < 1:
+            errors.append(f"TIME: {key} must be a positive whole number, not {clock[key]!r}")
+    _num("TIME: start_hour", clock["start_hour"], lo=0.0, hi=float(clock["hours_per_day"]) - 1e-9)
+    starts = list(clock["season_start_day"].values())
+    if set(clock["season_start_day"]) != set(SEASONS):
+        errors.append(f"TIME: season_start_day names {sorted(clock['season_start_day'])} "
+                      f"do not match SEASONS {sorted(SEASONS)}")
+    elif starts[0] != 0 or starts != sorted(set(starts)) or starts[-1] >= clock["days_per_year"]:
+        errors.append("TIME: season_start_day must begin at day 0, rise strictly, and stay inside days_per_year")
+    town = TOWN_INITIAL
+    if town.get("season") not in SEASONS:
+        errors.append(f"TOWN_INITIAL: season '{town.get('season')}' is not a SEASONS key")
+    elif town["season"] != next(iter(clock["season_start_day"])):
+        errors.append(f"TOWN_INITIAL: season '{town['season']}' does not match the season of day 0")
+    if town.get("weather") not in WEATHER:
+        errors.append(f"TOWN_INITIAL: weather '{town.get('weather')}' is not a WEATHER key")
+    if float(town.get("hour", -1)) != float(clock["start_hour"]):
+        errors.append("TOWN_INITIAL: hour must equal TIME start_hour (the clock starts at tick 0)")
+
+    actor = ACTOR_DEFAULTS
+    if actor.get("station") not in STATION_EDUCATION:
+        errors.append(f"ACTOR_DEFAULTS: station '{actor.get('station')}' is not a STATION_EDUCATION key")
+    if actor.get("life_stage") not in LIFE_STAGES:
+        errors.append(f"ACTOR_DEFAULTS: life_stage '{actor.get('life_stage')}' is not a LIFE_STAGES key")
+    _num("ACTOR_DEFAULTS: skill", actor["skill"], 0.0, 1.0)
+    _num("ACTOR_DEFAULTS: reputation", actor["reputation"], 0.0, 1.0)
+    _num("ACTOR_DEFAULTS: health_value", actor["health_value"], 0.0, 1.0)
+    _num("ACTOR_DEFAULTS: coin", actor["coin"], 0.0)
+    _num("ACTOR_DEFAULTS: age", actor["age"], 0.0)
+    _num("ACTOR_DEFAULTS: inventory_capacity", actor["inventory_capacity"], 1e-9)
+    _num("ACTOR_DEFAULTS: inventory_max_load", actor["inventory_max_load"], 1e-9)
+
+    for key in ("injury_severity", "treat_health_gain", "treat_health_base", "care_injury_relief",
+                "care_health_gain", "daily_injury_recovery", "recovered_injury_below",
+                "daily_health_recovery", "disease_health_loss"):
+        _num(f"CARE: {key}", CARE[key], 0.0, 1.0)
+    _num("CARE: starve_limit", CARE["starve_limit"], 1e-9)
+
+    _num("PRICE_DEFAULTS: shop_price", PRICE_DEFAULTS["shop_price"], 1e-9)
+    _num("PRICE_DEFAULTS: stock_price", PRICE_DEFAULTS["stock_price"], 0.0)
+    _num("PRICE_DEFAULTS: labour_wage", PRICE_DEFAULTS["labour_wage"], 0.0)
+    if PRICE_DEFAULTS["shop_is_open"] not in (0, 1):
+        errors.append("PRICE_DEFAULTS: shop_is_open must be 0 or 1")
+
+    for kind, tier in DOCUMENT_LITERACY.items():
+        if kind not in ("policy", "law", "charter"):
+            errors.append(f"DOCUMENT_LITERACY: '{kind}' is not a written document kind")
+        if tier not in ("functional", "educated"):
+            errors.append(f"DOCUMENT_LITERACY[{kind}]: '{tier}' is not a literacy tier")
+
+    repo = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    seed_dirs = (_os.path.join(repo, "seeds"), _os.path.join(repo, "bigville", "seeds"))
+    for table, ids in (("ENGINE_SEEDS", ENGINE_SEEDS), ("RESIDENT_SEEDS", RESIDENT_SEEDS),
+                       ("RESIDENT_CONCEPT_SEEDS", RESIDENT_CONCEPT_SEEDS)):
+        if len(set(ids)) != len(ids):
+            errors.append(f"{table}: a seed id is listed twice")
+        for sid in ids:
+            if not any(_os.path.isfile(_os.path.join(d, f"{sid}.json")) for d in seed_dirs):
+                errors.append(f"{table}: seed '{sid}' has no file in seeds/ or bigville/seeds/")
+
+    relationship_specs = [(f"RELATIONSHIP_KINDS[{edge}]", spec) for edge, spec in RELATIONSHIP_KINDS.items()]
+    relationship_specs.append(("RELATIONSHIP_DEFAULT", RELATIONSHIP_DEFAULT))
+    for where, spec in relationship_specs:
+        if not spec.get("kind"):
+            errors.append(f"{where}: no kind of tie is named")
+        _num(f"{where}: strength", spec.get("strength"), -1.0, 1.0)
+
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

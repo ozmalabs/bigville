@@ -1,0 +1,36 @@
+{
+  "_doc": "RELATIONSHIP_KINDS: how a relationship edge in the townspeople seed maps to a held relationship: the kind of tie and a signed strength (-1 hostile to 1 close). RELATIONSHIP_DEFAULT: the tie given to an edge whose label is not listed. These map the townspeople seed's edge labels; the strengths are model values, not measured figures (APPROX).",
+  "_types": {},
+  "tables": {
+    "RELATIONSHIP_KINDS": {
+      "rival_of": {
+        "kind": "feud",
+        "strength": -0.8
+      },
+      "friend_of": {
+        "kind": "friend",
+        "strength": 0.9
+      },
+      "spouse_of": {
+        "kind": "friend",
+        "strength": 1.0
+      },
+      "parent_of": {
+        "kind": "friend",
+        "strength": 1.0
+      },
+      "allied_with": {
+        "kind": "friend",
+        "strength": 0.7
+      },
+      "charmed": {
+        "kind": "friend",
+        "strength": 0.5
+      }
+    },
+    "RELATIONSHIP_DEFAULT": {
+      "kind": "acquaintance",
+      "strength": 0.5
+    }
+  }
+}
