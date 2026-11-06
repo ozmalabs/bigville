@@ -15,6 +15,8 @@ from .catalog import build_capability_catalog
 from .drafts import MAX_PREVIEW_BYTES, PreviewTooLarge, preview_draft, resolve_draft
 from .runs import (InvalidRunRequest, InvalidTransition, RegistryError,
                    RunConflict, RunNotFound, RunRegistry, RunViewUnavailable)
+from .templates import (TemplateError, TemplateInvalid, TemplateNotFound,
+                        TemplateRegistry, TemplateUnavailable)
 
 API_PREFIX = "/api/management/v1"
 STATIC_ROOT = Path(__file__).with_name("static").resolve()
@@ -89,6 +91,24 @@ class _Handler(BaseHTTPRequestHandler):
             except Exception:
                 return self._json(500, error_payload(
                     "catalog_unavailable", "Capability catalog could not be built."))
+        if path == f"{API_PREFIX}/templates":
+            return self._json(200, {"templates": self.server.template_registry.list_templates()})
+        if path.startswith(f"{API_PREFIX}/templates/"):
+            parts = path.removeprefix(f"{API_PREFIX}/templates/").split("/")
+            try:
+                if len(parts) == 1 and parts[0]:
+                    return self._json(200, self.server.template_registry.inspect(parts[0]))
+                if len(parts) in {3, 4} and parts[0] and parts[1] == "versions" and parts[2].isdecimal():
+                    version = int(parts[2])
+                    if len(parts) == 3:
+                        return self._json(200, self.server.template_registry.get_version(parts[0], version))
+                    if parts[3] == "load":
+                        return self._json(200, self.server.template_registry.load(parts[0], version))
+                return self._json(404, error_payload("not_found", "Unknown template path."))
+            except TemplateNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except TemplateUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc), getattr(exc, "fields", None)))
         if path == f"{API_PREFIX}/runs":
             return self._json(200, {"runs": self.server.run_registry.list_runs()})
         if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/report"):
@@ -167,7 +187,7 @@ class _Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path not in {f"{API_PREFIX}/run-drafts/validate",
                         f"{API_PREFIX}/run-drafts/preview",
-                        f"{API_PREFIX}/runs"} and not (
+                        f"{API_PREFIX}/runs", f"{API_PREFIX}/templates"} and not (
                             path.startswith(f"{API_PREFIX}/runs/") and
                             path.endswith("/commands") and
                             path.count("/") == len(API_PREFIX.strip("/").split("/")) + 3):
@@ -194,11 +214,30 @@ class _Handler(BaseHTTPRequestHandler):
             except RunConflict as exc:
                 return self._json(409, error_payload(
                     exc.code, str(exc), getattr(exc, "fields", None)))
+            except TemplateNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except TemplateUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc), getattr(exc, "fields", None)))
             except Exception:
                 return self._json(500, error_payload(
                     "run_creation_failed", "Run creation could not be completed."))
             status = 201 if created else 200
             return self._json(status, record)
+
+        if path == f"{API_PREFIX}/templates":
+            if not isinstance(payload, dict) or set(payload) - {"name", "draft", "template_id"}:
+                return self._json(400, error_payload("invalid_template", "Template request contains unsupported fields."))
+            try:
+                saved = self.server.template_registry.save(
+                    name=payload.get("name"), draft=payload.get("draft"),
+                    template_id=payload.get("template_id"))
+                return self._json(201, saved)
+            except TemplateInvalid as exc:
+                return self._json(422, error_payload(exc.code, str(exc), getattr(exc, "fields", None)))
+            except TemplateNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except Exception:
+                return self._json(500, error_payload("template_save_failed", "Template version could not be saved."))
 
         if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/commands"):
             run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/commands")
@@ -267,6 +306,8 @@ def create_server(host: str = "127.0.0.1", port: int = 8766,
     registry = RunRegistry(data_dir if data_dir is not None else default_data_dir())
     server = server_type((str(address), int(port)), _Handler)
     server.run_registry = registry
+    server.template_registry = TemplateRegistry(registry.data_dir / "templates.json")
+    registry.template_registry = server.template_registry
     return server
 
 

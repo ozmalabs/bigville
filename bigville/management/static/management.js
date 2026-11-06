@@ -24,6 +24,9 @@
   let viewRevision = 0;
   let viewController = null;
   let refereeSnapshot = null;
+  let formDirty = false;
+  let applyingTemplate = false;
+  let loadedTemplateRef = null;
   let reportsRevision = 0;
   let reportsData = null;
   let eventsData = null;
@@ -176,6 +179,7 @@
     submissionKey = null;
     $("#review-panel").hidden = true;
     $("#create-start").disabled = true;
+    $("#save-template").disabled = true;
     if (!submitting) $("#validate-preview").disabled = false;
     $("#validation-status").textContent = "Changes have not been reviewed.";
     clearErrors();
@@ -189,8 +193,16 @@
   }
 
   for (const input of form.querySelectorAll("input,select")) {
-    input.addEventListener("input", invalidateReview);
-    input.addEventListener("change", invalidateReview);
+    input.addEventListener("input", () => {
+      if (applyingTemplate) return;
+      formDirty = true;
+      invalidateReview();
+    });
+    input.addEventListener("change", () => {
+      if (applyingTemplate) return;
+      formDirty = true;
+      invalidateReview();
+    });
   }
 
   $("#new-run-button").addEventListener("click", () => {
@@ -296,6 +308,7 @@
     $("#review-warning").textContent = validation.warnings.join(" ");
     $("#review-panel").hidden = false;
     $("#create-start").disabled = false;
+    $("#save-template").disabled = false;
     reviewed = {
       draft: structuredClone(draft),
       configHash: validation.configuration_hash,
@@ -406,6 +419,139 @@
       runsStatus.textContent = `Could not load runs: ${error.message}`;
     }
   }
+
+  function selectedTemplate() {
+    const raw = $("#template-choice").value;
+    if (!raw) return null;
+    const [id, versionText] = raw.split("|");
+    const version = Number(versionText);
+    return id && Number.isInteger(version) ? {id, version} : null;
+  }
+
+  async function refreshTemplates() {
+    try {
+      const response = await requestJson("/templates");
+      const select = $("#template-choice");
+      const previous = select.value;
+      select.replaceChildren();
+      for (const template of response.templates || []) {
+        const details = await requestJson(`/templates/${encodeURIComponent(template.id)}`);
+        for (const version of details.versions) {
+          const option = new Option(`${template.name} · v${version.version}`, `${template.id}|${version.version}`);
+          select.add(option);
+        }
+      }
+      if (!select.options.length) select.add(new Option("No saved templates", ""));
+      if ([...select.options].some(option => option.value === previous)) select.value = previous;
+      const available = Boolean(selectedTemplate());
+      $("#inspect-template").disabled = !available;
+      $("#load-template").disabled = !available;
+      $("#template-status").textContent = response.templates?.length
+        ? `${response.templates.length} template${response.templates.length === 1 ? "" : "s"} · versions are immutable`
+        : "No templates saved yet.";
+    } catch (error) {
+      $("#template-status").textContent = `Templates unavailable: ${error.message}`;
+    }
+  }
+
+  async function inspectTemplate() {
+    const ref = selectedTemplate();
+    if (!ref) return;
+    try {
+      const data = await requestJson(`/templates/${encodeURIComponent(ref.id)}/versions/${ref.version}`);
+      $("#template-inspection").textContent = JSON.stringify({
+        id: data.id, version: data.version, name: data.name,
+        configuration_hash: data.configuration_hash,
+        capability_revision: data.capability_revision, draft_schema: data.schema_version,
+        draft: data.draft,
+      }, null, 2);
+      $("#template-inspection").hidden = false;
+      $("#template-status").textContent = `Inspecting ${data.name} · version ${data.version}.`;
+    } catch (error) {
+      $("#template-status").textContent = error.message;
+    }
+  }
+
+  function applyDraftToForm(draft) {
+    applyingTemplate = true;
+    $("#run-name").value = draft.name;
+    const scenario = $("#scenario-id");
+    if (![...scenario.options].some(option => option.value === draft.scenario_id)) {
+      scenario.add(new Option(`${draft.scenario_id} · unavailable`, draft.scenario_id));
+    }
+    scenario.value = draft.scenario_id;
+    $("#world-seed").value = String(draft.seed);
+    $("#default-backend").value = draft.default_backend;
+    $("#cadence-choice").value = draft.ticks_per_period === "world"
+      ? "world" : draft.ticks_per_period === null ? "none" : "custom";
+    $("#custom-cadence").value = draft.ticks_per_period == null || draft.ticks_per_period === "world"
+      ? "" : String(draft.ticks_per_period);
+    $("#custom-cadence").hidden = $("#cadence-choice").value !== "custom";
+    $("#turn-limit").value = draft.turn_limit == null ? "" : String(draft.turn_limit);
+    applyingTemplate = false;
+    formDirty = false;
+    invalidateReview();
+    formDirty = false;
+  }
+
+  async function loadTemplateIntoDraft() {
+    const ref = selectedTemplate();
+    if (!ref) return;
+    if (formDirty && !window.confirm("Replace this modified draft with the selected template version?")) return;
+    const revisionAtLoad = draftRevision;
+    $("#template-status").textContent = "Checking template compatibility…";
+    try {
+      const loaded = await requestJson(`/templates/${encodeURIComponent(ref.id)}/versions/${ref.version}/load`);
+      if (revisionAtLoad !== draftRevision) {
+        $("#template-status").textContent = "The draft changed while checking this template. Load it again to replace the current draft.";
+        return;
+      }
+      applyDraftToForm(loaded.draft);
+      loadedTemplateRef = {id: loaded.id, version: loaded.version,
+                           configuration_hash: loaded.configuration_hash};
+      $("#template-name").value = loaded.name;
+      showPanel("new-run-panel", "New run from template");
+      $("#template-status").textContent = `Loaded immutable version ${loaded.version}. Validate and preview it before launch.`;
+      await validateAndPreview();
+    } catch (error) {
+      $("#template-status").textContent = `${error.message}${error.fields ? ` ${JSON.stringify(error.fields)}` : ""}`;
+    }
+  }
+
+  async function saveReviewedTemplate() {
+    if (!reviewed || submitting) return;
+    const body = {name: $("#template-name").value.trim() || reviewed.draft.name,
+                  draft: structuredClone(reviewed.draft)};
+    const sourceTemplate = loadedTemplateRef ? {...loadedTemplateRef} : null;
+    const revisionAtSave = draftRevision;
+    if (sourceTemplate?.id) body.template_id = sourceTemplate.id;
+    $("#save-template").disabled = true;
+    $("#template-save-status").textContent = "Saving immutable version…";
+    try {
+      const saved = await requestJson("/templates", {method: "POST", body: JSON.stringify(body)});
+      if (revisionAtSave === draftRevision) {
+        loadedTemplateRef = {id: saved.id, version: saved.version,
+                             configuration_hash: saved.configuration_hash};
+      }
+      $("#template-name").value = saved.name;
+      $("#template-save-status").textContent = `Saved ${saved.name} · version ${saved.version}.`;
+      await refreshTemplates();
+      $("#template-choice").value = `${saved.id}|${saved.version}`;
+    } catch (error) {
+      $("#template-save-status").textContent = error.message;
+    } finally {
+      $("#save-template").disabled = !reviewed;
+    }
+  }
+
+  $("#inspect-template").addEventListener("click", inspectTemplate);
+  $("#load-template").addEventListener("click", loadTemplateIntoDraft);
+  $("#template-choice").addEventListener("change", () => {
+    const enabled = Boolean(selectedTemplate());
+    $("#inspect-template").disabled = !enabled;
+    $("#load-template").disabled = !enabled;
+  });
+  $("#save-template").addEventListener("click", saveReviewedTemplate);
 
   function resetRefereePanel() {
     refereeSnapshot = null;
@@ -783,6 +929,7 @@
     if (submitting || !reviewed) return;
     submitting = true;
     const submission = structuredClone(reviewed);
+    if (loadedTemplateRef) submission.template = {id: loadedTemplateRef.id, version: loadedTemplateRef.version};
     const revisionAtSubmit = draftRevision;
     const button = $("#create-start");
     button.disabled = true;
@@ -798,6 +945,7 @@
           idempotency_key: submissionKey,
           expected_config_hash: submission.configHash,
           expected_capability_revision: submission.capabilityRevision,
+          ...(submission.template ? {template: submission.template} : {}),
         }),
       });
       $("#launch-status").textContent = "Run created. Starting…";
@@ -812,6 +960,8 @@
       }
       $("#launch-status").textContent = "Run started. Check its status in Runs.";
       reviewed = null;
+      loadedTemplateRef = null;
+      formDirty = false;
       submissionKey = null;
       $("#review-panel").hidden = true;
       showPanel("runs-panel", "Runs");
@@ -862,6 +1012,7 @@
   $("#retry-button").addEventListener("click", loadCatalog);
   loadCatalog();
   refreshRuns();
+  refreshTemplates();
   window.setInterval(() => {
     if (!runsPanel.hidden) refreshRuns(true);
     else if (!$("#run-view-panel").hidden) refreshRunView();

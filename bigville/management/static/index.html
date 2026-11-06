@@ -43,6 +43,12 @@
         <div class="panel-heading"><div><p class="eyebrow">RUNS</p><h2 id="runs-heading">Your simulations</h2></div>
           <button id="new-run-button" class="primary" type="button">New run</button></div>
         <p class="section-copy">Create an autonomous run with a supported scenario and the simple backend.</p>
+        <section class="template-library" aria-labelledby="template-library-heading">
+          <div class="panel-heading"><h3 id="template-library-heading">Configuration templates</h3><span class="pill">Draft only · not a checkpoint</span></div>
+          <div class="template-controls"><label for="template-choice">Template version</label><select id="template-choice"><option value="">No saved templates</option></select><button id="inspect-template" class="secondary" type="button" disabled>Inspect</button><button id="load-template" class="secondary" type="button" disabled>Load into draft</button></div>
+          <p id="template-status" class="status" role="status" aria-live="polite"></p>
+          <pre id="template-inspection" class="template-inspection" hidden></pre>
+        </section>
         <div id="runs-load-status" class="status" role="status" aria-live="polite">Loading runs…</div>
         <div id="run-list" class="run-list" aria-live="polite"></div>
         <p id="runs-empty" class="empty" hidden>No runs yet. Create a run to begin.</p>
@@ -124,6 +130,7 @@
           <div class="preview-map"><h4>Map preview</h4><div id="map-summary"></div><pre id="map-grid" aria-label="Preview map"></pre></div>
           <p class="hash-line">Configuration hash <code id="config-hash"></code></p>
           <p id="review-warning" class="notice" hidden></p>
+          <div class="template-save"><label for="template-name">Template name</label><input id="template-name" maxlength="80" placeholder="Optional · uses run name"><button id="save-template" class="secondary" type="button">Save this version</button><span id="template-save-status" class="status-inline" role="status" aria-live="polite"></span></div>
           <div class="form-actions"><button id="create-start" class="primary" type="button" disabled>Create &amp; start run</button><span id="launch-status" class="status-inline" role="status" aria-live="polite"></span></div>
         </section>
       </section>

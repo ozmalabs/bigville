@@ -247,7 +247,7 @@ class RunRegistry:
         if not isinstance(request, dict):
             raise InvalidRunRequest("Request must be a JSON object.")
         allowed = {"draft", "idempotency_key", "expected_config_hash",
-                   "expected_capability_revision"}
+                   "expected_capability_revision", "template"}
         unknown = sorted(str(key) for key in set(request) - allowed)
         if unknown:
             raise InvalidRunRequest("Unknown request fields: " + ", ".join(unknown))
@@ -276,9 +276,26 @@ class RunRegistry:
         canonical = resolution["canonical_config"]
         config_hash = resolution["configuration_hash"]
         revision = resolution["capability_revision"]
+        template_ref = request.get("template")
+        template_provenance = None
+        if template_ref is not None:
+            if (not isinstance(template_ref, dict) or set(template_ref) != {"id", "version"} or
+                    not isinstance(template_ref.get("id"), str) or
+                    isinstance(template_ref.get("version"), bool) or
+                    not isinstance(template_ref.get("version"), int)):
+                error = InvalidRunRequest("Template provenance must contain a template ID and integer version.")
+                error.fields = {"template": "Load a specific template version before creating this run."}
+                raise error
+            template_registry = getattr(self, "template_registry", None)
+            if template_registry is None:
+                raise InvalidRunRequest("Template provenance is unavailable in this service.")
+            template_provenance = template_registry.verify_run_source(
+                template_ref["id"], template_ref["version"])
         key_hash = _digest(key.strip())
         request_hash = _digest(json.dumps(canonical, sort_keys=True,
-                                          separators=(",", ":"), ensure_ascii=False))
+                                          separators=(",", ":"), ensure_ascii=False) +
+                              json.dumps(template_ref, sort_keys=True,
+                                         separators=(",", ":"), ensure_ascii=False))
         with self._lock:
             existing = self._state["idempotency"].get(key_hash)
             if existing:
@@ -340,6 +357,9 @@ class RunRegistry:
                 "capability_revision": revision,
                 "config": copy.deepcopy(canonical),
                 "resolved_actor_backends": actor_assignments,
+                "template": ({**template_provenance,
+                              "run_configuration_hash": config_hash}
+                             if template_provenance else None),
                 "warnings": list(resolution["warnings"]),
                 "error": None,
             }
