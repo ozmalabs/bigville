@@ -1,5 +1,5 @@
 {
-  "_doc": "---------------------------------------------------------------- ITEMS\nmaterials are bulk (measured piles); tools are discrete, made, and wear.\n--- materials (bulk piles) ---\n`fuel` = heat per unit (INPUT_TYPES)\nbulky\ndense: heavy, small\nburns hottest\necological cycles and maintenance materials\ndried: burn it or spread it\n`nitrogen` = N per unit spread\nlatrine waste; must be composted before use\nleft by burning fuel\n--- crop seeds (one entry per crop in CROPS; `seed: True` marks sowable stock) ---\n--- tools (discrete; verb + fitness + wear + make time/effort; composite = head+handle) ---\na batch good (bulk), not an individually-worn tool\n--- composite COMPONENTS (discrete items; a head + a handle assemble into a tool) ---\n--- additional local produce and kitchen ingredients ---\n--- prepared foods (all remain bulk Stock, so a batch can feed a household) ---\na machine bought in from outside\n--- trade materials (bulk) ---\n--- fluids (need a watertight container) ---\n--- animal products + feed (bulk) ---\ngeneric kitchen scraps (peelings, crusts, mixed leavings): animal feed, not people food.\nMeat/fish leavings are separate \"<kind>_scraps\" items, minted below from `leaves_scraps`.\n--- imported goods (from OUTSIDE bigville -- acquired by trade, not made locally) ---\n--- goods (discrete; class != material -> made as discrete items with quality + wear) ---\n--- furniture (discrete, larger) ---\n--- larger tools (discrete) ---\nTableware is reusable equipment. Consumption names the abstract vessel capability below, while\nthese variants can also be made, owned, and pressed into service via use_as_store().\n--- extracted resources and the simple shop chains (RESOURCE_DEPOSITS / SHOP_CHAINS below) ---\nfelled wood from a deposit\ndressed stone (mason)\ngeneric carpenter output\nfishmonger's dressed fish\n--- trade tools and workshop equipment named by RECIPES / TRADES. The world provides one\ninstance of each recipe tool at founding; these rows give them physical and price data.\ncooking equipment (PREPARATION_EQUIPMENT); the pot's capacity matches CONTAINERS[\"pot\"]\n--- crops and their seed added to close the brewing, linen, oil, and condiment chains ---\nflax seed: sown, or pressed for oil\nsown, or ground into mustard\nsprouted, kilned barley\nlifted from the woodlot; planted as hedge\n--- prepared foods and goods that use otherwise-idle ingredients ---",
+  "_doc": "---------------------------------------------------------------- ITEMS\nmaterials are bulk (measured piles); tools are discrete, made, and wear.\n--- materials (bulk piles) ---\n`fuel` = heat per unit (INPUT_TYPES)\nbulky\ndense: heavy, small\nburns hottest\necological cycles and maintenance materials\ndried: burn it or spread it\n`nitrogen` = N per unit spread\nlatrine waste; must be composted before use\nleft by burning fuel\n--- crop seeds (one entry per crop in CROPS; `seed: True` marks sowable stock) ---\n--- tools (discrete; verb + fitness + wear + make time/effort; composite = head+handle) ---\na batch good (bulk), not an individually-worn tool\n--- composite COMPONENTS (discrete items; a head + a handle assemble into a tool) ---\n--- additional local produce and kitchen ingredients ---\n--- prepared foods (all remain bulk Stock, so a batch can feed a household) ---\na machine bought in from outside\n--- trade materials (bulk) ---\n--- fluids (need a watertight container) ---\n--- animal products + feed (bulk) ---\ngeneric kitchen scraps (peelings, crusts, mixed leavings): animal feed, not people food.\nMeat/fish leavings are separate \"<kind>_scraps\" items, minted below from `leaves_scraps`.\n--- imported goods (from OUTSIDE bigville -- acquired by trade, not made locally) ---\n--- goods (discrete; class != material -> made as discrete items with quality + wear) ---\n--- furniture (discrete, larger) ---\n--- larger tools (discrete) ---\nTableware is reusable equipment. Consumption names the abstract vessel capability below, while\nthese variants can also be made, owned, and pressed into service via use_as_store().\n--- extracted resources and the simple shop chains (RESOURCE_DEPOSITS / SHOP_CHAINS below) ---\nfelled wood from a deposit\ndressed stone (mason)\ngeneric carpenter output\nfishmonger's dressed fish\n--- trade tools and workshop equipment named by RECIPES / TRADES. The world provides one\ninstance of each recipe tool at founding; these rows give them physical and price data.\ncooking equipment (PREPARATION_EQUIPMENT); the pot's capacity matches CONTAINERS[\"pot\"]\n--- crops and their seed added to close the brewing, linen, oil, and condiment chains ---\nflax seed: sown, or pressed for oil\nsown, or ground into mustard\nsprouted, kilned barley\nlifted from the woodlot; planted as hedge\n--- prepared foods and goods that use otherwise-idle ingredients ---\n--- food grading (Phase 027) ---\n`feeds` = loaf-equivalents of hunger one unit relieves: 1.0 is one resident's meal, one loaf (the unit of\nfood_per_resident in population/balance_scenario.json). APPROX: judged from each food's energy against bread;\nno source table fixes these. apple 0.5 follows the Phase 027 brief (two apples equal a loaf). Derived scraps\n(pack.py) carry no feeds: animal feed, eaten for nothing.\n`needs_prep` = raw animal flesh. Eaten raw, its meal is multiplied by FOOD_GRADING raw_penalty.\nFOOD_GRADING: constants for graded eating (world_affordances.meal_value and meal_illness_risk).\n",
   "_types": {},
   "tables": {
     "ITEMS": {
@@ -488,35 +488,40 @@
         "bulk": true,
         "weight": 0.3,
         "volume": 0.4,
-        "food": true
+        "food": true,
+        "feeds": 0.5
       },
       "pear": {
         "class": "material",
         "bulk": true,
         "weight": 0.3,
         "volume": 0.4,
-        "food": true
+        "food": true,
+        "feeds": 0.5
       },
       "plum": {
         "class": "material",
         "bulk": true,
         "weight": 0.2,
         "volume": 0.3,
-        "food": true
+        "food": true,
+        "feeds": 0.4
       },
       "berry": {
         "class": "material",
         "bulk": true,
         "weight": 0.1,
         "volume": 0.2,
-        "food": true
+        "food": true,
+        "feeds": 0.25
       },
       "mushroom": {
         "class": "material",
         "bulk": true,
         "weight": 0.2,
         "volume": 0.4,
-        "food": true
+        "food": true,
+        "feeds": 0.2
       },
       "lentil": {
         "class": "material",
@@ -530,7 +535,8 @@
         "weight": 1.0,
         "volume": 0.7,
         "food": true,
-        "decay": 0.01
+        "decay": 0.01,
+        "feeds": 0.5
       },
       "cream": {
         "class": "material",
@@ -538,7 +544,8 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "decay": 0.04
+        "decay": 0.04,
+        "feeds": 0.3
       },
       "lard": {
         "class": "material",
@@ -547,7 +554,8 @@
         "volume": 0.8,
         "food": true,
         "decay": 0.04,
-        "candle_fat": 1.0
+        "candle_fat": 1.0,
+        "feeds": 0.4
       },
       "vinegar": {
         "class": "material",
@@ -574,7 +582,8 @@
         "bulk": true,
         "weight": 0.4,
         "volume": 0.4,
-        "food": true
+        "food": true,
+        "feeds": 0.1
       },
       "mutton": {
         "class": "material",
@@ -582,7 +591,9 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "leaves_scraps": 0.2
+        "leaves_scraps": 0.2,
+        "feeds": 1.0,
+        "needs_prep": true
       },
       "fish": {
         "class": "material",
@@ -590,7 +601,9 @@
         "weight": 0.8,
         "volume": 1.0,
         "food": true,
-        "leaves_scraps": 0.3
+        "leaves_scraps": 0.3,
+        "feeds": 0.6,
+        "needs_prep": true
       },
       "bacon": {
         "class": "material",
@@ -599,7 +612,8 @@
         "volume": 1.0,
         "food": true,
         "leaves_scraps": 0.1,
-        "decay": 0.03
+        "decay": 0.03,
+        "feeds": 0.8
       },
       "sausage": {
         "class": "material",
@@ -607,7 +621,8 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "decay": 0.04
+        "decay": 0.04,
+        "feeds": 0.8
       },
       "ham": {
         "class": "material",
@@ -616,7 +631,8 @@
         "volume": 1.0,
         "food": true,
         "leaves_scraps": 0.15,
-        "decay": 0.03
+        "decay": 0.03,
+        "feeds": 1.0
       },
       "pepper": {
         "class": "material",
@@ -669,42 +685,48 @@
         "bulk": true,
         "weight": 0.5,
         "volume": 1.0,
-        "food": true
+        "food": true,
+        "feeds": 1.0
       },
       "pottage": {
         "class": "material",
         "bulk": true,
         "weight": 1.0,
         "volume": 1.0,
-        "food": true
+        "food": true,
+        "feeds": 0.8
       },
       "stew": {
         "class": "material",
         "bulk": true,
         "weight": 1.0,
         "volume": 1.0,
-        "food": true
+        "food": true,
+        "feeds": 1.0
       },
       "roast": {
         "class": "material",
         "bulk": true,
         "weight": 1.0,
         "volume": 1.0,
-        "food": true
+        "food": true,
+        "feeds": 1.0
       },
       "pie": {
         "class": "material",
         "bulk": true,
         "weight": 0.8,
         "volume": 1.0,
-        "food": true
+        "food": true,
+        "feeds": 1.0
       },
       "sandwich": {
         "class": "material",
         "bulk": true,
         "weight": 0.4,
         "volume": 0.5,
-        "food": true
+        "food": true,
+        "feeds": 0.8
       },
       "butter": {
         "class": "material",
@@ -712,7 +734,8 @@
         "weight": 1.0,
         "volume": 0.8,
         "food": true,
-        "decay": 0.05
+        "decay": 0.05,
+        "feeds": 0.5
       },
       "cheese": {
         "class": "material",
@@ -720,7 +743,8 @@
         "weight": 1.2,
         "volume": 1.0,
         "food": true,
-        "decay": 0.02
+        "decay": 0.02,
+        "feeds": 0.6
       },
       "gruel": {
         "class": "material",
@@ -729,7 +753,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 0.6
       },
       "porridge": {
         "class": "material",
@@ -738,7 +763,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 0.8
       },
       "oatcake": {
         "class": "material",
@@ -747,7 +773,8 @@
         "volume": 0.8,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 0.6
       },
       "flatbread": {
         "class": "material",
@@ -756,7 +783,8 @@
         "volume": 0.9,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 0.9
       },
       "pancake": {
         "class": "material",
@@ -765,7 +793,8 @@
         "volume": 0.7,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 0.6
       },
       "dumpling": {
         "class": "material",
@@ -774,7 +803,8 @@
         "volume": 0.6,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 0.7
       },
       "noodles": {
         "class": "material",
@@ -783,7 +813,8 @@
         "volume": 0.6,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 0.8
       },
       "crackers": {
         "class": "material",
@@ -793,7 +824,8 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "decay": 0.04
+        "decay": 0.04,
+        "feeds": 0.5
       },
       "vegetable_soup": {
         "class": "material",
@@ -802,7 +834,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "vegetable"
+        "food_group": "vegetable",
+        "feeds": 0.5
       },
       "root_soup": {
         "class": "material",
@@ -811,7 +844,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "vegetable"
+        "food_group": "vegetable",
+        "feeds": 0.5
       },
       "bean_stew": {
         "class": "material",
@@ -820,7 +854,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "legume"
+        "food_group": "legume",
+        "feeds": 0.8
       },
       "lentil_stew": {
         "class": "material",
@@ -829,7 +864,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "legume"
+        "food_group": "legume",
+        "feeds": 0.8
       },
       "fish_stew": {
         "class": "material",
@@ -838,7 +874,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "fish"
+        "food_group": "fish",
+        "feeds": 0.8
       },
       "fish_pie": {
         "class": "material",
@@ -847,7 +884,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "fish"
+        "food_group": "fish",
+        "feeds": 0.9
       },
       "meat_pie": {
         "class": "material",
@@ -856,7 +894,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "meat"
+        "food_group": "meat",
+        "feeds": 1.0
       },
       "shepherds_pie": {
         "class": "material",
@@ -865,7 +904,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "meat"
+        "food_group": "meat",
+        "feeds": 1.0
       },
       "sausage_stew": {
         "class": "material",
@@ -874,7 +914,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "meat"
+        "food_group": "meat",
+        "feeds": 1.0
       },
       "bacon_eggs": {
         "class": "material",
@@ -883,7 +924,8 @@
         "volume": 0.8,
         "food": true,
         "prepared": true,
-        "food_group": "meat"
+        "food_group": "meat",
+        "feeds": 0.8
       },
       "roast_poultry": {
         "class": "material",
@@ -892,7 +934,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "meat"
+        "food_group": "meat",
+        "feeds": 0.6
       },
       "roast_fish": {
         "class": "material",
@@ -901,7 +944,8 @@
         "volume": 0.9,
         "food": true,
         "prepared": true,
-        "food_group": "fish"
+        "food_group": "fish",
+        "feeds": 0.5
       },
       "stuffed_cabbage": {
         "class": "material",
@@ -910,7 +954,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "meat"
+        "food_group": "meat",
+        "feeds": 0.9
       },
       "omelette": {
         "class": "material",
@@ -919,7 +964,8 @@
         "volume": 0.7,
         "food": true,
         "prepared": true,
-        "food_group": "dairy"
+        "food_group": "dairy",
+        "feeds": 0.5
       },
       "cheese_pie": {
         "class": "material",
@@ -928,7 +974,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "dairy"
+        "food_group": "dairy",
+        "feeds": 0.8
       },
       "buttered_bread": {
         "class": "material",
@@ -937,7 +984,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "staple"
+        "food_group": "staple",
+        "feeds": 1.0
       },
       "fruit_pie": {
         "class": "material",
@@ -946,7 +994,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "fruit"
+        "food_group": "fruit",
+        "feeds": 0.8
       },
       "cake": {
         "class": "material",
@@ -955,7 +1004,8 @@
         "volume": 0.9,
         "food": true,
         "prepared": true,
-        "food_group": "sweet"
+        "food_group": "sweet",
+        "feeds": 0.6
       },
       "honey_cake": {
         "class": "material",
@@ -964,7 +1014,8 @@
         "volume": 0.9,
         "food": true,
         "prepared": true,
-        "food_group": "sweet"
+        "food_group": "sweet",
+        "feeds": 0.6
       },
       "pudding": {
         "class": "material",
@@ -973,7 +1024,8 @@
         "volume": 0.8,
         "food": true,
         "prepared": true,
-        "food_group": "dairy"
+        "food_group": "dairy",
+        "feeds": 0.6
       },
       "cream_curd": {
         "class": "material",
@@ -983,7 +1035,8 @@
         "food": true,
         "prepared": true,
         "food_group": "dairy",
-        "decay": 0.04
+        "decay": 0.04,
+        "feeds": 0.3
       },
       "yogurt": {
         "class": "material",
@@ -993,7 +1046,8 @@
         "food": true,
         "prepared": true,
         "food_group": "dairy",
-        "decay": 0.04
+        "decay": 0.04,
+        "feeds": 0.4
       },
       "pickles": {
         "class": "material",
@@ -1003,7 +1057,8 @@
         "food": true,
         "prepared": true,
         "food_group": "preserve",
-        "decay": 0.01
+        "decay": 0.01,
+        "feeds": 0.2
       },
       "sauerkraut": {
         "class": "material",
@@ -1013,7 +1068,8 @@
         "food": true,
         "prepared": true,
         "food_group": "preserve",
-        "decay": 0.01
+        "decay": 0.01,
+        "feeds": 0.2
       },
       "dried_fruit": {
         "class": "material",
@@ -1023,7 +1079,8 @@
         "food": true,
         "prepared": true,
         "food_group": "preserve",
-        "decay": 0.015
+        "decay": 0.015,
+        "feeds": 0.4
       },
       "fruit_jam": {
         "class": "material",
@@ -1033,7 +1090,8 @@
         "food": true,
         "prepared": true,
         "food_group": "preserve",
-        "decay": 0.015
+        "decay": 0.015,
+        "feeds": 0.3
       },
       "salt_fish": {
         "class": "material",
@@ -1043,7 +1101,8 @@
         "food": true,
         "prepared": true,
         "food_group": "preserve",
-        "decay": 0.01
+        "decay": 0.01,
+        "feeds": 0.6
       },
       "smoked_fish": {
         "class": "material",
@@ -1053,7 +1112,8 @@
         "food": true,
         "prepared": true,
         "food_group": "preserve",
-        "decay": 0.015
+        "decay": 0.015,
+        "feeds": 0.6
       },
       "cider": {
         "class": "material",
@@ -1064,7 +1124,8 @@
         "food": true,
         "prepared": true,
         "food_group": "drink",
-        "decay": 0.02
+        "decay": 0.02,
+        "feeds": 0.2
       },
       "mead": {
         "class": "material",
@@ -1075,7 +1136,8 @@
         "food": true,
         "prepared": true,
         "food_group": "drink",
-        "decay": 0.015
+        "decay": 0.015,
+        "feeds": 0.2
       },
       "book": {
         "class": "good",
@@ -1148,7 +1210,8 @@
         "food": true,
         "prepared": true,
         "food_group": "drink",
-        "decay": 0.02
+        "decay": 0.02,
+        "feeds": 0.3
       },
       "oil": {
         "class": "material",
@@ -1163,7 +1226,8 @@
         "fluid": true,
         "weight": 1.0,
         "volume": 1.0,
-        "food": true
+        "food": true,
+        "feeds": 0.4
       },
       "pork": {
         "class": "material",
@@ -1171,7 +1235,9 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "leaves_scraps": 0.2
+        "leaves_scraps": 0.2,
+        "feeds": 1.0,
+        "needs_prep": true
       },
       "beef": {
         "class": "material",
@@ -1179,7 +1245,9 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "leaves_scraps": 0.2
+        "leaves_scraps": 0.2,
+        "feeds": 1.0,
+        "needs_prep": true
       },
       "poultry": {
         "class": "material",
@@ -1187,14 +1255,17 @@
         "weight": 0.5,
         "volume": 1.0,
         "food": true,
-        "leaves_scraps": 0.3
+        "leaves_scraps": 0.3,
+        "feeds": 0.6,
+        "needs_prep": true
       },
       "eggs": {
         "class": "material",
         "bulk": true,
         "weight": 0.1,
         "volume": 0.2,
-        "food": true
+        "food": true,
+        "feeds": 0.3
       },
       "hay": {
         "class": "material",
@@ -1985,7 +2056,8 @@
         "food": true,
         "prepared": true,
         "food_group": "drink",
-        "decay": 0.015
+        "decay": 0.015,
+        "feeds": 0.2
       },
       "salad": {
         "class": "material",
@@ -1995,7 +2067,8 @@
         "food": true,
         "prepared": true,
         "food_group": "vegetable",
-        "decay": 0.3
+        "decay": 0.3,
+        "feeds": 0.3
       },
       "pea_soup": {
         "class": "material",
@@ -2004,7 +2077,8 @@
         "volume": 1.0,
         "food": true,
         "prepared": true,
-        "food_group": "legume"
+        "food_group": "legume",
+        "feeds": 0.5
       },
       "spice_cake": {
         "class": "material",
@@ -2014,7 +2088,8 @@
         "food": true,
         "prepared": true,
         "food_group": "sweet",
-        "decay": 0.02
+        "decay": 0.02,
+        "feeds": 0.6
       },
       "candle": {
         "class": "good",
@@ -2040,6 +2115,11 @@
         "weight": 2.0,
         "volume": 3.0
       }
+    },
+    "FOOD_GRADING": {
+      "raw_penalty": 0.3,
+      "rot_illness": 0.3,
+      "raw_illness": 0.05
     }
   }
 }

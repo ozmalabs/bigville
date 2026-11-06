@@ -27,6 +27,8 @@ CONTAINERS = _PACK["CONTAINERS"]
 SERVING_UTENSILS = _PACK["SERVING_UTENSILS"]
 SERVING_EQUIPMENT = _PACK["SERVING_EQUIPMENT"]
 FOOD_SERVICE = _PACK["FOOD_SERVICE"]
+# Phase 027: the constants of graded eating (raw_penalty, rot_illness, raw_illness), in items.json.
+FOOD_GRADING = _PACK["FOOD_GRADING"]
 SOUP_FOODS = _PACK["SOUP_FOODS"]
 DRINK_FOODS = _PACK["DRINK_FOODS"]
 PREPARATION_REQUIREMENTS = _PACK["PREPARATION_REQUIREMENTS"]
@@ -156,6 +158,34 @@ RESIDENT_CONCEPT_SEEDS = _PACK["RESIDENT_CONCEPT_SEEDS"]
 def scrap_kind(kind):
     """The scrap item a food leaves, or None if eating it leaves nothing."""
     return f"{kind}_scraps" if ITEMS.get(kind, {}).get("leaves_scraps") else None
+
+
+def feeds(kind):
+    """Loaf-equivalents of hunger one unit of `kind` relieves when eaten fresh (ITEMS `feeds`, Phase 027).
+    1.0 is one resident's meal. Derived scraps are animal feed, not people food, and relieve nothing."""
+    spec = ITEMS.get(kind, {})
+    if spec.get("scraps_of"):
+        return 0.0
+    return float(spec.get("feeds", 0.0))
+
+
+def meal_value(kind, freshness):
+    """Hunger one unit of food relieves at a given freshness (0 to 1, the pile's condition): feeds x
+    freshness, times FOOD_GRADING raw_penalty when the food needs preparation and has none (`needs_prep`).
+    Spoiled food (freshness 0) relieves nothing but is still eaten, so the grading never refuses."""
+    value = feeds(kind) * min(1.0, max(0.0, float(freshness)))
+    if ITEMS.get(kind, {}).get("needs_prep"):
+        value *= float(FOOD_GRADING["raw_penalty"])
+    return value
+
+
+def meal_illness_risk(kind, freshness):
+    """Chance of illness from one meal (0 to 1): rot_illness x (1 - freshness), plus raw_illness when the
+    food needs preparation and has none. Phase 037's health routes turn this risk into the illness."""
+    risk = float(FOOD_GRADING["rot_illness"]) * (1.0 - min(1.0, max(0.0, float(freshness))))
+    if ITEMS.get(kind, {}).get("needs_prep"):
+        risk += float(FOOD_GRADING["raw_illness"])
+    return min(1.0, risk)
 
 
 def feed_kinds(eats):
@@ -481,7 +511,7 @@ def _tag_yield(kind, tag, _memo=None, _seen=frozenset()):
     if (kind, tag) in _memo:
         return _memo[(kind, tag)]
     spec = ITEMS.get(kind, {})
-    best = (1.0 if spec.get("food") else 0.0) if tag == "food" else float(spec.get(tag, 0.0) or 0.0)
+    best = feeds(kind) if tag == "food" else float(spec.get(tag, 0.0) or 0.0)
     if kind not in _seen:
         for r in RECIPES:
             for ik, iq in r["in"]:
@@ -565,8 +595,8 @@ def _balance_flows(sc):
     food_supply = sum(q * _tag_yield(k, "food") for k, q in harvest.items())
     staple_supply = sum(q * _tag_yield(k, "food") for k, q in harvest.items()
                         if any(k == ik for ik, _ in staple["in"]) or _tag_yield(k, "food") and k == "grain")
-    flows["food (upper bound)"] = (food_supply, food_demand)
-    notes.append(f"food: harvest could make {food_supply:.1f} food units/period by the best recipes "
+    flows["food (loaves, upper bound)"] = (food_supply, food_demand)
+    notes.append(f"food: harvest could make {food_supply:.1f} loaves/period by the best recipes "
                  f"(an upper bound; {staple_supply:.1f} of it from grain)")
 
     # fuel: the staple burns fuel; straw and the lumber deposit (split into firewood) supply it

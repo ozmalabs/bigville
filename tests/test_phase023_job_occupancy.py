@@ -79,7 +79,8 @@ def test_a_worker_who_is_busy_can_still_eat():
     w.eng.set_attr(w._actor("Smith"), "hunger", 2.0)
     assert w.start("Smith", "forge_plough")
     assert w.eat("Smith", "bread"), "eating between work pulses stays allowed"
-    assert w.hunger("Smith") == 0.0 and w.busy("Smith")
+    # Phase 027: a fresh loaf relieves one period of hunger (feeds 1.0), so hunger 2.0 falls to 1.0.
+    assert w.hunger("Smith") == 1.0 and w.busy("Smith")
 
 
 def test_walking_away_pauses_the_job_and_it_completes_after_return():

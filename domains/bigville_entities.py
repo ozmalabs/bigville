@@ -544,6 +544,32 @@ def _check_exhaustion(errors, warnings, info):
         errors.append(f"EXHAUSTION: night hours must lie in [0, 24), not {hours}")
 
 
+def _check_food_grading(errors, warnings, info):
+    """Phase 027: every food item has a `feeds` value in loaf-equivalents (0 < feeds <= 1.5), a raw food that
+    needs preparation is a food, and the FOOD_GRADING constants are fractions. Derived scraps carry no feeds
+    (they are animal feed), so they are skipped."""
+    for kind, spec in ITEMS.items():
+        if not spec.get("food") or spec.get("scraps_of"):
+            continue
+        feeds_value = spec.get("feeds")
+        if isinstance(feeds_value, bool) or not isinstance(feeds_value, (int, float)):
+            errors.append(f"ITEMS[{kind}]: a food needs a numeric 'feeds' value, not {feeds_value!r}")
+        elif not 0.0 < float(feeds_value) <= 1.5:
+            errors.append(f"ITEMS[{kind}].feeds: loaf-equivalents in (0, 1.5], not {feeds_value!r}")
+        if "needs_prep" in spec and not isinstance(spec["needs_prep"], bool):
+            errors.append(f"ITEMS[{kind}].needs_prep: a boolean, not {spec['needs_prep']!r}")
+    for kind, spec in ITEMS.items():
+        if spec.get("needs_prep") and not spec.get("food"):
+            errors.append(f"ITEMS[{kind}]: needs_prep is only meaningful on a food")
+    raw = FOOD_GRADING.get("raw_penalty")
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)) or not 0.0 < float(raw) <= 1.0:
+        errors.append(f"FOOD_GRADING[raw_penalty]: a multiplier in (0, 1], not {raw!r}")
+    for name in ("rot_illness", "raw_illness"):
+        value = FOOD_GRADING.get(name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= float(value) <= 1.0:
+            errors.append(f"FOOD_GRADING[{name}]: a risk in [0, 1], not {value!r}")
+
+
 def _check_prompt_instructions(errors, warnings, info):
     """Phase 018: the LLM prompt tables and speech lexicon. Each action has a description, the response
     fields are the ones the backend parses, the selection caps are positive, the standing types and gist
@@ -1329,6 +1355,7 @@ def check_consistency():
     _check_refusal_reasons(errors, warnings, info)
     _check_handovers(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
+    _check_food_grading(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)
     stats = {

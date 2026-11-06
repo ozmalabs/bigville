@@ -918,8 +918,6 @@ class BigvilleWorld:
             self._square_fixtures[fixture["name"]] = node
 
     def _run(self):
-        before = {kind: float(self.eng.node(node)["attrs"].get("qty", 0.0))
-                  for kind, node in self._stock.items()}
         # A stock node survives after its last batch spoils, so an empty pile
         # may retain condition=0.  Treat the next batch as newly made rather
         # than allowing the spoil rule to discard it in the same rule sweep.
@@ -935,19 +933,14 @@ class BigvilleWorld:
         self._resolve_sleep()
         self._resolve_clothing_and_bodies()
         self._resolve_period_effects()
-        # Stock piles are intentionally bulk physical nodes, but a new harvest
-        # or fresh bake must not inherit a fully-rotted condition from an older
-        # batch mixed into the same pile.  Reset freshness when a perishable
-        # pile gained quantity during this rule pass; this keeps bulk storage
-        # simple without making new production instantly spoil.
+        # Freshness is mixed in where stock arrives (set_stock and the transfers), so a pile that gained
+        # quantity keeps its blended condition. Only the quantity bookkeeping remains here.
         for kind, node in self._stock.items():
             attrs = self.eng.node(node)["attrs"]
             qty = float(attrs.get("qty", 0.0))
             if qty < 0.0:
                 self.eng.set_attr(node, "qty", 0.0)
                 qty = 0.0
-            if kind in before and qty > before[kind] and attrs.get("perishable", 0.0) == 1.0:
-                self.eng.set_attr(node, "condition", 1.0)
             self._last_stock_qty[kind] = qty
         self._record_unlogged_deaths()
 
@@ -1149,6 +1142,7 @@ class BigvilleWorld:
                             and self.contents_weight(container) + amount * self.item_weight(kind) <= max_load + 1e-9
                             and (not self.is_fluid(kind) or float(self.eng.node(self._containers[container][0])["attrs"].get("watertight", 0.0)) == 1.0)):
                         inner = self._containers[container][1][kind]
+                        self._mix_freshness(inner, amount, self._pile_condition(self._stock.get(kind)))
                         self.set_stock(kind, self.qty(kind) - amount)
                         self.eng.set_attr(inner, "qty", self.contents(container, kind) + amount)
                         self._record_handover("fill", kind, amount, ("store", "store"), ("container", str(container)))
@@ -1159,8 +1153,9 @@ class BigvilleWorld:
                     if kind not in inners or not self._container_accessible(actor, container):
                         continue
                     amount = min(amount, self.contents(container, kind))
+                    arriving = self._pile_condition(inners[kind])
                     self.eng.set_attr(inners[kind], "qty", self.contents(container, kind) - amount)
-                    self.set_stock(kind, self.qty(kind) + amount)
+                    self.set_stock(kind, self.qty(kind) + amount, condition=arriving)
                     if amount > 0.0:
                         self._record_handover("empty", kind, amount, ("container", str(container)), ("store", "store"))
                     break
@@ -1301,8 +1296,8 @@ class BigvilleWorld:
                     rate = float(sa.get("decay", 0.0)) * float(sa.get("storage_factor", 1.0))
                     condition = max(0.0, float(sa.get("condition", 1.0)) - rate)
                     self.eng.set_attr(stock, "condition", condition)
-                    if condition <= 0.0:
-                        self.eng.set_attr(stock, "qty", 0.0)
+                    # A pile that reaches condition 0 is spoiled, not deleted (Phase 027): it stays,
+                    # is graded when eaten, and leaves with the waste path. Its quantity is kept.
                 for item in self.eng.nodes("ToolItem"):
                     ia = self.eng.node(item)["attrs"]
                     kind = ia.get("kind", "")
@@ -1578,14 +1573,17 @@ class BigvilleWorld:
         if negative_stocks:
             errors.append("physical stock quantities went negative")
 
-        food_qty = (sum(self.qty(kind) for kind, spec in self._item_specs.items() if spec.get("food"))
-                    + sum(self.inventory_qty(name, kind)
+        food_qty = (sum(self.qty(kind) * self.E.feeds(kind) * self._pile_condition(self._stock.get(kind))
+                        for kind, spec in self._item_specs.items() if spec.get("food"))
+                    + sum(self.inventory_qty(name, kind) * self.E.feeds(kind)
+                          * self._pile_condition(self._inventory_stock(name, kind))
                           for name in self._actors
                           for kind, spec in self._item_specs.items() if spec.get("food")))
         food_days = food_qty / len(alive) if alive else 0.0
         shelf_lives = [self.stock_condition(kind) / self.E.decay_rate(kind)
                        for kind, spec in self._item_specs.items()
-                       if spec.get("food") and self.qty(kind) > 0 and self.E.decay_rate(kind) > 0]
+                       if spec.get("food") and self.qty(kind) > 0 and self.E.decay_rate(kind) > 0
+                       and self.stock_condition(kind) > 0]
         food_shelf_life = min(shelf_lives) if shelf_lives else float("inf")
         if alive and food_days < 4.0:
             warnings.append("less than four resident-rations of edible stock are available")
@@ -3452,8 +3450,10 @@ class BigvilleWorld:
         used = self.used_volume(self._actor_inventories[actor])
         if used + amount * self.item_volume(kind) > self.capacity(self._actor_inventories[actor]) + 1e-9:
             return self._refuse("no_capacity")
+        arriving = self._pile_condition(self._stock.get(kind))
         self.set_stock(kind, self.qty(kind) - amount)
         stock = self._inventory_stock(actor, kind, create=True)
+        self._mix_freshness(stock, amount, arriving)
         self.eng.set_attr(stock, "qty", float(self.eng.node(stock)["attrs"].get("qty", 0.0)) + amount)
         self.eng.add_edge_unchecked(self._actor(actor), "holds_food", stock)
         self._refresh_carry_state(actor)
@@ -3543,8 +3543,9 @@ class BigvilleWorld:
         stock = self._inventory_stock(actor, kind)
         if amount <= 0.0 or stock is None or self.inventory_qty(actor, kind) < amount:
             return False
+        arriving = self._pile_condition(stock)
         self.eng.set_attr(stock, "qty", self.inventory_qty(actor, kind) - amount)
-        self.set_stock(kind, self.qty(kind) + amount)
+        self.set_stock(kind, self.qty(kind) + amount, condition=arriving)
         self._refresh_carry_state(actor)
         return True
 
@@ -3559,6 +3560,7 @@ class BigvilleWorld:
             return self._refuse("no_capacity")
         source = self._inventory_stock(giver, kind)
         target = self._inventory_stock(recipient, kind, create=True)
+        self._mix_freshness(target, amount, self._pile_condition(source))
         self.eng.set_attr(source, "qty", self.inventory_qty(giver, kind) - amount)
         self.eng.set_attr(target, "qty", self.inventory_qty(recipient, kind) + amount)
         self._refresh_carry_state(giver)
@@ -3903,6 +3905,9 @@ class BigvilleWorld:
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "eat"):
             return self._refuse("slot_used")
         stock = self._inventory_stock(actor, kind)
+        # Graded eating (Phase 027): the meal is the held pile, at its own freshness. Spoiled food is still
+        # eaten and relieves little; only an empty stock (refused above) yields nothing.
+        freshness = self._pile_condition(stock)
         self.eng.set_attr(stock, "qty", self.inventory_qty(actor, kind) - 1.0)
         leftover = self.E.scrap_kind(kind)
         if leftover is not None:                         # the bones/rind stay in the eater's hands
@@ -3910,9 +3915,64 @@ class BigvilleWorld:
             scraps = self._inventory_stock(actor, leftover, create=True)
             self.eng.set_attr(scraps, "qty", self.inventory_qty(actor, leftover) + fraction)
         self._refresh_carry_state(actor)
-        self.eng.set_attr(self._actor(actor), "hunger", 0.0)
+        value = self.E.meal_value(kind, freshness)
+        hunger = float(self.eng.node(self._actor(actor))["attrs"].get("hunger", 0.0))
+        self.eng.set_attr(self._actor(actor), "hunger", max(0.0, hunger - value))
+        self._record_meal(actor, kind, value, freshness)
         self.eng.add_edge_unchecked(self._actor(actor), "ate", stock)
         return True
+
+    def _record_meal(self, actor, kind, value, freshness):
+        """Publish what one meal did to the eater: the hunger it relieved, its pleasantness and its illness
+        risk. Pleasantness is the freshness until taste exists (Phase 035). The illness risk is a plain value
+        for Phase 037's health routes to turn into illness; nothing here harms the body."""
+        node = self._actor(actor)
+        self.eng.set_attr(node, "last_meal_value", float(value))
+        self.eng.set_attr(node, "last_meal_freshness", float(freshness))
+        self.eng.set_attr(node, "meal_pleasantness", float(freshness))
+        self.eng.set_attr(node, "illness_risk", float(self.E.meal_illness_risk(kind, freshness)))
+
+    def last_meal(self, actor):
+        """The most recent meal's read-offs: the hunger it relieved, its freshness, its pleasantness, and the
+        illness risk (0 when nobody has eaten yet)."""
+        attrs = self.eng.node(self._actor(actor))["attrs"]
+        return {"value": round(float(attrs.get("last_meal_value", 0.0)), 4),
+                "freshness": round(float(attrs.get("last_meal_freshness", 0.0)), 4),
+                "pleasantness": round(float(attrs.get("meal_pleasantness", 0.0)), 4),
+                "illness_risk": round(float(attrs.get("illness_risk", 0.0)), 4)}
+
+    def meal_value(self, actor, kind):
+        """The hunger a held unit of `kind` would relieve if eaten now (see E.meal_value)."""
+        stock = self._inventory_stock(actor, kind)
+        return round(self.E.meal_value(kind, self._pile_condition(stock)), 4) if stock else 0.0
+
+    def _relieves_hunger(self, kind):
+        """True when eating a unit of the store's `kind` now would relieve some hunger (a food with value at the
+        pile's freshness). Spoiled food and scraps are not a hunger source a resident should walk to."""
+        if not self._item_specs.get(kind, {}).get("food"):
+            return False
+        return self.E.meal_value(kind, self._pile_condition(self._stock.get(kind))) > 0.0
+
+    def _pile_condition(self, node):
+        """Freshness of a pile node (0 to 1). A pile without a condition attribute is fresh."""
+        if node is None:
+            return 1.0
+        return float(self.eng.node(node)["attrs"].get("condition", 1.0))
+
+    def _mix_freshness(self, node, added, added_condition=1.0):
+        """Blend `added` units of freshness `added_condition` into pile `node`. A perishable pile's
+        freshness is the quantity-weighted mean of what it held and what arrives, so spoiled food moved or
+        mixed with fresh food reads between the two rather than resetting to fresh. An empty pile takes the
+        arriving freshness outright. Non-perishable piles keep no freshness."""
+        attrs = self.eng.node(node)["attrs"]
+        added = float(added)
+        if float(attrs.get("perishable", 0.0)) != 1.0 or added <= 0.0:
+            return
+        old_qty = max(0.0, float(attrs.get("qty", 0.0)))
+        old_condition = float(attrs.get("condition", 1.0)) if old_qty > 0.0 else 0.0
+        total = old_qty + added
+        blended = (old_qty * old_condition + added * float(added_condition)) / total
+        self.eng.set_attr(node, "condition", min(1.0, max(0.0, blended)))
 
     def pay_wage(self, employer, worker, amount):
         """Retired: use an explicit coin transfer chosen by the backend."""
@@ -4393,18 +4453,25 @@ class BigvilleWorld:
         return (float(spec.get("weight", 1.0)), float(spec.get("volume", 1.0)),
                 1.0 if spec.get("fluid") else 0.0)
 
-    def set_stock(self, kind, qty):
+    def set_stock(self, kind, qty, *, condition=None):
+        """Set a store pile's quantity. A pile that gains units takes their freshness mixed in: new production
+        arrives fresh (condition 1.0) unless the caller passes the arriving food's `condition`, as a transfer
+        does. A new pile starts at that condition (fresh by default)."""
         w, v, fl = self._phys(kind)
         food = 1.0 if self._item_specs.get(kind, {}).get("food") else 0.0
         perishable = 1.0 if self.E.adjectival(kind) == "perishable" else 0.0
+        arriving = 1.0 if condition is None else float(condition)
         if kind in self._stock:
+            added = float(qty) - self.qty(kind)
+            if added > 0.0:
+                self._mix_freshness(self._stock[kind], added, arriving)
             self.eng.set_attr(self._stock[kind], "qty", float(qty))
         else:
             colour = self._item_specs.get(kind, {}).get("colour", "")   # a dye names a colour (madder->red)
             s = self.eng.add_node("Stock", {"kind": kind, "qty": float(qty),   # a first-class physical pile
                                             "weight": w, "volume": v, "fluid": fl, "food": food, "colour": colour,
                                             # spoilage: a perishable pile has a freshness that decays over time
-                                            "perishable": perishable, "condition": 1.0,
+                                            "perishable": perishable, "condition": arriving,
                                             "decay": self.E.decay_rate(kind), "decay_epoch": 0.0})
             self.eng.add_edge_unchecked(self._store, "stock", s)
             self._stock[kind] = s
@@ -5897,6 +5964,7 @@ class BigvilleWorld:
             inners[kind] = self._new_inner_stock(node, container_kind, kind)
         source = self._inventory_stock(actor, kind)
         target = inners[kind]
+        self._mix_freshness(target, amount, self._pile_condition(source))
         self.eng.set_attr(source, "qty", self.inventory_qty(actor, kind) - amount)
         self.eng.set_attr(target, "qty", self.contents(container, kind) + amount)
         self._refresh_carry_state(actor)
@@ -5958,8 +6026,9 @@ class BigvilleWorld:
                     + amount * self.item_volume(kind) > self.capacity(self._actor_inventories[actor]) + 1e-9):
                 return self._refuse("no_capacity")
             inner = self._containers[source][1][kind]
-            self.eng.set_attr(inner, "qty", self.contents(source, kind) - amount)
             target = self._inventory_stock(actor, kind, create=True)
+            self._mix_freshness(target, amount, self._pile_condition(inner))
+            self.eng.set_attr(inner, "qty", self.contents(source, kind) - amount)
             self.eng.set_attr(target, "qty", self.inventory_qty(actor, kind) + amount)
             self._refresh_carry_state(actor)
         self._record_handover("fetch", kind, amount, ("store", "store") if source is None else ("container", str(source)),
@@ -6806,7 +6875,7 @@ class BigvilleWorld:
                 if spec.get("prepared") and self._serving_equipment(actor, kind) is None:
                     continue
                 options.append({"action": "eat", "kind": kind, "trade": "", "recipe": "", "target": "",
-                                "score": 0.0})
+                                "meal_value": self.meal_value(actor, kind), "score": 0.0})
         # Publishing a sale is an economic decision, not a physical affordance.
         # The resident's cognition can observe nearby people and choose whether
         # to propose a physical transfer; the world must not turn a seeded
@@ -6893,7 +6962,7 @@ class BigvilleWorld:
                 if any(option.get("action") == "fetch" and option.get("kind") == kind
                        for option in options):
                     continue
-                is_food = bool(self._item_specs.get(kind, {}).get("food"))
+                is_food = self._relieves_hunger(kind)
                 if self.actor_position(actor) == market_cell:
                     key = target_key(("store", kind))
                     options.append({"action": "fetch", "kind": kind, "trade": "", "recipe": "",
@@ -6902,7 +6971,7 @@ class BigvilleWorld:
                 elif reachable_destination(market_cell) and not market_move_added:
                     key = target_key(market_cell)
                     has_edible = any(
-                        bool(spec.get("food")) and self.qty(k) >= 1.0
+                        self._relieves_hunger(k) and self.qty(k) >= 1.0
                         and self._inventory_can_receive(actor, k)
                         for k, spec in self._item_specs.items()
                     )
@@ -6919,7 +6988,7 @@ class BigvilleWorld:
                 output = self.eng.node(shop_node)["attrs"].get("output_kind", "")
                 if output not in self._item_specs or self.qty(output) < 1.0:
                     continue
-                is_food = bool(self._item_specs.get(output, {}).get("food"))
+                is_food = self._relieves_hunger(output)
                 # Output collection is a physical carrying opportunity. Trade
                 # identity can influence cognition, but does not grant access.
                 if (self.actor_position(actor) == market_cell

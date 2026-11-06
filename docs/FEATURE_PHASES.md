@@ -1052,9 +1052,7 @@ documents are not edited.
 
 ## Phase 027 -- Food value, freshness and graded eating
 
-**Status:** ready (changes balance numbers; list them). Spec: `seeds/bigville_body.json`
-`bd_meal_feeds`; `seeds/bigville_foodstuff.json` `fs_spoil`, `fs_rot`, `fs_prepare`, `fs_eat`,
-`fs_nofood`. The seed's note assumes a meal relieves about 5 hunger.
+**Status:** done. Food items carry `feeds` in loaf-equivalents (bread 1.0, apple 0.5, APPROX); a meal relieves `feeds` x freshness (x `raw_penalty` 0.3 for unprepared `needs_prep` food) and publishes `illness_risk` for Phase 037. Rotten stock is kept, not deleted; freshness travels with food. Balance food line is in loaves (supply 812 -> 358 against demand 100). The cheap backend ignores zero-value (spoiled) meals. Open: grains as food, apple value by energy, a `discard` action. See docs/phases/phase027/PHASE027_REPORT.md.
 
 **Goal.**
 1. **Meals feed.** `eat` resets hunger to 0 for any food unit. Give each food item a `feeds` value
@@ -1848,3 +1846,4 @@ rearing priors (the backend's); carrying infants.
 | 024 Exhaustion, collapse and sleep | done | (this commit) | docs/phases/phase024/PHASE024_REPORT.md -- EXHAUSTION table, graded slowdown, collapse and sleep with refusals and job pause, sleep facts, simple-backend sleep rule; 872 passed |
 | 025 Fair turn order | done | (this commit) | docs/phases/phase025/PHASE025_REPORT.md -- per-turn seeded permutation of response order; last_order; 879 passed |
 | 026 Observable handovers | done | (this commit) | docs/phases/phase026/PHASE026_REPORT.md -- handover facts replace Transaction; economy.handovers; _transactions compat count; 894 passed |
+| 027 Food value and graded eating | done | (this commit) | docs/phases/phase027/PHASE027_REPORT.md -- feeds x freshness; spoiled stock kept; illness_risk published; 907 passed |

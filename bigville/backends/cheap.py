@@ -126,9 +126,13 @@ class DeterministicBackend:
             if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
             and memory.content.get("recipe")
         }
+        # Phase 027: held food that would relieve no hunger (a spoiled pile) is not a meal, so it
+        # neither counts as carried food nor blocks fetching a fresh one.
+        def _feeds(option):
+            return "meal_value" not in option or float(option.get("meal_value", 0.0)) > 0.0
         carried_food_kinds = {
             str(option.get("kind")) for option in context.affordances
-            if option.get("action") == "eat" and option.get("kind")
+            if option.get("action") == "eat" and option.get("kind") and _feeds(option)
         }
         options = [o for o in context.affordances
                    if o.get("action") not in {"rest", "", "sleep"}
@@ -153,7 +157,7 @@ class DeterministicBackend:
                                   and str(o.get("kind", "")) in carried_food_kinds)
                                  or (o.get("action") == "move"
                                      and str(o.get("fetch_kind", "")) in carried_food_kinds)))
-                   and not (o.get("action") == "eat" and hunger <= 0)]
+                   and not (o.get("action") == "eat" and (hunger <= 0 or not _feeds(o)))]
         # Professional identity guides the cheap resident's task selection.
         # These remain visible physical affordances for every cognition
         # backend; simple actors favor the tasks matching their seeded work.
@@ -233,10 +237,15 @@ class DeterministicBackend:
             elif hungry_without_food and self.policy.hook is None and bool(option.get("food")):
                 if option.get("action") in {"fetch", "move"}:
                     food_response_bonus = 100.0
+            # Among held meals the one that relieves more hunger wins (Phase 027: a fresh loaf over a
+            # spoiled one, a loaf over an apple). It reads the world's meal_value and never adds an eat.
+            meal_bonus = (10.0 * float(option.get("meal_value", 0.0))
+                          if option.get("action") == "eat" else 0.0)
             candidate["score"] = (float(candidate.get("score", 0.0))
                                    + self._goal_bonus(candidate)
                                    + (RESUME_JOB_BONUS if candidate.get("resumes_job") else 0.0)
                                    + food_response_bonus
+                                   + meal_bonus
                                    + role_bonus
                                    + float(self.policy.action_bonuses.get(candidate.get("action"), 0.0))
                                    + self._hook_bonus(context, candidate)

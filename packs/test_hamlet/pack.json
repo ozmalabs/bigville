@@ -10,6 +10,10 @@
       "file": "world/items.json"
     },
     {
+      "name": "FOOD_GRADING",
+      "file": "world/items.json"
+    },
+    {
       "name": "SCRAP_WEIGHT_FACTOR",
       "file": "world/constants.json"
     },

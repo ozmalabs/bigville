@@ -22,8 +22,10 @@ def test_simple_resident_fetches_and_eats_physical_food_across_periods():
             assert result["results"]["Ada"]
     assert actions[:4] == ["fetch", "eat", "fetch", "eat"]
     assert world.is_alive("Ada")
-    assert world.hunger("Ada") == 0
-    assert world.contents("pantry", "apple") == 8
+    # Phase 027: an apple relieves 0.5 of hunger at full freshness, and these apples have aged a period (0.75),
+    # so four apples are eaten in these steps and leave 0.75 of hunger.
+    assert world.hunger("Ada") == 0.75
+    assert world.contents("pantry", "apple") == 6
     assert world.inventory_qty("Ada", "apple") == 0
 
 

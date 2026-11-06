@@ -1,5 +1,5 @@
 {
-  "_doc": "Test pack 'test_hamlet' (Phase 013b): ITEMS. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): ITEMS. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.\n--- food grading (Phase 027) ---\n`feeds` = loaf-equivalents of hunger one unit relieves: 1.0 is one resident's meal, one loaf. APPROX (see\npacks/bigville/world/items.json). Only bread is food in this pack.\nFOOD_GRADING: constants for graded eating (world_affordances.meal_value and meal_illness_risk).\n",
   "_types": {},
   "tables": {
     "ITEMS": {
@@ -27,8 +27,14 @@
         "bulk": true,
         "weight": 0.5,
         "volume": 1.0,
-        "food": true
+        "food": true,
+        "feeds": 1.0
       }
+    },
+    "FOOD_GRADING": {
+      "raw_penalty": 0.3,
+      "rot_illness": 0.3,
+      "raw_illness": 0.05
     }
   }
 }

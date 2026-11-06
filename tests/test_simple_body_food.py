@@ -70,10 +70,12 @@ def test_simple_resident_observes_hunger_fetches_eats_and_conserves_food():
     eaten = sum(1 for step in trace if step["selected_action"]
                 and step["selected_action"]["action"] == "eat" and step["result"])
     assert world.contents("home_pantry", "apple") + world.inventory_qty("Ada", "apple") + eaten == 10
-    assert world.contents("home_pantry", "apple") == 8
+    # Phase 027: an apple relieves 0.5 of hunger, so the resident eats three apples in these 18 steps.
+    assert world.contents("home_pantry", "apple") == 7
     assert world.inventory_qty("Ada", "apple") == 0
     assert world.is_alive("Ada")
-    assert world.hunger("Ada") == 0
+    # Phase 027: decay is off here, so three fresh apples (0.5 each) leave 0.5 of hunger.
+    assert world.hunger("Ada") == 0.5
     # Keep a compact reproducible audit trail in pytest's assertion context.
     assert all(step["result"] for step in trace)
 

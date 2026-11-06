@@ -700,7 +700,8 @@ def test_residents_get_hungry_eat_food_and_starve_without_it():
     assert fed.give("Baker", "Tom", "bread", 1, payment_kind="coin", payment_amount=1)
     assert fed.inventory("Tom")["bread"] == 1.0
     assert fed.hunger("Tom") == 2.0, "buying does not feed him"
-    assert fed.eat("Tom", "bread") and fed.hunger("Tom") == 0.0, "an explicit eat action feeds him"
+    # Phase 027: the bread has aged two periods, so this loaf is half fresh and relieves 0.5, not a full period.
+    assert fed.eat("Tom", "bread") and fed.hunger("Tom") == 1.5, "an explicit eat action feeds him, by its freshness"
 
     starved = World(); starved.add_actor("Nell", role="hand")   # no food
     for _ in range(5):
@@ -955,7 +956,8 @@ def test_perishable_food_rots_through_its_stages_and_spoils():
     w.pass_period(2)
     assert w.stock_adjective("bread") in ("rotten", "putrid"), "then rotten/putrid (food rots fast)"
     w.pass_period(2)
-    assert w.qty("bread") == 0.0, "fully rotted, it spoils and is discarded"
+    assert w.qty("bread") == 20.0, "fully rotted, it spoils but stays as stock (Phase 027)"
+    assert w.stock_condition("bread") == 0.0, "spoiled: condition 0"
 
 
 # ------------------------------------------------------ G-larder-slows-decay (headline)
