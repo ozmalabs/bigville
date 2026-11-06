@@ -30,8 +30,8 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 | Phase | Status | Deliverable |
 |---|---|---|
 | M01 | integrated; full-suite gate pending | capability catalog and management server skeleton |
-| M02 | ready after M01 integration | local frontend shell and catalog |
-| M03 | blocked by M02 | draft validation and reproducible preview |
+| M02 | integrated; full-suite gate pending | local frontend shell and catalog |
+| M03 | ready after M02 integration | draft validation and reproducible preview |
 | M04 | blocked by M03 | durable run registry and lifecycle |
 | M05 | blocked by M04 | new-run and runs pages |
 | M06 | blocked by M05 | live overview, controls and resident perspectives |
