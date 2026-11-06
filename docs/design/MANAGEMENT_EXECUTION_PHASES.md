@@ -23,9 +23,9 @@ The implementation is local-first and single-user for these phases. Bind the man
 
 ## Dependency order and scheduling
 
-`M01 → M02 → M03 → M04 → M05 → M06 → M07 → M08 → M09 → M10 → M11 → M11A → M11B → M12`.
+`M01 → M02 → M03 → M04 → M05 → M06 → M07 → M09 → M10 → M11 → M11A → M11B`; M08 follows M07 once persistence lands, and M12 waits for M08 and M11B.
 
-This conservative sequence avoids simultaneous edits to the server and UI. The supervisor may parallelize read-only research or non-overlapping test design after freezing contracts, but must integrate in this order. M06 depends on committed agent-view work, and M08 on committed game checkpoint/restore; if unavailable, mark the affected phase blocked and continue only work explicitly independent of it. M01–M05 do not require those changes. M10–M12 are separate increments and do not block a usable M01–M09 product.
+This conservative sequence avoids simultaneous edits to the server and UI. The supervisor may parallelize read-only research or non-overlapping test design after freezing contracts, but must integrate in this order. M06 depends on committed agent-view work, and M08 on committed game checkpoint/restore; if unavailable, mark the affected phase blocked and continue only work explicitly independent of it. M01–M05 do not require those changes. M09–M11B are independent of checkpoints and may proceed while M08 is blocked; integrate UI changes serially. M10–M12 are separate increments and do not block a usable M01–M09 product.
 
 | Phase | Status | Deliverable |
 |---|---|---|
@@ -35,14 +35,14 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 | M04 | done; full suite passed (1590 passed, 1 skipped) | durable run registry and lifecycle |
 | M05 | integrated; full-suite gate pending | new-run and runs pages |
 | M06 | integrated; full-suite gate pending | live overview, controls and resident perspectives |
-| M07 | ready after M06 integration | reports, events and trace artifacts |
-| M08 | blocked by M07 and checkpoint integration | checkpoints and fork |
-| M09 | blocked by M08 | templates and versioned reuse |
+| M07 | integrated; full-suite gate pending | reports, events and trace artifacts |
+| M08 | blocked by uncommitted checkpoint integration | checkpoints and fork |
+| M09 | ready; independent of checkpoint integration | templates and versioned reuse |
 | M10 | blocked by M09 | backend profiles and actor assignments |
 | M11 | blocked by M10 | configurable cast generation and backend splits |
 | M11A | blocked by M11 | supported physical subsystem controls |
 | M11B | blocked by M11A | human-controlled sessions |
-| M12 | blocked by M11B | comparison and end-to-end release audit |
+| M12 | blocked by M08 and M11B | comparison and end-to-end release audit |
 
 ## M01 — Capability catalog and server skeleton
 
