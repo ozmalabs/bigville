@@ -98,8 +98,8 @@ would sweep its hunks into a phase commit, which is why rule 2 requires `git add
 
 | Tract | Phases |
 |---|---|
-| A, world physics | 030, 037, 050, 043, 048, 034, 038, 049, 047, 035, 036, 032, 033, 040, 039, 041 |
-| B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, 056, 053, 042, 044, 045, 046 |
+| A, world physics | 030, 037, 050, 043, 048, 034, 038, 049, 047, 035, 036, 032, 033, 040, 039, 041, and 063 (visible condition) |
+| B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, then 066, 056, 053, 042, 060, 061, 062, 064, 065, 067, 044, 045, 046 (068 parked) |
 | Neither | Ocelot integration and persistence (uncommitted) |
 | Superseded | 003 (done with 016b), 013 and 016 (split into 013a and 013b, 016a and 016b) |
 
@@ -2781,6 +2781,375 @@ counted against the counterfactual; the simple backend alone is unchanged.
 
 **Out of scope.** Learning the routine from experience; the model editing the routine table; the
 provider layer's retry and backoff (Phase 055).
+
+---
+
+# Programme E: speech in, what is perceived, and the LLM harness
+
+**Decision 2026-11-06 (user).** Four additions, planned here as Phases 060 to 068.
+
+1. *Structured speech for the simple backend.* A simple resident should understand speech as structure,
+   not only emit it. Open question from the user: is an extra LLM call needed to turn arbitrary speech
+   into structured speech, with a very small model and the reference structure cached?
+2. *Faculties and perception.* Skills, understanding, numeracy, literacy and impairment must each be
+   either represented by the backend, or enforced by the adapter, or both. An illiterate labourer sees
+   squiggles and one word he knows: ALE. A drunk or impaired agent can perceive information confidently
+   wrong, depending on the scenario. What an agent perceives also depends on its skills, in tiers: you
+   see a man; you see a dirty man; you see a man covered in coal dust.
+3. *The LLM harness.* It should continue the session, keep memory, and keep the complete log of every
+   call including the model's thinking. The log is critical.
+4. *The TUI in two modes.* A normal mode with the character-art map, and a text-adventure mode that
+   uses the same machinery as the LLM adapter.
+
+**What exists today** (read 2026-11-06):
+- *Speech out is already structured.* `DeterministicSpeechBackend` (`bigville/backends/speech.py`) picks a
+  speech act and composes a meaning (`{"greeting": {"of": name}}`, `{"news": ...}`, `{"request": ...}`
+  and fifteen more acts), realises it as text, and sends `raw: {act, target, meaning}` beside the text.
+  `ConversationMessage` and `DEFAULT_TEMPLATES` hold the act vocabulary.
+- *Speech in is not.* `BigvilleGame._adapt_speech` gives a recipient the raw payload only when its
+  backend declares `understands_raw_speech`; otherwise it gets the exact text and a note that the
+  recipient "cannot interpret" it. The simple backend therefore cannot act on what an LLM or a human
+  says. An LLM or human utterance carries `raw` only if the speaker supplied it (Phase 054 allows an
+  optional `raw` object; the TUI sends none).
+- *Literacy exists only as a gate.* `literacy` (0..1) and `DOCUMENT_LITERACY` tiers decide whether a
+  resident holds knowledge from a written source (`domains/knowledge.py`). Nothing changes what a
+  resident perceives. There is no numeracy, no appearance state beyond body words, and no perceptual
+  distortion. Phase 034 (alcohol) and the planned Phase 042 (night) supply impairment and light, but
+  nothing reads them into perception. The agent view (Phase 052) already is the single perception
+  adapter for LLM, human and TUI, and it shows the truth in words.
+- *The LLM harness is stateless and lossy.* Each consult is a fresh two-message call (system text and one
+  JSON packet). The `x-opencode-session` header names the resident, but no message history is kept.
+  `OpenAICompatibleProvider._parse` returns only `message.content`: any `reasoning_content` or reasoning
+  field in the response is dropped, and only the reasoning token count is kept. The Phase 055 transcript
+  holds the prompt, the reply text, latency and cost, and a replay keyed on the prompt hash. Memory is
+  the resident's `memories` list (notes, lessons, place beliefs, plans) inside the packet, bounded by
+  Phase 054's caps. Whether those memories survive a checkpoint is the Ocelot-persistence stream's file
+  (`game_persistence.py`) and is checked in Phase 066.
+- *The TUI* (Phase 057) draws terrain glyphs from the view's map patch and has one mode.
+
+**Answer to the speech question (design, not a build order).** Not by default. In order of cost:
+(1) a speaker that already has structure sends it: an LLM resident can put `raw` in the same reply (no
+extra call), and the TUI's `say` command, which has a grammar, can set the act. (2) A deterministic
+grammar over the lexicon recognises the common acts (greeting, farewell, thanks, apology, question,
+request, offer, warning, news about a named thing) in free text. (3) What the grammar cannot place goes
+to a very small model, once, behind a cache keyed by the normalised text, with the fixed act and slot
+reference as the stable prefix of the prompt (so a provider that caches prefixes charges for it once).
+(4) What is still unplaced is heard as words without meaning, which is what a simple resident would
+make of a stranger's odd remark, and is itself a consequence the world can show. The parser is optional,
+budgeted, replayable, and used only when the listener is a simple backend and the speaker gave no
+structure.
+
+**Representation or enforcement (the rule for Phases 062 to 065).** Each faculty is declared per backend
+as `represented` (the backend models it itself and the adapter passes the truth through, as the simple
+backend does with numbers), `enforced` (the adapter degrades what the backend is shown, as for an LLM or a
+human), or `both`. The adapter is the agent view builder plus the speech adapter. It works from a
+`perceiver` record (literacy tier, numeracy tier, skill tiers, impairment, light, distance) and from the
+true observation, and it writes the truth beside the percept in a referee-only block, so an evaluation can
+count how often a resident acted on a wrong percept.
+
+**Order and tracts.** All of Programme E is Tract B (agents, interface, harness) except Phase 063, which
+adds world state and is Tract A's. Suggested run order for Tract B, after the phases already in its list:
+066 (the harness and its log, because evaluation depends on the log), then 056, 053, 042, 060, 061, 062,
+064, 065, 067, then 044 to 046. Phase 068 is parked until Phase 056 has data. Dependencies are stated in
+each brief. A's 063 can run any time after 050 and feeds 062.
+
+## Phase 060 -- Structured speech in: the simple backend understands what it hears
+
+**Status:** ready, after 059 (decision 2026-11-06: speech interface for the simple backend).
+
+**Goal.** A simple resident reads a heard utterance as a meaning and lets it change what it does.
+1. **The act vocabulary as data.** A pack table `SPEECH_ACTS` lists each act with its slots, a plain
+   description, and an `understood_by` rule (which listeners can place it). It is built from the acts
+   `DeterministicSpeechBackend._meaning` already emits and `DEFAULT_TEMPLATES`, and the self-test checks
+   they agree.
+2. **A listener module.** `bigville/backends/speech_in.py`: `understand(utterance, listener_context)`
+   returns a meaning `{act, slots, confidence, source}` or `None`. Order: the speaker's `raw` if it is
+   well formed; else the deterministic grammar of Phase 061's first stage (kept in a pure module both
+   phases share); else `None`. `source` says which.
+3. **Effects on the simple backend** (behind a pack switch `SPEECH_UNDERSTANDING.enabled`, off by
+   default until measured, as Phase 058's seeding is): a greeting and a question are answered by the
+   existing reply logic; a request becomes a short-lived goal if the resident can do it (give, tell, fetch)
+   and has a tie to the speaker that allows it; an offer is accepted or declined by need; a warning raises
+   caution for a few ticks; news about a place or a person is stored as a memory the knowledge layer
+   (Phase 019) can use. A request the resident cannot meet is declined in words. Nothing the world
+   enforces changes: every action still goes through the single chokepoint.
+4. **No new world facts.** The listener learns only what the utterance said, at the confidence the
+   listener's faculties allow (Phase 062 later lowers it for deafness or drink). A lie is as believable as
+   a truth, weighted by the tie, which the existing `cred_on` and trust numbers already model.
+5. **Report.** Per run: utterances heard, placed by source (raw, grammar, none), and the effects they
+   caused.
+
+**Write scope.** new `bigville/backends/speech_in.py` and `domains/speech_grammar.py`,
+`bigville/backends/cheap.py` (a small additive hook in the goal update), the pack (`SPEECH_ACTS`,
+`SPEECH_UNDERSTANDING`) and its self-test, a new `tests/test_phase060_speech_in.py`.
+
+**Acceptance.** Tests show: each act in `SPEECH_ACTS` round-trips (a simple resident's emitted meaning,
+realised as text, is placed as the same act by the grammar from the text alone, for the wording the
+pack's templates produce); a request from a tied neighbour creates a goal and is declined by a stranger
+who has no reason; a human `say` of a plain sentence is placed by the grammar; with the switch off the
+60-turn simple-backend run is identical to HEAD, and with it on every difference is listed with numbers;
+the self-test finds a template with no act and an act with no template.
+
+**Out of scope.** The small-model parser (Phase 061); degraded hearing (Phase 065); negotiation,
+persuasion and multi-turn dialogue beyond a reply to the last remark.
+
+## Phase 061 -- Speech parser service: a small model, a cache, and the fixed reference
+
+**Status:** ready, after 055 and 060.
+
+**Goal.** Place free text that the grammar cannot, cheaply and repeatably, for listeners that are simple
+backends. Optional, off unless a provider is configured.
+1. **Interface.** `SpeechParser.parse(text, speaker, listener, context) -> meaning | None`, with the
+   grammar (Phase 060) as stage one and a model as stage two.
+2. **The model stage.** A very small, cheap model through the Phase 055 provider layer, with a prompt
+   whose first part is fixed and identical for every call: the act and slot reference built from
+   `SPEECH_ACTS`, the output schema, and a few examples. Only the utterance and a minimal context (the
+   speaker's name, whether the listener knows them, the topic words in sight) follow. The fixed prefix is
+   what a provider's prefix cache keeps.
+3. **Our own cache.** A persistent cache keyed by (normalised text, schema version, fixed-reference
+   hash). Normalisation lowercases, strips punctuation, and replaces names and counts with slots, so
+   "Bram, bring me two loaves" and "Ada, bring me three loaves" are one entry. A hit costs nothing. The
+   cache is a JSONL file beside the run, loaded at start, and is part of the replay record.
+4. **Budget and limits.** A per-run call cap and spend cap (the Phase 055 `CallBudget`), a timeout, and a
+   one-shot repair. On any failure the utterance stays unplaced (Phase 060's `None`), counted by cause.
+5. **Validation.** The model's output is checked against the same schema as a speaker's `raw`: an act in
+   `SPEECH_ACTS`, slots of the right kind, no invented names (a name must be one the listener could know).
+6. **Measurement.** The report gives the share placed by raw, grammar, cache and model, the misplaced
+   share on a labelled set (below), calls, cost, and latency. The labelled set is 200 hand-written
+   utterances with the act each should give, checked in under `tests/fixtures/`; the grammar-only and
+   grammar-plus-model scores are both reported, so the value of the extra call is a number.
+
+**Write scope.** new `bigville/backends/speech_parser.py`, `bigville/providers/` (use only), the pack
+(`SPEECH_PARSER` caps and the prefix text), a new `tests/test_phase061_speech_parser.py` with a fake
+provider and a stub server, `tests/fixtures/speech_labelled.json`.
+
+**Acceptance.** Tests show: a normalised duplicate hits the cache and makes no call; the fixed prefix is
+byte-identical across calls; an invented name or unknown act is rejected; a provider error leaves the
+utterance unplaced and counted; a recorded run replays with the same placements; the grammar-only and
+grammar-plus-model scores on the labelled set are reported with the fake provider's scripted answers.
+
+**Out of scope.** Choosing the model; translating between languages; the speaker's side (an LLM puts
+`raw` in its reply, Phase 054).
+
+## Phase 062 -- The perceiver: faculties, tiers, and the adapter
+
+**Status:** ready, after 052 and 051 (decision 2026-11-06: what an agent perceives depends on its
+faculties and skills, in tiers).
+
+**Goal.** One module decides, for each thing a resident could perceive, which tier of description
+reaches that resident. Today the agent view shows everything in view at full wording.
+1. **The perceiver record.** Built per resident per turn from facts the world already holds: literacy
+   tier (`LITERACY_ORDER`), numeracy tier (Phase 064), skill tiers (the skill levels in words, Phase 051),
+   senses (hearing and sight range, light from Phase 042 when it exists), and impairment (intoxication
+   band from Phase 034; later fatigue, illness, injury). It has no engine numbers a backend can read; the
+   adapter reads it.
+2. **Tiered percepts as data.** A pack table `PERCEPTION` lists, per kind of thing (a person, a creature,
+   an object, a building, a place, a sound, a written mark, a quantity), an ordered list of tiers. A tier
+   has a template over lexicon words, and a gate over the perceiver (skill and its minimum, literacy,
+   distance band, light, attention). Example: person tier 0 "a person"; tier 1 "a man" (distance and
+   light allow); tier 2 "a dirty man" (any sight at near range); tier 3 "a man covered in coal dust" (near
+   range and a mark visible at that detail, Phase 063); tier 4 "a collier, by the dust and the shovel"
+   (needs the skill that recognises a trade). The highest tier whose gate the perceiver meets is the
+   percept. Skill raises the tier a resident can reach for things in its trade: a physician reads a
+   gait, a miller reads grain.
+3. **The declaration.** Each backend declares how it holds each faculty: `represented` (the backend
+   models it, the adapter passes the truth), `enforced` (the adapter degrades), or `both`. Defaults:
+   simple `represented`, LLM and human `enforced`. The declaration is data on the backend class and is
+   reported.
+4. **Truth beside the percept.** The view's referee-only block carries the true description and the
+   tier chosen, so an evaluation can compare what was perceived with what was there.
+5. **Integration.** `domains/agent_view.py` calls the perceiver for `around.people`, `around.things` and
+   the map's occupants; the TUI, the LLM packet and the character sheet inherit it. The leak test adds
+   the rule that no percept is finer than its perceiver's tier.
+
+**Write scope.** new `domains/perceiver.py`, `domains/perception_check.py`, the pack (`PERCEPTION`,
+`PERCEIVER_TIERS`), `domains/agent_view.py` and its whitelist, a new `tests/test_phase062_perceiver.py`.
+
+**Acceptance.** Tests show: the same man at the same place gets different descriptions for a resident
+with and without the trade skill, in the dark and in daylight (once Phase 042 exists; before it, by a
+test light value), near and far; the chosen tier never exceeds what the gates allow; the truth is in the
+referee block only; a backend declared `represented` receives the raw context unchanged; the 60-turn
+simple-backend run is identical to HEAD; the self-test finds a kind with no tier 0 and a tier with an
+unknown gate.
+
+**Out of scope.** The world's new appearance facts (Phase 063); reading and counting (Phase 064);
+distortion (Phase 065).
+
+## Phase 063 -- Visible condition: what work and life leave on a person (Tract A)
+
+**Status:** ready, after 050 (decision 2026-11-06: you see a man covered in coal dust).
+
+**Goal.** Give the world the marks Phase 062's higher tiers describe, as physical state that arises from
+what residents do.
+1. **Marks.** Per resident, a small set of surface states: dirt, soot or coal dust, flour, blood, mud,
+   sweat, wetness, torn or soiled clothes, and visible injury, each with a level that rises from the work
+   or event that causes it (burning charcoal, milling, butchering, fighting, rain, falling) and falls with
+   washing, rain, time or changing clothes. The causes are table rows on recipes and events, not code.
+2. **Visibility.** A mark has a detail threshold: it is seen at a given distance and light, and some only
+   by a resident with the skill to notice (a limp, a pallor, a fever flush).
+3. **Display facts.** The world publishes the marks and the garment kinds; it never decides what an
+   observer concludes.
+4. **Washing.** A `wash` use of water and time removes marks, so the state has a way down.
+5. **Hand-off.** Phase 062 reads these as the evidence for its upper tiers; until then the lexicon words
+   exist and the tiers are tested with scripted marks.
+
+**Write scope.** `worlds/bigville_world.py`, the world tables (`MARKS`, causes on `RECIPES` and shocks),
+`domains/bigville_entities.py` (self-test), a new `tests/test_phase063_marks.py`.
+
+**Acceptance.** Tests show: burning charcoal raises the soot mark and washing lowers it; a mark decays
+with rain; the marks are in the world's published state and reach the view only through Phase 062; the
+60-turn run changes only by the marks (listed with numbers); the self-test finds a cause with no mark.
+
+**Out of scope.** Perception (Phase 062); cosmetics and fashion.
+
+## Phase 064 -- Reading, writing and numbers: literacy and numeracy at the adapter
+
+**Status:** ready, after 062.
+
+**Goal.** An illiterate labourer sees squiggles and one word he knows; a resident who cannot count past a
+few sees "some" and "many".
+1. **Written things.** Every written mark (a sign, a label, a price, a ledger, a notice, a letter, a law)
+   has a `text` and a `kind`. The perceiver's literacy tier chooses the percept: none gives "marks you
+   cannot read"; a recognised-word set gives only the words the resident has learned from use (their
+   trade's names, ALE on an ale-house sign, their own name, common numerals), shown as the word amid
+   squiggles; functional literacy gives short plain text; educated literacy gives all.
+2. **Learning words.** A resident learns a written word by seeing it where its referent is present and
+   used; the learned set is held state, bounded, and raises literacy slowly (the existing tier stays the
+   gate for documents).
+3. **Numbers.** A numeracy tier (data, from the founding class and schooling) sets how a quantity is
+   perceived and how a price or a count is understood: tally (one, two, a few, many), small arithmetic
+   (counts to a score, simple sums), commercial (change, ratios), advanced. The lexicon already gives
+   amount words; the percept picks the word set by tier. A price shown to a low-numeracy resident is
+   shown in the units they trade in (a loaf, a coin) and not as a figure.
+4. **Enforced and represented.** The simple backend keeps its numbers (represented); an LLM or a human
+   gets the degraded text (enforced). A numerate backend may be given the text and a calculator action
+   that costs time, so doing sums is an action with a consequence and not free.
+5. **Data.** `LITERACY_TIERS`, `NUMERACY_TIERS`, and the recognised-word seed per trade, in the pack.
+
+**Write scope.** new `domains/reading.py`, `domains/numeracy.py`, the pack, `domains/agent_view.py`
+(sign and price rows), a new `tests/test_phase064_reading.py`.
+
+**Acceptance.** Tests show: the same sign reads as squiggles, as ALE, as a short phrase, and as the full
+notice for four residents of rising literacy; a price is a figure for a numerate resident and a loaf
+count for a tally resident; a word learned from use appears from then on; the 60-turn simple run is
+identical to HEAD; the self-test finds a written kind with no tier text.
+
+**Out of scope.** Handwriting and forgery; teaching as an action; languages.
+
+## Phase 065 -- Impairment: confident wrong percepts
+
+**Status:** ready, after 062 and Tract A's 034 (done) and 042.
+
+**Goal.** An impaired resident perceives something confidently wrong, when the scenario says it should.
+1. **Sources.** Intoxication (Phase 034), fatigue (energy low), illness and fever (Phase 043), darkness
+   and poor light (Phase 042), and strong emotion (fear, rage) as an option. Each has a table row: which
+   percept kinds it distorts, how (drop a tier, swap with a neighbour tier, substitute a plausible wrong
+   entity from what is nearby, shift a quantity by a band, mishear a word), and how strongly by level.
+2. **Confidence.** A distorted percept is worded as sure as a true one. The impaired resident is not told
+   it is impaired beyond what it would feel (Phase 054's body words already say "you are drunk").
+3. **Deterministic.** The distortion is a function of (seed, resident, turn, thing), so a run repeats and
+   a recorded LLM run replays.
+4. **Scenario control.** A scenario switch sets which distortions are active and a global strength, so a
+   test can ask whether a drunk resident acts on a wrong percept, and a clean run has none.
+5. **Truth and audit.** The referee block carries true and perceived, and the report counts actions taken
+   on a wrong percept and their outcomes.
+6. **Speech.** Mishearing applies to speech too: a drunk or distant listener may place a different act or
+   miss a word (this is the listener side of Phase 060 and 061).
+
+**Write scope.** new `domains/distortion.py`, the pack (`DISTORTION`), `domains/agent_view.py` and
+`bigville/backends/speech_in.py` (use), `bigville/reporting.py`, a new `tests/test_phase065_distortion.py`.
+
+**Acceptance.** Tests show: a sober resident's percepts equal the truth; a drunk resident's differ for the
+kinds the table lists, are worded with the same confidence, and repeat on the same seed; the strength
+switch turns them off; the report counts wrong-percept actions; the self-test finds a source with no row.
+
+**Out of scope.** Hallucination of things that are not there at all; treatment of impairment.
+
+## Phase 066 -- The LLM harness: continue the session, keep the memory, keep the whole log
+
+**Status:** ready, after 055 (decision 2026-11-06: the harness should continue the session, keep memory,
+and keep the complete log including thinking, which is critical).
+
+**Goal.**
+1. **A continued session per resident.** Each LLM resident has a thread of messages: the fixed system
+   text once, then, per consult, a user message and the model's reply. A consult after the first sends
+   the changes since the last one (events, speech, outcome, body words) and the current full state at a
+   set interval or when the thread is compacted, so the model sees its own earlier reasoning and
+   replies as a conversation. The thread is bounded: past a token budget it is compacted by writing the
+   model's own lessons and notes out (they are already held memories, Phase 054) and starting a fresh
+   thread whose first message carries the persona, the usual day and those memories. The session id sent
+   in `x-opencode-session` stays the same for the life of a thread, which lets a provider cache the prefix.
+2. **Memory.** Verify what survives a checkpoint and a restart (held memories, the thread summary, the
+   consult gate state, the autopilot goals), fix what does not, and test a stop and resume of an LLM run.
+   The graph memory of Phase 068 is not built here.
+3. **The complete log, including thinking.** For every call, an append-only record of the whole
+   exchange: the request messages as sent, the provider's full response body (content, any
+   `reasoning_content` or reasoning field, finish reason, usage including reasoning tokens, model id,
+   provider request id), the retry history, timings, and the parsed outcome (accepted, repaired,
+   fallback cause). Thinking is stored whole and never truncated, redacted only of the key. It is kept
+   in the log and is not shown to the world, to another resident, to the agent view or to the replay
+   keying. The provider layer stops dropping fields: `_parse` returns the content and a `ProviderResult`
+   with everything else. Large records are compressed per file, and the log is checked for gaps (a
+   sequence number and a hash chain, so a missing or edited record is detectable).
+4. **Replay.** A replay of a continued session matches thread state as well as the single prompt, and a
+   mismatch names the first message that differs.
+5. **Report.** Thinking tokens, thread length and compactions per resident.
+
+**Write scope.** `bigville/backends/llm.py`, `bigville/llm_transcript.py`, `bigville/providers/`,
+`bigville/backends/prompts.py` and `prompt_packet.py` (delta packets), `bigville/reporting.py`, a new
+`tests/test_phase066_session_log.py` with a fake and a stub server that returns reasoning content.
+
+**Acceptance.** Tests show: the second consult's request carries the first consult's reply; the thread
+compacts at its budget and the resident keeps its lessons; a stub response with reasoning text is in the
+log whole and absent from the packet, the view and the replay key; the key never appears in the log; a
+deleted or edited record fails the chain check; a run stopped and resumed continues the thread; a
+recorded run replays with the same digest; the simple backend is unchanged.
+
+**Out of scope.** Choosing whether to feed thinking back to the model (it is stored, not fed back,
+unless a later decision says otherwise); a vector or graph store (Phase 068).
+
+## Phase 067 -- The TUI in two modes: the map and the text adventure
+
+**Status:** ready, after 057, 062 and 066 (decision 2026-11-06: a normal mode with the character art
+map, and a text-adventure mode on the LLM adapter's machinery).
+
+**Goal.**
+1. **Normal mode** (`--mode map`, the default): the screen of Phase 057 with a richer map: character art
+   where the view's tiers allow it (a resident shown as a glyph with a colour and a one-line label, a
+   building as a small block of art from the pack's art table, terrain as now), drawn from the perceived
+   percepts and not from the truth. Fog levels (Phase 053) are drawn when they exist.
+2. **Text-adventure mode** (`--mode text`): classic prose. The player is given what the LLM would be
+   given, through the same code path: the prompt packet of Phase 054 is rendered as a description of
+   the room and a list of exits, things and people, and the reply schema is the command grammar, so
+   `smash lock with hammer hard` and `go north` and `say Bram: hello` are the same replies an LLM
+   sends. Free text the grammar cannot place goes to the speech parser (Phase 061) if one is
+   configured, and otherwise asks again.
+3. **One machinery.** Both modes call the same `Session`, the same perceiver and the same reply binder;
+   there is no second path to the world, and the leak test covers both. A flag prints the exact packet
+   the mode used, for comparing a human's and a model's view.
+4. **Logging.** The text mode can write the same complete log as Phase 066 (without thinking), so a
+   human run and a model run can be compared turn by turn.
+
+**Write scope.** `bigville/tui/` (new `prose.py`, `art.py`, changes to `app.py` and `__main__.py`), the
+pack (`TUI_ART`), a new `tests/test_phase067_tui_modes.py`.
+
+**Acceptance.** Tests show: the text mode's scripted session on an embedded game plays five turns on
+StringIO and its replies equal what the LLM binder produces for the same words; the map mode draws
+percept-tier labels and not the true description for a resident with a low tier; both modes pass the
+leak test; the packet printer equals the packet an LLM resident would get.
+
+**Out of scope.** Mouse, sound, graphics beyond text art, more than one player.
+
+## Phase 068 -- Graph memory for LLM residents (parked)
+
+**Status:** blocked on Phase 056 data (decision 2026-11-06: "may make sense at some point").
+
+**Goal.** Decide with data whether the resident's flat memory list and compacted thread are enough, and if
+not, add a graph memory: people, places, things and events as nodes, with the resident's own beliefs and
+their sources as edges, queried per consult for what is relevant and rendered in words. The decision
+rule is Phase 056's measures (repeat-mistake rate, lessons later used, recall of a told fact after a
+long gap). The memory stays the resident's own, built from what it perceived and was told, with the
+truth held apart. Unscheduled until the rule says it is needed.
 
 ---
 
