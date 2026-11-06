@@ -1343,7 +1343,7 @@ decide); coin kept in a safe (Phase 041); locked doors (Phase 039).
 
 ## Phase 031 -- Register and harden the LLM backend
 
-**Status:** ready (018 and 021 are done). Stage 1 of the LLM build in Programme D; 054 (prompt packet
+**Status:** done (see History). Stage 1 of the LLM build in Programme D; 054 (prompt packet
 and schema from the agent view), 055 (operations) and 056 (evaluation) follow it. Decided
 2026-11-05: on a provider error, or an invalid reply after the repair, the resident falls back to
 the simple backend (Phase 059) in place of an idle turn, so it keeps its routine; a model's
@@ -2845,4 +2845,5 @@ provider layer's retry and backoff (Phase 055).
 | 027 Food value and graded eating | done | (this commit) | docs/phases/phase027/PHASE027_REPORT.md -- feeds x freshness; spoiled stock kept; illness_risk published; 907 passed |
 | 028 Hearing range and witnessing | done | (this commit) | docs/phases/phase028/PHASE028_REPORT.md -- loudness is Chebyshev hearing radius; sight witnesses the act; per-listener deliveries; 921 passed |
 | 029 Contested take and reactions | done | (this commit) | docs/phases/phase029/PHASE029_REPORT.md -- CONTEST, SIZE, fighting skill; react() protocol; human reaction wait; 945 passed |
+| 031 Register and harden the LLM backend | done | (this commit) | docs/phases/phase031/PHASE031_REPORT.md -- `create_game(llm_provider=)` and `llm_backend_factory`; response validated against PROMPT_RESPONSE_FIELDS; one repair; idle fallback, never raises; counts in `game_report()['llm']`; 26 tests, fake provider only; no network, `.env` unread |
 | 030 Store lock and key | done | (this commit) | docs/phases/phase030/PHASE030_REPORT.md -- keys are items; lock/unlock actions; dual keys; _store_open guards; 967 passed |

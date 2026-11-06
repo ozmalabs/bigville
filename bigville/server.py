@@ -49,7 +49,8 @@ class GameService:
 
     def report(self) -> dict[str, Any]:
         """Return the simulation report without requiring a game turn."""
-        return self.game.world.report()
+        from .reporting import game_report
+        return game_report(self.game)
 
     def turn(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Submit one human response and advance the shared turn."""

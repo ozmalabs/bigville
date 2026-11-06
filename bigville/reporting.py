@@ -341,3 +341,41 @@ class SimulationReporter:
 
     def history(self) -> list[dict[str, Any]]:
         return copy.deepcopy(getattr(self.world, "_report_history", []))
+
+
+LLM_TOTAL_KEYS = ("calls", "repairs_used", "repaired_successes", "successes", "failures",
+                  "provider_errors", "invalid_outputs")
+
+
+def llm_report(backends: dict[str, Any]) -> dict[str, Any]:
+    """Phase 031: LLM attempts, repairs, idle fallbacks and latency, per resident and in total.
+
+    Reads each backend's ``llm_counts``. Backends without it (cheap, human, Ocelot) are not
+    counted. ``failures`` are the idle fallbacks, which the world records as idle turns."""
+    residents = {}
+    for name, backend in sorted(backends.items()):
+        counts = getattr(backend, "llm_counts", None)
+        if counts is None:
+            continue
+        decisions = int(counts["successes"]) + int(counts["failures"])
+        residents[name] = {**{key: int(counts[key]) for key in LLM_TOTAL_KEYS},
+                           "decisions": decisions,
+                           "latency_ms_total": round(float(counts["latency_ms_total"]), 3),
+                           "mean_latency_ms": round(float(counts["latency_ms_total"]) / decisions, 3)
+                           if decisions else None,
+                           "last_error": str(counts["last_error"])}
+    total = {key: sum(row[key] for row in residents.values()) for key in LLM_TOTAL_KEYS}
+    latency = round(sum(row["latency_ms_total"] for row in residents.values()), 3)
+    decisions = total["successes"] + total["failures"]
+    total.update({"decisions": decisions, "latency_ms_total": latency,
+                  "mean_latency_ms": round(latency / decisions, 3) if decisions else None})
+    return {"residents_count": len(residents), "total": total, "residents": residents}
+
+
+def game_report(game) -> dict[str, Any]:
+    """The world report plus the game's LLM counts, beside the refusal counts (Phase 021).
+
+    Read-only. Takes a ``BigvilleGame`` (it uses ``game.world`` and ``game.backends``)."""
+    report = game.world.report()
+    report["llm"] = llm_report(game.backends)
+    return report

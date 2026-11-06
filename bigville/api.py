@@ -1,7 +1,7 @@
 """Construction functions for Bigville worlds and game sessions."""
 from __future__ import annotations
 
-from .backends import HumanBackend, OcelotBackend
+from .backends import HumanBackend, LLMBackend, OcelotBackend
 from .game import BigvilleGame
 from .backends.ocelot import ocelot_resident_class
 
@@ -28,13 +28,29 @@ def create_world(*, scenario="town100", seed=305000, autonomous_actors=False,
                                        cognition_factory=cognition_factory)
 
 
+def llm_backend_factory(provider):
+    """A ``backend_factories`` entry that builds an LLM resident around ``provider``.
+
+    ``provider`` is an object with ``complete(prompt)`` or a callable taking the prompt
+    dict. Core imports no vendor SDK; the caller supplies the provider."""
+    def factory(world, character):
+        return LLMBackend(character, provider)
+    return factory
+
+
 def create_game(*, scenario="town100", seed=305000, player=None,
                 default_backend="cheap", backend_factories=None,
-                cognition_factory=None, autonomous=False, ticks_per_period="world"):
+                cognition_factory=None, autonomous=False, ticks_per_period="world",
+                llm_provider=None):
+    """Build a game session. ``"llm"`` residents need a provider, given either as
+    ``llm_provider=`` (the same provider for every LLM resident) or as
+    ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both."""
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:
         raise ValueError("Use cognition_factory for the Ocelot backend")
+    if llm_provider is not None and (backend_factories or {}).get("llm") is not None:
+        raise ValueError("Pass llm_provider or backend_factories['llm'], not both")
     if cognition_factory is not None:
         from .scenarios import load_scenario
         from worlds.bigville_world import BigvilleOcelotActor
@@ -48,6 +64,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
     world = create_world(scenario=scenario, seed=seed, autonomous_actors=False,
                          cognition_factory=cognition_factory)
     factories = dict(backend_factories or {})
+    if llm_provider is not None:
+        factories["llm"] = llm_backend_factory(llm_provider)
     game = BigvilleGame(world, player=player, autonomous=autonomous,
                         ticks_per_period=ticks_per_period)
     scenario_backends = getattr(world, "_scenario_actor_backends", {})
@@ -60,6 +78,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
             game.set_backend(name, OcelotBackend(world, character))
         elif kind == "human":
             game.set_backend(name, HumanBackend(character))
+        elif kind == "llm":
+            raise ValueError("The llm backend needs llm_provider=... or backend_factories['llm']")
         elif kind not in {"cheap", "simple", "human"}:
             raise ValueError(f"Unknown backend: {kind}")
     return game
