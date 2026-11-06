@@ -73,7 +73,10 @@ def build_system_text(pack) -> str:
     for name, spec in pack["MAJOR_ACTIONS"].items():
         lines.append(f"- {name}: {spec.get('description', spec.get('kind', ''))}")
     # Phase 050: the verbs an attempt may name (VERBS in the pack).
-    lines.append("- attempt verbs: " + ", ".join(sorted(pack["VERBS"])) + ". A verb not listed is refused as unsupported.")
+    # Phase 050b: only the verbs the world runs (a displace verb marked not implemented is refused as unsupported).
+    lines.append("- attempt verbs: " + ", ".join(sorted(v for v, s in pack["VERBS"].items()
+                                                       if s.get("implemented") is not False))
+                 + ". A verb not listed is refused as unsupported.")
     lines += ["", "Free actions (communication; they use no major action):"]
     for name, spec in pack["FREE_ACTIONS"].items():
         lines.append(f"- {name}: {spec.get('description', spec.get('kind', ''))}")

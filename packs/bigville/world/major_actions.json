@@ -13,7 +13,7 @@
       },
       "attempt": {
         "kind": "attempt",
-        "description": "Try any physical action on a thing within reach, by a verb the world has physics for (smash, chop, pry, force). Name the verb, the target, the tool you hold (if any), and an intensity (1.0 is normal; more forces it, less is gentler). The world resolves it from your strength, skill, the tool, the target and your stamina, and reports the progress, damage and noise it sees. A verb the world has no physics for is refused as unsupported."
+        "description": "Try any physical action on a thing within reach, by a verb the world has physics for (smash, chop, pry, force, push, pull, drag). A thing on the ground is moved by push, pull or drag; a container is damaged or forced. Name the verb, the target, the tool you hold (if any), and an intensity (1.0 is normal; more forces it, less is gentler). The world resolves it from your strength, skill, the tool, the target and your stamina, and reports the progress, damage and noise it sees. A verb the world has no physics for is refused as unsupported."
       },
       "take": {
         "kind": "contest",

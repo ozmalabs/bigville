@@ -1,0 +1,56 @@
+ M README.md
+ M bigville/backends/cheap.py
+ M bigville/backends/ocelot.py
+ M bigville/backends/prompts.py
+ M bigville/game.py
+ M bigville/runtime.py
+ M bigville/seeds/bigville_actor_decision.json
+ M docs/AGENT_BACKENDS_PLAN.md
+ M domains/bigville_entities.py
+ M packs/bigville/pack.json
+ M packs/bigville/world/free_actions.json
+ M packs/bigville/world/lexicon.json
+ M packs/bigville/world/major_actions.json
+ M packs/bigville/world/resolution.json
+ M packs/test_hamlet/pack.json
+ M packs/test_hamlet/world/free_actions.json
+ M packs/test_hamlet/world/lexicon.json
+ M packs/test_hamlet/world/major_actions.json
+ M packs/test_hamlet/world/resolution.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M tests/test_phase050_resolution.py
+ M tests/test_phase051_lexicon.py
+ M tests/test_resolution_pure.py
+ M worlds/bigville_world.py
+ M worlds/resolution.py
+?? bigville/game_persistence.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/world_persistence.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase050/050b_check_bigville.log
+?? docs/phases/phase050/050b_check_hamlet.log
+?? docs/phases/phase050/050b_full_pytest.log
+?? docs/phases/phase050/050b_git_status_end.txt
+?? docs/phases/phase050/050b_golden_after.log
+?? docs/phases/phase050/050b_seeds_check.log
+?? docs/phases/phase050/050b_selftest.log
+?? docs/phases/phase050/PHASE050B_REPORT.md
+?? docs/phases/phase058/
+?? docs/runs/
+?? domains/persona.py
+?? domains/persona_check.py
+?? domains/relationship_seeding.py
+?? packs/bigville/world/persona.json
+?? packs/test_hamlet/world/persona.json
+?? tests/test_bigville_game_persistence.py
+?? tests/test_bigville_graph_persistence.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_bigville_world_persistence.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase058_persona.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

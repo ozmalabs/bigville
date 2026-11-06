@@ -1000,11 +1000,13 @@ class BigvilleWorld:
                 speed = self._job_speed(job)
                 if speed <= 0.0:
                     continue
-                remaining -= speed
+                # Phase 050b: a job's pace multiplies its progress per tick (1.0 is the committed rate).
+                pace = float(ja.get("pace", 1.0))
+                remaining -= speed * pace
                 self.eng.set_attr(job, "remaining", max(0.0, remaining))
                 # The recipe's stamina cost is spread evenly over the ticks of the job (Phase 022), and over
                 # the progress it makes (Phase 024): a slowed worker spends less per tick.
-                self._spend_job_stamina(job, share=speed)
+                self._spend_job_stamina(job, share=speed * pace)
                 if remaining > 1e-9:
                     continue
                 remaining = 0.0
@@ -1086,8 +1088,21 @@ class BigvilleWorld:
                     self.eng.remove_node(item)
             if part_qualities:
                 quality = min([quality] + part_qualities)
-            out_kind, out_qty = action.get("out_kind", ""), float(action.get("out_qty", 0.0))
-            if float(action.get("out_discrete", 0.0)) == 1.0:
+            # Phase 050b: the pace moves the batch's quality and its yield; a batch the pace spoils yields nothing.
+            from worlds import resolution as R
+            table = self.E.RESOLUTION
+            quality_at_reference = quality
+            quality = R.pace_quality(quality, float(ja.get("pace", 1.0)), table["haste_penalty"])
+            spoiled = R.ruined(quality, quality_at_reference, table["ruin_below"])
+            out_kind = action.get("out_kind", "")
+            out_qty = float(action.get("out_qty", 0.0)) * R.pace_yield(float(ja.get("pace", 1.0)),
+                                                                        table["haste_yield_loss"])
+            if spoiled:
+                self.eng.set_attr(job, "ruined", 1.0)
+                self.create_event("batch_spoiled", subject=job_actor,
+                                  detail=f"{job_actor}'s {action.get('name', '')} batch spoiled from being rushed.",
+                                  observer=job_actor, severity=0.1)
+            elif float(action.get("out_discrete", 0.0)) == 1.0:
                 item_attrs = {"kind": out_kind, "weight": self.item_weight(out_kind),
                               "quality": quality, "condition": 1.0, "broken": 0.0,
                               "wear": 0.0, "decay": float(action.get("decay", 0.0)),
@@ -1102,7 +1117,8 @@ class BigvilleWorld:
                     pass
             elif out_kind:
                 self.set_stock(out_kind, self.qty(out_kind) + out_qty)
-            for kind, qty in self._recipe_specs.get(action.get("name", ""), {}).get("byproducts", {}).items():
+            for kind, qty in ({} if spoiled else self._recipe_specs.get(action.get("name", ""), {})
+                              .get("byproducts", {})).items():
                 self.set_stock(kind, self.qty(kind) + float(qty))      # e.g. bran from milling
             own_tools = bool(self._recipe_specs.get(action.get("name", ""), {}).get("open"))
             for tool_use in self.eng.neighbours(job, "uses"):
@@ -7723,7 +7739,8 @@ class BigvilleWorld:
                 kwargs.update(vessel=equipment[0], utensil=equipment[1])
             return self.major_action(actor, "eat", **kwargs)
         if action == "work":
-            return self.major_action(actor, "start", action_name=plan.get("recipe"))
+            pace = 1.0 if plan.get("intensity") is None else plan["intensity"]
+            return self.major_action(actor, "start", action_name=plan.get("recipe"), intensity=pace)
         if action == "sleep":
             return self.major_action(actor, "sleep")
         if action == "move":
@@ -8488,8 +8505,12 @@ class BigvilleWorld:
             code = self._recipe_refusal(actor, recipe)
             if code is not None:
                 return self._refuse(code)
-            operation = self.start if action == "start" else self.do
-            return self._claimed_attempt(actor, action, lambda: operation(actor, recipe))
+            if action == "start":
+                pace = kwargs.get("intensity", 1.0)
+                if self._as_amount(pace) is None:
+                    return self._refuse("malformed")
+                return self._claimed_attempt(actor, action, lambda: self.start(actor, recipe, intensity=pace))
+            return self._claimed_attempt(actor, action, lambda: self.do(actor, recipe))
         if action in {"water", "harvest", "sow", "fertilise"}:
             target = kwargs.get("target", args[0] if args else None)
             if action == "sow":
@@ -8578,7 +8599,26 @@ class BigvilleWorld:
             return self.accept_request(actor, kwargs.pop("request", args[0]))
         if action == "decline":
             return self.decline_request(actor, kwargs.pop("request", args[0]))
+        if action == "set_intensity":
+            return self.set_job_pace(actor, kwargs.pop("intensity", args[0] if args else None))
         raise ValueError(f"unknown free action: {action}")
+
+    def set_job_pace(self, actor, intensity):
+        """Change a running timed job's pace without losing its progress (free action set_intensity, Phase 050b).
+
+        Returns False when the actor has no unfinished job, or the value is not a finite number. The pace is
+        clamped to [1 / care_cap, haste_cap] and the applied value is kept on the job."""
+        from worlds import resolution as R
+        value = self._as_amount(intensity)
+        if value is None or actor not in self._actors:
+            return False
+        job = self._job_of(actor)
+        if job is None or float(self.eng.node(job)["attrs"].get("complete", 0.0)) == 1.0:
+            return False
+        table = self.E.RESOLUTION
+        applied, _clamped = R.pace_clamp(value, table["care_cap"], table["haste_cap"])
+        self.eng.set_attr(job, "pace", applied)
+        return True
 
     # ---------------------------------------------------- shared reference knowledge
     def reference_names(self):
@@ -8678,7 +8718,7 @@ class BigvilleWorld:
 
 
     # ---------------------------------------------------- do an action (the ONE engine)
-    def _open_job(self, actor, action_name, remaining):
+    def _open_job(self, actor, action_name, remaining, pace=1.0):
         asp = self._actions[action_name]
         action_attrs = self.eng.node(asp)["attrs"]
         site_kind = self._recipe_specs.get(action_name, {}).get("gathered_from")
@@ -8694,6 +8734,8 @@ class BigvilleWorld:
                                         "stamina_ticks": float(remaining),
                                         # Phase 050: the strength the recipe demands; the core's cost ratio reads it.
                                         "strength_needed": float(self.E.recipe_exertion(action_name)[0]),
+                                        # Phase 050b: the job's pace (intensity on a recipe), read each tick.
+                                        "pace": float(pace),
                                         # Phase 032: a recipe with a strength requirement trains strength too.
                                         "uses_strength": 1.0 if self.E.recipe_exertion(action_name)[0] > 0.0 else 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
@@ -8741,6 +8783,8 @@ class BigvilleWorld:
         ratio = R.cost_ratio(float(ja.get("strength_needed", 0.0)), self.strength(actor), 1.0,
                              float(self.E.RESOLUTION["effort_cap"]))
         amount *= ratio
+        # Phase 050b: pace (intensity on a recipe) scales the effort by pace^k, as an attempt's intensity does.
+        amount *= float(ja.get("pace", 1.0)) ** float(self.E.RESOLUTION["k"])
         effort = self.eng.add_node("Effort", {"uses_strength": float(ja.get("uses_strength", 0.0)), "uses_stamina": 1.0,
                                               "intensity": min(1.0, amount), "stamina_cost": amount,
                                               "terrain": "", "terrain_speed": 1.0,
@@ -9020,16 +9064,30 @@ class BigvilleWorld:
         self._open_job(actor, action_name, 0.0); self._run()
         return True
 
-    def start(self, actor, action_name):
-        """START a TIMED action; refused if the actor does not know OR is not skilled enough for it."""
+    def start(self, actor, action_name, intensity=1.0):
+        """START a TIMED action; refused if the actor does not know OR is not skilled enough for it.
+
+        ``intensity`` is the job's pace (Phase 050b): above 1 the job finishes sooner, at a cost in quality and
+        stamina; below 1 it is slower and better. It is clamped to [1 / care_cap, haste_cap]."""
         code = self._recipe_refusal(actor, action_name)
         if code is not None:
             return self._refuse(code)
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "start"):
             return self._refuse("slot_used")
         mins = float(self.eng.node(self._actions[action_name])["attrs"]["time_minutes"])
-        self._open_job(actor, action_name, math.ceil(mins / float(self.E.TIME["minutes_per_tick"]))); self._run()
+        self._open_job(actor, action_name, math.ceil(mins / float(self.E.TIME["minutes_per_tick"])),
+                       pace=self._pace_value(intensity)); self._run()
         return True
+
+    def _pace_value(self, value):
+        """A recipe pace from a proposal: the number clamped to [1 / care_cap, haste_cap]; anything that is not a
+        finite number is the normal pace (1.0). The major action refuses such values before they get here."""
+        from worlds import resolution as R
+        number = self._as_amount(value)
+        if number is None:
+            number = 1.0
+        applied, _clamped = R.pace_clamp(number, self.E.RESOLUTION["care_cap"], self.E.RESOLUTION["haste_cap"])
+        return applied
 
     def tick(self, n=1):
         for _ in range(int(n)):
@@ -9161,20 +9219,24 @@ class BigvilleWorld:
 
     # ---------------------------------------------------- one resolution rule (Phase 050)
     def _attempt_verb(self, actor, verb, target, with_kind=None, intensity=1.0):
-        """An attempt (Phase 050): a verb from VERBS, a target container, a held tool and an intensity.
+        """An attempt (Phase 050): a verb from VERBS, a target, a held tool and an intensity.
 
         The checks that refuse an attempt run here, before the action slot is claimed, so a refused attempt costs
         nothing: a malformed value, a verb with no physics (unsupported), an unknown or out-of-reach target, a
         broken target, a lock that is not there or already open, and a tool the actor does not hold (no_tool).
-        Anything else is enacted, however unwise: the world charges for it and reports what it saw."""
+        Anything else is enacted, however unwise: the world charges for it and reports what it saw. A target is a
+        container for damage and open, and a physical object on the ground for displace (Phase 050b)."""
         if not isinstance(verb, str) or verb == "":
             return self._refuse("malformed")
         spec = self.E.VERBS.get(verb)
-        if spec is None or spec.get("primitive") not in ("damage", "open"):
+        if spec is None or spec.get("primitive") not in ("damage", "open", "displace") \
+                or spec.get("implemented") is False:
             return self._refuse("unsupported")
         name = self._as_key(target)
         if name is None:
             return self._refuse("malformed")
+        if spec["primitive"] == "displace":
+            return self._displace_verb(actor, verb, spec, name, with_kind, intensity)
         if name not in self._containers:
             return self._refuse("unknown_target")
         node = self._containers[name][0]
@@ -9199,26 +9261,28 @@ class BigvilleWorld:
                 return self._refuse("no_tool")
         if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
             return self._refuse("malformed")
-        return self._claimed_attempt(actor, "attempt",
-                                     lambda: self._run_attempt(actor, verb, spec, name, tool, float(intensity)))
+        return self._enact_attempt(actor, self._container_plan(actor, verb, spec, name, tool, float(intensity)))
 
-    def _run_attempt(self, actor, verb, spec, name, tool, requested):
-        """One resolution step of a claimed attempt. Returns True: an attempt that makes no progress is still enacted.
+    def _enact_attempt(self, actor, plan):
+        """Enact a planned attempt, applying the slot rule of Phase 029 (item 5).
 
-        The intensity is clamped to the ceiling (max_intensity, lowered by the exhaustion step and by health). Capability
-        is force x technique x fit x team x conditions (worlds/resolution.py); demand is the target's toughness x its
-        structure (damage) or its lock strength x lock condition (open). Stamina, strain, tool wear, the target's
-        wear and the noise all follow from the same step. Nothing here is random."""
-        from worlds import resolution as R
+        An attempt whose cost share (stamina share, with intensity) is below slot_above leaves the actor's action
+        slot unspent, so it can run after a major action this turn. A costlier one claims the slot as usual, and
+        is refused with slot_used when the slot is already spent."""
+        if float(plan["share"]) < float(self.E.RESOLUTION["slot_above"]):
+            return self._run_attempt(actor, plan)
+        return self._claimed_attempt(actor, "attempt", lambda: self._run_attempt(actor, plan))
+
+    def _capability_terms(self, actor, spec, tool, requested):
+        """The capability terms every attempt shares (Phase 050): the intensity applied (clamped to the ceiling,
+        which the speed factor and health lower), force, technique, fit, and the tool's kind."""
         rs = self.E.RESOLUTION
-        node = self._containers[name][0]
-        attrs = self.eng.node(node)["attrs"]
-        actor_node = self._actors[actor]
         body = self.eng.node(self._bodies[actor])["attrs"]
         speed = self.speed_factor(actor)
         ceiling = float(rs["max_intensity"]) * speed * self.health(actor)
+        from worlds import resolution as R
         applied, clamped = R.intensity_applied(requested, rs["max_intensity"], ceiling)
-        stage = str(self.eng.node(actor_node)["attrs"].get("life_stage", "adult"))
+        stage = str(self.eng.node(self._actors[actor])["attrs"].get("life_stage", "adult"))
         force = (self.effective_strength(actor) * float(body.get("size", 1.0))
                  * float(self.E.CONTEST["life_stage_force"].get(stage, 1.0)) * speed)
         skill = spec.get("skill")
@@ -9230,6 +9294,31 @@ class BigvilleWorld:
         else:
             tool_verb = self._item_specs.get(tool_kind, {}).get("verb")
             fit = float(spec["tool_verbs"].get(tool_verb, rs["unrelated_fit"]))
+        return {"applied": applied, "clamped": clamped, "force": force, "technique": technique, "fit": fit,
+                "tool_kind": tool_kind}
+
+    def _resolve_terms(self, terms, spec, demand):
+        """One resolution step for the terms and a demand. Returns (step, share): the step's outputs, and the cost
+        share with intensity (the stamina share times intensity^k), which the trivial and slot rules read."""
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        step = R.resolve_step({
+            "force": terms["force"], "technique": terms["technique"], "fit": terms["fit"],
+            "team": rs["neutral_team"], "conditions": rs["neutral_conditions"],
+            "intensity": terms["applied"], "demand": demand,
+            "cap_rate": rs["attempt_cap_rate"], "exponent": rs["progress_exponent"],
+            "base_cost": rs["base_cost"], "floor": rs["floor"], "effort_cap": rs["effort_cap"],
+            "k": rs["k"], "i_safe": rs["i_safe"], "m": rs["m"],
+        })
+        share = float(step["cost_share"]) * float(terms["applied"]) ** float(rs["k"])
+        return step, share
+
+    def _container_plan(self, actor, verb, spec, name, tool, requested):
+        """The plan of a damage or open attempt on a container: capability, demand, and what the target is made of."""
+        rs = self.E.RESOLUTION
+        node = self._containers[name][0]
+        attrs = self.eng.node(node)["attrs"]
+        terms = self._capability_terms(actor, spec, tool, requested)
         if spec["primitive"] == "damage":
             target_material = (self._item_specs.get(str(attrs.get("kind", "")), {}).get("material")
                                or rs["default_material"])
@@ -9239,24 +9328,36 @@ class BigvilleWorld:
             target_material = rs["lock_material"]
             condition = float(attrs.get("lock_condition", 1.0))
             demand = float(attrs.get("lock_strength", 1.0)) * condition
-        mat = self.E.MATERIALS[target_material]
-        step = R.resolve_step({
-            "force": force, "technique": technique, "fit": fit, "team": rs["neutral_team"],
-            "conditions": rs["neutral_conditions"], "intensity": applied, "demand": demand,
-            "cap_rate": rs["attempt_cap_rate"], "exponent": rs["progress_exponent"],
-            "base_cost": rs["base_cost"], "floor": rs["floor"], "effort_cap": rs["effort_cap"],
-            "k": rs["k"], "i_safe": rs["i_safe"], "m": rs["m"],
-        })
+        step, share = self._resolve_terms(terms, spec, demand)
+        return {"primitive": spec["primitive"], "verb": verb, "name": name, "node": node, "tool": tool,
+                "terms": terms, "step": step, "share": share, "demand": demand, "condition": condition,
+                "material": self.E.MATERIALS[target_material], "requested": requested, "actor": actor}
+
+    def _run_attempt(self, actor, plan):
+        """One resolution step of an enacted attempt. Returns True: an attempt that makes no progress is still enacted.
+
+        Damage and open lower the target's condition by the step's progress (fragile material faster). A container
+        that breaks spills its contents on its cell. A displace attempt moves the object (see _run_displace).
+        Tool wear, stamina (free below trivial_below), strain and noise follow. Nothing here is random."""
+        if plan["primitive"] == "displace":
+            return self._run_displace(actor, plan)
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        name, node = plan["name"], plan["node"]
+        attrs = self.eng.node(node)["attrs"]
+        step, terms, mat = plan["step"], plan["terms"], plan["material"]
+        condition = plan["condition"]
         progress = float(step["progress"])
         # The target's wear: its condition falls by progress, faster for fragile material.
         loss = float(rs["damage_per_attempt"]) * progress * (0.5 + float(mat["fragility"]))
         outcome = "no_progress"
-        if spec["primitive"] == "damage":
+        if plan["primitive"] == "damage":
             after = max(0.0, condition - loss)
             self.eng.set_attr(node, "structure", after)
             if after <= 0.0:
                 self.eng.set_attr(node, "destroyed", 1.0)
                 outcome = "broke"
+                self._spill_contents(name, actor)
             elif loss > 0.0:
                 outcome = "damaged"
         else:
@@ -9274,6 +9375,16 @@ class BigvilleWorld:
                 self.eng.set_attr(node, "lock_progress", done)
                 if progress > 0.0:
                     outcome = "progress"
+        self._finish_attempt(actor, plan, outcome, progress, condition - after)
+        return True
+
+    def _finish_attempt(self, actor, plan, outcome, progress, damage, moved=0):
+        """What every enacted attempt leaves behind: tool wear, stamina, strain (an accident at the limit), noise
+        for a loud (damage or open) attempt, and the actor's record."""
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        tool, tool_kind, step, applied = plan["tool"], plan["terms"]["tool_kind"], plan["step"], plan["terms"]["applied"]
+        mat, fit = plan["material"], plan["terms"]["fit"]
         # The tool's wear: rises with intensity, with a poor fit, and with a material harder than the tool's.
         if tool is not None:
             tool_material = self._item_specs.get(tool_kind, {}).get("material")
@@ -9284,16 +9395,122 @@ class BigvilleWorld:
             self.eng.set_attr(tool, "condition", tool_condition)
             if tool_condition <= 0.0:
                 self.eng.set_attr(tool, "broken", 1.0)
-        self._spend_attempt_stamina(actor, float(step["stamina"]), applied)
+        # A trivial attempt (cost share below trivial_below, Phase 029) spends no stamina.
+        if plan["share"] >= float(rs["trivial_below"]):
+            self._spend_attempt_stamina(actor, float(step["stamina"]), applied)
+        actor_node = self._actors[actor]
         # Overexertion and the rest of the strain build up; a full strain is an accident.
         strain = float(self.eng.node(actor_node)["attrs"].get("strain", 0.0)) + float(step["strain"])
         if strain >= float(rs["strain_limit"]):
             self.harm(actor, float(rs["accident_harm"]), "accident")
             strain = 0.0
         self.eng.set_attr(actor_node, "strain", strain)
-        self._publish_noise(actor, verb, name, R.noise_radius(rs["noise_base"], applied, mat["noise"]))
-        self._record_attempt(actor, verb, name, tool_kind, requested, applied, clamped, progress, condition - after,
-                             outcome)
+        if plan["primitive"] != "displace":
+            self._publish_noise(actor, plan["verb"], plan["name"],
+                                R.noise_radius(rs["noise_base"], applied, mat["noise"]))
+        self._record_attempt(actor, plan["verb"], plan["name"], tool_kind, plan["requested"], applied,
+                             plan["terms"]["clamped"], progress, damage, outcome, moved=moved)
+
+    def _spill_contents(self, name, actor):
+        """A container broken by an attempt drops its contents on its cell as dropped stock (Phase 050b).
+
+        Each content pile's quantity moves to a dropped-stock pile where the container stands (where the actor
+        stands, when the container is held and so has no cell). The pile is physical and visible; no resident
+        is given the goods."""
+        spilled = []
+        for kind, stock in self._containers[name][1].items():
+            qty = float(self.eng.node(stock)["attrs"].get("qty", 0.0))
+            if qty <= 0.0:
+                continue
+            self._drop_stock(actor, kind, qty)
+            self.eng.set_attr(stock, "qty", 0.0)
+            spilled.append((kind, qty))
+        return spilled
+
+    def _displace_verb(self, actor, verb, spec, name, with_kind, intensity):
+        """A displace attempt (Phase 050b): push, pull or drag a physical object on the ground.
+
+        The object must be on the ground (location world) with a cell, within reach: a push needs the object next to
+        the actor, a pull or drag within two cells. Refused before the slot is claimed: unknown target, an object
+        that is not movable, out of reach, a tool named but not held, and a malformed intensity."""
+        if name not in self._physical_objects:
+            return self._refuse("unknown_target")
+        node = self._physical_objects[name]
+        attrs = self.eng.node(node)["attrs"]
+        kind = str(attrs.get("kind", ""))
+        if "mass" in attrs:
+            mass = float(attrs["mass"])
+        elif kind in self._item_specs:
+            mass = float(self.item_weight(kind))   # the ITEMS weight, in the pack's weight units
+        else:
+            return self._refuse("unsupported")
+        if self._physical_object_locations.get(name, "world") != "world":
+            return self._refuse("not_in_reach")
+        cell = self._physical_location_cell(name)
+        here = self.actor_position(actor)
+        if cell is None or here is None:
+            return self._refuse("not_in_reach")
+        dx, dy = cell[0] - here[0], cell[1] - here[1]
+        gap = max(abs(dx), abs(dy))
+        reach = 1 if verb == "push" else 2
+        if gap < 1 or gap > reach:
+            return self._refuse("not_in_reach")
+        tool = None
+        if with_kind is not None:
+            tool_kind = self._as_key(with_kind)
+            if tool_kind is None:
+                return self._refuse("malformed")
+            tool = self._held_tool(actor, tool_kind)
+            if tool is None:
+                return self._refuse("no_tool")
+        if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
+            return self._refuse("malformed")
+        # Push drives the object away from the actor; pull and drag draw it toward the actor.
+        away = (self._sign(dx), self._sign(dy))
+        direction = away if verb == "push" else (-away[0], -away[1])
+        plan = self._displace_plan(actor, verb, spec, name, tool, float(intensity), mass, cell, here, direction)
+        return self._enact_attempt(actor, plan)
+
+    @staticmethod
+    def _sign(value):
+        return (value > 0) - (value < 0)
+
+    def _displace_plan(self, actor, verb, spec, name, tool, requested, mass, cell, here, direction):
+        """The plan of a displace attempt: the demand is the load over the ground (mass in weight units over the
+        reference push, times the ground's friction, the terrain's move time), and the capability is the usual one."""
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        terms = self._capability_terms(actor, spec, tool, requested)
+        friction = float(self.terrain_state(cell)["move_time"])
+        demand = R.friction_demand(mass, rs["push_mass_unit"], friction)
+        step, share = self._resolve_terms(terms, spec, demand)
+        return {"primitive": "displace", "verb": verb, "name": name, "node": self._physical_objects[name],
+                "tool": tool, "terms": terms, "step": step, "share": share, "demand": demand, "condition": 1.0,
+                "material": self.E.MATERIALS[rs["default_material"]], "requested": requested, "actor": actor,
+                "cell": tuple(cell), "here": tuple(here), "direction": direction}
+
+    def _run_displace(self, actor, plan):
+        """Slide the object by the surplus force: floor(surplus x push_cells_per_surplus) cells, at most
+        push_max_cells, where the surplus is the capability left over after the demand. It stops at a cell the
+        ground does not allow (speed 0), and never enters the actor's cell."""
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        node = plan["node"]
+        surplus = max(0.0, float(plan["step"]["capability"]) - float(plan["demand"]))
+        wanted = R.push_cells(surplus, rs["push_cells_per_surplus"], rs["push_max_cells"])
+        dx, dy = plan["direction"]
+        pos, moved = plan["cell"], 0
+        for _ in range(wanted):
+            nxt = (pos[0] + dx, pos[1] + dy)
+            if nxt not in self._map_cells or nxt == plan["here"]:
+                break
+            if float(self.terrain_state(nxt)["speed"]) <= 0.0:
+                break
+            pos, moved = nxt, moved + 1
+        if moved:
+            self.eng.set_attr(node, "cell", [int(pos[0]), int(pos[1])])
+        outcome = "moved" if moved else "stuck"
+        self._finish_attempt(actor, plan, outcome, 0.0, 0.0, moved=moved)
         return True
 
     def _spend_attempt_stamina(self, actor, amount, applied):
@@ -9327,7 +9544,8 @@ class BigvilleWorld:
                 self.observe_event(other, event)
         return event
 
-    def _record_attempt(self, actor, verb, name, tool_kind, requested, applied, clamped, progress, damage, outcome):
+    def _record_attempt(self, actor, verb, name, tool_kind, requested, applied, clamped, progress, damage, outcome,
+                        moved=0):
         """What the actor sees of its own attempt: the applied intensity (and whether it was clamped), the progress
         and the damage, and the outcome. Never the capability or the demand. Also counted by verb and outcome."""
         node = self._actors[actor]
@@ -9336,7 +9554,7 @@ class BigvilleWorld:
             "turn": int(self._turn), "verb": str(verb), "target": str(name), "tool": str(tool_kind),
             "requested_intensity": float(requested), "applied_intensity": round(float(applied), 4),
             "clamped": bool(clamped), "progress": round(float(progress), 4), "damage": round(float(damage), 4),
-            "outcome": str(outcome)})
+            "cells_moved": int(moved), "outcome": str(outcome)})
         counts = {key: dict(value) for key, value in attrs.get("attempt_counts", {}).items()}
         by_outcome = counts.setdefault(str(verb), {})
         by_outcome[str(outcome)] = by_outcome.get(str(outcome), 0) + 1
@@ -9871,6 +10089,15 @@ class BigvilleWorld:
         self.eng.set_attr(node, "sleep_kind", 0.0)
         self._set_job_paused(actor, self.job_paused(actor))
 
+    def _recover_strain(self, actor):
+        """Strain (Phase 050) falls by strain_sleep_recovery per clock tick of sleep, down to zero (Phase 050b)."""
+        attrs = self.eng.node(self._actors[actor])["attrs"]
+        strain = float(attrs.get("strain", 0.0))
+        if strain <= 0.0:
+            return
+        rate = float(self.E.RESOLUTION["strain_sleep_recovery"])
+        self.eng.set_attr(self._actors[actor], "strain", max(0.0, strain - rate))
+
     def _resolve_sleep(self):
         """Collapse, sleep and wake, once per run (seed bigville_time_sleep).
 
@@ -9891,6 +10118,7 @@ class BigvilleWorld:
                         self._lie_down(actor, collapsed=True)
                     code = "collapsed"
                 elif code is not None and self._job_tick_armed:
+                    self._recover_strain(actor)
                     collapsed = code == "collapsed"
                     gain = float(ex["collapse_gain" if collapsed else "rest_gain"])
                     # Phase 037: a body holds no more stamina than its health-scaled capacity (Phase 032), so a sleeper

@@ -125,3 +125,64 @@ def resolve_step(p):
         "strain": strain(share, r) + over,
         "overexertion": over,
     }
+
+
+# ---------------------------------------------------------------- Phase 050b: pace, displacement, thresholds
+
+def pace_clamp(requested, care_cap, haste_cap):
+    """The pace a recipe job runs at: the requested intensity clamped to [1 / care_cap, haste_cap].
+
+    Returns (applied, clamped). A slower job (below 1) takes at most care_cap times the reference time; a faster
+    one (above 1) runs at most haste_cap times the reference rate. NaN is taken as the normal pace, 1.0."""
+    low, high = 1.0 / float(care_cap), float(haste_cap)
+    want = float(requested)
+    if math.isnan(want):
+        want = 1.0
+    applied = clamp(want, low, high)
+    return applied, applied != want
+
+
+def pace_defect(pace, haste_penalty):
+    """How much a batch's defect grows at a pace. At the reference (1.0) it is 1. Below 1 it falls in step with
+    the pace (careful work leaves fewer defects). Above 1 each unit of haste adds haste_penalty to it."""
+    p = float(pace)
+    if p <= 1.0:
+        return max(0.0, p)
+    return 1.0 + float(haste_penalty) * (p - 1.0)
+
+
+def pace_quality(quality, pace, haste_penalty):
+    """A batch's quality at a pace: the reference quality with its defect share (1 - quality) scaled by
+    pace_defect. At pace 1 the quality is unchanged, so committed recipe numbers do not move."""
+    if float(pace) == 1.0:
+        return float(quality)          # the reference pace leaves the quality exactly as it was
+    q = clamp(float(quality), 0.0, 1.0)
+    return clamp(1.0 - (1.0 - q) * pace_defect(pace, haste_penalty), 0.0, 1.0)
+
+
+def pace_yield(pace, haste_yield_loss):
+    """The share of a batch's output that a pace keeps. Haste above the reference loses haste_yield_loss of the
+    output per unit of haste (waste from rushing); careful work keeps all of it."""
+    p = float(pace)
+    return clamp(1.0 - float(haste_yield_loss) * max(0.0, p - 1.0), 0.0, 1.0)
+
+
+def ruined(quality_after, quality_before, ruin_below):
+    """A batch is spoiled when the pace pushes its quality below ruin_below. A batch that was already below the line
+    at the reference pace is not spoiled by the pace, so this only bites on work done faster than normal."""
+    return float(quality_after) < float(ruin_below) and float(quality_after) < float(quality_before)
+
+
+def push_cells(surplus, cells_per_surplus, max_cells):
+    """Cells a load moves in one attempt: floor(surplus x cells_per_surplus), at most max_cells. A surplus of zero
+    or less moves nothing."""
+    s = float(surplus)
+    if s <= 0.0:
+        return 0
+    return int(min(int(max_cells), math.floor(s * float(cells_per_surplus))))
+
+
+def friction_demand(mass, mass_unit, friction):
+    """Demand of a ground displacement: the load's mass in units of the reference push (mass_unit kg, the average
+    adult's push at normal intensity), times the ground's friction (terrain move time, grass 1.0)."""
+    return max(0.0, float(mass)) / float(mass_unit) * max(0.0, float(friction))

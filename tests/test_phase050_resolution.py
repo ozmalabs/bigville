@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from bigville.backends.cheap import SimplePolicy
 from domains import bigville_entities as E
 from worlds.bigville_world import BigvilleWorld as World
@@ -72,7 +74,8 @@ def test_a_verb_the_world_has_no_physics_for_is_unsupported_and_costs_nothing():
 
 def test_a_physical_verb_without_an_implemented_primitive_is_unsupported():
     w = _world(tool="hammer")
-    assert w.major_action("Ada", "attempt", verb="push", target="box") is False
+    # Phase 050b: push is implemented now, so the unimplemented example is lift (still refused as unsupported).
+    assert w.major_action("Ada", "attempt", verb="lift", target="box") is False
     assert _reason(w) == "unsupported"
 
 
@@ -374,3 +377,231 @@ def test_the_resolution_tables_name_the_lock_strength_and_the_accident_cause():
     assert E.STORE_LOCK["lock_strength"] > 0.0
     assert "accident" in E.HEALTH["causes"]
     assert math.isfinite(E.RESOLUTION["max_intensity"])
+
+
+# ---------------------------------------------------------------- Phase 050b: displace, spill, pace, slot, strain
+
+def _ground_world(strength=1.0, mass=100.0, gap=1):
+    """A resident on a map cell with a physical object (a cart of `mass` weight units) `gap` cells east of them,
+    on ground that lets a cell through. Returns (world, resident's cell)."""
+    w = World(autonomous_actors=False)
+    cell = next(c for c in _cells(w) if (c[0] + 1, c[1]) in w._map_cells and (c[0] + 2, c[1]) in w._map_cells
+                and w.terrain_state(c)["speed"] > 0 and w.terrain_state((c[0] + 1, c[1]))["speed"] > 0
+                and w.terrain_state((c[0] + 2, c[1]))["speed"] > 0)
+    w.add_actor("Ada", role="hand", home_cell=cell)
+    w.eng.set_attr(w._bodies["Ada"], "str_base", float(strength))
+    w._move_actor_to("Ada", cell)
+    node = w.eng.add_node("PhysicalObject", {"object_id": "cart", "name": "cart", "kind": "cart", "location": "world",
+                                              "mass": float(mass), "cell": [cell[0] + gap, cell[1]]})
+    w._physical_objects["cart"] = node
+    w._physical_object_locations["cart"] = "world"
+    return w, cell
+
+
+def _cart_cell(w):
+    return w._physical_location_cell("cart")
+
+
+def test_a_strong_resident_pushes_a_cart_by_the_surplus_force():
+    # Demand: 100 weight units over a push unit of 50, on grass (move time 1.0) = 2.0. Capability at intensity 3:
+    # strength 2.0 x technique 0.5 (no labour skill) x intensity 3 = 3.0. Surplus 1.0, two cells (2 per unit).
+    w, cell = _ground_world(strength=2.0)
+    _turn(w)
+    assert w.major_action("Ada", "attempt", verb="push", target="cart", intensity=3.0) is True
+    assert _cart_cell(w) == (cell[0] + 3, cell[1])
+    assert w.last_attempt("Ada")["cells_moved"] == 2
+    assert w.last_attempt("Ada")["outcome"] == "moved"
+
+
+def test_a_weak_resident_does_not_move_the_cart_even_at_full_force():
+    # Capability 0.5 x 0.5 x 3 = 0.75, below the demand of 2.0: no surplus, no movement.
+    w, cell = _ground_world(strength=0.5)
+    _turn(w)
+    assert w.major_action("Ada", "attempt", verb="push", target="cart", intensity=3.0) is True
+    assert _cart_cell(w) == (cell[0] + 1, cell[1])
+    assert w.last_attempt("Ada")["outcome"] == "stuck"
+    assert w.last_attempt("Ada")["cells_moved"] == 0
+
+
+def test_a_push_needs_the_object_next_to_the_resident():
+    w, cell = _ground_world(strength=2.0)
+    w.eng.set_attr(w._physical_objects["cart"], "cell", [cell[0] + 3, cell[1]])
+    _turn(w)
+    assert w.major_action("Ada", "attempt", verb="push", target="cart", intensity=3.0) is False
+    assert _reason(w) == "not_in_reach"
+
+
+def test_a_pull_draws_the_cart_toward_the_resident_and_stops_short_of_them():
+    # Two cells east, pulled west: the first cell is free, the second is the resident's own, so it stops there.
+    w, cell = _ground_world(strength=2.0, gap=2)
+    _turn(w)
+    assert w.major_action("Ada", "attempt", verb="pull", target="cart", intensity=3.0) is True
+    assert _cart_cell(w) == (cell[0] + 1, cell[1])
+    assert w.last_attempt("Ada")["cells_moved"] == 1
+
+
+def test_a_verb_still_without_physics_is_refused_on_an_object():
+    w, _cell = _ground_world(strength=2.0)
+    _turn(w)
+    assert w.major_action("Ada", "attempt", verb="lift", target="cart") is False
+    assert _reason(w) == "unsupported"
+
+
+def test_a_trivial_attempt_costs_no_stamina_and_leaves_the_action_slot_unspent():
+    # Strength 5: capability 5 x 0.5 = 2.5 against a wood chest's demand 0.5, a cost share of 0.2 (below 0.25).
+    w = _world(strength=5.0, tool="hammer")
+    _fresh_body(w)
+    _turn(w)
+    before = _reserve(w)
+    assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+    assert _reserve(w) == before
+    assert w.actor_turn_state("Ada")["major_action_used"] is False
+    assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+
+
+def test_a_middling_attempt_spends_stamina_but_leaves_the_slot_unspent():
+    # Strength 3: a cost share of 0.33, between trivial_below (0.25) and slot_above (0.5).
+    w = _world(strength=3.0, tool="hammer")
+    _fresh_body(w)
+    _turn(w)
+    before = _reserve(w)
+    assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+    assert _reserve(w) < before
+    assert w.actor_turn_state("Ada")["major_action_used"] is False
+
+
+def test_a_costly_attempt_claims_the_slot_and_a_second_is_refused():
+    w = _world(strength=1.0, tool="hammer")
+    _fresh_body(w)
+    _turn(w)
+    assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+    assert w.actor_turn_state("Ada")["major_action_used"] is True
+    assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is False
+    assert _reason(w) == "slot_used"
+
+
+def test_a_broken_chest_spills_its_contents_on_its_cell():
+    w = _world(strength=3.0, tool="hammer")
+    _fresh_body(w)
+    w.eng.set_attr(w._containers["box"][1]["grain"], "qty", 5.0)
+    cell = w.container_position("box")
+    for _ in range(80):
+        _turn(w)
+        w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=3.0)
+        if _box(w).get("destroyed") == 1.0:
+            break
+    assert _box(w)["destroyed"] == 1.0
+    assert w.eng.node(w._containers["box"][1]["grain"])["attrs"]["qty"] == 0.0
+    piles = [n for n in w.eng.neighbours(w._town, "has_dropped_stock")
+             if w.eng.node(n)["attrs"]["kind"] == "grain"]
+    assert len(piles) == 1
+    assert w.eng.node(piles[0])["attrs"]["qty"] == 5.0
+    assert w.eng.neighbours(piles[0], "at_cell") == [w._map_cells[cell]]
+
+
+def _table_world(skill=None):
+    """A woodworker at the workshop with the inputs for make_table (150 minutes: 10 ticks)."""
+    w = World(exhaustion_slow_on=False)
+    w.add_tradesperson("Wil", "woodworker")
+    if skill is not None:
+        w.set_skill_level("Wil", "carpentry", skill)
+    recipe = next(r for r in E.RECIPES if r["name"] == "make_table")
+    for kind, qty in recipe["in"]:
+        w.set_stock(kind, float(qty) * 10)
+    key = next(k for k, v in E.BUILDINGS.items() if v.get("provides") == "woodworker")
+    x, y, _fw, _fh = w._building_sites[key]
+    w._move_actor_to("Wil", (x, y))
+    return w
+
+
+def _make_table(pace, skill=None):
+    """Start make_table at a pace and tick it to completion. Returns (ticks, item quality, stamina spent, the
+    recipe's reference quality before the job)."""
+    w = _table_world(skill)
+    reference = w.recipe_skill_level("Wil", w._recipe_specs.get("make_table", {}))
+    before = w.stamina_reserve("Wil")
+    assert w.major_action("Wil", "start", action_name="make_table", intensity=pace) is True
+    ticks = 0
+    while w.busy("Wil") and ticks < 100:
+        w.tick(1)
+        ticks += 1
+    item = w.newest_tool()
+    return ticks, float(w.eng.node(item)["attrs"]["quality"]), before - w.stamina_reserve("Wil"), reference
+
+
+def test_a_recipe_at_pace_one_keeps_the_committed_time_and_quality():
+    ticks, quality, _spent, reference = _make_table(1.0)
+    assert ticks == 10
+    assert quality == reference
+
+
+def test_a_recipe_at_pace_one_and_a_half_finishes_sooner_with_lower_quality_and_more_stamina():
+    base_ticks, base_quality, base_spent, _ = _make_table(1.0)
+    ticks, quality, spent, _ = _make_table(1.5)
+    assert ticks < base_ticks
+    assert quality < base_quality
+    assert spent > base_spent
+
+
+def test_a_recipe_at_pace_one_half_is_slower_and_better():
+    base_ticks, base_quality, base_spent, _ = _make_table(1.0)
+    ticks, quality, spent, _ = _make_table(0.5)
+    assert ticks > base_ticks
+    assert quality > base_quality
+    assert spent < base_spent
+
+
+def test_a_pace_outside_the_caps_is_clamped_and_kept_on_the_job():
+    w = _table_world()
+    assert w.major_action("Wil", "start", action_name="make_table", intensity=99.0) is True
+    job = w._job_of("Wil")
+    assert w.eng.node(job)["attrs"]["pace"] == float(E.RESOLUTION["haste_cap"])
+
+
+def test_a_rushed_batch_that_falls_below_the_ruin_line_is_spoiled():
+    # A reference quality of about 0.12 sits just above ruin_below (0.1); pace 1.5 pushes it below the line.
+    w = _table_world(skill=0.12)
+    reference = w.recipe_skill_level("Wil", w._recipe_specs.get("make_table", {}))
+    assert reference < 0.2
+    items = len(list(w.eng.neighbours(w._town, "has_tool_item")))
+    assert w.major_action("Wil", "start", action_name="make_table", intensity=1.5) is True
+    job = w._job_of("Wil")
+    while w.busy("Wil"):
+        w.tick(1)
+    assert len(list(w.eng.neighbours(w._town, "has_tool_item"))) == items
+    assert w.eng.node(job)["attrs"]["ruined"] == 1.0
+
+
+def test_set_intensity_changes_a_running_job_without_losing_progress():
+    w = _table_world()
+    assert w.major_action("Wil", "start", action_name="make_table") is True
+    job = w._job_of("Wil")
+    for _ in range(3):
+        w.tick(1)
+    remaining = w.eng.node(job)["attrs"]["remaining"]
+    assert w.free_action("Wil", "set_intensity", intensity=1.5) is True
+    assert w.eng.node(job)["attrs"]["pace"] == 1.5
+    assert w.eng.node(job)["attrs"]["remaining"] == remaining
+    ticks = 3
+    while w.busy("Wil") and ticks < 100:
+        w.tick(1)
+        ticks += 1
+    assert ticks < 10
+
+
+def test_set_intensity_is_refused_without_a_running_job_or_a_number():
+    w = _table_world()
+    assert w.free_action("Wil", "set_intensity", intensity=1.5) is False
+    assert w.major_action("Wil", "start", action_name="make_table") is True
+    assert w.free_action("Wil", "set_intensity", intensity=True) is False
+    assert w.free_action("Wil", "set_intensity", intensity=float("nan")) is False
+
+
+def test_strain_falls_while_a_resident_sleeps():
+    w = World(autonomous_actors=False)
+    w.add_actor("Ada", role="hand", home_cell=_cells(w)[0])
+    w.eng.set_attr(w._actors["Ada"], "strain", 0.5)
+    w._lie_down("Ada", collapsed=False)
+    w._job_tick_armed = True
+    w._resolve_sleep()
+    assert w.eng.node(w._actors["Ada"])["attrs"]["strain"] == pytest.approx(0.5 - float(E.RESOLUTION["strain_sleep_recovery"]))

@@ -32,6 +32,11 @@
         "kind": "utterance",
         "requires_target": true,
         "description": "Answer a person who has spoken to you. Uses no major action."
+      },
+      "set_intensity": {
+        "kind": "pace",
+        "requires_target": false,
+        "description": "Change the pace of a timed job you are running (a recipe) to a number, without losing its progress. 1.0 is the normal pace. Above 1 the job finishes sooner, at a cost in quality and stamina; below 1 it is slower and more careful. Uses no major action."
       }
     }
   }

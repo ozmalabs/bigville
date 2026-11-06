@@ -676,6 +676,12 @@ def _check_resolution(errors, warnings, info):
             for tool_verb, value in closeness.items():
                 if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= float(value) <= 1.0:
                     errors.append(f"VERBS[{verb}][tool_verbs][{tool_verb}]: a closeness in [0, 1], not {value!r}")
+        if primitive == "displace":
+            # Phase 050b: a displace verb says whether the world runs it yet; an unimplemented one is refused.
+            if not isinstance(spec.get("implemented"), bool):
+                errors.append(f"VERBS[{verb}]: a displace verb needs 'implemented' (true or false)")
+        elif "implemented" in spec:
+            errors.append(f"VERBS[{verb}]: only a displace verb carries 'implemented'")
         if not str(spec.get("description", "")).strip():
             errors.append(f"VERBS[{verb}]: needs a description")
     if "attempt" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["attempt"].get("description", "")).strip():
@@ -735,6 +741,34 @@ def _check_resolution(errors, warnings, info):
             errors.append(f"RESOLUTION: cost must not rise as capability rises (demand {d})")
         if any(b > a + 1e-12 for a, b in zip(strain, strain[1:])):
             errors.append(f"RESOLUTION: strain must not rise as capability rises (demand {d})")
+    # Phase 050b: recipe pace, the trivial and slot thresholds, strain recovery, and displacement.
+    for name in ("haste_cap", "care_cap"):
+        value = rs.get(name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or float(value) < 1.0:
+            errors.append(f"RESOLUTION[{name}]: a pace cap of at least 1.0, not {value!r}")
+    for name, hi in (("haste_penalty", None), ("haste_yield_loss", 1.0), ("ruin_below", 1.0),
+                     ("trivial_below", 1.0), ("slot_above", 1.0), ("strain_sleep_recovery", None),
+                     ("push_cells_per_surplus", None)):
+        value = rs.get(name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or float(value) < 0.0 \
+                or (hi is not None and float(value) > hi):
+            errors.append(f"RESOLUTION[{name}]: out of range, not {value!r}")
+    if not isinstance(rs.get("push_mass_unit"), (int, float)) or float(rs["push_mass_unit"]) <= 0.0:
+        errors.append(f"RESOLUTION[push_mass_unit]: must be positive, not {rs.get('push_mass_unit')!r}")
+    if isinstance(rs.get("push_max_cells"), bool) or not isinstance(rs.get("push_max_cells"), int) \
+            or rs["push_max_cells"] < 0:
+        errors.append(f"RESOLUTION[push_max_cells]: a whole number of cells, not {rs.get('push_max_cells')!r}")
+    if float(rs["trivial_below"]) > float(rs["slot_above"]):
+        errors.append("RESOLUTION: trivial_below must not exceed slot_above (a trivial cost is below the slot line)")
+    pace_grid = [i / 10.0 for i in range(1, 31)]
+    quality = [R.pace_quality(0.8, p, rs["haste_penalty"]) for p in pace_grid]
+    yields = [R.pace_yield(p, rs["haste_yield_loss"]) for p in pace_grid]
+    if any(b > a + 1e-12 for a, b in zip(quality, quality[1:])):
+        errors.append("RESOLUTION: quality must not rise as the recipe pace rises")
+    if any(b > a + 1e-12 for a, b in zip(yields, yields[1:])):
+        errors.append("RESOLUTION: yield must not rise as the recipe pace rises")
+    if "set_intensity" not in FREE_ACTIONS:
+        errors.append("FREE_ACTIONS: needs 'set_intensity' (Phase 050b: change a running job's pace)")
     info.append(f"RESOLUTION: {len(VERBS)} verbs, {len(MATERIALS)} materials; attempt cap {rs['attempt_cap_rate']}, "
                 f"max intensity {rs['max_intensity']}, i_safe {rs['i_safe']} (APPROX)")
 

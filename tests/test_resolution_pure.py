@@ -133,3 +133,47 @@ def test_hopeless_fit_makes_no_progress_and_still_costs_stamina():
     out = R.resolve_step(_step(fit=0.0))
     assert out["progress"] == 0.0
     assert out["stamina"] > 0.0 and out["strain"] > 0.0
+
+
+# ---------------------------------------------------------------- Phase 050b: pace, push, thresholds
+
+def test_pace_is_clamped_to_the_care_and_haste_caps():
+    assert R.pace_clamp(1.0, 2.0, 1.5) == (1.0, False)
+    assert R.pace_clamp(0.1, 2.0, 1.5) == (0.5, True)
+    assert R.pace_clamp(9.0, 2.0, 1.5) == (1.5, True)
+    assert R.pace_clamp(float("nan"), 2.0, 1.5) == (1.0, False)
+
+
+def test_quality_at_the_reference_pace_is_unchanged_and_falls_as_pace_rises():
+    for q in (0.0, 0.05, 0.3, 0.7, 1.0):
+        assert R.pace_quality(q, 1.0, 0.5) == q
+    grid = [i / 10.0 for i in range(1, 31)]
+    curve = [R.pace_quality(0.8, p, 0.5) for p in grid]
+    assert all(b <= a + 1e-12 for a, b in zip(curve, curve[1:]))
+    assert R.pace_quality(0.8, 0.5, 0.5) > 0.8 > R.pace_quality(0.8, 1.5, 0.5)
+
+
+def test_yield_keeps_all_output_at_or_below_the_reference_pace():
+    assert R.pace_yield(1.0, 0.25) == 1.0
+    assert R.pace_yield(0.5, 0.25) == 1.0
+    assert R.pace_yield(1.5, 0.25) == pytest.approx(0.875)
+
+
+def test_a_batch_is_spoiled_only_when_the_pace_takes_it_below_the_ruin_line():
+    assert R.ruined(0.05, 0.3, 0.1) is True          # the pace took it below the line
+    assert R.ruined(0.05, 0.05, 0.1) is False        # already below at the reference pace: not the pace's doing
+    assert R.ruined(0.2, 0.3, 0.1) is False
+
+
+def test_push_moves_floor_of_surplus_times_cells_capped_at_the_maximum():
+    assert R.push_cells(0.0, 2.0, 3) == 0
+    assert R.push_cells(-1.0, 2.0, 3) == 0
+    assert R.push_cells(0.49, 2.0, 3) == 0
+    assert R.push_cells(1.0, 2.0, 3) == 2
+    assert R.push_cells(9.0, 2.0, 3) == 3
+
+
+def test_friction_demand_scales_with_mass_and_ground():
+    assert R.friction_demand(100.0, 50.0, 1.0) == 2.0
+    assert R.friction_demand(100.0, 50.0, 0.75) == 1.5
+    assert R.friction_demand(0.0, 50.0, 1.0) == 0.0
