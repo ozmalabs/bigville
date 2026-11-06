@@ -319,6 +319,10 @@ class BigvilleWorld:
         # Use builds the body (Phase 032, seeds bd_train_strength, bd_train_stamina): each effort raises the
         # trained strength or stamina it uses, toward base x TRAIN_HEADROOM. Off, no effort trains anyone.
         "training": True,
+        # Phase 043: illness onset (DISEASE) and its daily course, and the doctor's and midwife's acts
+        # (MEDICAL_CARE). Off, no resident catches an illness from the dawn tick and the new care options are
+        # not offered; the existing disease rules (diagnose, the burial condition) are unchanged.
+        "illness": False,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -6798,14 +6802,16 @@ class BigvilleWorld:
         """The one health variable (health_value): 1 is fully healthy, 0 is dead."""
         return float(self.eng.node(self._actor(actor))["attrs"].get("health_value", self.E.HEALTH["max_health"]))
 
-    def harm(self, actor, amount, cause):
+    def harm(self, actor, amount, cause, *, fragility=True):
         """Acute harm: lower the resident's health by `amount` times their life stage's fragility (HEALTH), and
         tag the cause. Health at or below 0 is death by `cause` (record_death). Returns False when the resident
-        is dead. `cause` must be one of HEALTH.causes."""
+        is dead. `cause` must be one of HEALTH.causes. Phase 043: `fragility=False` applies `amount` as given,
+        for the illness course, whose infant penalty is its own (MEDICAL_CARE.infant_fragility)."""
         if str(cause) not in self.E.HEALTH["causes"]:
             raise ValueError(f"harm: unknown cause {cause!r}; HEALTH.causes are {list(self.E.HEALTH['causes'])}")
         stage = str(self.eng.node(self._actor(actor))["attrs"].get("life_stage", "adult"))
-        return self._drop_health(actor, float(amount) * float(self.E.HEALTH["fragility"].get(stage, 1.0)), cause)
+        mult = float(self.E.HEALTH["fragility"].get(stage, 1.0)) if fragility else 1.0
+        return self._drop_health(actor, float(amount) * mult, cause)
 
     def _drop_health(self, actor, drop, cause):
         if not self.is_alive(actor):
@@ -6905,6 +6911,133 @@ class BigvilleWorld:
         if float(self.eng.node(self._actors[patient])["attrs"].get("injury", 0.0)) <= 0.0:
             self.eng.set_attr(self._actors[patient], "health", "healthy")
         self.eng.add_edge_unchecked(self._actors[caregiver], "cared_for", self._actors[patient])
+        return True
+
+    # ---------------------------------------------------- illness, screening and treatment (Phase 043)
+    # Off by default (physical_subsystems.illness). On, each dawn may start an illness (DISEASE) by a stateless
+    # seeded draw, and a diagnosed illness costs health each day by the table's drop, less what screening,
+    # treatment and care remove. The doctor's and midwife's acts (checkup, treat, well_baby) are the care action
+    # with a care_kind; each sets a flag on the body for a table-set number of days (MEDICAL_CARE).
+    def _illness_on(self):
+        return bool(self.physical_subsystems.get("illness"))
+
+    def _care_flag_value(self, actor, flag):
+        """A Phase 043 care flag on the resident's body (screened, treated, well_baby): 1 or 0."""
+        return int(float(self.eng.node(self._bodies[actor])["attrs"].get(flag, 0.0)) == 1.0)
+
+    def _set_care_flag(self, actor, flag, value, days=None):
+        """Set a care flag; with `days`, it lapses at the calendar day that many days on."""
+        node = self._bodies[actor]
+        self.eng.set_attr(node, flag, 1.0 if value else 0.0)
+        if days is not None:
+            self.eng.set_attr(node, f"{flag}_until", float(self.calendar()["day"]) + float(days))
+
+    def _lapse_care_flags(self, actor):
+        today = float(self.calendar()["day"])
+        attrs = self.eng.node(self._bodies[actor])["attrs"]
+        for flag in ("screened", "treated", "well_baby"):
+            if self._care_flag_value(actor, flag) and today >= float(attrs.get(f"{flag}_until", 0.0)):
+                self._set_care_flag(actor, flag, False)
+
+    def _illness_onset(self, name, stage):
+        """Phase 043: a resident who is not ill may catch an illness this dawn. The draw is stateless and seeded
+        (_stable_draw, keyed on the world seed, the resident, the disease and the day), so the world's own state
+        is not touched. The onset uses diagnose(), as the burial condition does. Returns the disease or None."""
+        season = str(self.season())
+        day = int(float(self.calendar()["day"]))
+        for disease, spec in self.E.DISEASE.items():
+            chance = float(spec["onset_per_day"][season]) * float(spec["stage_risk"].get(stage, 1.0))
+            if chance > 0.0 and self._stable_draw("illness", name, disease, day) < chance:
+                self.diagnose(None, name, disease)
+                self.eng.set_attr(self._bodies[name], "illness_days", 0.0)
+                return disease
+        return None
+
+    def _illness_day(self, name, disease, stage):
+        """Phase 043: one day of an illness course. The cost is the disease's severity, plus progression while the
+        resident is unscreened, less treat_relief while treated, plus MEDICAL_CARE.infant_fragility for an infant
+        no well-baby visit has seen (added, not multiplied). harm() is given the cost as it is (fragility=False).
+        A treated resident regains treated_heal a day, an untreated one natural_care. After course_days the
+        illness clears and the resident is healthy again."""
+        spec = self.E.DISEASE[disease]
+        care = self.E.MEDICAL_CARE
+        treated = self._care_flag_value(name, "treated")
+        cost = float(spec["severity"]) + (0.0 if self._care_flag_value(name, "screened") else float(spec["progression"]))
+        if treated:
+            cost -= float(spec["treat_relief"])
+        if stage == "infant" and not self._care_flag_value(name, "well_baby"):
+            cost += float(care["infant_fragility"])
+        self.harm(name, max(0.0, cost), "illness", fragility=False)
+        if not self.is_alive(name):
+            return
+        self._heal(name, float(care["treated_heal"] if treated else care["natural_care"]))
+        node = self._bodies[name]
+        days = float(self.eng.node(node)["attrs"].get("illness_days", 0.0)) + 1.0
+        self.eng.set_attr(node, "illness_days", days)
+        if days >= float(spec["course_days"]):
+            self.eng.set_attr(self._actors[name], "disease", "")
+            self.eng.set_attr(self._actors[name], "health", "healthy")
+            self.eng.set_attr(node, "illness_days", 0.0)
+
+    def _holds_care_skill(self, actor, act):
+        """A doctor or midwife holds the act's skill when any of MEDICAL_CARE.skills[act] is above level 0."""
+        return any(self.skill_level(actor, skill) > 0.0 for skill in self.E.MEDICAL_CARE["skills"][act])
+
+    def _care_act_refusal(self, doctor, patient, act):
+        """The checks every Phase 043 act shares. Returns the refusal code, or None when the act may happen."""
+        if doctor not in self._actors or patient not in self._actors:
+            return "unknown_target"
+        if not self._illness_on():
+            return "unsupported"
+        if not self.is_alive(doctor) or not self.is_alive(patient):
+            return "not_possible"
+        if not self._holds_care_skill(doctor, act):
+            return "unskilled"
+        if self._turn > 0 and self.actor_position(doctor) != self.actor_position(patient):
+            return "not_in_reach"
+        return None
+
+    def checkup(self, doctor, patient):
+        """A preventive visit by a resident with the medical skill, co-located with the patient. The patient is
+        screened for MEDICAL_CARE.screen_days: an illness they catch progresses less while it lasts."""
+        code = self._care_act_refusal(doctor, patient, "checkup")
+        if code is not None:
+            return self._refuse(code)
+        self._set_care_flag(patient, "screened", True, self.E.MEDICAL_CARE["screen_days"])
+        self.eng.add_edge_unchecked(self._actors[doctor], "examined", self._actors[patient])
+        return True
+
+    def treat_patient(self, doctor, patient):
+        """Treatment by a resident with the medical skill, co-located with an ill patient. It consumes
+        MEDICAL_CARE.medicine_per_treatment from the town store (the store guard applies, as for care_for) and
+        sets the patient treated for MEDICAL_CARE.treated_days. A patient with no illness is refused."""
+        code = self._care_act_refusal(doctor, patient, "treat")
+        cost = float(self.E.MEDICAL_CARE["medicine_per_treatment"])
+        if code is None and not self.eng.node(self._actors[patient])["attrs"].get("disease"):
+            code = "not_needed"
+        if code is None and not self._store_open(doctor):
+            code = "store_locked"
+        if code is None and self.qty("medicine") < cost:
+            code = "out_of_stock"
+        if code is not None:
+            return self._refuse(code)
+        self.set_stock("medicine", self.qty("medicine") - cost)
+        self._set_care_flag(patient, "treated", True, self.E.MEDICAL_CARE["treated_days"])
+        self.eng.add_edge_unchecked(self._actors[doctor], "treated_patient", self._actors[patient])
+        return True
+
+    def well_baby_visit(self, doctor, infant):
+        """A well-baby visit by a resident with the medical skill or midwifery, co-located with an infant. The
+        infant is seen for MEDICAL_CARE.well_baby_days: it pays no infant_fragility while the visit holds."""
+        code = self._care_act_refusal(doctor, infant, "well_baby")
+        if code is None and self.eng.node(self._actors[infant])["attrs"].get("life_stage") != "infant":
+            code = "not_needed"
+        if code is None and self._care_flag_value(infant, "well_baby"):
+            code = "not_needed"
+        if code is not None:
+            return self._refuse(code)
+        self._set_care_flag(infant, "well_baby", True, self.E.MEDICAL_CARE["well_baby_days"])
+        self.eng.add_edge_unchecked(self._actors[doctor], "examined", self._actors[infant])
         return True
 
     def birth(self, mother, child_name, *, father=None, home_cell=None):
@@ -7143,7 +7276,13 @@ class BigvilleWorld:
                     self.eng.set_attr(node, "health", "healthy")
             if float(a.get("hunger", 0.0)) >= float(care["malnourished_hunger"]):
                 self.eng.set_attr(node, "health", "malnourished")
-            if a.get("disease"):
+            self._lapse_care_flags(name)
+            if self._illness_on() and str(a.get("disease") or "") in self.E.DISEASE:
+                # Phase 043: a table-driven course (DISEASE) replaces the flat daily loss below.
+                self._illness_day(name, str(a["disease"]), str(a.get("life_stage", "adult")))
+                if not self.is_alive(name):
+                    continue
+            elif a.get("disease"):
                 # A disease is an ongoing illness route: its daily loss is acute harm tagged illness.
                 self.harm(name, float(care["disease_health_loss"]), "illness")
                 if not self.is_alive(name):
@@ -7153,6 +7292,10 @@ class BigvilleWorld:
             chance = self.burial_risk(a.get("household"))
             if chance > 0.0 and not a.get("disease") and self._burial_roll(name) < chance:
                 self.diagnose(None, name, str(self.E.BURIAL["condition"]))
+            # Phase 043: illness onset, when the switch is on. The attribute is read fresh, since the burial
+            # diagnosis above may have just set it.
+            if self._illness_on() and not self.eng.node(node)["attrs"].get("disease"):
+                self._illness_onset(name, str(a.get("life_stage", "adult")))
             age_stage = next((stage for stage, spec in self.E.LIFE_STAGES.items()
                               if float(spec["age_min"]) <= age <= float(spec["age_max"])), "elder")
             if age_stage != a.get("life_stage"):
@@ -7558,6 +7701,29 @@ class BigvilleWorld:
                                 "kind": "", "trade": "", "recipe": "",
                                 "target": key, "patient": patient, "score": 0.0})
                 break
+        # Phase 043: the medical acts. Each is a care option with a care_kind, offered only to a resident with the
+        # skill, standing with the patient, and only when the act has something to do (an unscreened patient,
+        # an ill patient with medicine in the store, an infant with no visit). Off, none is offered.
+        if self._illness_on() and self._actors:
+            for patient, patient_node in self._actors.items():
+                if patient == actor or not self.is_alive(patient):
+                    continue
+                if self.actor_position(actor) is None or self.actor_position(patient) != self.actor_position(actor):
+                    continue
+                pa = self.eng.node(patient_node)["attrs"]
+                kinds = []
+                if self._holds_care_skill(actor, "checkup") and not self._care_flag_value(patient, "screened"):
+                    kinds.append("checkup")
+                if (self._holds_care_skill(actor, "treat") and pa.get("disease") and self._store_open(actor)
+                        and self.qty("medicine") >= float(self.E.MEDICAL_CARE["medicine_per_treatment"])):
+                    kinds.append("treat")
+                if (str(pa.get("life_stage", "")) == "infant" and not self._care_flag_value(patient, "well_baby")
+                        and self._holds_care_skill(actor, "well_baby")):
+                    kinds.append("well_baby")
+                for kind in kinds:
+                    options.append({"action": "care", "kind": "", "trade": "", "recipe": "",
+                                    "target": target_key(patient), "patient": patient,
+                                    "care_kind": kind, "score": 0.0})
         # Ordinary object movement is a physical option, not a purchase,
         # permission check, or interpretation of ownership.  Keep these
         # choices in the same backend affordance boundary as other actions;
@@ -7801,7 +7967,7 @@ class BigvilleWorld:
                 destination = self.actor_position(target)
                 if destination is not None and self.actor_position(actor) != destination:
                     return self.major_action(actor, "move", destination=destination)
-                return self.major_action(actor, "care", patient=target)
+                return self.major_action(actor, "care", patient=target, care_kind=plan.get("care_kind"))
             if target is not None:
                 return self.major_action(actor, "move", destination=target)
         if action in {"water", "harvest", "sow", "fertilise"}:
@@ -8490,6 +8656,14 @@ class BigvilleWorld:
             patient = self._as_key(kwargs.get("patient", args[0] if args else None))
             if patient not in self._actors:
                 return self._refuse("unknown_target")
+            # Phase 043: a medical act (checkup, treat, well_baby) is the care action with a care_kind.
+            care_kind = kwargs.get("care_kind")
+            if care_kind is not None:
+                medical = {"checkup": self.checkup, "treat": self.treat_patient,
+                           "well_baby": self.well_baby_visit}.get(str(care_kind))
+                if medical is None:
+                    return self._refuse("malformed")
+                return self._claimed_attempt(actor, "care", lambda: medical(actor, patient))
             return self._claimed_attempt(actor, "care", lambda: self.care_for(actor, patient))
         if action == "tend_animals":
             animal = self._as_key(kwargs.get("animal", args[0] if args else None))
@@ -10191,7 +10365,11 @@ class BigvilleWorld:
                 # Phase 024 read-offs: the exhaustion step (0 full speed .. 3 too exhausted to walk), the
                 # movement speed it gives (1, 2/3, 1/3, 0), and the sleep flags.
                 "exhaustion_step": int(band["step"]), "speed_factor": round(float(band["speed"]), 4),
-                "asleep": self.asleep(actor), "collapsed": self.collapsed(actor)}
+                "asleep": self.asleep(actor), "collapsed": self.collapsed(actor),
+                # Phase 043 read-offs: the illness flag and the care flags (screened, treated, well_baby), 0 or 1.
+                "illness": int(bool(self.eng.node(self._actors[actor])["attrs"].get("disease"))),
+                "screened": self._care_flag_value(actor, "screened"),
+                "treated": self._care_flag_value(actor, "treated"), "well_baby": self._care_flag_value(actor, "well_baby")}
 
     def stamina(self, actor): return self.body_state(actor)["stamina"]
     def stamina_reserve(self, actor): return self.body_state(actor)["stamina_reserve"]

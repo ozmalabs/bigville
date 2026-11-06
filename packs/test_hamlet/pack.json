@@ -222,6 +222,14 @@
       "file": "world/health.json"
     },
     {
+      "name": "DISEASE",
+      "file": "world/disease.json"
+    },
+    {
+      "name": "MEDICAL_CARE",
+      "file": "world/medical_care.json"
+    },
+    {
       "name": "VERBS",
       "file": "world/resolution.json"
     },

@@ -651,6 +651,66 @@ def _check_health(errors, warnings, info):
                 f"period(s) past starve_limit (starve_harm {h['starve_harm']}, APPROX)")
 
 
+def _check_illness(errors, warnings, info):
+    """Phase 043: the DISEASE and MEDICAL_CARE tables. Each disease is a HEALTH_CONDITIONS key that is not
+    healthy, with a daily onset chance for every season and a multiplier for every life stage, and drops in
+    [0, 1]. MEDICAL_CARE gives whole-day durations, the natural and treated recovery rates, and the skills each
+    act needs, which must exist in SKILLS. An empty pair (test_hamlet) is valid: the switch then has no rules."""
+    if not DISEASE and not MEDICAL_CARE:
+        info.append("illness: DISEASE and MEDICAL_CARE are empty in this pack (no illness rules)")
+        return
+    seasons = set(SEASONS)
+    for name, d in DISEASE.items():
+        if name not in HEALTH_CONDITIONS or name == "healthy":
+            errors.append(f"DISEASE[{name}]: must be an illness in HEALTH_CONDITIONS, not {name!r}")
+        rates = d.get("onset_per_day", {})
+        if set(rates) != seasons:
+            errors.append(f"DISEASE[{name}][onset_per_day]: one rate per season {sorted(seasons)}, not {sorted(rates)}")
+        for season, rate in rates.items():
+            if not 0.0 <= float(rate) <= 1.0:
+                errors.append(f"DISEASE[{name}][onset_per_day][{season}]: a chance per day in [0, 1], not {rate!r}")
+        risks = d.get("stage_risk", {})
+        if set(risks) != set(LIFE_STAGES):
+            errors.append(f"DISEASE[{name}][stage_risk]: one multiplier per LIFE_STAGES key, not {sorted(risks)}")
+        for stage, mult in risks.items():
+            if float(mult) <= 0.0:
+                errors.append(f"DISEASE[{name}][stage_risk][{stage}]: a positive multiplier, not {mult!r}")
+        for key in ("severity", "progression", "treat_relief"):
+            if float(d.get(key, -1.0)) < 0.0:
+                errors.append(f"DISEASE[{name}][{key}]: must not be negative, not {d.get(key)!r}")
+        if float(d.get("severity", 0.0)) <= 0.0:
+            errors.append(f"DISEASE[{name}][severity]: must be positive, not {d.get('severity')!r}")
+        course = d.get("course_days")
+        if not isinstance(course, int) or isinstance(course, bool) or course < 1:
+            errors.append(f"DISEASE[{name}][course_days]: a whole number of days >= 1, not {course!r}")
+        else:
+            expected = (sum(float(r) for r in rates.values()) * float(TIME["days_per_year"]) / max(1, len(seasons))
+                        * float(risks.get("adult", 1.0)))
+            info.append(f"DISEASE[{name}]: about {expected:.2f} onsets per resident-year at adult risk "
+                        f"(onset_per_day summed over the year, APPROX)")
+    m = MEDICAL_CARE
+    for key in ("screen_days", "treated_days", "well_baby_days"):
+        value = m.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            errors.append(f"MEDICAL_CARE[{key}]: a whole number of days >= 1, not {value!r}")
+    for key in ("natural_care", "treated_heal"):
+        if not 0.0 <= float(m.get(key, -1.0)) <= 1.0:
+            errors.append(f"MEDICAL_CARE[{key}]: a daily recovery in [0, 1], not {m.get(key)!r}")
+    if float(m.get("infant_fragility", -1.0)) < 0.0:
+        errors.append(f"MEDICAL_CARE[infant_fragility]: must not be negative, not {m.get('infant_fragility')!r}")
+    if float(m.get("medicine_per_treatment", 0.0)) <= 0.0:
+        errors.append(f"MEDICAL_CARE[medicine_per_treatment]: must be positive, not {m.get('medicine_per_treatment')!r}")
+    skills = m.get("skills", {})
+    if set(skills) != {"checkup", "treat", "well_baby"}:
+        errors.append(f"MEDICAL_CARE[skills]: must name checkup, treat and well_baby, not {sorted(skills)}")
+    for act, names in skills.items():
+        if not names:
+            errors.append(f"MEDICAL_CARE[skills][{act}]: at least one skill is needed")
+        for skill in names:
+            if skill not in SKILLS:
+                errors.append(f"MEDICAL_CARE[skills][{act}]: '{skill}' is not a skill in SKILLS")
+
+
 def _check_resolution(errors, warnings, info):
     """Phase 050: the resolution core's tables. Each verb names a primitive the world implements, a skill that
     exists, and a closeness in [0, 1] for each tool verb. Each material has the four figures, and every material an
@@ -1703,6 +1763,7 @@ def check_consistency():
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_health(errors, warnings, info)
+    _check_illness(errors, warnings, info)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)
     _check_training(errors, warnings, info)

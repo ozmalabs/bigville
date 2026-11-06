@@ -1,0 +1,27 @@
+{
+  "_doc": "DISEASE (Phase 043): the acute illnesses the illness switch (physical_subsystems.illness, off by default) can raise. Each key is a HEALTH_CONDITIONS key and the disease name a resident's disease attribute holds. onset_per_day: the chance per dawn that a healthy resident catches it, by season (the seasons of SEASONS). stage_risk: a multiplier on that chance by life stage (LIFE_STAGES). severity: the health a day the illness costs (the disease base). progression: the extra cost a day while the resident is unscreened (a checkup sets screened). treat_relief: the cost a day that a treated resident does not pay (a treatment sets treated). course_days: days an illness runs before it resolves on its own; a treated resident recovers faster (MEDICAL_CARE). Every figure is APPROX: no source was consulted for the seasonal rates, the stage multipliers, or the drops. The shape (more fever in summer and autumn, the young and the old at more risk) follows the pre-modern English mortality pattern discussed in Wrigley and Schofield (1981, The Population History of England 1541-1871); the magnitudes are model parameters chosen so an untreated adult survives a fortnight of fever and an unvisited infant often does not.",
+  "_types": {},
+  "tables": {
+    "DISEASE": {
+      "fever": {
+        "onset_per_day": {
+          "spring": 0.001,
+          "summer": 0.002,
+          "autumn": 0.0015,
+          "winter": 0.001
+        },
+        "stage_risk": {
+          "infant": 2.0,
+          "child": 1.5,
+          "youth": 1.0,
+          "adult": 1.0,
+          "elder": 1.5
+        },
+        "severity": 0.03,
+        "progression": 0.02,
+        "treat_relief": 0.03,
+        "course_days": 14
+      }
+    }
+  }
+}

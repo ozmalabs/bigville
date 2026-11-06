@@ -1,0 +1,27 @@
+{
+  "_doc": "MEDICAL_CARE (Phase 043): the doctor's and midwife's physical acts on a patient, co-located, and their lasting effects. checkup sets screened for screen_days (a screened resident pays no progression, see DISEASE). treat sets treated for treated_days, consumes medicine_per_treatment from the town store (Phase 030's store guard applies), and is refused unless the patient is ill. well_baby_visit sets well_baby for well_baby_days on an infant (a seen infant pays no infant_fragility). The flags lapse after their days; days are calendar days, as the dawn tick counts them. natural_care: health an ill, untreated resident regains a day. treated_heal: health a treated, ill resident regains a day. infant_fragility: the extra cost a day while an unvisited infant is ill (added to the disease cost, not multiplied). skills: the skills that let a resident do each act (a skill at any level above 0; the doctor's trade is medicine, the midwife's is midwifery, both in SKILLS). Every figure is APPROX: the durations are design choices for a village with a doctor's visit once a season, and the rates are model parameters with no source consulted, sized against DISEASE and HEALTH.",
+  "_types": {},
+  "tables": {
+    "MEDICAL_CARE": {
+      "screen_days": 60,
+      "treated_days": 14,
+      "well_baby_days": 30,
+      "natural_care": 0.01,
+      "treated_heal": 0.04,
+      "infant_fragility": 0.05,
+      "medicine_per_treatment": 1.0,
+      "skills": {
+        "checkup": [
+          "medicine"
+        ],
+        "treat": [
+          "medicine"
+        ],
+        "well_baby": [
+          "medicine",
+          "midwifery"
+        ]
+      }
+    }
+  }
+}

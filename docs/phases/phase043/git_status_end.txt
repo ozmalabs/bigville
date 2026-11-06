@@ -1,0 +1,39 @@
+ M README.md
+ M bigville/backends/ocelot.py
+ M bigville/game.py
+ M bigville/game/game.js
+ M bigville/runtime.py
+ M bigville/seeds/bigville_actor_decision.json
+ M bigville/server.py
+ M docs/AGENT_BACKENDS_PLAN.md
+ M domains/bigville_entities.py
+ M domains/world_affordances.py
+ M packs/bigville/pack.json
+ M packs/test_hamlet/pack.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M tests/test_bigville_server.py
+ M tests/test_scenario_runner.py
+ M tests/test_simple_life.py
+ M worlds/bigville_world.py
+?? bigville/game_persistence.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/world_persistence.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase043/
+?? docs/runs/
+?? packs/bigville/world/disease.json
+?? packs/bigville/world/medical_care.json
+?? packs/test_hamlet/world/disease.json
+?? packs/test_hamlet/world/medical_care.json
+?? tests/test_bigville_game_persistence.py
+?? tests/test_bigville_graph_persistence.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_bigville_world_persistence.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase043_care.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

@@ -147,6 +147,10 @@ HUNGER_PER_STAMINA = _PACK["HUNGER_PER_STAMINA"]
 EXHAUSTION = _PACK["EXHAUSTION"]
 # Phase 037: the health routes (one health variable, its causes, age decline, fragility and the harms).
 HEALTH = _PACK["HEALTH"]
+# Phase 043: the illness rules (DISEASE: onset, severity, progression, course) and the doctor's and midwife's
+# acts (MEDICAL_CARE: screening, treatment and well-baby durations, and the skills each act needs). APPROX.
+DISEASE = _PACK["DISEASE"]
+MEDICAL_CARE = _PACK["MEDICAL_CARE"]
 # Phase 029: a contested take (force, cost, margins, reactions). APPROX values; see the table's _doc.
 CONTEST = _PACK["CONTEST"]
 # Phase 050: the one resolution rule. VERBS (the physics of a verb), MATERIALS (what a thing is made of) and

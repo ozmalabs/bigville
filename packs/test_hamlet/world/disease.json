@@ -1,0 +1,7 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 043): DISEASE is empty. The illness switch (physical_subsystems.illness) is off by default, and this pack has no medicine or midwifery skills to give MEDICAL_CARE a skill to check, so it has no illness rules. Values, if wanted, are in packs/bigville/world/disease.json (APPROX).",
+  "_types": {},
+  "tables": {
+    "DISEASE": {}
+  }
+}

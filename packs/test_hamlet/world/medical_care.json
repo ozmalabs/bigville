@@ -1,0 +1,7 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 043): MEDICAL_CARE is empty, since this pack has no medicine or midwifery skills (see disease.json in this directory). Values are in packs/bigville/world/medical_care.json (APPROX).",
+  "_types": {},
+  "tables": {
+    "MEDICAL_CARE": {}
+  }
+}

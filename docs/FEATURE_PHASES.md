@@ -1827,16 +1827,7 @@ the curfew (`bigville_bells`, residents' institution).
 
 ## Phase 043 -- Screening, treatment, well-baby care and illness
 
-**Status:** ready, after 037 (decision 2026-11-05: added). Spec: `seeds/bigville_doctor_care.json`
-(`bd_checkup`, `bd_treat`, `bd_onset`, `bd_recover`) and `seeds/bigville_infant_care.json`
-(`bi_wellbaby`, `bi_onset`). The effective acute drop is `disease_base + (screened ? 0 :
-progression) - (treated ? treat_relief : 0)`; treated patients heal fast and untreated ones at
-`natural_care`; an infant takes `disease_base + (well_baby ? 0 : infant_fragility)`. The
-seeds' fees, `funds` and affordability gate (a coin test; `public_health` paid by the treasury)
-are the residents' institutions and are not world rules here: a doctor decides whether to treat,
-and a fee is an ordinary handover. Their parameters are set by the adapter and so are new,
-APPROX. NEW DESIGN, behind an `illness` switch, default off: the seeds leave illness onset
-(`disease_armed`) to the adapter and the port has none (only `diagnose`).
+**Status:** done, behind `physical_subsystems.illness` (default off). Illness onset from the new `DISEASE` table (fever: seasonal daily rate x life-stage risk, stateless seeded draw keyed on seed, resident, disease and day); a daily course of `severity + progression (unscreened) - treat_relief (treated) + infant_fragility (unvisited infant)` through `harm(..., "illness")`, recovery at `natural_care` or `treated_heal`, ending after `course_days` (14, a design choice). Checkup, treatment (consumes medicine through the store guard) and well-baby visit are `care` actions with a `care_kind`, by a resident with the medicine or midwifery skill on the patient's cell; the flags lapse after `MEDICAL_CARE` days and are in `body_state`. All figures APPROX. Open: whether the simple doctor should choose these acts (a cheap.py policy, not added); whether treatment should cure at once. See docs/phases/phase043/PHASE043_REPORT.md.
 
 **Goal.**
 1. **Screening, treatment, well-baby.** `checkup` (a preventive visit sets `screened`), `treat`
@@ -2846,3 +2837,4 @@ provider layer's retry and backoff (Phase 055).
 | 050b Resolution core, the rest | done | (this commit) | docs/phases/phase050/PHASE050B_REPORT.md -- displace (push, pull, drag); spill; recipe pace, quality, yield, ruin; set_intensity; trivial and slot rules; strain recovery; 1265 passed |
 | 050 Resolution core, stage 1 | done (part) | (this commit) | docs/phases/phase050/PHASE050_REPORT.md -- pure core; VERBS, MATERIALS, RESOLUTION; attempt with damage and open; intensity, strain, wear, noise; recipe cost term inert at the gate; 1242 passed |
 | 058 Persona: personality, a usual day, relationships | done | (this commit) | docs/phases/phase058/PHASE058_REPORT.md -- `domains/persona.py` (traits in words, life sketch, usual day, persona card), `BigvilleGame.persona()`, routine bands now read from the pack (unchanged 9/17/21), `plan_ties` seeds 845 founding ties but `RELATIONSHIP_SEEDING.enabled` is false because four tests assert a town with no ties; simple-backend behaviour identical to HEAD over 60 and 200 turns; 245 phase tests; 1328 passed |
+| 043 Screening, treatment, well-baby care and illness | done | (this commit) | docs/phases/phase043/PHASE043_REPORT.md -- illness switch (off); DISEASE and MEDICAL_CARE; checkup, treat, well-baby as care kinds; 1352 passed |
