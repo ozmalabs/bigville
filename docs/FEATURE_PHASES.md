@@ -1117,10 +1117,7 @@ with the switch off a flat radius applies; existing conversation tests pass with
 
 ## Phase 029 -- Contested actions: reaction turns and taking
 
-**Status:** ready, after 021, 024 and 025 (decision 2026-11-05: contests resolve in an
-interrupt style; depending on the situation and on skill, size and ability, the other party
-gets a reaction turn). `SIMPLE_VILLAGE_PACKAGE_12.md` records that taking held goods is
-unsupported for lack of this mechanism.
+**Status:** done. `take` is a deterministic physical contest on one cell: force from strength, size (new `SIZE` draw), life stage and the exhaustion step, with a `fighting` technique multiplier; outcomes completed, dropped, held or redirected; stamina costs with the trivial and slot thresholds from the new `CONTEST` table (all APPROX). The holder reacts (resist, brace, yield, evade) through an optional backend `react`; a human holder makes `step()` return `waiting`; a backend without `react` is logged as `no_react_method`. Completed takes and yields are `take`/`yield` handovers. Open: test_hamlet's placeholder `constable` trade; reach is the same cell; the suspended turn and pending contest are not checkpointed. See docs/phases/phase029/PHASE029_REPORT.md.
 
 **Spec.** `seeds/bigville_theft.json` `th_take`: taking is a world fact, "anyone can physically
 take what another holds; the substrate never forbids it". Recognising it as theft, charging,
@@ -1843,3 +1840,4 @@ rearing priors (the backend's); carrying infants.
 | 026 Observable handovers | done | (this commit) | docs/phases/phase026/PHASE026_REPORT.md -- handover facts replace Transaction; economy.handovers; _transactions compat count; 894 passed |
 | 027 Food value and graded eating | done | (this commit) | docs/phases/phase027/PHASE027_REPORT.md -- feeds x freshness; spoiled stock kept; illness_risk published; 907 passed |
 | 028 Hearing range and witnessing | done | (this commit) | docs/phases/phase028/PHASE028_REPORT.md -- loudness is Chebyshev hearing radius; sight witnesses the act; per-listener deliveries; 921 passed |
+| 029 Contested take and reactions | done | (this commit) | docs/phases/phase029/PHASE029_REPORT.md -- CONTEST, SIZE, fighting skill; react() protocol; human reaction wait; 945 passed |

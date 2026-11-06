@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import json
 import random
-from dataclasses import dataclass
+from collections import deque
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,9 @@ from .backends.protocol import communication_capabilities
 from .character import CharacterDefinition, FrameSeed, MemoryRecord
 from worlds.bigville_bond_world import BigvilleBondWorld
 from domains.data_view import world_entities
+
+
+_WAITING = object()   # a reaction that a human holder has not yet given
 
 
 @dataclass
@@ -79,6 +83,10 @@ class BigvilleGame:
         self.last_errors: dict[str, str] = {}
         # Actors in the order their responses were applied on the last advanced turn (Phase 025).
         self.last_order: list[str] = []
+        # Phase 029: a turn waiting for a holder's reaction (None when no turn is waiting), and the newest
+        # contested takes (turn, attacker, target, offer, reaction, outcome). Not checkpointed.
+        self._suspended: dict[str, Any] | None = None
+        self.contest_log: deque = deque(maxlen=int(world_entities(self.world).CONTEST["log_limit"]))
 
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
@@ -774,7 +782,12 @@ class BigvilleGame:
         return order
 
     def step(self) -> dict:
-        """Advance one shared turn, or return waiting for human input."""
+        """Advance one shared turn, or return waiting for human input.
+
+        A contested take (Phase 029) can wait for the holder's reaction. The step then returns waiting, and
+        the next call resumes that turn where it stopped, without deciding again."""
+        if self._suspended is not None:
+            return self._resume_suspended()
         # Period changes happen only after a successful turn, below. Publish
         # them on the next decision rather than changing the world while a
         # human is still deciding.
@@ -807,9 +820,33 @@ class BigvilleGame:
         self.last_errors = {}
         order = self.turn_order(list(responses), int(self.world._turn))
         self.last_order = order
-        for actor in order:
+        # Phase 029: the cells at the start of the turn, for whether a target could see a taker coming.
+        self.world.mark_turn_start()
+        return self._apply_turn(order, responses, 0)
+
+    def _apply_turn(self, order, responses, start):
+        """Apply each actor's response in ``order`` from position ``start``, then finish the turn.
+
+        Returns waiting when a human target must react to a contested take. The turn then resumes on the
+        next step (``_resume_suspended``)."""
+        for index in range(start, len(order)):
+            actor = order[index]
             response = responses[actor]
             utterances_before = len(self.world._utterances)
+            if self._is_take(response):
+                pending, reason = self.world.take_begin(actor, dict(response.major_action.params))
+                choice, note = None, ""
+                if pending is not None:
+                    choice, note = self._contest_choice(pending)
+                    if choice is _WAITING:
+                        self._suspended = {"order": order, "index": index, "responses": responses,
+                                           "actor": actor, "response": response,
+                                           "utterances_before": utterances_before}
+                        return self._waiting_for_reaction(pending)
+                result = self._settle_take(actor, response, pending, reason, choice, note)
+                self.last_results[actor] = result
+                self._record_speech_witnesses(actor, utterances_before)
+                continue
             # Avoid actor-by-actor world scans in the common object-free
             # town. With objects present, only the actor and residents
             # close enough to witness this action need endpoint snapshots.
@@ -828,6 +865,29 @@ class BigvilleGame:
             if result and before:
                 after = {name: self._visible_object_snapshot(name) for name in before}
                 self._record_physical_changes(actor, before, after, int(self.world._turn))
+        return self._finish_turn(responses)
+
+    def _resume_suspended(self) -> dict:
+        """Continue a turn that waited for a human holder's reaction, or wait again."""
+        suspended = self._suspended
+        actor = suspended["actor"]
+        pending = self.world.contest_pending()
+        if pending is None:
+            # The pending contest is gone, so the take cannot complete: it is void.
+            self._suspended = None
+            result = self._settle_take(actor, suspended["response"], None, "not_possible")
+        else:
+            choice, note = self._contest_choice(pending)
+            if choice is _WAITING:
+                return self._waiting_for_reaction(pending)
+            self._suspended = None
+            result = self._settle_take(actor, suspended["response"], pending, None, choice, note)
+        self.last_results[actor] = result
+        self._record_speech_witnesses(actor, suspended["utterances_before"])
+        return self._apply_turn(suspended["order"], suspended["responses"], suspended["index"] + 1)
+
+    def _finish_turn(self, responses) -> dict:
+        """The end of a turn: world turn bookkeeping, event expiry, periods and continuations."""
         self.world.resolve_actor_turn()
         # Context construction is observational (trace/UI callers may ask for
         # it repeatedly). Expire records once the successful step has advanced
@@ -848,6 +908,97 @@ class BigvilleGame:
                 self._continuations.pop(actor, None)
         return {"status": "advanced", "turn": int(self.world._turn),
                 "results": dict(self.last_results), "snapshot": self.snapshot()}
+
+    # ---------------------------------------------------- contested take (Phase 029)
+    @staticmethod
+    def _is_take(response: ActorResponse) -> bool:
+        return response.major_action is not None and response.major_action.action == "take"
+
+    def _reaction_context(self, pending) -> ActorContext:
+        """The holder's reaction context: who takes, what, by hand, and the reaction options only."""
+        context = self._context(pending["target"])
+        offer = pending["offer"]
+        context.observations["reaction"] = {
+            "actor": pending["attacker"], "on": str(pending["kind"]), "by": "hand",
+            "amount": float(pending["amount"]), "late": bool(offer["late"]),
+            "options": list(offer["options"]),
+        }
+        context.affordances = [{"action": "react", "option": option} for option in offer["options"]]
+        return context
+
+    def _waiting_for_reaction(self, pending) -> dict:
+        context = self._reaction_context(pending)
+        return {"status": "waiting", "actor": pending["target"],
+                "reaction": {"actor": pending["attacker"], "on": str(pending["kind"]),
+                             "options": list(pending["offer"]["options"])},
+                "context": context.observations, "affordances": context.affordances}
+
+    def _contest_choice(self, pending):
+        """The holder's reaction to a pending take: (option or None, note), or (_WAITING, note).
+
+        None means no reaction: the holder is ineligible, its backend has no ``react`` method (noted,
+        so a missing adapter shows in the log), or it declined. A reaction the offer did not name is None."""
+        offer = pending["offer"]
+        target = pending["target"]
+        if not offer["eligible"]:
+            return None, f"ineligible:{offer['reason']}"
+        react = getattr(self.backends.get(target), "react", None)
+        if not callable(react):
+            return None, "no_react_method"
+        response = react(self._reaction_context(pending))
+        if response.waiting:
+            return _WAITING, "waiting"
+        choice = dict(response.backend_state or {}).get("reaction") or None
+        if choice is None:
+            return None, "declined"
+        if choice not in offer["options"]:
+            return None, "invalid"
+        return choice, "chosen"
+
+    def _settle_take(self, actor, response, pending, reason="", choice=None, note=""):
+        """Resolve a take (or record its refusal), report it to the actor, and apply the rest of the response."""
+        if pending is None:
+            self.world.take_outcome(actor, False, reason)
+            applied = False
+        else:
+            applied, code = self.world.take_resolve(pending, choice)
+            self.world.take_outcome(actor, applied, code)
+            self._log_contest(pending, note)
+            self._record_contest_witnesses(pending)
+        self._report_take_outcome(actor, applied)
+        self._apply_response_contained(actor, replace(response, major_action=None))
+        return bool(applied)
+
+    def _report_take_outcome(self, actor, applied):
+        """Give the actor's provider the take's outcome, as other major actions report theirs."""
+        mind_getter = getattr(self.world, "actor_mind", None)
+        mind = mind_getter(actor) if callable(mind_getter) else None
+        record_outcome = getattr(mind, "record_action_outcome", None)
+        if callable(record_outcome):
+            record_outcome(action="take", applied=bool(applied))
+
+    def _record_contest_witnesses(self, pending):
+        """Everyone on the cell when the take was made sees its result. Nobody else is told."""
+        result = pending.get("result") or {}
+        turn = int(self.world._turn)
+        for observer in pending["witnesses"]:
+            if observer == pending["attacker"]:
+                continue
+            self._physical_events.setdefault(observer, []).append({
+                "actor": pending["attacker"], "target": pending["target"], "action": "contest",
+                "outcome": result.get("outcome", ""), "turn": turn, "expires_turn": turn})
+
+    def _log_contest(self, pending, note):
+        offer, result = pending["offer"], pending.get("result") or {}
+        self.contest_log.append({
+            "turn": pending["turn"], "attacker": pending["attacker"], "target": pending["target"],
+            "kind": str(pending["kind"]), "amount": float(pending["amount"]),
+            "eligible": bool(offer["eligible"]), "reason": offer["reason"], "late": bool(offer["late"]),
+            "note": note, "reaction": result.get("reaction", ""), "outcome": result.get("outcome", ""),
+            "applied": bool(result.get("applied", False)), "redirected": bool(result.get("redirected", False)),
+            "attacker_cost": float(result.get("attacker_cost", 0.0)),
+            "target_cost": float(result.get("target_cost", 0.0)),
+        })
 
     def dump_held_state(self, actor: str) -> dict:
         """Reverse API exposed to UI/debuggers for one cognition provider."""

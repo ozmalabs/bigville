@@ -3,6 +3,10 @@
   "_types": {},
   "tables": {
     "SKILLS": {
+      "fighting": {
+        "kind": "general",
+        "learning": "physical"
+      },
       "baking": {
         "kind": "craft",
         "learning": "physical"

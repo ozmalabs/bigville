@@ -9,6 +9,12 @@
           "baking",
           "milling"
         ]
+      },
+      "combat": {
+        "metaskill": "toil",
+        "skills": [
+          "fighting"
+        ]
       }
     }
   }

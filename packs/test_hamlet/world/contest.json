@@ -1,0 +1,37 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 029): CONTEST. The same table as packs/bigville/world/contest.json, copied so the standalone pack runs its own contests. Every value and its APPROX status is recorded in packs/bigville/world/contest.json.",
+  "_types": {},
+  "tables": {
+    "CONTEST": {
+      "size_exponent": 2.0,
+      "life_stage_force": {
+        "infant": 0.2,
+        "child": 0.8,
+        "youth": 0.95,
+        "adult": 1.0,
+        "elder": 0.85
+      },
+      "base_cost": 0.2,
+      "grip": 0.5,
+      "technique_weight": 2.0,
+      "min_efficiency": 0.2,
+      "trivial_below": 0.25,
+      "slot_above": 0.5,
+      "decisive_margin": 0.2,
+      "narrow_margin": 0.05,
+      "redirect_gap": 0.3,
+      "overextend": 0.5,
+      "reaction_floor": 0.5,
+      "late_penalty": 0.75,
+      "late_options": [
+        "yield",
+        "brace"
+      ],
+      "busy_factor": 0.7,
+      "overloaded_factor": 0.8,
+      "baseline_level": 0.1,
+      "practice_minutes": 5.0,
+      "log_limit": 500
+    }
+  }
+}

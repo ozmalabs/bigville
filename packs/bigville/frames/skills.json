@@ -155,6 +155,10 @@
         "kind": "office",
         "learning": "cognitive"
       },
+      "fighting": {
+        "kind": "general",
+        "learning": "physical"
+      },
       "policing": {
         "kind": "office",
         "learning": "cognitive"

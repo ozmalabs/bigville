@@ -256,6 +256,18 @@
           "dealing"
         ]
       },
+      "fighting": {
+        "title": "fighting: hitting, grappling, throwing, and holding on",
+        "skills": [
+          "fighting"
+        ],
+        "clusters": [
+          "combat"
+        ],
+        "metaskills": [
+          "toil"
+        ]
+      },
       "household_work": {
         "title": "work in the home: service, labour, and the household",
         "skills": [

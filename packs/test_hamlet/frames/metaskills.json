@@ -7,6 +7,11 @@
         "description": "hand and eye for making things in any material",
         "g_loading": 0.3,
         "learning": "physical"
+      },
+      "toil": {
+        "description": "the technique and endurance of heavy, plain work",
+        "g_loading": 0.15,
+        "learning": "physical"
       }
     }
   }

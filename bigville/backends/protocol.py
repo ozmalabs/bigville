@@ -172,6 +172,11 @@ class CognitionBackend(Protocol):
         """Reverse API: expose the provider's resident-held state read-only."""
         ...
 
+    # Optional (Phase 029): ``react(context) -> ActorResponse``. When another resident takes from this one,
+    # the game calls ``react`` with a context whose ``observations["reaction"]`` names the taker, the goods
+    # and the offered ``options``; the response's ``backend_state["reaction"]`` names one of them. A backend
+    # without ``react`` does not react, and the game records that. A human backend returns ``waiting``.
+
 
 def communication_capabilities(backend) -> dict[str, Any]:
     """Return the stable capability marker exposed to worlds and clients."""

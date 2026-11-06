@@ -6,6 +6,9 @@
       "baker": [
         "baking",
         "milling"
+      ],
+      "constable": [
+        "fighting"
       ]
     }
   }

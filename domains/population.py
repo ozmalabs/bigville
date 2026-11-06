@@ -47,6 +47,8 @@ NOVELTY_SWING = _PACK["NOVELTY_SWING"]
 MERE_EXPOSURE_GAIN = _PACK["MERE_EXPOSURE_GAIN"]
 MERE_EXPOSURE_DECAY = _PACK["MERE_EXPOSURE_DECAY"]
 PHYSIQUE = _PACK["PHYSIQUE"]
+# Phase 029: body size, drawn per person after their other capacities (see SIZE's _doc).
+SIZE = _PACK["SIZE"]
 APTITUDE = _PACK["APTITUDE"]
 TALENT = _PACK["TALENT"]
 LIMITATION_PREVALENCE = _PACK["LIMITATION_PREVALENCE"]
@@ -211,8 +213,16 @@ def draw_person_capacities(rng, *, age=30.0, sex=None):
     for name in order:
         if rng.random() < limitation_rate(name, age=age, sex=sex, present=present):
             present.append(name)
+    # Phase 029: body size is drawn last, so the draws above are the same as before it existed.
+    size = draw_size(rng, age=age)
     return {"aptitude": round(aptitude, 4), "aptitude_base": round(aptitude, 4),
-            "talents": talents, "limitations": sorted(present)}
+            "talents": talents, "limitations": sorted(present), "size": round(size, 4)}
+
+
+def draw_size(rng, *, age=30.0):
+    """A body size (SIZE): the mean for the age plus a normal draw, floored. One draw from `rng`."""
+    mean = _age_rate(SIZE["mean_by_age"], age)
+    return float(max(SIZE["floor"], mean + rng.normal(0.0, SIZE["sd"])))
 
 
 def describe_capacity_distribution(n=10000, *, seed=1, age=35.0):

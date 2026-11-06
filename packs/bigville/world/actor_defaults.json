@@ -20,6 +20,7 @@
         "mood": 0.5,
         "str_base": 1.0,
         "sta_base": 1.0,
+        "size": 1.0,
         "stamina_reserve": 1.0
       }
     }

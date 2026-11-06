@@ -582,6 +582,89 @@ def _check_exhaustion(errors, warnings, info):
         errors.append(f"EXHAUSTION: night hours must lie in [0, 24), not {hours}")
 
 
+def _check_contest(errors, warnings, info):
+    """Phase 029: the CONTEST table (a contested take: force, cost, margins, reactions) and the SIZE table it
+    draws body size from. Fractions stay in range, the margins and reaction bands keep their order, and the
+    reasons, action, handover kinds and the fighting skill that the contest uses exist in their tables."""
+    ct = CONTEST
+    expected = ("size_exponent", "life_stage_force", "base_cost", "grip", "technique_weight", "min_efficiency",
+                "trivial_below", "slot_above", "decisive_margin", "narrow_margin", "redirect_gap", "overextend",
+                "reaction_floor", "late_penalty", "late_options", "busy_factor", "overloaded_factor",
+                "baseline_level", "practice_minutes", "log_limit")
+    for name in expected:
+        if name not in ct:
+            errors.append(f"CONTEST: missing {name!r}")
+    if errors and any(name not in ct for name in expected):
+        return
+
+    def number(name):
+        value = ct[name]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            errors.append(f"CONTEST[{name}]: a number, not {value!r}")
+            return None
+        return float(value)
+
+    values = {name: number(name) for name in expected if name not in ("life_stage_force", "late_options", "log_limit")}
+    if values.get("size_exponent") is not None and values["size_exponent"] <= 0.0:
+        errors.append(f"CONTEST[size_exponent]: must be positive, not {values['size_exponent']}")
+    for name, lo, hi in (("grip", 0.0, 1.0), ("min_efficiency", 0.0, 1.0), ("redirect_gap", 0.0, 1.0),
+                         ("reaction_floor", 0.0, 1.0), ("late_penalty", 0.0, 1.0), ("busy_factor", 0.0, 1.0),
+                         ("overloaded_factor", 0.0, 1.0), ("baseline_level", 0.0, 1.0),
+                         ("decisive_margin", 0.0, 1.0), ("narrow_margin", 0.0, 1.0)):
+        value = values.get(name)
+        if value is not None and not (lo < value <= hi if name in ("grip", "min_efficiency", "late_penalty",
+                                                                   "busy_factor", "overloaded_factor",
+                                                                   "reaction_floor", "decisive_margin")
+                                      else lo <= value <= hi):
+            errors.append(f"CONTEST[{name}]: out of range, not {value}")
+    for name in ("base_cost", "slot_above", "practice_minutes"):
+        value = values.get(name)
+        if value is not None and value <= 0.0:
+            errors.append(f"CONTEST[{name}]: must be positive, not {value}")
+    for name in ("technique_weight", "trivial_below", "overextend"):
+        value = values.get(name)
+        if value is not None and value < 0.0:
+            errors.append(f"CONTEST[{name}]: must not be negative, not {value}")
+    if (values.get("decisive_margin") is not None and values.get("narrow_margin") is not None
+            and not values["decisive_margin"] > values["narrow_margin"] >= 0.0):
+        errors.append("CONTEST: decisive_margin > narrow_margin >= 0 is required (the goods fall in between)")
+    if isinstance(ct["log_limit"], bool) or not isinstance(ct["log_limit"], int) or ct["log_limit"] < 1:
+        errors.append(f"CONTEST[log_limit]: a whole number of at least 1, not {ct['log_limit']!r}")
+    for stage, factor in ct["life_stage_force"].items():
+        if stage not in LIFE_STAGES:
+            errors.append(f"CONTEST[life_stage_force]: unknown life stage {stage!r}")
+        if isinstance(factor, bool) or not isinstance(factor, (int, float)) or not 0.0 < float(factor) <= 1.5:
+            errors.append(f"CONTEST[life_stage_force][{stage}]: a factor in (0, 1.5], not {factor!r}")
+    if sorted(ct["late_options"]) != sorted(set(ct["late_options"])) or not set(ct["late_options"]) <= {"yield", "brace"}:
+        errors.append(f"CONTEST[late_options]: a subset of yield and brace, not {ct['late_options']!r}")
+    if "yield" not in ct["late_options"]:
+        errors.append("CONTEST[late_options]: a late reaction must always allow yield")
+    for code in ("held", "evaded", "dropped"):
+        if code not in REFUSAL_REASONS:
+            errors.append(f"REFUSAL_REASONS: needs the contest code {code!r} (Phase 029)")
+    if "take" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["take"].get("description", "")).strip():
+        errors.append("MAJOR_ACTIONS: needs 'take' with a description (Phase 029)")
+    for kind in ("take", "yield"):
+        if kind not in HANDOVER_KINDS:
+            errors.append(f"HANDOVER_KINDS: needs the contest kind {kind!r} (Phase 029)")
+    if "fighting" not in SKILLS or SKILLS["fighting"].get("learning") != "physical":
+        errors.append("SKILLS[fighting]: the contest skill must exist and be learned physically (Phase 029)")
+    if "fighting" not in SKILLS or not any("fighting" in c["skills"] for c in SKILL_CLUSTERS.values()):
+        errors.append("SKILL_CLUSTERS: no cluster holds 'fighting' (Phase 029)")
+    sz = SIZE
+    for name in ("sd", "floor"):
+        if isinstance(sz.get(name), bool) or not isinstance(sz.get(name), (int, float)) or float(sz[name]) < 0:
+            errors.append(f"SIZE[{name}]: a non-negative number, not {sz.get(name)!r}")
+    if not 0.0 < float(sz["floor"]) <= 1.0:
+        errors.append(f"SIZE[floor]: in (0, 1], not {sz['floor']!r}")
+    points = sz["mean_by_age"]
+    starts = [float(start) for start, _ in points]
+    if not points or starts[0] != 0.0 or starts != sorted(set(starts)) or any(float(m) <= 0.0 for _, m in points):
+        errors.append(f"SIZE[mean_by_age]: points from age 0, ascending, with positive means, not {points!r}")
+    info.append(f"CONTEST: reaction floor {ct['reaction_floor']}, decisive margin {ct['decisive_margin']}, "
+                f"base cost {ct['base_cost']}; SIZE mean at age 18 {points[-1][1] if points else 'n/a'}")
+
+
 def _check_food_grading(errors, warnings, info):
     """Phase 027: every food item has a `feeds` value in loaf-equivalents (0 < feeds <= 1.5), a raw food that
     needs preparation is a food, and the FOOD_GRADING constants are fractions. Derived scraps carry no feeds
@@ -1394,6 +1477,7 @@ def check_consistency():
     _check_handovers(errors, warnings, info)
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
+    _check_contest(errors, warnings, info)
     _check_food_grading(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)

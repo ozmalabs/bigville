@@ -427,6 +427,14 @@ class DeterministicBackend:
         self.last_speech_turn = context.turn
         return [{"target": target["id"], "act": act, "slots": slots, "content": ""}]
 
+    def react(self, context: ActorContext) -> ActorResponse:
+        """Phase 029: a fixed reaction to a contested take. Resist when offered, else brace, else yield.
+        Deterministic: the same offer always gets the same reaction."""
+        offer = context.observations.get("reaction", {})
+        options = list(offer.get("options", []))
+        choice = next((option for option in ("resist", "brace", "yield") if option in options), "")
+        return ActorResponse(backend_state={"reaction": choice, "reason": "fixed_reaction_policy"})
+
     def dump_held_state(self) -> HeldState:
         return HeldState(
             character_id=self.character.character_id,

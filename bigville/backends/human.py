@@ -20,10 +20,23 @@ class HumanBackend:
         self.character = character
         self.chooser = chooser
         self._responses = deque()
+        self._reactions = deque()
         self.last_context: ActorContext | None = None
+        self.last_reaction_context: ActorContext | None = None
 
     def submit(self, response: ActorResponse):
         self._responses.append(response)
+
+    def submit_reaction(self, response: ActorResponse):
+        """Queue the reaction to a contested take (Phase 029). Separate from the decision queue."""
+        self._reactions.append(response)
+
+    def react(self, context: ActorContext) -> ActorResponse:
+        """A contested take on this resident: the queued reaction, or waiting until one is submitted."""
+        self.last_reaction_context = context
+        if self._reactions:
+            return self._reactions.popleft()
+        return ActorResponse(waiting=True)
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self.last_context = context

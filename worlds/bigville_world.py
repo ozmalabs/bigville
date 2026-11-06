@@ -17,7 +17,7 @@ import heapq
 from collections import deque
 from pathlib import Path
 
-from bigville.runtime import (BigvilleGraph, WorldAdapter, boot_core,
+from bigville.runtime import (BigvilleGraph, NodeRef, WorldAdapter, boot_core,
                                load_seeds_into, manifest_for)
 from bigville.scenarios import load_scenario
 from domains.data_view import entities as _entities_view  # noqa: E402
@@ -426,6 +426,10 @@ class BigvilleWorld:
         self._affordances = {}
         self._observation_schemas = {}
         self._map_cells = {}
+        # Phase 029: the pending contested take (a plain dict, None when none), and the actors' cells at the
+        # start of the turn, which decide whether a target could see a taker coming.
+        self._contest = None
+        self._turn_start_positions = {}
         # Cells crossed during the current turn. Ground that saw traffic this turn does
         # not also recover this turn; everything else grows back.
         self._traversed_this_tick = set()
@@ -6088,6 +6092,7 @@ class BigvilleWorld:
         cap = prof["capability"] if capability is None else float(capability)
         stage = self.E.LIFE_STAGES.get(life_stage, self.E.LIFE_STAGES["adult"])
         healthy = self.E.HEALTH_CONDITIONS["healthy"]
+        founding_levels, founding_metas = self._founding_levels(role, trades, skill)
         a = self.eng.add_node("Agent", {"name": name, "role": role, "skill": float(skill),
                                         "age": float(age), "life_stage": life_stage, "health": "healthy",
                                         "health_value": float(defaults["health_value"]), "disease": "",
@@ -6099,8 +6104,8 @@ class BigvilleWorld:
                                         "trades": ",".join((role,) + tuple(trades)),
                                         # a level per skill and per metaskill (E.initial_skill_levels),
                                         # and minutes of practice awaiting consolidation this period
-                                        "skill_levels": self.E.initial_skill_levels((role,) + tuple(trades), skill)[0],
-                                        "metaskill_levels": self.E.initial_skill_levels((role,) + tuple(trades), skill)[1],
+                                        "skill_levels": founding_levels,
+                                        "metaskill_levels": founding_metas,
                                         "skill_practice": {},
                                         # the meta-metaskill, metaskill talents, and limitations
                                         # (average and unlimited unless drawn: draw_capacities)
@@ -6146,6 +6151,7 @@ class BigvilleWorld:
             "health": float(defaults["body"]["health"]), "mood": float(defaults["body"]["mood"]), "satiety": 0.0,
             "last_food": -1.0, "food_run": 0.0,
             "str_base": float(defaults["body"]["str_base"]), "sta_base": float(defaults["body"]["sta_base"]),
+            "size": float(defaults["body"]["size"]),
             "str_train": 0.0,
             "sta_train": 0.0, "strength": 1.0, "stamina": 1.0,
             "stats_dirty": 0.0, "stamina_reserve": float(defaults["body"]["stamina_reserve"])})
@@ -8082,10 +8088,20 @@ class BigvilleWorld:
             return self._claimed_attempt(actor, "transfer", lambda: self._physical_transfer(
                 source, recipient, kind, amount, handover_kind="transfer"))
         if action == "take":
-            # A resident's carried stock is not unattended merely because a
-            # backend can name its holder.  Taking held goods needs an explicit
-            # contested physical mechanism; this action does not invent one.
-            return self._refuse("unsupported")
+            # Phase 029: a take without a game is a contest the holder does not answer (no reaction).
+            recipient = kwargs.get("recipient")
+            if recipient is not None and self._as_key(recipient) != actor:
+                return self._refuse("wrong_target")
+            plan = {"source": kwargs.get("source", args[0] if args else None),
+                    "kind": kwargs.get("kind", args[1] if len(args) > 1 else None),
+                    "amount": kwargs.get("amount", args[2] if len(args) > 2 else 1.0)}
+            pending, code = self.take_begin(actor, plan)
+            if pending is None:
+                return self._refuse(code)
+            applied, code = self.take_resolve(pending, None)
+            if not applied:
+                self._refusal_code = code
+            return applied
         if action == "put":
             container = self._as_key(kwargs.get("container", args[0] if args else None))
             kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
@@ -8449,9 +8465,12 @@ class BigvilleWorld:
         """The actor's aptitude (meta-metaskill), metaskill talents, and limitations."""
         return self._person(actor)
 
-    def set_capacities(self, actor, *, aptitude=None, talents=None, limitations=None):
+    def set_capacities(self, actor, *, aptitude=None, talents=None, limitations=None, size=None):
         """Set an actor's capacities (setup, or a scenario authoring a particular person)."""
         node = self._actors[actor]
+        if size is not None:
+            # Phase 029: body size is a physical trait of the body (CONTEST uses it), not of the Agent.
+            self.eng.set_attr(self._bodies[actor], "size", float(size))
         if aptitude is not None:
             self.eng.set_attr(node, "aptitude", float(aptitude))
             self.eng.set_attr(node, "aptitude_base", float(aptitude))
@@ -8463,6 +8482,19 @@ class BigvilleWorld:
             self.eng.set_attr(node, "limitations", sorted(limitations))
         return self._person(actor)
 
+    def _founding_levels(self, role, trades, skill):
+        """({skill: level}, {metaskill: level}) for a new resident: their trades' skills at `skill`, and every
+        resident at least the CONTEST baseline in fighting (Phase 029). A constable's trade gives fighting at
+        the trade's level instead. The baseline lifts the metaskill of fighting like any other level."""
+        levels, metas = self.E.initial_skill_levels((role,) + tuple(trades), skill)
+        base = float(self.E.CONTEST["baseline_level"])
+        if base > 0.0 and float(levels.get("fighting", 0.0)) < base:
+            levels["fighting"] = base
+            meta = self.E.skill_metaskill("fighting")
+            if meta:
+                metas[meta] = max(float(metas.get(meta, 0.0)), float(self.E.META_FROM_SKILL) * base)
+        return levels, metas
+
     def draw_capacities(self, actor, *, seed=0, sex=None):
         """Draw an actor's capacities from the population distributions (E.draw_person_capacities),
         deterministically from `seed` and their name."""
@@ -8472,7 +8504,7 @@ class BigvilleWorld:
         age = float(self.eng.node(self._actors[actor])["attrs"].get("age", 30.0))
         drawn = self.E.draw_person_capacities(rng, age=age, sex=sex)
         return self.set_capacities(actor, aptitude=drawn["aptitude"], talents=drawn["talents"],
-                                   limitations=drawn["limitations"])
+                                   limitations=drawn["limitations"], size=drawn["size"])
 
     def effective_skill(self, actor, skill):
         """The actor's working level at a skill: own level, lifted by their closest skill through the
@@ -8846,6 +8878,311 @@ class BigvilleWorld:
     # The seeded rules are bigville_move_energy (mv_energy_budget, mv_deplete) and bigville_time_sleep
     # (bt_collapse, bt_replenish, bt_wake, bt_decide_sleep). The decision to sleep belongs to the backend;
     # this block only enacts sleep, collapse and wake, and publishes the facts the seeds name.
+    # ---------------------------------------------- contested take (Phase 029)
+    # A take is a physical contest between two residents on one cell. The world computes the forces, the
+    # reaction offer and the outcome; the game asks the holder's backend which reaction it chooses. Nothing
+    # here is random, and no ownership, crime or law is attached (the residents' institutions own those).
+    # The pending contest is a plain dict held on `self._contest` between the attacker's claim and its
+    # resolution, so a human holder's reaction can wait for input.
+    def mark_turn_start(self):
+        """Record every resident's cell at the start of the turn (the observation a target can have made)."""
+        self._turn_start_positions = {name: tuple(pos) for name, pos in self._actor_positions.items()
+                                      if pos is not None}
+
+    def contest_pending(self):
+        """The pending contest (a plain dict), or None."""
+        return self._contest
+
+    def _contest_efficiency(self, skill):
+        """Technique discounts a side's share of a load: 1.0 at no skill, min_efficiency at full skill."""
+        skill = min(1.0, max(0.0, float(skill)))
+        return 1.0 - (1.0 - float(self.E.CONTEST["min_efficiency"])) * skill
+
+    def _contest_share(self, load, own, skill):
+        """A side's cost share: the load it bears as a share of its own force, times its efficiency."""
+        if load <= 0.0:
+            return 0.0
+        ratio = 1.0 if own <= 0.0 else min(1.0, float(load) / float(own))
+        return ratio * self._contest_efficiency(skill)
+
+    def _contest_side(self, actor):
+        """One side's traits: force (strength, size, life stage, exhaustion step), skill and score."""
+        ct = self.E.CONTEST
+        body = self._bodies.get(actor)
+        ba = self.eng.node(body)["attrs"] if body is not None else {}
+        aa = self.eng.node(self._actors[actor])["attrs"]
+        strength = (float(ba.get("str_base", 1.0)) + float(ba.get("str_train", 0.0))) * float(ba.get("health", 1.0))
+        size = float(ba.get("size", 1.0))
+        life = float(ct["life_stage_force"].get(str(aa.get("life_stage", "adult")), 1.0))
+        step = float(self._exhaustion_band(actor)["speed"])
+        force = max(0.0, strength) * (size ** float(ct["size_exponent"])) * life * step
+        skill = float(self.effective_skill(actor, "fighting"))
+        score = force * (1.0 + float(ct["technique_weight"]) * skill)
+        return {"force": force, "skill": skill, "score": score, "reserve": float(ba.get("stamina_reserve", 1.0))}
+
+    def _aware_of(self, attacker, target):
+        """Whether the target could see the attacker coming: the attacker stood within sight range of the
+        target at the start of the turn. A taker who walked in during the turn was not seen."""
+        sight = int(self.E.HEARING["sight_range"])
+        starts = self._turn_start_positions
+        here = starts.get(attacker, self.actor_position(attacker))
+        there = starts.get(target, self.actor_position(target))
+        if here is None or there is None:
+            return False
+        return max(abs(here[0] - there[0]), abs(here[1] - there[1])) <= sight
+
+    def _evade_cell(self, target):
+        """The first walkable cell one step from the target (sorted), or None. Evading steps onto it."""
+        here = self.actor_position(target)
+        if here is None:
+            return None
+        options = [(here[0] + dx, here[1] + dy) for dx, dy in ((-1, 0), (0, -1), (0, 1), (1, 0))]
+        open_cells = [cell for cell in sorted(options) if cell in self._map_cells]
+        return open_cells[0] if open_cells else None
+
+    def _contest_offer(self, attacker, target, attacker_side, target_side):
+        """Whether the target reacts, how late, and with which options (the world's reaction rules)."""
+        ct = self.E.CONTEST
+        offer = {"eligible": False, "reason": "", "late": False, "penalty": 1.0, "options": [],
+                 "aware": self._aware_of(attacker, target), "evade_cell": None, "slot_free": True}
+        if not self.is_alive(target):
+            offer["reason"] = "dead"
+            return offer
+        code = self._sleep_code(target)
+        if code is not None:
+            offer["reason"] = code
+            return offer
+        if not offer["aware"]:
+            offer["reason"] = "unaware"
+            return offer
+        situation = 1.0
+        if self._job_of(target) is not None:
+            situation *= float(ct["busy_factor"])
+        if self.carry_state(target)["overloaded"]:
+            situation *= float(ct["overloaded_factor"])
+        reaction = target_side["score"] * situation
+        initiative = attacker_side["score"]
+        if reaction + 1e-12 >= initiative:
+            late = False
+        elif reaction + 1e-12 >= float(ct["reaction_floor"]) * initiative:
+            late = True
+        else:
+            offer["reason"] = "too_slow"
+            return offer
+        offer["slot_free"] = float(self.eng.node(self._actor(target))["attrs"].get("major_action_used", 0.0)) != 1.0
+        resist_share = self._contest_share(attacker_side["force"], target_side["force"], target_side["skill"])
+        if not offer["slot_free"] and resist_share >= float(ct["slot_above"]):
+            late = True
+        offer["eligible"] = True
+        offer["late"] = late
+        if late:
+            offer["penalty"] = float(ct["late_penalty"])
+            offer["options"] = [option for option in ct["late_options"]]
+        else:
+            offer["options"] = ["resist", "brace", "yield"]
+            offer["evade_cell"] = self._evade_cell(target)
+            if offer["evade_cell"] is not None:
+                offer["options"].insert(2, "evade")
+        return offer
+
+    def take_begin(self, actor, plan):
+        """Start a contested take of `plan`'s goods from `plan["source"]`, a resident on the actor's cell.
+
+        Refusals (no one in reach, nothing held, no room, asleep, slot used) return ``(None, reason)`` and
+        claim nothing. Otherwise the actor's major action is claimed and the pending contest, with the
+        target's reaction offer, is returned as a plain dict. The caller then resolves it with
+        ``take_resolve`` and publishes the outcome with ``take_outcome``."""
+        self._contest = None
+        if actor not in self._actors:
+            return None, "unknown_target"
+        sleep_code = self._sleep_code(actor)
+        if sleep_code is not None:
+            return None, sleep_code
+        plan = plan if isinstance(plan, dict) else {}
+        source = self._as_key(plan.get("source"))
+        kind = plan.get("kind")
+        amount = self._as_amount(plan.get("amount", 1.0))
+        if source is None or kind is None or amount is None:
+            return None, "malformed"
+        if source in self._shops:
+            return None, "wrong_target"
+        if source not in self._actors or source == actor:
+            return None, "unknown_target" if source not in self._actors else "wrong_target"
+        if isinstance(kind, str):
+            if amount <= 0.0:
+                return None, "malformed"
+        elif not self._known_ref(kind):
+            return None, "malformed"
+        self._refusal_code = None
+        if not self._physical_transfer_precheck(source, actor, kind, amount if isinstance(kind, str) else 1.0):
+            return None, self._refusal_code or "not_possible"
+        attrs = self.eng.node(self._actor(actor))["attrs"]
+        before = {"major_action_used": attrs.get("major_action_used", 0.0),
+                  "major_action_kind": attrs.get("major_action_kind", ""),
+                  "last_major_action": attrs.get("last_major_action", "")}
+        if not self._claim_major_action(actor, "take"):
+            return None, "slot_used"
+        attacker_side = self._contest_side(actor)
+        target_side = self._contest_side(source)
+        pending = {
+            "attacker": str(actor), "target": str(source),
+            "kind": kind if isinstance(kind, str) else int(kind),
+            "kind_is_item": not isinstance(kind, str),
+            "amount": float(amount) if isinstance(kind, str) else 1.0,
+            "turn": int(self._turn),
+            "witnesses": self._witnesses(actor),
+            "slot_before": before, "slot_record": self._turn_actions[actor][-1],
+            "attacker_side": attacker_side, "target_side": target_side,
+            "offer": self._contest_offer(actor, source, attacker_side, target_side),
+            "result": None,
+        }
+        self._contest = pending
+        return pending, None
+
+    def _contest_spend(self, actor, cost):
+        """Spend stamina on a contest through the same Effort mechanism movement uses."""
+        if cost <= 0.0 or self._bodies.get(actor) is None:
+            return
+        effort = self.eng.add_node("Effort", {"uses_strength": 0.0, "uses_stamina": 1.0,
+                                              "intensity": min(1.0, cost), "stamina_cost": float(cost),
+                                              "terrain": "", "terrain_speed": 1.0,
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+        self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
+        self._run()
+
+    def _contest_log_practice(self, actor, minutes):
+        """Contests are practice in fighting (Phase 012, physical learning, consolidated at period end)."""
+        node = self._actors[actor]
+        log = dict(self.eng.node(node)["attrs"].get("skill_practice", {}))
+        log["fighting"] = float(log.get("fighting", 0.0)) + float(minutes)
+        self.eng.set_attr(node, "skill_practice", log)
+
+    def _contest_kind(self, pending):
+        """The good as the give path takes it: a good's kind name, or a discrete item's node reference.
+
+        The pending dict keeps a plain int for an item (checkpoint-safe); the node reference is rebuilt here."""
+        return NodeRef(pending["kind"]) if pending["kind_is_item"] else pending["kind"]
+
+    def _contest_move(self, pending, handover):
+        """Move the goods from the target to the attacker through the give path (conserved, capacity-checked)."""
+        self._refusal_code = None
+        moved = self._physical_transfer(pending["target"], pending["attacker"], self._contest_kind(pending),
+                                        pending["amount"], handover_kind=handover)
+        return bool(moved), (None if moved else (self._refusal_code or "not_possible"))
+
+    def _contest_drop(self, pending):
+        """The goods fall on the cell, from the target's hands or stock (a narrow margin)."""
+        target, kind = pending["target"], self._contest_kind(pending)
+        if pending["kind_is_item"]:
+            self._drop_discrete_item(target, kind)
+        else:
+            self._remove_inventory_stock(target, kind, pending["amount"])
+            self._drop_stock(target, kind, pending["amount"])
+
+    def take_resolve(self, pending, reaction=None):
+        """Resolve a pending take after the target has chosen its reaction (or None for none).
+
+        Returns ``(applied, reason)``: applied is True when the goods changed hands, and reason is a
+        REFUSAL_REASONS code otherwise. The full result (outcome, costs, redirection) is kept in
+        ``pending["result"]``. A reaction the target was not offered is treated as no reaction."""
+        if self._contest is pending:
+            self._contest = None
+        ct = self.E.CONTEST
+        attacker, target = pending["attacker"], pending["target"]
+        offer = pending["offer"]
+        choice = reaction if (offer["eligible"] and reaction in offer["options"]) else None
+        A, T = pending["attacker_side"], pending["target_side"]
+        base, grip, tw = float(ct["base_cost"]), float(ct["grip"]), float(ct["technique_weight"])
+        trivial, slot_above = float(ct["trivial_below"]), float(ct["slot_above"])
+        penalty = float(offer["penalty"]) if choice is not None else 1.0
+        result = {"reaction": choice or "", "outcome": "", "applied": False, "reason": "",
+                  "late": bool(offer["late"]) if choice is not None else False, "redirected": False,
+                  "attacker_cost": 0.0, "target_cost": 0.0}
+        pending["result"] = result
+        if choice == "yield":
+            applied, code = self._contest_move(pending, "yield")
+            result.update(outcome="yielded", applied=applied, reason=code or "")
+            self._contest_practice_after(pending, choice)
+            return applied, code
+        if choice == "evade":
+            share_t = self._contest_share(A["force"], T["force"], T["skill"])
+            cost_t = base * share_t if share_t >= trivial else 0.0
+            self._contest_spend(target, cost_t)
+            self._move_actor_to(target, offer["evade_cell"])
+            result.update(outcome="evaded", reason="evaded", target_cost=cost_t)
+            self._release_contest_slot(pending)
+            self._contest_practice_after(pending, choice)
+            return False, "evaded"
+        if choice is None:
+            brought = grip * T["force"]
+            hold = grip * T["force"]
+        elif choice == "resist":
+            brought = T["force"]
+            hold = T["force"] * (1.0 + tw * T["skill"]) * penalty
+        else:  # brace: a technique-assisted hold; it bears the push but brings grip x force
+            brought = grip * T["force"]
+            hold = grip * T["force"] * (1.0 + tw * T["skill"]) * penalty
+        att = A["force"] * (1.0 + tw * A["skill"])
+        total = att + hold
+        margin = 0.0 if total <= 0.0 else (att - hold) / total
+        decisive, narrow = float(ct["decisive_margin"]), float(ct["narrow_margin"])
+        if margin >= decisive:
+            outcome = "completed"
+        elif margin >= narrow:
+            outcome = "dropped"
+        else:
+            outcome = "held"
+        if outcome == "dropped" and not pending["kind_is_item"] and pending["kind"] == "coin":
+            outcome = "held"          # coin cannot fall on the cell in this model
+        if (outcome == "held" and margin <= -decisive and choice in ("resist", "brace")
+                and T["skill"] - A["skill"] >= float(ct["redirect_gap"])):
+            outcome = "redirected"
+            result["redirected"] = True
+        share_a = self._contest_share(brought, A["force"], A["skill"])
+        share_t = self._contest_share(A["force"], T["force"], T["skill"])
+        cost_a = base * share_a if share_a >= trivial else 0.0
+        if result["redirected"]:
+            cost_a += float(ct["overextend"]) * base * share_a
+        cost_t = base * share_t if share_t >= trivial else 0.0
+        self._contest_spend(attacker, cost_a)
+        self._contest_spend(target, cost_t)
+        result.update(attacker_cost=cost_a, target_cost=cost_t, outcome=outcome)
+        if choice in ("resist", "brace") and not offer["late"] and share_t >= slot_above:
+            self._claim_major_action(target, choice)
+        self._contest_practice_after(pending, choice)
+        if outcome == "completed":
+            applied, code = self._contest_move(pending, "take")
+            if not applied:
+                result.update(outcome="held", reason=code or "held")
+                self._release_contest_slot(pending)
+                return False, code or "held"
+            result.update(applied=True)
+            return True, None
+        if outcome == "dropped":
+            self._contest_drop(pending)
+            result.update(reason="dropped")
+            self._release_contest_slot(pending)
+            return False, "dropped"
+        result.update(reason="held")
+        self._release_contest_slot(pending)
+        return False, "held"
+
+    def _contest_practice_after(self, pending, choice):
+        """Both sides practise fighting in a contest the holder answered (yield is no contest)."""
+        if choice == "yield":
+            return
+        minutes = float(self.E.CONTEST["practice_minutes"])
+        for name in (pending["attacker"], pending["target"]):
+            self._contest_log_practice(name, minutes)
+
+    def _release_contest_slot(self, pending):
+        """A take that did not happen frees the actor's major action, as a refused attempt does."""
+        self._release_major_action(pending["attacker"], pending["slot_before"], pending["slot_record"])
+
+    def take_outcome(self, actor, applied, reason=None):
+        """Publish a take's outcome to the actor (the same record every major action gets, Phase 021)."""
+        self._publish_outcome(actor, "take", bool(applied), None if applied else (reason or "not_possible"))
+
     def _sleep_code(self, actor):
         """'collapsed' or 'asleep' while the resident is down (refusal reasons), else None."""
         try:

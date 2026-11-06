@@ -7,6 +7,12 @@
         "building": "bakehouse",
         "tools": [],
         "base_skill": 0.7
+      },
+      "constable": {
+        "building": null,
+        "site": "square",
+        "tools": [],
+        "base_skill": 0.7
       }
     }
   }

@@ -1,0 +1,24 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nSIZE (Phase 029): a person's body size, the second trait of a physical contest (CONTEST).\n---------------------------------------------------------------------------\nSize is relative to an adult of mean stature: 1.0 is a typical adult. A drawn size is the mean for the person's age plus a normal draw with standard deviation sd, floored at floor. mean_by_age is a list of [from age, mean] points; the last point at or below the person's age applies. The draw comes after a person's aptitude, talents and limitations on the same generator, so those draws are unchanged.\n\nAPPROX: the child means (0.5 under 12, 0.8 from 12 to 17) and the sd and floor are model choices, not measured stature data. No source in the repository gives adult or child heights. The adult mean of 1.0 is the normalisation.",
+  "_types": {},
+  "tables": {
+    "SIZE": {
+      "sd": 0.07,
+      "floor": 0.4,
+      "mean_by_age": [
+        [
+          0,
+          0.5
+        ],
+        [
+          12,
+          0.8
+        ],
+        [
+          18,
+          1.0
+        ]
+      ]
+    }
+  }
+}

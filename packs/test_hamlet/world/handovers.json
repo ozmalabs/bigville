@@ -12,6 +12,12 @@
       "accept": {
         "description": "A resident takes a held item from another resident's hands (accept with a giver)."
       },
+      "take": {
+        "description": "A resident takes goods, coin, or an item from another resident on the same cell, after a contest the taker won outright (Phase 029). The world moves the goods; it does not decide that the taking was theft."
+      },
+      "yield": {
+        "description": "A resident hands goods over at once when another reaches for them, without a contest and without stamina cost (Phase 029)."
+      },
       "fetch": {
         "description": "A resident takes stock from the store, or from a container it can reach, into its own carrier."
       },

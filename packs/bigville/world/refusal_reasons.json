@@ -36,6 +36,15 @@
       "out_of_stock": {
         "description": "There is not enough of it. The store, the container, or the coin you hold is less than the amount asked for."
       },
+      "held": {
+        "description": "The holder kept hold of it. Your grab did not win the contest, or the holder braced and held."
+      },
+      "evaded": {
+        "description": "The holder stepped out of reach before your grab landed, so nothing was taken."
+      },
+      "dropped": {
+        "description": "The goods fell to the ground in the scuffle. Nothing is in your hands; they lie on the cell."
+      },
       "not_held": {
         "description": "You do not hold it, so it cannot be dropped, given, eaten, or handed on."
       },

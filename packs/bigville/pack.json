@@ -206,6 +206,10 @@
       "file": "world/exhaustion.json"
     },
     {
+      "name": "CONTEST",
+      "file": "world/contest.json"
+    },
+    {
       "name": "SEASONS",
       "file": "world/seasons.json"
     },
@@ -496,6 +500,10 @@
     {
       "name": "PHYSIQUE",
       "file": "population/physique.json"
+    },
+    {
+      "name": "SIZE",
+      "file": "population/size.json"
     },
     {
       "name": "APTITUDE",

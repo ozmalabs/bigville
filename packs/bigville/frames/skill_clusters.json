@@ -111,6 +111,12 @@
           "storekeeping"
         ]
       },
+      "combat": {
+        "metaskill": "toil",
+        "skills": [
+          "fighting"
+        ]
+      },
       "household": {
         "metaskill": "toil",
         "skills": [

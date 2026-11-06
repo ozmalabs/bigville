@@ -1,0 +1,59 @@
+ M README.md
+ M bigville/backends/cheap.py
+ M bigville/backends/human.py
+ M bigville/backends/ocelot.py
+ M bigville/backends/protocol.py
+ M bigville/game.py
+ M bigville/runtime.py
+ M bigville/seeds/bigville_actor_decision.json
+ M bigville/seeds/gen_skills.json
+ M docs/AGENT_BACKENDS_PLAN.md
+ M docs/FEATURE_PHASES.md
+ M domains/bigville_entities.py
+ M domains/population.py
+ M domains/world_affordances.py
+ M packs/bigville/frames/knowledge.json
+ M packs/bigville/frames/skill_affinity.json
+ M packs/bigville/frames/skill_clusters.json
+ M packs/bigville/frames/skills.json
+ M packs/bigville/frames/trade_skills.json
+ M packs/bigville/pack.json
+ M packs/bigville/world/actor_defaults.json
+ M packs/bigville/world/handovers.json
+ M packs/bigville/world/major_actions.json
+ M packs/bigville/world/refusal_reasons.json
+ M packs/test_hamlet/frames/knowledge.json
+ M packs/test_hamlet/frames/metaskills.json
+ M packs/test_hamlet/frames/skill_clusters.json
+ M packs/test_hamlet/frames/skills.json
+ M packs/test_hamlet/frames/trade_skills.json
+ M packs/test_hamlet/frames/trades.json
+ M packs/test_hamlet/pack.json
+ M packs/test_hamlet/world/actor_defaults.json
+ M packs/test_hamlet/world/handovers.json
+ M packs/test_hamlet/world/major_actions.json
+ M packs/test_hamlet/world/refusal_reasons.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M worlds/bigville_world.py
+?? bigville/game_persistence.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/world_persistence.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase029/
+?? docs/runs/
+?? packs/bigville/population/size.json
+?? packs/bigville/world/contest.json
+?? packs/test_hamlet/population/size.json
+?? packs/test_hamlet/world/contest.json
+?? tests/test_bigville_game_persistence.py
+?? tests/test_bigville_graph_persistence.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_bigville_world_persistence.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase029_contest.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

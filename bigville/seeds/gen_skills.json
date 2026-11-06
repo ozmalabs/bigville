@@ -192,6 +192,11 @@
     },
     {
       "category": "skill",
+      "definition": "cluster: combat; kind: general; learning: physical",
+      "name": "skill_fighting"
+    },
+    {
+      "category": "skill",
       "definition": "cluster: civic; kind: office; learning: cognitive",
       "name": "skill_policing"
     },
@@ -297,6 +302,11 @@
     },
     {
       "category": "skill_cluster",
+      "definition": "metaskill: toil; skills: [\"fighting\"]",
+      "name": "skill_cluster_combat"
+    },
+    {
+      "category": "skill_cluster",
       "definition": "metaskill: toil; skills: [\"labour\", \"water_drawing\", \"sanitation\"]",
       "name": "skill_cluster_household"
     },
@@ -344,7 +354,7 @@
     "generator": "tools/generate_seeds.py",
     "pack": "bigville",
     "record": null,
-    "sha256": "47c896c4e955bf4a4b0fd8b0160eae545afaca57fb610285f76c6317a7aa4dd3",
+    "sha256": "b1b26a4fdbea976dae5170d5562efa215edb820ad65ea43b5f43539a832904ba",
     "tables": [
       "SKILLS",
       "SKILL_CLUSTERS",
