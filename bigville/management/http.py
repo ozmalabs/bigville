@@ -4,13 +4,16 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+import mimetypes
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from .catalog import build_capability_catalog
 
 API_PREFIX = "/api/management/v1"
+STATIC_ROOT = Path(__file__).with_name("static").resolve()
 
 
 def error_payload(code: str, message: str) -> dict[str, Any]:
@@ -44,6 +47,14 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
+        if path == "/":
+            return self._static(STATIC_ROOT / "index.html")
+        if path.startswith("/management/"):
+            relative = unquote(path.removeprefix("/management/"))
+            candidate = (STATIC_ROOT / relative).resolve()
+            if not candidate.is_relative_to(STATIC_ROOT):
+                return self._json(404, error_payload("not_found", "Unknown management path."))
+            return self._static(candidate)
         if path == f"{API_PREFIX}/health":
             return self._json(200, {"ready": True, "service": "bigville-management",
                                     "schema_version": 1})
@@ -54,6 +65,22 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(500, error_payload(
                     "catalog_unavailable", "Capability catalog could not be built."))
         return self._json(404, error_payload("not_found", "Unknown management API path."))
+
+    def _static(self, path: Path):
+        try:
+            encoded = path.read_bytes()
+        except (OSError, ValueError):
+            return self._json(404, error_payload("not_found", "Unknown management asset."))
+        self.send_response(200)
+        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        if content_type.startswith("text/") or content_type in {"application/javascript"}:
+            content_type += "; charset=utf-8"
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(encoded)
 
     def do_POST(self):
         return self._json(404, error_payload("not_found", "Unknown management API path."))

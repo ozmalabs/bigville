@@ -259,6 +259,7 @@ availability. It does not create or control runs.
 python -m bigville.management.http
 # http://127.0.0.1:8766/api/management/v1/health
 # http://127.0.0.1:8766/api/management/v1/capabilities
+# Open http://127.0.0.1:8766/ for the Worlds & casts and Backends catalog.
 ```
 
 The service only binds to loopback IP addresses. Ocelot is marked unavailable

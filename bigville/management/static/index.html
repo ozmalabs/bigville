@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#20392e">
+  <title>Bigville · Management</title>
+  <link rel="stylesheet" href="/management/management.css">
+  <script src="/management/management.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="side" aria-label="Workspace navigation">
+      <a class="brand" href="/" aria-label="Bigville management home">bigville<span>Simulation workspace</span></a>
+      <nav class="nav" aria-label="Workspace">
+        <span class="nav-label">Workspace</span>
+        <button type="button" class="nav-item" aria-controls="runs-panel" disabled title="Run management is not available yet">Runs <span class="nav-future">Not available yet</span></button>
+        <button type="button" class="nav-item active" aria-current="page" aria-controls="worlds-panel">Worlds &amp; casts</button>
+        <button type="button" class="nav-item" aria-controls="backends-panel">Backends</button>
+      </nav>
+      <p class="side-note">A place to set up, observe and understand your worlds.</p>
+    </aside>
+
+    <main class="main">
+      <header class="top"><span>LOCAL WORKSPACE</span><a class="game-link" href="http://127.0.0.1:8765/">Open existing game <span aria-hidden="true">↗</span></a></header>
+      <section class="intro" aria-labelledby="page-title">
+        <div><p class="eyebrow">BIGVILLE MANAGEMENT</p><h1 id="page-title">Worlds &amp; backends</h1>
+          <p>Review the scenarios and integrations available in this checkout.</p></div>
+        <span class="tag">Local · read only</span>
+      </section>
+
+      <div id="catalog-status" class="status" role="status" aria-live="polite">Loading capability catalog…</div>
+      <div id="catalog-error" class="error" role="alert" hidden>
+        <h2>Catalog could not be loaded</h2><p id="catalog-error-message">Check that the management service is ready, then try again.</p>
+        <button id="retry-button" class="secondary" type="button">Retry catalog</button>
+      </div>
+
+      <section id="runs-panel" class="panel empty-panel" aria-labelledby="runs-heading" hidden>
+        <p class="eyebrow">RUNS</p><h2 id="runs-heading">Run management is not available yet</h2>
+        <p>This service currently provides capability discovery only. No run list or launch controls are available.</p>
+      </section>
+
+      <section id="worlds-panel" class="panel" aria-labelledby="worlds-heading">
+        <div class="panel-heading"><div><p class="eyebrow">WORLDS &amp; CASTS</p><h2 id="worlds-heading">Scenario catalog</h2></div><span id="scenario-count" class="count"></span></div>
+        <p class="section-copy">Built-in and authored scenarios discovered from the engine. This catalog does not preview or create worlds.</p>
+        <div id="scenario-list" class="scenario-grid" aria-live="polite"></div>
+        <p id="scenario-empty" class="empty" hidden>No scenarios are available.</p>
+      </section>
+
+      <section id="backends-panel" class="panel" aria-labelledby="backends-heading" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">BACKENDS</p><h2 id="backends-heading">Decision integrations</h2></div></div>
+        <p class="section-copy">Availability reflects this service configuration. No provider is started or contacted here.</p>
+        <div id="backend-list" class="backend-list" aria-live="polite"></div>
+        <p id="backend-empty" class="empty" hidden>No backends are reported.</p>
+      </section>
+      <footer class="footer">Local single-user service · <span id="build-label">engine build unknown</span></footer>
+    </main>
+  </div>
+</body>
+</html>
