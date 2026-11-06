@@ -74,8 +74,15 @@ three. After 059, A rebases and reads the routine, not the hour bands.
    worktree and branch (`git worktree add ../bigville-tract-b -b tract-b`), run the full suite in
    its own tree, and merge into `main` by rebase at phase boundaries. Commit or park any unrelated
    uncommitted work first, so a worktree starts clean.
-2. **One phase, one commit,** by explicit pathspec. Never `git add -A` or `git commit -a`. Use
-   `git add -p` for a shared file that has someone else's hunks in it.
+2. **One phase, one commit, made as soon as the phase is done** (user, 2026-11-05: commit after
+   every phase). The supervising session of each tract reviews the diff and the report, then
+   commits; the executor still never does. Stage by explicit pathspec, never `git add -A` or
+   `git commit -a`. Check `git diff --cached --name-only` is empty before staging and equals the
+   phase's files before committing, since the index is shared. For a shared file that carries
+   someone else's hunks (including this plan), stage a prepared snapshot of just your change
+   (`git hash-object -w`, then `git update-index --cacheinfo`) or use `git add -p`. Plan edits that
+   are not a phase's own status and History row get their own commit, made first, so every snapshot
+   is self-consistent. The commit message is `Phase NNN: ...` in the style of the log.
 3. **This file.** A tract edits only its own phases' briefs, statuses and History rows, re-reading
    before it writes. A change to the other tract's brief is a note to that tract, not an edit.
 4. **Sync points,** when both tracts pause to merge: (1) 037 and 051 committed, (2) 050 and 059,
