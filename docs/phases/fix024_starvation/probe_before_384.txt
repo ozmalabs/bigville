@@ -1,0 +1,1 @@
+{"turns": 384, "ticks_per_period": 96, "deaths": 95, "first_death_turn": 95, "causes": {"starvation": 95}, "sample": [{"actor": "Tamsin Wold", "day": 1.0, "cause": "starvation", "event": "21893"}, {"actor": "Willa Mudge", "day": 1.0, "cause": "starvation", "event": "21897"}, {"actor": "Cuthbert Wold", "day": 1.0, "cause": "starvation", "event": "21901"}]}

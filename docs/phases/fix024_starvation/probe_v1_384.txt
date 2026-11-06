@@ -1,0 +1,1 @@
+{"turns": 384, "ticks_per_period": 96, "deaths": 6, "first_death_turn": 243, "causes": {"exhaustion": 3, "starvation": 3}, "sample": [{"actor": "Millicent Dabney", "day": 2.0, "cause": "exhaustion", "event": "37080"}, {"actor": "Effie Codling", "day": 2.0, "cause": "exhaustion", "event": "37343"}, {"actor": "John", "day": 3.0, "cause": "starvation", "event": "40886"}]}

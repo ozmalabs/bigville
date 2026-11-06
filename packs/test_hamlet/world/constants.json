@@ -18,6 +18,6 @@
     "LABOUR_RATE": 0.02,
     "TRAIN_HEADROOM": 0.4,
     "TRAIN_RATE": 0.12,
-    "HUNGER_PER_STAMINA": 1.0
+    "HUNGER_PER_STAMINA": 0.2
   }
 }

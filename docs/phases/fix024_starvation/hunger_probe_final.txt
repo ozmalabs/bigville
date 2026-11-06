@@ -1,0 +1,7 @@
+starve_limit 4.0
+0 hunger mean 0.012 max 0.020 reserve mean 0.938 min 0.900 asleep 0 collapsed 0 eats 0
+10 hunger mean 0.152 max 0.187 reserve mean 0.245 min 0.064 asleep 0 collapsed 0 eats 1
+30 hunger mean 0.290 max 0.363 reserve mean 0.213 min 0.084 asleep 16 collapsed 0 eats 0
+60 hunger mean 0.464 max 0.622 reserve mean 0.359 min 0.058 asleep 32 collapsed 0 eats 0
+90 hunger mean 0.619 max 0.899 reserve mean 0.446 min 0.082 asleep 65 collapsed 0 eats 0
+94 hunger mean 0.632 max 0.914 reserve mean 0.488 min 0.096 asleep 67 collapsed 0 eats 0

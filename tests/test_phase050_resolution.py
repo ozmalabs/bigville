@@ -131,7 +131,9 @@ def test_smashing_a_wooden_chest_damages_it_each_attempt_until_it_breaks_and_the
             break
     assert _box(w)["destroyed"] == 1.0, "the chest breaks"
     assert falls[0] > 0.0 and all(d > 0.0 for d in falls[:5]), "the first attempts damage it"
-    assert any(d == 0.0 for d in falls), "a worn hammer makes no progress (Phase 048)"
+    # fix024: the old zero-progress attempts came from exertion hunger draining the reserve (HUNGER_PER_STAMINA 1.0 -> 0.2
+    # leaves the reserve above the clamp here), not from the hammer alone. The hammer's wear still shows as falling progress.
+    assert falls[-1] < falls[0], "a worn hammer does less per attempt (Phase 048)"
     assert w.last_attempt("Ada")["outcome"] == "broke"
     _turn(w)
     _fresh_body(w)              # a worn hammer costs more stamina (Phase 048); rest, so the reason is the chest's

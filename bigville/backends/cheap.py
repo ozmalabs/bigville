@@ -13,6 +13,10 @@ from domains.persona import simple_band   # Phase 058: the hour bands are the pa
 # resumes unless a need (food, rest) scores higher. It is a valuation, not a world rule.
 RESUME_JOB_BONUS = 40.0
 
+# Hunger at which a resident goes for food before sleeping or resting (fix024). It is on the world's hunger scale, where
+# 1.0 is one unmet meal of one loaf, so a resident one meal short tends to eat before it sleeps. A valuation, not a rule.
+HUNGER_BEFORE_SLEEP = 1.0
+
 
 @dataclass
 class NPCGoal:
@@ -209,6 +213,14 @@ class DeterministicBackend:
         sleep_reason = None
         sleep = next((o for o in context.affordances if o.get("action") == "sleep"), None)
         fed_first = hunger > 0 and any(o.get("action") == "eat" for o in options)
+        # fix024: a resident at HUNGER_BEFORE_SLEEP with a food fetch in reach counts as fed first, so it goes for food
+        # before it sleeps. The awake rest is not held back by food in reach (see held_meal_first below).
+        food_in_reach = hunger >= HUNGER_BEFORE_SLEEP and any(
+            o.get("action") in {"fetch", "move"}
+            and (o.get("food") or o.get("fetch_kind") or o.get("physical_source") == "container")
+            for o in options)
+        held_meal_first = fed_first
+        fed_first = fed_first or food_in_reach
         if sleep is not None and not fed_first and energy < self.policy.sleep_energy_threshold and bool(sleep.get("safe")):
             if float(sleep.get("lateness", 0.0)) >= 1.0:
                 sleep_reason = "sleep_at_night"
@@ -216,7 +228,7 @@ class DeterministicBackend:
                 sleep_reason = "sleep_before_collapse"
         if sleep_reason is not None:
             options = [sleep]
-        elif energy < self.rest_energy_threshold and not fed_first:
+        elif energy < self.rest_energy_threshold and not held_meal_first:
             rest = next((o for o in context.affordances if o.get("action") == "rest"), None)
             if rest is not None:
                 options = [rest]

@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_town100_simple_backends_nobody_starves_in_the_first_day _________
+
+    def test_town100_simple_backends_nobody_starves_in_the_first_day():
+        game = create_game(scenario="town100", seed=305017, default_backend="simple", autonomous=True,
+                           ticks_per_period=ve.TICKS_PER_PERIOD)
+        for _ in range(TURNS):
+            game.step()
+        starved = [d for d in game.world._deaths if d.get("cause") == "starvation"]
+>       assert starved == [], f"{len(starved)} residents starved within {TURNS} turns"
+E       AssertionError: 80 residents starved within 97 turns
+E       assert [{'actor': 'T...'21913'}, ...] == []
+E         
+E         Left contains 80 more items, first extra item: {'actor': 'Tamsin Wold', 'cause': 'starvation', 'day': 1.0, 'event': '21893'}
+E         Use -v to get more diff
+
+tests/test_fix024_starvation.py:20: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_fix024_starvation.py::test_town100_simple_backends_nobody_starves_in_the_first_day
+1 failed in 177.23s (0:02:57)

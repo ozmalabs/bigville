@@ -509,7 +509,10 @@ def test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns(tmp_pa
     """The before-change run (behaviour_before.json) and this run both use seed 305000, the simple backend
     for all residents, and no founding ties (seeding off). Five residents' action sequences and the mean
     hunger for the first 50 turns must match exactly."""
-    before = json.load(open(os.path.join(PHASE_DIR, "behaviour_before.json"), encoding="utf-8"))
+    # fix024 re-pinned this: the simple backend's hunger and food choices changed (HUNGER_PER_STAMINA, food-first
+    # sleep). The Phase 058 recording (behaviour_before.json) is kept as history; this reference is the same run after fix024.
+    before = json.load(open(os.path.join(_ROOT, "docs", "phases", "fix024_starvation", "behaviour_after_fix024.json"),
+                            encoding="utf-8"))
     out = tmp_path / "behaviour_check.json"
     env = dict(os.environ, PYTHONHASHSEED="0")
     script = os.path.join(PHASE_DIR, "measure_behaviour.py")
