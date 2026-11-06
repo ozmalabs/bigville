@@ -1,0 +1,31 @@
+{
+ "comparison": {
+  "learner": {
+   "censored_episodes": 0,
+   "failures": 6,
+   "lessons_offered": 6,
+   "lessons_recorded": 6,
+   "lessons_used": 6,
+   "refusals": 6,
+   "repeat_failures": 0,
+   "repeat_mistake_rate": 0.0,
+   "tries_before_switch_mean": 1.0,
+   "void": false
+  },
+  "nonlearner": {
+   "censored_episodes": 3,
+   "failures": 90,
+   "lessons_offered": 0,
+   "lessons_recorded": 0,
+   "lessons_used": 0,
+   "refusals": 90,
+   "repeat_failures": 87,
+   "repeat_mistake_rate": 0.966667,
+   "tries_before_switch_mean": null,
+   "void": false
+  }
+ },
+ "digest": "14c509706f10b2b5233e981ae7e6bfa12d0a3f5904fdc12702781a19da94a6fb",
+ "void_arms": []
+}
+EXIT 0

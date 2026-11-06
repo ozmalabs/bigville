@@ -1,0 +1,1054 @@
+s................................s.......................s.............. [  4%]
+......F................................................................. [  8%]
+...............................F............F.............F.....F....... [ 12%]
+................................FF...................................... [ 17%]
+....F................................................................... [ 21%]
+........................................................................ [ 25%]
+........................................................................ [ 30%]
+........................................................................ [ 34%]
+........................................................................ [ 38%]
+..............................FFFFF..................................... [ 43%]
+......................................................F.........FFF..... [ 47%]
+.F.F...F.........F.......F.............................................. [ 51%]
+........................................................................ [ 56%]
+.......F.F...................F.......................................... [ 60%]
+...................................F.F......F.FFFFFFFFFFFFFF.....F...... [ 64%]
+.FFFF................................................................... [ 69%]
+........................................................................ [ 73%]
+........................................................................ [ 77%]
+........................................................................ [ 82%]
+...........F............................................................ [ 86%]
+.......................FFFF.........................................F... [ 90%]
+........................................................................ [ 95%]
+...............................F........................................ [ 99%]
+.F...F.                                                                  [100%]
+=================================== FAILURES ===================================
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x74233f486030>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x742341ce84a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+___________________ test_crops_are_sown_only_in_their_season ___________________
+
+    def test_crops_are_sown_only_in_their_season():
+        w = World(); w.set_stock("carrot_seed", 5); w.set_stock("turnip_seed", 5)
+        assert w.season() == "spring"
+        assert w.sow("Hob", "carrot") is not None, "a spring crop sows in spring"
+>       assert w.sow("Hob", "turnip") is None, "an autumn crop (turnip) will not sow in spring"
+E       AssertionError: an autumn crop (turnip) will not sow in spring
+E       assert 3259 is None
+E        +  where 3259 = sow('Hob', 'turnip')
+E        +    where sow = <worlds.bigville_world.BigvilleWorld object at 0x742311d36c10>.sow
+
+tests/test_bigville_world_migrated.py:701: AssertionError
+____________ test_soup_consumption_requires_held_serving_equipment _____________
+
+    def test_soup_consumption_requires_held_serving_equipment():
+        w = World(); w.add_actor("Tom", role="hand", home_cell=(1, 1)); w.add_actor("Cook", role="cook", home_cell=(1, 1)); w.set_stock("gruel", 1)
+        w.add_shop("kitchen", (1, 1), input_kind="grain", output_kind="gruel", price=1)
+        assert w.stock_person("Cook", "gruel", 1, price=1)
+        assert w.purchase_utterance("Tom", "Cook", "gruel", 1)
+        assert w.give("Cook", "Tom", "gruel", 1, payment_kind="coin", payment_amount=1)
+>       assert not w.eat("Tom", "gruel"), "a bowl meal cannot be consumed bare-handed"
+E       AssertionError: a bowl meal cannot be consumed bare-handed
+E       assert not True
+E        +  where True = eat('Tom', 'gruel')
+E        +    where eat = <worlds.bigville_world.BigvilleWorld object at 0x742311d36c10>.eat
+
+tests/test_bigville_world_migrated.py:932: AssertionError
+______________ test_fine_tailoring_is_a_learned_specialist_skill _______________
+
+    def test_fine_tailoring_is_a_learned_specialist_skill():
+        w = World(); w.add_tradesperson("Tessa", "tailor"); w.set_stock("cloth", 10); w.set_stock("silk", 6)
+        game = BigvilleGame(w, autonomous=True)
+        tailor_recipes = {m.content.get("recipe") for m in game.characters["Tessa"].memories
+                          if m.kind == "recipe_knowledge"}
+        assert "sew_smock" in tailor_recipes, "the configured backend catalog includes plain sewing"
+        assert "sew_gown" not in tailor_recipes, "fine tailoring is not a default private prior"
+        w.eng.set_attr(w._actors["Tessa"], "skill", 0.5)
+>       assert w.do("Tessa", "sew_gown") is False and w.qty("silk") == 6.0, "insufficient mechanical skill blocks the work"
+E       AssertionError: insufficient mechanical skill blocks the work
+E       assert (True is False)
+E        +  where True = do('Tessa', 'sew_gown')
+E        +    where do = <worlds.bigville_world.BigvilleWorld object at 0x742311d36c10>.do
+
+tests/test_bigville_world_migrated.py:1098: AssertionError
+_____________ test_you_cannot_read_your_way_to_a_blacksmiths_hand ______________
+
+    def test_you_cannot_read_your_way_to_a_blacksmiths_hand():
+        w = World(); w.add_actor("Nan", role="tailor", skill=0.3); w.set_stock("silk", 10)
+        # Nan READS the fine-gown recipe -- she now KNOWS it, but her hand is untrained
+        w.eng.add_edge_unchecked(w._actors["Nan"], "knows", w._actions["sew_gown"])
+        assert w.knows("Nan", "sew_gown") and not w.can_make("Nan", "sew_gown"), "knowing it is not being able to do it"
+>       assert w.do("Nan", "sew_gown") is False and w.qty("silk") == 10.0, "unskilled, she cannot make the gown (silk untouched)"
+E       AssertionError: unskilled, she cannot make the gown (silk untouched)
+E       assert (True is False)
+E        +  where True = do('Nan', 'sew_gown')
+E        +    where do = <worlds.bigville_world.BigvilleWorld object at 0x742311d36c10>.do
+
+tests/test_bigville_world_migrated.py:1175: AssertionError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x742311d2ee40>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-639/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x742306189130>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:49: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+_ test_a_timed_gathering_batch_takes_its_stock_as_it_opens_and_yields_when_done _
+
+    def test_a_timed_gathering_batch_takes_its_stock_as_it_opens_and_yields_when_done():
+        w = _bare_world(kind="woodlot", cell=WOODLOT_CELL)
+        w.set_season("autumn")
+        assert w.start("Gatherer", "gather_mushrooms")
+        assert w.gathering_stock("woodlot") == 57.0, "the batch is taken as the job opens"
+        assert w.qty("mushroom") == 0.0, "the mushrooms arrive when the 90-minute job finishes"
+        w.tick(10)
+>       assert w.qty("mushroom") == 3.0
+E       AssertionError: assert 0.75 == 3.0
+E        +  where 0.75 = qty('mushroom')
+E        +    where qty = <worlds.bigville_world.BigvilleWorld object at 0x742311d36c10>.qty
+
+tests/test_phase004_located_gathering.py:175: AssertionError
+____ test_a_malformed_backend_plan_is_refused_without_an_exception[rest-0] _____
+
+action = 'rest', shape = 0
+
+    @pytest.mark.parametrize("shape", range(len(PLAN_SHAPES)))
+    @pytest.mark.parametrize("action", PLAN_ACTIONS)
+    def test_a_malformed_backend_plan_is_refused_without_an_exception(action, shape):
+        world, actor, other = _town()
+        before = _turn_snapshot(world, actor)
+        plan = {"action": action, **PLAN_SHAPES[shape]}
+>       assert world.enact_plan(actor, plan) is False
+E       AssertionError: assert True is False
+E        +  where True = enact_plan('Adelina Gorse', {'action': 'rest'})
+E        +    where enact_plan = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.enact_plan
+
+tests/test_phase020_validation.py:291: AssertionError
+____ test_a_malformed_backend_plan_is_refused_without_an_exception[rest-1] _____
+
+action = 'rest', shape = 1
+
+    @pytest.mark.parametrize("shape", range(len(PLAN_SHAPES)))
+    @pytest.mark.parametrize("action", PLAN_ACTIONS)
+    def test_a_malformed_backend_plan_is_refused_without_an_exception(action, shape):
+        world, actor, other = _town()
+        before = _turn_snapshot(world, actor)
+        plan = {"action": action, **PLAN_SHAPES[shape]}
+>       assert world.enact_plan(actor, plan) is False
+E       AssertionError: assert True is False
+E        +  where True = enact_plan('Adelina Gorse', {'action': 'rest', 'amount': 'lots', 'kind': 5, 'recipe': 3, ...})
+E        +    where enact_plan = <worlds.bigville_world.BigvilleWorld object at 0x742304363890>.enact_plan
+
+tests/test_phase020_validation.py:291: AssertionError
+____ test_a_malformed_backend_plan_is_refused_without_an_exception[rest-2] _____
+
+action = 'rest', shape = 2
+
+    @pytest.mark.parametrize("shape", range(len(PLAN_SHAPES)))
+    @pytest.mark.parametrize("action", PLAN_ACTIONS)
+    def test_a_malformed_backend_plan_is_refused_without_an_exception(action, shape):
+        world, actor, other = _town()
+        before = _turn_snapshot(world, actor)
+        plan = {"action": action, **PLAN_SHAPES[shape]}
+>       assert world.enact_plan(actor, plan) is False
+E       AssertionError: assert True is False
+E        +  where True = enact_plan('Adelina Gorse', {'action': 'rest', 'animal': {'a': 1}, 'destination': ['x'], 'kind': None, ...})
+E        +    where enact_plan = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.enact_plan
+
+tests/test_phase020_validation.py:291: AssertionError
+____ test_a_malformed_backend_plan_is_refused_without_an_exception[rest-3] _____
+
+action = 'rest', shape = 3
+
+    @pytest.mark.parametrize("shape", range(len(PLAN_SHAPES)))
+    @pytest.mark.parametrize("action", PLAN_ACTIONS)
+    def test_a_malformed_backend_plan_is_refused_without_an_exception(action, shape):
+        world, actor, other = _town()
+        before = _turn_snapshot(world, actor)
+        plan = {"action": action, **PLAN_SHAPES[shape]}
+>       assert world.enact_plan(actor, plan) is False
+E       AssertionError: assert True is False
+E        +  where True = enact_plan('Adelina Gorse', {'action': 'rest', 'crop_node': '7', 'land': 4, 'project': 999999, ...})
+E        +    where enact_plan = <worlds.bigville_world.BigvilleWorld object at 0x742304363890>.enact_plan
+
+tests/test_phase020_validation.py:291: AssertionError
+____ test_a_malformed_backend_plan_is_refused_without_an_exception[rest-4] _____
+
+action = 'rest', shape = 4
+
+    @pytest.mark.parametrize("shape", range(len(PLAN_SHAPES)))
+    @pytest.mark.parametrize("action", PLAN_ACTIONS)
+    def test_a_malformed_backend_plan_is_refused_without_an_exception(action, shape):
+        world, actor, other = _town()
+        before = _turn_snapshot(world, actor)
+        plan = {"action": action, **PLAN_SHAPES[shape]}
+>       assert world.enact_plan(actor, plan) is False
+E       AssertionError: assert True is False
+E        +  where True = enact_plan('Adelina Gorse', {'action': 'rest', 'kind': 'bread', 'name': 999999, 'patient': 999999, ...})
+E        +    where enact_plan = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.enact_plan
+
+tests/test_phase020_validation.py:291: AssertionError
+___________ test_a_plan_to_rest_when_not_tired_is_refused_not_needed ___________
+
+    def test_a_plan_to_rest_when_not_tired_is_refused_not_needed():
+        world, actor, _ = _town()
+        assert world.stamina_reserve(actor) >= 0.8
+>       assert world.enact_plan(actor, {"action": "rest"}) is False
+E       AssertionError: assert True is False
+E        +  where True = enact_plan('Adelina Gorse', {'action': 'rest'})
+E        +    where enact_plan = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.enact_plan
+
+tests/test_phase021_refusals.py:223: AssertionError
+__________________ test_busy_is_a_refusal_reason_in_the_pack ___________________
+
+    def test_busy_is_a_refusal_reason_in_the_pack():
+>       assert "busy" in E.REFUSAL_REASONS
+E       AssertionError: assert 'busy' in {'already_authorised': {'description': 'You have already turned your key in this lock. It needs another keyholder to t...locked': {'description': 'It is already locked.'}, 'already_unlocked': {'description': 'It is already unlocked.'}, ...}
+E        +  where {'already_authorised': {'description': 'You have already turned your key in this lock. It needs another keyholder to t...locked': {'description': 'It is already locked.'}, 'already_unlocked': {'description': 'It is already unlocked.'}, ...} = E.REFUSAL_REASONS
+
+tests/test_phase023_job_occupancy.py:55: AssertionError
+__________________ test_a_second_start_while_busy_is_refused ___________________
+
+    def test_a_second_start_while_busy_is_refused():
+        w = _smith()
+        assert w.start("Smith", "forge_plough")
+        assert w.busy("Smith")
+>       assert not w.start("Smith", "forge_knife"), "one timed job at a time"
+E       AssertionError: one timed job at a time
+E       assert not True
+E        +  where True = start('Smith', 'forge_knife')
+E        +    where start = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.start
+
+tests/test_phase023_job_occupancy.py:63: AssertionError
+__ test_a_refused_start_while_busy_publishes_the_busy_reason_and_uses_no_slot __
+
+    def test_a_refused_start_while_busy_publishes_the_busy_reason_and_uses_no_slot():
+        w = _smith()
+        assert w.major_action("Smith", "start", "forge_plough")
+        assert w.busy("Smith")
+        w.eng.set_attr(w._actor("Smith"), "major_action_used", 0.0)   # a fresh turn slot, no other attempt
+>       assert not w.major_action("Smith", "work", "forge_knife")
+E       AssertionError: assert not True
+E        +  where True = major_action('Smith', 'work', 'forge_knife')
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x742304362d50>.major_action
+
+tests/test_phase023_job_occupancy.py:72: AssertionError
+__________ test_the_exhaustion_codes_are_refusal_reasons_in_the_pack ___________
+
+    def test_the_exhaustion_codes_are_refusal_reasons_in_the_pack():
+        for code in ("asleep", "collapsed", "too_tired"):
+>           assert code in E.REFUSAL_REASONS
+E           AssertionError: assert 'too_tired' in {'already_authorised': {'description': 'You have already turned your key in this lock. It needs another keyholder to t...locked': {'description': 'It is already locked.'}, 'already_unlocked': {'description': 'It is already unlocked.'}, ...}
+E            +  where {'already_authorised': {'description': 'You have already turned your key in this lock. It needs another keyholder to t...locked': {'description': 'It is already locked.'}, 'already_unlocked': {'description': 'It is already unlocked.'}, ...} = E.REFUSAL_REASONS
+
+tests/test_phase024_exhaustion.py:90: AssertionError
+________ test_the_seeded_fractions_and_hop_budget_are_the_table_values _________
+
+    def test_the_seeded_fractions_and_hop_budget_are_the_table_values():
+        ex = E.EXHAUSTION
+        assert (ex["e_high"], ex["e_mid"], ex["e_low"]) == (0.7, 0.4, 0.15)
+>       assert list(ex["moves_per_tick"]) == [3, 2, 1, 0]
+E       assert [3, 2, 1, 0.5] == [3, 2, 1, 0]
+E         
+E         At index 3 diff: 0.5 != 0
+E         Use -v to get more diff
+
+tests/test_phase024_exhaustion.py:103: AssertionError
+_______________ test_a_resident_below_e_low_cannot_start_a_walk ________________
+
+    def test_a_resident_below_e_low_cannot_start_a_walk():
+        w = _resident()
+        _flat_ground(w)
+        _set_reserve(w, "Ada", 0.1)
+        other = _neighbour(w, "Ada")
+        here = w.actor_position("Ada")
+>       assert not w.major_action("Ada", "move", destination=other)
+E       AssertionError: assert not True
+E        +  where True = major_action('Ada', 'move', destination=(24, 14))
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.major_action
+
+tests/test_phase024_exhaustion.py:123: AssertionError
+_ test_sleep_is_refused_when_rested_and_other_actions_are_refused_while_asleep _
+
+    def test_sleep_is_refused_when_rested_and_other_actions_are_refused_while_asleep():
+        w = _resident()
+        _set_reserve(w, "Ada", 1.0)
+>       assert not w.major_action("Ada", "sleep")
+E       AssertionError: assert not True
+E        +  where True = major_action('Ada', 'sleep')
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.major_action
+
+tests/test_phase024_exhaustion.py:247: AssertionError
+_________ test_a_worker_too_exhausted_to_walk_does_not_advance_the_job _________
+
+    def test_a_worker_too_exhausted_to_walk_does_not_advance_the_job():
+        w = _smith_at_forge()
+        assert w.start("Smith", "forge_plough")
+        job = _job(w, "Smith")
+        before = w.eng.node(job)["attrs"]["remaining"]
+        _set_reserve(w, "Smith", 0.1)
+        w.tick()
+>       assert w.eng.node(job)["attrs"]["remaining"] == before
+E       assert 15.833333333333334 == 16.0
+
+tests/test_phase024_exhaustion.py:347: AssertionError
+_ test_a_resident_trained_by_forging_can_attempt_a_recipe_that_was_above_them_at_the_start _
+
+    def test_a_resident_trained_by_forging_can_attempt_a_recipe_that_was_above_them_at_the_start():
+        w = _smith()
+        assert not w.can_make("Smith", "forge_plough"), "a founding body (strength 1.0) is below the plough's 1.2"
+>       assert not w.start("Smith", "forge_plough")
+E       AssertionError: assert not True
+E        +  where True = start('Smith', 'forge_plough')
+E        +    where start = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.start
+
+tests/test_phase032_training.py:72: AssertionError
+__________ test_a_low_health_smith_cannot_forge_a_knife_until_healthy __________
+
+    def test_a_low_health_smith_cannot_forge_a_knife_until_healthy():
+        w = _smith()
+        w.eng.set_attr(w._actors["Smith"], "health_value", 0.5)     # effective strength 0.5 is below the knife's 0.9
+>       assert not w.do("Smith", "forge_knife")
+E       AssertionError: assert not True
+E        +  where True = do('Smith', 'forge_knife')
+E        +    where do = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.do
+
+tests/test_phase032_training.py:104: AssertionError
+_______ test_a_smith_drunk_past_the_floor_fails_a_recipe_he_passes_sober _______
+
+    def test_a_smith_drunk_past_the_floor_fails_a_recipe_he_passes_sober():
+        w = World(autonomous_actors=False)
+        w.add_tradesperson("Smith", "smith")
+        w.eng.set_attr(w._bodies["Smith"], "str_base", 1.3)
+        w.set_stock("iron", 10)
+        w.set_stock("charcoal", 10)
+        x, y, _fw, _fh = w._building_sites["forge"]
+        w._move_actor_to("Smith", (x, y))
+        floor = float(E.MIN_SKILL["forge_plough"])
+        # Put the smith just above the floor with no other skill to lean on, so the drink decides the gate.
+        w.eng.set_attr(w._actors["Smith"], "skill", floor + 0.05)
+        levels = dict(w.eng.node(w._actors["Smith"])["attrs"].get("skill_levels", {}))
+        levels["smithing"] = floor + 0.05
+        w.eng.set_attr(w._actors["Smith"], "skill_levels", levels)
+        assert w.effective_skill("Smith", "smithing") >= floor
+        _set_level(w, "Smith", 0.5)
+        assert w.effective_skill("Smith", "smithing") < floor
+>       assert not w.start("Smith", "forge_plough")
+E       AssertionError: assert not True
+E        +  where True = start('Smith', 'forge_plough')
+E        +    where start = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.start
+
+tests/test_phase034_intoxication.py:238: AssertionError
+_ test_a_wooden_tool_on_a_locked_iron_lock_makes_no_progress_wears_snaps_and_hurts_the_worker _
+
+    def test_a_wooden_tool_on_a_locked_iron_lock_makes_no_progress_wears_snaps_and_hurts_the_worker():
+        w = World(autonomous_actors=False)
+        cells = sorted(w._map_cells)
+        w.add_actor("Ada", role="hand", home_cell=cells[len(cells) // 2])
+        here = w.actor_position("Ada")
+        w.add_container("box", kind="chest", holds=["grain"], lock_id=1, locked=True, cell=here)
+        board = w.give_tool("Ada", "board")                     # wood, a knead verb: no closeness to a pierce
+        health = w.health("Ada")
+        progress_seen = []
+        for _ in range(12):
+            if w.tool_broken(board):
+                break
+            _rest(w, "Ada")
+            w.actor_tick("Ada")
+            w.major_action("Ada", "attempt", verb="pry", target="box", with_kind="board", intensity=1.0)
+            node = w._containers["box"][0]
+            progress_seen.append(float(w.eng.node(node)["attrs"].get("lock_progress", 0.0)))
+        assert progress_seen and all(p == 0.0 for p in progress_seen), "no progress against iron"
+        assert w.eng.node(w._containers["box"][0])["attrs"]["locked"] == 1.0
+>       assert w.tool_broken(board), "the wooden tool snaps"
+E       AssertionError: the wooden tool snaps
+E       assert False
+E        +  where False = tool_broken(3261)
+E        +    where tool_broken = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.tool_broken
+
+tests/test_phase048_tool_fitness.py:191: AssertionError
+_____ test_the_proposal_tool_names_the_held_tool_bare_hands_or_is_refused ______
+
+    def test_the_proposal_tool_names_the_held_tool_bare_hands_or_is_refused():
+        w = _smith()
+        shelf = w.workshop_tool("hammer", building="forge")
+        held = w.give_tool("Smith", "hammer")
+        assert w.start("Smith", "forge_nails", tool="hammer")
+        assert _ticks_to_finish(w, "Smith") >= 1
+        assert w.tool_condition(held) < 1.0 and w.tool_condition(shelf) == 1.0, "the held hammer was the one used"
+>       assert not w.start("Smith", "forge_nails", tool="saw"), "a saw the smith does not hold is refused"
+E       AssertionError: a saw the smith does not hold is refused
+E       assert not True
+E        +  where True = start('Smith', 'forge_nails', tool='saw')
+E        +    where start = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.start
+
+tests/test_phase048_tool_fitness.py:216: AssertionError
+__________ test_a_tool_the_actor_does_not_hold_is_refused_as_no_tool ___________
+
+    def test_a_tool_the_actor_does_not_hold_is_refused_as_no_tool():
+        w = _world()
+        assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is False
+>       assert _reason(w) == "no_tool"
+E       AssertionError: assert 'not_possible' == 'no_tool'
+E         
+E         - no_tool
+E         + not_possible
+
+tests/test_phase050_resolution.py:94: AssertionError
+____________________ test_a_malformed_intensity_is_refused _____________________
+
+    def test_a_malformed_intensity_is_refused():
+        w = _world(tool="hammer")
+        assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer",
+                              intensity="hard") is False
+>       assert _reason(w) == "malformed"
+E       AssertionError: assert 'not_possible' == 'malformed'
+E         
+E         - malformed
+E         + not_possible
+
+tests/test_phase050_resolution.py:107: AssertionError
+_ test_an_attempt_uses_the_action_slot_and_a_second_one_in_the_turn_is_refused _
+
+    def test_an_attempt_uses_the_action_slot_and_a_second_one_in_the_turn_is_refused():
+        w = _world(tool="hammer")
+>       assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+E       AssertionError: assert False is True
+E        +  where False = major_action('Ada', 'attempt', verb='smash', target='box', with_kind='hammer')
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x742310eb07d0>.major_action
+
+tests/test_phase050_resolution.py:112: AssertionError
+_ test_smashing_a_wooden_chest_damages_it_each_attempt_until_it_breaks_and_then_it_is_refused _
+
+    def test_smashing_a_wooden_chest_damages_it_each_attempt_until_it_breaks_and_then_it_is_refused():
+        # Phase 048: a hammer's fitness is its quality x condition, and its wear rises as its fit falls. So a hammer
+        # that has worn down stops progressing before it breaks; the attempts that follow do no damage and the hammer
+        # still wears out. Attempts damage the chest while the hammer is sound.
+        w = _world(tool="hammer")
+        falls = []
+        for _ in range(60):
+            _turn(w)
+            before = _box(w)["structure"]
+>           assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+E           AssertionError: assert False is True
+E            +  where False = major_action('Ada', 'attempt', verb='smash', target='box', with_kind='hammer')
+E            +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.major_action
+
+tests/test_phase050_resolution.py:128: AssertionError
+_ test_the_attempt_reports_what_the_actor_saw_and_not_the_capability_or_the_demand _
+
+    def test_the_attempt_reports_what_the_actor_saw_and_not_the_capability_or_the_demand():
+        w = _world(tool="hammer")
+        _turn(w)
+        w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=1.0)
+        seen = w.last_attempt("Ada")
+>       assert {"progress", "damage", "applied_intensity", "clamped", "outcome", "tool"} <= set(seen)
+                                                                                            ^^^^^^^^^
+E       TypeError: 'NoneType' object is not iterable
+
+tests/test_phase050_resolution.py:150: TypeError
+_ test_a_smash_is_heard_by_a_resident_within_the_radius_and_not_by_one_far_away _
+
+    def test_a_smash_is_heard_by_a_resident_within_the_radius_and_not_by_one_far_away():
+        w = _world(tool="hammer")
+        here = w.actor_position("Ada")
+        near = next(c for c in _cells(w) if max(abs(c[0] - here[0]), abs(c[1] - here[1])) == 2)
+        far = next(c for c in _cells(w) if max(abs(c[0] - here[0]), abs(c[1] - here[1])) >= 10)
+        w.add_actor("Bob", role="hand", home_cell=near)
+        w.add_actor("Cy", role="hand", home_cell=far)
+        w._move_actor_to("Bob", near)
+        w._move_actor_to("Cy", far)
+        _turn(w)
+>       assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=1.0)
+E       AssertionError: assert False
+E        +  where False = major_action('Ada', 'attempt', verb='smash', target='box', with_kind='hammer', intensity=1.0)
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x742310eb16d0>.major_action
+
+tests/test_phase050_resolution.py:164: AssertionError
+___ test_a_strong_resident_with_a_hammer_forces_a_locked_chest_without_a_key ___
+
+    def test_a_strong_resident_with_a_hammer_forces_a_locked_chest_without_a_key():
+        w = _world(strength=1.3, lock_id=7, locked=True, tool="hammer")
+        opened_on = None
+        for attempt in range(1, 6):
+            _turn(w)
+>           assert w.major_action("Ada", "attempt", verb="force", target="box", with_kind="hammer") is True
+E           AssertionError: assert False is True
+E            +  where False = major_action('Ada', 'attempt', verb='force', target='box', with_kind='hammer')
+E            +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x742310eb07d0>.major_action
+
+tests/test_phase050_resolution.py:178: AssertionError
+__ test_a_frail_resident_with_a_spoon_makes_no_progress_and_breaks_the_spoon ___
+
+    def test_a_frail_resident_with_a_spoon_makes_no_progress_and_breaks_the_spoon():
+        w = _world(strength=0.5, lock_id=7, locked=True, tool="wooden_serving_spoon")
+        for _ in range(6):
+            _turn(w)
+            _fresh_body(w)
+            w.major_action("Ada", "attempt", verb="pry", target="box", with_kind="wooden_serving_spoon")
+            if _box(w)["locked"] == 0.0:
+                break
+        assert _box(w)["locked"] == 1.0, "the lock holds"
+>       assert w.last_attempt("Ada")["progress"] == 0.0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_phase050_resolution.py:195: TypeError
+________ test_a_half_worn_lock_opens_in_fewer_attempts_than_a_fresh_one ________
+
+    def test_a_half_worn_lock_opens_in_fewer_attempts_than_a_fresh_one():
+        counts = []
+        for worn in (1.0, 0.5):
+            w = _world(strength=0.9, lock_id=7, locked=True, tool="hammer")
+            w.eng.set_attr(w._containers["box"][0], "lock_condition", worn)
+            n = 0
+            for _ in range(20):
+                _turn(w)
+                w.major_action("Ada", "attempt", verb="force", target="box", with_kind="hammer")
+                n += 1
+                if _box(w)["locked"] == 0.0:
+                    break
+            counts.append(n)
+>       assert counts[1] < counts[0], counts
+E       AssertionError: [20, 20]
+E       assert 20 < 20
+
+tests/test_phase050_resolution.py:213: AssertionError
+_ test_wood_against_iron_at_intensity_three_breaks_the_spoon_sooner_and_changes_nothing_else _
+
+    def test_wood_against_iron_at_intensity_three_breaks_the_spoon_sooner_and_changes_nothing_else():
+        attempts = []
+        for level in (1.0, 3.0):
+            w = _world(strength=1.0, lock_id=7, locked=True, tool="wooden_serving_spoon")
+            spoon = w.eng.neighbours(w._actors["Ada"], "holds")[0]
+            n = 0
+            for _ in range(20):
+                _turn(w)
+                _fresh_body(w)   # isolate the tool's wear from exhaustion
+                w.major_action("Ada", "attempt", verb="pry", target="box", with_kind="wooden_serving_spoon",
+                               intensity=level)
+                n += 1
+                if w.eng.node(spoon)["attrs"]["broken"] == 1.0:
+                    break
+            assert _box(w)["locked"] == 1.0
+            attempts.append(n)
+>       assert attempts[1] < attempts[0], attempts
+E       AssertionError: [20, 20]
+E       assert 20 < 20
+
+tests/test_phase050_resolution.py:232: AssertionError
+_ test_an_intensity_above_the_ceiling_is_clamped_and_the_applied_value_is_reported _
+
+    def test_an_intensity_above_the_ceiling_is_clamped_and_the_applied_value_is_reported():
+        w = _world(tool="hammer")
+        _turn(w)
+        w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=5.0)
+        seen = w.last_attempt("Ada")
+>       assert seen["clamped"] is True
+               ^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_phase050_resolution.py:242: TypeError
+______________ test_a_spent_reserve_lowers_the_ceiling_to_nothing ______________
+
+    def test_a_spent_reserve_lowers_the_ceiling_to_nothing():
+        w = _world(tool="hammer")
+        w.eng.set_attr(w._bodies["Ada"], "stamina_reserve", 0.1)
+        _turn(w)
+        w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=2.0)
+        seen = w.last_attempt("Ada")
+>       assert seen["applied_intensity"] == 0.0 and seen["clamped"] is True
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_phase050_resolution.py:253: TypeError
+__________ test_twice_the_intensity_costs_more_than_twice_the_stamina __________
+
+    def test_twice_the_intensity_costs_more_than_twice_the_stamina():
+        spent = {}
+        for level in (1.0, 2.0):
+            w = _world(tool="hammer")
+            _turn(w)
+            start = _reserve(w)
+            w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=level)
+            spent[level] = start - _reserve(w)
+>       assert spent[1.0] > 0.0
+E       assert 0.0 > 0.0
+
+tests/test_phase050_resolution.py:265: AssertionError
+_______ test_twice_the_intensity_damages_more_per_attempt_and_is_louder ________
+
+    def test_twice_the_intensity_damages_more_per_attempt_and_is_louder():
+        drop, loudness = {}, {}
+        for level in (1.0, 2.0):
+            w = _world(tool="hammer")
+            _turn(w)
+            before = _box(w)["structure"]
+            w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=level)
+            drop[level] = before - _box(w)["structure"]
+            noise = [w.eng.node(e)["attrs"] for e in w._events.values() if w.eng.node(e)["attrs"].get("kind") == "noise"]
+>           loudness[level] = noise[-1]["severity"]
+                              ^^^^^^^^^
+E           IndexError: list index out of range
+
+tests/test_phase050_resolution.py:278: IndexError
+_ test_an_intensity_above_the_safe_level_strains_and_a_full_strain_is_an_accident _
+
+    def test_an_intensity_above_the_safe_level_strains_and_a_full_strain_is_an_accident():
+        w = _world(tool="hammer")
+        _turn(w)
+        w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=3.0)
+>       assert w.eng.node(w._actors["Ada"])["attrs"].get("last_cause") == "accident"
+E       AssertionError: assert None == 'accident'
+E        +  where None = <built-in method get of dict object at 0x74230d161980>('last_cause')
+E        +    where <built-in method get of dict object at 0x74230d161980> = {'age': 30.0, 'alive': 1.0, 'appr_epoch': 0.0, 'aptitude': 1.0, ...}.get
+
+tests/test_phase050_resolution.py:287: AssertionError
+__________ test_attempts_are_counted_by_verb_and_outcome_and_reported __________
+
+    def test_attempts_are_counted_by_verb_and_outcome_and_reported():
+        from bigville.reporting import SimulationReporter
+        w = _world(tool="hammer")
+        for _ in range(2):
+            _turn(w)
+            w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer")
+        counts = SimulationReporter(w).attempts_by_verb()
+>       assert sum(counts["smash"].values()) == 2
+                   ^^^^^^^^^^^^^^^
+E       KeyError: 'smash'
+
+tests/test_phase050_resolution.py:371: KeyError
+__ test_a_trivial_attempt_costs_no_stamina_and_leaves_the_action_slot_unspent __
+
+    def test_a_trivial_attempt_costs_no_stamina_and_leaves_the_action_slot_unspent():
+        # Strength 5: capability 5 x 0.5 = 2.5 against a wood chest's demand 0.5, a cost share of 0.2 (below 0.25).
+        w = _world(strength=5.0, tool="hammer")
+        _fresh_body(w)
+        _turn(w)
+        before = _reserve(w)
+>       assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+E       AssertionError: assert False is True
+E        +  where False = major_action('Ada', 'attempt', verb='smash', target='box', with_kind='hammer')
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x74230dcca990>.major_action
+
+tests/test_phase050_resolution.py:468: AssertionError
+______ test_a_middling_attempt_spends_stamina_but_leaves_the_slot_unspent ______
+
+    def test_a_middling_attempt_spends_stamina_but_leaves_the_slot_unspent():
+        # Strength 3: a cost share of 0.33, between trivial_below (0.25) and slot_above (0.5).
+        w = _world(strength=3.0, tool="hammer")
+        _fresh_body(w)
+        _turn(w)
+        before = _reserve(w)
+>       assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+E       AssertionError: assert False is True
+E        +  where False = major_action('Ada', 'attempt', verb='smash', target='box', with_kind='hammer')
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x742310eb1590>.major_action
+
+tests/test_phase050_resolution.py:480: AssertionError
+________ test_a_costly_attempt_claims_the_slot_and_a_second_is_refused _________
+
+    def test_a_costly_attempt_claims_the_slot_and_a_second_is_refused():
+        w = _world(strength=1.0, tool="hammer")
+        _fresh_body(w)
+        _turn(w)
+>       assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+E       AssertionError: assert False is True
+E        +  where False = major_action('Ada', 'attempt', verb='smash', target='box', with_kind='hammer')
+E        +    where major_action = <worlds.bigville_world.BigvilleWorld object at 0x742310eb07d0>.major_action
+
+tests/test_phase050_resolution.py:489: AssertionError
+_____________ test_a_broken_chest_spills_its_contents_on_its_cell ______________
+
+    def test_a_broken_chest_spills_its_contents_on_its_cell():
+        w = _world(strength=3.0, tool="hammer")
+        _fresh_body(w)
+        w.eng.set_attr(w._containers["box"][1]["grain"], "qty", 5.0)
+        cell = w.container_position("box")
+        for _ in range(80):
+            _turn(w)
+            w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=3.0)
+            if _box(w).get("destroyed") == 1.0:
+                break
+>       assert _box(w)["destroyed"] == 1.0
+E       assert 0.0 == 1.0
+
+tests/test_phase050_resolution.py:505: AssertionError
+_____ test_a_call_cap_in_a_pooled_town_yields_the_autopilot_not_a_failure ______
+
+    def test_a_call_cap_in_a_pooled_town_yields_the_autopilot_not_a_failure():
+        provider = FakeProvider(varied_reply)
+        game = build_llm_town(provider, llm_residents=4, budget=CallBudget(max_calls_per_day=1))
+        _run(game, 4)
+        capped = [name for name in game.llm_residents
+                  if game.backends[name].llm_counts["fallbacks_by_cause"]["call_cap"] > 0]
+>       assert capped, "with one call per day, later consults must be refused"
+E       AssertionError: with one call per day, later consults must be refused
+E       assert []
+
+tests/test_phase055_concurrency.py:145: AssertionError
+___ test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it ___
+
+    def test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it():
+        server, service = _serve_with_service()
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            row = next(r for r in session.view["can"] if r["action"] == "work")
+            before = service.game.world._turn
+            session.line("look")
+            out = session.line(str([r["handle"] for r in session.view["can"]].index(row["handle"]) + 1))
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert service.game.world._turn == before + 1
+>       assert service.game.last_responses[PLAYER].major_action.action == "work"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:642: AttributeError
+______ test_over_http_walking_to_a_known_place_sends_the_rows_destination ______
+
+    def test_over_http_walking_to_a_known_place_sends_the_rows_destination():
+        walker = "Verity Peaseblossom"                      # a resident who knows exact places at the start
+        server, service = _serve_with_service(walker)
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", walker))
+            walk = next((r for r in session.view["can"] if r["action"] == "walk"), None)
+            assert walk is not None
+            session.line("walk to " + walk["what"].replace("walk to the ", ""))
+        finally:
+            server.shutdown()
+            server.server_close()
+        proposal = service.game.last_responses[walker].major_action
+>       assert proposal.action == "move" and proposal.params.get("destination") is not None
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:660: AttributeError
+_____________ test_over_http_a_reaction_is_delivered_to_the_holder _____________
+
+    def test_over_http_a_reaction_is_delivered_to_the_holder():
+        server, service = _serve_with_service()
+        game = service.game
+        taker = "Kester Furlong"
+        game.world._move_actor_to(taker, game.world.actor_position(PLAYER))
+        game.world.set_coin(PLAYER, 9.0)
+    
+        class Taker(DeterministicBackend):
+            def decide(self, context):
+                return ActorResponse(major_action=ProposedAction(
+                    "take", {"source": PLAYER, "kind": "coin", "amount": 3.0}))
+    
+        game.set_backend(taker, Taker(game.characters[taker]))
+        for name in game.characters:
+            if name not in (PLAYER, taker):
+                game.set_backend(name, DeterministicBackend(game.characters[name]))
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            out = session.line("wait")
+            assert session.view.get("reaction"), out
+            answer = session.line("resist")
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert answer[0] == "You hold on and resist."
+>       assert game.contest_log and game.contest_log[-1]["reaction"] == "resist"
+E       assert (deque([]))
+E        +  where deque([]) = <bigville.game.BigvilleGame object at 0x7423048cb980>.contest_log
+
+tests/test_phase057_tui.py:688: AssertionError
+___ test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for ___
+
+    def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
+        server, service = _serve_with_service()
+        try:
+            url = f"http://127.0.0.1:{server.server_port}/api/turn"
+    
+            def post(body):
+                req = urlrequest.Request(url, data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+                try:
+                    with urlrequest.urlopen(req) as response:
+                        return response.status, json.loads(response.read())
+                except urlrequest.HTTPError as exc:
+                    return exc.code, json.loads(exc.read())
+    
+            status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
+>           assert status == 400 and "intensity must be" in body["error"]
+E           assert (200 == 400)
+
+tests/test_phase057_tui.py:706: AssertionError
+____ test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns _____
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-639/test_the_simple_backend_takes_0')
+
+    def test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns(tmp_path):
+        """The before-change run (behaviour_before.json) and this run both use seed 305000, the simple backend
+        for all residents, and no founding ties (seeding off). Five residents' action sequences and the mean
+        hunger for the first 50 turns must match exactly."""
+        # fix024 re-pinned this: the simple backend's hunger and food choices changed (HUNGER_PER_STAMINA, food-first
+        # sleep). The Phase 058 recording (behaviour_before.json) is kept as history; this reference is the same run after fix024.
+        before = json.load(open(os.path.join(_ROOT, "docs", "phases", "fix024_starvation", "behaviour_after_fix024.json"),
+                                encoding="utf-8"))
+        out = tmp_path / "behaviour_check.json"
+        env = dict(os.environ, PYTHONHASHSEED="0")
+        script = os.path.join(PHASE_DIR, "measure_behaviour.py")
+        subprocess.run([sys.executable, script, "--label", "check", "--turns", "50", "--seeding", "off",
+                        "--out", str(out)], check=True, env=env, cwd=_ROOT, timeout=900)
+        after = json.loads(out.read_text(encoding="utf-8"))
+        for name, sequence in before["sample_sequences"].items():
+>           assert after["sample_sequences"][name] == sequence[:50], name
+E           AssertionError: Alby Marsh
+E           assert ['move', 'mov..., 'move', ...] == ['move', 'mov..., 'move', ...]
+E             
+E             At index 14 diff: 'move' != 'rest'
+E             Use -v to get more diff
+
+tests/test_phase058_persona.py:523: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"alive_at_end": 100, "deaths": 0, "elapsed_seconds": 78.4, "handovers": 0, "hunger_mean_end": 0.3158, "label": "check", "relationships_on_record": 0, "turns": 50, "utterances": 276}
+{"move": 2391, "none": 2391, "rest": 203, "work": 15}
+___________ test_crop_loop_trace_replays_and_sowing_respects_season ____________
+
+    def test_crop_loop_trace_replays_and_sowing_respects_season():
+        assert _run(_game()) == _run(_game())
+        out_of_season = _game(season="summer")
+        context = out_of_season._context("Farmer")
+        assert not any(option.get("action") == "sow" for option in context.affordances)
+>       assert out_of_season.world.sow("Farmer", "wheat", land="farm_plot_00") is None
+E       AssertionError: assert 1002 is None
+E        +  where 1002 = sow('Farmer', 'wheat', land='farm_plot_00')
+E        +    where sow = <worlds.bigville_world.BigvilleWorld object at 0x742304003750>.sow
+E        +      where <worlds.bigville_world.BigvilleWorld object at 0x742304003750> = <bigville.game.BigvilleGame object at 0x74230e4be3f0>.world
+
+tests/test_simple_crop_water.py:105: AssertionError
+________ test_missing_tool_starts_on_bare_hands_and_the_batch_is_wasted ________
+
+    def test_missing_tool_starts_on_bare_hands_and_the_batch_is_wasted():
+        # Phase 048: a recipe does not refuse for want of its tool. The job runs on bare hands, takes its inputs when it
+        # completes, and yields nothing (the fitness is below waste_below).
+        world = BigvilleWorld()
+        world.add_actor("Smith", role="smith", skill=0.9)
+        world.set_stock("iron", 1)
+        world.set_stock("charcoal", 1)
+        hammer = world.workshop_tool("hammer", building="forge")     # the forge's own hammer
+        world.eng.remove_edge_unchecked(world._places["forge"], "has_tool_item", hammer)
+    
+        assert not world._recipe_inputs_available("forge_nails", "Smith"), "offers still want a usable tool"
+        assert world.start("Smith", "forge_nails")
+        assert world.qty("iron") == 1.0 and world.qty("charcoal") == 1.0, "inputs are taken at completion"
+        for _ in range(2000):
+            if not world.busy("Smith"):
+                break
+            world.tick(1)
+>       assert not world.busy("Smith")
+E       AssertionError: assert not True
+E        +  where True = busy('Smith')
+E        +    where busy = <worlds.bigville_world.BigvilleWorld object at 0x7423040025d0>.busy
+
+tests/test_simple_tools_materials_job.py:108: AssertionError
+__ test_work_food_and_exchange_trace_physical_provenance_and_shortage_control __
+
+    def test_work_food_and_exchange_trace_physical_provenance_and_shortage_control():
+        game = _game()
+        trace = _trace(game)
+        world = game.world
+        selected = lambda row, actor: row["selected_actions"].get(actor) or {}
+        assert any(selected(row, "Farmer").get("action") == "sow" for row in trace)
+>       assert any(selected(row, "Farmer").get("action") == "harvest" for row in trace)
+E       assert False
+E        +  where False = any(<generator object test_work_food_and_exchange_trace_physical_provenance_and_shortage_control.<locals>.<genexpr> at 0x742301dfc040>)
+
+tests/test_simple_work_food_exchange.py:194: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_bigville_world_migrated.py::test_crops_are_sown_only_in_their_season
+FAILED tests/test_bigville_world_migrated.py::test_soup_consumption_requires_held_serving_equipment
+FAILED tests/test_bigville_world_migrated.py::test_fine_tailoring_is_a_learned_specialist_skill
+FAILED tests/test_bigville_world_migrated.py::test_you_cannot_read_your_way_to_a_blacksmiths_hand
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+FAILED tests/test_phase004_located_gathering.py::test_a_timed_gathering_batch_takes_its_stock_as_it_opens_and_yields_when_done
+FAILED tests/test_phase020_validation.py::test_a_malformed_backend_plan_is_refused_without_an_exception[rest-0]
+FAILED tests/test_phase020_validation.py::test_a_malformed_backend_plan_is_refused_without_an_exception[rest-1]
+FAILED tests/test_phase020_validation.py::test_a_malformed_backend_plan_is_refused_without_an_exception[rest-2]
+FAILED tests/test_phase020_validation.py::test_a_malformed_backend_plan_is_refused_without_an_exception[rest-3]
+FAILED tests/test_phase020_validation.py::test_a_malformed_backend_plan_is_refused_without_an_exception[rest-4]
+FAILED tests/test_phase021_refusals.py::test_a_plan_to_rest_when_not_tired_is_refused_not_needed
+FAILED tests/test_phase023_job_occupancy.py::test_busy_is_a_refusal_reason_in_the_pack
+FAILED tests/test_phase023_job_occupancy.py::test_a_second_start_while_busy_is_refused
+FAILED tests/test_phase023_job_occupancy.py::test_a_refused_start_while_busy_publishes_the_busy_reason_and_uses_no_slot
+FAILED tests/test_phase024_exhaustion.py::test_the_exhaustion_codes_are_refusal_reasons_in_the_pack
+FAILED tests/test_phase024_exhaustion.py::test_the_seeded_fractions_and_hop_budget_are_the_table_values
+FAILED tests/test_phase024_exhaustion.py::test_a_resident_below_e_low_cannot_start_a_walk
+FAILED tests/test_phase024_exhaustion.py::test_sleep_is_refused_when_rested_and_other_actions_are_refused_while_asleep
+FAILED tests/test_phase024_exhaustion.py::test_a_worker_too_exhausted_to_walk_does_not_advance_the_job
+FAILED tests/test_phase032_training.py::test_a_resident_trained_by_forging_can_attempt_a_recipe_that_was_above_them_at_the_start
+FAILED tests/test_phase032_training.py::test_a_low_health_smith_cannot_forge_a_knife_until_healthy
+FAILED tests/test_phase034_intoxication.py::test_a_smith_drunk_past_the_floor_fails_a_recipe_he_passes_sober
+FAILED tests/test_phase048_tool_fitness.py::test_a_wooden_tool_on_a_locked_iron_lock_makes_no_progress_wears_snaps_and_hurts_the_worker
+FAILED tests/test_phase048_tool_fitness.py::test_the_proposal_tool_names_the_held_tool_bare_hands_or_is_refused
+FAILED tests/test_phase050_resolution.py::test_a_tool_the_actor_does_not_hold_is_refused_as_no_tool
+FAILED tests/test_phase050_resolution.py::test_a_malformed_intensity_is_refused
+FAILED tests/test_phase050_resolution.py::test_an_attempt_uses_the_action_slot_and_a_second_one_in_the_turn_is_refused
+FAILED tests/test_phase050_resolution.py::test_smashing_a_wooden_chest_damages_it_each_attempt_until_it_breaks_and_then_it_is_refused
+FAILED tests/test_phase050_resolution.py::test_the_attempt_reports_what_the_actor_saw_and_not_the_capability_or_the_demand
+FAILED tests/test_phase050_resolution.py::test_a_smash_is_heard_by_a_resident_within_the_radius_and_not_by_one_far_away
+FAILED tests/test_phase050_resolution.py::test_a_strong_resident_with_a_hammer_forces_a_locked_chest_without_a_key
+FAILED tests/test_phase050_resolution.py::test_a_frail_resident_with_a_spoon_makes_no_progress_and_breaks_the_spoon
+FAILED tests/test_phase050_resolution.py::test_a_half_worn_lock_opens_in_fewer_attempts_than_a_fresh_one
+FAILED tests/test_phase050_resolution.py::test_wood_against_iron_at_intensity_three_breaks_the_spoon_sooner_and_changes_nothing_else
+FAILED tests/test_phase050_resolution.py::test_an_intensity_above_the_ceiling_is_clamped_and_the_applied_value_is_reported
+FAILED tests/test_phase050_resolution.py::test_a_spent_reserve_lowers_the_ceiling_to_nothing
+FAILED tests/test_phase050_resolution.py::test_twice_the_intensity_costs_more_than_twice_the_stamina
+FAILED tests/test_phase050_resolution.py::test_twice_the_intensity_damages_more_per_attempt_and_is_louder
+FAILED tests/test_phase050_resolution.py::test_an_intensity_above_the_safe_level_strains_and_a_full_strain_is_an_accident
+FAILED tests/test_phase050_resolution.py::test_attempts_are_counted_by_verb_and_outcome_and_reported
+FAILED tests/test_phase050_resolution.py::test_a_trivial_attempt_costs_no_stamina_and_leaves_the_action_slot_unspent
+FAILED tests/test_phase050_resolution.py::test_a_middling_attempt_spends_stamina_but_leaves_the_slot_unspent
+FAILED tests/test_phase050_resolution.py::test_a_costly_attempt_claims_the_slot_and_a_second_is_refused
+FAILED tests/test_phase050_resolution.py::test_a_broken_chest_spills_its_contents_on_its_cell
+FAILED tests/test_phase055_concurrency.py::test_a_call_cap_in_a_pooled_town_yields_the_autopilot_not_a_failure
+FAILED tests/test_phase057_tui.py::test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it
+FAILED tests/test_phase057_tui.py::test_over_http_walking_to_a_known_place_sends_the_rows_destination
+FAILED tests/test_phase057_tui.py::test_over_http_a_reaction_is_delivered_to_the_holder
+FAILED tests/test_phase057_tui.py::test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for
+FAILED tests/test_phase058_persona.py::test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns
+FAILED tests/test_simple_crop_water.py::test_crop_loop_trace_replays_and_sowing_respects_season
+FAILED tests/test_simple_tools_materials_job.py::test_missing_tool_starts_on_bare_hands_and_the_batch_is_wasted
+FAILED tests/test_simple_work_food_exchange.py::test_work_food_and_exchange_trace_physical_provenance_and_shortage_control
+56 failed, 1604 passed, 3 skipped in 1122.21s (0:18:42)
+EXIT 1

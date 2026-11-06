@@ -2591,7 +2591,7 @@ fake provider.
 
 ## Phase 056 -- Evaluation: how well do residents learn the world
 
-**Status:** ready, after 054 (decision 2026-11-05: the LLM may work out the rules by inference,
+**Status:** done (see History). Open: a real-model run, a longer horizon, per-resident improvised-work counts (Tract A), and showing repeated refusals in delta packets (decision 2026-11-05: the LLM may work out the rules by inference,
 which is the point).
 
 **Goal.** Measure it, with data the engine already counts.
@@ -3196,3 +3196,4 @@ truth held apart. Unscheduled until the rule says it is needed.
 | 055 LLM backend operations | done | (this commit) | docs/phases/phase055/PHASE055_REPORT.md -- bounded thread pool for `concurrent` backends with fixed result order; JSONL transcripts and a replay provider keyed by turn, actor and prompt hash; stdlib OpenAI-compatible provider with OpenCode Go settings, retries, rate limit, key redaction and spend cap; `llm_scenario` mixed towns; per-resident and per-day cost in `llm_report`; live test skipped by default; 3 LLM + 97 simple for 100 turns made 38 calls; 38 tests; simple backend identical to HEAD; 1569 passed on the previous base |
 | 038 Strikes and injury | done | (this commit) | docs/phases/phase038/PHASE038_REPORT.md -- strike through the contest rule; injury and violence harm; trigger off by default; 1609 passed |
 | 066 LLM harness: session, memory, whole log | done | (this commit) | docs/phases/phase066/PHASE066_REPORT.md -- per-resident message thread (full packet, then deltas, compaction by new thread, stable session id); provider returns `ProviderResult` with reasoning fields and the whole response; hash-chained append-only `LLMLog` that keeps thinking whole and detects edits and cuts; replay keyed on thread state naming the first differing message; `to_dict`/`from_dict` stop and resume; 17 tests; simple backend identical to HEAD; 1626 passed |
+| 056 Learning evaluation | done | (this commit) | docs/phases/phase056/PHASE056_REPORT.md -- `bigville/learning_eval.py` (per-resident metrics from engine records, repeat-mistake rate, tries before switch, lessons offered and used, leak guard that voids a run, scripted learner and non-learner, marginal effect against a simple control) and `tools/run_learning_eval.py`; learner repeat-mistake rate 0.000 against 0.967; Ocelot arm skipped; 8 tests; no shared file edited |
