@@ -879,8 +879,9 @@ class BigvilleGame:
             actor = order[index]
             response = responses[actor]
             utterances_before = len(self.world._utterances)
-            if self._is_take(response):
-                pending, reason = self.world.take_begin(actor, dict(response.major_action.params))
+            if self._is_contest(response):
+                pending, reason = self.world.contest_begin(actor, response.major_action.action,
+                                                           dict(response.major_action.params))
                 choice, note = None, ""
                 if pending is not None:
                     choice, note = self._contest_choice(pending)
@@ -960,12 +961,17 @@ class BigvilleGame:
     def _is_take(response: ActorResponse) -> bool:
         return response.major_action is not None and response.major_action.action == "take"
 
+    @staticmethod
+    def _is_contest(response: ActorResponse) -> bool:
+        """Phase 038: a take or a strike, each a contest that can wait for the target's reaction."""
+        return response.major_action is not None and response.major_action.action in ("take", "strike")
+
     def _reaction_context(self, pending) -> ActorContext:
         """The holder's reaction context: who takes, what, by hand, and the reaction options only."""
         context = self._context(pending["target"])
         offer = pending["offer"]
         context.observations["reaction"] = {
-            "actor": pending["attacker"], "on": str(pending["kind"]), "by": "hand",
+            "actor": pending["attacker"], "on": str(pending["kind"]), "by": pending.get("by", "hand"),
             "amount": float(pending["amount"]), "late": bool(offer["late"]),
             "options": list(offer["options"]),
         }
@@ -1002,26 +1008,27 @@ class BigvilleGame:
         return choice, "chosen"
 
     def _settle_take(self, actor, response, pending, reason="", choice=None, note=""):
-        """Resolve a take (or record its refusal), report it to the actor, and apply the rest of the response."""
+        """Resolve a take or strike (or record its refusal), report it to the actor, and apply the rest of the response."""
+        action = response.major_action.action if response.major_action is not None else "take"
         if pending is None:
-            self.world.take_outcome(actor, False, reason)
+            self.world.take_outcome(actor, False, reason, action=action)
             applied = False
         else:
             applied, code = self.world.take_resolve(pending, choice)
-            self.world.take_outcome(actor, applied, code)
+            self.world.take_outcome(actor, applied, code, action=action)
             self._log_contest(pending, note)
             self._record_contest_witnesses(pending)
-        self._report_take_outcome(actor, applied)
+        self._report_take_outcome(actor, applied, action)
         self._apply_response_contained(actor, replace(response, major_action=None))
         return bool(applied)
 
-    def _report_take_outcome(self, actor, applied):
+    def _report_take_outcome(self, actor, applied, action="take"):
         """Give the actor's provider the take's outcome, as other major actions report theirs."""
         mind_getter = getattr(self.world, "actor_mind", None)
         mind = mind_getter(actor) if callable(mind_getter) else None
         record_outcome = getattr(mind, "record_action_outcome", None)
         if callable(record_outcome):
-            record_outcome(action="take", applied=bool(applied))
+            record_outcome(action=action, applied=bool(applied))
 
     def _record_contest_witnesses(self, pending):
         """Everyone on the cell when the take was made sees its result. Nobody else is told."""
@@ -1031,7 +1038,8 @@ class BigvilleGame:
             if observer == pending["attacker"]:
                 continue
             self._physical_events.setdefault(observer, []).append({
-                "actor": pending["attacker"], "target": pending["target"], "action": "contest",
+                "actor": pending["attacker"], "target": pending["target"],
+                "action": "strike" if pending.get("action") == "strike" else "contest",
                 "outcome": result.get("outcome", ""), "turn": turn, "expires_turn": turn})
 
     def _log_contest(self, pending, note):

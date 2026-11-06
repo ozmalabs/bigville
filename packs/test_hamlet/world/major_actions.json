@@ -19,6 +19,10 @@
         "kind": "contest",
         "description": "Take held goods, coin, or an item from a person standing on your cell. The holder may resist, brace, yield, or step away. The outcome depends on strength, size, skill, and stamina; the world does not decide whether the taking is theft."
       },
+      "strike": {
+        "kind": "violence",
+        "description": "Strike a person standing on your cell with your bare hands. Name the target and an intensity (1.0 is a normal blow; less is a pull, more forces it). The blow's harm and its cost come from your strength, size, skill and stamina, against what the target does: it may resist, brace, step away, or take the blow. A blow with little stamina left lands weakly. The world records the blow as a physical event for those who can see you; it does not judge whether the blow was justified."
+      },
       "put": {
         "kind": "placement",
         "description": "Place a held good into a container or onto a surface within reach."

@@ -7856,7 +7856,7 @@ class BigvilleWorld:
             (action == "move" and plan.get("destination") is not None)
             or action in {"rest", "eat", "work", "move_object"}
             or (action == "transfer" and plan.get("recipient"))
-            or (action == "take")
+            or (action == "take") or (action == "strike")
         )
         if needs_targets:
             self._actor_options(actor)
@@ -7888,6 +7888,9 @@ class BigvilleWorld:
             # A shop is not a physical recipient. Purchase intent, speech,
             # acceptance, and any payment are choices owned by cognition.
             return self._refuse("wrong_target")
+        if action == "strike":
+            return self.major_action(actor, "strike", target=plan.get("target"),
+                                     intensity=plan.get("intensity", 1.0))
         if action in {"transfer", "take"}:
             if action == "transfer":
                 recipient = plan.get("recipient") or target_of()
@@ -8578,6 +8581,17 @@ class BigvilleWorld:
                 return False
             return self._claimed_attempt(actor, "transfer", lambda: self._physical_transfer(
                 source, recipient, kind, amount, handover_kind="transfer"))
+        if action == "strike":
+            # Phase 038: a strike without a game is a blow the target does not answer (no reaction).
+            plan = {"target": kwargs.get("target", args[0] if args else None),
+                    "intensity": kwargs.get("intensity", args[1] if len(args) > 1 else 1.0)}
+            pending, code = self.strike_begin(actor, plan)
+            if pending is None:
+                return self._refuse(code)
+            applied, code = self.strike_resolve(pending, None)
+            if not applied:
+                self._refusal_code = code
+            return applied
         if action == "take":
             # Phase 029: a take without a game is a contest the holder does not answer (no reaction).
             recipient = kwargs.get("recipient")
@@ -10083,10 +10097,13 @@ class BigvilleWorld:
         size = float(ba.get("size", 1.0))
         life = float(ct["life_stage_force"].get(str(aa.get("life_stage", "adult")), 1.0))
         step = float(self._exhaustion_band(actor)["speed"])
-        force = max(0.0, strength) * (size ** float(ct["size_exponent"])) * life * step
+        base_force = max(0.0, strength) * (size ** float(ct["size_exponent"])) * life
+        force = base_force * step
         skill = float(self.effective_skill(actor, "fighting"))
         score = force * (1.0 + float(ct["technique_weight"]) * skill)
-        return {"force": force, "skill": skill, "score": score, "reserve": float(ba.get("stamina_reserve", 1.0))}
+        # power: the blow's strength without the exhaustion step (Phase 038: a tired blow is weak, not nothing).
+        return {"force": force, "skill": skill, "score": score, "reserve": float(ba.get("stamina_reserve", 1.0)),
+                "power": base_force * (1.0 + float(ct["technique_weight"]) * skill)}
 
     def _aware_of(self, attacker, target):
         """Whether the target could see the attacker coming: the attacker stood within sight range of the
@@ -10253,6 +10270,8 @@ class BigvilleWorld:
         Returns ``(applied, reason)``: applied is True when the goods changed hands, and reason is a
         REFUSAL_REASONS code otherwise. The full result (outcome, costs, redirection) is kept in
         ``pending["result"]``. A reaction the target was not offered is treated as no reaction."""
+        if pending.get("action") == "strike":
+            return self.strike_resolve(pending, reaction)
         if self._contest is pending:
             self._contest = None
         ct = self.E.CONTEST
@@ -10347,9 +10366,176 @@ class BigvilleWorld:
         """A take that did not happen frees the actor's major action, as a refused attempt does."""
         self._release_major_action(pending["attacker"], pending["slot_before"], pending["slot_record"])
 
-    def take_outcome(self, actor, applied, reason=None):
-        """Publish a take's outcome to the actor (the same record every major action gets, Phase 021)."""
-        self._publish_outcome(actor, "take", bool(applied), None if applied else (reason or "not_possible"))
+    def take_outcome(self, actor, applied, reason=None, action=None):
+        """Publish a take's outcome to the actor (the same record every major action gets, Phase 021).
+        `action` names the contest that produced it ("take" by default, "strike" for Phase 038)."""
+        self._publish_outcome(actor, str(action or "take"), bool(applied),
+                              None if applied else (reason or "not_possible"))
+
+    # ---------------------------------------------- strikes (Phase 038)
+    # A strike is a blow by one resident on another standing on the same cell (reach is the cell, as for a take).
+    # It reuses the contest: the blow's power is the attacker's score (force x technique), the target's hold is
+    # its resist or brace score (none when it does not react, so an unprepared target takes the blow in full), and
+    # the share that lands is (1 + margin) / 2 of the take's margin. The stamina rules are the take's, with the
+    # blow's intensity raising the cost by intensity^k. A blow with less stamina than attack_cost lands weakly. The
+    # world does not decide to strike: the backend proposes it. Nothing here is random.
+    def contest_begin(self, actor, action, plan):
+        """The begin step of a contested major action: `take` (Phase 029) or `strike` (Phase 038)."""
+        if action == "strike":
+            return self.strike_begin(actor, plan)
+        return self.take_begin(actor, plan)
+
+    def strike_begin(self, actor, plan):
+        """Start a strike by `actor` on the resident `plan["target"]`, who must stand on the actor's cell.
+
+        Returns (pending, None) with the target's reaction offer, or (None, reason) when refused: an unknown
+        resident, the actor itself, a dead person, someone off the cell, a malformed intensity, a sleeping or
+        collapsed actor, or a used action slot. Stamina never refuses a blow. The intensity is clamped as an
+        attempt's is (RESOLUTION max_intensity, lowered by speed and health)."""
+        self._contest = None
+        if actor not in self._actors:
+            return None, "unknown_target"
+        sleep_code = self._sleep_code(actor)
+        if sleep_code is not None:
+            return None, sleep_code
+        plan = plan if isinstance(plan, dict) else {}
+        target = self._as_key(plan.get("target"))
+        requested = plan.get("intensity", 1.0)
+        if target is None or isinstance(requested, bool) or not isinstance(requested, (int, float)) \
+                or math.isnan(float(requested)):
+            return None, "malformed"
+        if target not in self._actors or target == actor:
+            return None, "unknown_target" if target not in self._actors else "wrong_target"
+        if not self.is_alive(target):
+            return None, "wrong_target"
+        here, there = self.actor_position(actor), self.actor_position(target)
+        if here is None or here != there:
+            return None, "not_in_reach"
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        ceiling = float(rs["max_intensity"]) * self.health(actor)   # tiredness weakens the blow (weak), not its ceiling
+        applied, _clamped = R.intensity_applied(float(requested), rs["max_intensity"], ceiling)
+        attrs = self.eng.node(self._actor(actor))["attrs"]
+        before = {"major_action_used": attrs.get("major_action_used", 0.0),
+                  "major_action_kind": attrs.get("major_action_kind", ""),
+                  "last_major_action": attrs.get("last_major_action", "")}
+        if not self._claim_major_action(actor, "strike"):
+            return None, "slot_used"
+        attacker_side = self._contest_side(actor)
+        target_side = self._contest_side(target)
+        pending = {
+            "action": "strike", "attacker": str(actor), "target": str(target),
+            "kind": "blow", "kind_is_item": False, "by": "blow",
+            "amount": float(applied), "intensity": float(applied),
+            "turn": int(self._turn),
+            "witnesses": self._strike_witnesses(actor),
+            "slot_before": before, "slot_record": self._turn_actions[actor][-1],
+            "attacker_side": attacker_side, "target_side": target_side,
+            "offer": self._contest_offer(actor, target, attacker_side, target_side),
+            "result": None,
+        }
+        self._contest = pending
+        return pending, None
+
+    def _strike_witnesses(self, actor):
+        """Living, awake residents with sight of the actor: within HEARING sight_range by the Chebyshev distance and
+        with no sight occluder on the line (Phase 028). The target is among them when it can see. Nobody else learns."""
+        here = self.actor_position(actor)
+        if here is None:
+            return []
+        table = self.E.HEARING
+        sight_range = int(table["sight_range"])
+        codes = self._occluder_codes(table["sight_occluders"])
+        seen = []
+        for other in self._actors:
+            if other == actor or not self.is_alive(other) or self._sleep_code(other) is not None:
+                continue
+            pos = self.actor_position(other)
+            if pos is None:
+                continue
+            dist = max(abs(pos[0] - here[0]), abs(pos[1] - here[1]))
+            if dist <= sight_range and not self._line_blocked(here, pos, codes):
+                seen.append(other)
+        return seen
+
+    def strike_resolve(self, pending, reaction=None):
+        """Resolve a pending strike once the target has chosen its reaction (or None for none).
+
+        Returns (applied, reason). applied is True when the blow was enacted: it landed (outcome struck) or a
+        skilled holder turned it back on the attacker (redirected). A target that stepped out of reach gives
+        (False, "evaded"). The attacker's blow is on the record either way. The full result is kept in
+        ``pending["result"]``."""
+        if self._contest is pending:
+            self._contest = None
+        from worlds import resolution as R
+        ct = self.E.CONTEST
+        attacker, target = pending["attacker"], pending["target"]
+        offer = pending["offer"]
+        choice = reaction if (offer["eligible"] and reaction in offer["options"]) else None
+        A, T = pending["attacker_side"], pending["target_side"]
+        base, grip, tw = float(ct["base_cost"]), float(ct["grip"]), float(ct["technique_weight"])
+        trivial, slot_above = float(ct["trivial_below"]), float(ct["slot_above"])
+        k = float(self.E.RESOLUTION["k"])
+        intensity = float(pending["intensity"])
+        penalty = float(offer["penalty"]) if choice is not None else 1.0
+        body = self._bodies.get(attacker)
+        reserve = float(self.eng.node(body)["attrs"].get("stamina_reserve", 1.0)) if body is not None else 0.0
+        weak = R.clamp(reserve / float(ct["attack_cost"]), 0.0, 1.0)
+        result = {"action": "strike", "reaction": choice or "", "outcome": "", "applied": False, "reason": "",
+                  "late": bool(offer["late"]) if choice is not None else False, "redirected": False,
+                  "attacker_cost": 0.0, "target_cost": 0.0, "harm": 0.0, "landed": 0.0, "weak": weak}
+        pending["result"] = result
+        # The attacker's load is the take's: a yielding target brings none, a resisting one its full force, and
+        # any other target its passive grip. The swing costs that share, discounted by the attacker's technique.
+        if choice == "yield":
+            brought = 0.0
+        elif choice == "resist":
+            brought = T["force"]
+        else:
+            brought = grip * T["force"]
+        share_a = self._contest_share(brought, A["force"], A["skill"])
+        cost_a = base * share_a * (intensity ** k) if share_a >= trivial else 0.0
+        if choice == "evade":
+            share_t = self._contest_share(A["force"], T["force"], T["skill"])
+            cost_t = base * share_t if share_t >= trivial else 0.0
+            self._contest_spend(attacker, cost_a)
+            self._contest_spend(target, cost_t)
+            self._move_actor_to(target, offer["evade_cell"])
+            result.update(outcome="evaded", reason="evaded", attacker_cost=cost_a, target_cost=cost_t)
+            self._contest_practice_after(pending, choice)
+            self._record_sight(attacker, "strike", pending["witnesses"])
+            return False, "evaded"
+        # What the target's hold stops: none unprepared or yielding; the resist or brace score otherwise.
+        if choice in (None, "yield"):
+            hold = 0.0
+        elif choice == "resist":
+            hold = T["force"] * (1.0 + tw * T["skill"]) * penalty
+        else:
+            hold = grip * T["force"] * (1.0 + tw * T["skill"]) * penalty
+        att = A["power"]
+        total = att + hold
+        margin = 0.0 if total <= 0.0 else (att - hold) / total
+        landed = R.clamp((1.0 + margin) / 2.0, 0.0, 1.0)
+        redirected = (margin <= -float(ct["decisive_margin"]) and choice in ("resist", "brace")
+                      and T["skill"] - A["skill"] >= float(ct["redirect_gap"]))
+        harm = 0.0 if redirected else float(ct["strike_harm"]) * intensity * weak * landed * att
+        share_t = self._contest_share(A["force"], T["force"], T["skill"])
+        cost_t = base * share_t if (choice in ("resist", "brace") and share_t >= trivial) else 0.0
+        if redirected:
+            cost_a += float(ct["overextend"]) * base * share_a * (intensity ** k)
+        self._contest_spend(attacker, cost_a)
+        self._contest_spend(target, cost_t)
+        if choice in ("resist", "brace") and not offer["late"] and share_t >= slot_above:
+            self._claim_major_action(target, choice)
+        self._contest_practice_after(pending, choice)
+        result.update(attacker_cost=cost_a, target_cost=cost_t, landed=landed, harm=harm,
+                      redirected=redirected, outcome="redirected" if redirected else "struck", applied=True)
+        self._record_sight(attacker, "strike", pending["witnesses"])
+        if harm > 0.0:
+            self.harm(target, harm, "violence")
+        if redirected:
+            self.harm(attacker, float(ct["redirect_harm"]) * intensity, "violence")
+        return True, None
 
     def _sleep_code(self, actor):
         """'collapsed' or 'asleep' while the resident is down (refusal reasons), else None."""

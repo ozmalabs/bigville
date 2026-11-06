@@ -1,0 +1,2 @@
+# Baseline, before phase 038 edits (run with PYTHONPATH=. python3 /tmp/death_probe.py 192, output as captured)
+{"turns": 192, "ticks_per_period": 96, "deaths": 0, "first_death_turn": null, "causes": {}, "sample": []}

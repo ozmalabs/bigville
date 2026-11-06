@@ -942,7 +942,7 @@ def _check_contest(errors, warnings, info):
     expected = ("size_exponent", "life_stage_force", "base_cost", "grip", "technique_weight", "min_efficiency",
                 "trivial_below", "slot_above", "decisive_margin", "narrow_margin", "redirect_gap", "overextend",
                 "reaction_floor", "late_penalty", "late_options", "busy_factor", "overloaded_factor",
-                "baseline_level", "practice_minutes", "log_limit")
+                "baseline_level", "practice_minutes", "log_limit", "strike_harm", "attack_cost", "redirect_harm")
     for name in expected:
         if name not in ct:
             errors.append(f"CONTEST: missing {name!r}")
@@ -969,11 +969,11 @@ def _check_contest(errors, warnings, info):
                                                                    "reaction_floor", "decisive_margin")
                                       else lo <= value <= hi):
             errors.append(f"CONTEST[{name}]: out of range, not {value}")
-    for name in ("base_cost", "slot_above", "practice_minutes"):
+    for name in ("base_cost", "slot_above", "practice_minutes", "strike_harm", "attack_cost"):
         value = values.get(name)
         if value is not None and value <= 0.0:
             errors.append(f"CONTEST[{name}]: must be positive, not {value}")
-    for name in ("technique_weight", "trivial_below", "overextend"):
+    for name in ("technique_weight", "trivial_below", "overextend", "redirect_harm"):
         value = values.get(name)
         if value is not None and value < 0.0:
             errors.append(f"CONTEST[{name}]: must not be negative, not {value}")
@@ -996,6 +996,10 @@ def _check_contest(errors, warnings, info):
             errors.append(f"REFUSAL_REASONS: needs the contest code {code!r} (Phase 029)")
     if "take" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["take"].get("description", "")).strip():
         errors.append("MAJOR_ACTIONS: needs 'take' with a description (Phase 029)")
+    if "strike" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["strike"].get("description", "")).strip():
+        errors.append("MAJOR_ACTIONS: needs 'strike' with a description (Phase 038)")
+    if "violence" not in HEALTH["causes"]:
+        errors.append("HEALTH[causes]: 'violence' is missing (Phase 038 strikes)")
     for kind in ("take", "yield"):
         if kind not in HANDOVER_KINDS:
             errors.append(f"HANDOVER_KINDS: needs the contest kind {kind!r} (Phase 029)")

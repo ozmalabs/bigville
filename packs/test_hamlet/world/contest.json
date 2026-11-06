@@ -31,7 +31,10 @@
       "overloaded_factor": 0.8,
       "baseline_level": 0.1,
       "practice_minutes": 5.0,
-      "log_limit": 500
+      "log_limit": 500,
+      "strike_harm": 0.1,
+      "attack_cost": 0.2,
+      "redirect_harm": 0.05
     }
   }
 }

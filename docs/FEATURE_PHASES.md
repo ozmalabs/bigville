@@ -1597,16 +1597,7 @@ well-baby effects (Phase 043); births (Phases 044 and 045).
 
 ## Phase 038 -- Strikes and injury
 
-**Status:** ready, after 029 and 037 (decision 2026-11-05: strikes and injury are added). Spec:
-`seeds/bigville_viol_act.json` (`bv_trigger`, `bv_refrain`, `bv_harm_victim`,
-`bv_cost_aggressor`) and `bigville_viol_kill.json`. The act is a `ViolentAct{amount, cost}`: it
-lowers the victim's health by `amount`, lowers the aggressor's stamina by `cost`, and is gated on
-the aggressor's stamina being at least `attack_cost`. The decision to commit it
-(`snap_pressure + w_spite x spite_gain + hunger x desperation_gain` against a threshold) is
-the resident's. Evidence, prosecution and sentencing (`bigville_viol_evidence`,
-`bigville_viol_prosecute`) are the residents' institutions. `seeds/bigville_tools.json`
-`tl_strike` is the held-object form of the same harm (use X on a person: harm = the tool's strike
-fitness, the striker spends effort, gated on holding); Phase 040 supplies the fitness.
+**Status:** done. `strike` is a major action resolved by the Phase 029 contest rule: the target may react (resist, brace, yield, evade) through the same `react` path; blow power is force x technique x intensity (the intensity ceiling is `max_intensity` x health), and a landed blow is `harm(target, strike_harm x margin, "injury")`, with deaths by violence tagged `violence`. A redirected blow harms the attacker by `redirect_harm` x intensity. New CONTEST keys `strike_harm` 0.1, `attack_cost` 0.2, `redirect_harm` 0.05 (APPROX). The unarmed blow does not use TOOL_FIT, so the hands floor does not apply. The simple backend's strike trigger (grievances recorded in `react`) is off by default: the 192-turn town100 probe has 0 deaths before and after. The Phase 054 packet snapshot fixture is regenerated (the action list gained `strike`). Open: grievance memory is not checkpointed. See docs/phases/phase038/PHASE038_REPORT.md.
 
 **Goal.** Add a `strike` major action by an actor on a resident within reach, reusing Phase 029's
 force, technique, efficiency, reaction turn and `redirected` rules:
@@ -3203,3 +3194,4 @@ truth held apart. Unscheduled until the rule says it is needed.
 | 057 Terminal interface | done | (this commit) | docs/phases/phase057/PHASE057_REPORT.md -- `python -m bigville.tui` (plain and curses) on the agent view only; pure `render` (80x24 snapshot), command parser with lexicon verbs, intensity and amount words, ambiguity questions; pack `NARRATION`; embedded and HTTP clients (no `/api/state`); agent-mode server binds a reply's handles and delivers reactions; view gains a `reaction` section; 48 tests; 1532 passed |
 | 034 Intoxication | done | (this commit) | docs/phases/phase034/PHASE034_REPORT.md -- Widmark gain, linear sobering, skill loss via effective_skill, stagger, pass-out; 1553 passed |
 | 055 LLM backend operations | done | (this commit) | docs/phases/phase055/PHASE055_REPORT.md -- bounded thread pool for `concurrent` backends with fixed result order; JSONL transcripts and a replay provider keyed by turn, actor and prompt hash; stdlib OpenAI-compatible provider with OpenCode Go settings, retries, rate limit, key redaction and spend cap; `llm_scenario` mixed towns; per-resident and per-day cost in `llm_report`; live test skipped by default; 3 LLM + 97 simple for 100 turns made 38 calls; 38 tests; simple backend identical to HEAD; 1569 passed on the previous base |
+| 038 Strikes and injury | done | (this commit) | docs/phases/phase038/PHASE038_REPORT.md -- strike through the contest rule; injury and violence harm; trigger off by default; 1609 passed |

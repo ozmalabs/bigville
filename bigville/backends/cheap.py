@@ -9,6 +9,7 @@ from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAc
 from .psi_can import CANWeightModel
 from domains.persona import simple_band   # Phase 058: the hour bands are the pack's ROUTINE_BANDS
 from domains.world_affordances import INTOXICATION as _INTOXICATION   # Phase 034: the drink policy numbers
+from domains.world_affordances import CONTEST as _CONTEST   # Phase 038: attack_cost, the strike gate
 
 # Score added to the walk back to a paused timed job (Phase 023). A modest bias: the job
 # resumes unless a need (food, rest) scores higher. It is a valuation, not a world rule.
@@ -66,6 +67,14 @@ class SimplePolicy:
     # result (RESOLUTION max_intensity). 0 turns escalation off, so the default intensity is always 1.0.
     escalate_after_ticks: int = 0
     escalate_step: float = 0.5
+    # Strikes (Phase 038, OFF by default, so the simple village stays peaceful). The seeded trigger
+    # (bigville_viol_act bv_trigger) as a valuation: a resident strikes a person on its cell it holds a grievance
+    # against when snap_pressure + w_spite x spite_gain + hunger x desperation_gain reaches strike_threshold, and
+    # only with stamina at least attack_cost (the seed's gate). snap_pressure is 0 (no frustration model here), and
+    # spite_gain is 1 for a grievance (a contest this resident reacted to). Both gains and the threshold are APPROX.
+    strike_trigger: bool = False
+    strike_threshold: float = 1.0
+    strike_desperation_gain: float = 1.0
 
     def escalated_intensity(self, current: float, ticks_without_progress: int) -> float:
         """The intensity for the next attempt (Phase 050). Unchanged while escalation is off, or before the span
@@ -153,6 +162,8 @@ class DeterministicBackend:
         self.model = CANWeightModel()
         # Phase 034: the last few intoxication bonuses given (the reason trace of a drunk resident's choices)
         self.intoxication_trace: list[dict] = []
+        # Phase 038: residents this backend has reacted to in a contest (a grievance, for the optional strike trigger).
+        self.grievances: dict[str, int] = {}
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self._update_goals(context)
@@ -244,6 +255,14 @@ class DeterministicBackend:
                                 "time_band": self.time_band, "reason": "unlock_with_key"}
             params = {k: value for k, value in unlock.items() if k not in {"action", "score", "legal", "reason"}}
             return ActorResponse(major_action=ProposedAction("unlock", params, "cheap_psi_can"),
+                                 utterances=self._speech(context))
+        # Phase 038: the optional strike trigger (off by default). Sleep and food still come first only through the
+        # sleep block above; a resident that is asleep does not strike.
+        strike = self._strike_proposal(context) if sleep_reason is None else None
+        if strike is not None:
+            self.last_choice = {"action": "strike", **strike, "goal": self.current_goal.kind if self.current_goal else "observe",
+                                "time_band": self.time_band, "reason": "grievance_trigger"}
+            return ActorResponse(major_action=ProposedAction("strike", dict(strike), "cheap_psi_can"),
                                  utterances=self._speech(context))
         # PSI/CAN weights the already-admissible options.  The durable goal
         # state remains useful as a modest task salience bonus, but it never
@@ -504,11 +523,36 @@ class DeterministicBackend:
 
     def react(self, context: ActorContext) -> ActorResponse:
         """Phase 029: a fixed reaction to a contested take. Resist when offered, else brace, else yield.
-        Deterministic: the same offer always gets the same reaction."""
+        Deterministic: the same offer always gets the same reaction. Phase 038: the contest's actor is recorded as a
+        grievance (the strike trigger reads it), whatever the reaction."""
         offer = context.observations.get("reaction", {})
+        if offer.get("actor"):
+            self.grievances[str(offer["actor"])] = int(context.turn)
         options = list(offer.get("options", []))
         choice = next((option for option in ("resist", "brace", "yield") if option in options), "")
         return ActorResponse(backend_state={"reaction": choice, "reason": "fixed_reaction_policy"})
+
+    def _strike_proposal(self, context: ActorContext) -> dict | None:
+        """Phase 038: the seeded strike trigger as an optional policy. Returns the proposal's params, or None.
+
+        Off unless policy.strike_trigger is set. The trigger value is snap_pressure (0) + w_spite x spite_gain
+        + hunger x desperation_gain, where spite_gain is 1 for a person on this cell this resident holds a grievance
+        against. It must reach policy.strike_threshold, and the resident needs stamina of at least attack_cost (the
+        seed's gate; energy is 0 to 100, the reserve x 100). The world itself never refuses a blow for stamina."""
+        if not self.policy.strike_trigger or not self.grievances:
+            return None
+        if float(context.observations.get("energy", 0.0)) / 100.0 < float(_CONTEST["attack_cost"]):
+            return None
+        here = sorted(str(r.get("id")) for r in context.observations.get("nearby_residents", [])
+                      if int(r.get("distance", 1)) == 0 and str(r.get("id")) in self.grievances)
+        if not here:
+            return None
+        hunger = float(context.observations.get("hunger", 0.0))
+        w_spite = float(self.character.personality.get("w_spite", 0.0))
+        value = 0.0 + w_spite * 1.0 + hunger * float(self.policy.strike_desperation_gain)
+        if value < float(self.policy.strike_threshold):
+            return None
+        return {"target": here[0], "intensity": 1.0}
 
     def dump_held_state(self) -> HeldState:
         return HeldState(
