@@ -251,19 +251,23 @@ The backend and prompt work is staged in
 
 ## Local management discovery service
 
-The separately launched management service currently exposes health and a
-read-only catalog of scenarios, physical subsystem defaults, and backend
-availability. It does not create or control runs.
+The separately launched management service exposes health, capabilities, a
+local run registry, and run lifecycle commands. It remains a loopback-only,
+single-user service.
 
 ```bash
 python -m bigville.management.http
 # http://127.0.0.1:8766/api/management/v1/health
 # http://127.0.0.1:8766/api/management/v1/capabilities
-# Open http://127.0.0.1:8766/ for the Worlds & casts and Backends catalog.
+# Open http://127.0.0.1:8766/ for the management shell.
 ```
 
-The service only binds to loopback IP addresses. Ocelot is marked unavailable
-when its external adapter cannot be imported, and LLM is unavailable until a
-server-side provider is configured. Discovery never constructs a backend or
-contacts a provider. This is a local single-user service; remote and
-multi-user deployment and authentication are out of scope.
+Run metadata is stored by default in `~/.local/share/bigville-management`.
+Set `BIGVILLE_MANAGEMENT_DATA_DIR` or pass `--data-dir` to choose another
+local directory. The service only binds to loopback IP addresses. Ocelot is
+marked unavailable when its external adapter cannot be imported, and LLM is
+unavailable until a server-side provider is configured. M04 supports
+autonomous simple-backend runs; human-input handling and provider invocation
+are unavailable. On service restart, unfinished in-memory runs are marked
+failed with an interruption reason; worlds are not silently resumed. Remote
+and multi-user deployment and authentication are out of scope.

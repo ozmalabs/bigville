@@ -193,7 +193,7 @@ def test_http_validate_and_preview_endpoints_return_field_errors_and_preview(
     status, preview = post(management_server, "/run-drafts/preview", draft(seed=True))
     assert status == 422
     assert preview["error"]["code"] == "invalid_draft"
-    assert "seed" in preview["fields"]
+    assert "seed" in preview["error"]["fields"]
 
     status, preview = post(management_server, "/run-drafts/preview", draft())
     assert status == 200
@@ -220,4 +220,4 @@ def test_http_preview_world_construction_error_is_field_addressed(
     status, body = post(management_server, "/run-drafts/preview", draft())
     assert status == 422
     assert body["error"]["code"] == "preview_failed"
-    assert body["fields"]["scenario_id"]
+    assert body["error"]["fields"]["scenario_id"]

@@ -31,7 +31,24 @@ def _build_identity() -> dict[str, str | None]:
         package_version = version("bigville")
     except Exception:
         package_version = None
-    return {"package_version": package_version, "git_commit": commit or None}
+    source_digest = hashlib.sha256()
+    source_files = []
+    for relative_dir, suffixes in (("bigville", {".py"}), ("worlds", {".py"}),
+                                   ("domains", {".py"}), ("packs", {".json"}),
+                                   ("seeds", {".json"})):
+        directory = root / relative_dir
+        if directory.is_dir():
+            source_files.extend(path for path in directory.rglob("*")
+                                if path.is_file() and path.suffix in suffixes)
+    for path in sorted(source_files):
+        relative = path.relative_to(root).as_posix().encode("utf-8")
+        source_digest.update(len(relative).to_bytes(4, "big"))
+        source_digest.update(relative)
+        content = path.read_bytes()
+        source_digest.update(len(content).to_bytes(8, "big"))
+        source_digest.update(content)
+    return {"package_version": package_version, "git_commit": commit or None,
+            "engine_source_hash": source_digest.hexdigest() if source_files else None}
 
 
 def _scenario_entry(identifier: str) -> dict[str, Any]:
@@ -100,8 +117,9 @@ def build_capability_catalog() -> dict[str, Any]:
         "schema_version": 1,
         "revision": _canonical_hash({"scenarios": scenarios,
                                     "subsystems": defaults,
-                                    "backends": backends}),
-        "engine_build": _build_identity(),
+                                    "backends": backends,
+                                    "engine_build": (engine_build := _build_identity())}),
+        "engine_build": engine_build,
         "scenarios": scenarios,
         "physical_subsystems": [
             {"name": name, "default": enabled}

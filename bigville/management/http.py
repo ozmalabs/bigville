@@ -5,6 +5,7 @@ import argparse
 import ipaddress
 import json
 import mimetypes
+import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -12,14 +13,25 @@ from urllib.parse import unquote, urlsplit
 
 from .catalog import build_capability_catalog
 from .drafts import MAX_PREVIEW_BYTES, PreviewTooLarge, preview_draft, resolve_draft
+from .runs import (InvalidRunRequest, InvalidTransition, RegistryError,
+                   RunConflict, RunNotFound, RunRegistry)
 
 API_PREFIX = "/api/management/v1"
 STATIC_ROOT = Path(__file__).with_name("static").resolve()
 MAX_REQUEST_BYTES = 65_536
 
 
-def error_payload(code: str, message: str) -> dict[str, Any]:
-    return {"error": {"code": code, "message": message}}
+def default_data_dir() -> Path:
+    configured = os.environ.get("BIGVILLE_MANAGEMENT_DATA_DIR")
+    return Path(configured).expanduser() if configured else Path.home() / ".local/share/bigville-management"
+
+
+def error_payload(code: str, message: str,
+                  fields: dict[str, Any] | None = None) -> dict[str, Any]:
+    error = {"code": code, "message": message}
+    if fields:
+        error["fields"] = fields
+    return {"error": error}
 
 
 class ManagementHTTPServer(ThreadingHTTPServer):
@@ -66,6 +78,16 @@ class _Handler(BaseHTTPRequestHandler):
             except Exception:
                 return self._json(500, error_payload(
                     "catalog_unavailable", "Capability catalog could not be built."))
+        if path == f"{API_PREFIX}/runs":
+            return self._json(200, {"runs": self.server.run_registry.list_runs()})
+        if path.startswith(f"{API_PREFIX}/runs/"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            try:
+                return self._json(200, self.server.run_registry.get_run(run_id))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
         return self._json(404, error_payload("not_found", "Unknown management API path."))
 
     def _static(self, path: Path):
@@ -87,7 +109,11 @@ class _Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = urlsplit(self.path).path
         if path not in {f"{API_PREFIX}/run-drafts/validate",
-                        f"{API_PREFIX}/run-drafts/preview"}:
+                        f"{API_PREFIX}/run-drafts/preview",
+                        f"{API_PREFIX}/runs"} and not (
+                            path.startswith(f"{API_PREFIX}/runs/") and
+                            path.endswith("/commands") and
+                            path.count("/") == len(API_PREFIX.strip("/").split("/")) + 3):
             return self._json(404, error_payload("not_found", "Unknown management API path."))
         try:
             length = int(self.headers.get("Content-Length", "-1"))
@@ -101,6 +127,38 @@ class _Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length))
         except (json.JSONDecodeError, UnicodeDecodeError):
             return self._json(400, error_payload("invalid_json", "Request body must be valid JSON."))
+
+        if path == f"{API_PREFIX}/runs":
+            try:
+                record, created = self.server.run_registry.create_run(payload)
+            except InvalidRunRequest as exc:
+                return self._json(422, error_payload(
+                    exc.code, str(exc), getattr(exc, "fields", None)))
+            except RunConflict as exc:
+                return self._json(409, error_payload(
+                    exc.code, str(exc), getattr(exc, "fields", None)))
+            except Exception:
+                return self._json(500, error_payload(
+                    "run_creation_failed", "Run creation could not be completed."))
+            status = 201 if created else 200
+            return self._json(status, record)
+
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/commands"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/commands")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            if not isinstance(payload, dict) or set(payload) != {"command"} or not isinstance(payload.get("command"), str):
+                return self._json(400, error_payload("invalid_request", "Command body must contain only a string 'command'."))
+            try:
+                return self._json(200, self.server.run_registry.command(run_id, payload["command"]))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except InvalidTransition as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except InvalidRunRequest as exc:
+                return self._json(400, error_payload(exc.code, str(exc)))
+            except RegistryError as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
 
         if path.endswith("/validate"):
             try:
@@ -116,13 +174,12 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(413, error_payload("preview_too_large", str(exc)))
         except Exception:
             return self._json(422, {
-                **error_payload("preview_failed", "The selected scenario could not be previewed."),
-                "fields": {"scenario_id": "Check that the scenario is supported and well formed."},
+                **error_payload("preview_failed", "The selected scenario could not be previewed.",
+                                {"scenario_id": "Check that the scenario is supported and well formed."}),
             })
         if preview is None:
             return self._json(422, {
-                **error_payload("invalid_draft", "Draft validation failed."),
-                "fields": resolution["errors"],
+                **error_payload("invalid_draft", "Draft validation failed.", resolution["errors"]),
             })
         encoded_size = len(json.dumps(preview, sort_keys=True, separators=(",", ":"),
                                       ensure_ascii=False).encode("utf-8"))
@@ -140,7 +197,8 @@ class _Handler(BaseHTTPRequestHandler):
         return self._json(404, error_payload("not_found", "Unknown management API path."))
 
 
-def create_server(host: str = "127.0.0.1", port: int = 8766) -> ManagementHTTPServer:
+def create_server(host: str = "127.0.0.1", port: int = 8766,
+                  data_dir: str | Path | None = None) -> ManagementHTTPServer:
     """Create a service bound to a loopback address only."""
     try:
         address = ipaddress.ip_address(host)
@@ -149,11 +207,15 @@ def create_server(host: str = "127.0.0.1", port: int = 8766) -> ManagementHTTPSe
     if not address.is_loopback:
         raise ValueError("Management service host must be a loopback IP address")
     server_type = _IPv6ManagementHTTPServer if address.version == 6 else ManagementHTTPServer
-    return server_type((str(address), int(port)), _Handler)
+    registry = RunRegistry(data_dir if data_dir is not None else default_data_dir())
+    server = server_type((str(address), int(port)), _Handler)
+    server.run_registry = registry
+    return server
 
 
-def serve(host: str = "127.0.0.1", port: int = 8766) -> None:
-    server = create_server(host, port)
+def serve(host: str = "127.0.0.1", port: int = 8766,
+          data_dir: str | Path | None = None) -> None:
+    server = create_server(host, port, data_dir)
     print(f"Bigville management ready at http://{server.server_address[0]}:{server.server_address[1]}")
     try:
         server.serve_forever()
@@ -167,9 +229,10 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Run the local Bigville management discovery service")
     parser.add_argument("--host", default="127.0.0.1", help="loopback bind address (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8766)
+    parser.add_argument("--data-dir", help="local registry directory (default: BIGVILLE_MANAGEMENT_DATA_DIR or ~/.local/share/bigville-management)")
     args = parser.parse_args(argv)
     try:
-        serve(args.host, args.port)
+        serve(args.host, args.port, args.data_dir)
     except ValueError as exc:
         parser.error(str(exc))
     return 0

@@ -83,7 +83,9 @@ def test_catalog_response_is_displayable_and_backend_readiness_is_real(shell_ser
 
 def test_old_game_and_unknown_api_routes_are_not_shadowed(shell_server):
     base, _ = shell_server
+    with urlopen(base + API_PREFIX + "/runs") as response:
+        assert isinstance(json.load(response)["runs"], list)
     with pytest.raises(HTTPError) as caught:
-        urlopen(base + API_PREFIX + "/runs")
+        urlopen(base + API_PREFIX + "/not-a-route")
     assert caught.value.code == 404
     assert json.load(caught.value)["error"]["code"] == "not_found"
