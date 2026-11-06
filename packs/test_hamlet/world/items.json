@@ -28,7 +28,9 @@
         "weight": 0.5,
         "volume": 1.0,
         "food": true,
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 42.5,
+        "taste": 0.45
       }
     },
     "FOOD_GRADING": {

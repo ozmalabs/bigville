@@ -179,6 +179,21 @@ class SimulationReporter:
         band so far, and grams of alcohol drunk so far. Reads the world's counts only."""
         return self.world.intoxication_tally()
 
+    def nutrition(self) -> dict[str, Any]:
+        """Phase 035: over the living residents, how many are short of protein (deficiency above 0), the mean
+        deficiency, the mean protein store in grams, and the mean mood. Reads the world's read-offs only."""
+        people = [a for a in self.world._actors if self.world.is_alive(a)]
+        if not people:
+            return {"residents": 0, "short_of_protein": 0, "deficiency_mean": 0.0, "protein_store_mean": 0.0,
+                    "mood_mean": 0.0}
+        reads = [self.world.nutrition(a) for a in people]
+        n = float(len(people))
+        return {"residents": len(people),
+                "short_of_protein": sum(1 for r in reads if r["deficiency"] > 0.0),
+                "deficiency_mean": round(sum(r["deficiency"] for r in reads) / n, 4),
+                "protein_store_mean": round(sum(r["protein_store"] for r in reads) / n, 4),
+                "mood_mean": round(sum(float(self.world.body_state(a)["mood"]) for a in people) / n, 4)}
+
     def economy(self) -> dict[str, Any]:
         E = world_entities(self.world)
         stock = {}
@@ -333,6 +348,7 @@ class SimulationReporter:
         report = {"schema": "bigville/report/1", "clock": dict(self.world.calendar()),
                   "population": population, "economy": economy, "social": social,
                   "ecology": self.ecology(), "refusals": self.refusals(), "intoxication": self.intoxication(),
+                  "nutrition": self.nutrition(),
                   "measurement": {
                       "population": "complete_census", "economy": "complete_physical_and_handover_readout",
                       "social": "complete_recorded_graph_events", "sample_estimate": "simple_random_sample_with_fpc"}}

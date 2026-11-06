@@ -24,7 +24,7 @@ def test_runner_replays_identically_and_records_seed_and_causal_trace():
     assert first["initial_state"]["turn"] == 0
     assert first["physical_subsystems"] == {
         "metabolism": False, "ecology": True, "decay": True, "practice": True, "cognitive_practice": False,
-        "loudness": True, "training": True, "illness": False, "joint_actions": False}
+        "loudness": True, "training": True, "illness": False, "joint_actions": False, "monotony": False}
     assert [step["turn"] for step in first["steps"]] == [1, 2, 3]
     assert first["steps"][1]["period_transition"]["period"] == 1
     actor = first["steps"][0]["actors"][0]

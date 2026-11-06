@@ -226,6 +226,10 @@
       "file": "world/intoxication.json"
     },
     {
+      "name": "NUTRITION",
+      "file": "world/nutrition.json"
+    },
+    {
       "name": "DISEASE",
       "file": "world/disease.json"
     },

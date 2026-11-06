@@ -330,6 +330,11 @@ class BigvilleWorld:
         # several). Off, no joint option is published, a joint proposal is refused as unsupported, and every recipe
         # runs as before, whatever its crew field says.
         "joint_actions": False,
+        # Phase 035: specific satiety lowers a repeated food's energy (feeds x freshness x (1 - satiety)). Off by
+        # default: the founding village eats mostly bread and runs close to the starvation limit (peak hunger 3.78
+        # of 4.0 in 384 turns), so the rule changes the simple village's eating and survival. With it off, satiety
+        # is still tracked and still lowers the meal's pleasure and the mood; only the energy is unchanged.
+        "monotony": False,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -1342,6 +1347,8 @@ class BigvilleWorld:
                         continue
                     hunger = float(aa.get("hunger", 0.0)) + 1.0
                     self.eng.set_attr(node, "hunger", hunger)
+                    # Phase 035: the protein store, deficiency and satiety settle once per period (seeds nu_metabolize).
+                    self._nutrition_period(actor)
                     if hunger > float(aa.get("starve_limit", self.E.CARE["starve_limit"])):
                         # Phase 037: starvation is acute harm each period past the limit (HEALTH.starve_harm).
                         self.harm(actor, float(self.E.HEALTH["starve_harm"]), "starvation")
@@ -3980,13 +3987,15 @@ class BigvilleWorld:
     def _has_tableware(self, actor, kind):
         return bool(self._actor_tableware.get(actor, {}).get(kind))
 
-    def eat(self, actor, kind=None, *, vessel=None, utensil=None, source=None):
+    def eat(self, actor, kind=None, *, vessel=None, utensil=None, source=None, spiced=False):
         """Eat one held food unit as an explicit major action.
 
         Soups require a bowl-sized serving vessel and a ladle/serving spoon (a
         bowl may itself scoop from a larger bowl). Drinks require a mug and a
         dipper or mug. ``source`` may name a larger physical container and is
-        checked for the corresponding serving capacity.
+        checked for the corresponding serving capacity. ``spiced`` (Phase 035)
+        adds the spice bonus to the meal's pleasure if a spice unit is held, and
+        consumes that unit; the backend chooses whether to spice a meal.
         """
         if kind is None:
             candidates = [k for k, spec in self._item_specs.items()
@@ -4027,19 +4036,21 @@ class BigvilleWorld:
             scraps = self._inventory_stock(actor, leftover, create=True)
             self.eng.set_attr(scraps, "qty", self.inventory_qty(actor, leftover) + fraction)
         self._refresh_carry_state(actor)
-        value = self.E.meal_value(kind, freshness)
+        pre_satiety = self._satiety_level(actor, kind)
+        value = self.E.meal_value(kind, freshness) * (1.0 - self._energy_satiety(pre_satiety))   # Phase 035
         if unserved:
             value *= 1.0 - float(self.E.RESOLUTION["unserved_waste"])     # Phase 049: the share spilled or wasted
         hunger = float(self.eng.node(self._actor(actor))["attrs"].get("hunger", 0.0))
         self.eng.set_attr(self._actor(actor), "hunger", max(0.0, hunger - value))
         self._record_meal(actor, kind, value, freshness)
+        self._nutrition_meal(actor, kind, pre_satiety, spiced)
         self._drink_alcohol(actor, kind)
         self.eng.add_edge_unchecked(self._actor(actor), "ate", stock)
         return True
 
     def _record_meal(self, actor, kind, value, freshness):
         """Publish what one meal did to the eater: the hunger it relieved, its pleasantness and its illness
-        risk. Pleasantness is the freshness until taste exists (Phase 035). Phase 037: the illness risk is rolled
+        risk. Pleasantness is the freshness (Phase 027); the taste-based meal pleasure is set in _nutrition_meal (Phase 035). Phase 037: the illness risk is rolled
         once per meal (a stateless draw keyed on the seed, the eater, the period and the meal count); a meal that
         makes its eater ill is acute harm (HEALTH.illness_harm, cause `illness`)."""
         node = self._actor(actor)
@@ -4062,10 +4073,99 @@ class BigvilleWorld:
                 "pleasantness": round(float(attrs.get("meal_pleasantness", 0.0)), 4),
                 "illness_risk": round(float(attrs.get("illness_risk", 0.0)), 4)}
 
+    # ---------------------------------------------------- nutrition (Phase 035)
+    # The body keeps a protein store, a deficiency, the last meal's pleasure and monotony, and its mood. Each food
+    # kind has a Satiety node (specific satiety) linked from the Body. A meal's energy is feeds x freshness x (1 -
+    # satiety); its protein enters the store; its satisfaction moves the mood. Deficiency, pleasure and monotony are
+    # read-offs for the backend's mind rule (seed nu_psych). Choosing a food, and whether to spice a meal, is the
+    # backend's choice; the world only applies it.
+    def _satiety_level(self, actor, kind):
+        """The specific satiety of `kind` for `actor`, 0 (never eaten or faded) to NUTRITION monotony_cap."""
+        node = self._satiety_node(actor, kind)
+        return 0.0 if node is None else float(self.eng.node(node)["attrs"].get("level", 0.0))
+
+    def _satiety_node(self, actor, kind, *, create=False):
+        body = self._bodies[actor]
+        for node in self.eng.neighbours(body, "has_satiety"):
+            if self.eng.node(node)["attrs"].get("kind") == kind:
+                return node
+        if not create:
+            return None
+        node = self.eng.add_node("Satiety", {"kind": kind, "level": 0.0})
+        self.eng.add_edge_unchecked(body, "has_satiety", node)
+        return node
+
+    def _take_spice(self, actor):
+        """Consume one unit of the first spice the actor holds (NUTRITION spice_kinds). True if one was used."""
+        for kind in self.E.NUTRITION["spice_kinds"]:
+            if self.inventory_qty(actor, kind) >= 1.0:
+                stock = self._inventory_stock(actor, kind)
+                self.eng.set_attr(stock, "qty", self.inventory_qty(actor, kind) - 1.0)
+                self._refresh_carry_state(actor)
+                return True
+        return False
+
+    def _nutrition_meal(self, actor, kind, pre_satiety, spiced):
+        """A meal's body effects, applied after its hunger is relieved. The spice bonus is taken only if the meal is
+        spiced and a unit is held. The mood moves toward the meal's satisfaction (seed af_meal_mood). The food's
+        satiety rises by monotony_rise, up to monotony_cap."""
+        n = self.E.NUTRITION
+        bonus = float(n["spice_bonus"]) if (spiced and self._take_spice(actor)) else 0.0
+        body = self._bodies[actor]
+        attrs = self.eng.node(body)["attrs"]
+        satisfaction = self.E.satisfaction_of_meal(kind, pre_satiety, bonus)
+        mood = float(attrs.get("mood", 0.5))
+        self.eng.set_attr(body, "mood", mood + (satisfaction - mood) * float(n["mood_rate"]))
+        self.eng.set_attr(body, "protein_store", float(attrs.get("protein_store", 0.0)) + self.E.protein(kind))
+        self.eng.set_attr(body, "meal_pleasure", min(1.0, self.E.taste(kind) + bonus))
+        level = min(float(n["monotony_cap"]), pre_satiety + float(n["monotony_rise"]))
+        self.eng.set_attr(self._satiety_node(actor, kind, create=True), "level", level)
+        self.eng.set_attr(body, "monotony", level)
+
+    def _nutrition_period(self, actor):
+        """One period of nutrition (seeds nu_metabolize and nu_deficiency). The protein store is read at the period's
+        close: while it is below protein_need, deficiency rises by deficiency_rate times the shortfall share; once it
+        is not, deficiency falls by deficiency_recovery. Then the store keeps protein_retain of itself, each food's
+        satiety keeps monotony_retain, and the pleasure and monotony read-offs fade."""
+        n = self.E.NUTRITION
+        body = self._bodies[actor]
+        attrs = self.eng.node(body)["attrs"]
+        store = float(attrs.get("protein_store", 0.0))
+        need = float(n["protein_need"])
+        deficiency = float(attrs.get("deficiency", 0.0))
+        if store < need:
+            deficiency += float(n["deficiency_rate"]) * (need - store) / need
+        else:
+            deficiency -= float(n["deficiency_recovery"])
+        self.eng.set_attr(body, "deficiency", min(1.0, max(0.0, deficiency)))
+        self.eng.set_attr(body, "protein_store", store * float(n["protein_retain"]))
+        for node in self.eng.neighbours(body, "has_satiety"):
+            level = float(self.eng.node(node)["attrs"].get("level", 0.0))
+            self.eng.set_attr(node, "level", level * float(n["monotony_retain"]))
+        self.eng.set_attr(body, "monotony", float(attrs.get("monotony", 0.0)) * float(n["monotony_retain"]))
+        self.eng.set_attr(body, "meal_pleasure", float(attrs.get("meal_pleasure", 0.0)) * float(n["pleasure_retain"]))
+
+    def nutrition(self, actor):
+        """Read-offs (Phase 035), plain values: the protein store in grams, the deficiency (0 to 1), the last meal's
+        pleasure (0 to 1) and the monotony (the specific satiety of the last food eaten, 0 to 1)."""
+        attrs = self.eng.node(self._bodies[actor])["attrs"]
+        return {"protein_store": round(float(attrs.get("protein_store", 0.0)), 4),
+                "deficiency": round(float(attrs.get("deficiency", 0.0)), 4),
+                "meal_pleasure": round(float(attrs.get("meal_pleasure", 0.0)), 4),
+                "monotony": round(float(attrs.get("monotony", 0.0)), 4)}
+
     def meal_value(self, actor, kind):
-        """The hunger a held unit of `kind` would relieve if eaten now (see E.meal_value)."""
+        """The hunger a held unit of `kind` would relieve if eaten now: feeds x freshness, less the actor's specific
+        satiety for that kind (Phase 035)."""
         stock = self._inventory_stock(actor, kind)
-        return round(self.E.meal_value(kind, self._pile_condition(stock)), 4) if stock else 0.0
+        if not stock:
+            return 0.0
+        return round(self.E.meal_value(kind, self._pile_condition(stock))
+                     * (1.0 - self._energy_satiety(self._satiety_level(actor, kind))), 4)
+
+    def _energy_satiety(self, satiety):
+        """The satiety that lowers a meal's energy: the food's satiety with the `monotony` switch on, else 0."""
+        return float(satiety) if self.physical_subsystems.get("monotony") else 0.0
 
     def _relieves_hunger(self, kind):
         """True when eating a unit of the store's `kind` now would relieve some hunger (a food with value at the
@@ -6464,7 +6564,9 @@ class BigvilleWorld:
             "sta_train": 0.0, "strength": 1.0, "stamina": 1.0,
             "stats_dirty": 0.0, "stamina_reserve": float(defaults["body"]["stamina_reserve"]),
             # Phase 034: alcohol in the body (0 sober to 1), on the Body node
-            "intoxication": 0.0})
+            "intoxication": 0.0,
+            # Phase 035: nutrition on the Body node (protein store, deficiency, last meal's pleasure and monotony)
+            "protein_store": 0.0, "deficiency": 0.0, "meal_pleasure": 0.0, "monotony": 0.0})
         self.eng.add_edge_unchecked(a, "has_body", body)
         self._bodies[name] = body
         self._actor_minds[name] = (
@@ -7491,7 +7593,9 @@ class BigvilleWorld:
                 if spec.get("prepared") and self._serving_equipment(actor, kind) is None:
                     continue
                 options.append({"action": "eat", "kind": kind, "trade": "", "recipe": "", "target": "",
-                                "meal_value": self.meal_value(actor, kind), "score": 0.0})
+                                "meal_value": self.meal_value(actor, kind),
+                                "monotony": round(self._satiety_level(actor, kind), 4),
+                                "meal_pleasure": round(self.E.taste(kind), 4), "score": 0.0})
         # Publishing a sale is an economic decision, not a physical affordance.
         # The resident's cognition can observe nearby people and choose whether
         # to propose a physical transfer; the world must not turn a seeded
@@ -11329,6 +11433,8 @@ class BigvilleWorld:
                 "asleep": self.asleep(actor), "collapsed": self.collapsed(actor),
                 # Phase 034 read-offs: intoxication (0 sober to 1) and its band.
                 "intoxication": self.intoxication(actor), "intoxication_band": self.intoxication_band(actor),
+                # Phase 035 read-offs: protein_store (grams), deficiency, meal_pleasure and monotony.
+                **self.nutrition(actor),
                 # Phase 043 read-offs: the illness flag and the care flags (screened, treated, well_baby), 0 or 1.
                 "illness": int(bool(self.eng.node(self._actors[actor])["attrs"].get("disease"))),
                 "screened": self._care_flag_value(actor, "screened"),

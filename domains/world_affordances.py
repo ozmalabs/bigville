@@ -151,6 +151,9 @@ HEALTH = _PACK["HEALTH"]
 # effect rates). The grams per drink are on the ITEMS (`alcohol`). APPROX values; see the table's _doc.
 INTOXICATION = _PACK["INTOXICATION"]
 INTOXICATION_BANDS = ("sober", "tipsy", "drunk", "stupefied")
+# Phase 035: nutrition (protein need, the deficiency and specific-satiety rates, the spice bonus and the mood rate).
+# The per-food protein and taste are on ITEMS. APPROX values; see the table's _doc.
+NUTRITION = _PACK["NUTRITION"]
 # Phase 043: the illness rules (DISEASE: onset, severity, progression, course) and the doctor's and midwife's
 # acts (MEDICAL_CARE: screening, treatment and well-baby durations, and the skills each act needs). APPROX.
 DISEASE = _PACK["DISEASE"]
@@ -245,6 +248,48 @@ def meal_illness_risk(kind, freshness):
     if ITEMS.get(kind, {}).get("needs_prep"):
         risk += float(FOOD_GRADING["raw_illness"])
     return min(1.0, risk)
+
+
+def protein(kind):
+    """Grams of protein in one unit of `kind` (ITEMS `protein`, Phase 035). 0 for a food with none."""
+    return float(ITEMS.get(kind, {}).get("protein", 0.0))
+
+
+def taste(kind):
+    """The hedonic rating of `kind`, 0 to 1 (ITEMS `taste`, Phase 035). 0 for a food with none."""
+    return float(ITEMS.get(kind, {}).get("taste", 0.0))
+
+
+def is_spice(kind):
+    """True for an item that spices a meal (NUTRITION `spice_kinds`)."""
+    return kind in NUTRITION["spice_kinds"]
+
+
+def satisfaction_of_meal(kind, satiety, spice_bonus=0.0):
+    """How a meal lands with the eater, 0 to 1: the input to the mood rule (seed af_meal_mood).
+
+    Pleasantness falls as the food is eaten (sensory-specific satiety, Rolls et al., 1981), so the taste is scaled
+    by (1 - satiety). The spice bonus is added on top and not scaled, so a spiced meal is still enjoyed when the
+    food is monotonous (seed nu_eat). The sum is clipped to [0, 1]. This is the world's form, read from the body's
+    satiety. population.meal_satisfaction is a different model (per-person neophobia and a count of repeats), used
+    by the population's diet simulation; the two are not unified (see the Phase 035 report)."""
+    level = min(1.0, max(0.0, float(satiety)))
+    return min(1.0, max(0.0, taste(kind) * (1.0 - level) + float(spice_bonus)))
+
+
+def protein_balance(sc):
+    """(supply, need), grams of protein per period, for the balance scenario `sc` (Phase 035), or None without one.
+
+    Supply is the staple's protein as the founding diet eats it: residents x food_per_resident loaves x the protein
+    of one loaf of the staple's output. Need is residents x NUTRITION protein_need. The model reads the staple only,
+    so it says what the staple alone supplies."""
+    if not sc or "beds" not in sc:
+        return None
+    staple = next(r for r in RECIPES if r["name"] == sc["staple"])
+    residents = float(sc["residents"])
+    supply = residents * float(sc["food_per_resident"]) * protein(staple["out"][0])
+    need = residents * float(NUTRITION["protein_need"])
+    return supply, need
 
 
 def feed_kinds(eats):

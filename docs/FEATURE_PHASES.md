@@ -1475,11 +1475,7 @@ what residents do with these physical facts.
 
 ## Phase 035 -- Nutrition: variety, protein and taste
 
-**Status:** ready, after 027 and 034 (decision 2026-11-05: nutrition is restored). Spec:
-`seeds/bigville_nutrition.json` `nu_eat`, `nu_metabolize`, `nu_deficiency`, `nu_psych` and
-`seeds/bigville_diet_affect.json` `af_meal_mood`. The seeds name the quantities and leave every
-rate unset (`protein_decay`, `monotony_decay`, `pleasure_decay`, the protein need, the spice
-bonus, the deficiency rates), so the numbers are new and marked APPROX with nutrition sources.
+**Status:** done. Every food carries `protein` (grams per unit, APPROX from typical composition tables) and `taste` (0 to 1); the body keeps a protein store, a deficiency (rises while the store is below `protein_need` 40 g a period, WHO/FAO/UNU 2007 x a 60 kg adult; a read-off only), a specific satiety per food kind (`Satiety` nodes), the last meal's pleasure and a mood that moves toward each meal's satisfaction. A spiced meal (`eat(..., spiced=True)`, consumes a held pepper, cinnamon or ginger) adds `spice_bonus` to pleasure. The energy effect of satiety (feeds x freshness x (1 - satiety)) is behind a `monotony` switch, default off: the founding village runs close to the starvation limit, and an eat floor in the simple backend that would have absorbed the residue starved 19 residents in 384 turns. With the switch off the village is unchanged (0 deaths in 384 turns). Open: no backend chooses spice; nutrition read-offs are not in game.py's observations; two satisfaction models (population and world). See docs/phases/phase035/PHASE035_REPORT.md.
 
 **Goal.**
 1. **Food codebook.** Each food in the pack gets `energy` (density, its `feeds` from Phase 027),
@@ -3192,4 +3188,5 @@ truth held apart. Unscheduled until the rule says it is needed.
 | 066 LLM harness: session, memory, whole log | done | (this commit) | docs/phases/phase066/PHASE066_REPORT.md -- per-resident message thread (full packet, then deltas, compaction by new thread, stable session id); provider returns `ProviderResult` with reasoning fields and the whole response; hash-chained append-only `LLMLog` that keeps thinking whole and detects edits and cuts; replay keyed on thread state naming the first differing message; `to_dict`/`from_dict` stop and resume; 17 tests; simple backend identical to HEAD; 1626 passed |
 | 056 Learning evaluation | done | (this commit) | docs/phases/phase056/PHASE056_REPORT.md -- `bigville/learning_eval.py` (per-resident metrics from engine records, repeat-mistake rate, tries before switch, lessons offered and used, leak guard that voids a run, scripted learner and non-learner, marginal effect against a simple control) and `tools/run_learning_eval.py`; learner repeat-mistake rate 0.000 against 0.967; Ocelot arm skipped; 8 tests; no shared file edited |
 | 049 Consequences instead of gates | done | (this commit) | docs/phases/phase049/PHASE049_REPORT.md -- skill, season, strength, busy, serving, leak, capacity, harvest, tending gates become consequences; plan-path walk, rest and watering refusals kept; 1653 passed |
+| 035 Nutrition | done | (this commit) | docs/phases/phase035/PHASE035_REPORT.md -- protein, taste, satiety, pleasure, mood, spice; energy monotony behind a switch (off); 1696 passed |
 | 047 Joint actions | done (part) | (this commit) | docs/phases/phase047/PHASE047_REPORT.md -- joint carry and crewed recipes behind a switch; team term; group takes, gangs and group contests not built |

@@ -35,6 +35,7 @@ from domains.world_affordances import (  # noqa: E402
     _recipe_unit_cost,
     _recipes_for,
     _value_parts,
+    protein_balance,
 )
 
 
@@ -1142,6 +1143,42 @@ def _check_food_grading(errors, warnings, info):
             errors.append(f"FOOD_GRADING[{name}]: a risk in [0, 1], not {value!r}")
 
 
+def _check_nutrition(errors, warnings, info):
+    """Phase 035: every food carries a protein (grams per unit, 0 or more) and a taste (0 to 1). The NUTRITION
+    constants are in range, and each spice kind names an item. The founding staple's protein is reported against
+    the need in the info lines (the balance check that flags a shortfall is in the balance section below)."""
+    for kind, spec in ITEMS.items():
+        if not spec.get("food") or spec.get("scraps_of"):
+            continue
+        protein_value = spec.get("protein")
+        if isinstance(protein_value, bool) or not isinstance(protein_value, (int, float)) or float(protein_value) < 0.0:
+            errors.append(f"ITEMS[{kind}]: a food needs a protein (grams per unit, 0 or more), not {protein_value!r}")
+        taste_value = spec.get("taste")
+        if isinstance(taste_value, bool) or not isinstance(taste_value, (int, float)) or not 0.0 <= float(taste_value) <= 1.0:
+            errors.append(f"ITEMS[{kind}].taste: a rating in [0, 1], not {taste_value!r}")
+    n = NUTRITION
+    for name in ("protein_retain", "deficiency_rate", "deficiency_recovery", "monotony_cap", "monotony_retain",
+                 "pleasure_retain", "spice_bonus"):
+        value = n.get(name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= float(value) <= 1.0:
+            errors.append(f"NUTRITION[{name}]: a fraction in [0, 1], not {value!r}")
+    for name in ("monotony_rise", "mood_rate"):
+        value = n.get(name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 < float(value) <= 1.0:
+            errors.append(f"NUTRITION[{name}]: a rate in (0, 1], not {value!r}")
+    need = n.get("protein_need")
+    if isinstance(need, bool) or not isinstance(need, (int, float)) or float(need) <= 0.0:
+        errors.append(f"NUTRITION[protein_need]: grams per resident per period, above 0, not {need!r}")
+    for kind in n.get("spice_kinds", []):
+        if kind not in ITEMS:
+            errors.append(f"NUTRITION[spice_kinds]: {kind!r} is not an item")
+    if isinstance(need, (int, float)) and not isinstance(need, bool) and float(need) > 0.0:
+        pb = protein_balance(BALANCE_SCENARIO)
+        if pb is not None:
+            info.append(f"protein: the founding staple gives {pb[0] / float(BALANCE_SCENARIO['residents']):.1f} g "
+                        f"per resident per period against a need of {float(need):.1f} g")
+
+
 def _check_prompt_instructions(errors, warnings, info):
     """Phase 018: the LLM prompt tables and speech lexicon. Each action has a description, the response
     fields are the ones the backend parses, the selection caps are positive, the standing types and gist
@@ -1937,13 +1974,14 @@ def check_consistency():
     _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)
     _check_food_grading(errors, warnings, info)
+    _check_nutrition(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)
     from domains.lexicon_check import check_lexicon      # Phase 051: the words for numbers and statuses
     check_lexicon(_WORLD_PACK.path, errors, warnings, info)
     from domains.prompt_packet_check import check_prompt_packet  # Phase 054: the LLM prompt packet and reply schema
     check_prompt_packet(_WORLD_PACK.path, errors, warnings, info)
-    from domains.persona_check import check_persona      # Phase 058: persona, routine, founding ties
+    from domains.persona_check import check_persona      # Phase 058: routines, traits, founding ties
     check_persona(_WORLD_PACK.path, errors, warnings, info)
     from domains.autopilot_check import check_autopilot  # Phase 059: the autopilot's consult rules
     check_autopilot(_WORLD_PACK.path, errors, warnings, info)
@@ -2209,6 +2247,10 @@ def analyse_systems():
         elif ratio > 6.0 and name in ("fuel (heat)", "soil nitrogen", "water"):
             issues.append(f"GLUT {name}: supply {supply:.1f} vs demand {demand:.1f} per period "
                           f"({ratio:.1f}x -- the constraint may be too loose to matter)")
+    protein = protein_balance(BALANCE_SCENARIO)
+    if protein is not None and protein[1] > 0 and protein[0] < protein[1]:
+        issues.append(f"DEFICIT protein: the staple supplies {protein[0]:.1f} g per period against a need of "
+                      f"{protein[1]:.1f} g ({protein[0] / protein[1]:.0%} covered)")
     for crop, spec in CROPS.items():
         if float(spec.get("seed_return", 1.0)) <= 1.0 and crop in BALANCE_SCENARIO.get("beds", {}):
             issues.append(f"BREAK-EVEN seed for {crop}: a harvest returns {spec.get('seed_return', 1.0)} seed per "

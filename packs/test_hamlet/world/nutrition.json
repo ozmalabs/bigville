@@ -1,0 +1,19 @@
+{
+  "_doc": "NUTRITION (Phase 035): variety, protein and taste. The codebook is on each food in items.json: `feeds` is its energy density (Phase 027, loaf-equivalents), `protein` is grams per unit (g per 100 g x 10 x the unit's weight in kg, APPROX from typical composition tables, McCance and Widdowson, The Composition of Foods, 6th ed., 2002, not checked row by row) and `taste` is a 0-1 hedonic rating (APPROX judgement). Every constant here is APPROX unless its note says otherwise. The world holds the body's protein store, the deficiency, the specific satiety of each food kind (a Satiety node per kind), the meal pleasure and the mood; a meal's energy, protein and mood effect follow these rules. Choosing a food, or whether to spice a meal, is the backend's choice. protein_need: grams of protein per resident per period, a flat figure. It is 0.66 g/kg/day, the WHO/FAO/UNU (2007) safe level for adults (Protein and Amino Acid Requirements in Human Nutrition, WHO Technical Report Series 935), times a 60 kg reference adult (APPROX). It is flat, so it overstates the need of children, which is conservative for the balance check. protein_retain: the fraction of the protein store kept from one period to the next (APPROX); a store of 2 days' intake settles near twice one day's intake. deficiency_rate and deficiency_recovery: per period, deficiency rises by deficiency_rate times the shortfall share (need minus store, over need) while the store is below need, and falls by deficiency_recovery while it is not (APPROX). Deficiency is a read-off for the backend's Mind rule (seeds/bigville_nutrition.json nu_psych); it changes no world physics. monotony_rise, monotony_cap and monotony_retain: specific satiety. Each meal of a food kind raises that kind's satiety by monotony_rise, up to monotony_cap; the satiety fades by monotony_retain per period. The energy a meal relieves is feeds x freshness x (1 - satiety), so a diet of one food yields less per meal (Rolls, Rolls, Rowe and Sweeney, 1981, Physiology and Behavior, sensory-specific satiety). The rise and the cap are APPROX and small, because one unit is a whole day's loaf and the founding town eats about 2.5 loaves a day. Measured on the default village over 384 turns: at 0.15 (cap 0.6) 19 residents starved from turn 287; at 0.05 (cap 0.3) one starved at turn 383; at 0.03 (cap 0.2) none, and mean relief per loaf is 0.454 against 0.470 with no monotony (Phase 035 report). A loaf a day settles near 0.75 per cent, and repeat meals within a period still lower the energy each time. pleasure_retain: the meal pleasure fades by this fraction per period (APPROX). spice_kinds and spice_bonus: a spiced meal adds spice_bonus to its pleasure, if a spice unit is in stock and it is consumed. The spice bonus is not scaled by satiety, so a boring meal, spiced, is still enjoyed (seed nu_eat). spice_kinds are the imported spices in items.json (APPROX bonus). The satisfaction that moves mood (seed af_meal_mood) is taste x (1 - satiety) + the spice bonus, clipped to 0-1: pleasantness falls as a food is eaten (sensory-specific satiety), and spice is added on top. mood_rate: mood moves by (satisfaction - mood) x mood_rate per meal (0.4, from seed af_meal_mood, a hedonic adaptation rate; APPROX).",
+  "_types": {},
+  "tables": {
+    "NUTRITION": {
+      "protein_need": 40.0,
+      "protein_retain": 0.5,
+      "deficiency_rate": 0.2,
+      "deficiency_recovery": 0.1,
+      "monotony_rise": 0.03,
+      "monotony_cap": 0.2,
+      "monotony_retain": 0.2,
+      "pleasure_retain": 0.5,
+      "spice_kinds": [],
+      "spice_bonus": 0.2,
+      "mood_rate": 0.4
+    }
+  }
+}

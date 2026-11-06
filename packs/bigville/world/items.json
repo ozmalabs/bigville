@@ -489,7 +489,9 @@
         "weight": 0.3,
         "volume": 0.4,
         "food": true,
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 0.9,
+        "taste": 0.7
       },
       "pear": {
         "class": "material",
@@ -497,7 +499,9 @@
         "weight": 0.3,
         "volume": 0.4,
         "food": true,
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 1.2,
+        "taste": 0.7
       },
       "plum": {
         "class": "material",
@@ -505,7 +509,9 @@
         "weight": 0.2,
         "volume": 0.3,
         "food": true,
-        "feeds": 0.4
+        "feeds": 0.4,
+        "protein": 1.4,
+        "taste": 0.65
       },
       "berry": {
         "class": "material",
@@ -513,7 +519,9 @@
         "weight": 0.1,
         "volume": 0.2,
         "food": true,
-        "feeds": 0.25
+        "feeds": 0.25,
+        "protein": 0.7,
+        "taste": 0.75
       },
       "mushroom": {
         "class": "material",
@@ -521,7 +529,9 @@
         "weight": 0.2,
         "volume": 0.4,
         "food": true,
-        "feeds": 0.2
+        "feeds": 0.2,
+        "protein": 5.0,
+        "taste": 0.6
       },
       "lentil": {
         "class": "material",
@@ -536,7 +546,9 @@
         "volume": 0.7,
         "food": true,
         "decay": 0.01,
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 3.0,
+        "taste": 0.85
       },
       "cream": {
         "class": "material",
@@ -545,7 +557,9 @@
         "volume": 1.0,
         "food": true,
         "decay": 0.04,
-        "feeds": 0.3
+        "feeds": 0.3,
+        "protein": 25.0,
+        "taste": 0.75
       },
       "lard": {
         "class": "material",
@@ -555,7 +569,9 @@
         "food": true,
         "decay": 0.04,
         "candle_fat": 1.0,
-        "feeds": 0.4
+        "feeds": 0.4,
+        "protein": 0.0,
+        "taste": 0.4
       },
       "vinegar": {
         "class": "material",
@@ -583,7 +599,9 @@
         "weight": 0.4,
         "volume": 0.4,
         "food": true,
-        "feeds": 0.1
+        "feeds": 0.1,
+        "protein": 18.8,
+        "taste": 0.4
       },
       "mutton": {
         "class": "material",
@@ -593,6 +611,8 @@
         "food": true,
         "leaves_scraps": 0.2,
         "feeds": 1.0,
+        "protein": 170.0,
+        "taste": 0.65,
         "needs_prep": true
       },
       "fish": {
@@ -603,6 +623,8 @@
         "food": true,
         "leaves_scraps": 0.3,
         "feeds": 0.6,
+        "protein": 144.0,
+        "taste": 0.55,
         "needs_prep": true
       },
       "bacon": {
@@ -613,7 +635,9 @@
         "food": true,
         "leaves_scraps": 0.1,
         "decay": 0.03,
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 150.0,
+        "taste": 0.8
       },
       "sausage": {
         "class": "material",
@@ -622,7 +646,9 @@
         "volume": 1.0,
         "food": true,
         "decay": 0.04,
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 120.0,
+        "taste": 0.75
       },
       "ham": {
         "class": "material",
@@ -632,7 +658,9 @@
         "food": true,
         "leaves_scraps": 0.15,
         "decay": 0.03,
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 216.0,
+        "taste": 0.8
       },
       "pepper": {
         "class": "material",
@@ -686,7 +714,9 @@
         "weight": 0.5,
         "volume": 1.0,
         "food": true,
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 42.5,
+        "taste": 0.45
       },
       "pottage": {
         "class": "material",
@@ -694,7 +724,9 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 20.0,
+        "taste": 0.5
       },
       "stew": {
         "class": "material",
@@ -702,7 +734,9 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 60.0,
+        "taste": 0.65
       },
       "roast": {
         "class": "material",
@@ -710,7 +744,9 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 150.0,
+        "taste": 0.8
       },
       "pie": {
         "class": "material",
@@ -718,7 +754,9 @@
         "weight": 0.8,
         "volume": 1.0,
         "food": true,
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 56.0,
+        "taste": 0.75
       },
       "sandwich": {
         "class": "material",
@@ -726,7 +764,9 @@
         "weight": 0.4,
         "volume": 0.5,
         "food": true,
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 36.0,
+        "taste": 0.6
       },
       "butter": {
         "class": "material",
@@ -735,7 +775,9 @@
         "volume": 0.8,
         "food": true,
         "decay": 0.05,
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 5.0,
+        "taste": 0.7
       },
       "cheese": {
         "class": "material",
@@ -744,7 +786,9 @@
         "volume": 1.0,
         "food": true,
         "decay": 0.02,
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 300.0,
+        "taste": 0.75
       },
       "gruel": {
         "class": "material",
@@ -754,7 +798,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 15.0,
+        "taste": 0.3
       },
       "porridge": {
         "class": "material",
@@ -764,7 +810,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 25.0,
+        "taste": 0.45
       },
       "oatcake": {
         "class": "material",
@@ -774,7 +822,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 40.0,
+        "taste": 0.4
       },
       "flatbread": {
         "class": "material",
@@ -784,7 +834,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 0.9
+        "feeds": 0.9,
+        "protein": 40.0,
+        "taste": 0.5
       },
       "pancake": {
         "class": "material",
@@ -794,7 +846,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 24.0,
+        "taste": 0.6
       },
       "dumpling": {
         "class": "material",
@@ -804,7 +858,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 0.7
+        "feeds": 0.7,
+        "protein": 28.0,
+        "taste": 0.55
       },
       "noodles": {
         "class": "material",
@@ -814,7 +870,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 40.0,
+        "taste": 0.5
       },
       "crackers": {
         "class": "material",
@@ -825,7 +883,9 @@
         "prepared": true,
         "food_group": "staple",
         "decay": 0.04,
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 27.0,
+        "taste": 0.35
       },
       "vegetable_soup": {
         "class": "material",
@@ -835,7 +895,9 @@
         "food": true,
         "prepared": true,
         "food_group": "vegetable",
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 15.0,
+        "taste": 0.5
       },
       "root_soup": {
         "class": "material",
@@ -845,7 +907,9 @@
         "food": true,
         "prepared": true,
         "food_group": "vegetable",
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 12.0,
+        "taste": 0.45
       },
       "bean_stew": {
         "class": "material",
@@ -855,7 +919,9 @@
         "food": true,
         "prepared": true,
         "food_group": "legume",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 60.0,
+        "taste": 0.5
       },
       "lentil_stew": {
         "class": "material",
@@ -865,7 +931,9 @@
         "food": true,
         "prepared": true,
         "food_group": "legume",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 70.0,
+        "taste": 0.5
       },
       "fish_stew": {
         "class": "material",
@@ -875,7 +943,9 @@
         "food": true,
         "prepared": true,
         "food_group": "fish",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 80.0,
+        "taste": 0.6
       },
       "fish_pie": {
         "class": "material",
@@ -885,7 +955,9 @@
         "food": true,
         "prepared": true,
         "food_group": "fish",
-        "feeds": 0.9
+        "feeds": 0.9,
+        "protein": 72.0,
+        "taste": 0.65
       },
       "meat_pie": {
         "class": "material",
@@ -895,7 +967,9 @@
         "food": true,
         "prepared": true,
         "food_group": "meat",
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 80.0,
+        "taste": 0.8
       },
       "shepherds_pie": {
         "class": "material",
@@ -905,7 +979,9 @@
         "food": true,
         "prepared": true,
         "food_group": "meat",
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 72.0,
+        "taste": 0.75
       },
       "sausage_stew": {
         "class": "material",
@@ -915,7 +991,9 @@
         "food": true,
         "prepared": true,
         "food_group": "meat",
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 70.0,
+        "taste": 0.7
       },
       "bacon_eggs": {
         "class": "material",
@@ -925,7 +1003,9 @@
         "food": true,
         "prepared": true,
         "food_group": "meat",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 84.0,
+        "taste": 0.8
       },
       "roast_poultry": {
         "class": "material",
@@ -935,7 +1015,9 @@
         "food": true,
         "prepared": true,
         "food_group": "meat",
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 200.0,
+        "taste": 0.75
       },
       "roast_fish": {
         "class": "material",
@@ -945,7 +1027,9 @@
         "food": true,
         "prepared": true,
         "food_group": "fish",
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 160.0,
+        "taste": 0.65
       },
       "stuffed_cabbage": {
         "class": "material",
@@ -955,7 +1039,9 @@
         "food": true,
         "prepared": true,
         "food_group": "meat",
-        "feeds": 0.9
+        "feeds": 0.9,
+        "protein": 72.0,
+        "taste": 0.7
       },
       "omelette": {
         "class": "material",
@@ -965,7 +1051,9 @@
         "food": true,
         "prepared": true,
         "food_group": "dairy",
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 55.0,
+        "taste": 0.75
       },
       "cheese_pie": {
         "class": "material",
@@ -975,7 +1063,9 @@
         "food": true,
         "prepared": true,
         "food_group": "dairy",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 80.0,
+        "taste": 0.8
       },
       "buttered_bread": {
         "class": "material",
@@ -985,7 +1075,9 @@
         "food": true,
         "prepared": true,
         "food_group": "staple",
-        "feeds": 1.0
+        "feeds": 1.0,
+        "protein": 40.0,
+        "taste": 0.65
       },
       "fruit_pie": {
         "class": "material",
@@ -995,7 +1087,9 @@
         "food": true,
         "prepared": true,
         "food_group": "fruit",
-        "feeds": 0.8
+        "feeds": 0.8,
+        "protein": 20.0,
+        "taste": 0.85
       },
       "cake": {
         "class": "material",
@@ -1005,7 +1099,9 @@
         "food": true,
         "prepared": true,
         "food_group": "sweet",
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 30.0,
+        "taste": 0.85
       },
       "honey_cake": {
         "class": "material",
@@ -1015,7 +1111,9 @@
         "food": true,
         "prepared": true,
         "food_group": "sweet",
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 24.0,
+        "taste": 0.9
       },
       "pudding": {
         "class": "material",
@@ -1025,7 +1123,9 @@
         "food": true,
         "prepared": true,
         "food_group": "dairy",
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 28.0,
+        "taste": 0.85
       },
       "cream_curd": {
         "class": "material",
@@ -1036,7 +1136,9 @@
         "prepared": true,
         "food_group": "dairy",
         "decay": 0.04,
-        "feeds": 0.3
+        "feeds": 0.3,
+        "protein": 80.0,
+        "taste": 0.55
       },
       "yogurt": {
         "class": "material",
@@ -1047,7 +1149,9 @@
         "prepared": true,
         "food_group": "dairy",
         "decay": 0.04,
-        "feeds": 0.4
+        "feeds": 0.4,
+        "protein": 32.0,
+        "taste": 0.5
       },
       "pickles": {
         "class": "material",
@@ -1058,7 +1162,9 @@
         "prepared": true,
         "food_group": "preserve",
         "decay": 0.01,
-        "feeds": 0.2
+        "feeds": 0.2,
+        "protein": 7.0,
+        "taste": 0.5
       },
       "sauerkraut": {
         "class": "material",
@@ -1069,7 +1175,9 @@
         "prepared": true,
         "food_group": "preserve",
         "decay": 0.01,
-        "feeds": 0.2
+        "feeds": 0.2,
+        "protein": 10.4,
+        "taste": 0.35
       },
       "dried_fruit": {
         "class": "material",
@@ -1080,7 +1188,9 @@
         "prepared": true,
         "food_group": "preserve",
         "decay": 0.015,
-        "feeds": 0.4
+        "feeds": 0.4,
+        "protein": 10.0,
+        "taste": 0.65
       },
       "fruit_jam": {
         "class": "material",
@@ -1091,7 +1201,9 @@
         "prepared": true,
         "food_group": "preserve",
         "decay": 0.015,
-        "feeds": 0.3
+        "feeds": 0.3,
+        "protein": 2.8,
+        "taste": 0.8
       },
       "salt_fish": {
         "class": "material",
@@ -1102,7 +1214,9 @@
         "prepared": true,
         "food_group": "preserve",
         "decay": 0.01,
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 200.0,
+        "taste": 0.45
       },
       "smoked_fish": {
         "class": "material",
@@ -1113,7 +1227,9 @@
         "prepared": true,
         "food_group": "preserve",
         "decay": 0.015,
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 176.0,
+        "taste": 0.6
       },
       "cider": {
         "class": "material",
@@ -1126,6 +1242,8 @@
         "food_group": "drink",
         "decay": 0.02,
         "feeds": 0.2,
+        "protein": 1.0,
+        "taste": 0.65,
         "alcohol": 20.0
       },
       "mead": {
@@ -1139,6 +1257,8 @@
         "food_group": "drink",
         "decay": 0.015,
         "feeds": 0.2,
+        "protein": 0.0,
+        "taste": 0.7,
         "alcohol": 45.0
       },
       "book": {
@@ -1214,6 +1334,8 @@
         "food_group": "drink",
         "decay": 0.02,
         "feeds": 0.3,
+        "protein": 3.0,
+        "taste": 0.6,
         "alcohol": 18.0
       },
       "oil": {
@@ -1230,7 +1352,9 @@
         "weight": 1.0,
         "volume": 1.0,
         "food": true,
-        "feeds": 0.4
+        "feeds": 0.4,
+        "protein": 33.0,
+        "taste": 0.5
       },
       "pork": {
         "class": "material",
@@ -1240,6 +1364,8 @@
         "food": true,
         "leaves_scraps": 0.2,
         "feeds": 1.0,
+        "protein": 180.0,
+        "taste": 0.75,
         "needs_prep": true
       },
       "beef": {
@@ -1250,6 +1376,8 @@
         "food": true,
         "leaves_scraps": 0.2,
         "feeds": 1.0,
+        "protein": 200.0,
+        "taste": 0.8,
         "needs_prep": true
       },
       "poultry": {
@@ -1260,6 +1388,8 @@
         "food": true,
         "leaves_scraps": 0.3,
         "feeds": 0.6,
+        "protein": 100.0,
+        "taste": 0.7,
         "needs_prep": true
       },
       "eggs": {
@@ -1268,7 +1398,9 @@
         "weight": 0.1,
         "volume": 0.2,
         "food": true,
-        "feeds": 0.3
+        "feeds": 0.3,
+        "protein": 12.5,
+        "taste": 0.6
       },
       "hay": {
         "class": "material",
@@ -2061,6 +2193,8 @@
         "food_group": "drink",
         "decay": 0.015,
         "feeds": 0.2,
+        "protein": 3.0,
+        "taste": 0.6,
         "alcohol": 22.0
       },
       "salad": {
@@ -2072,7 +2206,9 @@
         "prepared": true,
         "food_group": "vegetable",
         "decay": 0.3,
-        "feeds": 0.3
+        "feeds": 0.3,
+        "protein": 6.0,
+        "taste": 0.5
       },
       "pea_soup": {
         "class": "material",
@@ -2082,7 +2218,9 @@
         "food": true,
         "prepared": true,
         "food_group": "legume",
-        "feeds": 0.5
+        "feeds": 0.5,
+        "protein": 50.0,
+        "taste": 0.5
       },
       "spice_cake": {
         "class": "material",
@@ -2093,7 +2231,9 @@
         "prepared": true,
         "food_group": "sweet",
         "decay": 0.02,
-        "feeds": 0.6
+        "feeds": 0.6,
+        "protein": 30.0,
+        "taste": 0.9
       },
       "candle": {
         "class": "good",
