@@ -90,6 +90,9 @@ def _scenario_entry(identifier: str) -> dict[str, Any]:
         "actors": [{"name": str(actor.get("name", "")),
                     "scenario_backend": actor.get("backend")}
                    for actor in definition.actors],
+        "cast_generation": (dict(data["management_cast_generation"])
+                            if isinstance(data.get("management_cast_generation"), dict)
+                            else None),
     }
 
 

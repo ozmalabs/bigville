@@ -113,6 +113,13 @@
       const row = document.createElement("li");
       row.append(text("strong", "Physical subsystems: "), document.createTextNode(switches));
       list.append(row);
+      if (scenario.cast_generation) {
+        const capability = scenario.cast_generation;
+        const castRow = document.createElement("li");
+        castRow.append(text("strong", "Generated cast: "), document.createTextNode(
+          `schema v${capability.schema_version} · up to ${capability.max_generated} additional residents · roles ${(capability.roles || []).join(", ")}`));
+        list.append(castRow);
+      }
       details.append(list);
       card.append(details);
       scenarioList.append(card);
@@ -188,11 +195,138 @@
     }
   }
 
+  function castFeature() {
+    const selected = capabilityCatalog?.scenarios?.find(item => item.id === $("#scenario-id").value);
+    return selected?.cast_generation || null;
+  }
+
+  function addCastGroup(initial = {}) {
+    const feature = castFeature();
+    if (!feature) return;
+    const container = $("#cast-generation-groups");
+    const row = document.createElement("fieldset");
+    row.className = "cast-group-row";
+    const number = container.children.length + 1;
+    const legend = document.createElement("legend");
+    legend.textContent = `Cast group ${number}`;
+    row.append(legend);
+    const field = (labelText, control) => {
+      const wrapper = document.createElement("label");
+      wrapper.className = "field";
+      wrapper.append(text("span", labelText), control);
+      row.append(wrapper);
+      return control;
+    };
+    const id = field("Group ID", Object.assign(document.createElement("input"), {
+      type: "text", value: initial.id || `group-${number}`, maxLength: 24,
+    }));
+    const count = field("Population", Object.assign(document.createElement("input"), {
+      type: "number", min: "1", max: String(feature.max_generated), step: "1",
+      value: String(initial.count ?? 2),
+    }));
+    const role = field("Role", document.createElement("select"));
+    for (const value of feature.roles || []) role.add(new Option(value, value));
+    role.value = initial.role || feature.roles?.[0] || "";
+    const profile = field("Backend profile", document.createElement("select"));
+    for (const item of backendProfiles.filter(value => value.available)) {
+      profile.add(new Option(`${item.name} · ${item.kind}`, item.id));
+    }
+    profile.value = initial.backend_profile_id || "simple.default";
+    const range = (trait, key, defaultValue) => field(`${trait} ${key}`, Object.assign(document.createElement("input"), {
+      type: "number", min: trait === "Age" ? "0" : "0", max: trait === "Age" ? "120" : "1",
+      step: "any", value: String(initial.traits?.[trait.toLowerCase()]?.[key] ?? defaultValue),
+    }));
+    const ageMin = range("Age", "min", 18);
+    const ageMax = range("Age", "max", 60);
+    const skillMin = range("Skill", "min", 0.1);
+    const skillMax = range("Skill", "max", 0.9);
+    id.dataset.castField = "id";
+    count.dataset.castField = "count";
+    role.dataset.castField = "role";
+    profile.dataset.castField = "backend_profile_id";
+    for (const [control, key] of [[ageMin, "age-min"], [ageMax, "age-max"],
+                                  [skillMin, "skill-min"], [skillMax, "skill-max"]]) {
+      control.dataset.castField = key;
+    }
+    const remove = text("button", "Remove group", "text-button");
+    remove.type = "button";
+    remove.addEventListener("click", () => {
+      row.remove();
+      updateCastGenerationTotal();
+      if (!applyingTemplate) { formDirty = true; invalidateReview(); }
+    });
+    row.append(remove);
+    row.addEventListener("input", () => {
+      updateCastGenerationTotal();
+      if (!applyingTemplate) { formDirty = true; invalidateReview(); }
+    });
+    row.addEventListener("change", () => {
+      updateCastGenerationTotal();
+      if (!applyingTemplate) { formDirty = true; invalidateReview(); }
+    });
+    container.append(row);
+    updateCastGenerationTotal();
+  }
+
+  function renderCastGenerationControls(spec = null) {
+    const feature = castFeature();
+    const fieldset = $("#cast-generation-fieldset");
+    const enabled = Boolean(feature && spec);
+    fieldset.hidden = !feature || $("#scenario-id").value === "town100";
+    $("#enable-cast-generation").checked = enabled;
+    $("#cast-generation-editor").hidden = !enabled;
+    const container = $("#cast-generation-groups");
+    container.replaceChildren();
+    if (enabled) {
+      for (const group of spec.groups || []) addCastGroup(group);
+      if (!container.children.length) addCastGroup();
+    }
+    updateCastGenerationTotal();
+  }
+
+  function updateCastGenerationTotal() {
+    const rows = [...$("#cast-generation-groups").children];
+    const total = rows.reduce((sum, row) => {
+      const value = Number(row.querySelector("[data-cast-field=count]")?.value);
+      return sum + (Number.isInteger(value) && value > 0 ? value : 0);
+    }, 0);
+    $("#cast-generation-total").textContent = rows.length
+      ? `${total} generated resident${total === 1 ? "" : "s"} across ${rows.length} group${rows.length === 1 ? "" : "s"}. Scenario capacity: ${castFeature()?.max_generated ?? 0}.`
+      : "Add a group to generate residents.";
+  }
+
+  function currentCastGeneration() {
+    if (!$("#enable-cast-generation").checked) return null;
+    const groups = [...$("#cast-generation-groups").children].map(row => {
+      const values = Object.fromEntries([...row.querySelectorAll("[data-cast-field]")]
+        .map(control => [control.dataset.castField, control.value]));
+      return {id: values.id, count: Number(values.count), role: values.role,
+        backend_profile_id: values.backend_profile_id,
+        traits: {age: {min: Number(values["age-min"]), max: Number(values["age-max"])},
+          skill: {min: Number(values["skill-min"]), max: Number(values["skill-max"])}}};
+    });
+    return {schema_version: 1, groups};
+  }
+
+  $("#enable-cast-generation").addEventListener("change", () => {
+    const enabled = $("#enable-cast-generation").checked;
+    $("#cast-generation-editor").hidden = !enabled;
+    if (enabled && !$("#cast-generation-groups").children.length) addCastGroup();
+    updateCastGenerationTotal();
+    if (!applyingTemplate) { formDirty = true; invalidateReview(); }
+  });
+  $("#add-cast-group").addEventListener("click", () => {
+    addCastGroup();
+    formDirty = true;
+    invalidateReview();
+  });
+
   $("#scenario-id").addEventListener("change", () => {
     const assignments = Object.fromEntries(
       [...$("#actor-profile-assignments").querySelectorAll("select[data-actor]")]
         .filter(select => select.value).map(select => [select.dataset.actor, select.value]));
     renderActorProfileControls(assignments);
+    renderCastGenerationControls();
   });
 
   function clearErrors() {
@@ -304,6 +438,8 @@
       if (select.value) actorProfiles[select.dataset.actor] = select.value;
     }
     if (Object.keys(actorProfiles).length) result.actor_backend_profiles = actorProfiles;
+    const castGeneration = currentCastGeneration();
+    if (castGeneration) result.cast_generation = castGeneration;
     return result;
   }
 
@@ -337,6 +473,9 @@
       ["Ticks per period", draft.ticks_per_period === null ? "Disabled" : draft.ticks_per_period],
       ["Turn limit", draft.turn_limit == null ? "No limit" : draft.turn_limit],
     ];
+    if (config.cast_generation_version != null) {
+      rows.push(["Generated cast", `${config.generated_cast.length} residents · generator v${config.cast_generation_version}`]);
+    }
     for (const [label, value] of rows) {
       const wrapper = document.createElement("div");
       wrapper.append(text("dt", label), text("dd", value));
@@ -354,6 +493,16 @@
     }
     if (preview.cast.truncated) actors.append(text("li", `Showing ${preview.cast.actors.length} of ${preview.cast.count} residents.`));
     if (!preview.cast.count) actors.append(text("li", "No residents in this scenario."));
+    for (const group of preview.cast.groups || []) {
+      const details = document.createElement("details");
+      const summary = text("summary", `${group.id} · ${group.role} · ${group.count} · ${group.backend_profile_id}`);
+      const members = document.createElement("ul");
+      for (const name of group.actors) members.append(text("li", name));
+      details.append(summary, members);
+      const item = document.createElement("li");
+      item.append(details);
+      actors.append(item);
+    }
     const switches = $("#review-subsystems");
     switches.replaceChildren();
     for (const [name, enabled] of Object.entries(config.physical_subsystems || {})) {
@@ -553,6 +702,7 @@
       $("#default-backend").value = profileChoice;
     }
     renderActorProfileControls(draft.actor_backend_profiles || {});
+    renderCastGenerationControls(draft.cast_generation || null);
     $("#world-seed").value = String(draft.seed);
     $("#cadence-choice").value = draft.ticks_per_period === "world"
       ? "world" : draft.ticks_per_period === null ? "none" : "custom";
@@ -1134,6 +1284,7 @@
       renderScenarios(catalog.scenarios);
       renderBackends(backendProfiles);
       renderActorProfileControls();
+      renderCastGenerationControls();
       const commit = catalog.engine_build && catalog.engine_build.git_commit;
       $("#build-label").textContent = commit ? `build ${commit.slice(0, 12)}` : "engine build unknown";
       status.textContent = `Catalog ready · ${catalog.scenarios.length} scenarios · ${backendProfiles.length} backend profiles`;

@@ -8,13 +8,15 @@ from typing import Any
 from ..api import create_world
 from ..scenarios import list_scenarios, load_scenario
 from .catalog import _scenario_entry, build_capability_catalog
+from .cast_generation import generate_cast
 
 ALLOWED_FIELDS = {
     "scenario_id", "name", "seed", "autonomous", "default_backend",
     "ticks_per_period", "turn_limit",
 }
 OPTIONAL_PROFILE_FIELDS = {"default_profile_id", "actor_backend_profiles"}
-DRAFT_FIELDS = ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS
+OPTIONAL_CAST_FIELDS = {"cast_generation"}
+DRAFT_FIELDS = ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS | OPTIONAL_CAST_FIELDS
 MAX_NAME_LENGTH = 80
 MAX_TURN_LIMIT = 1_000_000
 MAX_SEED_ABS = (1 << 53) - 1
@@ -122,6 +124,23 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             turn_limit < 1 or turn_limit > MAX_TURN_LIMIT):
         errors["turn_limit"] = f"Turn limit must be an integer from 1 to {MAX_TURN_LIMIT}."
 
+    cast_generation_result = None
+    if "cast_generation" in payload:
+        if scenario_id == "town100":
+            errors["cast_generation"] = "Generated casts are not supported for built-in town100."
+        elif "scenario_id" not in errors:
+            try:
+                scenario_definition = load_scenario(scenario_id)
+                scenario_entry_for_cast = _scenario_entry(scenario_id)
+                cast_generation_result = generate_cast(
+                    scenario_definition.to_dict(), payload["cast_generation"], seed=seed,
+                    scenario_hash=scenario_entry_for_cast["content_hash"], profiles=profiles,
+                    default_profile_id=default_profile["id"] if default_profile else "simple.default",
+                )
+                errors.update(cast_generation_result.get("errors", {}))
+            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                errors["cast_generation"] = "Scenario does not provide a valid generated-cast contract."
+
     actor_overrides: list[dict[str, str]] = []
     actor_backend_profiles = payload.get("actor_backend_profiles", {})
     if not isinstance(actor_backend_profiles, dict):
@@ -140,7 +159,10 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             if scenario_id != "town100":
                 definition = load_scenario(scenario_id)
             actors = definition.actors if definition else []
-            actor_names = {str(actor.get("name", "")) for actor in actors}
+            generated_cast = cast_generation_result.get("actors", []) if cast_generation_result else []
+            generated_profiles = cast_generation_result.get("profiles", {}) if cast_generation_result else {}
+            actor_names = {str(actor.get("name", "")) for actor in actors + generated_cast}
+            authored_actor_names = {str(actor.get("name", "")) for actor in actors}
             for unknown_actor in sorted(set(actor_backend_profiles) - actor_names):
                 errors[f"actor_backend_profiles.{unknown_actor}"] = "Actor is not present in this authored scenario."
             scenario_profile_ids = {}
@@ -178,6 +200,9 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
                 if actor_name in actor_backend_profiles:
                     profile = profiles.get(actor_backend_profiles[actor_name])
                     source = "user_override"
+                elif actor_name in generated_profiles:
+                    profile = profiles.get(generated_profiles[actor_name])
+                    source = "cast_group"
                 elif actor_name in scenario_profile_ids:
                     profile = profiles.get(scenario_profile_ids[actor_name])
                     source = "scenario_override"
@@ -252,6 +277,15 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             "capability_revision": capability_revision,
             "engine_build": catalog["engine_build"],
         }
+        if cast_generation_result is not None:
+            normalized.update({
+                "cast_generation": {"schema_version": cast_generation_result["generator_version"],
+                                    "groups": cast_generation_result["groups"]},
+                "cast_generation_version": cast_generation_result["generator_version"],
+                "generated_cast": cast_generation_result["actors"],
+                "cast_group_profiles": cast_generation_result["profiles"],
+                "cast_generation_hash": cast_generation_result["generator_hash"],
+            })
         canonical_config = {key: value for key, value in normalized.items()
                             if key != "capability_revision"}
         configuration_hash = _hash(canonical_config)
@@ -263,6 +297,8 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             template_draft["default_profile_id"] = normalized["default_profile_id"]
         if "actor_backend_profiles" in payload:
             template_draft["actor_backend_profiles"] = normalized["actor_backend_profiles"]
+        if "cast_generation" in payload:
+            template_draft["cast_generation"] = normalized["cast_generation"]
     return {
         "valid": not errors,
         "errors": errors,
@@ -281,15 +317,8 @@ def preview_draft(payload: Any, *, profile_registry=None) -> tuple[dict[str, Any
     if not resolution["valid"]:
         return None, resolution
     config = resolution["normalized"]
-    scenario = config["scenario_id"]
-    if scenario != "town100" and config["actor_backend_profiles"]:
-        scenario_data = load_scenario(scenario).to_dict()
-        for actor in scenario_data.get("actors", []):
-            profile_id = config["actor_backend_profiles"].get(actor.get("name"))
-            if profile_id:
-                actor["backend"] = (profile_registry.get(profile_id)["kind"]
-                                    if profile_registry else "simple")
-        scenario = scenario_data
+    from .cast_generation import materialize_scenario
+    scenario = materialize_scenario(config["scenario_id"], config, profile_registry)
     world = create_world(scenario=scenario, seed=config["seed"],
                          autonomous_actors=False)
     grid = world._map_grid or []
@@ -320,6 +349,17 @@ def preview_draft(payload: Any, *, profile_registry=None) -> tuple[dict[str, Any
             "position": list(position) if position is not None else None,
         })
     full_cast_count = len(cast)
+    cast_summary = {"count": full_cast_count, "actors": cast[:MAX_ACTORS],
+                    "truncated": full_cast_count > MAX_ACTORS}
+    if "cast_generation_version" in config:
+        cast_summary["groups"] = [
+            {"id": group["id"], "role": group["role"], "count": group["count"],
+             "backend_profile_id": group["backend_profile_id"],
+             "actors": [actor["name"] for actor in config["generated_cast"]
+                        if actor.get("group") == group["id"]]}
+            for group in config["cast_generation"]["groups"]]
+        cast_summary["generation"] = {"version": config["cast_generation_version"],
+                                       "hash": config["cast_generation_hash"]}
     result = {
         "schema_version": 1,
         "configuration_hash": resolution["configuration_hash"],
@@ -330,8 +370,7 @@ def preview_draft(payload: Any, *, profile_registry=None) -> tuple[dict[str, Any
             "tile_counts": tile_counts, "grid": preview_grid,
             "truncated": full_width > MAX_MAP_EDGE or full_height > MAX_MAP_EDGE,
         },
-        "cast": {"count": full_cast_count, "actors": cast[:MAX_ACTORS],
-                 "truncated": full_cast_count > MAX_ACTORS},
+        "cast": cast_summary,
         "profile_assignments": config["resolved_actor_profiles"],
     }
     encoded = json.dumps(result, sort_keys=True, separators=(",", ":"),

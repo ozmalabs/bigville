@@ -546,7 +546,8 @@ class RunRegistry:
     def _draft_from_config(config: dict[str, Any]) -> dict[str, Any]:
         fields = (
             "scenario_id", "name", "seed", "autonomous", "default_backend",
-            "ticks_per_period", "turn_limit", "default_profile_id", "actor_backend_profiles")
+            "ticks_per_period", "turn_limit", "default_profile_id", "actor_backend_profiles",
+            "cast_generation")
         return {key: config[key] for key in fields if key in config}
 
     def _assert_config_current(self, record: dict[str, Any]) -> None:
@@ -566,15 +567,9 @@ class RunRegistry:
         if runtime.game is None:
             config = record["config"]
             scenario = config["scenario_id"]
-            if scenario != "town100" and config.get("actor_backend_profiles"):
-                from ..scenarios import load_scenario
-                scenario = load_scenario(scenario).to_dict()
-                assignments = {item["actor"]: item["backend"]
-                               for item in config.get("resolved_actor_profiles", [])
-                               if item.get("source") == "user_override"}
-                for actor in scenario.get("actors", []):
-                    if actor.get("name") in assignments:
-                        actor["backend"] = assignments[actor["name"]]
+            from .cast_generation import materialize_scenario
+            scenario = materialize_scenario(scenario, config,
+                                            getattr(self, "profile_registry", None))
             profile_registry = getattr(self, "profile_registry", None)
             actor_profiles = {item["actor"]: item["profile_id"]
                               for item in config.get("resolved_actor_profiles", [])}

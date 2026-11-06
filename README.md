@@ -298,3 +298,19 @@ shell cannot register providers or submit credentials. Only the built-in
 `simple.default` and `ocelot.default` profiles are accepted for those kinds;
 custom simple/Ocelot variants are rejected because the engine does not route
 their settings separately.
+
+Authored scenarios may opt into management cast generation with a
+`management_cast_generation` declaration. The bundled `management_cast_demo`
+scenario declares schema version 1 and supports up to eight generated residents
+because it has eight free home cells. A scenario may declare up to 100 generated
+actors, subject to its map's walkable, unoccupied home cells and the 200-actor
+service limit. Each group selects a declared role, a server backend profile, a
+population count, and optional bounded age/skill/literacy/capability/learning
+ranges. Generated names are stable from group IDs (`group-001`, etc.); each
+generated actor gets a distinct free home. Authored home sharing is preserved,
+but the generator does not infer household relationships or share generated
+homes. The generator uses deterministic trait streams derived from the run's
+single world seed and scenario/config identity, and records its version, inputs,
+generated actor data and hash in the immutable run configuration. Preview and
+launch use the same resolved actor records. `town100` does not declare this
+contract and rejects cast-generation options; its normal cast remains unchanged.
