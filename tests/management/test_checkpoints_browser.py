@@ -53,7 +53,7 @@ def test_checkpoint_and_fork_controls_restore_distinct_run(tmp_path, monkeypatch
             assert "Turn 1" in checkpoint_row.inner_text()
             checkpoint_row.get_by_role("button", name="Fork").click()
             page.locator("#run-view-heading").get_by_text("Browser checkpoint run · fork").wait_for(timeout=10000)
-            assert "Paused · Turn 1" in page.locator("#run-view-status").inner_text()
+            page.wait_for_function("document.querySelector('#run-view-status').textContent.toLowerCase().includes('paused · turn 1')", timeout=10000)
             assert page.get_by_role("button", name="Resume").is_visible()
             child = next(run for run in server.run_registry.list_runs() if run["id"] != parent["id"])
             assert child["forked_from"]["run_id"] == parent["id"]

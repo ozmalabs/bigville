@@ -79,7 +79,7 @@ def test_validation_rejects_unknown_fields_and_invalid_choices_field_by_field(au
                                  default_backend="llm", ticks_per_period=True))
     assert result["valid"] is False
     assert set(result["errors"]) == {
-        "extra_option", "seed", "autonomous", "default_backend", "ticks_per_period",
+        "extra_option", "seed", "player", "default_backend", "ticks_per_period",
     }
     assert result["normalized"] is None
     assert result["configuration_hash"] is None

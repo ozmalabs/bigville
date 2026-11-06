@@ -1,4 +1,5 @@
 import pytest
+import time
 
 from bigville.management.http import create_server
 
@@ -45,8 +46,15 @@ def test_cast_groups_preview_and_launch_match_actual_world(tmp_path):
             runs = server.run_registry.list_runs()
             assert len(runs) == 1
             record = runs[0]
-            game = server.run_registry._runtime[record["id"]].game
-            assert game is not None
+            deadline = time.monotonic() + 15
+            runtime = server.run_registry._runtime[record["id"]]
+            while runtime.game is None and time.monotonic() < deadline:
+                record = server.run_registry.get_run(record["id"])
+                if record["status"] in {"failed", "stopped"}:
+                    break
+                time.sleep(0.05)
+            game = runtime.game
+            assert game is not None, (record["status"], record["error"])
             generated_actual = {name: game.world.eng.node(game.world._actors[name])["attrs"]
                                 for name in game.characters if name.startswith("gardeners-")}
             assert set(generated_actual) == set(generated_preview)
