@@ -662,7 +662,13 @@
   function renderRuns(runs) {
     runList.replaceChildren();
     $("#runs-empty").hidden = runs.length !== 0;
+    const comparisonSelect = $("#compare-runs");
+    const previousSelection = new Set([...comparisonSelect.selectedOptions].map(option => option.value));
+    comparisonSelect.replaceChildren();
     for (const run of runs) {
+      const option = new Option(`${run.name} · ${run.scenario_id} · turn ${run.turn}`, run.id);
+      option.selected = previousSelection.has(run.id);
+      comparisonSelect.add(option);
       const card = document.createElement("article");
       card.className = "run-card";
       const info = document.createElement("div");
@@ -720,6 +726,48 @@
       runsStatus.textContent = `Could not load runs: ${error.message}`;
     }
   }
+
+  $("#compare-button").addEventListener("click", async () => {
+    const run_ids = [...$("#compare-runs").selectedOptions].map(option => option.value);
+    $("#compare-results").replaceChildren();
+    $("#compare-status").textContent = "Comparing recorded snapshots…";
+    try {
+      const comparison = await requestJson("/reports/compare", {
+        method: "POST", body: JSON.stringify({run_ids}),
+      });
+      const table = document.createElement("table");
+      table.className = "comparison-table";
+      const head = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      const metricHeading = text("th", "Metric");
+      const unitHeading = text("th", "Unit");
+      metricHeading.scope = "col";
+      unitHeading.scope = "col";
+      headerRow.append(metricHeading, unitHeading);
+      for (const item of comparison.runs) {
+        const runHeading = text("th", `${item.run.name} · ${item.run.id}`);
+        runHeading.scope = "col";
+        headerRow.append(runHeading);
+      }
+      head.append(headerRow);
+      const body = document.createElement("tbody");
+      for (const [metric, details] of Object.entries(comparison.metrics)) {
+        const row = document.createElement("tr");
+        const metricName = text("th", metric);
+        metricName.scope = "row";
+        row.append(metricName, text("td", details.unit));
+        for (const value of details.values) row.append(text("td", value.value == null ? `Unavailable: ${value.missing_reason}` : String(value.value)));
+        body.append(row);
+      }
+      table.append(head, body);
+      $("#compare-results").append(table);
+      $("#compare-status").textContent = comparison.compatible
+        ? `Compatible recorded report schema: ${comparison.report_schema}.`
+        : "Some reports are missing or use incompatible schemas; affected values are unavailable.";
+    } catch (error) {
+      $("#compare-status").textContent = error.message || "Comparison could not be loaded.";
+    }
+  });
 
   function selectedTemplate() {
     const raw = $("#template-choice").value;
@@ -1307,6 +1355,31 @@
   });
   $("#download-report").addEventListener("click", () => {
     if (reportsData) downloadJson(`bigville-report-${reportsData.run.id}.json`, reportsData);
+  });
+  $("#capture-report").addEventListener("click", async () => {
+    if (!activeRunId) return;
+    const button = $("#capture-report");
+    button.disabled = true;
+    $("#snapshot-status").textContent = "Recording snapshot…";
+    try {
+      const snapshot = await requestJson(`/runs/${encodeURIComponent(activeRunId)}/report-snapshots`, {
+        method: "POST", body: "{}",
+      });
+      $("#snapshot-status").textContent = `Recorded ${snapshot.id} at turn ${snapshot.run.turn}.`;
+    } catch (error) {
+      $("#snapshot-status").textContent = error.message || "Report snapshot could not be recorded.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+  $("#download-reproducibility").addEventListener("click", async () => {
+    if (!activeRunId) return;
+    try {
+      const metadata = await requestJson(`/runs/${encodeURIComponent(activeRunId)}/reproducibility`);
+      downloadJson(`bigville-reproducibility-${metadata.run_id}.json`, metadata);
+    } catch (error) {
+      $("#snapshot-status").textContent = error.message || "Reproducibility metadata is unavailable.";
+    }
   });
   $("#download-events").addEventListener("click", () => {
     if (eventsData) downloadJson(`bigville-events-${eventsData.run.id}-${eventsData.pagination.offset}.json`, eventsData);

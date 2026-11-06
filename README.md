@@ -314,3 +314,53 @@ single world seed and scenario/config identity, and records its version, inputs,
 generated actor data and hash in the immutable run configuration. Preview and
 launch use the same resolved actor records. `town100` does not declare this
 contract and rejects cast-generation options; its normal cast remains unchanged.
+
+### Recorded reports and comparisons
+
+The report shown under **Reports & events** is a read-only live readout of the
+current in-memory run. Use **Record report snapshot** to preserve an immutable
+report for comparison; snapshots and their run/configuration provenance are
+stored in the local registry and survive a service restart. A restart still
+does not restore the world itself. Compare selects the latest recorded snapshot
+for each selected run. The comparison currently supports schema
+`bigville/report/1` and a small allowlist of count/value metrics with explicit
+units. Unknown schemas, absent snapshots, missing values, and non-numeric
+values are shown as unavailable. Population/social counts have common defined
+units; economic values are compared only when scenario source and content
+identity match. No values are interpolated or reconstructed.
+
+The API offers `POST /api/management/v1/runs/{id}/report-snapshots` to capture,
+`GET /api/management/v1/runs/{id}/report-snapshots` to list,
+`POST /api/management/v1/reports/compare` with `{"run_ids":[...]}`, and
+`GET /api/management/v1/runs/{id}/reproducibility` for a downloadable metadata
+document. Reproducibility export includes normalized configuration, its hash,
+capability/profile revisions, template/checkpoint references, and report
+snapshot IDs. It omits secret-bearing keys and never contains provider
+credential values. Engine build identity is copied from the normalized run
+configuration; if no canonical identifier was available at creation, it stays
+null rather than being guessed.
+
+The shell remains a local, single-user operator tool. Runs use in-memory worlds;
+on service restart unfinished runs are marked interrupted and are not resumed.
+Checkpoints are a separate supported recovery path with adapter restrictions
+described above. Agent perspective responses are server-filtered and do not
+include referee reports. At narrow widths the navigation and form controls
+stack, while wide comparison tables scroll inside their own region. Inputs and
+actions retain visible labels, headings, status announcements, and keyboard
+focus behavior. There is no remote/multi-user deployment or authentication
+claim.
+
+#### Troubleshooting
+
+- If the shell does not load, start the service with `python -m
+  bigville.management.http` and check the local `/api/management/v1/health`
+  endpoint. The service refuses non-loopback bind addresses.
+- If an LLM profile is unavailable, register its adapter in the server process
+  and verify the adapter ID and local profile revision. The shell cannot submit
+  credentials or make an unregistered provider ready.
+- If a run is marked interrupted after restart, its world was in memory and is
+  not recoverable from run metadata. Fork from a supported checkpoint when one
+  exists, or create a new run from the saved template/configuration.
+- If a comparison says a value is unavailable, check that each run has a
+  recorded snapshot and that the report schema is supported. Economic values
+  additionally require matching known scenario and engine/pack source identity.

@@ -22,13 +22,14 @@ def test_subsystem_controls_preview_and_launched_run_match(tmp_path):
             except Exception as exc:
                 pytest.skip(f"Playwright Chromium is unavailable: {exc}")
             page = browser.new_page()
-            page.on("response", lambda response: previews.append(response.json())
-                    if response.url.endswith("/run-drafts/preview") and response.ok else None)
             page.goto(base, wait_until="domcontentloaded")
             page.get_by_role("button", name="New run").click()
             page.get_by_label("Scenario", exact=True).select_option("management_cast_demo")
             page.get_by_label("training", exact=True).select_option("false")
-            page.get_by_role("button", name="Validate & preview").click()
+            with page.expect_response(lambda response:
+                                      response.url.endswith("/run-drafts/preview") and response.ok) as preview_response:
+                page.get_by_role("button", name="Validate & preview").click()
+            previews.append(preview_response.value.json())
             page.locator("#review-panel").wait_for(state="visible", timeout=15000)
             assert previews
             preview = previews[-1]

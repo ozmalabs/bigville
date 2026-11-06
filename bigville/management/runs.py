@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -117,6 +118,11 @@ class RunRegistry:
                     not isinstance(item.get("backend_profiles", []), list)
                     for item in checkpoints):
                 raise ValueError(f"Run registry contains invalid checkpoint metadata; refusing to overwrite {self.path}")
+            try:
+                self._validated_report_snapshots(record)
+            except RunViewUnavailable:
+                raise ValueError(
+                    f"Run registry contains invalid report snapshot metadata; refusing to overwrite {self.path}") from None
         return state
 
     def _write_state(self, state: dict[str, Any]) -> None:
@@ -162,6 +168,7 @@ class RunRegistry:
 
     @staticmethod
     def _public(record: dict[str, Any]) -> dict[str, Any]:
+        RunRegistry._validated_report_snapshots(record)
         return copy.deepcopy(record)
 
     def list_runs(self) -> list[dict[str, Any]]:
@@ -361,6 +368,187 @@ class RunRegistry:
             return {"source": "live_snapshot", "captured_at": _utc_now(),
                     "run": run_info, "report": report}
 
+    def capture_run_report(self, run_id: str) -> dict[str, Any]:
+        """Persist an immutable report snapshot from the current referee state."""
+        runtime = self._runtime_for(run_id)
+        with runtime.lock:
+            with self._lock:
+                record = self._record(run_id)
+                game = runtime.game
+                if game is None:
+                    raise RunViewUnavailable("Report is unavailable until the run has a world state.")
+                snapshot = {
+                    "id": "report_" + uuid.uuid4().hex,
+                    "schema_version": 1, "captured_at": _utc_now(),
+                    "run": {"id": record["id"], "name": record["name"],
+                            "scenario_id": record["scenario_id"], "turn": record["turn"],
+                            "status": record["status"]},
+                    "provenance": {"configuration_hash": record["config_hash"],
+                                   "capability_revision": record["capability_revision"],
+                                   "seed": record["config"].get("seed"),
+                                   "scenario_id": record["scenario_id"],
+                                   "scenario_source": record["config"].get("scenario_source"),
+                                   "scenario_content_hash": record["config"].get("scenario_content_hash"),
+                                   "engine_build": copy.deepcopy(record["config"].get("engine_build"))},
+                    "report": game_report(game),
+                }
+                previous = copy.deepcopy(record.get("report_snapshots", []))
+                record.setdefault("report_snapshots", []).append(snapshot)
+                try:
+                    self._persist()
+                except Exception:
+                    record["report_snapshots"] = previous
+                    raise
+                return copy.deepcopy(snapshot)
+
+    def compare_recorded_reports(self, run_ids: Any) -> dict[str, Any]:
+        if (not isinstance(run_ids, list) or not 2 <= len(run_ids) <= 10 or
+                any(not isinstance(item, str) for item in run_ids) or len(set(run_ids)) != len(run_ids)):
+            raise InvalidRunRequest("Choose between 2 and 10 distinct run IDs.")
+        reports = []
+        for run_id in run_ids:
+            record = self.get_run(run_id)
+            snapshots = self._validated_report_snapshots(record)
+            snapshot = copy.deepcopy(snapshots[-1]) if snapshots else None
+            valid = (isinstance(snapshot, dict) and snapshot.get("schema_version") == 1 and
+                     isinstance(snapshot.get("run"), dict) and isinstance(snapshot.get("provenance"), dict) and
+                     isinstance(snapshot.get("report"), dict) and
+                     isinstance(snapshot.get("report", {}).get("schema"), str))
+            reports.append({"run": {"id": run_id, "name": record["name"],
+                                     "scenario_id": record["scenario_id"]},
+                            "snapshot": snapshot if valid else None,
+                            "config": record["config"],
+                            "missing_reason": (None if valid else
+                                "No report has been recorded." if snapshot is None else
+                                "Stored report snapshot is malformed.")})
+        schema_set = {item["snapshot"]["report"].get("schema") for item in reports if item["snapshot"]}
+        compatible = (len(schema_set) == 1 and schema_set == {"bigville/report/1"} and
+                      all(item["snapshot"] for item in reports))
+        units = {"population.alive": "residents", "population.total": "residents",
+                 "economy.food_quantity": "food item units",
+                 "economy.stock_reference_value": "engine reference-value units",
+                 "social.relationships.directed_bonds": "directed_bonds",
+                 "social.conversation.utterances": "utterances"}
+        paths = {"population.alive": ("population", "alive"),
+                 "population.total": ("population", "total"),
+                 "economy.food_quantity": ("economy", "food_quantity"),
+                 "economy.stock_reference_value": ("economy", "stock_reference_value"),
+                 "social.relationships.directed_bonds": ("social", "relationships", "directed_bonds"),
+                 "social.conversation.utterances": ("social", "conversation", "utterances")}
+        def comparable_economy():
+            identities = []
+            for entry in reports:
+                config = entry["config"]
+                build = config.get("engine_build")
+                source_hash = build.get("engine_source_hash") if isinstance(build, dict) else None
+                scenario_hash = config.get("scenario_content_hash")
+                scenario_source = config.get("scenario_source")
+                if not isinstance(scenario_hash, str) or not isinstance(source_hash, str):
+                    return False
+                identities.append((scenario_source, scenario_hash, source_hash))
+            return len(set(identities)) == 1
+        same_scenario_data = comparable_economy()
+        metrics = {}
+        for name, path in paths.items():
+            values = []
+            for item in reports:
+                value = None
+                reason = item["missing_reason"]
+                if compatible and (not name.startswith("economy.") or same_scenario_data):
+                    value = item["snapshot"]["report"]
+                    for key in path:
+                        value = value.get(key) if isinstance(value, dict) else None
+                elif compatible and name.startswith("economy."):
+                    reason = "Scenario content differs; economic item/value semantics are not comparable."
+                elif not compatible and reason is None:
+                    reason = "Report schemas are missing or unsupported."
+                numeric = (not isinstance(value, bool) and isinstance(value, int)) or (
+                    isinstance(value, float) and math.isfinite(value))
+                if not numeric:
+                    if reason is None:
+                        reason = "Metric is missing or is not numeric in this report."
+                    value = None
+                else:
+                    reason = None
+                values.append({"run_id": item["run"]["id"], "value": value,
+                               "missing_reason": reason})
+            metrics[name] = {"unit": units[name], "values": values}
+        public_runs = [{key: value for key, value in item.items() if key != "config"}
+                       for item in reports]
+        return {"schema": "bigville/report-comparison/1", "compatible": compatible,
+                "report_schema": next(iter(schema_set)) if len(schema_set) == 1 else None,
+                "runs": public_runs, "metrics": metrics}
+
+    def list_report_snapshots(self, run_id: str) -> list[dict[str, Any]]:
+        with self._lock:
+            record = self._record(run_id)
+            return copy.deepcopy(self._validated_report_snapshots(record))
+
+    @staticmethod
+    def _validated_report_snapshots(record: dict[str, Any]) -> list[dict[str, Any]]:
+        snapshots = record.get("report_snapshots", [])
+        if not isinstance(snapshots, list):
+            raise RunViewUnavailable("Stored report snapshots are malformed or unsupported.")
+        owner_turn = record.get("turn")
+        if isinstance(owner_turn, bool) or not isinstance(owner_turn, int) or owner_turn < 0:
+            raise RunViewUnavailable("Stored report snapshots are malformed or unsupported.")
+        for item in snapshots:
+            run_meta = item.get("run") if isinstance(item, dict) else None
+            provenance = item.get("provenance") if isinstance(item, dict) else None
+            turn = run_meta.get("turn") if isinstance(run_meta, dict) else None
+            config = record.get("config", {})
+            required_provenance = {
+                "configuration_hash": record.get("config_hash"),
+                "capability_revision": record.get("capability_revision"),
+                "seed": config.get("seed"),
+                "scenario_id": record.get("scenario_id"),
+                "scenario_source": config.get("scenario_source"),
+                "scenario_content_hash": config.get("scenario_content_hash"),
+                "engine_build": config.get("engine_build"),
+            }
+            if (not isinstance(item, dict) or type(item.get("schema_version")) is not int or
+                    item.get("schema_version") != 1 or
+                    not isinstance(item.get("id"), str) or
+                    not re.fullmatch(r"report_[0-9a-f]{32}", item["id"]) or
+                    not isinstance(item.get("captured_at"), str) or
+                    not isinstance(run_meta, dict) or run_meta.get("id") != record.get("id") or
+                    run_meta.get("name") != record.get("name") or
+                    run_meta.get("scenario_id") != record.get("scenario_id") or
+                    isinstance(turn, bool) or not isinstance(turn, int) or turn < 0 or turn > owner_turn or
+                    run_meta.get("status") not in VALID_STATES or
+                    not isinstance(provenance, dict) or
+                    any(key not in provenance or provenance.get(key) != expected
+                        for key, expected in required_provenance.items()) or
+                    not isinstance(item.get("report"), dict) or
+                    not isinstance(item["report"].get("schema"), str) or
+                    not item["report"].get("schema")):
+                raise RunViewUnavailable("Stored report snapshots are malformed or unsupported.")
+        return snapshots
+
+    def reproducibility_metadata(self, run_id: str) -> dict[str, Any]:
+        with self._lock:
+            record = self._record(run_id)
+            snapshots = self._validated_report_snapshots(record)
+            def public(value):
+                if isinstance(value, dict):
+                    return {key: public(item) for key, item in value.items()
+                            if not any(part in str(key).casefold() for part in
+                                       ("secret", "password", "api_key", "token", "credential"))}
+                if isinstance(value, list):
+                    return [public(item) for item in value]
+                return copy.deepcopy(value)
+            return {"schema": "bigville/reproducibility/1", "run_id": record["id"],
+                    "name": record["name"], "scenario_id": record["scenario_id"],
+                    "created_at": record["created_at"], "configuration_hash": record["config_hash"],
+                    "capability_revision": record["capability_revision"],
+                    "config": public(record["config"]),
+                    "resolved_actor_profiles": public(record.get("resolved_actor_profiles", [])),
+                    "template": copy.deepcopy(record.get("template")),
+                    "checkpoints": copy.deepcopy(record.get("checkpoints", [])),
+                    "report_snapshots": [{"id": item["id"], "captured_at": item["captured_at"],
+                                          "turn": item["run"]["turn"], "report_schema": item["report"].get("schema")}
+                                          for item in snapshots]}
+
     def get_run_events(self, run_id: str, *, offset: int = 0, limit: int = 50,
                        kind: str | None = None, actor: str | None = None) -> dict[str, Any]:
         """Read recorded world events without recording a report or advancing state."""
@@ -508,6 +696,7 @@ class RunRegistry:
                 "status": "created",
                 "turn": 0,
                 "checkpoints": [],
+                "report_snapshots": [],
                 "config_hash": config_hash,
                 "capability_revision": revision,
                 "config": copy.deepcopy(canonical),

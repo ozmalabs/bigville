@@ -52,6 +52,15 @@
         <div id="runs-load-status" class="status" role="status" aria-live="polite">Loading runs…</div>
         <div id="run-list" class="run-list" aria-live="polite"></div>
         <p id="runs-empty" class="empty" hidden>No runs yet. Create a run to begin.</p>
+        <section class="comparison-tools" aria-labelledby="compare-heading">
+          <h3 id="compare-heading">Compare recorded reports</h3>
+          <label for="compare-runs">Runs (select two or more)</label>
+          <select id="compare-runs" multiple size="4" aria-describedby="compare-help"></select>
+          <p id="compare-help" class="help">Only explicitly captured reports are compared. Missing snapshots and incompatible report schemas are shown as unavailable.</p>
+          <button id="compare-button" class="secondary" type="button">Compare latest recorded reports</button>
+          <p id="compare-status" role="status" aria-live="polite"></p>
+          <div id="compare-results" class="comparison-results" aria-live="polite"></div>
+        </section>
       </section>
 
       <section id="run-view-panel" class="panel" aria-labelledby="run-view-heading" hidden>
@@ -99,10 +108,11 @@
       <section id="reports-panel" class="panel" aria-labelledby="reports-heading" hidden>
         <button id="back-from-reports" class="text-button" type="button">← Back to run</button>
         <div class="panel-heading"><div><p class="eyebrow">REPORTS &amp; EVENTS</p><h2 id="reports-heading">Run report</h2></div><span id="reports-run-status" class="run-status"></span></div>
-        <p class="section-copy">Reports are live readouts of the current in-memory state. World events are recorded history. No observation advances the simulation.</p>
+        <p class="section-copy">Live reports read current in-memory state. Capture a report to preserve an immutable snapshot for later comparison. World events are recorded history.</p>
         <div id="report-error" class="error inline-error" role="alert" hidden></div>
         <section aria-labelledby="latest-report-heading">
-          <div class="panel-heading"><h3 id="latest-report-heading">Latest report</h3><button id="download-report" class="secondary" type="button" disabled>Download report JSON</button></div>
+          <div class="panel-heading"><h3 id="latest-report-heading">Live report</h3><div><button id="capture-report" class="secondary" type="button">Record report snapshot</button> <button id="download-reproducibility" class="secondary" type="button">Download reproducibility metadata</button> <button id="download-report" class="secondary" type="button" disabled>Download report JSON</button></div></div>
+          <p id="snapshot-status" class="status" role="status" aria-live="polite"></p>
           <p id="report-provenance" class="run-meta"></p>
           <p class="help">Census and sampled measures are labelled in the report's measurement field. Missing values remain null.</p>
           <pre id="report-json" class="artifact-json"></pre>

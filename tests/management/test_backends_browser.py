@@ -69,9 +69,6 @@ def test_ui_previews_launches_and_reports_server_profile_assignments_without_sec
             page.on("request", lambda request: posted_runs.append(json.loads(request.post_data))
                     if request.url.endswith(API_PREFIX + "/runs") and request.method == "POST"
                     else None)
-            page.on("response", lambda response: response_bodies.append(response.json())
-                    if "/backend-profiles" in response.url or response.url.endswith(API_PREFIX + "/runs")
-                    else None)
             page.goto(base, wait_until="domcontentloaded")
             page.get_by_role("button", name="Backends").click()
             page.get_by_role("heading", name="Unready model · llm").wait_for()
@@ -95,6 +92,12 @@ def test_ui_previews_launches_and_reports_server_profile_assignments_without_sec
             assert submitted["draft"]["actor_backend_profiles"] == {
                 "Ada": "llm.alpha", "Ben": "llm.beta"}
             assert "secret_ref" not in json.dumps(submitted)
+            # Read the public resources after they have completed instead of
+            # consuming response bodies in an asynchronous Playwright event callback.
+            response_bodies.extend([
+                json.load(urlopen(f"{base}{API_PREFIX}/backend-profiles")),
+                json.load(urlopen(f"{base}{API_PREFIX}/runs")),
+            ])
             assert "ALPHA_SECRET" not in json.dumps(response_bodies)
             assert "BETA_SECRET" not in json.dumps(response_bodies)
             run_records = json.load(urlopen(f"{base}{API_PREFIX}/runs"))["runs"]

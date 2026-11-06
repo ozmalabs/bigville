@@ -66,6 +66,13 @@ a{color:inherit}
 .template-save { grid-template-columns: minmax(10rem, 1fr) auto minmax(10rem, 1fr); align-items: center; }
 @media (max-width: 720px) { .template-save { grid-template-columns: 1fr; } .template-controls { align-items: stretch; flex-direction: column; } }
 .actor-profile-fieldset { grid-column: 1 / -1; min-width: 0; padding: 1rem; border: 1px solid var(--line); border-radius: .75rem; }
+.comparison-tools { margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--line); border-radius: .75rem; min-width: 0; }
+.comparison-tools select { display:block; width:min(100%, 38rem); min-height:7rem; margin:.5rem 0; padding:.5rem; }
+.comparison-results { max-width:100%; overflow-x:auto; }
+.comparison-table { border-collapse:collapse; width:100%; min-width:36rem; margin-top:.8rem; }
+.comparison-table th,.comparison-table td { text-align:left; vertical-align:top; border-bottom:1px solid var(--line); padding:.55rem; overflow-wrap:anywhere; }
+.comparison-table th { background:var(--soft); }
+@media (max-width:720px) { .comparison-table { min-width:32rem; } #reports-panel .panel-heading > div { display:flex; flex-wrap:wrap; gap:.4rem; } }
 .actor-profile-fieldset legend { padding: 0 .4rem; font-weight: 700; }
 .actor-profile-row { display: grid; grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr); align-items: center; gap: .8rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
 .actor-profile-row:last-child { border-bottom: 0; }

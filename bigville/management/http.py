@@ -114,13 +114,36 @@ class _Handler(BaseHTTPRequestHandler):
             except TemplateUnavailable as exc:
                 return self._json(409, error_payload(exc.code, str(exc), getattr(exc, "fields", None)))
         if path == f"{API_PREFIX}/runs":
-            return self._json(200, {"runs": self.server.run_registry.list_runs()})
+            try:
+                return self._json(200, {"runs": self.server.run_registry.list_runs()})
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
         if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/report"):
             run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/report")
             if not run_id or "/" in run_id:
                 return self._json(404, error_payload("not_found", "Unknown management API path."))
             try:
                 return self._json(200, self.server.run_registry.get_run_report(run_id))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/report-snapshots"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/report-snapshots")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            try:
+                return self._json(200, {"snapshots": self.server.run_registry.list_report_snapshots(run_id)})
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/reproducibility"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/reproducibility")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            try:
+                return self._json(200, self.server.run_registry.reproducibility_metadata(run_id))
             except RunNotFound as exc:
                 return self._json(404, error_payload(exc.code, str(exc)))
             except RunViewUnavailable as exc:
@@ -149,6 +172,8 @@ class _Handler(BaseHTTPRequestHandler):
                     actor=query.get("actor", [None])[0] or None))
             except RunNotFound as exc:
                 return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
             except RunViewUnavailable as exc:
                 return self._json(409, error_payload(exc.code, str(exc)))
             except InvalidRunRequest as exc:
@@ -189,6 +214,8 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(200, self.server.run_registry.get_run(run_id))
             except RunNotFound as exc:
                 return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
         return self._json(404, error_payload("not_found", "Unknown management API path."))
 
     def _static(self, path: Path):
@@ -211,9 +238,11 @@ class _Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path not in {f"{API_PREFIX}/run-drafts/validate",
                         f"{API_PREFIX}/run-drafts/preview",
-                        f"{API_PREFIX}/runs", f"{API_PREFIX}/templates"} and not (
+                        f"{API_PREFIX}/runs", f"{API_PREFIX}/templates",
+                        f"{API_PREFIX}/reports/compare"} and not (
                             path.startswith(f"{API_PREFIX}/runs/") and
                             (path.endswith("/commands") or path.endswith("/checkpoints") or
+                             path.endswith("/report-snapshots") or
                              path.endswith("/player-input") or
                              path.endswith("/fork")) and
                             path.count("/") in {
@@ -251,6 +280,33 @@ class _Handler(BaseHTTPRequestHandler):
                     "run_creation_failed", "Run creation could not be completed."))
             status = 201 if created else 200
             return self._json(status, record)
+
+        if path == f"{API_PREFIX}/reports/compare":
+            if not isinstance(payload, dict) or set(payload) != {"run_ids"}:
+                return self._json(400, error_payload("invalid_request", "Comparison requires run_ids."))
+            try:
+                return self._json(200, self.server.run_registry.compare_recorded_reports(payload["run_ids"]))
+            except InvalidRunRequest as exc:
+                return self._json(400, error_payload(exc.code, str(exc)))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/report-snapshots"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/report-snapshots")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            if payload not in ({}, None):
+                return self._json(400, error_payload("invalid_request", "Report capture accepts an empty object."))
+            try:
+                return self._json(201, self.server.run_registry.capture_run_report(run_id))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except Exception:
+                return self._json(500, error_payload("report_capture_failed", "Report snapshot could not be recorded."))
 
         if path == f"{API_PREFIX}/templates":
             if not isinstance(payload, dict) or set(payload) - {"name", "draft", "template_id"}:

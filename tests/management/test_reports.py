@@ -7,6 +7,7 @@ import pytest
 
 from bigville.management.drafts import resolve_draft
 from bigville.management.http import API_PREFIX, create_server
+from bigville.management.runs import RunRegistry
 from bigville.reporting import game_report
 
 
@@ -79,6 +80,33 @@ def test_report_matches_engine_and_reads_do_not_advance_or_record(report_server)
     assert len(world._events) == before_events
     assert len(world.eng.nodes()) == before_nodes
     assert world._report_history == before_history
+
+
+def test_captured_report_is_immutable_durable_and_has_build_provenance(report_server):
+    server, record, game, _ = report_server
+    snapshot = server.run_registry.capture_run_report(record["id"])
+    assert snapshot["report"]["schema"] == "bigville/report/1"
+    assert snapshot["provenance"]["configuration_hash"] == record["config_hash"]
+    assert snapshot["provenance"]["engine_build"] == record["config"]["engine_build"]
+    game.world.create_event("later-event", subject="Ada")
+    assert server.run_registry.list_report_snapshots(record["id"])[0] == snapshot
+    recovered = RunRegistry(server.run_registry.data_dir)
+    assert recovered.list_report_snapshots(record["id"])[0] == snapshot
+    assert recovered.get_run(record["id"])["report_snapshots"] == [snapshot]
+    assert recovered.list_runs()[0]["report_snapshots"] == [snapshot]
+
+
+def test_malformed_persisted_report_data_returns_shared_json_error(report_server):
+    server, record, _, base = report_server
+    server.run_registry._state["runs"][record["id"]]["report_snapshots"] = [
+        {"schema_version": 1, "report": "corrupt"}]
+    run_collection = base.rsplit("/runs/", 1)[0] + "/runs"
+    for endpoint in ("/report-snapshots", "/reproducibility", "", "collection"):
+        url = (run_collection if endpoint == "collection" else base + endpoint)
+        with pytest.raises(HTTPError) as caught:
+            urlopen(url)
+        assert caught.value.code == 409
+        assert json.load(caught.value)["error"]["code"] == "snapshot_unavailable"
 
 
 def test_event_filters_pagination_trace_honesty_and_agent_separation(report_server):
