@@ -50,6 +50,10 @@ class InvalidRunRequest(RegistryError):
     code = "invalid_run_request"
 
 
+class RunViewUnavailable(RegistryError):
+    code = "snapshot_unavailable"
+
+
 class _Runtime:
     def __init__(self):
         self.lock = threading.RLock()
@@ -152,6 +156,38 @@ class RunRegistry:
             if record is None:
                 raise RunNotFound(f"Run {run_id!r} was not found.")
             return self._public(record)
+
+    def get_run_view(self, run_id: str, *, perspective: str,
+                     actor: str | None = None) -> dict[str, Any]:
+        """Return only the selected server-built perspective for a run."""
+        if perspective not in {"referee", "agent"}:
+            raise InvalidRunRequest("Perspective must be 'referee' or 'agent'.")
+        runtime = self._runtime_for(run_id)
+        with runtime.lock:
+            with self._lock:
+                record = self._record(run_id)
+                game = runtime.game
+                run_info = {
+                    "id": record["id"], "name": record["name"],
+                    "scenario_id": record["scenario_id"],
+                    "status": record["status"], "turn": record["turn"],
+                    "error": record["error"],
+                }
+            if game is None:
+                raise RunViewUnavailable(
+                    f"Run snapshot is unavailable while status is {run_info['status']}; start or step the run first.")
+            if perspective == "agent":
+                if not isinstance(actor, str) or not actor:
+                    raise InvalidRunRequest("An actor is required for an agent view.")
+                if actor not in game.characters:
+                    raise RunNotFound(f"Resident {actor!r} was not found in this run.")
+                # Do not call game.snapshot() or serialize world state on this path.
+                view = game.agent_view(actor, mode="agent")
+                return {"perspective": "agent", "actor": actor,
+                        "run": run_info, "view": view}
+            snapshot = game.snapshot()
+            return {"perspective": "referee", "run": run_info,
+                    "snapshot": snapshot}
 
     def create_run(self, request: Any) -> tuple[dict[str, Any], bool]:
         """Return (record, created); key reuse is checked against canonical resolved config."""

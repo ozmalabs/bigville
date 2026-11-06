@@ -9,15 +9,16 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from .catalog import build_capability_catalog
 from .drafts import MAX_PREVIEW_BYTES, PreviewTooLarge, preview_draft, resolve_draft
 from .runs import (InvalidRunRequest, InvalidTransition, RegistryError,
-                   RunConflict, RunNotFound, RunRegistry)
+                   RunConflict, RunNotFound, RunRegistry, RunViewUnavailable)
 
 API_PREFIX = "/api/management/v1"
 STATIC_ROOT = Path(__file__).with_name("static").resolve()
+GAME_STATIC_ROOT = Path(__file__).resolve().parents[1] / "game"
 MAX_REQUEST_BYTES = 65_536
 
 
@@ -57,13 +58,23 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(encoded)
+        try:
+            self.wfile.write(encoded)
+        except (BrokenPipeError, ConnectionResetError):
+            # A browser may abort an obsolete perspective request after a switch.
+            return
 
     def do_GET(self):
         path = urlsplit(self.path).path
         if path == "/":
             return self._static(STATIC_ROOT / "index.html")
         if path.startswith("/management/"):
+            if path.startswith("/management/game/"):
+                relative = unquote(path.removeprefix("/management/game/"))
+                candidate = (GAME_STATIC_ROOT / relative).resolve()
+                if not candidate.is_relative_to(GAME_STATIC_ROOT.resolve()):
+                    return self._json(404, error_payload("not_found", "Unknown game asset."))
+                return self._static(candidate)
             relative = unquote(path.removeprefix("/management/"))
             candidate = (STATIC_ROOT / relative).resolve()
             if not candidate.is_relative_to(STATIC_ROOT):
@@ -80,6 +91,22 @@ class _Handler(BaseHTTPRequestHandler):
                     "catalog_unavailable", "Capability catalog could not be built."))
         if path == f"{API_PREFIX}/runs":
             return self._json(200, {"runs": self.server.run_registry.list_runs()})
+        if path.startswith(f"{API_PREFIX}/runs/") and "/views/" in path:
+            remainder = path.removeprefix(f"{API_PREFIX}/runs/")
+            run_id, view_path = remainder.split("/views/", 1)
+            if not run_id or "/" in view_path or view_path not in {"referee", "agent"}:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            actor = parse_qs(urlsplit(self.path).query).get("actor", [None])[0]
+            try:
+                view = self.server.run_registry.get_run_view(
+                    run_id, perspective=view_path, actor=actor)
+                return self._json(200, view)
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except InvalidRunRequest as exc:
+                return self._json(400, error_payload(exc.code, str(exc)))
         if path.startswith(f"{API_PREFIX}/runs/"):
             run_id = path.removeprefix(f"{API_PREFIX}/runs/")
             if not run_id or "/" in run_id:

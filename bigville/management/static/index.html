@@ -15,7 +15,7 @@
       <nav class="nav" aria-label="Workspace">
         <span class="nav-label">Workspace</span>
         <button type="button" class="nav-item active" aria-current="page" aria-controls="runs-panel">Runs</button>
-        <button type="button" class="nav-item active" aria-current="page" aria-controls="worlds-panel">Worlds &amp; casts</button>
+        <button type="button" class="nav-item" aria-controls="worlds-panel">Worlds &amp; casts</button>
         <button type="button" class="nav-item" aria-controls="backends-panel">Backends</button>
       </nav>
       <p class="side-note">A place to set up, observe and understand your worlds.</p>
@@ -46,6 +46,36 @@
         <div id="runs-load-status" class="status" role="status" aria-live="polite">Loading runs…</div>
         <div id="run-list" class="run-list" aria-live="polite"></div>
         <p id="runs-empty" class="empty" hidden>No runs yet. Create a run to begin.</p>
+      </section>
+
+      <section id="run-view-panel" class="panel" aria-labelledby="run-view-heading" hidden>
+        <button id="back-from-run-view" class="text-button" type="button">← Back to Runs</button>
+        <div class="panel-heading"><div><p class="eyebrow">RUN OVERVIEW</p><h2 id="run-view-heading">Run</h2></div><span id="run-view-status" class="run-status">Loading</span></div>
+        <div id="run-view-meta" class="run-meta"></div>
+        <div id="run-view-error" class="error inline-error" role="alert" hidden></div>
+        <div id="run-view-controls" class="run-actions"></div>
+
+        <div class="perspective-toolbar">
+          <div class="field"><label for="perspective-choice">Perspective</label><select id="perspective-choice"><option value="referee">Referee · full run state</option><option value="agent">Resident · agent view</option></select></div>
+          <div id="agent-resident-choice" class="field" hidden><label for="agent-resident">Resident</label><select id="agent-resident"></select></div>
+          <p class="perspective-note">The service returns a separate referee or resident view. This local single-user tool is not a multi-user authorization system.</p>
+        </div>
+
+        <section id="referee-view" aria-labelledby="referee-heading" hidden>
+          <h3 id="referee-heading">Referee world</h3>
+          <p id="mapless-fallback" class="empty" hidden>This scenario has no map. Use the resident table below to inspect the run.</p>
+          <iframe id="referee-renderer" class="referee-renderer" title="Referee world map" hidden></iframe>
+          <section class="resident-section" aria-labelledby="population-heading">
+            <h3 id="population-heading">Population</h3>
+            <div class="table-wrap"><table><thead><tr><th scope="col">Resident</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Position</th></tr></thead><tbody id="resident-rows"></tbody></table></div>
+            <div id="resident-detail" class="resident-detail" aria-live="polite"></div>
+          </section>
+        </section>
+        <section id="agent-view" aria-labelledby="agent-heading" hidden>
+          <h3 id="agent-heading">Resident perspective</h3>
+          <p id="agent-view-status" class="status" role="status" aria-live="polite">Choose a resident to load their agent view.</p>
+          <pre id="agent-view-content" class="agent-view-content"></pre>
+        </section>
       </section>
 
       <section id="new-run-panel" class="panel" aria-labelledby="new-run-heading" hidden>

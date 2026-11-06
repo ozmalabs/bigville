@@ -16,6 +16,14 @@
   let submissionKey = null;
   let submitting = false;
   let draftRevision = 0;
+  let activeRunId = null;
+  let activeRunRecord = null;
+  let selectedPerspective = "referee";
+  let selectedAgent = null;
+  let selectedRefereeResident = null;
+  let viewRevision = 0;
+  let viewController = null;
+  let refereeSnapshot = null;
 
   function activatePanel(button) {
     document.querySelectorAll(".nav-item").forEach(item => {
@@ -43,6 +51,8 @@
       ? "Create, find and monitor autonomous simulations."
       : panelId === "new-run-panel"
         ? "Review the resolved configuration before starting a simulation."
+        : panelId === "run-view-panel"
+          ? "Observe the current run snapshot and choose a server-built perspective."
         : "Review scenarios and integrations available in this checkout.";
   }
 
@@ -346,6 +356,10 @@
       if (run.error) info.append(text("p", run.error, "run-error"));
       const actions = document.createElement("div");
       actions.className = "run-actions";
+      const open = text("button", "Open run", "text-button");
+      open.type = "button";
+      open.addEventListener("click", () => openRun(run));
+      actions.append(open);
       if (run.status === "created") actions.append(commandButton(run.id, "start", "Start"));
       if (["running", "paused", "waiting"].includes(run.status)) actions.append(commandButton(run.id, "stop", "Stop"));
       card.append(info, actions);
@@ -363,6 +377,7 @@
           method: "POST", body: JSON.stringify({command}),
         });
         await refreshRuns();
+        if (activeRunId === runId && !$("#run-view-panel").hidden) await refreshRunView();
       } catch (error) {
         showActionError(error.message, error.fields);
       } finally {
@@ -384,6 +399,274 @@
       runsStatus.textContent = `Could not load runs: ${error.message}`;
     }
   }
+
+  function resetRefereePanel() {
+    refereeSnapshot = null;
+    selectedRefereeResident = null;
+    const frame = $("#referee-renderer");
+    frame.hidden = true;
+    frame.onload = null;
+    frame.removeAttribute("src");
+    delete frame.dataset.runId;
+    $("#referee-view").hidden = true;
+    $("#resident-rows").replaceChildren();
+    $("#resident-detail").replaceChildren();
+    $("#mapless-fallback").hidden = true;
+  }
+
+  function agentNames(record) {
+    return (record?.resolved_actor_backends || []).map(item => item.actor).filter(Boolean);
+  }
+
+  function fillAgentSelector(record) {
+    const select = $("#agent-resident");
+    const names = agentNames(record);
+    const prior = selectedAgent;
+    select.replaceChildren();
+    for (const name of names) select.add(new Option(name, name));
+    if (names.includes(prior)) select.value = prior;
+    else {
+      selectedAgent = names[0] || null;
+      if (selectedAgent) select.value = selectedAgent;
+    }
+    $("#agent-resident-choice").hidden = selectedPerspective !== "agent";
+    select.disabled = names.length === 0;
+  }
+
+  function populateResidentDetail(resident) {
+    const target = $("#resident-detail");
+    target.replaceChildren();
+    if (!resident) return;
+    const heading = text("h4", `${resident.name} · ${resident.role || "resident"}`);
+    const details = document.createElement("dl");
+    const position = Array.isArray(resident.position) ? resident.position.join(", ") : "Unknown";
+    const fields = [
+      ["Status", resident.alive ? "Alive" : "Dead"], ["Health", resident.health],
+      ["Life stage", resident.life_stage], ["Position", position],
+      ["Energy", resident.energy], ["Hunger", resident.hunger],
+      ["Household", resident.household], ["Backend", resident.backend?.kind || "simple"],
+    ];
+    for (const [label, value] of fields) {
+      const item = document.createElement("div");
+      item.append(text("dt", label), text("dd", value == null || value === "" ? "Unknown" : value));
+      details.append(item);
+    }
+    target.append(heading, details);
+  }
+
+  function renderResidents(snapshot) {
+    const rows = $("#resident-rows");
+    rows.replaceChildren();
+    const residents = snapshot.world?.residents || [];
+    if (!residents.length) {
+      rows.append(text("tr", ""));
+      $("#resident-detail").textContent = "No residents are present in this scenario.";
+      return;
+    }
+    for (const resident of residents) {
+      const row = document.createElement("tr");
+      const nameCell = document.createElement("td");
+      const inspect = text("button", resident.name, "resident-link");
+      inspect.type = "button";
+      inspect.addEventListener("click", () => {
+        selectedRefereeResident = resident.id;
+        populateResidentDetail(resident);
+      });
+      nameCell.append(inspect);
+      const position = Array.isArray(resident.position) ? resident.position.join(", ") : "Unknown";
+      row.append(nameCell, text("td", resident.role || "Unknown"),
+                 text("td", resident.alive ? "Alive" : "Dead"), text("td", position));
+      rows.append(row);
+    }
+    const selected = residents.find(resident => resident.id === selectedRefereeResident) || residents[0];
+    selectedRefereeResident = selected.id;
+    populateResidentDetail(selected);
+  }
+
+  function sendSnapshotToRenderer(snapshot, runId, revision) {
+    const frame = $("#referee-renderer");
+    if (selectedPerspective !== "referee" || activeRunId !== runId ||
+        revision !== viewRevision || !frame.contentWindow) return;
+    frame.contentWindow.postMessage({
+      type: "management-referee-snapshot", run_id: runId, snapshot,
+    }, location.origin);
+  }
+
+  function showRefereeSnapshot(response, revision) {
+    refereeSnapshot = response.snapshot;
+    $("#agent-view").hidden = true;
+    $("#referee-view").hidden = false;
+    renderResidents(refereeSnapshot);
+    const map = refereeSnapshot.world?.map || {};
+    const hasMap = Number(map.width) > 0 && Number(map.height) > 0 && Array.isArray(map.grid) && map.grid.length > 0;
+    const frame = $("#referee-renderer");
+    if (!hasMap) {
+      frame.hidden = true;
+      frame.removeAttribute("src");
+      delete frame.dataset.runId;
+      $("#mapless-fallback").hidden = false;
+      return;
+    }
+    $("#mapless-fallback").hidden = true;
+    frame.hidden = false;
+    if (frame.dataset.runId !== activeRunId) {
+      frame.dataset.runId = activeRunId;
+      frame.onload = () => sendSnapshotToRenderer(refereeSnapshot, activeRunId, viewRevision);
+      frame.src = `/management/renderer.html?run_id=${encodeURIComponent(activeRunId)}`;
+    } else {
+      sendSnapshotToRenderer(refereeSnapshot, activeRunId, revision);
+    }
+  }
+
+  function renderRunControls(record) {
+    const controls = $("#run-view-controls");
+    controls.replaceChildren();
+    const commands = {
+      created: [["start", "Start"], ["step", "Step"], ["stop", "Stop"]],
+      running: [["pause", "Pause"], ["stop", "Stop"]],
+      paused: [["resume", "Resume"], ["step", "Step"], ["stop", "Stop"]],
+      waiting: [["stop", "Stop"]],
+    }[record.status] || [];
+    for (const [command, label] of commands) {
+      const button = text("button", label, command === "stop" ? "secondary" : "primary");
+      button.type = "button";
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const updated = await requestJson(`/runs/${encodeURIComponent(record.id)}/commands`, {
+            method: "POST", body: JSON.stringify({command}),
+          });
+          if (updated.error) showActionError(updated.error);
+          await refreshRunView();
+          await refreshRuns(true);
+        } catch (error) {
+          showActionError(error.message, error.fields);
+        } finally {
+          button.disabled = false;
+        }
+      });
+      controls.append(button);
+    }
+    if (record.status === "waiting") {
+      controls.append(text("p", "This run is waiting for human input. Input handling is not available yet.", "run-error"));
+    }
+  }
+
+  async function refreshRunView() {
+    if (!activeRunId || $("#run-view-panel").hidden) return;
+    const revision = ++viewRevision;
+    if (viewController) viewController.abort();
+    viewController = new AbortController();
+    const signal = viewController.signal;
+    $("#run-view-error").hidden = true;
+    $("#run-view-status").textContent = "Refreshing";
+    try {
+      const record = await requestJson(`/runs/${encodeURIComponent(activeRunId)}`, {signal});
+      if (revision !== viewRevision) return;
+      activeRunRecord = record;
+      $("#run-view-heading").textContent = record.name;
+      $("#run-view-status").textContent = record.status;
+      $("#run-view-status").className = `run-status ${record.status}`;
+      const config = record.config || {};
+      $("#run-view-meta").textContent = `${record.scenario_id} · seed ${config.seed} · turn ${record.turn}`;
+      if (record.error) {
+        $("#run-view-error").textContent = record.error;
+        $("#run-view-error").hidden = false;
+      }
+      renderRunControls(record);
+      fillAgentSelector(record);
+
+      if (selectedPerspective === "agent") {
+        $("#referee-view").hidden = true;
+        $("#agent-view").hidden = false;
+        $("#agent-view-content").textContent = "";
+        if (!selectedAgent) {
+          $("#agent-view-status").textContent = "No resident is available for agent view.";
+          return;
+        }
+        $("#agent-view-status").textContent = `Loading ${selectedAgent}'s view…`;
+        const data = await requestJson(
+          `/runs/${encodeURIComponent(activeRunId)}/views/agent?actor=${encodeURIComponent(selectedAgent)}`,
+          {signal},
+        );
+        if (revision !== viewRevision) return;
+        $("#agent-view-content").textContent = JSON.stringify(data.view, null, 2);
+        $("#agent-view-status").textContent = `${data.actor} · resident perspective · turn ${data.run.turn}`;
+        return;
+      }
+
+      $("#agent-view").hidden = true;
+      $("#referee-view").hidden = false;
+      const data = await requestJson(`/runs/${encodeURIComponent(activeRunId)}/views/referee`, {signal});
+      if (revision !== viewRevision) return;
+      showRefereeSnapshot(data, revision);
+      $("#run-view-status").textContent = `${data.run.status} · turn ${data.run.turn}`;
+      $("#run-view-meta").textContent = `${record.scenario_id} · seed ${config.seed} · turn ${data.run.turn}`;
+    } catch (error) {
+      if (revision !== viewRevision || error.name === "AbortError") return;
+      $("#run-view-error").textContent = error.message || "Run view is unavailable.";
+      $("#run-view-error").hidden = false;
+      if (selectedPerspective === "agent") {
+        $("#agent-view").hidden = false;
+        $("#agent-view-status").textContent = "Resident perspective is unavailable.";
+      } else {
+        resetRefereePanel();
+      }
+      $("#run-view-status").textContent = activeRunRecord?.status || "Unavailable";
+    }
+  }
+
+  function clearAgentPerspective() {
+    $("#agent-view-content").textContent = "";
+    $("#agent-view-status").textContent = "Choose a resident to load their agent view.";
+    $("#agent-view").hidden = true;
+  }
+
+  async function openRun(run) {
+    if (viewController) viewController.abort();
+    viewRevision += 1;
+    resetRefereePanel();
+    clearAgentPerspective();
+    activeRunId = run.id;
+    activeRunRecord = run;
+    selectedPerspective = "referee";
+    selectedAgent = agentNames(run)[0] || null;
+    $("#perspective-choice").value = "referee";
+    $("#agent-resident-choice").hidden = true;
+    showPanel("run-view-panel", run.name);
+    await refreshRunView();
+  }
+
+  $("#back-from-run-view").addEventListener("click", () => {
+    if (viewController) viewController.abort();
+    viewRevision += 1;
+    activeRunId = null;
+    activeRunRecord = null;
+    resetRefereePanel();
+    clearAgentPerspective();
+    showPanel("runs-panel", "Runs");
+    refreshRuns();
+  });
+
+  $("#perspective-choice").addEventListener("change", () => {
+    selectedPerspective = $("#perspective-choice").value;
+    if (viewController) viewController.abort();
+    viewRevision += 1;
+    if (selectedPerspective === "agent") {
+      resetRefereePanel();
+      $("#agent-view").hidden = false;
+      $("#agent-resident-choice").hidden = false;
+    } else {
+      clearAgentPerspective();
+      $("#agent-resident-choice").hidden = true;
+    }
+    refreshRunView();
+  });
+
+  $("#agent-resident").addEventListener("change", () => {
+    selectedAgent = $("#agent-resident").value || null;
+    if (selectedPerspective === "agent") refreshRunView();
+  });
 
   function newIdempotencyKey() {
     return typeof crypto.randomUUID === "function"
@@ -476,5 +759,6 @@
   refreshRuns();
   window.setInterval(() => {
     if (!runsPanel.hidden) refreshRuns(true);
+    else if (!$("#run-view-panel").hidden) refreshRunView();
   }, 1500);
 })();
