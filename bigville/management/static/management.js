@@ -459,11 +459,12 @@
       scenario_id: $("#scenario-id").value,
       name: $("#run-name").value,
       seed,
-      autonomous: true,
+      autonomous: $("#run-mode").value !== "human",
       default_backend: selectedProfile?.kind || selectedProfileId,
       ticks_per_period: ticksPerPeriod,
       turn_limit: rawLimit === "" ? null : Number(rawLimit),
     };
+    if (!result.autonomous && $("#human-player").value) result.player = $("#human-player").value;
     if (selectedProfile) result.default_profile_id = selectedProfile.id;
     const actorProfiles = {};
     for (const select of $("#actor-profile-assignments").querySelectorAll("select[data-actor]")) {
@@ -499,13 +500,60 @@
     return data;
   }
 
+  function renderHumanPlayerChoices(actors, selected = "") {
+    const select = $("#human-player");
+    select.replaceChildren(new Option("Choose a player resident", ""));
+    for (const actor of actors) {
+      const name = typeof actor === "string" ? actor : actor.name;
+      if (name) select.add(new Option(name, name));
+    }
+    if (actors.some(actor => (typeof actor === "string" ? actor : actor.name) === selected)) {
+      select.value = selected;
+    }
+  }
+
+  $("#run-mode").addEventListener("change", () => {
+    const human = $("#run-mode").value === "human";
+    $("#human-player-fieldset").hidden = !human;
+    if (!human) $("#human-player").value = "";
+  });
+  $("#human-player").addEventListener("change", () => {
+    const player = $("#human-player").value;
+    for (const select of $("#actor-profile-assignments").querySelectorAll("select[data-actor]")) {
+      if (select.dataset.actor === player) select.value = "";
+    }
+  });
+
+  $("#load-player-cast").addEventListener("click", async () => {
+    const draft = currentDraft();
+    draft.autonomous = true;
+    delete draft.player;
+    const button = $("#load-player-cast");
+    button.disabled = true;
+    $("#validation-status").textContent = "Resolving the cast for player selection…";
+    try {
+      const data = await requestJson("/run-drafts/preview", {
+        method: "POST", body: JSON.stringify(draft),
+      });
+      renderHumanPlayerChoices(data.cast.actors, "");
+      $("#validation-status").textContent = `Choose one of ${data.cast.count} resolved residents as the player.`;
+      $("#human-player").focus();
+    } catch (error) {
+      showActionError(error.message, error.fields);
+      $("#validation-status").textContent = "Player choices could not be loaded.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   function displayReview(draft, validation, preview) {
     const config = preview.canonical_config;
     const summary = $("#review-summary");
     summary.replaceChildren();
     const rows = [
       ["Run name", draft.name], ["Scenario", draft.scenario_id], ["World seed", draft.seed],
-      ["Default backend", config.default_backend], ["Run mode", "Autonomous"],
+      ["Default backend", config.default_backend],
+      ["Run mode", config.autonomous ? "Autonomous" : `Human-controlled · ${config.player}`],
       ["Default profile", `${config.default_profile_id} · revision ${config.default_profile_revision}`],
       ["Ticks per period", draft.ticks_per_period === null ? "Disabled" : draft.ticks_per_period],
       ["Turn limit", draft.turn_limit == null ? "No limit" : draft.turn_limit],
@@ -728,6 +776,9 @@
   function applyDraftToForm(draft) {
     applyingTemplate = true;
     $("#run-name").value = draft.name;
+    $("#run-mode").value = draft.autonomous === false ? "human" : "autonomous";
+    $("#human-player-fieldset").hidden = draft.autonomous !== false;
+    renderHumanPlayerChoices(draft.player ? [draft.player] : [], draft.player || "");
     const scenario = $("#scenario-id");
     if (![...scenario.options].some(option => option.value === draft.scenario_id)) {
       scenario.add(new Option(`${draft.scenario_id} · unavailable`, draft.scenario_id));
@@ -962,7 +1013,59 @@
       controls.append(button);
     }
     if (record.status === "waiting") {
-      controls.append(text("p", "This run is waiting for human input. Input handling is not available yet.", "run-error"));
+      controls.append(text("p", record.config?.autonomous === false
+        ? "Waiting for the selected player to choose an action."
+        : "This run is waiting for human input that this configuration cannot accept.", "run-error"));
+    }
+  }
+
+  async function renderHumanTurn(record, revision, signal) {
+    const panel = $("#human-turn-panel");
+    const options = $("#human-action-options");
+    options.replaceChildren();
+    if (record.config?.autonomous !== false || record.status !== "waiting") {
+      panel.hidden = true;
+      $("#human-agent-view").textContent = "";
+      return;
+    }
+    panel.hidden = false;
+    $("#human-turn-status").textContent = "Loading the player's current agent view…";
+    try {
+      const prompt = await requestJson(
+        `/runs/${encodeURIComponent(record.id)}/player-prompt`, {signal});
+      if (revision !== viewRevision) return;
+      $("#human-agent-view").textContent = JSON.stringify(prompt.view, null, 2);
+      $("#human-turn-status").textContent = prompt.mode === "reaction"
+        ? `${prompt.actor} must answer a contested take at turn ${prompt.turn}.`
+        : `${prompt.actor} · choose one action for turn ${prompt.turn}.`;
+      const choices = prompt.mode === "reaction"
+        ? (prompt.reactions || []).map(value => ({selection: value, label: `React: ${value}`}))
+        : (prompt.actions || []).map(row => ({selection: row.handle,
+            label: [row.action, row.what].filter(Boolean).join(" · ")}));
+      for (const choice of choices) {
+        const button = text("button", choice.label || choice.selection, "secondary");
+        button.type = "button";
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          $("#human-turn-status").textContent = "Applying your choice…";
+          try {
+            await requestJson(`/runs/${encodeURIComponent(record.id)}/player-input`, {
+              method: "POST", body: JSON.stringify({token: prompt.token,
+                turn: prompt.turn, selection: choice.selection}),
+            });
+            await refreshRunView();
+            await refreshRuns(true);
+          } catch (error) {
+            $("#human-turn-status").textContent = error.message || "Input was rejected.";
+            button.disabled = false;
+          }
+        });
+        options.append(button);
+      }
+      if (!choices.length) $("#human-turn-status").textContent = "No supported player actions are currently available.";
+    } catch (error) {
+      if (revision !== viewRevision || error.name === "AbortError") return;
+      $("#human-turn-status").textContent = error.message || "The player prompt is unavailable.";
     }
   }
 
@@ -1047,6 +1150,8 @@
       renderRunControls(record);
       renderCheckpoints(record);
       fillAgentSelector(record);
+      await renderHumanTurn(record, revision, signal);
+      if (revision !== viewRevision) return;
 
       if (selectedPerspective === "agent") {
         $("#referee-view").hidden = true;
@@ -1101,9 +1206,9 @@
     clearAgentPerspective();
     activeRunId = run.id;
     activeRunRecord = run;
-    selectedPerspective = "referee";
-    selectedAgent = agentNames(run)[0] || null;
-    $("#perspective-choice").value = "referee";
+    selectedPerspective = run.config?.autonomous === false ? "agent" : "referee";
+    selectedAgent = run.config?.player || agentNames(run)[0] || null;
+    $("#perspective-choice").value = selectedPerspective;
     $("#agent-resident-choice").hidden = true;
     showPanel("run-view-panel", run.name);
     await refreshRunView();

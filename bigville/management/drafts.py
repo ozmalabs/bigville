@@ -17,7 +17,9 @@ ALLOWED_FIELDS = {
 OPTIONAL_PROFILE_FIELDS = {"default_profile_id", "actor_backend_profiles"}
 OPTIONAL_CAST_FIELDS = {"cast_generation"}
 OPTIONAL_SUBSYSTEM_FIELDS = {"physical_subsystems"}
-DRAFT_FIELDS = ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS | OPTIONAL_CAST_FIELDS | OPTIONAL_SUBSYSTEM_FIELDS
+OPTIONAL_PLAYER_FIELDS = {"player"}
+DRAFT_FIELDS = (ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS | OPTIONAL_CAST_FIELDS |
+                OPTIONAL_SUBSYSTEM_FIELDS | OPTIONAL_PLAYER_FIELDS)
 MAX_NAME_LENGTH = 80
 MAX_TURN_LIMIT = 1_000_000
 MAX_SEED_ABS = (1 << 53) - 1
@@ -73,8 +75,17 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
     elif seed < 0 or seed > MAX_SEED_ABS:
         errors["seed"] = f"Seed must be a nonnegative integer no greater than {MAX_SEED_ABS}."
 
-    if payload.get("autonomous") is not True:
-        errors["autonomous"] = "Only autonomous runs are supported in this phase."
+    autonomous = payload.get("autonomous")
+    if not isinstance(autonomous, bool):
+        errors["autonomous"] = "Choose whether the run is autonomous or human-controlled."
+        autonomous = True
+    player = payload.get("player")
+    if autonomous and player is not None:
+        errors["player"] = "A player is only valid for human-controlled runs."
+    elif not autonomous and (not isinstance(player, str) or not player.strip()):
+        errors["player"] = "Choose a player resident for a human-controlled run."
+    elif isinstance(player, str):
+        player = player.strip()
 
     if profile_registry is None:
         from .profiles import BackendProfileRegistry
@@ -163,6 +174,11 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             generated_cast = cast_generation_result.get("actors", []) if cast_generation_result else []
             generated_profiles = cast_generation_result.get("profiles", {}) if cast_generation_result else {}
             actor_names = {str(actor.get("name", "")) for actor in actors + generated_cast}
+            if scenario_id == "town100" and not autonomous and isinstance(player, str):
+                from ..api import create_world
+                actor_names = set(create_world(scenario="town100", seed=seed)._actors)
+            if not autonomous and isinstance(player, str) and player not in actor_names:
+                errors["player"] = "Choose a resident present in the resolved cast."
             authored_actor_names = {str(actor.get("name", "")) for actor in actors}
             for unknown_actor in sorted(set(actor_backend_profiles) - actor_names):
                 errors[f"actor_backend_profiles.{unknown_actor}"] = "Actor is not present in this authored scenario."
@@ -173,6 +189,8 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
                 if actor_backend is None:
                     continue
                 actor_name = str(actor.get("name", "(unnamed actor)"))
+                if not autonomous and actor_name == player:
+                    continue  # The selected human player does not need an NPC backend profile.
                 # An explicit actor profile wins before scenario profile readiness is checked.
                 if actor_name in actor_backend_profiles:
                     continue
@@ -191,6 +209,9 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
                 actor_overrides.append({"actor": actor_name, "backend": kind,
                                         "source": "scenario_override"})
             for actor_name, profile_id in actor_backend_profiles.items():
+                if not autonomous and actor_name == player:
+                    errors[f"actor_backend_profiles.{actor_name}"] = "The human player cannot also have an NPC backend profile."
+                    continue
                 profile = profiles.get(profile_id)
                 if profile is None:
                     errors[f"actor_backend_profiles.{actor_name}"] = "Choose a listed backend profile."
@@ -198,6 +219,12 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
                     errors[f"actor_backend_profiles.{actor_name}"] = profile["reason"] or "This profile is unavailable."
             resolved_actor_profiles = []
             for actor_name in sorted(actor_names):
+                if not autonomous and actor_name == player:
+                    resolved_actor_profiles.append({
+                        "actor": actor_name, "profile_id": "human.player",
+                        "profile_revision": "builtin-1", "backend": "human", "source": "player",
+                    })
+                    continue
                 if actor_name in actor_backend_profiles:
                     profile = profiles.get(actor_backend_profiles[actor_name])
                     source = "user_override"
@@ -285,7 +312,7 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             "name": name,
             "scenario_id": scenario_id,
             "seed": seed,
-            "autonomous": True,
+            "autonomous": autonomous,
             "default_backend": backend,
             "default_profile_id": default_profile["id"] if default_profile else "simple.default",
             "default_profile_revision": default_profile["revision"] if default_profile else "unknown",
@@ -304,6 +331,8 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             "capability_revision": capability_revision,
             "engine_build": catalog["engine_build"],
         }
+        if not autonomous:
+            normalized["player"] = player
         if cast_generation_result is not None:
             normalized.update({
                 "cast_generation": {"schema_version": cast_generation_result["generator_version"],
@@ -328,6 +357,8 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             template_draft["cast_generation"] = normalized["cast_generation"]
         if "physical_subsystems" in payload:
             template_draft["physical_subsystems"] = normalized["physical_subsystem_overrides"]
+        if "player" in payload and "player" in normalized:
+            template_draft["player"] = normalized["player"]
     return {
         "valid": not errors,
         "errors": errors,

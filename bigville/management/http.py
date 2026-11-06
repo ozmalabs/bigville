@@ -169,6 +169,18 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(409, error_payload(exc.code, str(exc)))
             except InvalidRunRequest as exc:
                 return self._json(400, error_payload(exc.code, str(exc)))
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/player-prompt"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/player-prompt")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            try:
+                return self._json(200, self.server.run_registry.get_player_prompt(run_id))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except InvalidRunRequest as exc:
+                return self._json(400, error_payload(exc.code, str(exc)))
         if path.startswith(f"{API_PREFIX}/runs/"):
             run_id = path.removeprefix(f"{API_PREFIX}/runs/")
             if not run_id or "/" in run_id:
@@ -202,6 +214,7 @@ class _Handler(BaseHTTPRequestHandler):
                         f"{API_PREFIX}/runs", f"{API_PREFIX}/templates"} and not (
                             path.startswith(f"{API_PREFIX}/runs/") and
                             (path.endswith("/commands") or path.endswith("/checkpoints") or
+                             path.endswith("/player-input") or
                              path.endswith("/fork")) and
                             path.count("/") in {
                                 len(API_PREFIX.strip("/").split("/")) + 3,
@@ -269,6 +282,23 @@ class _Handler(BaseHTTPRequestHandler):
             except InvalidRunRequest as exc:
                 return self._json(400, error_payload(exc.code, str(exc)))
             except RegistryError as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/player-input"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/player-input")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            try:
+                return self._json(200, self.server.run_registry.submit_player_input(run_id, payload))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except InvalidTransition as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except RunConflict as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except InvalidRunRequest as exc:
+                return self._json(422, error_payload(exc.code, str(exc), getattr(exc, "fields", None)))
+            except RunViewUnavailable as exc:
                 return self._json(409, error_payload(exc.code, str(exc)))
 
         if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/checkpoints"):

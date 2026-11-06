@@ -42,7 +42,7 @@
       <section id="runs-panel" class="panel" aria-labelledby="runs-heading">
         <div class="panel-heading"><div><p class="eyebrow">RUNS</p><h2 id="runs-heading">Your simulations</h2></div>
           <button id="new-run-button" class="primary" type="button">New run</button></div>
-        <p class="section-copy">Create an autonomous run with a supported scenario and the simple backend.</p>
+        <p class="section-copy">Create an autonomous simulation or take control of one resident.</p>
         <section class="template-library" aria-labelledby="template-library-heading">
           <div class="panel-heading"><h3 id="template-library-heading">Configuration templates</h3><span class="pill">Draft only · not a checkpoint</span></div>
           <div class="template-controls"><label for="template-choice">Template version</label><select id="template-choice"><option value="">No saved templates</option></select><button id="inspect-template" class="secondary" type="button" disabled>Inspect</button><button id="load-template" class="secondary" type="button" disabled>Load into draft</button></div>
@@ -60,6 +60,12 @@
         <div id="run-view-meta" class="run-meta"></div>
         <div id="run-view-error" class="error inline-error" role="alert" hidden></div>
         <div id="run-view-controls" class="run-actions"></div>
+        <section id="human-turn-panel" class="human-turn-panel" aria-labelledby="human-turn-heading" hidden>
+          <h3 id="human-turn-heading">Player input</h3>
+          <p id="human-turn-status" class="status" role="status" aria-live="polite"></p>
+          <pre id="human-agent-view" class="agent-view-content"></pre>
+          <div id="human-action-options" class="human-action-options"></div>
+        </section>
         <section class="checkpoint-section" aria-labelledby="checkpoints-heading">
           <div class="panel-heading"><div><h3 id="checkpoints-heading">Checkpoints</h3><p class="help">Capture the full game state at a quiescent turn boundary. Forks start as separate paused runs.</p></div><button id="create-checkpoint" class="secondary" type="button">Create checkpoint</button></div>
           <p id="checkpoint-status" class="status" role="status" aria-live="polite"></p>
@@ -123,6 +129,8 @@
             <div class="field"><label for="default-backend">Default backend profile</label><select id="default-backend" name="default_backend"><option value="simple.default">Simple default</option></select><p class="help">Server-configured profiles are used for actors without a scenario or per-actor assignment.</p><p id="error-default_backend" class="field-error" hidden></p></div>
             <fieldset id="actor-profile-fieldset" class="field actor-profile-fieldset" hidden><legend>Per-actor profile overrides</legend><p class="help">Available only for authored scenarios. Explicit overrides take precedence over scenario assignments and the default profile.</p><div id="actor-profile-assignments"></div><p id="error-actor_backend_profiles" class="field-error" hidden></p></fieldset>
             <fieldset id="physical-subsystems-fieldset" class="field" hidden><legend>Physical subsystems</legend><p class="help">Inherit each scenario value or engine default, or set an explicit override for this run.</p><div id="physical-subsystem-controls"></div><p id="error-physical_subsystems" class="field-error" hidden></p></fieldset>
+            <div class="field"><label for="run-mode">Run mode</label><select id="run-mode"><option value="autonomous">Autonomous</option><option value="human">Human-controlled</option></select><p class="help">Human-controlled runs wait at the selected resident’s turn for your action.</p><p id="error-autonomous" class="field-error" hidden></p></div>
+            <fieldset id="human-player-fieldset" class="field" hidden><legend>Player resident</legend><label for="human-player">Choose a resident</label><select id="human-player"><option value="">Load the resolved cast first</option></select><button id="load-player-cast" class="secondary" type="button">Load players from preview</button><p class="help">Actions come from the resident’s filtered agent view.</p><p id="error-player" class="field-error" hidden></p></fieldset>
             <fieldset id="cast-generation-fieldset" class="field cast-generation-fieldset" hidden>
               <legend>Generated cast</legend>
               <label class="check-row"><input id="enable-cast-generation" type="checkbox"> Generate residents for this scenario</label>
@@ -133,7 +141,6 @@
               </div>
               <p id="error-cast_generation" class="field-error" hidden></p>
             </fieldset>
-            <div class="field"><span class="label">Run mode</span><p class="fixed-value">Autonomous <span class="pill">Supported</span></p><p class="help">Human-controlled runs are not available yet.</p><input id="autonomous-mode" type="hidden" value="true"><p id="error-autonomous" class="field-error" hidden></p></div>
             <div class="field"><label for="cadence-choice">Ticks per period</label><select id="cadence-choice" name="ticks_per_period"><option value="world">World default</option><option value="none">Disabled</option><option value="custom">Set a number</option></select><input id="custom-cadence" class="custom-cadence" type="number" min="1" step="1" aria-label="Ticks per period number" hidden><p id="error-ticks_per_period" class="field-error" hidden></p></div>
             <div class="field"><label for="turn-limit">Turn limit <span class="optional">Optional</span></label><input id="turn-limit" name="turn_limit" type="number" min="1" max="1000000" step="1" placeholder="No limit"><p class="help">A limited run completes after the requested number of turns.</p><p id="error-turn_limit" class="field-error" hidden></p></div>
           </div>

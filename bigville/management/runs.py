@@ -66,6 +66,7 @@ class _Runtime:
         self.lock = threading.RLock()
         self.game = None
         self.worker: threading.Thread | None = None
+        self.pending_input: dict[str, Any] | None = None
 
 
 class RunRegistry:
@@ -198,6 +199,9 @@ class RunRegistry:
             if perspective == "agent":
                 if not isinstance(actor, str) or not actor:
                     raise InvalidRunRequest("An actor is required for an agent view.")
+                if (record["config"].get("autonomous") is False and
+                        actor != record["config"].get("player")):
+                    raise InvalidRunRequest("Only the selected player can receive an agent view for this run.")
                 if actor not in game.characters:
                     raise RunNotFound(f"Resident {actor!r} was not found in this run.")
                 # Do not call game.snapshot() or serialize world state on this path.
@@ -207,6 +211,137 @@ class RunRegistry:
             snapshot = game.snapshot()
             return {"perspective": "referee", "run": run_info,
                     "snapshot": snapshot}
+
+    def _capture_player_wait(self, runtime: _Runtime, game, outcome: dict[str, Any], record):
+        player = record["config"].get("player")
+        if not player or outcome.get("actor") != player:
+            raise InvalidRunRequest("The game is waiting for input from an actor other than the selected player.")
+        reaction = outcome.get("reaction") if game._suspended is not None else None
+        runtime.pending_input = {
+            "token": uuid.uuid4().hex,
+            "turn": int(game.world._turn),
+            "actor": player,
+            "kind": "reaction" if reaction else "action",
+            "reaction": copy.deepcopy(reaction),
+        }
+
+    def get_player_prompt(self, run_id: str) -> dict[str, Any]:
+        """Return only the selected player's agent view and currently advertised input handles."""
+        runtime = self._runtime_for(run_id)
+        with runtime.lock:
+            with self._lock:
+                record = self._record(run_id)
+                game = runtime.game
+                if record["config"].get("autonomous") is not False:
+                    raise InvalidRunRequest("This run has no human-controlled player.")
+                if record["status"] != "waiting" or runtime.pending_input is None:
+                    raise RunViewUnavailable("The player prompt is available only while input is waiting.")
+                pending = copy.deepcopy(runtime.pending_input)
+                run_info = {"id": record["id"], "status": record["status"],
+                            "turn": record["turn"]}
+            if game is None or pending["actor"] != game.player:
+                raise RunViewUnavailable("The player session is unavailable.")
+            view = game.agent_view(game.player, mode="agent")
+            prompt = {"run": run_info, "actor": game.player,
+                      "turn": pending["turn"], "token": pending["token"],
+                      "mode": pending["kind"], "view": view}
+            if pending["kind"] == "reaction":
+                prompt["reactions"] = list((pending.get("reaction") or {}).get("options", []))
+            else:
+                # Only handles advertised by the filtered agent view are
+                # eligible, then they are re-resolved from the current world
+                # affordance set when a selection is submitted.
+                prompt["actions"] = list(view.get("can", []))
+            return prompt
+
+    def submit_player_input(self, run_id: str, payload: Any) -> dict[str, Any]:
+        """Submit one affordance handle or offered reaction for the selected player."""
+        if (not isinstance(payload, dict) or set(payload) != {"token", "turn", "selection"} or
+                not isinstance(payload.get("token"), str) or
+                isinstance(payload.get("turn"), bool) or not isinstance(payload.get("turn"), int) or
+                not isinstance(payload.get("selection"), str)):
+            error = InvalidRunRequest("Player input must include the current token, turn, and selection.")
+            error.fields = {"input": "Choose one currently advertised action or reaction."}
+            raise error
+        runtime = self._runtime_for(run_id)
+        with runtime.lock:
+            with self._lock:
+                record = self._record(run_id)
+                if record["config"].get("autonomous") is not False:
+                    raise InvalidRunRequest("This run has no human-controlled player.")
+                if record["status"] != "waiting" or runtime.pending_input is None:
+                    raise InvalidTransition("Player input is accepted only while the run is waiting.")
+                pending = runtime.pending_input
+                if (payload["token"] != pending["token"] or payload["turn"] != pending["turn"] or
+                        payload["turn"] != record["turn"]):
+                    raise RunConflict("Player input is stale; reload the current player prompt.")
+                game = runtime.game
+                player = record["config"]["player"]
+                if game is None or game.player != player:
+                    raise RunViewUnavailable("The player session is unavailable.")
+
+            from ..backends.protocol import ActorResponse, ProposedAction
+            if pending["kind"] == "reaction":
+                options = list((pending.get("reaction") or {}).get("options", []))
+                if payload["selection"] not in options:
+                    error = InvalidRunRequest("Choose one of the currently offered reaction options.")
+                    error.fields = {"selection": "This reaction was not offered for the pending contest."}
+                    raise error
+                game.backends[player].submit_reaction(
+                    ActorResponse(backend_state={"reaction": payload["selection"]}))
+            else:
+                view = game.agent_view(player, mode="agent")
+                advertised = {row["handle"] for row in view.get("can", [])
+                              if isinstance(row, dict) and isinstance(row.get("handle"), str)}
+                if payload["selection"] not in advertised:
+                    error = InvalidRunRequest("Choose an action currently advertised in the player's agent view.")
+                    error.fields = {"selection": "This action handle is unavailable or was not advertised."}
+                    raise error
+                from domains.affordance_handles import handle_pairs
+                options = handle_pairs(game.world.actor_affordances(player))
+                choice = next((option for handle, option in options
+                               if handle == payload["selection"] and handle in advertised), None)
+                if choice is None:
+                    raise RunConflict("The selected action handle became stale; reload the player prompt.")
+                params = {key: value for key, value in choice.items()
+                          if key not in {"action", "score", "legal", "reason"}}
+                game.submit_player_response(ActorResponse(major_action=ProposedAction(
+                    str(choice["action"]), params, "management_human")))
+            runtime.pending_input = None
+            try:
+                outcome = game.step()
+                if outcome.get("status") == "advanced":
+                    turn = int(game.world._turn)
+                    turn_limit = record["config"].get("turn_limit")
+                    if turn_limit is not None and turn >= turn_limit:
+                        with self._lock:
+                            self._update(record, status="completed", turn=turn, error=None)
+                        return self.get_run(run_id)
+                if outcome.get("status") == "advanced" and game.world.is_alive(player):
+                    # The completed turn is now recorded. Ask once for the
+                    # next player prompt; the human backend returns waiting
+                    # before the world or period advances.
+                    outcome = game.step()
+                with self._lock:
+                    turn = int(game.world._turn)
+                    if outcome.get("status") == "waiting" and game.world.is_alive(player):
+                        self._capture_player_wait(runtime, game, outcome, record)
+                        self._update(record, status="waiting", turn=turn, error=None)
+                    elif not game.world.is_alive(player):
+                        self._update(record, status="completed", turn=turn,
+                                     error="The selected player is no longer alive; the human session ended.")
+                    elif outcome.get("status") == "advanced":
+                        self._update(record, status="paused", turn=turn, error=None)
+                    else:
+                        self._update(record, status="failed", turn=turn,
+                                     error="The game did not return to a valid human input boundary.")
+            except Exception:
+                runtime.pending_input = None
+                with self._lock:
+                    self._update(record, status="failed",
+                                 error="Human input could not be applied by the game engine.")
+                raise
+            return self.get_run(run_id)
 
     def get_run_report(self, run_id: str) -> dict[str, Any]:
         """Compute a read-only report from the current in-memory run state."""
@@ -547,7 +682,7 @@ class RunRegistry:
         fields = (
             "scenario_id", "name", "seed", "autonomous", "default_backend",
             "ticks_per_period", "turn_limit", "default_profile_id", "actor_backend_profiles",
-            "cast_generation")
+            "cast_generation", "player")
         draft = {key: config[key] for key in fields if key in config}
         draft["physical_subsystems"] = config.get("physical_subsystem_overrides", {})
         return draft
@@ -587,7 +722,9 @@ class RunRegistry:
                 backend_factories["llm"] = llm_factory
             runtime.game = create_game(
                 scenario=scenario, seed=config["seed"],
-                default_backend=config["default_backend"], autonomous=True,
+                player=config.get("player"),
+                default_backend=config["default_backend"],
+                autonomous=config["autonomous"],
                 ticks_per_period=config["ticks_per_period"],
                 backend_factories=backend_factories,
                 physical_subsystems=config.get("physical_subsystem_overrides", {}),
@@ -643,6 +780,8 @@ class RunRegistry:
                 with self._lock:
                     turn = int(game.world._turn)
                     next_state = "waiting" if outcome.get("status") == "waiting" else state
+                    if next_state == "waiting" and record["config"].get("autonomous") is False:
+                        self._capture_player_wait(runtime, game, outcome, record)
                     if next_state != "waiting" and record["config"].get("turn_limit") is not None and turn >= record["config"]["turn_limit"]:
                         next_state = "completed"
                     self._update(record, status=next_state, turn=turn, error=None)
@@ -683,8 +822,12 @@ class RunRegistry:
                     with self._lock:
                         turn = int(game.world._turn)
                         if outcome.get("status") == "waiting":
-                            self._update(record, status="waiting", turn=turn,
-                                         error="Run is waiting for human input, which this phase does not support.")
+                            if record["config"].get("autonomous") is False:
+                                self._capture_player_wait(runtime, game, outcome, record)
+                                self._update(record, status="waiting", turn=turn, error=None)
+                            else:
+                                self._update(record, status="waiting", turn=turn,
+                                             error="Run is waiting for human input, which this phase does not support.")
                             return
                         turn_limit = record["config"].get("turn_limit")
                         next_state = "completed" if turn_limit is not None and turn >= turn_limit else "running"
