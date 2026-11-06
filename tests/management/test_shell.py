@@ -47,7 +47,7 @@ def test_root_serves_semantic_shell_and_existing_game_link(shell_server):
     assert '<nav class="nav" aria-label="Workspace">' in html
     assert 'aria-live="polite"' in html
     assert 'href="http://127.0.0.1:8765/"' in html
-    assert "Not available yet" in html
+    assert 'id="new-run-button"' in html
 
 
 def test_static_assets_serve_and_traversal_is_rejected(shell_server):
