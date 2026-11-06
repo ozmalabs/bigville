@@ -13,6 +13,65 @@ demand beliefs, choose a recipe, or size a production run from town-wide
 signals. Those expectations and choices belong to the actor's cognition
 backend.
 
+## A system for embodied agent research
+
+Bigville provides a shared, persistent world in which an agent's cognition is
+coupled to a simulated body. A resident has a position, physical needs and
+capabilities, and acts among other residents, objects and institutions.
+Observations and affordances come from that situation; actions are proposed by
+the resident's backend, checked and enacted by the world, and their outcomes
+change what can happen next. For example, food has to be reached, acquired and
+eaten; exertion, exhaustion and injury have consequences; and objects and
+resources remain in the world for other residents to encounter. The API is the
+interface to this loop: the modeled body, environment and their interaction
+give the actions their meaning.
+
+This design makes Bigville useful as an experimental system for questions in
+embodied cognition, artificial life and social simulation:
+
+- **Perception and action:** how do limited observation, location, effort and
+  changing bodily needs affect a resident's choices and its ability to learn
+  what the world permits?
+- **Cognition in context:** how do Ocelot, deterministic, human and LLM
+  backends behave when situated in the same world, and how do their decisions
+  change when resources, bodies or social surroundings change?
+- **Social and institutional dynamics:** how do individual actions and their
+  consequences accumulate into patterns of work, exchange, cooperation,
+  conflict and governance in a shared village?
+- **Experimental intervention:** how do outcomes change when a scenario,
+  initial conditions, population or backend changes? Seeded scenarios,
+  world reports and action outcomes support controlled runs and inspection of
+  the resulting trajectories.
+
+The intellectual grounding is the relationship between mind, body and world.
+Varela, Thompson and Rosch's [*The Embodied Mind*](https://mitpress.mit.edu/9780262529365/the-embodied-mind/)
+describes cognition and perception as arising through embodied, situated
+activity. Gibson's [account of affordances](https://www.routledge.com/The-Ecological-Approach-to-Visual-Perception-Classic-Edition/Gibson/p/book/9781848725782)
+connects opportunities for action to the relationship between an organism
+and its environment. Brooks's [work on situated robotics](https://people.csail.mit.edu/brooks/papers/representation.pdf)
+likewise makes ongoing perception and action central to intelligent behaviour.
+Bigville takes these ideas as design influences: its bodies and environment
+are computational models, and the system does not claim to reproduce lived
+experience or establish that its agents are human-like.
+
+The system is complementary to recent agent research. Park et al.'s
+[*Generative Agents*](https://arxiv.org/abs/2304.03442) explores believable
+social behaviour using language-model memories, reflection and planning in a
+town. [*Emergence World*](https://arxiv.org/html/2606.08367v1) studies
+long-horizon, heterogeneous agent populations using a persistent spatial
+environment, memories, governance and context-gated tools. Bigville shares the
+interest in agents acting together over time, while making a simulated body's
+needs and capabilities, physical resources and world-side consequences a
+foundation for the cognition loop. Emergence World also enforces contextual
+preconditions; the difference is one of modeling emphasis, not a claim that
+its agents lack a world or that an API cannot mediate embodied action.
+
+The [feature plan](docs/FEATURE_PHASES.md) sets out further work on a limited
+agent view, personas and routines, and comparative learning evaluation; these
+are planned phases rather than claims about the current system. Research use
+still requires explicit hypotheses, controls, repeated runs and validation
+against appropriate observations.
+
 The public API is in `bigville/`:
 
 ```python
