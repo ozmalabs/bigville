@@ -63,6 +63,7 @@
 
         <section id="referee-view" aria-labelledby="referee-heading" hidden>
           <h3 id="referee-heading">Referee world</h3>
+          <button id="open-reports" class="secondary" type="button">Reports &amp; events</button>
           <p id="mapless-fallback" class="empty" hidden>This scenario has no map. Use the resident table below to inspect the run.</p>
           <iframe id="referee-renderer" class="referee-renderer" title="Referee world map" hidden></iframe>
           <section class="resident-section" aria-labelledby="population-heading">
@@ -76,6 +77,27 @@
           <p id="agent-view-status" class="status" role="status" aria-live="polite">Choose a resident to load their agent view.</p>
           <pre id="agent-view-content" class="agent-view-content"></pre>
         </section>
+      </section>
+
+      <section id="reports-panel" class="panel" aria-labelledby="reports-heading" hidden>
+        <button id="back-from-reports" class="text-button" type="button">← Back to run</button>
+        <div class="panel-heading"><div><p class="eyebrow">REPORTS &amp; EVENTS</p><h2 id="reports-heading">Run report</h2></div><span id="reports-run-status" class="run-status"></span></div>
+        <p class="section-copy">Reports are live readouts of the current in-memory state. World events are recorded history. No observation advances the simulation.</p>
+        <div id="report-error" class="error inline-error" role="alert" hidden></div>
+        <section aria-labelledby="latest-report-heading">
+          <div class="panel-heading"><h3 id="latest-report-heading">Latest report</h3><button id="download-report" class="secondary" type="button" disabled>Download report JSON</button></div>
+          <p id="report-provenance" class="run-meta"></p>
+          <p class="help">Census and sampled measures are labelled in the report's measurement field. Missing values remain null.</p>
+          <pre id="report-json" class="artifact-json"></pre>
+        </section>
+        <section aria-labelledby="events-heading">
+          <div class="panel-heading"><h3 id="events-heading">Recorded events</h3><button id="download-events" class="secondary" type="button" disabled>Download events JSON</button></div>
+          <p id="events-provenance" class="run-meta"></p>
+          <div class="event-filters"><label>Kind <input id="event-kind-filter" type="search" placeholder="All kinds"></label><label>Actor <input id="event-actor-filter" type="search" placeholder="All actors"></label><button id="apply-event-filter" class="secondary" type="button">Apply filters</button></div>
+          <ol id="event-list" class="event-list"></ol>
+          <div class="event-pagination"><button id="events-previous" class="secondary" type="button" disabled>Previous</button><span id="events-page-status" role="status" aria-live="polite"></span><button id="events-next" class="secondary" type="button" disabled>Next</button></div>
+        </section>
+        <section aria-labelledby="trace-heading"><h3 id="trace-heading">Decision trace</h3><p class="notice">Unavailable: this engine does not retain a per-turn decision trace. Reading reports or events will not replay turns or change affordance state.</p></section>
       </section>
 
       <section id="new-run-panel" class="panel" aria-labelledby="new-run-heading" hidden>

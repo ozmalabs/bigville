@@ -24,6 +24,11 @@
   let viewRevision = 0;
   let viewController = null;
   let refereeSnapshot = null;
+  let reportsRevision = 0;
+  let reportsData = null;
+  let eventsData = null;
+  let eventsOffset = 0;
+  const eventsLimit = 50;
 
   function activatePanel(button) {
     document.querySelectorAll(".nav-item").forEach(item => {
@@ -53,6 +58,8 @@
         ? "Review the resolved configuration before starting a simulation."
         : panelId === "run-view-panel"
           ? "Observe the current run snapshot and choose a server-built perspective."
+          : panelId === "reports-panel"
+            ? "Inspect live measurements and events recorded by this run."
         : "Review scenarios and integrations available in this checkout.";
   }
 
@@ -636,6 +643,104 @@
     showPanel("run-view-panel", run.name);
     await refreshRunView();
   }
+
+  function downloadJson(filename, value) {
+    const blob = new Blob([JSON.stringify(value, null, 2) + "\n"], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function eventQuery() {
+    const params = new URLSearchParams({offset: String(eventsOffset), limit: String(eventsLimit)});
+    const kind = $("#event-kind-filter").value.trim();
+    const actor = $("#event-actor-filter").value.trim();
+    if (kind) params.set("kind", kind);
+    if (actor) params.set("actor", actor);
+    return params.toString();
+  }
+
+  async function refreshReportEvents() {
+    if (!activeRunId || $("#reports-panel").hidden) return;
+    const revision = ++reportsRevision;
+    const id = encodeURIComponent(activeRunId);
+    $("#report-error").hidden = true;
+    $("#reports-run-status").textContent = "Loading";
+    try {
+      const [report, events] = await Promise.all([
+        requestJson(`/runs/${id}/report`),
+        requestJson(`/runs/${id}/events?${eventQuery()}`),
+      ]);
+      if (revision !== reportsRevision || id !== encodeURIComponent(activeRunId)) return;
+      reportsData = report;
+      eventsData = events;
+      $("#reports-heading").textContent = report.run.name;
+      $("#reports-run-status").textContent = `${report.run.status} · turn ${report.run.turn}`;
+      $("#report-provenance").textContent = `Live state · captured ${report.captured_at} · turn ${report.run.turn}`;
+      $("#report-json").textContent = JSON.stringify(report.report, null, 2);
+      $("#download-report").disabled = false;
+      $("#events-provenance").textContent = `Recorded world history · as of turn ${events.run.turn}; this is not a reconstructed timeline.`;
+      const list = $("#event-list");
+      list.replaceChildren();
+      for (const event of events.events) {
+        const row = document.createElement("li");
+        const kind = event.kind || "Unclassified event";
+        row.append(text("strong", kind));
+        row.append(text("pre", JSON.stringify(event, null, 2), "artifact-event"));
+        list.append(row);
+      }
+      if (!events.events.length) list.append(text("li", "No recorded events match these filters.", "empty"));
+      const pagination = events.pagination;
+      const first = pagination.total ? pagination.offset + 1 : 0;
+      const last = pagination.offset + events.events.length;
+      $("#events-page-status").textContent = `${first}–${last} of ${pagination.total}`;
+      $("#events-previous").disabled = pagination.offset === 0;
+      $("#events-next").disabled = pagination.next_offset === null;
+      $("#download-events").disabled = false;
+    } catch (error) {
+      if (revision !== reportsRevision) return;
+      $("#report-error").textContent = error.message || "Report and event data are unavailable.";
+      $("#report-error").hidden = false;
+      $("#reports-run-status").textContent = activeRunRecord?.status || "Unavailable";
+      $("#download-report").disabled = true;
+      $("#download-events").disabled = true;
+    }
+  }
+
+  $("#open-reports").addEventListener("click", () => {
+    if (selectedPerspective !== "referee") return;
+    eventsOffset = 0;
+    showPanel("reports-panel", activeRunRecord?.name || "Run report");
+    refreshReportEvents();
+  });
+  $("#back-from-reports").addEventListener("click", () => {
+    reportsRevision += 1;
+    showPanel("run-view-panel", activeRunRecord?.name || "Run");
+    refreshRunView();
+  });
+  $("#apply-event-filter").addEventListener("click", () => {
+    eventsOffset = 0;
+    refreshReportEvents();
+  });
+  $("#events-previous").addEventListener("click", () => {
+    eventsOffset = Math.max(0, eventsOffset - eventsLimit);
+    refreshReportEvents();
+  });
+  $("#events-next").addEventListener("click", () => {
+    eventsOffset += eventsLimit;
+    refreshReportEvents();
+  });
+  $("#download-report").addEventListener("click", () => {
+    if (reportsData) downloadJson(`bigville-report-${reportsData.run.id}.json`, reportsData);
+  });
+  $("#download-events").addEventListener("click", () => {
+    if (eventsData) downloadJson(`bigville-events-${eventsData.run.id}-${eventsData.pagination.offset}.json`, eventsData);
+  });
 
   $("#back-from-run-view").addEventListener("click", () => {
     if (viewController) viewController.abort();

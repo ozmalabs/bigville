@@ -91,6 +91,36 @@ class _Handler(BaseHTTPRequestHandler):
                     "catalog_unavailable", "Capability catalog could not be built."))
         if path == f"{API_PREFIX}/runs":
             return self._json(200, {"runs": self.server.run_registry.list_runs()})
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/report"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/report")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            try:
+                return self._json(200, self.server.run_registry.get_run_report(run_id))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/events"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/events")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
+            try:
+                offset_raw = query.get("offset", ["0"])[0]
+                limit_raw = query.get("limit", ["50"])[0]
+                if not offset_raw.isdecimal() or not limit_raw.isdecimal():
+                    raise InvalidRunRequest("offset and limit must be decimal integers.")
+                return self._json(200, self.server.run_registry.get_run_events(
+                    run_id, offset=int(offset_raw), limit=int(limit_raw),
+                    kind=query.get("kind", [None])[0] or None,
+                    actor=query.get("actor", [None])[0] or None))
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except RunViewUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except InvalidRunRequest as exc:
+                return self._json(400, error_payload(exc.code, str(exc)))
         if path.startswith(f"{API_PREFIX}/runs/") and "/views/" in path:
             remainder = path.removeprefix(f"{API_PREFIX}/runs/")
             run_id, view_path = remainder.split("/views/", 1)

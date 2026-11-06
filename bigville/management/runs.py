@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ..api import create_game
+from ..reporting import game_report
 from .drafts import PreviewTooLarge, preview_draft, resolve_draft
 
 REGISTRY_SCHEMA_VERSION = 1
@@ -188,6 +189,58 @@ class RunRegistry:
             snapshot = game.snapshot()
             return {"perspective": "referee", "run": run_info,
                     "snapshot": snapshot}
+
+    def get_run_report(self, run_id: str) -> dict[str, Any]:
+        """Compute a read-only report from the current in-memory run state."""
+        runtime = self._runtime_for(run_id)
+        with runtime.lock:
+            with self._lock:
+                record = self._record(run_id)
+                game = runtime.game
+                run_info = {"id": record["id"], "name": record["name"],
+                            "scenario_id": record["scenario_id"],
+                            "status": record["status"], "turn": record["turn"],
+                            "error": record["error"]}
+            if game is None:
+                raise RunViewUnavailable(
+                    f"Report is unavailable while status is {run_info['status']}; start or step the run first.")
+            report = game_report(game)
+            return {"source": "live_snapshot", "captured_at": _utc_now(),
+                    "run": run_info, "report": report}
+
+    def get_run_events(self, run_id: str, *, offset: int = 0, limit: int = 50,
+                       kind: str | None = None, actor: str | None = None) -> dict[str, Any]:
+        """Read recorded world events without recording a report or advancing state."""
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise InvalidRunRequest("offset must be a nonnegative integer.")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
+            raise InvalidRunRequest("limit must be an integer from 1 to 200.")
+        runtime = self._runtime_for(run_id)
+        with runtime.lock:
+            with self._lock:
+                record = self._record(run_id)
+                game = runtime.game
+                run_info = {"id": record["id"], "name": record["name"],
+                            "scenario_id": record["scenario_id"],
+                            "status": record["status"], "turn": record["turn"],
+                            "error": record["error"]}
+            if game is None:
+                raise RunViewUnavailable(
+                    f"Events are unavailable while status is {run_info['status']}; start or step the run first.")
+            events = [{"id": event_id, **dict(game.world.eng.node(node)["attrs"])}
+                      for event_id, node in game.world._events.items()]
+            if kind:
+                events = [event for event in events
+                          if str(event.get("kind", "")).casefold() == kind.casefold()]
+            if actor:
+                events = [event for event in events
+                          if str(event.get("actor", event.get("subject", ""))).casefold() == actor.casefold()]
+            total = len(events)
+            page = events[offset:offset + limit]
+            return {"source": "recorded_history", "run": run_info,
+                    "events": page, "pagination": {"offset": offset, "limit": limit,
+                        "total": total,
+                        "next_offset": offset + len(page) if offset + len(page) < total else None}}
 
     def create_run(self, request: Any) -> tuple[dict[str, Any], bool]:
         """Return (record, created); key reuse is checked against canonical resolved config."""
