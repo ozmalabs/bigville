@@ -16,6 +16,8 @@ cost (its ``last_cost`` attribute, in whatever unit the caller chooses).
 """
 from __future__ import annotations
 
+import threading
+
 from domains.autopilot import (DEFAULT_PACK, TRIGGERS, boundary_consult_chance, habit_roll,
                                max_quiet_ticks, routine_strength, table, usual_block, usual_words)
 
@@ -29,16 +31,17 @@ class CallBudget:
     applies to the sum of the provider's reported costs. Either cap is None for no limit.
 
     The budget is checked before each provider call (a repair counts as a call), so a cap is never exceeded.
-    One budget object may be shared by several LLM residents."""
+    One budget object may be shared by several LLM residents, and by residents decided in parallel: every
+    read and update of the counts happens under one lock. ``reserve`` checks and records a call in one step."""
 
     def __init__(self, *, max_calls_per_day=None, max_spend=None):
         self.max_calls_per_day = None if max_calls_per_day is None else int(max_calls_per_day)
         self.max_spend = None if max_spend is None else float(max_spend)
         self.calls_by_day: dict[tuple[str, int | None], int] = {}
         self.spent = 0.0
+        self._lock = threading.Lock()
 
-    def refusal(self, resident: str, day) -> str | None:
-        """The cause that stops a call now (``spend_cap`` or ``call_cap``), or None."""
+    def _refusal(self, resident: str, day) -> str | None:
         if self.max_spend is not None and self.spent >= self.max_spend:
             return "spend_cap"
         if (self.max_calls_per_day is not None
@@ -46,13 +49,30 @@ class CallBudget:
             return "call_cap"
         return None
 
+    def refusal(self, resident: str, day) -> str | None:
+        """The cause that stops a call now (``spend_cap`` or ``call_cap``), or None."""
+        with self._lock:
+            return self._refusal(resident, day)
+
+    def reserve(self, resident: str, day) -> str | None:
+        """Check and, when allowed, record one call in a single locked step. Returns the refusing cause, or None
+        when the call was recorded and may be made."""
+        with self._lock:
+            cause = self._refusal(resident, day)
+            if cause is None:
+                key = (resident, day)
+                self.calls_by_day[key] = self.calls_by_day.get(key, 0) + 1
+            return cause
+
     def record_call(self, resident: str, day) -> None:
-        key = (resident, day)
-        self.calls_by_day[key] = self.calls_by_day.get(key, 0) + 1
+        with self._lock:
+            key = (resident, day)
+            self.calls_by_day[key] = self.calls_by_day.get(key, 0) + 1
 
     def record_cost(self, cost) -> None:
         if isinstance(cost, (int, float)) and not isinstance(cost, bool):
-            self.spent += float(cost)
+            with self._lock:
+                self.spent += float(cost)
 
 
 def _day(calendar) -> int | None:

@@ -2546,7 +2546,7 @@ stays within the caps over a 200-turn fake run.
 
 ## Phase 055 -- The LLM backend, stage 3: operations
 
-**Status:** ready, after 054.
+**Status:** done (see History). A live OpenCode Go check of `usage.opencode.allowance` is still to do.
 
 **Goal.** Make a town of LLM residents runnable and repeatable.
 1. **Concurrency.** `BigvilleGame.step()` calls `decide` for each resident one after another, so a
@@ -2833,3 +2833,4 @@ provider layer's retry and backoff (Phase 055).
 | 048 Tools by fitness | done | (this commit) | docs/phases/phase048/PHASE048_REPORT.md -- TOOL_FIT; bare hands 0.05; no tool refusals; time, stamina, wear, strain, yield and waste by fit; stop; 1483 passed |
 | 057 Terminal interface | done | (this commit) | docs/phases/phase057/PHASE057_REPORT.md -- `python -m bigville.tui` (plain and curses) on the agent view only; pure `render` (80x24 snapshot), command parser with lexicon verbs, intensity and amount words, ambiguity questions; pack `NARRATION`; embedded and HTTP clients (no `/api/state`); agent-mode server binds a reply's handles and delivers reactions; view gains a `reaction` section; 48 tests; 1532 passed |
 | 034 Intoxication | done | (this commit) | docs/phases/phase034/PHASE034_REPORT.md -- Widmark gain, linear sobering, skill loss via effective_skill, stagger, pass-out; 1553 passed |
+| 055 LLM backend operations | done | (this commit) | docs/phases/phase055/PHASE055_REPORT.md -- bounded thread pool for `concurrent` backends with fixed result order; JSONL transcripts and a replay provider keyed by turn, actor and prompt hash; stdlib OpenAI-compatible provider with OpenCode Go settings, retries, rate limit, key redaction and spend cap; `llm_scenario` mixed towns; per-resident and per-day cost in `llm_report`; live test skipped by default; 3 LLM + 97 simple for 100 turns made 38 calls; 38 tests; simple backend identical to HEAD; 1569 passed on the previous base |

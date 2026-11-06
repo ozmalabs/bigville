@@ -1,0 +1,30 @@
+{
+  "delay_seconds": 0.3,
+  "env_pythonhashseed": null,
+  "pool_only": {
+    "pool_workers_1_seconds": 2.401,
+    "pool_workers_2_seconds": 1.202,
+    "pool_workers_4_seconds": 0.601,
+    "pool_workers_8_seconds": 0.301,
+    "sequential_floor_seconds": 2.4
+  },
+  "residents": 8,
+  "whole_town_two_turns": {
+    "concurrent_4": {
+      "calls": 12,
+      "digest": "c92c722c620b222602abc09ad606a30256b1cd13bd5f74daed89ecf99ea188d8",
+      "seconds": 5.651
+    },
+    "concurrent_8": {
+      "calls": 12,
+      "digest": "c92c722c620b222602abc09ad606a30256b1cd13bd5f74daed89ecf99ea188d8",
+      "seconds": 5.321
+    },
+    "digests_equal": true,
+    "sequential": {
+      "calls": 12,
+      "digest": "c92c722c620b222602abc09ad606a30256b1cd13bd5f74daed89ecf99ea188d8",
+      "seconds": 8.307
+    }
+  }
+}

@@ -323,6 +323,8 @@ def test_llm_report_ignores_backends_without_llm_counts():
                   "failures": 0, "provider_errors": 0, "invalid_outputs": 0, "decisions": 0,
                   "autopilot_turns": 0, "carry_ons": 0, "waits": 0, "deviations": 0, "turns": 0,
                   "fallbacks_by_cause": {}, "consults_by_reason": {}, "share_consulted": None,
-                  "share_autopilot": None, "latency_ms_total": 0.0, "mean_latency_ms": None},
+                  "share_autopilot": None, "latency_ms_total": 0.0, "mean_latency_ms": None,
+                  "call_latency_ms_total": 0, "cost": 0.0, "tokens_in": 0, "tokens_out": 0,
+                  "tokens_reasoning": 0, "per_day": {}},
         "residents": {},
     }

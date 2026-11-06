@@ -375,7 +375,10 @@ def llm_report(backends: dict[str, Any]) -> dict[str, Any]:
     counted. ``decisions`` are the consults attempted (accepted replies plus fallbacks). ``failures``
     are the fallbacks of every cause (Phase 059: the autopilot acts instead of an idle turn); the
     causes are in ``fallbacks_by_cause``. ``autopilot_turns`` are turns the model was not consulted.
-    ``turns`` is every decision, and the ``share_*`` fields are each kind's part of it."""
+    ``turns`` is every decision, and the ``share_*`` fields are each kind's part of it.
+    Phase 055 adds per resident and in total: ``cost`` (the provider's reported spend), token counts, the time
+    spent in provider calls, and ``per_day`` (calls, repairs, fallbacks, cost and latency for each calendar day,
+    the period the call budget uses)."""
     residents = {}
     for name, backend in sorted(backends.items()):
         counts = getattr(backend, "llm_counts", None)
@@ -391,24 +394,47 @@ def llm_report(backends: dict[str, Any]) -> dict[str, Any]:
                            "latency_ms_total": round(float(counts["latency_ms_total"]), 3),
                            "mean_latency_ms": round(float(counts["latency_ms_total"]) / decisions, 3)
                            if decisions else None,
-                           "last_error": str(counts["last_error"])}
+                           "last_error": str(counts["last_error"]),
+                           **_spend_row(counts)}
     total = {key: sum(row[key] for row in residents.values()) for key in LLM_TOTAL_KEYS}
     latency = round(sum(row["latency_ms_total"] for row in residents.values()), 3)
     decisions = total["successes"] + total["failures"]
     turns = decisions + total["autopilot_turns"]
     causes: dict[str, int] = {}
     reasons: dict[str, int] = {}
+    per_day: dict[str, dict[str, Any]] = {}
     for row in residents.values():
         for cause, n in row["fallbacks_by_cause"].items():
             causes[cause] = causes.get(cause, 0) + int(n)
         for reason, n in row["consults_by_reason"].items():
             reasons[reason] = reasons.get(reason, 0) + int(n)
+        for day, bucket in row["per_day"].items():
+            merged = per_day.setdefault(day, {"calls": 0, "repairs": 0, "fallbacks": 0, "cost": 0.0,
+                                              "latency_ms": 0.0})
+            for key, value in bucket.items():
+                merged[key] = merged[key] + value
     share = (lambda n: round(n / turns, 4)) if turns else (lambda n: None)
     total.update({"decisions": decisions, "turns": turns, "latency_ms_total": latency,
                   "mean_latency_ms": round(latency / decisions, 3) if decisions else None,
                   "fallbacks_by_cause": causes, "consults_by_reason": reasons,
                   "share_consulted": share(decisions), "share_autopilot": share(total["autopilot_turns"])})
+    for key in ("cost", "tokens_in", "tokens_out", "tokens_reasoning", "call_latency_ms_total"):
+        total[key] = round(sum(row[key] for row in residents.values()), 6)
+    total["per_day"] = {day: {k: (round(v, 6) if isinstance(v, float) else v) for k, v in bucket.items()}
+                        for day, bucket in sorted(per_day.items())}
     return {"residents_count": len(residents), "total": total, "residents": residents}
+
+
+def _spend_row(counts: dict[str, Any]) -> dict[str, Any]:
+    """Phase 055: cost, tokens, provider call time, and the per-day buckets of one resident's backend."""
+    return {"call_latency_ms_total": round(float(counts.get("call_latency_ms_total", 0.0)), 3),
+            "cost": round(float(counts.get("cost", 0.0)), 6),
+            "tokens_in": int(counts.get("tokens_in", 0)),
+            "tokens_out": int(counts.get("tokens_out", 0)),
+            "tokens_reasoning": int(counts.get("tokens_reasoning", 0)),
+            "per_day": {day: {k: (round(float(v), 6) if isinstance(v, float) else int(v))
+                              for k, v in bucket.items()}
+                        for day, bucket in sorted((counts.get("by_day") or {}).items())}}
 
 
 def game_report(game) -> dict[str, Any]:

@@ -38,6 +38,8 @@ from typing import Any, Protocol
 
 from domains.autopilot import DEFAULT_PACK, table
 from ..character import CharacterDefinition, HeldState
+from ..concurrency import DEFAULT_WORKERS
+from ..llm_transcript import call_provider
 from .autopilot import FALLBACK_CAUSES, CallBudget, ConsultGate
 from .cheap import DeterministicBackend, simple_policy_for
 from .prompts import PromptBuilder
@@ -191,6 +193,11 @@ class LLMBackend:
     kind = "llm"
     # Phase 054: the game gives this resident's context its agent view (words only), and nothing else.
     wants_agent_view = True
+    # Phase 055: decided through the game's thread pool, with one thread per resident at a time. The backend keeps
+    # its state per resident; the shared CallBudget and the provider are the only shared objects, and both are
+    # thread-safe (the provider's per-call cost and usage are per thread).
+    concurrent = True
+    concurrency = DEFAULT_WORKERS
     communication_mode = "free_text"
     supports_free_text = True
     understands_raw_speech = True
@@ -221,8 +228,14 @@ class LLMBackend:
         self.counts: dict[str, Any] = {key: 0 for key in _COUNT_KEYS}
         self.counts["latency_ms_total"] = 0.0
         self.counts["last_error"] = ""
+        # Phase 055: spend and tokens reported by the provider, and the time spent in provider calls.
+        self.counts.update({"cost": 0.0, "tokens_in": 0, "tokens_out": 0, "tokens_reasoning": 0,
+                            "call_latency_ms_total": 0.0})
         self.fallbacks: dict[str, int] = {cause: 0 for cause in FALLBACK_CAUSES}
         self.consults_by_reason: dict[str, int] = {}
+        # Phase 055: per calendar day (the period the call budget uses): calls, repairs, fallbacks, cost, latency.
+        self.by_day: dict[str, dict[str, Any]] = {}
+        self._bucket_day = None
         self.last_backend_state: dict[str, Any] = self._state({})
 
     @property
@@ -230,7 +243,13 @@ class LLMBackend:
         """Cumulative counts for the game report (a copy). ``failures`` are the fallbacks of every cause;
         ``successes`` are the accepted replies; the two together are the consults that were attempted."""
         return {**self.counts, "fallbacks_by_cause": dict(self.fallbacks),
-                "consults_by_reason": dict(self.consults_by_reason)}
+                "consults_by_reason": dict(self.consults_by_reason),
+                "by_day": {day: dict(row) for day, row in self.by_day.items()}}
+
+    def _bucket(self, day) -> dict[str, Any]:
+        key = "none" if day is None else str(day)
+        return self.by_day.setdefault(key, {"calls": 0, "repairs": 0, "fallbacks": 0, "cost": 0.0,
+                                            "latency_ms": 0.0})
 
     def _state(self, extra: dict[str, Any]) -> dict[str, Any]:
         return {**extra, **{key: self.counts[key] for key in _COUNT_KEYS},
@@ -238,13 +257,8 @@ class LLMBackend:
                 "last_error": self.counts["last_error"],
                 "fallbacks_by_cause": dict(self.fallbacks)}
 
-    def _call(self, payload: dict[str, Any]) -> Any:
-        complete = getattr(self.provider, "complete", None)
-        if callable(complete):
-            return complete(payload)
-        if callable(self.provider):
-            return self.provider(payload)
-        raise TypeError("LLM provider must have complete(prompt) or be callable")
+    def _call(self, payload: dict[str, Any], meta: dict[str, Any] | None = None) -> Any:
+        return call_provider(self.provider, payload, meta)
 
     def _resident(self) -> str:
         return str(self.character.character_id)
@@ -281,31 +295,47 @@ class LLMBackend:
         errors: list[str] = []
         for attempt in range(MAX_REPAIRS + 1):
             if self.budget is not None:
-                cause = self.budget.refusal(resident, day)
+                # Checked and recorded in one locked step, so residents decided in parallel cannot overrun the cap.
+                cause = self.budget.reserve(resident, day)
                 if cause is not None:
                     return ("fallback", cause, f"{cause}: the call budget for this resident is spent",
                             record, prompt_hash)
             payload = base if attempt == 0 else {**base, "repair": {"errors": list(errors)}}
             if attempt:
                 self.counts["repairs_used"] += 1
+                self._bucket(day)["repairs"] += 1
             self.counts["calls"] += 1
-            if self.budget is not None:
-                self.budget.record_call(resident, day)
+            self._bucket(day)["calls"] += 1
+            meta = {"turn": int(context.turn), "actor": resident, "attempt": attempt, "period": day}
+            started = time.perf_counter()
             try:
-                raw = self._call(payload)
+                raw = self._call(payload, meta)
             except Exception as exc:
-                self._record_cost()
+                self._record_cost(day, started)
                 return ("fallback", "provider_error", exc, record, prompt_hash)
-            self._record_cost()
+            self._record_cost(day, started)
             wire, as_sent, errors = self._check(raw, fields, context.affordances)
             if wire is not None:
                 return ("reply", wire, attempt + 1, record, prompt_hash, as_sent)
         return ("fallback", "invalid_output", "; ".join(errors), record, prompt_hash)
 
-
-    def _record_cost(self) -> None:
+    def _record_cost(self, day, started: float) -> None:
+        """Book the provider's figures for the call that just returned, on this thread: spend (for the cap),
+        tokens, and the time the call took."""
+        elapsed_ms = (time.perf_counter() - started) * 1000.0
+        cost = getattr(self.provider, "last_cost", None)
         if self.budget is not None:
-            self.budget.record_cost(getattr(self.provider, "last_cost", None))
+            self.budget.record_cost(cost)
+        self.counts["call_latency_ms_total"] += elapsed_ms
+        bucket = self._bucket(day)
+        bucket["latency_ms"] += elapsed_ms
+        if isinstance(cost, (int, float)) and not isinstance(cost, bool):
+            self.counts["cost"] += float(cost)
+            bucket["cost"] += float(cost)
+        usage = getattr(self.provider, "last_usage", None) or {}
+        self.counts["tokens_in"] += int(usage.get("input", 0) or 0)
+        self.counts["tokens_out"] += int(usage.get("output", 0) or 0)
+        self.counts["tokens_reasoning"] += int(usage.get("reasoning", 0) or 0)
 
     # -- decisions -----------------------------------------------------------------------
     def decide(self, context: ActorContext) -> ActorResponse:
@@ -314,6 +344,7 @@ class LLMBackend:
         This method never raises for provider, parse, or validation errors."""
         started = time.perf_counter()
         holder: dict[str, Any] = {}
+        self._bucket_day = _day(context.observations.get("calendar"))
         try:
             return self._decide(context, started, holder)
         except Exception as exc:  # last resort: a bug here must not reach the world
@@ -422,6 +453,7 @@ class LLMBackend:
         autopilot)."""
         self.counts["failures"] += 1
         self.fallbacks[cause] = self.fallbacks.get(cause, 0) + 1
+        self._bucket(self._bucket_day)["fallbacks"] += 1
         if cause == "provider_error":
             self.counts["provider_errors"] += 1
             text = f"{type(error).__name__}: {error}"
@@ -450,6 +482,7 @@ class LLMBackend:
         the offered options (``major_action.params.option``, or ``major_action.action``). Otherwise, or on any
         failure, the autopilot's fixed reaction policy answers."""
         started = time.perf_counter()
+        self._bucket_day = _day(context.observations.get("calendar"))
         fallback = (self.autopilot.react(context) if self.autopilot is not None
                     else ActorResponse(backend_state={"reaction": "", "reason": "no_autopilot"}))
         if self.gate is None or "reaction" not in self.gate.triggers:

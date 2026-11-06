@@ -1,0 +1,78 @@
+{
+  "delay_seconds": 0.3,
+  "env_pythonhashseed": null,
+  "pool_only": {
+    "pool_workers_1_seconds": 2.401,
+    "pool_workers_2_seconds": 1.202,
+    "pool_workers_4_seconds": 0.601,
+    "pool_workers_8_seconds": 0.301,
+    "sequential_floor_seconds": 2.4
+  },
+  "residents": 8,
+  "whole_town_two_turns": {
+    "concurrent_4": {
+      "calls": 12,
+      "digest": "c92c722c620b222602abc09ad606a30256b1cd13bd5f74daed89ecf99ea188d8",
+      "seconds": 5.651
+    },
+    "concurrent_8": {
+      "calls": 12,
+      "digest": "c92c722c620b222602abc09ad606a30256b1cd13bd5f74daed89ecf99ea188d8",
+      "seconds": 5.321
+    },
+    "digests_equal": true,
+    "sequential": {
+      "calls": 12,
+      "digest": "c92c722c620b222602abc09ad606a30256b1cd13bd5f74daed89ecf99ea188d8",
+      "seconds": 8.307
+    }
+  }
+}
+{
+  "key_in_file": false,
+  "key_in_stub_request_headers": true,
+  "line": "{\"actor\": \"Adelina Gorse\", \"attempt\": 0, \"cost\": 0.0021, \"latency_ms\": 16.916, \"model\": \"glm-5.3-flash\", \"prompt\": \"<13187 characters, omitted here>\", \"prompt_hash\": \"a94aaa24867f15c3cff9835b4861a0d4d954316b297d9bc8c8d2e2e1fcfbbe83\", \"reply\": \"{\\\"major_action\\\": {\\\"action\\\": \\\"rest\\\", \\\"params\\\": {}}, \\\"utterances\\\": []}\", \"run_id\": \"sample55\", \"schema\": \"bigville/llm-transcript/1\", \"tokens\": {\"input\": 120, \"output\": 40, \"reasoning\": 3}, \"turn\": 0}"
+}
+{
+  "calls": 38,
+  "calls_per_llm_resident": {
+    "Adelina Gorse": 12,
+    "Adelina Norbisham": 12,
+    "Adelina Sputterfield": 14
+  },
+  "consults_by_reason": {
+    "check_in": 3,
+    "routine_boundary": 3,
+    "spoken_to": 61,
+    "task_failed": 21
+  },
+  "fallbacks_by_cause": {
+    "call_cap": 50,
+    "internal_error": 0,
+    "invalid_output": 0,
+    "invalid_reaction": 0,
+    "provider_error": 0,
+    "spend_cap": 0
+  },
+  "llm_residents": [
+    "Adelina Gorse",
+    "Adelina Norbisham",
+    "Adelina Sputterfield"
+  ],
+  "llm_total": {
+    "autopilot_turns": 79,
+    "calls": 38,
+    "carry_ons": 16,
+    "decisions": 88,
+    "deviations": 14,
+    "failures": 50,
+    "repairs_used": 0,
+    "successes": 38,
+    "turns": 167,
+    "waits": 10
+  },
+  "residents": 100,
+  "seconds": 179.48,
+  "turns": 100
+}
+EXIT 0

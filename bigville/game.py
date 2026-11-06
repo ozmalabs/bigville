@@ -14,6 +14,7 @@ from .backends.animal import AnimalNPCBackend
 from .backends.cheap import simple_policy_for
 from .backends.protocol import ActorContinuation, ProposedAction
 from .backends.protocol import communication_capabilities
+from .concurrency import decide_pooled
 from .character import CharacterDefinition, FrameSeed, MemoryRecord
 from worlds.bigville_bond_world import BigvilleBondWorld
 from domains.data_view import world_entities
@@ -815,6 +816,7 @@ class BigvilleGame:
         # them on the next decision rather than changing the world while a
         # human is still deciding.
         responses = {}
+        deferred = {}  # Phase 055: concurrent backends' (backend, context), decided together after the loop
         for actor, backend in self.backends.items():
             if not self.world.is_alive(actor):
                 continue
@@ -832,6 +834,10 @@ class BigvilleGame:
                 if reason is not None:
                     # Phase 059: the interrupt reason, so a backend can tell why it is asked again.
                     context.backend_state["continuation_interrupted"] = reason
+                if getattr(backend, "concurrent", False):
+                    # Phase 055: decided with the other concurrent residents, after every context is built.
+                    deferred[actor] = (backend, context)
+                    continue
                 response = backend.decide(context)
                 if reason is not None:
                     response.backend_state.setdefault("continuation_interrupted", reason)
@@ -841,6 +847,16 @@ class BigvilleGame:
                         "context": self._context(actor).observations,
                         "affordances": self.world.actor_affordances(actor)}
 
+        # Phase 055: the concurrent residents decide in one pool; results apply in registration order.
+        for actor, response in decide_pooled(deferred).items():
+            if "continuation_interrupted" in deferred[actor][1].backend_state:
+                response.backend_state.setdefault("continuation_interrupted",
+                                                  deferred[actor][1].backend_state["continuation_interrupted"])
+            responses[actor] = response
+            if response.waiting:
+                return {"status": "waiting", "actor": actor,
+                        "context": self._context(actor).observations,
+                        "affordances": self.world.actor_affordances(actor)}
         # This opens the turn and advances the physical environment, but does
         # not let the embedded Ocelot loop act behind the backends.
         self.world.tick()
