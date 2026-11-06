@@ -2316,6 +2316,8 @@ class BigvilleWorld:
         # node is an independently watered and harvested unit.
         self._seed_village_crops()
         self._found_kinship(cast["residents"], seed)
+        from domains.relationship_seeding import seed_founding_relationships   # Phase 058: founding ties
+        seed_founding_relationships(self, seed)
         return cast
 
     # ------------------------------------------------------------------ kinship (Phase 009)

@@ -468,6 +468,12 @@ class BigvilleGame:
                             "gist": gist.get(content["type"], gist["default"])})
         return laws, policies
 
+    def persona(self, actor: str) -> dict:
+        """The persona card for a resident (Phase 058): traits in words, life sketch, usual day, close ties.
+        A plain dict of strings, built from the resident's own character and held records."""
+        from domains.persona import persona as persona_card
+        return persona_card(self.characters[actor], self)
+
     def _context(self, actor: str) -> ActorContext:
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]

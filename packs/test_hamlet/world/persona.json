@@ -1,0 +1,414 @@
+{
+  "_doc": "PERSONA (Phase 058), the test pack 'test_hamlet': a smaller, differently worded copy of the bigville persona tables for a one-baker hamlet with no founding town. It keeps the same structure and the same simple-backend band boundaries (9, 17, 21), so the persona checks run on it. Hours and words are APPROX.",
+  "_types": {},
+  "tables": {
+    "PERSONA_TRAITS": {
+      "charm": {
+        "source": "charm_weight",
+        "quantity": "charm"
+      },
+      "spite": {
+        "source": "w_spite",
+        "quantity": "spite"
+      },
+      "hostility": {
+        "source": "hostile_weight",
+        "quantity": "hostility"
+      },
+      "mood_bias": {
+        "source": "mood_bias",
+        "quantity": "mood_bias"
+      },
+      "trust": {
+        "source": "prior_others_trust",
+        "quantity": "trust"
+      },
+      "outlook": {
+        "source": "prior_world_safe",
+        "quantity": "outlook"
+      },
+      "self_worth": {
+        "source": "prior_self_worth",
+        "quantity": "self_worth"
+      },
+      "temperament": {
+        "source": "valence",
+        "quantity": "temperament"
+      },
+      "arousal": {
+        "source": "arousal",
+        "quantity": "arousal"
+      },
+      "role_identity": {
+        "source": "role_identity",
+        "quantity": "role_identity"
+      }
+    },
+    "PERSONA_ENGINE_PARAMS": {
+      "w_supergraph": "Ocelot's supergraph weight: how much the resident's cognition weights the shared graph. Engine configuration, read by the Ocelot cognition, not a word a resident would use.",
+      "cred_on": "Ocelot's credence-update gain. Engine configuration.",
+      "claim_weight": "Ocelot's claim weight, read by the cognition engine. Engine configuration.",
+      "carried_weight": "The carrying weight of the resident's body model (world attribute). Engine configuration, not a personality word.",
+      "resolution_bins": "Ocelot's causal-resolution bin count (FOUNDING_CAUSAL_RESOLUTION). Engine configuration.",
+      "emotional_core_enabled": "Ocelot's emotional-core switch, set by the founding cast. Engine configuration."
+    },
+    "ROUTINE_BANDS": {
+      "_doc": "The four hour bands the simple backend uses (bigville/backends/cheap.py, _time_band): morning before morning_until, workday to workday_until, evening to evening_until, night after. Each value is the boundary the simple backend had before Phase 058 (APPROX as a model choice, not sourced). Every ROUTINE row starts its work block at morning_until, its evening at workday_until and its sleep at evening_until, so the routine agrees with the bands.",
+      "morning_until": 9.0,
+      "workday_until": 17.0,
+      "evening_until": 21.0
+    },
+    "ROUTINE": {
+      "_doc": "Test pack: the one job (baker) and the two dependant rows. Places are JOB_ROUTINE places or common places.",
+      "baker": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.0,
+            "place": "home",
+            "task": "kneading the dough at home"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "market",
+            "task": "selling bread at the stall"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating a plain meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "market",
+            "task": "selling the last loaves"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "a light supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "_child": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "home",
+            "task": "waking, washing, and helping at home"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "school",
+            "task": "learning letters or small tasks, as the family needs"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "home",
+            "task": "playing, or running errands for the household"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper with the family"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "_infant": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "home",
+            "task": "being fed and tended by the household"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "home",
+            "task": "napping and being minded"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "being fed"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "home",
+            "task": "napping and being minded"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "being fed and settled"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      }
+    },
+    "ROUTINE_STAGE": {
+      "adult": {
+        "row": null,
+        "work_fraction": 1.0,
+        "override": {}
+      },
+      "youth": {
+        "row": null,
+        "work_fraction": 0.65,
+        "override": {
+          "afternoon": {
+            "place": "home",
+            "task": "free time with friends, or helping at home"
+          }
+        }
+      },
+      "elder": {
+        "row": null,
+        "work_fraction": 0.35,
+        "override": {
+          "work": {
+            "task": "light work at the trade, with help"
+          },
+          "afternoon": {
+            "place": "home",
+            "task": "resting at home"
+          }
+        }
+      },
+      "child": {
+        "row": "_child",
+        "work_fraction": 0.25,
+        "override": {}
+      },
+      "infant": {
+        "row": "_infant",
+        "work_fraction": 0.0,
+        "override": {}
+      },
+      "_doc": "Life stage to row and overrides. work_fraction must equal LIFE_STAGES[stage].work_fraction (checked by domains/persona_check.py). The override replaces the named block's place or task for that stage. A stage with a row uses that row in place of the job's row."
+    },
+    "ROUTINE_WEEK": {
+      "_doc": "Test pack: a market on the third day of the week and church on the sixth (invented).",
+      "market_day": 2,
+      "church_day": 6,
+      "market": {
+        "block": "afternoon",
+        "place": "market",
+        "task": "selling at the stall"
+      },
+      "church": {
+        "block": "work",
+        "set": {
+          "block": "midday",
+          "place": "church",
+          "task": "at prayers, then at rest"
+        }
+      }
+    },
+    "ROUTINE_SEASON": {
+      "_doc": "Test pack: no farm jobs.",
+      "farm_jobs": [],
+      "farm_places": [],
+      "spring": {
+        "farm_task": "no farm work"
+      },
+      "summer": {
+        "farm_task": "no farm work"
+      },
+      "autumn": {
+        "farm_task": "no farm work"
+      },
+      "winter": {
+        "farm_task": "no farm work"
+      }
+    },
+    "PLACE_WORDS": {
+      "_doc": "Test pack: the places the baker uses, and the common places.",
+      "home": "indoors",
+      "market": "out at the stall",
+      "church": "in the church",
+      "school": "in the schoolroom"
+    },
+    "YEARS_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "lately"
+      },
+      {
+        "min": 3.0,
+        "phrase": "some while back"
+      },
+      {
+        "min": 10.0,
+        "phrase": "long since"
+      },
+      {
+        "min": 25.0,
+        "phrase": "in the old days"
+      }
+    ],
+    "SPAN_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "a short spell"
+      },
+      {
+        "min": 3.0,
+        "phrase": "a good while"
+      }
+    ],
+    "SCHOOLING_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "no book learning"
+      },
+      {
+        "min": 2.0,
+        "phrase": "a little reading"
+      },
+      {
+        "min": 5.0,
+        "phrase": "a fair grounding in letters"
+      }
+    ],
+    "TIE_DURATION_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "lately"
+      },
+      {
+        "min": 3.0,
+        "phrase": "a good while"
+      },
+      {
+        "min": 10.0,
+        "phrase": "for years"
+      },
+      {
+        "min": 25.0,
+        "phrase": "since childhood"
+      }
+    ],
+    "OFFICE_WORDS": {},
+    "BIOGRAPHY_TEMPLATES": {
+      "_doc": "The life sketch: one sentence per fact, in this order, when the fact holds. {when} is a YEARS_WORDS phrase, {schooling} a SCHOOLING_WORDS phrase, {trade} and {job} a job or trade key with underscores read as spaces, {span} a SPAN_WORDS phrase, {office} an OFFICE_WORDS phrase. The facts come from Phase 019's implied history (the founding cast's history record) and the held kin terms. Nothing here names a world fact the resident does not hold.",
+      "order": [
+        "stage",
+        "job",
+        "birth",
+        "schooling",
+        "apprenticed",
+        "former_trade",
+        "past_office",
+        "married",
+        "widowed",
+        "household"
+      ],
+      "stage": "You are {stage}.",
+      "job": "You bake for a living, as a {job}.",
+      "birth": "You were born in the hamlet.",
+      "incomer": "You came to the hamlet {when}.",
+      "schooling": "You had {schooling}.",
+      "apprenticed": "You learned the {trade} as an apprentice.",
+      "former_trade": "You once worked as a {trade} {span}.",
+      "past_office": "You have held the office {office}.",
+      "married": "You are wed.",
+      "widowed": "You lost your spouse.",
+      "household": {
+        "head": "You keep the house.",
+        "spouse": "You keep the house with the head of it.",
+        "child": "You live under your parents' roof.",
+        "sibling": "You live with your sibling."
+      }
+    },
+    "RELATIONSHIP_SEEDING": {
+      "_doc": "Test pack: founding ties are off (enabled false), since this hamlet has no founding town. The counts and history lines are the test pack's own words (APPROX).",
+      "enabled": false,
+      "stream": 9058,
+      "max_close_ties": 6,
+      "close_kinds": [
+        "spouse",
+        "blood_kin",
+        "household",
+        "friend",
+        "feud"
+      ],
+      "close_kin_terms": [
+        "parent",
+        "child",
+        "sibling",
+        "half_sibling"
+      ],
+      "colleague_count": 1,
+      "neighbour_radius": 6,
+      "neighbour_count": 1,
+      "friend_count": 1,
+      "rival_spite_min": 0.3,
+      "rival_count": 0,
+      "strength": {
+        "spouse": 5.0,
+        "close_kin": 5.0,
+        "kin": 3.0,
+        "household": 2.0,
+        "friend": 2.0,
+        "workmate": 1.0,
+        "neighbour": 0.6,
+        "feud": -0.8
+      },
+      "kind_of": {
+        "spouse": "spouse",
+        "close_kin": "blood_kin",
+        "kin": "blood_kin",
+        "household": "household",
+        "friend": "friend",
+        "workmate": "workmate",
+        "neighbour": "neighbour",
+        "feud": "feud"
+      },
+      "history": {
+        "spouse": "wed to you",
+        "kin": "your {term}, by blood",
+        "household": "under your roof",
+        "friend": "a friend since youth",
+        "workmate": "trades beside you",
+        "neighbour": "a near neighbour",
+        "rival": "a grievance that never healed"
+      }
+    }
+  }
+}

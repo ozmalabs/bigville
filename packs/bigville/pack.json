@@ -828,6 +828,66 @@
     {
       "name": "LEXICON_PAYLOAD",
       "file": "world/lexicon.json"
+    },
+    {
+      "name": "PERSONA_TRAITS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "PERSONA_ENGINE_PARAMS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "ROUTINE_BANDS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "ROUTINE",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "ROUTINE_STAGE",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "ROUTINE_WEEK",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "ROUTINE_SEASON",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "PLACE_WORDS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "YEARS_WORDS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "SPAN_WORDS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "SCHOOLING_WORDS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "TIE_DURATION_WORDS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "OFFICE_WORDS",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "BIOGRAPHY_TEMPLATES",
+      "file": "world/persona.json"
+    },
+    {
+      "name": "RELATIONSHIP_SEEDING",
+      "file": "world/persona.json"
     }
   ]
 }

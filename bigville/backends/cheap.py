@@ -7,6 +7,7 @@ from typing import Callable
 from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
 from .psi_can import CANWeightModel
+from domains.persona import simple_band   # Phase 058: the hour bands are the pack's ROUTINE_BANDS
 
 # Score added to the walk back to a paused timed job (Phase 023). A modest bias: the job
 # resumes unless a need (food, rest) scores higher. It is a valuation, not a world rule.
@@ -383,13 +384,8 @@ class DeterministicBackend:
 
     @staticmethod
     def _time_band(hour: float) -> str:
-        if hour < 9:
-            return "morning"
-        if hour < 17:
-            return "workday"
-        if hour < 21:
-            return "evening"
-        return "night"
+        """The simple backend's band for an hour. The boundaries are the pack's ROUTINE_BANDS (Phase 058)."""
+        return simple_band(hour)
 
     def _choice_key(self, option, context):
         """Prefer actions matching the active goal, then world score."""

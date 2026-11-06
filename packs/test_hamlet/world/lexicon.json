@@ -121,6 +121,482 @@
             "phrase": "after dusk"
           }
         ]
+      },
+      "charm": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. CHARM, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "awkward",
+            "phrase": "tongue-tied with people"
+          },
+          {
+            "min": 0.33,
+            "label": "pleasant",
+            "phrase": "agreeable enough"
+          },
+          {
+            "min": 0.67,
+            "label": "charming",
+            "phrase": "winsome"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "awkward",
+            "phrase": "seems tongue-tied"
+          },
+          {
+            "min": 0.33,
+            "label": "pleasant",
+            "phrase": "seems agreeable"
+          },
+          {
+            "min": 0.67,
+            "label": "charming",
+            "phrase": "seems winsome"
+          }
+        ]
+      },
+      "spite": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. SPITE, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "forgiving",
+            "phrase": "easy to forgive"
+          },
+          {
+            "min": 0.15,
+            "label": "touchy",
+            "phrase": "prickly"
+          },
+          {
+            "min": 0.4,
+            "label": "vindictive",
+            "phrase": "unforgiving"
+          },
+          {
+            "min": 0.7,
+            "label": "spiteful",
+            "phrase": "malicious"
+          }
+        ]
+      },
+      "hostility": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. HOSTILITY, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "placid",
+            "phrase": "slow to anger"
+          },
+          {
+            "min": 0.33,
+            "label": "touchy",
+            "phrase": "soon affronted"
+          },
+          {
+            "min": 0.67,
+            "label": "quick_tempered",
+            "phrase": "hot in the blood"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "placid",
+            "phrase": "seems easygoing"
+          },
+          {
+            "min": 0.33,
+            "label": "touchy",
+            "phrase": "seems prickly"
+          },
+          {
+            "min": 0.67,
+            "label": "quick_tempered",
+            "phrase": "seems hot in the blood"
+          }
+        ]
+      },
+      "mood_bias": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. MOOD BIAS",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": -1.0,
+            "label": "gloomy",
+            "phrase": "given to glumness"
+          },
+          {
+            "min": -0.2,
+            "label": "steady",
+            "phrase": "even-keeled in spirits"
+          },
+          {
+            "min": 0.3,
+            "label": "cheerful",
+            "phrase": "merry by habit"
+          }
+        ]
+      },
+      "trust": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. TRUST in others, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "wary",
+            "phrase": "chary of others"
+          },
+          {
+            "min": 0.33,
+            "label": "guarded",
+            "phrase": "close-mouthed"
+          },
+          {
+            "min": 0.67,
+            "label": "trusting",
+            "phrase": "open-hearted"
+          }
+        ]
+      },
+      "outlook": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. OUTLOOK, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "dread",
+            "phrase": "expects trouble"
+          },
+          {
+            "min": 0.33,
+            "label": "cautious",
+            "phrase": "watchful"
+          },
+          {
+            "min": 0.67,
+            "label": "hopeful",
+            "phrase": "sanguine"
+          }
+        ]
+      },
+      "self_worth": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. SELF-WORTH, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "doubting",
+            "phrase": "uncertain of yourself"
+          },
+          {
+            "min": 0.33,
+            "label": "modest",
+            "phrase": "humble about yourself"
+          },
+          {
+            "min": 0.67,
+            "label": "assured",
+            "phrase": "certain of your worth"
+          }
+        ]
+      },
+      "temperament": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. TEMPERAMENT, -1 (sour) to 1 (sunny)",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": -1.0,
+            "label": "sour",
+            "phrase": "crabbed-tempered"
+          },
+          {
+            "min": -0.33,
+            "label": "even",
+            "phrase": "level-tempered"
+          },
+          {
+            "min": 0.33,
+            "label": "sunny",
+            "phrase": "bright-tempered"
+          }
+        ],
+        "other": [
+          {
+            "min": -1.0,
+            "label": "sour",
+            "phrase": "seems crabbed"
+          },
+          {
+            "min": -0.33,
+            "label": "even",
+            "phrase": "seems level-tempered"
+          },
+          {
+            "min": 0.33,
+            "label": "sunny",
+            "phrase": "seems bright"
+          }
+        ]
+      },
+      "arousal": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. AROUSAL, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "calm",
+            "phrase": "composed"
+          },
+          {
+            "min": 0.33,
+            "label": "lively",
+            "phrase": "brisk"
+          },
+          {
+            "min": 0.67,
+            "label": "excitable",
+            "phrase": "easily excited"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "calm",
+            "phrase": "seems composed"
+          },
+          {
+            "min": 0.33,
+            "label": "lively",
+            "phrase": "seems brisk"
+          },
+          {
+            "min": 0.67,
+            "label": "excitable",
+            "phrase": "seems easily excited"
+          }
+        ]
+      },
+      "role_identity": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. ROLE IDENTITY, 0 to 1",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "loose",
+            "phrase": "happy to turn a hand to anything"
+          },
+          {
+            "min": 0.33,
+            "label": "loyal",
+            "phrase": "true to your trade"
+          },
+          {
+            "min": 0.67,
+            "label": "wedded",
+            "phrase": "bound to your trade"
+          }
+        ]
+      },
+      "day_block": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. DAY BLOCK",
+        "kind": "status",
+        "published": true,
+        "self": {
+          "sleep": "asleep",
+          "morning": "seeing to the morning chores",
+          "work": "at work",
+          "midday": "taking a midday break",
+          "afternoon": "back at work",
+          "evening": "at leisure in the evening",
+          "unknown": "about your business"
+        },
+        "other": {
+          "sleep": "asleep",
+          "morning": "seeing to the morning chores",
+          "work": "at work",
+          "midday": "resting at midday",
+          "afternoon": "at work",
+          "evening": "at leisure"
+        }
+      },
+      "life_stage": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. LIFE STAGE",
+        "kind": "status",
+        "published": true,
+        "keys_from": "LIFE_STAGES",
+        "self": {
+          "infant": "a baby",
+          "child": "a child",
+          "youth": "a young person",
+          "adult": "an adult",
+          "elder": "an elder",
+          "unknown": "of uncertain age"
+        },
+        "other": {
+          "infant": "a baby",
+          "child": "a child",
+          "youth": "a young person",
+          "adult": "an adult",
+          "elder": "an elder",
+          "unknown": "of uncertain age"
+        }
+      },
+      "season": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. SEASON",
+        "kind": "status",
+        "published": true,
+        "keys_from": "SEASONS",
+        "self": {
+          "spring": "spring",
+          "summer": "summer",
+          "autumn": "autumn",
+          "winter": "winter",
+          "unknown": "an unsettled season"
+        },
+        "other": {
+          "spring": "spring",
+          "summer": "summer",
+          "autumn": "autumn",
+          "winter": "winter"
+        }
+      },
+      "relationship_strength": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. RELATIONSHIP STRENGTH",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          10.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "stranger",
+            "phrase": "a stranger"
+          },
+          {
+            "min": 0.5,
+            "label": "acquaintance",
+            "phrase": "an acquaintance"
+          },
+          {
+            "min": 1.5,
+            "label": "friend",
+            "phrase": "a friend"
+          },
+          {
+            "min": 3.0,
+            "label": "intimate",
+            "phrase": "very close"
+          },
+          {
+            "min": 5.0,
+            "label": "family",
+            "phrase": "as close as family"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "stranger",
+            "phrase": "a stranger"
+          },
+          {
+            "min": 0.5,
+            "label": "acquaintance",
+            "phrase": "an acquaintance"
+          },
+          {
+            "min": 1.5,
+            "label": "friend",
+            "phrase": "a friend"
+          },
+          {
+            "min": 3.0,
+            "label": "intimate",
+            "phrase": "very close"
+          },
+          {
+            "min": 5.0,
+            "label": "family",
+            "phrase": "as close as family"
+          }
+        ]
+      },
+      "relationship_kind": {
+        "_doc": "Test pack words (Phase 058): the bigville quantity worded differently for this pack. RELATIONSHIP KIND",
+        "kind": "status",
+        "published": true,
+        "self": {
+          "feud": "a bitter feud",
+          "friend": "a friend",
+          "acquaintance": "an acquaintance",
+          "blood_kin": "kin",
+          "chosen": "chosen family",
+          "unknown": "a tie of unclear kind",
+          "spouse": "your spouse",
+          "household": "a housemate",
+          "workmate": "a workmate",
+          "neighbour": "a neighbour"
+        }
       }
     },
     "INTENSITY_WORDS": {

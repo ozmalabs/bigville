@@ -1,0 +1,1543 @@
+{
+  "_doc": "PERSONA (Phase 058): the data a resident's persona is built from. Read by domains/persona.py (the persona card, the usual day, the life sketch), domains/relationship_seeding.py (the founding ties) and domains/persona_check.py (the self-test). Tables: PERSONA_TRAITS (each trait of a founding resident, its drawn source and its lexicon quantity); PERSONA_ENGINE_PARAMS (the raw numbers that stay engine configuration, not traits); ROUTINE_BANDS (the four hour bands the simple backend reads, see bigville/backends/cheap.py); ROUTINE (the usual day of each job, adult; a '_child' and '_infant' row for dependants); ROUTINE_STAGE (life stage: which row and which overrides); ROUTINE_WEEK (market day and church day); ROUTINE_SEASON (the seasonal farm task); PLACE_WORDS (the words for each place in JOB_ROUTINE and the common places); BIOGRAPHY_TEMPLATES, YEARS_WORDS, SPAN_WORDS, SCHOOLING_WORDS, OFFICE_WORDS (the life sketch); RELATIONSHIP_SEEDING (counts, strengths and history lines for the founding ties).\n\nSOURCES AND APPROX. Hours and tasks in ROUTINE are APPROX, a model of a pre-industrial English village working day, not measured. The day is organised from the sun and a midday break, as E. P. Thompson describes preindustrial task and clock time in 'Time, Work-Discipline, and Industrial Capitalism' (Past and Present 38, 1967); the hour values are not taken from that article. The four simple-backend bands (9, 17, 21) are the boundaries cheap.py used before Phase 058, carried over unchanged. The market day and church day (weekday 5 and 6 of a 7-day week) are model choices (APPROX). The seasonal tasks are APPROX. Relationship counts follow Dunbar's layered networks (Dunbar 1993, Behavioral and Brain Sciences 16(4), the sympathy group of about 15; Hill and Dunbar 2003, Human Nature 14, the close circle) and are APPROX within that; the 12 close ties cap is a model choice. Dunbar's figures are recalled from those articles and were not checked against the text in this phase (no network access).\n\nTraits: each PERSONA_TRAITS key names the FOUNDING_PERSONALITY key it reads (or role_identity, which is an identity attribute) and the lexicon quantity whose words describe it. A trait with no 'other' words is seen by others not at all, as lexicon.json says.",
+  "_types": {},
+  "tables": {
+    "PERSONA_TRAITS": {
+      "charm": {
+        "source": "charm_weight",
+        "quantity": "charm"
+      },
+      "spite": {
+        "source": "w_spite",
+        "quantity": "spite"
+      },
+      "hostility": {
+        "source": "hostile_weight",
+        "quantity": "hostility"
+      },
+      "mood_bias": {
+        "source": "mood_bias",
+        "quantity": "mood_bias"
+      },
+      "trust": {
+        "source": "prior_others_trust",
+        "quantity": "trust"
+      },
+      "outlook": {
+        "source": "prior_world_safe",
+        "quantity": "outlook"
+      },
+      "self_worth": {
+        "source": "prior_self_worth",
+        "quantity": "self_worth"
+      },
+      "temperament": {
+        "source": "valence",
+        "quantity": "temperament"
+      },
+      "arousal": {
+        "source": "arousal",
+        "quantity": "arousal"
+      },
+      "role_identity": {
+        "source": "role_identity",
+        "quantity": "role_identity"
+      }
+    },
+    "PERSONA_ENGINE_PARAMS": {
+      "w_supergraph": "Ocelot's supergraph weight: how much the resident's cognition weights the shared graph. Engine configuration, read by the Ocelot cognition, not a word a resident would use.",
+      "cred_on": "Ocelot's credence-update gain. Engine configuration.",
+      "claim_weight": "Ocelot's claim weight, read by the cognition engine. Engine configuration.",
+      "carried_weight": "The carrying weight of the resident's body model (world attribute). Engine configuration, not a personality word.",
+      "resolution_bins": "Ocelot's causal-resolution bin count (FOUNDING_CAUSAL_RESOLUTION). Engine configuration.",
+      "emotional_core_enabled": "Ocelot's emotional-core switch, set by the founding cast. Engine configuration."
+    },
+    "ROUTINE_BANDS": {
+      "_doc": "The four hour bands the simple backend uses (bigville/backends/cheap.py, _time_band): morning before morning_until, workday to workday_until, evening to evening_until, night after. Each value is the boundary the simple backend had before Phase 058 (APPROX as a model choice, not sourced). Every ROUTINE row starts its work block at morning_until, its evening at workday_until and its sleep at evening_until, so the routine agrees with the bands.",
+      "morning_until": 9.0,
+      "workday_until": 17.0,
+      "evening_until": 21.0
+    },
+    "ROUTINE": {
+      "_doc": "The usual day of each job (adult). Blocks in order from the morning: morning (waking, and the first task, which may be the trade's early start), work (the workday's first part), midday (the meal and break), afternoon (back at work), evening, sleep (the block after the evening until waking). 'block' is a lexicon day_block key; 'place' is a JOB_ROUTINE place for the job or a common place (home, church, school, market). Hours APPROX. A row is a habit: the world never refuses a resident who departs from it.",
+      "_child": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "home",
+            "task": "waking, washing, and helping at home"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "school",
+            "task": "learning letters or small tasks, as the family needs"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "home",
+            "task": "playing, or running errands for the household"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper with the family"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "_infant": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "home",
+            "task": "being fed and tended by the household"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "home",
+            "task": "napping and being minded"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "being fed"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "home",
+            "task": "napping and being minded"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "being fed and settled"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "farmer": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.5,
+            "place": "barn",
+            "task": "feeding and watering the animals, then out to the fields"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "field",
+            "task": "working the fields"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "field",
+            "task": "working the fields"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "barn",
+            "task": "seeing to the animals before supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "farm_labourer": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.5,
+            "place": "field",
+            "task": "walking out to the day's field work"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "field",
+            "task": "hoeing, lifting, and carrying on the farm"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "field",
+            "task": "hoeing, lifting, and carrying on the farm"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "resting, and mending tools by lamplight"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "animal_keeper": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.5,
+            "place": "barn",
+            "task": "feeding and watering the animals"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "pasture",
+            "task": "moving and minding the animals on the pasture"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "barn",
+            "task": "mucking out and checking the animals"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "miller": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.5,
+            "place": "mill",
+            "task": "starting the wheel and checking the stones"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "mill",
+            "task": "grinding grain for the town"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "granary",
+            "task": "weighing and storing the meal"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "baker": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 4.0,
+            "place": "bakery",
+            "task": "firing the oven and baking the morning bread"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "bakery",
+            "task": "selling and finishing loaves"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "bakery",
+            "task": "kneading and shaping the next batch"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "forester": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "lumber",
+            "task": "walking out to the coppice"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "lumber",
+            "task": "felling and cutting timber"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "charcoal_hearth",
+            "task": "tending the charcoal hearth"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "smith": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "forge",
+            "task": "lighting the forge"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "forge",
+            "task": "shoeing horses and making iron tools"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "forge",
+            "task": "mending tools for the town"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "carpenter": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "woodshop",
+            "task": "sharpening tools and setting out the day's work"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "woodshop",
+            "task": "making and mending joinery"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "sawpit",
+            "task": "sawing timber"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "cooper": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "cooperage",
+            "task": "raising the fires and setting out staves"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "cooperage",
+            "task": "making and hooping casks"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "cooperage",
+            "task": "finishing casks"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "mason": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "stone",
+            "task": "walking out to the quarry"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "stone",
+            "task": "cutting and dressing stone"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "forge",
+            "task": "sharpening chisels, then building walls"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "leatherworker": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "tannery",
+            "task": "turning the hides in the tanpits"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "cobbler",
+            "task": "cutting and stitching leather"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "tannery",
+            "task": "dressing hides"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "weaver": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "weavery",
+            "task": "setting up the loom"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "weavery",
+            "task": "weaving cloth"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "dyehouse",
+            "task": "dyeing yarn"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "tailor": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "tailorshop",
+            "task": "opening the shop and pressing cloth"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "tailorshop",
+            "task": "cutting and sewing garments"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "tailorshop",
+            "task": "fitting customers"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "fisher": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 4.5,
+            "place": "wharf",
+            "task": "launching the boat on the tide"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "fish",
+            "task": "fishing"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "wharf",
+            "task": "landing the catch and mending nets"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "butcher": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.5,
+            "place": "shambles",
+            "task": "killing and dressing the day's meat"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "shambles",
+            "task": "cutting and selling meat"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "barn",
+            "task": "fetching animals from the barn"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "dairymaid": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.0,
+            "place": "dairy",
+            "task": "milking the cows"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "dairy",
+            "task": "making butter and cheese"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "pasture",
+            "task": "bringing in the herd"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "barn",
+            "task": "milking again"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "innkeeper": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "kitchen",
+            "task": "getting the fires going and the bread in"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "inn",
+            "task": "serving at the bar and the tables"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "kitchen",
+            "task": "eating in the kitchen between services"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "inn",
+            "task": "running the inn"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "inn",
+            "task": "running the evening trade"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "mayor": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 7.0,
+            "place": "townhall",
+            "task": "reading the town's letters"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "townhall",
+            "task": "hearing business and settling disputes"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "records_office",
+            "task": "signing and sealing papers"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "clerk": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 7.0,
+            "place": "records_office",
+            "task": "opening the records"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "records_office",
+            "task": "copying and filing"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "townhall",
+            "task": "writing up the council's minutes"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "constable": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "watchhouse",
+            "task": "checking the watch roster"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "market",
+            "task": "walking the market and keeping the peace"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "watchhouse",
+            "task": "taking reports"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "councillor": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 7.0,
+            "place": "home",
+            "task": "reading the day's business"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "townhall",
+            "task": "debating town business"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "records_office",
+            "task": "reviewing the accounts"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "teacher": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 7.0,
+            "place": "home",
+            "task": "preparing lessons"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "school",
+            "task": "teaching the children and the youths"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "scriptorium",
+            "task": "copying and marking"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "doctor": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "home",
+            "task": "answering a call from the sick"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "surgery",
+            "task": "seeing patients"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "wellhouse",
+            "task": "visiting the sick and giving draughts"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "midwife": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "home",
+            "task": "answering a call"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "surgery",
+            "task": "tending the sick and the newborn"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "surgery",
+            "task": "seeing mothers"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "pastor": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 7.0,
+            "place": "church",
+            "task": "saying the morning prayers"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "church",
+            "task": "keeping the church and seeing parishioners"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "church",
+            "task": "teaching the catechism"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "fishmonger": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 5.0,
+            "place": "wharf",
+            "task": "buying the catch"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "market",
+            "task": "selling fish"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "market",
+            "task": "selling fish"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "reporter": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 7.0,
+            "place": "home",
+            "task": "reading the newssheets"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "printshop",
+            "task": "setting type and printing"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "townhall",
+            "task": "gathering news at the hall"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "writing up the news"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      },
+      "labourer": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "market",
+            "task": "waiting at the market for day work"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "field",
+            "task": "doing whatever work is going"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "lumber",
+            "task": "carrying and stacking timber"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "home",
+            "task": "eating supper"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
+      }
+    },
+    "ROUTINE_STAGE": {
+      "adult": {
+        "row": null,
+        "work_fraction": 1.0,
+        "override": {}
+      },
+      "youth": {
+        "row": null,
+        "work_fraction": 0.65,
+        "override": {
+          "afternoon": {
+            "place": "home",
+            "task": "free time with friends, or helping at home"
+          }
+        }
+      },
+      "elder": {
+        "row": null,
+        "work_fraction": 0.35,
+        "override": {
+          "work": {
+            "task": "light work at the trade, with help"
+          },
+          "afternoon": {
+            "place": "home",
+            "task": "resting at home"
+          }
+        }
+      },
+      "child": {
+        "row": "_child",
+        "work_fraction": 0.25,
+        "override": {}
+      },
+      "infant": {
+        "row": "_infant",
+        "work_fraction": 0.0,
+        "override": {}
+      },
+      "_doc": "Life stage to row and overrides. work_fraction must equal LIFE_STAGES[stage].work_fraction (checked by domains/persona_check.py). The override replaces the named block's place or task for that stage. A stage with a row uses that row in place of the job's row."
+    },
+    "ROUTINE_WEEK": {
+      "_doc": "The weekly rhythm (APPROX, a model of the Bigville week). weekday = the calendar day modulo days_per_week (TIME). market: on market day, a job whose JOB_ROUTINE lists the market has its afternoon at the market. church: on church day the work block becomes the midday block at the church.",
+      "market_day": 5,
+      "church_day": 6,
+      "market": {
+        "block": "afternoon",
+        "place": "market",
+        "task": "selling and buying at the market"
+      },
+      "church": {
+        "block": "work",
+        "set": {
+          "block": "midday",
+          "place": "church",
+          "task": "at the morning service, then at rest"
+        }
+      }
+    },
+    "ROUTINE_SEASON": {
+      "_doc": "The seasonal rhythm of farm work (APPROX). The season is the calendar's (TIME.season_start_day). A job in farm_jobs has its work block's task replaced by its season's farm_task. Keys must be the TIME seasons.",
+      "farm_jobs": [
+        "farmer",
+        "farm_labourer",
+        "animal_keeper",
+        "dairymaid",
+        "labourer"
+      ],
+      "farm_places": [
+        "field",
+        "pasture"
+      ],
+      "spring": {
+        "farm_task": "sowing and planting the fields"
+      },
+      "summer": {
+        "farm_task": "weeding and watching the crops"
+      },
+      "autumn": {
+        "farm_task": "bringing in the harvest"
+      },
+      "winter": {
+        "farm_task": "threshing, mending, and feeding the stock indoors"
+      }
+    },
+    "PLACE_WORDS": {
+      "_doc": "The words for each place (phrases that follow 'you are'). Covers every JOB_ROUTINE place and the common places.",
+      "home": "at home",
+      "church": "at the church",
+      "school": "at the school",
+      "market": "at the market",
+      "bakery": "at the bakery",
+      "barn": "in the barn",
+      "charcoal_hearth": "at the charcoal hearth",
+      "compost_yard": "in the compost yard",
+      "cobbler": "at the cobbler's",
+      "cooperage": "at the cooperage",
+      "dairy": "in the dairy",
+      "dyehouse": "at the dyehouse",
+      "field": "in the fields",
+      "fish": "on the fishing grounds",
+      "forge": "at the forge",
+      "granary": "at the granary",
+      "inn": "at the inn",
+      "kitchen": "in the kitchen",
+      "lumber": "in the woods",
+      "mill": "at the mill",
+      "pasture": "on the pasture",
+      "printshop": "at the printshop",
+      "records_office": "at the records office",
+      "root_cellar": "in the root cellar",
+      "sawpit": "at the sawpit",
+      "scriptorium": "in the scriptorium",
+      "shambles": "at the shambles",
+      "stone": "at the quarry",
+      "surgery": "at the surgery",
+      "tailorshop": "at the tailor's",
+      "tannery": "at the tannery",
+      "townhall": "at the town hall",
+      "watchhouse": "at the watchhouse",
+      "weavery": "at the weavery",
+      "wellhouse": "at the wellhouse",
+      "wharf": "at the wharf",
+      "woodshop": "in the woodshop"
+    },
+    "YEARS_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "only recently"
+      },
+      {
+        "min": 3.0,
+        "phrase": "a few years ago"
+      },
+      {
+        "min": 10.0,
+        "phrase": "some years ago"
+      },
+      {
+        "min": 25.0,
+        "phrase": "a long time ago"
+      }
+    ],
+    "SPAN_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "for a short while"
+      },
+      {
+        "min": 3.0,
+        "phrase": "for some years"
+      }
+    ],
+    "SCHOOLING_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "no schooling to speak of"
+      },
+      {
+        "min": 2.0,
+        "phrase": "a little schooling"
+      },
+      {
+        "min": 5.0,
+        "phrase": "a fair schooling"
+      }
+    ],
+    "TIE_DURATION_WORDS": [
+      {
+        "min": 0.0,
+        "phrase": "only lately"
+      },
+      {
+        "min": 3.0,
+        "phrase": "for a few years"
+      },
+      {
+        "min": 10.0,
+        "phrase": "for many years"
+      },
+      {
+        "min": 25.0,
+        "phrase": "for most of your life"
+      }
+    ],
+    "OFFICE_WORDS": {
+      "mayor": "as mayor",
+      "councillor": "on the council",
+      "constable": "as constable",
+      "clerk": "as clerk to the council",
+      "midwife": "as the town midwife",
+      "doctor": "as the town doctor"
+    },
+    "BIOGRAPHY_TEMPLATES": {
+      "_doc": "The life sketch: one sentence per fact, in this order, when the fact holds. {when} is a YEARS_WORDS phrase, {schooling} a SCHOOLING_WORDS phrase, {trade} and {job} a job or trade key with underscores read as spaces, {span} a SPAN_WORDS phrase, {office} an OFFICE_WORDS phrase. The facts come from Phase 019's implied history (the founding cast's history record) and the held kin terms. Nothing here names a world fact the resident does not hold.",
+      "order": [
+        "stage",
+        "job",
+        "birth",
+        "schooling",
+        "apprenticed",
+        "former_trade",
+        "past_office",
+        "married",
+        "widowed",
+        "household"
+      ],
+      "stage": "You are {stage}.",
+      "job": "You work at the trade of {job}.",
+      "birth": "You were born in Bigville.",
+      "incomer": "You came to Bigville {when}.",
+      "schooling": "You had {schooling}.",
+      "apprenticed": "You trained at the trade of {trade} as an apprentice.",
+      "former_trade": "You also worked at the trade of {trade} {span}.",
+      "past_office": "You have served {office}.",
+      "married": "You are married.",
+      "widowed": "You were widowed.",
+      "household": {
+        "head": "You head your own household.",
+        "spouse": "You keep house with the head of the household.",
+        "child": "You live in your parents' household.",
+        "sibling": "You live in your brother's or sister's household."
+      }
+    },
+    "RELATIONSHIP_SEEDING": {
+      "_doc": "Founding ties (Phase 058). A tie is a held relationship record, directed, with a kind, a strength (the lexicon relationship_strength scale, 0 to 10; a feud is negative, as RELATIONSHIP_KINDS has rival_of at -0.8) and a one-line history. Structural ties are all written: spouses, kin from the held genealogical terms, and household members. Social ties are drawn per resident from the same-workplace, nearest-neighbour, friend and rival pools, with a generator seeded from the world seed plus 'stream' (distinct from KINSHIP_STREAM and the history stream). A rival is drawn for a resident whose spite is at or above rival_spite_min, and is the most distant candidate in class and trait. close_kinds are the ties that count towards max_close_ties; the others are acquaintances. Counts and strengths are APPROX within Dunbar's layers (Dunbar 1993, the sympathy group of about 15; Hill and Dunbar 2003). The stream and the thresholds are model choices. enabled switches the seeding. The bigville default is false: four existing tests assert a town with no held ties (the Phase 058 report lists them), so the seeding is turned on explicitly where it is tested. The stream and the thresholds are model choices.",
+      "enabled": false,
+      "stream": 9058,
+      "max_close_ties": 12,
+      "close_kinds": [
+        "spouse",
+        "blood_kin",
+        "household",
+        "friend",
+        "feud"
+      ],
+      "close_kin_terms": [
+        "parent",
+        "child",
+        "sibling",
+        "half_sibling"
+      ],
+      "colleague_count": 2,
+      "neighbour_radius": 6,
+      "neighbour_count": 2,
+      "friend_count": 2,
+      "rival_spite_min": 0.3,
+      "rival_count": 1,
+      "strength": {
+        "spouse": 5.0,
+        "close_kin": 5.0,
+        "kin": 3.0,
+        "household": 2.0,
+        "friend": 2.0,
+        "workmate": 1.0,
+        "neighbour": 0.6,
+        "feud": -0.8
+      },
+      "kind_of": {
+        "spouse": "spouse",
+        "close_kin": "blood_kin",
+        "kin": "blood_kin",
+        "household": "household",
+        "friend": "friend",
+        "workmate": "workmate",
+        "neighbour": "neighbour",
+        "feud": "feud"
+      },
+      "history": {
+        "spouse": "married to you",
+        "kin": "your {term}, related by birth",
+        "household": "shares your house",
+        "friend": "a friend of long standing",
+        "workmate": "works at the same place as you",
+        "neighbour": "lives close by",
+        "rival": "an old quarrel nobody has settled"
+      }
+    }
+  }
+}

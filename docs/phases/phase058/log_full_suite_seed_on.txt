@@ -1,0 +1,312 @@
+.......................F........s.......................s............... [  5%]
+.....F....F.........................................FF.................. [ 10%]
+........................................................................ [ 16%]
+..............................FF........................................ [ 21%]
+........................................................................ [ 27%]
+........................................................................ [ 32%]
+...............F.............................F.......................... [ 37%]
+........................................................................ [ 43%]
+........................................................................ [ 48%]
+........................................................................ [ 54%]
+........................................................................ [ 59%]
+........................................................................ [ 64%]
+........................................................................ [ 70%]
+........................................................................ [ 75%]
+........................................................................ [ 81%]
+........................................................................ [ 86%]
+..............................F......................................... [ 91%]
+........................................................................ [ 97%]
+...................................                                      [100%]
+=================================== FAILURES ===================================
+______ test_seed_generated_relationships_not_auto_wired_into_from_town100 ______
+
+    def test_seed_generated_relationships_not_auto_wired_into_from_town100():
+        """Matches seed_workplace_relationships' own documented precedent:
+        a bare from_town100() town must be unaffected -- this stays opt-in."""
+        world = BigvilleWorld.from_town100(seed=SEED, autonomous_actors=False)
+>       assert world._relationships == {}
+E       AssertionError: assert {('Adelina Go...'): 8461, ...} == {}
+E         
+E         Left contains 845 more items:
+E         {('Adelina Gorse', 'Adelina Norbisham'): 8880,
+E          ('Adelina Gorse', 'Alby Harkness'): 8460,
+E          ('Adelina Gorse', 'Cobweb Furlong'): 8876,
+E          ('Adelina Gorse', 'Corvin Inkpen'): 8461,
+E          ('Adelina Gorse', 'Corvin Kindle'): 8875,...
+E         
+E         ...Full output truncated (841 lines hidden), use '-vv' to show
+
+tests/test_bigville_disposition_seed.py:160: AssertionError
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b9c3d03cd10>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x7b9c3f6e84a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+_______ test_report_covers_physical_economy_and_recorded_social_activity _______
+
+    def test_report_covers_physical_economy_and_recorded_social_activity():
+        world = BigvilleWorld.from_town100(autonomous_actors=False)
+        names = list(world._actors)
+        world.set_relationship(names[0], names[1], kind="neighbour", strength=0.8)
+        world.speak(names[0], names[1], "The market is busy today.")
+    
+        report = world.report(sample_size=5, seed=3)
+    
+        economy = report["economy"]
+        assert economy["food_quantity"] >= economy["food_quantity_in_stock"]
+        assert economy["total_physical_reference_value"] >= economy["stock_reference_value"]
+        assert economy["shops"]
+        assert economy["storage"]
+        assert economy["land"]
+        assert economy["living_animals"]
+        assert report["ecology"]["animals"]["alive"] == 7
+>       assert report["social"]["relationships"]["directed_bonds"] == 1
+E       assert 846 == 1
+
+tests/test_bigville_reporting.py:43: AssertionError
+___________ test_a_bare_from_town100_still_seeds_zero_relationships ____________
+
+    def test_a_bare_from_town100_still_seeds_zero_relationships():
+        """Regression guard: seeding must stay OPT-IN.  test_bigville_reporting.py
+        asserts an EXACT ``directed_bonds`` count against a bare ``from_town100()``
+        town; auto-wiring population relationships into ``populate_town100`` would
+        silently break that baseline.
+        """
+        w = World.from_town100(autonomous_actors=False)
+>       assert len(w._relationships) == 0
+E       AssertionError: assert 845 == 0
+E        +  where 845 = len({('Adelina Gorse', 'Adelina Norbisham'): 8880, ('Adelina Gorse', 'Alby Harkness'): 8460, ('Adelina Gorse', 'Cobweb Furlong'): 8876, ('Adelina Gorse', 'Corvin Inkpen'): 8461, ...})
+E        +    where {('Adelina Gorse', 'Adelina Norbisham'): 8880, ('Adelina Gorse', 'Alby Harkness'): 8460, ('Adelina Gorse', 'Cobweb Furlong'): 8876, ('Adelina Gorse', 'Corvin Inkpen'): 8461, ...} = <worlds.bigville_world.BigvilleWorld object at 0x7b9c0f6a2c10>._relationships
+
+tests/test_bigville_topic_style_migrated.py:290: AssertionError
+________ test_town100_workplace_relationships_are_sparse_not_all_pairs _________
+
+    def test_town100_workplace_relationships_are_sparse_not_all_pairs():
+        w = World.from_town100(autonomous_actors=False)
+        minted = w.seed_workplace_relationships()
+        assert minted > 0
+        # 100 residents, an all-pairs graph would be ~4950 undirected pairs; the ring
+        # construction must stay far below that -- bounded by population size, not
+        # by the square of the largest single-workplace group (25 labourers).
+        assert minted < 150, f"expected a sparse ring (O(n)), got {minted} edges"
+        # Every resident who got a tie has only a HANDFUL of them, not a clique.
+        outgoing = {}
+        for (src, _tgt) in w._relationships:
+            outgoing[src] = outgoing.get(src, 0) + 1
+>       assert max(outgoing.values()) <= 2, (
+            "a ring gives each resident at most one outgoing tie per direction "
+            f"(mutual=True), not a clique: {outgoing}")
+E       AssertionError: a ring gives each resident at most one outgoing tie per direction (mutual=True), not a clique: {'Verity Peaseblossom': 8, 'Garnet Hollow': 7, 'Alby Marsh': 9, 'Bryony Turnbull': 9, 'Thaddeus Ramskin': 8, 'Cuthbert Wold': 6, 'Wat Bracken': 8, 'Rosamund Haywain': 7, 'Bartholomew Quirke': 6, 'Doreen Ferrety': 10, 'Lemuel Bindle': 9, 'Phineas Jubbins': 8, 'Radella Peaseblossom': 8, 'Mary': 7, 'Cask Thistlewood': 7, 'Hogget Jubbins': 9, 'Henrietta Jubbins': 6, 'Prosper Tallowick': 10, 'Godfrey Norbisham': 9, 'Phineas Underhill': 10, 'Bettony Rundle': 10, 'Wat Nettle': 7, 'Cobweb Furlong': 8, 'Peony Hobb': 9, 'Corvin Kindle': 10, 'Marjorie Dough': 5, 'Keturah Marsh': 7, 'Alby Harkness': 8, 'Vernon Lorric': 8, 'Millicent Vellum': 11, 'Mordecai Oakes': 9, 'Erasmus Inkpen': 8, 'Erasmus Ottermole': 11, 'Thaddeus Furlong': 10, 'Ephraim Larkspur': 11, 'Godfrey Tremble': 11, 'Thaddeus Puddifoot': 11, 'Radella Gorse': 11, 'Bartholomew Tremble': 8, 'Adelina Gorse': 11, 'Jem Grubb': 13, 'Mordecai Hobb': 9, 'Winifred Ottermole': 10, 'Henrietta Sedge': 9, 'Elowen Peaseblossom': 9, 'Mordecai Tremble': 15, 'Barnaby Rushton': 13, 'Jem Cobb': 14, 'Isolde Everdew': 10, 'Henrietta Everdew': 10, 'Drusilla Ottermole': 10, 'Corvin Cobb': 12, 'Lemuel Bramble': 11, 'Ida Codling': 9, 'Lavinia Rundle': 11, 'Ida Sedge': 10, 'Septimus Underhill': 12, 'Prosper Grubb': 11, 'Effie Wormwood': 16, 'Bettony Bindle': 13, 'Henrietta Nettle': 9, 'Garnet Inkpen': 10, 'Radella Ramskin': 11, 'Prudence Gorse': 12, 'Horace Yarrow': 12, 'Drusilla Underhill': 10, 'Ferdinand Wormwood': 10, 'Henrietta Peaseblossom': 11, 'Ottoline Frittle': 9, 'Agnes Wick': 10, 'Lettice Sallow': 10, 'Tobias Jubbins': 9, 'Horace Nubbins': 14, 'Peony Tremble': 10, 'Obadiah Sedge': 9, 'Jerusha Thistlewood': 10, 'Jem Vellum': 10, 'Godfrey Ashby': 10, 'Verity Ottermole': 11, 'Elowen Puddifoot': 11, 'Corvin Inkpen': 17, 'Ignatius Kettle': 10, 'Quentin Codling': 11, 'Willa Jubbins': 15, 'Effie Larkspur': 11, 'Alby Frittle': 10, 'Kester Furlong': 9, 'Jem Sedge': 12, 'Dunstan Haywain': 11, 'Lemuel Norbisham': 11, 'Ida Ditchwater': 8, 'Barnaby Furlong': 6, 'Gristle Bracken': 4, 'John': 8, 'Silas Kettle': 4, 'Lavinia Grubb': 5, 'Constance Ottermole': 5, 'Adelina Sputterfield': 8, 'Ida Hobb': 9, 'Adelina Norbisham': 8}
+E       assert 17 <= 2
+E        +  where 17 = max(dict_values([8, 7, 9, 9, 8, 6, 8, 7, 6, 10, 9, 8, 8, 7, 7, 9, 6, 10, 9, 10, 10, 7, 8, 9, 10, 5, 7, 8, 8, 11, 9, 8, 11,... 11, 9, 10, 10, 9, 14, 10, 9, 10, 10, 10, 11, 11, 17, 10, 11, 15, 11, 10, 9, 12, 11, 11, 8, 6, 4, 8, 4, 5, 5, 8, 9, 8]))
+E        +    where dict_values([8, 7, 9, 9, 8, 6, 8, 7, 6, 10, 9, 8, 8, 7, 7, 9, 6, 10, 9, 10, 10, 7, 8, 9, 10, 5, 7, 8, 8, 11, 9, 8, 11,... 11, 9, 10, 10, 9, 14, 10, 9, 10, 10, 10, 11, 11, 17, 10, 11, 15, 11, 10, 9, 12, 11, 11, 8, 6, 4, 8, 4, 5, 5, 8, 9, 8]) = <built-in method values of dict object at 0x7b9c0d9bbb40>()
+E        +      where <built-in method values of dict object at 0x7b9c0d9bbb40> = {'Adelina Gorse': 11, 'Adelina Norbisham': 8, 'Adelina Sputterfield': 8, 'Agnes Wick': 10, ...}.values
+
+tests/test_bigville_topic_style_migrated.py:305: AssertionError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b9c0f69ab70>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-375/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b9c0f69a8a0>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:49: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+_____________________ test_export_rerun_is_byte_identical ______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-375/test_export_rerun_is_byte_iden0')
+
+    def test_export_rerun_is_byte_identical(tmp_path):
+        export = _export_module()
+        out = tmp_path / "bigville"
+        assert export.main(["--pack", "bigville", "--out", str(out)]) == 0
+        source = os.path.join(P.PACKS_ROOT, "bigville")
+        names = sorted(os.path.relpath(os.path.join(d, f), source)
+                       for d, _, files in os.walk(source) for f in files)
+        assert names
+        for rel in names:
+            with open(os.path.join(source, rel), "rb") as a, open(out / rel, "rb") as b:
+>               assert a.read() == b.read(), rel
+E               AssertionError: world/persona.json
+E               assert b'{\n  "_doc"...  }\n  }\n}\n' == b'{\n  "_doc"...  }\n  }\n}\n'
+E                 
+E                 At index 2362 diff: b'"' != b'\n'
+E                 Use -v to get more diff
+
+tests/test_phase013a_packs.py:86: AssertionError
+----------------------------- Captured stdout call -----------------------------
+normalised 221 tables into /tmp/pytest-of-matt/pytest-375/test_export_rerun_is_byte_iden0/bigville
+______ test_the_fixture_renames_two_offices_and_inherits_everything_else _______
+
+    def test_the_fixture_renames_two_offices_and_inherits_everything_else():
+        child = entities(FIXTURE)
+        assert "reeve" in child.GOVERNANCE_OFFICES and "mayor" not in child.GOVERNANCE_OFFICES
+        assert child.GOVERNANCE_OFFICES["notary"]["registrar"] is True
+        assert child.ITEMS == DEFAULT.ITEMS, "tables the fixture does not name are inherited"
+        assert child.LAWMAKING_PROCEDURES == DEFAULT.LAWMAKING_PROCEDURES
+        report = child.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       AssertionError: assert (['OFFICE_WORD..._OFFICES key'] == []
+E         
+E         Left contains 2 more items, first extra item: 'OFFICE_WORDS[mayor]: not a GOVERNANCE_OFFICES key'
+E         Use -v to get more diff)
+
+tests/test_phase015_offices.py:130: AssertionError
+___________ test_the_smaller_pack_lacks_quantities_it_does_not_name ____________
+
+    def test_the_smaller_pack_lacks_quantities_it_does_not_name():
+>       assert set(L.quantities(pack="test_hamlet")) == {"energy", "hunger", "hour"}
+E       AssertionError: assert {'arousal', '..., 'hour', ...} == {'energy', 'hour', 'hunger'}
+E         
+E         Extra items in the left set:
+E         'arousal'
+E         'outlook'
+E         'spite'
+E         'day_block'
+E         'life_stage'...
+E         
+E         ...Full output truncated (11 lines hidden), use '-vv' to show
+
+tests/test_phase051_lexicon.py:260: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_disposition_seed.py::test_seed_generated_relationships_not_auto_wired_into_from_town100
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_bigville_reporting.py::test_report_covers_physical_economy_and_recorded_social_activity
+FAILED tests/test_bigville_topic_style_migrated.py::test_a_bare_from_town100_still_seeds_zero_relationships
+FAILED tests/test_bigville_topic_style_migrated.py::test_town100_workplace_relationships_are_sparse_not_all_pairs
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+FAILED tests/test_phase013a_packs.py::test_export_rerun_is_byte_identical - A...
+FAILED tests/test_phase015_offices.py::test_the_fixture_renames_two_offices_and_inherits_everything_else
+FAILED tests/test_phase051_lexicon.py::test_the_smaller_pack_lacks_quantities_it_does_not_name
+10 failed, 1319 passed, 2 skipped in 495.79s (0:08:15)

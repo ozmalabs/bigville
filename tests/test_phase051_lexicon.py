@@ -257,7 +257,12 @@ def test_a_different_pack_gives_different_words_with_no_code_change():
 
 
 def test_the_smaller_pack_lacks_quantities_it_does_not_name():
-    assert set(L.quantities(pack="test_hamlet")) == {"energy", "hunger", "hour"}
+    # Phase 058 changed this: test_hamlet now names the persona quantities too (traits, the day blocks, life
+    # stage, season, tie kinds and strengths), so its persona card can be built. It still lacks the rest.
+    assert set(L.quantities(pack="test_hamlet")) == {
+        "energy", "hunger", "hour", "arousal", "charm", "day_block", "hostility", "life_stage", "mood_bias",
+        "outlook", "relationship_kind", "relationship_strength", "role_identity", "season", "self_worth",
+        "spite", "temperament", "trust"}
     with pytest.raises(KeyError):
         L.describe("health_status", "healthy", pack="test_hamlet")
 

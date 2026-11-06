@@ -2694,7 +2694,7 @@ lexicon number or a referee-only field.
 
 ## Phase 058 -- Persona: personality, a usual day, and relationships
 
-**Status:** ready, after 051 (decision 2026-11-05: an agent should have a pre-existing personality, a
+**Status:** done (see History). Seeding stays off by default until the supervisor decides (decision 2026-11-05: an agent should have a pre-existing personality, a
 typical routine and relationships, which gives continuity). Uses Phase 009 (kin and households)
 and Phase 019 (implied history and place knowledge), both done.
 
@@ -2845,3 +2845,4 @@ provider layer's retry and backoff (Phase 055).
 | 051 Words for numbers and statuses | done | (this commit) | docs/phases/phase051/PHASE051_REPORT.md -- `domains/lexicon.py` (`describe`, `value_for`, reverse words, `resolve_verb`), 35 quantities in self and other perspectives read from the pack, source edges cross-checked, bigville and test_hamlet words differ; 179 tests; 1199 passed |
 | 050b Resolution core, the rest | done | (this commit) | docs/phases/phase050/PHASE050B_REPORT.md -- displace (push, pull, drag); spill; recipe pace, quality, yield, ruin; set_intensity; trivial and slot rules; strain recovery; 1265 passed |
 | 050 Resolution core, stage 1 | done (part) | (this commit) | docs/phases/phase050/PHASE050_REPORT.md -- pure core; VERBS, MATERIALS, RESOLUTION; attempt with damage and open; intensity, strain, wear, noise; recipe cost term inert at the gate; 1242 passed |
+| 058 Persona: personality, a usual day, relationships | done | (this commit) | docs/phases/phase058/PHASE058_REPORT.md -- `domains/persona.py` (traits in words, life sketch, usual day, persona card), `BigvilleGame.persona()`, routine bands now read from the pack (unchanged 9/17/21), `plan_ties` seeds 845 founding ties but `RELATIONSHIP_SEEDING.enabled` is false because four tests assert a town with no ties; simple-backend behaviour identical to HEAD over 60 and 200 turns; 245 phase tests; 1328 passed |

@@ -1297,13 +1297,17 @@
           "acquaintance": "an acquaintance",
           "blood_kin": "kin",
           "chosen": "chosen family",
-          "unknown": "a tie of unclear kind"
+          "unknown": "a tie of unclear kind",
+          "spouse": "your spouse",
+          "household": "a housemate",
+          "workmate": "a workmate",
+          "neighbour": "a neighbour"
         }
       },
       "temperament": {
-        "_doc": "TEMPERAMENT, -1 (sour) to 1 (sunny): FOUNDING_PERSONALITY.valence (population/founding_personality.json, cross-checked by key). The edges -0.33 and 0.33 are APPROX. Other sees a manner. read-off not yet published (Phase 058).",
+        "_doc": "TEMPERAMENT, -1 (sour) to 1 (sunny): FOUNDING_PERSONALITY.valence (population/founding_personality.json, cross-checked by key). The edges -0.33 and 0.33 are APPROX. Other sees a manner. read-off published by Phase 058 (the persona card).",
         "kind": "numeric",
-        "published": false,
+        "published": true,
         "source": "valence",
         "range": [
           -1.0,
@@ -1345,9 +1349,9 @@
         ]
       },
       "trust": {
-        "_doc": "TRUST in others, 0 to 1: FOUNDING_PERSONALITY.prior_others_trust. Edges APPROX. Self only. read-off not yet published (Phase 058).",
+        "_doc": "TRUST in others, 0 to 1: FOUNDING_PERSONALITY.prior_others_trust. Edges APPROX. Self only. read-off published by Phase 058 (the persona card).",
         "kind": "numeric",
-        "published": false,
+        "published": true,
         "source": "prior_others_trust",
         "range": [
           0.0,
@@ -1372,9 +1376,9 @@
         ]
       },
       "spite": {
-        "_doc": "SPITE, 0 to 1: FOUNDING_PERSONALITY.w_spite (mean 0.15, cited there). The 0.15 edge is that mean; 0.4 and 0.7 are APPROX. Self only. read-off not yet published (Phase 058).",
+        "_doc": "SPITE, 0 to 1: FOUNDING_PERSONALITY.w_spite (mean 0.15, cited there). The 0.15 edge is that mean; 0.4 and 0.7 are APPROX. Self only. read-off published by Phase 058 (the persona card).",
         "kind": "numeric",
-        "published": false,
+        "published": true,
         "source": "w_spite",
         "range": [
           0.0,
@@ -1404,9 +1408,9 @@
         ]
       },
       "charm": {
-        "_doc": "CHARM, 0 to 1: FOUNDING_PERSONALITY.charm_weight. Edges APPROX. An observer sees charm in manner. read-off not yet published (Phase 058).",
+        "_doc": "CHARM, 0 to 1: FOUNDING_PERSONALITY.charm_weight. Edges APPROX. An observer sees charm in manner. read-off published by Phase 058 (the persona card).",
         "kind": "numeric",
-        "published": false,
+        "published": true,
         "source": "charm_weight",
         "range": [
           0.0,
@@ -1448,9 +1452,9 @@
         ]
       },
       "outlook": {
-        "_doc": "OUTLOOK, 0 to 1: FOUNDING_PERSONALITY.prior_world_safe, how safe a resident expects the world to be. Edges APPROX. Self only. read-off not yet published (Phase 058).",
+        "_doc": "OUTLOOK, 0 to 1: FOUNDING_PERSONALITY.prior_world_safe, how safe a resident expects the world to be. Edges APPROX. Self only. read-off published by Phase 058 (the persona card).",
         "kind": "numeric",
-        "published": false,
+        "published": true,
         "source": "prior_world_safe",
         "range": [
           0.0,
@@ -1506,9 +1510,9 @@
         ]
       },
       "day_block": {
-        "_doc": "DAY BLOCK: what a resident is doing in the usual day. Phase 058 defines the blocks, so these keys are provisional. read-off not yet published.",
+        "_doc": "DAY BLOCK: what a resident is doing in the usual day. Phase 058 defines the blocks, so these keys are provisional. read-off published by Phase 058 (the persona card).",
         "kind": "status",
-        "published": false,
+        "published": true,
         "self": {
           "sleep": "asleep",
           "morning": "seeing to the morning chores",
@@ -1526,6 +1530,174 @@
           "afternoon": "at work",
           "evening": "at leisure"
         }
+      },
+      "hostility": {
+        "_doc": "HOSTILITY, 0 to 1: FOUNDING_PERSONALITY.hostile_weight (mean 0.4, sd 0.2, authored; no source, APPROX). Edges APPROX. An observer can see a quick temper. Published by Phase 058 (the persona card).",
+        "kind": "numeric",
+        "published": true,
+        "source": "hostile_weight",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "placid",
+            "phrase": "slow to anger"
+          },
+          {
+            "min": 0.33,
+            "label": "touchy",
+            "phrase": "quick to take offence"
+          },
+          {
+            "min": 0.67,
+            "label": "quick_tempered",
+            "phrase": "quick to anger"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "placid",
+            "phrase": "looks easygoing"
+          },
+          {
+            "min": 0.33,
+            "label": "touchy",
+            "phrase": "looks touchy"
+          },
+          {
+            "min": 0.67,
+            "label": "quick_tempered",
+            "phrase": "looks quick to anger"
+          }
+        ]
+      },
+      "mood_bias": {
+        "_doc": "MOOD BIAS: FOUNDING_PERSONALITY.mood_bias (mean 0.3, sd 0.2, unclipped in the founding draw; the range -1 to 1 here is a display range, APPROX). Edges APPROX. Self only: a resident knows their usual spirits. Published by Phase 058 (the persona card).",
+        "kind": "numeric",
+        "published": true,
+        "source": "mood_bias",
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": -1.0,
+            "label": "gloomy",
+            "phrase": "given to gloom"
+          },
+          {
+            "min": -0.2,
+            "label": "steady",
+            "phrase": "steady in spirits"
+          },
+          {
+            "min": 0.3,
+            "label": "cheerful",
+            "phrase": "cheerful by habit"
+          }
+        ]
+      },
+      "self_worth": {
+        "_doc": "SELF-WORTH, 0 to 1: FOUNDING_PERSONALITY.prior_self_worth (mean 0.6, sd 0.2, authored). Edges APPROX. Self only. Published by Phase 058 (the persona card).",
+        "kind": "numeric",
+        "published": true,
+        "source": "prior_self_worth",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "doubting",
+            "phrase": "doubtful of yourself"
+          },
+          {
+            "min": 0.33,
+            "label": "modest",
+            "phrase": "modest about yourself"
+          },
+          {
+            "min": 0.67,
+            "label": "assured",
+            "phrase": "sure of your worth"
+          }
+        ]
+      },
+      "arousal": {
+        "_doc": "AROUSAL, 0 to 1: FOUNDING_PERSONALITY.arousal (mean 0.4, sd 0.2, authored). Edges APPROX. Others can see it in a manner. Published by Phase 058 (the persona card).",
+        "kind": "numeric",
+        "published": true,
+        "source": "arousal",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "calm",
+            "phrase": "calm"
+          },
+          {
+            "min": 0.33,
+            "label": "lively",
+            "phrase": "lively"
+          },
+          {
+            "min": 0.67,
+            "label": "excitable",
+            "phrase": "easily excited"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "calm",
+            "phrase": "looks calm"
+          },
+          {
+            "min": 0.33,
+            "label": "lively",
+            "phrase": "looks lively"
+          },
+          {
+            "min": 0.67,
+            "label": "excitable",
+            "phrase": "looks easily excited"
+          }
+        ]
+      },
+      "role_identity": {
+        "_doc": "ROLE IDENTITY, 0 to 1: how far a resident takes their trade for part of who they are. The cast draws it from FOUNDING_JOBS role_identity_mean and sd (identity attribute, not FOUNDING_PERSONALITY; edges APPROX). Self only. Published by Phase 058 (the persona card).",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "loose",
+            "phrase": "happy to turn a hand to anything"
+          },
+          {
+            "min": 0.33,
+            "label": "loyal",
+            "phrase": "loyal to your trade"
+          },
+          {
+            "min": 0.67,
+            "label": "wedded",
+            "phrase": "wedded to your trade"
+          }
+        ]
       }
     },
     "INTENSITY_WORDS": {

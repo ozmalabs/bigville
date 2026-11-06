@@ -1,0 +1,243 @@
+................................s.......................s............... [  5%]
+.....F.................................................................. [ 10%]
+........................................................................ [ 16%]
+..............................FF........................................ [ 21%]
+........................................................................ [ 27%]
+........................................................................ [ 32%]
+...............FF......F................................................ [ 37%]
+........................................................................ [ 43%]
+........................................................................ [ 48%]
+........................................................................ [ 54%]
+........................................................................ [ 59%]
+........................................................................ [ 64%]
+........................................................................ [ 70%]
+........................................................................ [ 75%]
+........................................................................ [ 81%]
+........................................................................ [ 86%]
+........................................................................ [ 91%]
+........................................................................ [ 97%]
+...................................                                      [100%]
+=================================== FAILURES ===================================
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x723090984d10>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x723092fd04a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x723062ee2d50>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-378/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x723062ee2a80>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:49: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+_____________________ test_export_rerun_is_byte_identical ______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-378/test_export_rerun_is_byte_iden0')
+
+    def test_export_rerun_is_byte_identical(tmp_path):
+        export = _export_module()
+        out = tmp_path / "bigville"
+        assert export.main(["--pack", "bigville", "--out", str(out)]) == 0
+        source = os.path.join(P.PACKS_ROOT, "bigville")
+        names = sorted(os.path.relpath(os.path.join(d, f), source)
+                       for d, _, files in os.walk(source) for f in files)
+        assert names
+        for rel in names:
+            with open(os.path.join(source, rel), "rb") as a, open(out / rel, "rb") as b:
+>               assert a.read() == b.read(), rel
+E               AssertionError: world/resolution.json
+E               assert b'{\n  "_doc"...  }\n  }\n}\n' == b'{\n  "_doc"...  }\n  }\n}\n'
+E                 
+E                 At index 3707 diff: b'P' != b'N'
+E                 Use -v to get more diff
+
+tests/test_phase013a_packs.py:86: AssertionError
+----------------------------- Captured stdout call -----------------------------
+normalised 221 tables into /tmp/pytest-of-matt/pytest-378/test_export_rerun_is_byte_iden0/bigville
+_____________ test_exported_files_compile_back_to_the_same_tables ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-378/test_exported_files_compile_ba0')
+
+    def test_exported_files_compile_back_to_the_same_tables(tmp_path):
+        export = _export_module()
+        out = tmp_path / "copy"
+        export.main(["--pack", "bigville", "--out", str(out)])
+        copied = P.load_pack(str(out))
+        original = P.load_pack("bigville")
+        assert set(copied.tables) == set(original.tables)
+        for name in original.tables:
+>           assert P.canonical(copied[name]) == P.canonical(original[name]), name
+E           AssertionError: VERBS
+E           assert '{"smash": {"...rted here."}}' == '{"smash": {"...rted here."}}'
+E             
+E             Skipping 1132 identical leading characters in diff, use -v to show
+E             - the ground (displace primitive; not implemented yet, so refused as unsupported)."}, "push": {"primitive": "displace", "skill": "labour", "tool_verbs": {"push": 1.0, "pull": 0.4, "carry": 0.2}, "description": "Push a thing along the ground (displace primitive; not implemented yet)."}, "pull": {"primitive": "displace", "skill": "labour", "tool_verbs": {"pull": 1.0, "push": 0.4, "haul": 0.6}, "description": "Pull a thing toward you (displace primitive; not implemented yet)."}, "lift": {"primitive": "displa...
+E             
+E             ...Full output truncated (4 lines hidden), use '-vv' to show
+
+tests/test_phase013a_packs.py:97: AssertionError
+----------------------------- Captured stdout call -----------------------------
+normalised 221 tables into /tmp/pytest-of-matt/pytest-378/test_exported_files_compile_ba0/copy
+______ test_a_fresh_view_of_the_bigville_pack_equals_the_default_modules _______
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-378/test_a_fresh_view_of_the_bigvi0')
+
+    def test_a_fresh_view_of_the_bigville_pack_equals_the_default_modules(tmp_path):
+        """The view built from the pack (not the default modules) gives the same tables: a copy of
+        bigville, made as a child pack that extends it with no change."""
+        view = entities("bigville")
+        assert view is DEFAULT, "the default pack is served by the real modules"
+        child = _child_of_bigville_dir(tmp_path)
+        fresh = entities(child)
+        assert fresh is not DEFAULT
+>       assert _public_tables(fresh) == _public_tables(DEFAULT)
+E       assert {'ACTOR_DEFAU...law"]}}', ...} == {'ACTOR_DEFAU...law"]}}', ...}
+E         
+E         Omitting 206 identical items, use -vv to show
+E         Differing items:
+E         {'VERBS': '{"smash": {"primitive": "damage", "skill": "fighting", "tool_verbs": {"strike": 1.0, "cleave": 0.6, "chop":...": null, "description": "Mending is a recipe or a maintenance action: not an attempt. Refused as unsupported here."}}'} != {'VERBS': '{"smash": {"primitive": "damage", "skill": "fighting", "tool_verbs": {"strike": 1.0, "cleave": 0.6, "chop":...": null, "description": "Mending is a recipe or a maintenance action: not an attempt. Refused as unsupported here."}}'}
+E         {'RESOLUTION': '{"attempt_cap_r...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_phase013b_data_pack.py:85: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+FAILED tests/test_phase013a_packs.py::test_export_rerun_is_byte_identical - A...
+FAILED tests/test_phase013a_packs.py::test_exported_files_compile_back_to_the_same_tables
+FAILED tests/test_phase013b_data_pack.py::test_a_fresh_view_of_the_bigville_pack_equals_the_default_modules
+6 failed, 1323 passed, 2 skipped in 472.17s (0:07:52)
