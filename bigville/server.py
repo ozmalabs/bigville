@@ -13,7 +13,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from .api import create_game
 from .backends import ActorResponse
@@ -26,11 +26,25 @@ class GameService:
     """Own one game session and expose JSON-safe snapshots to a client."""
 
     def __init__(self, *, scenario: str = "town100", seed: int = 305000,
-                 player: str | None = None):
+                 player: str | None = None, mode: str = "referee"):
+        if mode not in ("agent", "referee"):
+            raise ValueError(f"mode must be 'agent' or 'referee', not {mode!r}")
+        if mode == "agent" and player is None:
+            raise ValueError("agent mode needs a player: the view is one resident's")
         self.scenario = scenario
         self.seed = seed
         self.player_name = player
+        # Phase 052. "agent": /api/state is refused and /api/turn answers with the player's agent view.
+        # "referee": the omniscient snapshot, as before.
+        self.mode = mode
         self.game = create_game(scenario=scenario, seed=seed, player=player)
+
+    def view(self, actor: str | None = None) -> dict[str, Any]:
+        """The agent view (words only) of `actor`, or of the player when no actor is named."""
+        name = actor or self.game.player
+        if name is None:
+            raise ValueError("no player: name an actor")
+        return self.game.agent_view(name, mode="agent")
 
     def state(self) -> dict[str, Any]:
         snapshot = self.game.snapshot()
@@ -57,7 +71,10 @@ class GameService:
         response = ActorResponse.from_dict(payload)
         self.game.submit_player_response(response)
         result = self.game.step()
-        result["state"] = self.state()
+        if self.mode == "agent":
+            result["view"] = self.view()
+        else:
+            result["state"] = self.state()
         return result
 
 
@@ -99,7 +116,20 @@ class BigvilleHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/health":
             self._json(HTTPStatus.OK, {"ok": True, "schema": "bigville/api/1"})
         elif parsed.path == "/api/state":
-            self._json(HTTPStatus.OK, self.service.state())
+            if self.service.mode == "agent":
+                self._json(HTTPStatus.FORBIDDEN, {
+                    "error": "the omniscient state is not served in agent mode; use /api/view"})
+            else:
+                self._json(HTTPStatus.OK, self.service.state())
+        elif parsed.path == "/api/view":
+            query = parse_qs(parsed.query)
+            actor = query.get("actor", [None])[0]
+            try:
+                self._json(HTTPStatus.OK, self.service.view(actor))
+            except KeyError as exc:
+                self._json(HTTPStatus.NOT_FOUND, {"error": str(exc)})
+            except ValueError as exc:
+                self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         elif parsed.path == "/api/report":
             self._json(HTTPStatus.OK, self.service.report())
         else:
@@ -117,7 +147,8 @@ class BigvilleHandler(BaseHTTPRequestHandler):
             elif parsed.path == "/api/reset":
                 type(self).service = GameService(scenario=self.service.scenario,
                                                  seed=self.service.seed,
-                                                 player=self.service.player_name)
+                                                 player=self.service.player_name,
+                                                 mode=self.service.mode)
                 self._json(HTTPStatus.OK, self.service.state())
             else:
                 self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
@@ -132,8 +163,8 @@ class BigvilleHandler(BaseHTTPRequestHandler):
 
 
 def serve(host: str = "127.0.0.1", port: int = 8765, *, scenario: str = "town100",
-          seed: int = 305000, player: str | None = None):
-    service = GameService(scenario=scenario, seed=seed, player=player)
+          seed: int = 305000, player: str | None = None, mode: str = "referee"):
+    service = GameService(scenario=scenario, seed=seed, player=player, mode=mode)
 
     class Handler(BigvilleHandler):
         pass
@@ -156,8 +187,13 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--scenario", default="town100")
     parser.add_argument("--seed", type=int, default=305000)
     parser.add_argument("--player", default=None)
+    parser.add_argument("--referee", action="store_true",
+                        help="serve the omniscient /api/state even when a player is named")
     args = parser.parse_args(argv)
-    serve(args.host, args.port, scenario=args.scenario, seed=args.seed, player=args.player)
+    # Agent mode is the default when a player is named: the page sees only that resident's view.
+    # Without --player the server keeps the omniscient state the Phaser client draws from.
+    mode = "agent" if args.player is not None and not args.referee else "referee"
+    serve(args.host, args.port, scenario=args.scenario, seed=args.seed, player=args.player, mode=mode)
 
 
 if __name__ == "__main__":

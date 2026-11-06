@@ -474,6 +474,12 @@ class BigvilleGame:
         from domains.persona import persona as persona_card
         return persona_card(self.characters[actor], self)
 
+    def agent_view(self, actor: str, mode: str = "agent") -> dict:
+        """The one limited interface (Phase 052): what the resident may know, in words. Mode "agent" is words
+        only; "referee" adds a `referee` block with the numbers. Built by domains/agent_view.py."""
+        from domains.agent_view import build_agent_view
+        return build_agent_view(self, actor, mode=mode)
+
     def _context(self, actor: str) -> ActorContext:
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]

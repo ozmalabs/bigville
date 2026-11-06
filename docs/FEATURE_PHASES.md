@@ -2417,7 +2417,7 @@ residents learning vocabulary.
 
 ## Phase 052 -- The agent view: the one limited interface
 
-**Status:** ready, after 051 (decision 2026-11-05: a limited user interface that only gets the
+**Status:** done (see History). Agent mode applies when `--player` is named; the Phaser client moves with Phase 053 (decision 2026-11-05: a limited user interface that only gets the
 data available to the agent).
 
 **Goal.** One payload that is everything an agent may know, built by whitelist, used by the LLM
@@ -2838,3 +2838,4 @@ provider layer's retry and backoff (Phase 055).
 | 050 Resolution core, stage 1 | done (part) | (this commit) | docs/phases/phase050/PHASE050_REPORT.md -- pure core; VERBS, MATERIALS, RESOLUTION; attempt with damage and open; intensity, strain, wear, noise; recipe cost term inert at the gate; 1242 passed |
 | 058 Persona: personality, a usual day, relationships | done | (this commit) | docs/phases/phase058/PHASE058_REPORT.md -- `domains/persona.py` (traits in words, life sketch, usual day, persona card), `BigvilleGame.persona()`, routine bands now read from the pack (unchanged 9/17/21), `plan_ties` seeds 845 founding ties but `RELATIONSHIP_SEEDING.enabled` is false because four tests assert a town with no ties; simple-backend behaviour identical to HEAD over 60 and 200 turns; 245 phase tests; 1328 passed |
 | 043 Screening, treatment, well-baby care and illness | done | (this commit) | docs/phases/phase043/PHASE043_REPORT.md -- illness switch (off); DISEASE and MEDICAL_CARE; checkup, treat, well-baby as care kinds; 1352 passed |
+| 052 The agent view | done | (this commit) | docs/phases/phase052/PHASE052_REPORT.md -- `domains/agent_view.py` builds the view from a pack whitelist (`world/agent_view.json`), fail-closed; `BigvilleGame.agent_view(actor, mode)`, `GET /api/view`, `/api/state` 403 and `/api/turn` returns the view in agent mode (on when `--player` is named, `--referee` restores); leak test over 100 residents; 26 tests; 1378 passed |

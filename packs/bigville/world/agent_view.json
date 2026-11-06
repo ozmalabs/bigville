@@ -1,0 +1,251 @@
+{
+  "_doc": "AGENT VIEW (Phase 052): the one limited interface. BigvilleGame.agent_view(actor) and GET /api/view return only what the resident could perceive and know, built by domains/agent_view.py from the whitelist below. AGENT_VIEW_WHITELIST names the keys each section may carry; the builder raises on any other key, and domains/agent_view_check.py checks the whitelist itself. AGENT_VIEW_REFEREE_ONLY names engine fields that must never appear in an agent view (the leak test checks every key and every string). AGENT_VIEW_QUANTITIES maps each view field that carries a number in words to its lexicon table (domains/lexicon.py), so a field with no words cannot be published. MAP_GLYPHS draws the map patch (terrain only, no occupants, no coordinates): a glyph and its words for each terrain name in TERRAIN_MOVEMENT, plus 'unknown' for off-map ground and 'player' for the resident's own cell. VIEW_WORDS, PRECISION_WORDS and ACTION_WORDS are the fixed phrases of the view (a person's words, not the engine's). Every phrase has no digit: a digit in a view string is a raw number. KNOWS_LIMIT caps the 'knows' list (APPROX: a display cap, not a world fact). The glyphs and the cap are model choices and are marked APPROX. Phase 053 replaces the map patch with the fogged map.",
+  "_types": {},
+  "tables": {
+    "AGENT_VIEW_WHITELIST": {
+      "_doc": "The keys each section of the agent view may carry. A section not listed here cannot be built. 'referee' is present only in referee mode.",
+      "top": [
+        "mode",
+        "actor",
+        "self",
+        "now",
+        "around",
+        "map",
+        "can",
+        "last",
+        "referee"
+      ],
+      "self": [
+        "name",
+        "job",
+        "life_stage",
+        "age",
+        "persona",
+        "body",
+        "skills",
+        "carrying",
+        "knows",
+        "places",
+        "kin",
+        "notes"
+      ],
+      "persona": [
+        "name",
+        "traits",
+        "as_others_see",
+        "life",
+        "usual_day",
+        "ties"
+      ],
+      "body": [
+        "health",
+        "health_status",
+        "energy",
+        "hunger",
+        "strength",
+        "stamina",
+        "mood",
+        "asleep",
+        "collapsed",
+        "ill"
+      ],
+      "carrying": [
+        "inventory",
+        "held",
+        "worn",
+        "load"
+      ],
+      "knows": [
+        "name",
+        "understood",
+        "gist"
+      ],
+      "places": [
+        "name",
+        "precision"
+      ],
+      "now": [
+        "time",
+        "season",
+        "weather"
+      ],
+      "around": [
+        "people",
+        "heard",
+        "seen"
+      ],
+      "person": [
+        "name",
+        "description",
+        "job",
+        "distance",
+        "looks",
+        "tie"
+      ],
+      "heard": [
+        "from",
+        "text"
+      ],
+      "seen": [
+        "who",
+        "did"
+      ],
+      "map": [
+        "level",
+        "rows",
+        "legend"
+      ],
+      "can": [
+        "handle",
+        "action",
+        "what"
+      ],
+      "last": [
+        "action",
+        "outcome",
+        "reason"
+      ],
+      "referee": [
+        "body",
+        "calendar",
+        "carry",
+        "skills",
+        "affordances",
+        "nearby"
+      ]
+    },
+    "AGENT_VIEW_REFEREE_ONLY": [
+      "score",
+      "speed_factor",
+      "exhaustion_step",
+      "terrain_movement",
+      "terrain_speed",
+      "terrain_move_time",
+      "terrain_stamina_multiplier",
+      "route_terrain",
+      "path_preferred",
+      "klass",
+      "group",
+      "coin",
+      "stats",
+      "destination",
+      "position",
+      "tie_strength",
+      "band_code",
+      "shared_bucket_count",
+      "id",
+      "fitness",
+      "demand",
+      "rho",
+      "turn",
+      "clock",
+      "stamina_reserve",
+      "health_value",
+      "str_base",
+      "sta_base",
+      "str_train",
+      "sta_train"
+    ],
+    "AGENT_VIEW_QUANTITIES": {
+      "_doc": "Each numeric or status field the view publishes in words, and its LEXICON_QUANTITIES table.",
+      "health": "health",
+      "health_status": "health_status",
+      "energy": "energy",
+      "hunger": "hunger",
+      "strength": "strength",
+      "stamina": "stamina",
+      "mood": "mood",
+      "age": "age",
+      "life_stage": "life_stage",
+      "skill": "skill",
+      "load": "load",
+      "condition": "condition",
+      "amount": "amount",
+      "distance": "distance",
+      "hour": "hour",
+      "season": "season",
+      "weather": "weather",
+      "relationship_kind": "relationship_kind",
+      "relationship_strength": "relationship_strength",
+      "temperament": "temperament"
+    },
+    "AGENT_VIEW_KNOWS_LIMIT": 60,
+    "MAP_GLYPHS": {
+      "_doc": "APPROX: the glyphs are display choices. 'word' is what the resident sees on that ground, in words.",
+      "grass": {
+        "glyph": ".",
+        "word": "open grass"
+      },
+      "path": {
+        "glyph": "=",
+        "word": "a path"
+      },
+      "floor": {
+        "glyph": "_",
+        "word": "a floor"
+      },
+      "square": {
+        "glyph": "+",
+        "word": "the square"
+      },
+      "tree": {
+        "glyph": "T",
+        "word": "a tree"
+      },
+      "water": {
+        "glyph": "~",
+        "word": "water"
+      },
+      "wall": {
+        "glyph": "#",
+        "word": "a wall"
+      },
+      "unknown": {
+        "glyph": " ",
+        "word": "unknown ground"
+      },
+      "player": {
+        "glyph": "@",
+        "word": "you"
+      }
+    },
+    "VIEW_WORDS": {
+      "_doc": "Fixed phrases of the view. {placeholders} are filled by the builder. No digits.",
+      "asleep": "you are asleep",
+      "collapsed": "you have collapsed",
+      "ill": "you are ill",
+      "carried_line": "{item} ({amount})",
+      "held_line": "{item} ({condition})",
+      "kin_line": "{term}: {who}",
+      "unknown_kin": "a relative you do not know by name",
+      "stranger": "a stranger ({job})",
+      "someone": "someone",
+      "you": "you",
+      "walk_to": "walk to the {place}",
+      "moved": "moved something you could see",
+      "done": "it happened",
+      "not_done": "it did not happen",
+      "map_level": "a patch of ground around you",
+      "understood": "you understand it",
+      "aware": "you have heard of it"
+    },
+    "PRECISION_WORDS": {
+      "_doc": "How well a place is known (Phase 019 location). 'none' places are not listed.",
+      "exact": "you know where it is",
+      "rough": "you know roughly where it is"
+    },
+    "ACTION_WORDS": {
+      "_doc": "The words for an affordance's action. An action not listed reads as its name with spaces.",
+      "move": "walk",
+      "work": "work",
+      "eat": "eat",
+      "sleep": "sleep",
+      "rest": "rest",
+      "take": "take",
+      "give": "give",
+      "transfer": "hand over",
+      "move_object": "move something",
+      "attempt": "try something"
+    }
+  }
+}

@@ -896,6 +896,38 @@
     {
       "name": "RELATIONSHIP_SEEDING",
       "file": "world/persona.json"
+    },
+    {
+      "name": "AGENT_VIEW_WHITELIST",
+      "file": "world/agent_view.json"
+    },
+    {
+      "name": "AGENT_VIEW_REFEREE_ONLY",
+      "file": "world/agent_view.json"
+    },
+    {
+      "name": "AGENT_VIEW_QUANTITIES",
+      "file": "world/agent_view.json"
+    },
+    {
+      "name": "AGENT_VIEW_KNOWS_LIMIT",
+      "file": "world/agent_view.json"
+    },
+    {
+      "name": "MAP_GLYPHS",
+      "file": "world/agent_view.json"
+    },
+    {
+      "name": "VIEW_WORDS",
+      "file": "world/agent_view.json"
+    },
+    {
+      "name": "PRECISION_WORDS",
+      "file": "world/agent_view.json"
+    },
+    {
+      "name": "ACTION_WORDS",
+      "file": "world/agent_view.json"
     }
   ]
 }

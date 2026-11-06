@@ -154,6 +154,8 @@ class ActorContext:
     affordances: list[dict[str, Any]]
     backend_state: dict[str, Any] = field(default_factory=dict)
     recipient_interfaces: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Phase 052: the resident's agent view (words only). None unless a fogged backend asks for it.
+    agent_view: dict[str, Any] | None = None
 
 
 class CognitionBackend(Protocol):
