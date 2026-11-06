@@ -2742,7 +2742,7 @@ before); full biographies for a hundred residents written by hand.
 
 ## Phase 059 -- Autopilot and momentum: the simple backend carries a resident between decisions
 
-**Status:** ready, after 031 and 058 (decision 2026-11-05: on a provider error the simple backend
+**Status:** done (see History). Human unattended autopilot deferred; the scenario's simple_profile does not yet reach an LLM resident's autopilot (decision 2026-11-05: on a provider error the simple backend
 should give some continuity, and an agent needs momentum to make this work properly).
 
 **Goal.** An LLM or human resident is the simple resident's persona and routine, plus
@@ -2839,3 +2839,4 @@ provider layer's retry and backoff (Phase 055).
 | 058 Persona: personality, a usual day, relationships | done | (this commit) | docs/phases/phase058/PHASE058_REPORT.md -- `domains/persona.py` (traits in words, life sketch, usual day, persona card), `BigvilleGame.persona()`, routine bands now read from the pack (unchanged 9/17/21), `plan_ties` seeds 845 founding ties but `RELATIONSHIP_SEEDING.enabled` is false because four tests assert a town with no ties; simple-backend behaviour identical to HEAD over 60 and 200 turns; 245 phase tests; 1328 passed |
 | 043 Screening, treatment, well-baby care and illness | done | (this commit) | docs/phases/phase043/PHASE043_REPORT.md -- illness switch (off); DISEASE and MEDICAL_CARE; checkup, treat, well-baby as care kinds; 1352 passed |
 | 052 The agent view | done | (this commit) | docs/phases/phase052/PHASE052_REPORT.md -- `domains/agent_view.py` builds the view from a pack whitelist (`world/agent_view.json`), fail-closed; `BigvilleGame.agent_view(actor, mode)`, `GET /api/view`, `/api/state` 403 and `/api/turn` returns the view in agent mode (on when `--player` is named, `--referee` restores); leak test over 100 residents; 26 tests; 1378 passed |
+| 059 Autopilot and momentum | done | (this commit) | docs/phases/phase059/PHASE059_REPORT.md -- LLMBackend owns a DeterministicBackend; `ConsultGate` and `CallBudget` (`bigville/backends/autopilot.py`), pack `AUTOPILOT` table; consults at interrupts, routine boundaries, check-ins and idle; fallback by cause (provider error, invalid output, call or spend cap) is the autopilot's action; `waiting: true` rejected, no action carries on, `wait` idles; model plans hold; would-be choice and deviation counts in `llm_report`; 34 tests; simple backend identical to HEAD over 60 turns; 1412 passed |

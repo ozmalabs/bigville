@@ -1775,6 +1775,8 @@ def check_consistency():
     check_lexicon(_WORLD_PACK.path, errors, warnings, info)
     from domains.persona_check import check_persona      # Phase 058: persona, routine, founding ties
     check_persona(_WORLD_PACK.path, errors, warnings, info)
+    from domains.autopilot_check import check_autopilot  # Phase 059: the autopilot's consult rules
+    check_autopilot(_WORLD_PACK.path, errors, warnings, info)
     from domains.agent_view_check import check_agent_view  # Phase 052: the agent view's whitelist and words
     check_agent_view(_WORLD_PACK.path, errors, warnings, info)
     stats = {

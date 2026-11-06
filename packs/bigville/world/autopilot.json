@@ -1,0 +1,50 @@
+{
+  "_doc": "AUTOPILOT (Phase 059): how often an LLM resident is consulted, and what the autopilot carries in between. Read by domains/autopilot.py (routine strength, quiet ticks, the routine's words), bigville/backends/autopilot.py (the consult gate and call budget) and domains/autopilot_check.py (the self-test). routine_strength is a weighted mean of persona traits (PERSONA_TRAITS in world/persona.json): a resident with a high value is a creature of habit, consulted less often. max_quiet_ticks is the longest span between consults (check-ins) for the least and the most habitual resident, in ticks (TIME.ticks_per_day is 96). boundary_consult_share scales how often a routine boundary prompts a consult: a boundary is consulted with chance share * (1 - routine_strength), decided by a fixed hash of the resident, day and block, so a run repeats. consult_triggers names the events that prompt a consult; a name not listed here never prompts one. hunger_threshold and energy_threshold are the crossings the autopilot watches for itself; the first equals the protocol default (bigville/backends/protocol.py, ActorContinuation) and the second the simple backend's rest threshold (cheap.py, SimplePolicy.rest_energy_threshold, 35). refusal_repeats is the number of failed attempts in a row with the same reason that prompts a consult. max_calls_per_resident_per_day caps the provider calls one resident may cause in one day. APPROX: every number here is a model choice, not measured or sourced; the trait weights are a model of habit, not a published scale.",
+  "_types": {},
+  "tables": {
+    "AUTOPILOT": {
+      "routine_strength": {
+        "terms": [
+          {
+            "trait": "role_identity",
+            "weight": 0.6,
+            "invert": false
+          },
+          {
+            "trait": "arousal",
+            "weight": 0.2,
+            "invert": true
+          },
+          {
+            "trait": "outlook",
+            "weight": 0.2,
+            "invert": false
+          }
+        ],
+        "when_no_terms": 0.5
+      },
+      "max_quiet_ticks": {
+        "least": 24,
+        "most": 192
+      },
+      "boundary_consult_share": 1.0,
+      "consult_triggers": [
+        "hunger_threshold",
+        "energy_threshold",
+        "tie_in_view",
+        "spoken_to",
+        "task_failed",
+        "refusal_repeats",
+        "world_event",
+        "routine_boundary",
+        "check_in",
+        "nothing_to_do",
+        "reaction"
+      ],
+      "hunger_threshold": 2.0,
+      "energy_threshold": 35.0,
+      "refusal_repeats": 2,
+      "max_calls_per_resident_per_day": 12
+    }
+  }
+}

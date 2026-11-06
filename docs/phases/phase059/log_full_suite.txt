@@ -1,0 +1,172 @@
+................................s.......................s............... [  4%]
+.....F.................................................................. [  9%]
+........................................................................ [ 14%]
+..............................FF........................................ [ 19%]
+........................................................................ [ 24%]
+........................................................................ [ 29%]
+........................................................................ [ 34%]
+........................................................................ [ 39%]
+........................................................................ [ 44%]
+........................................................................ [ 49%]
+........................................................................ [ 54%]
+........................................................................ [ 59%]
+........................................................................ [ 64%]
+........................................................................ [ 69%]
+........................................................................ [ 74%]
+........................................................................ [ 79%]
+........................................................................ [ 84%]
+........................................................................ [ 89%]
+........................................................................ [ 93%]
+........................................................................ [ 98%]
+................                                                         [100%]
+=================================== FAILURES ===================================
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72ed0f3e5040>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x72ed11ae84a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72ece1c67980>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-421/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72ece1c676b0>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:49: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+3 failed, 1451 passed, 2 skipped in 520.62s (0:08:40)
+EXIT 1

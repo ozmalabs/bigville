@@ -811,9 +811,16 @@ class BigvilleGame:
             reason = (self._continuation_interrupt(actor, active)
                       if active is not None else None)
             if active is not None and reason is None:
+                # Phase 059: a model plan holds this turn; an LLM resident's autopilot still sees it.
+                note_turn = getattr(backend, "note_turn", None)
+                if callable(note_turn):
+                    note_turn(self._context(actor))
                 response = self._continuation_response(active)
             else:
                 context = self._context(actor)
+                if reason is not None:
+                    # Phase 059: the interrupt reason, so a backend can tell why it is asked again.
+                    context.backend_state["continuation_interrupted"] = reason
                 response = backend.decide(context)
                 if reason is not None:
                     response.backend_state.setdefault("continuation_interrupted", reason)

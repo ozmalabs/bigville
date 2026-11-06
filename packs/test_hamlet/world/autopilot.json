@@ -1,0 +1,50 @@
+{
+  "_doc": "AUTOPILOT (Phase 059), test pack: the same shape as the bigville pack with smaller numbers, so a test town consults in a short run. Read by domains/autopilot.py, bigville/backends/autopilot.py and domains/autopilot_check.py. Every number is a test choice (APPROX), not a model of the Bigville town. routine_strength weights the traits in world/persona.json; max_quiet_ticks runs from 12 to 48 ticks; boundary_consult_share scales the routine-boundary consults; consult_triggers names the events that prompt a consult.",
+  "_types": {},
+  "tables": {
+    "AUTOPILOT": {
+      "routine_strength": {
+        "terms": [
+          {
+            "trait": "role_identity",
+            "weight": 0.6,
+            "invert": false
+          },
+          {
+            "trait": "arousal",
+            "weight": 0.2,
+            "invert": true
+          },
+          {
+            "trait": "outlook",
+            "weight": 0.2,
+            "invert": false
+          }
+        ],
+        "when_no_terms": 0.5
+      },
+      "max_quiet_ticks": {
+        "least": 12,
+        "most": 48
+      },
+      "boundary_consult_share": 1.0,
+      "consult_triggers": [
+        "hunger_threshold",
+        "energy_threshold",
+        "tie_in_view",
+        "spoken_to",
+        "task_failed",
+        "refusal_repeats",
+        "world_event",
+        "routine_boundary",
+        "check_in",
+        "nothing_to_do",
+        "reaction"
+      ],
+      "hunger_threshold": 2.0,
+      "energy_threshold": 35.0,
+      "refusal_repeats": 2,
+      "max_calls_per_resident_per_day": 6
+    }
+  }
+}

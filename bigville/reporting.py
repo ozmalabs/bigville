@@ -354,22 +354,29 @@ class SimulationReporter:
 
 
 LLM_TOTAL_KEYS = ("calls", "repairs_used", "repaired_successes", "successes", "failures",
-                  "provider_errors", "invalid_outputs")
+                  "provider_errors", "invalid_outputs", "autopilot_turns", "carry_ons", "waits", "deviations")
 
 
 def llm_report(backends: dict[str, Any]) -> dict[str, Any]:
     """Phase 031: LLM attempts, repairs, idle fallbacks and latency, per resident and in total.
 
     Reads each backend's ``llm_counts``. Backends without it (cheap, human, Ocelot) are not
-    counted. ``failures`` are the idle fallbacks, which the world records as idle turns."""
+    counted. ``decisions`` are the consults attempted (accepted replies plus fallbacks). ``failures``
+    are the fallbacks of every cause (Phase 059: the autopilot acts instead of an idle turn); the
+    causes are in ``fallbacks_by_cause``. ``autopilot_turns`` are turns the model was not consulted.
+    ``turns`` is every decision, and the ``share_*`` fields are each kind's part of it."""
     residents = {}
     for name, backend in sorted(backends.items()):
         counts = getattr(backend, "llm_counts", None)
         if counts is None:
             continue
         decisions = int(counts["successes"]) + int(counts["failures"])
+        turns = decisions + int(counts["autopilot_turns"])
         residents[name] = {**{key: int(counts[key]) for key in LLM_TOTAL_KEYS},
                            "decisions": decisions,
+                           "turns": turns,
+                           "fallbacks_by_cause": dict(counts.get("fallbacks_by_cause", {})),
+                           "consults_by_reason": dict(counts.get("consults_by_reason", {})),
                            "latency_ms_total": round(float(counts["latency_ms_total"]), 3),
                            "mean_latency_ms": round(float(counts["latency_ms_total"]) / decisions, 3)
                            if decisions else None,
@@ -377,8 +384,19 @@ def llm_report(backends: dict[str, Any]) -> dict[str, Any]:
     total = {key: sum(row[key] for row in residents.values()) for key in LLM_TOTAL_KEYS}
     latency = round(sum(row["latency_ms_total"] for row in residents.values()), 3)
     decisions = total["successes"] + total["failures"]
-    total.update({"decisions": decisions, "latency_ms_total": latency,
-                  "mean_latency_ms": round(latency / decisions, 3) if decisions else None})
+    turns = decisions + total["autopilot_turns"]
+    causes: dict[str, int] = {}
+    reasons: dict[str, int] = {}
+    for row in residents.values():
+        for cause, n in row["fallbacks_by_cause"].items():
+            causes[cause] = causes.get(cause, 0) + int(n)
+        for reason, n in row["consults_by_reason"].items():
+            reasons[reason] = reasons.get(reason, 0) + int(n)
+    share = (lambda n: round(n / turns, 4)) if turns else (lambda n: None)
+    total.update({"decisions": decisions, "turns": turns, "latency_ms_total": latency,
+                  "mean_latency_ms": round(latency / decisions, 3) if decisions else None,
+                  "fallbacks_by_cause": causes, "consults_by_reason": reasons,
+                  "share_consulted": share(decisions), "share_autopilot": share(total["autopilot_turns"])})
     return {"residents_count": len(residents), "total": total, "residents": residents}
 
 

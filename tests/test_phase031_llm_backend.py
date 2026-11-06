@@ -210,7 +210,7 @@ def test_each_structural_rule_reports_a_fixed_message(bad, message):
 
 def test_repeated_invalid_output_returns_an_idle_response_and_counts_a_failure():
     provider = ScriptedProvider(NOT_JSON)
-    backend = LLMBackend(_character(), provider)
+    backend = LLMBackend(_character(), provider, autopilot=False)
     response = backend.decide(_context())
     assert _idle(response)
     assert response.backend_state == {"llm_outcome": "idle_fallback", "llm_reason": "invalid_output"}
@@ -227,7 +227,7 @@ def test_repeated_invalid_output_returns_an_idle_response_and_counts_a_failure()
 def test_idle_fallback_in_a_game_turn_advances_the_world_and_never_raises():
     world, game = _world_game()
     provider = ScriptedProvider(NOT_JSON)
-    game.set_backend("Ben", LLMBackend(game.characters["Ben"], provider))
+    game.set_backend("Ben", LLMBackend(game.characters["Ben"], provider, autopilot=False))
     game.submit_player_response(ActorResponse())
     turn = world._turn
     result = game.step()
@@ -239,7 +239,7 @@ def test_idle_fallback_in_a_game_turn_advances_the_world_and_never_raises():
 
 def test_provider_exception_is_not_repaired_counted_and_does_not_reach_the_world():
     provider = ScriptedProvider(TimeoutError("read timed out"))
-    backend = LLMBackend(_character(), provider)
+    backend = LLMBackend(_character(), provider, autopilot=False)
     response = backend.decide(_context())
     assert _idle(response)
     assert len(provider.prompts) == 1
@@ -252,7 +252,7 @@ def test_provider_exception_is_not_repaired_counted_and_does_not_reach_the_world
 def test_provider_error_text_that_looks_like_a_credential_is_dropped():
     key = "sk-live-0123456789abcdef0123456789"
     provider = ScriptedProvider(RuntimeError(f"Authorization: Bearer {key} rejected"))
-    backend = LLMBackend(_character(), provider)
+    backend = LLMBackend(_character(), provider, autopilot=False)
     assert _idle(backend.decide(_context()))
     stored = backend.last_backend_state["last_error"]
     assert key not in stored and "Bearer" not in stored
@@ -275,7 +275,7 @@ def test_a_bug_in_the_prompt_path_is_counted_not_raised():
         def build(self, context):
             raise KeyError("broken")
 
-    backend = LLMBackend(_character(), ScriptedProvider(VALID), prompt_builder=BrokenBuilder())
+    backend = LLMBackend(_character(), ScriptedProvider(VALID), prompt_builder=BrokenBuilder(), autopilot=False)
     assert _idle(backend.decide(_context()))
     assert backend.counts["failures"] == 1
     assert backend.last_backend_state["reason"] == "internal_error"
@@ -312,6 +312,8 @@ def test_llm_report_ignores_backends_without_llm_counts():
         "residents_count": 0,
         "total": {"calls": 0, "repairs_used": 0, "repaired_successes": 0, "successes": 0,
                   "failures": 0, "provider_errors": 0, "invalid_outputs": 0, "decisions": 0,
-                  "latency_ms_total": 0.0, "mean_latency_ms": None},
+                  "autopilot_turns": 0, "carry_ons": 0, "waits": 0, "deviations": 0, "turns": 0,
+                  "fallbacks_by_cause": {}, "consults_by_reason": {}, "share_consulted": None,
+                  "share_autopilot": None, "latency_ms_total": 0.0, "mean_latency_ms": None},
         "residents": {},
     }

@@ -898,6 +898,10 @@
       "file": "world/persona.json"
     },
     {
+      "name": "AUTOPILOT",
+      "file": "world/autopilot.json"
+    },
+    {
       "name": "AGENT_VIEW_WHITELIST",
       "file": "world/agent_view.json"
     },
