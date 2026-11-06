@@ -313,6 +313,9 @@ class BigvilleWorld:
         # and it publishes the practice to the actor as a "practice" observation, so the resident's
         # backend decides what it learned. Physical skills consolidate under "practice" regardless.
         "cognitive_practice": False,
+        # Loudness is the hearing radius (Phase 028, seeds/bigville_loud_comm.json). Off, every speech act
+        # carries the flat radius from the HEARING table, whatever the speaker chose.
+        "loudness": True,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -6361,10 +6364,15 @@ class BigvilleWorld:
                 speaker, target, content, message) or {})
             content = speech_meta.pop("content", content)
         conv = conversation
+        radius = self.speech_radius(loudness)
+        deliveries = self._speech_deliveries(speaker, target, radius)
         attrs = {
-            "content": str(content), "loudness": float(loudness),
+            "content": str(content), "loudness": float(loudness), "eff_loudness": radius,
             "speaker": speaker, "target": target or "", "turn": float(self._turn),
-            "heard": 1.0 if target is None or self.actor_position(speaker) == self.actor_position(target) else 0.0,
+            # Derived summary for reporting: whether any listener heard the content. The per-listener
+            # record in `deliveries` is the source of truth.
+            "heard": 1.0 if any(d["heard"] for d in deliveries.values()) else 0.0,
+            "deliveries": deliveries,
         }
         if backend_speech:
             attrs["speech_origin"] = "backend"
@@ -6382,10 +6390,98 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(utterance, "to", self._actor(target))
             if conv is not None:
                 self.eng.add_edge_unchecked(conv, "has_utterance", utterance)
-            if self.eng.node(utterance)["attrs"]["heard"] == 1.0:
-                self.eng.add_edge_unchecked(self._actor(target), "heard", utterance)
+        for name, delivery in deliveries.items():
+            if delivery["heard"]:
+                self.eng.add_edge_unchecked(self._actor(name), "heard", utterance)
         self._utterances[len(self._utterances) + 1] = utterance
         return utterance
+
+    def speech_radius(self, loudness):
+        """The Chebyshev distance, in cells, that a speech act carries (Phase 028, seeds/bigville_loud_comm.json).
+
+        With the `loudness` subsystem on, the chosen loudness is clamped to the HEARING table's max_loudness and
+        to zero from below (a not-a-number request is taken as normal loudness). With it off, the flat radius from
+        the table applies whatever was chosen.
+        """
+        table = self.E.HEARING
+        if not self.physical_subsystems.get("loudness", True):
+            return float(table["flat_radius"])
+        chosen = float(loudness)
+        if math.isnan(chosen):
+            chosen = float(table["normal_loudness"])
+        return max(0.0, min(chosen, float(table["max_loudness"])))
+
+    def _occluder_codes(self, terrain_names):
+        from worlds.bigville_sim_world import TILE_NAME
+        names = set(terrain_names)
+        return {code for code, name in TILE_NAME.items() if name in names}
+
+    def _line_blocked(self, a, b, codes):
+        """True when a cell of `codes` lies on the grid line from a to b, endpoints excluded.
+
+        With no map, or no occluder cells, there is no occlusion data and nothing is blocked: distance alone
+        decides.
+        """
+        grid = self._map_grid
+        if not grid or not codes or a is None or b is None:
+            return False
+        from worlds.bigville_sim_world import _line
+        for x, y in _line(a[0], a[1], b[0], b[1])[1:-1]:
+            if 0 <= y < len(grid) and 0 <= x < len(grid[y]) and grid[y][x] in codes:
+                return True
+        return False
+
+    def speech_occlusion_status(self):
+        """What occlusion data the map holds for speech (Phase 028). A count of zero means distance alone."""
+        grid = self._map_grid or []
+        table = self.E.HEARING
+
+        def cells(names):
+            codes = self._occluder_codes(names)
+            return sum(1 for row in grid for tile in row if tile in codes)
+
+        return {"map_installed": bool(grid),
+                "sight_occluder_cells": cells(table["sight_occluders"]),
+                "hear_occluder_cells": cells(table["hear_occluders"])}
+
+    def _speech_deliveries(self, speaker, target, radius):
+        """Who hears and who witnesses one speech act (Phase 028), as plain per-listener records.
+
+        A listener is any other living resident. Content reaches the target of a targeted utterance, or every
+        listener for a broadcast, when the Chebyshev distance is at most `radius` and no hear occluder lies
+        between them. A resident witnesses the act when the distance is at most the table's sight_range and no
+        sight occluder lies between; a witness also sees the target when the target is in view. Only residents
+        who heard or witnessed get an entry: {"heard": 0.0|1.0, "seen": 0.0|1.0, "target_seen": 0.0|1.0}.
+        """
+        speaker_pos = self.actor_position(speaker)
+        if speaker_pos is None:
+            return {}
+        table = self.E.HEARING
+        sight_range = int(table["sight_range"])
+        sight_codes = self._occluder_codes(table["sight_occluders"])
+        hear_codes = self._occluder_codes(table["hear_occluders"])
+        target_pos = self.actor_position(target) if target is not None else None
+        deliveries = {}
+        for name in self._actors:
+            if name == speaker or not self.is_alive(name):
+                continue
+            pos = self.actor_position(name)
+            if pos is None:
+                continue
+            dist = max(abs(pos[0] - speaker_pos[0]), abs(pos[1] - speaker_pos[1]))
+            heard = ((target is None or name == target) and dist <= radius
+                     and not self._line_blocked(speaker_pos, pos, hear_codes))
+            seen = dist <= sight_range and not self._line_blocked(speaker_pos, pos, sight_codes)
+            if not (heard or seen):
+                continue
+            entry = {"heard": 1.0 if heard else 0.0, "seen": 1.0 if seen else 0.0}
+            if seen and target_pos is not None and name != target:
+                target_dist = max(abs(target_pos[0] - pos[0]), abs(target_pos[1] - pos[1]))
+                entry["target_seen"] = 1.0 if (
+                    target_dist <= sight_range
+                    and not self._line_blocked(pos, target_pos, sight_codes)) else 0.0
+            deliveries[str(name)] = entry
+        return deliveries
 
     def heard_utterances(self, actor, *, limit=20):
         """Return recent speech delivered to ``actor`` as cognition input.
@@ -6399,8 +6495,8 @@ class BigvilleWorld:
         for node in self._utterances.values():
             attrs = self.eng.node(node)["attrs"]
             target = str(attrs.get("target", ""))
-            heard = bool(float(attrs.get("heard", 0.0)))
-            if not heard or (target not in {"", str(actor)}):
+            mine = (attrs.get("deliveries") or {}).get(str(actor), {})
+            if not float(mine.get("heard", 0.0)) or (target not in {"", str(actor)}):
                 continue
             records.append({
                 "speaker": attrs.get("speaker", ""),
@@ -7520,8 +7616,7 @@ class BigvilleWorld:
         """
         self._actor(speaker)
         if (target not in self._actors or target == speaker
-                or not self.is_alive(target)
-                or self.actor_position(speaker) != self.actor_position(target)):
+                or not self.is_alive(target)):
             return None
         share_salience, share_event = self._speech_share_event(speaker, target)
         attrs = self.eng.node(self._actors[speaker])["attrs"]
@@ -7561,8 +7656,7 @@ class BigvilleWorld:
             return None
         target = proposal.get("target")
         if (target not in self._actors or not self.is_alive(speaker)
-                or not self.is_alive(target)
-                or self.actor_position(speaker) != self.actor_position(target)):
+                or not self.is_alive(target)):
             return None
         utterance = self.speak(
             speaker, target, str(proposal["text"]),

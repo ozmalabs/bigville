@@ -511,6 +511,44 @@ def _check_handovers(errors, warnings, info):
         errors.append(f"HANDOVER_LOG_LIMIT: must be a whole number of at least 1, not {HANDOVER_LOG_LIMIT!r}")
 
 
+def _check_hearing(errors, warnings, info):
+    """Phase 028: the speech and sight figures (packs/*/world/hearing.json). Radii are cells and at least 0;
+    the normal loudness is the floor of a chosen loudness and sits within the clamp; the sight range is a
+    whole number of cells at least 1; occluders are terrain names the map has. A radius of 0 is allowed (touch
+    only), a sight range of 0 is not (nobody could witness)."""
+    h = HEARING
+    required = {"flat_radius", "normal_loudness", "max_loudness", "sight_range", "sight_occluders",
+                "hear_occluders"}
+    missing = sorted(required - set(h))
+    if missing:
+        errors.append(f"HEARING: missing {missing}")
+        return
+    for name in ("flat_radius", "normal_loudness", "max_loudness"):
+        value = h[name]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            errors.append(f"HEARING[{name}]: a non-negative number, not {value!r}")
+    numeric = all(isinstance(h[n], (int, float)) and not isinstance(h[n], bool)
+                  for n in ("normal_loudness", "max_loudness"))
+    if numeric and h["normal_loudness"] > h["max_loudness"]:
+        errors.append(f"HEARING: normal_loudness {h['normal_loudness']} is above max_loudness {h['max_loudness']}")
+    sight = h["sight_range"]
+    if isinstance(sight, bool) or not isinstance(sight, int) or sight < 1:
+        errors.append(f"HEARING[sight_range]: a whole number of cells of at least 1, not {sight!r}")
+    terrain_names = set(TERRAIN_MOVEMENT)
+    for channel in ("sight_occluders", "hear_occluders"):
+        names = h[channel]
+        if not isinstance(names, list):
+            errors.append(f"HEARING[{channel}]: a list of terrain names")
+            continue
+        for name in names:
+            if name not in terrain_names:
+                errors.append(f"HEARING[{channel}]: {name!r} is not a terrain name in TERRAIN_MOVEMENT")
+    if not h["sight_occluders"] and not h["hear_occluders"]:
+        warnings.append("HEARING: no occluders on either channel; occlusion is off everywhere")
+    info.append(f"HEARING: sight {sight} cells, hearing flat {h['flat_radius']}, "
+                f"loudness {h['normal_loudness']} to {h['max_loudness']}")
+
+
 def _check_exhaustion(errors, warnings, info):
     """Phase 024: the EXHAUSTION table. Reserve bands fall from e_high to e_low, their moves per tick fall
     from the full budget to zero, and the collapse, sleep and wake thresholds keep their order: a collapse
@@ -1354,6 +1392,7 @@ def check_consistency():
     _check_prompt_instructions(errors, warnings, info)
     _check_refusal_reasons(errors, warnings, info)
     _check_handovers(errors, warnings, info)
+    _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_food_grading(errors, warnings, info)
     _check_generated_seeds(errors)

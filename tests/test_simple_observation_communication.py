@@ -61,8 +61,9 @@ def test_simple_speech_is_range_gated_then_recipient_policy_responds():
     world, game, _speaker, listener, observer = _game()
     starting_inventories = {name: world.inventory(name) for name in ("Ada", "Ben", "Cy")}
 
-    # Adjacent residents are not co-located; this world currently gates speech
-    # delivery on occupying the same cell. The event exists but is not heard.
+    # Normal speech carries one cell (HEARING table, loudness 1.0). Ben starts two cells from Ada, so the
+    # utterance is not heard. Cy, adjacent to Ada, is not the target and hears nothing.
+    world.move_actor("Ben", (3, 1))
     game.step()
     assert world.heard_utterances("Ben") == []
     assert listener.responses == 0

@@ -186,6 +186,10 @@
       "file": "world/handovers.json"
     },
     {
+      "name": "HEARING",
+      "file": "world/hearing.json"
+    },
+    {
       "name": "FREE_ACTIONS",
       "file": "world/free_actions.json"
     },

@@ -1,0 +1,20 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nHEARING AND SIGHT (Phase 028): loudness is the hearing radius, and hearing is not witnessing\n---------------------------------------------------------------------------\nThe same physical table as packs/bigville/world/hearing.json, so the standalone test pack keeps the\nspeech rules. Seed: seeds/bigville_loud_comm.json. Distances are Chebyshev grid cells. Witnesses get the\nact (and the target, if in view), never the content. See the bigville pack for the sources of each figure:\nsight_range 7 (seed lo_observe_act), flat_radius 11 (APPROX; worlds/bigville_sim_world.py HEAR_RANGE),\nnormal_loudness 1.0 and max_loudness 100.0 (bigville/backends/speech.py), occluders wall and tree (the sim\nworld's OCCLUDERS).",
+  "_types": {},
+  "tables": {
+    "HEARING": {
+      "flat_radius": 11,
+      "normal_loudness": 1.0,
+      "max_loudness": 100.0,
+      "sight_range": 7,
+      "sight_occluders": [
+        "wall",
+        "tree"
+      ],
+      "hear_occluders": [
+        "wall",
+        "tree"
+      ]
+    }
+  }
+}

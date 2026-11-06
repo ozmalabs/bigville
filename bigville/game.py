@@ -600,6 +600,28 @@ class BigvilleGame:
                     "expires_turn": turn,
                 })
 
+    def _record_speech_witnesses(self, actor, first_utterance):
+        """Publish one speech act to the residents who witnessed it (Phase 028).
+
+        Utterances from `first_utterance` on (the position in the world's utterance log before this
+        resident's response was applied) are this resident's speech. Each resident who saw the speaker gets
+        a physical event naming the speaker and, if that resident could see the target, the target. No content
+        goes into it. A resident who heard the speech but did not see the speaker gets no event. The speaker
+        gets no event either: the speaker knows what was said, and the delivery records of others are not the
+        speaker's to see.
+        """
+        turn = int(self.world._turn)
+        for node in list(self.world._utterances.values())[first_utterance:]:
+            attrs = self.world.eng.node(node)["attrs"]
+            target = str(attrs.get("target", ""))
+            for observer, delivery in dict(attrs.get("deliveries") or {}).items():
+                if observer == actor or not float(delivery.get("seen", 0.0)):
+                    continue
+                event = {"actor": actor, "action": "spoke", "turn": turn, "expires_turn": turn}
+                if target and float(delivery.get("target_seen", 0.0)):
+                    event["target"] = target
+                self._physical_events.setdefault(observer, []).append(event)
+
     def _adapt_speech(self, speaker, target, content, message=None, raw_data=None,
                       backend_owned=False):
         """Mediate delivery without rewriting backend-owned speech.
@@ -787,6 +809,7 @@ class BigvilleGame:
         self.last_order = order
         for actor in order:
             response = responses[actor]
+            utterances_before = len(self.world._utterances)
             # Avoid actor-by-actor world scans in the common object-free
             # town. With objects present, only the actor and residents
             # close enough to witness this action need endpoint snapshots.
@@ -801,6 +824,7 @@ class BigvilleGame:
                         before[name] = self._visible_object_snapshot(name)
             result = self._apply_response_contained(actor, response)
             self.last_results[actor] = result
+            self._record_speech_witnesses(actor, utterances_before)
             if result and before:
                 after = {name: self._visible_object_snapshot(name) for name in before}
                 self._record_physical_changes(actor, before, after, int(self.world._turn))

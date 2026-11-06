@@ -1087,12 +1087,7 @@ every food item has a value; the balance report's food line is in the new units.
 
 ## Phase 028 -- Loudness is hearing range; hearing is not witnessing
 
-**Status:** ready. Spec: `seeds/bigville_loud_comm.json` (a resident seed, so only Ocelot minds
-run it; the Python world has no counterpart). Seed: loudness IS the Chebyshev hearing radius;
-`eff_loudness` is the speaker's chosen loudness clamped to `max_loudness`; content is delivered
-iff `eff_loudness >= dist` and the path is not hear-occluded (`lo_deliver_content`); any witness
-with sight of the speaker (in range, not sight-occluded) observes that a speech act happened,
-whatever the content (`lo_observe_act`, a `CommAct`).
+**Status:** done. Speech content reaches listeners within Chebyshev distance `eff_loudness` (the speaker's loudness clamped to `max_loudness` from the new `HEARING` table) on an unoccluded line; residents with sight of the speaker get a content-free `spoke` event. Delivery is recorded per listener (`deliveries`; `heard` kept as a derived summary). `loudness` switch off gives a flat radius. Map walls and trees occlude both sound and sight (no sound-only tile exists); buildings do not occlude. See docs/phases/phase028/PHASE028_REPORT.md.
 
 **Goal.** A broadcast reaches every resident at any distance, `loudness` is never read, and a
 targeted utterance needs the same cell. Port the seed's physics into the world:
@@ -1847,3 +1842,4 @@ rearing priors (the backend's); carrying infants.
 | 025 Fair turn order | done | (this commit) | docs/phases/phase025/PHASE025_REPORT.md -- per-turn seeded permutation of response order; last_order; 879 passed |
 | 026 Observable handovers | done | (this commit) | docs/phases/phase026/PHASE026_REPORT.md -- handover facts replace Transaction; economy.handovers; _transactions compat count; 894 passed |
 | 027 Food value and graded eating | done | (this commit) | docs/phases/phase027/PHASE027_REPORT.md -- feeds x freshness; spoiled stock kept; illness_risk published; 907 passed |
+| 028 Hearing range and witnessing | done | (this commit) | docs/phases/phase028/PHASE028_REPORT.md -- loudness is Chebyshev hearing radius; sight witnesses the act; per-listener deliveries; 921 passed |

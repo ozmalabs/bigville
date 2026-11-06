@@ -1,0 +1,7 @@
+seed=305000 turns=200 loudness=off seconds=329.5 residents=100
+utterances=1350 targeted=1350 broadcast=0
+targeted content delivered=1350 (1.00)
+utterances with at least one listener hearing=1350
+mean hearers per utterance=1.00
+mean witnesses per utterance=74.09
+speech status={'map_installed': True, 'sight_occluder_cells': 91, 'hear_occluder_cells': 91}

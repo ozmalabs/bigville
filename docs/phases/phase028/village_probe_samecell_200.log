@@ -1,0 +1,3 @@
+seed=305000 turns=200 seconds=318.7
+speak calls with a target at speech time: {'targeted': 1350, 'same_cell': 1168, 'adjacent': 133, 'beyond_one': 49, 'unplaced': 0}
+new rule: targeted content delivered=1301 of 1350 utterances

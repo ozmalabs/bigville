@@ -1,0 +1,20 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nHEARING AND SIGHT (Phase 028): loudness is the hearing radius, and hearing is not witnessing\n---------------------------------------------------------------------------\nSeed: seeds/bigville_loud_comm.json (R19). A speech act has a loudness the speaker chooses, and the\nworld clamps it to max_loudness. The effective loudness is the Chebyshev radius, in cells, within which\ncontent is delivered. Content reaches the target of a targeted utterance, or every living resident for a\nbroadcast, when the distance is at most that radius and no occluder lies between them on the grid line.\nAny living resident with sight of the speaker (within sight_range, and no sight occluder between them)\nobserves that a speech act happened, and the target too if the target is in view. Witnesses get the act\nand never the content.\n\nUnits: distances are grid cells (Chebyshev), not metres. The seed gives no cell size, so no loudness\nfigure here is a decibel or a metre. Loudness values are relative to normal speech, which is 1.0.\n\nFIELDS. flat_radius: the hearing radius used when the `loudness` physical subsystem is off (the seed's\nloudness ablation); with the switch on it is not used. normal_loudness: the loudness of ordinary speech, and\nthe floor for a non-finite request. max_loudness: the clamp on any chosen loudness. sight_range: the\nChebyshev sight radius for witnessing. sight_occluders and hear_occluders: tile names (the map's terrain\nnames, see TERRAIN_MOVEMENT) that block the grid line for that channel.\n\nSOURCES. sight_range 7 is the literal in the seed's lo_observe_act (`Gte 7.0 dist`). flat_radius 11 is\nworlds/bigville_sim_world.py HEAR_RANGE, the repository's own hearing range for its grid simulation; it is\nnot a measured figure and is marked APPROX. normal_loudness 1.0 is the default base_loudness of\nworlds/bigville_speech_world.py utter() and the 1.0 floor in bigville/backends/speech.py. max_loudness\n100.0 is the cap bigville/backends/speech.py applies (min(100.0, ...)) and the default max_loudness of\nworlds/bigville_speech_world.py. Both occluder lists are the sim world's OCCLUDERS (wall and tree), which\nthat file says block line of sight and muffle hearing. The seed's own occluder flags come from an adapter\nnot kept in this repository, so the split between sight and hearing occluders is a choice; APPROX.\n\nThe seed does not say whether a wall that muffles hearing also blocks sight. With the same occluder list for\nboth channels, a wall that stops content also stops the witnessed act. Tests show the split by setting\ndifferent lists; the map has no tile that stops sound and passes light.",
+  "_types": {},
+  "tables": {
+    "HEARING": {
+      "flat_radius": 11,
+      "normal_loudness": 1.0,
+      "max_loudness": 100.0,
+      "sight_range": 7,
+      "sight_occluders": [
+        "wall",
+        "tree"
+      ],
+      "hear_occluders": [
+        "wall",
+        "tree"
+      ]
+    }
+  }
+}
