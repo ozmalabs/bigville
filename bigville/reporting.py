@@ -159,6 +159,11 @@ class SimulationReporter:
         exact["sample_estimate"] = self._sample(rows, sample_size, seed)
         return exact
 
+    def deaths_by_cause(self) -> dict[str, int]:
+        """Phase 037: the deaths so far, counted by the cause recorded at each death (age, illness, injury,
+        starvation, exhaustion, violence, intoxication). Reads the world's death record only."""
+        return _counts([death["cause"] for death in self.world._deaths])
+
     def economy(self) -> dict[str, Any]:
         E = world_entities(self.world)
         stock = {}

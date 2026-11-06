@@ -87,22 +87,22 @@ def test_a_low_health_body_has_lower_effective_strength_and_stamina():
     body = w._bodies["Ada"]
     w.eng.set_attr(body, "str_train", 0.2)
     w.eng.set_attr(body, "sta_train", 0.1)
-    w.eng.set_attr(body, "health", 0.5)
+    w.eng.set_attr(w._actors["Ada"], "health_value", 0.5)   # Phase 037: health is the actor's health_value
     w._run()
     assert w.strength("Ada") == pytest.approx((1.0 + 0.2) * 0.5, abs=TOL)
     assert w.effective_stamina("Ada") == pytest.approx((1.0 + 0.1) * 0.5, abs=TOL)
     assert w.body_state("Ada")["stamina"] == pytest.approx(0.55, abs=1e-4)
     assert w.stamina_reserve("Ada") <= w.effective_stamina("Ada") + TOL, "the reserve cannot exceed the capacity"
-    w.eng.set_attr(body, "health", 1.0)
+    w.eng.set_attr(w._actors["Ada"], "health_value", 1.0)
     w._run()
     assert w.strength("Ada") == pytest.approx(1.2, abs=TOL), "health back to full restores the potential"
 
 
 def test_a_low_health_smith_cannot_forge_a_knife_until_healthy():
     w = _smith()
-    w.eng.set_attr(w._bodies["Smith"], "health", 0.5)     # effective strength 0.5 is below the knife's 0.9
+    w.eng.set_attr(w._actors["Smith"], "health_value", 0.5)     # effective strength 0.5 is below the knife's 0.9
     assert not w.do("Smith", "forge_knife")
-    w.eng.set_attr(w._bodies["Smith"], "health", 1.0)
+    w.eng.set_attr(w._actors["Smith"], "health_value", 1.0)
     assert w.do("Smith", "forge_knife")
 
 

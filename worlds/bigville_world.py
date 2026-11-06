@@ -1299,7 +1299,8 @@ class BigvilleWorld:
                     hunger = float(aa.get("hunger", 0.0)) + 1.0
                     self.eng.set_attr(node, "hunger", hunger)
                     if hunger > float(aa.get("starve_limit", self.E.CARE["starve_limit"])):
-                        self.eng.set_attr(node, "alive", 0.0)
+                        # Phase 037: starvation is acute harm each period past the limit (HEALTH.starve_harm).
+                        self.harm(actor, float(self.E.HEALTH["starve_harm"]), "starvation")
                 self._collect_night_soil()
                 self._burn_household_heat()
                 self._advance_animal_life(fed)
@@ -3968,13 +3969,19 @@ class BigvilleWorld:
 
     def _record_meal(self, actor, kind, value, freshness):
         """Publish what one meal did to the eater: the hunger it relieved, its pleasantness and its illness
-        risk. Pleasantness is the freshness until taste exists (Phase 035). The illness risk is a plain value
-        for Phase 037's health routes to turn into illness; nothing here harms the body."""
+        risk. Pleasantness is the freshness until taste exists (Phase 035). Phase 037: the illness risk is rolled
+        once per meal (a stateless draw keyed on the seed, the eater, the period and the meal count); a meal that
+        makes its eater ill is acute harm (HEALTH.illness_harm, cause `illness`)."""
         node = self._actor(actor)
         self.eng.set_attr(node, "last_meal_value", float(value))
         self.eng.set_attr(node, "last_meal_freshness", float(freshness))
         self.eng.set_attr(node, "meal_pleasantness", float(freshness))
-        self.eng.set_attr(node, "illness_risk", float(self.E.meal_illness_risk(kind, freshness)))
+        risk = float(self.E.meal_illness_risk(kind, freshness))
+        self.eng.set_attr(node, "illness_risk", risk)
+        meals = int(float(self.eng.node(node)["attrs"].get("meal_count", 0.0))) + 1
+        self.eng.set_attr(node, "meal_count", float(meals))
+        if risk > 0.0 and self._stable_draw(actor, self._town_period(), kind, meals) < risk:
+            self.harm(actor, float(self.E.HEALTH["illness_harm"]), "illness")
 
     def last_meal(self, actor):
         """The most recent meal's read-offs: the hunger it relieved, its freshness, its pleasantness, and the
@@ -6318,6 +6325,8 @@ class BigvilleWorld:
                                         "hunger": 0.0, "hunger_epoch": 0.0, "alive": 1.0,
                                         "starve_limit": float(self.E.CARE["starve_limit"]),
                                         "death_event": -1.0, "death_recorded": 0.0,
+                                        # Phase 037: the exhaustion run (collapses without a full rest)
+                                        "collapse_run": 0.0, "last_collapse_period": -1.0,
                                         "eat_armed": 0.0,
                                         "appr_epoch": 0.0,   # apprenticeship: skill grows under a master
                                         # reading/writing + general capability (class-graded; raised at school)
@@ -6330,7 +6339,7 @@ class BigvilleWorld:
         self._actors[name] = a
         self._alive_snapshot[name] = True
         body = self.eng.add_node("Body", {
-            "health": float(defaults["body"]["health"]), "mood": float(defaults["body"]["mood"]), "satiety": 0.0,
+            "mood": float(defaults["body"]["mood"]), "satiety": 0.0,
             "last_food": -1.0, "food_run": 0.0,
             "str_base": float(defaults["body"]["str_base"]), "sta_base": float(defaults["body"]["sta_base"]),
             "size": float(defaults["body"]["size"]),
@@ -6754,15 +6763,69 @@ class BigvilleWorld:
         return list(self.eng.neighbours(self._actor(actor), "received_request"))
 
     # ---------------------------------------------------- health, life history, and ecology
+    # Phase 037: one health variable (the actor's health_value, 0 to 1). Every route down goes through harm()
+    # (or the daily age decline), every route up through _heal(), and death is health at or below 0, recorded
+    # with the cause tag. The routes, their figures and the fragility by life stage are the HEALTH table.
+    def health(self, actor):
+        """The one health variable (health_value): 1 is fully healthy, 0 is dead."""
+        return float(self.eng.node(self._actor(actor))["attrs"].get("health_value", self.E.HEALTH["max_health"]))
+
+    def harm(self, actor, amount, cause):
+        """Acute harm: lower the resident's health by `amount` times their life stage's fragility (HEALTH), and
+        tag the cause. Health at or below 0 is death by `cause` (record_death). Returns False when the resident
+        is dead. `cause` must be one of HEALTH.causes."""
+        if str(cause) not in self.E.HEALTH["causes"]:
+            raise ValueError(f"harm: unknown cause {cause!r}; HEALTH.causes are {list(self.E.HEALTH['causes'])}")
+        stage = str(self.eng.node(self._actor(actor))["attrs"].get("life_stage", "adult"))
+        return self._drop_health(actor, float(amount) * float(self.E.HEALTH["fragility"].get(stage, 1.0)), cause)
+
+    def _drop_health(self, actor, drop, cause):
+        if not self.is_alive(actor):
+            return False
+        node = self._actor(actor)
+        health = max(0.0, self.health(actor) - max(0.0, float(drop)))
+        self.eng.set_attr(node, "health_value", health)
+        self.eng.set_attr(node, "last_cause", str(cause))
+        if health <= 0.0:
+            self.record_death(actor, cause=str(cause))
+        return True
+
+    def _heal(self, actor, gain):
+        """Recovery by care, rest or treatment: health rises by `gain`, capped at HEALTH.max_health."""
+        if not self.is_alive(actor):
+            return
+        cap = float(self.E.HEALTH["max_health"])
+        self.eng.set_attr(self._actor(actor), "health_value", min(cap, self.health(actor) + max(0.0, float(gain))))
+
+    def _stable_draw(self, *parts):
+        """A stateless draw in [0, 1) keyed on the world seed and `parts` (as _burial_roll; nothing is stored)."""
+        return random.Random(":".join([str(self._burial_seed), *(str(p) for p in parts)])).random()
+
+    def _exhaustion_collapse(self, actor):
+        """Phase 037's exhaustion route. A collapse extends the run of collapses while the previous collapse was
+        within exhaustion_window_periods days; a full rest ends the run (see _resolve_sleep). The first collapse
+        in a run is free. Each later one in the run is acute harm, exhaustion_harm, from cause `exhaustion`."""
+        h = self.E.HEALTH
+        node = self._actor(actor)
+        attrs = self.eng.node(node)["attrs"]
+        now = self._town_period()
+        last = float(attrs.get("last_collapse_period", -1.0))
+        in_window = last >= 0.0 and now - last <= float(h["exhaustion_window_periods"])
+        run = (float(attrs.get("collapse_run", 0.0)) if in_window else 0.0) + 1.0
+        self.eng.set_attr(node, "collapse_run", run)
+        self.eng.set_attr(node, "last_collapse_period", now)
+        if run > float(h["exhaustion_free_collapses"]):
+            self.harm(actor, float(h["exhaustion_harm"]), "exhaustion")
+
     def injure(self, actor, *, severity=None, cause="accident"):
+        """A blow or fall (cause text is for the event). The injury is the health drop from `severity`, tagged
+        `injury`, and it can kill."""
         if severity is None:
             severity = self.E.CARE["injury_severity"]
         node = self._actors[actor]
-        a = self.eng.node(node)["attrs"]
-        health = max(0.0, float(a.get("health_value", 1.0)) - float(severity))
-        self.eng.set_attr(node, "health_value", health)
         self.eng.set_attr(node, "health", "injured")
         self.eng.set_attr(node, "injury", float(severity))
+        self.harm(actor, float(severity), "injury")
         event = self.create_event("injury", subject=actor, detail=f"{actor} was injured ({cause}).", severity=severity)
         self.eng.add_edge_unchecked(node, "has_illness", event)
         return event
@@ -6788,8 +6851,7 @@ class BigvilleWorld:
         self.eng.set_attr(node, "health", "healthy")
         self.eng.set_attr(node, "disease", "")
         self.eng.set_attr(node, "injury", 0.0)
-        self.eng.set_attr(node, "health_value", min(1.0, float(self.eng.node(node)["attrs"].get(
-            "health_value", self.E.CARE["treat_health_base"])) + float(self.E.CARE["treat_health_gain"])))
+        self._heal(patient, float(self.E.CARE["treat_health_gain"]))
         self.eng.add_edge_unchecked(self._actors[doctor], "treated", node)
         return True
 
@@ -6811,8 +6873,7 @@ class BigvilleWorld:
         care = self.E.CARE
         self.eng.set_attr(self._actors[patient], "injury",
                           max(0.0, float(attrs.get("injury", 0.0)) - float(care["care_injury_relief"])))
-        self.eng.set_attr(self._actors[patient], "health_value",
-                          min(1.0, float(attrs.get("health_value", 1.0)) + float(care["care_health_gain"])))
+        self._heal(patient, float(care["care_health_gain"]))
         if float(self.eng.node(self._actors[patient])["attrs"].get("injury", 0.0)) <= 0.0:
             self.eng.set_attr(self._actors[patient], "health", "healthy")
         self.eng.add_edge_unchecked(self._actors[caregiver], "cared_for", self._actors[patient])
@@ -6857,6 +6918,7 @@ class BigvilleWorld:
             return attrs.get("death_event", -1.0)
         event = self.create_event("death", subject=actor,
                                   detail=f"{actor} died ({cause}).", public=False)
+        self.eng.set_attr(node, "death_cause", str(cause))
         self.eng.set_attr(node, "death_event", float(event.value))
         self.eng.set_attr(node, "death_recorded", 1.0)
         self._deaths.append({"actor": actor, "day": self.calendar()["day"],
@@ -7038,21 +7100,26 @@ class BigvilleWorld:
                 continue
             age = float(a.get("age", self.E.ACTOR_DEFAULTS["age"])) + 1.0 / float(self.E.TIME["days_per_year"])
             self.eng.set_attr(node, "age", age)
+            # Phase 037: chronic decline by life stage (HEALTH.age_rate, per year, spread over the days).
+            rate = float(self.E.HEALTH["age_rate"].get(str(a.get("life_stage", "adult")), 0.0))
+            if rate > 0.0:
+                self._drop_health(name, rate / float(self.E.TIME["days_per_year"]), "age")
+                if not self.is_alive(name):
+                    continue
             injury = float(a.get("injury", 0.0))
             care = self.E.CARE
             if injury > 0.0:
                 self.eng.set_attr(node, "injury", max(0.0, injury - float(care["daily_injury_recovery"])))
-                self.eng.set_attr(node, "health_value",
-                                  min(1.0, float(a.get("health_value", 1.0)) + float(care["daily_health_recovery"])))
+                self._heal(name, float(care["daily_health_recovery"]))
                 if injury <= float(care["recovered_injury_below"]):
                     self.eng.set_attr(node, "health", "healthy")
             if float(a.get("hunger", 0.0)) >= float(care["malnourished_hunger"]):
                 self.eng.set_attr(node, "health", "malnourished")
             if a.get("disease"):
-                health = max(0.0, float(a.get("health_value", 1.0)) - float(care["disease_health_loss"]))
-                self.eng.set_attr(node, "health_value", health)
-                if health <= 0.0:
-                    self.record_death(name, cause=str(a.get("disease")))
+                # A disease is an ongoing illness route: its daily loss is acute harm tagged illness.
+                self.harm(name, float(care["disease_health_loss"]), "illness")
+                if not self.is_alive(name):
+                    continue
             # An unburied body in the household is a health risk: an onset is an ordinary diagnose() of
             # the burial condition (BURIAL.condition), which the disease rule above then runs.
             chance = self.burial_risk(a.get("household"))
@@ -9113,8 +9180,7 @@ class BigvilleWorld:
 
     def _effective_body_stat(self, actor, base_key, train_key):
         ba = self.eng.node(self._bodies[actor])["attrs"]
-        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)),
-                                     float(ba.get("health", 1.0)))
+        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor))
 
     def _train_from_effort(self, body, event):
         """Apply the training rules to one resolved Effort: each stat the effort uses gains train_gain once,
@@ -9584,16 +9650,26 @@ class BigvilleWorld:
                 reserve = float(ba.get("stamina_reserve", 1.0))
                 code = self._sleep_code(actor)
                 if code is None and reserve < float(ex["e_collapse"]):
-                    self._lie_down(actor, collapsed=True)
+                    # Phase 037: the collapse is the exhaustion route; the sleep follows only if the resident lives.
+                    self._exhaustion_collapse(actor)
+                    if self.is_alive(actor):
+                        self._lie_down(actor, collapsed=True)
                     code = "collapsed"
                 elif code is not None and self._job_tick_armed:
                     collapsed = code == "collapsed"
                     gain = float(ex["collapse_gain" if collapsed else "rest_gain"])
-                    cap = float(ex["collapse_cap" if collapsed else "rest_cap"])
+                    # Phase 037: a body holds no more stamina than its health-scaled capacity (Phase 032), so a sleeper
+                    # wakes at the lower of the cap and that capacity. A healthy body (capacity >= 1) is unchanged.
+                    cap = min(float(ex["collapse_cap" if collapsed else "rest_cap"]), self.effective_stamina(actor))
                     regained = max(reserve, min(cap, reserve + gain))
                     if regained != reserve:
                         self.eng.set_attr(body, "stamina_reserve", regained)
+                    if not collapsed:
+                        # Phase 037: ordinary sleep restores health a tick at a time (HEALTH.rest_health_gain).
+                        self._heal(actor, float(self.E.HEALTH["rest_health_gain"]))
                     if regained >= cap:
+                        if not collapsed:
+                            self.eng.set_attr(node, "collapse_run", 0.0)     # a full rest ends a run of collapses
                         self._wake(actor)
             self._refresh_exhaustion(actor)
 
@@ -9642,7 +9718,7 @@ class BigvilleWorld:
         body = self._bodies[actor]
         attrs = self.eng.node(body)["attrs"]
         band = self._exhaustion_band(actor)
-        return {"health": round(float(attrs.get("health", 1.0)), 4),
+        return {"health": round(self.health(actor), 4),
                 "mood": round(float(attrs.get("mood", 0.5)), 4),
                 "strength": round(self.effective_strength(actor), 4),
                 "stamina": round(self.effective_stamina(actor), 4),

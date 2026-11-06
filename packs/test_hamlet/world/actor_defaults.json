@@ -16,7 +16,6 @@
       "inventory_max_load": 50.0,
       "inventory_capacity": 50.0,
       "body": {
-        "health": 1.0,
         "mood": 0.5,
         "str_base": 1.0,
         "sta_base": 1.0,

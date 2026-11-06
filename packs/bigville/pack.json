@@ -218,6 +218,10 @@
       "file": "world/exhaustion.json"
     },
     {
+      "name": "HEALTH",
+      "file": "world/health.json"
+    },
+    {
       "name": "CONTEST",
       "file": "world/contest.json"
     },

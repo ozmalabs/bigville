@@ -1,0 +1,38 @@
+{
+  "_doc": "Test pack 'test_hamlet' (Phase 037): HEALTH. Copied from packs/bigville/world/health.json, so the values keep their citations (APPROX, from seeds/bigville_life_health.json, which gives no figures) and the reasoning there.",
+  "_types": {},
+  "tables": {
+    "HEALTH": {
+      "max_health": 1.0,
+      "causes": [
+        "age",
+        "illness",
+        "injury",
+        "starvation",
+        "exhaustion",
+        "violence",
+        "intoxication"
+      ],
+      "age_rate": {
+        "infant": 0.0,
+        "child": 0.0,
+        "youth": 0.0,
+        "adult": 0.0,
+        "elder": 0.05
+      },
+      "fragility": {
+        "infant": 2.0,
+        "child": 1.0,
+        "youth": 1.0,
+        "adult": 1.0,
+        "elder": 1.0
+      },
+      "starve_harm": 1.0,
+      "illness_harm": 0.1,
+      "rest_health_gain": 0.002,
+      "exhaustion_harm": 0.1,
+      "exhaustion_free_collapses": 1,
+      "exhaustion_window_periods": 3
+    }
+  }
+}

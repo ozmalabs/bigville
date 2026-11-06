@@ -1567,14 +1567,7 @@ choice rules (the backend's).
 
 ## Phase 037 -- One health, several routes to death
 
-**Status:** ready (independent of Programme B). Spec: `seeds/bigville_life_health.json`
-`bl_age`, `bl_acute`, `bl_recover`, `bl_death`: health is one variable with two timescales, a
-chronic decline with age and acute drops tagged with a cause (illness, injury, starvation,
-exhaustion; violence is the fifth, via `bigville_viol_kill`), recoverable by care, rest and
-treatment up to `max_health`; death is health at or below 0, and the cause is the last tag. The
-seed's `age_rate`, `illness_amount` and `care_amount` are set by the adapter, so the figures are
-new and marked APPROX with demographic sources. `bigville_doctor_care` and `bigville_infant_care`
-make care and fees residents' business and are not part of this phase.
+**Status:** done. Health is one variable (`health_value`; the body's copy is gone and effective stats read it). `harm(actor, amount, cause)` carries injury, illness (disease and spoiled or raw meals, from Phase 027's `illness_risk` by a stateless seeded draw), starvation (`starve_harm` 1.0 per period past `starve_limit`, so the existing timelines hold) and exhaustion (repeated collapse within a window). Elders decline daily by `age_rate`; infants carry `fragility`. Care, treatment, injury recovery and sleep recover up to `max_health`. Death at 0 records the cause in the death record and event; `SimulationReporter.deaths_by_cause()` counts them. Figures in the new `HEALTH` table are APPROX. See docs/phases/phase037/PHASE037_REPORT.md.
 
 **Goal.** In the port, health is `health_value` and death comes from separate paths: starvation
 kills at a hunger threshold, only disease can reduce health to death, injury cannot kill, and
@@ -2855,3 +2848,4 @@ provider layer's retry and backoff (Phase 055).
 | 031 Register and harden the LLM backend | done | (this commit) | docs/phases/phase031/PHASE031_REPORT.md -- `create_game(llm_provider=)` and `llm_backend_factory`; response validated against PROMPT_RESPONSE_FIELDS; one repair; idle fallback, never raises; counts in `game_report()['llm']`; 26 tests, fake provider only; no network, `.env` unread |
 | 030 Store lock and key | done | (this commit) | docs/phases/phase030/PHASE030_REPORT.md -- keys are items; lock/unlock actions; dual keys; _store_open guards; 967 passed |
 | 032 Use trains the body | done | (this commit) | docs/phases/phase032/PHASE032_REPORT.md -- seed training rules; effective stats; training switch; strength gate on all heavy recipes; 1003 passed |
+| 037 One health, several routes to death | done | (this commit) | docs/phases/phase037/PHASE037_REPORT.md -- harm(actor, amount, cause); age decline; starvation harm; recovery cap; deaths by cause; 1020 passed |

@@ -1,0 +1,38 @@
+{
+  "_doc": "HEALTH (Phase 037): one health variable (actor health_value, 0 to 1, 1 = fully healthy) with four routes down and three ways back up. Death is health at or below 0, and the death's cause is the route that took it last (the actor's last_cause tag). Seed: seeds/bigville_life_health.json (bl_age chronic decline, bl_acute acute drop tagged by cause, bl_recover up to max_health, bl_death). The seed gives no figures: every number here is APPROX, a model parameter chosen to be of the right order, and the sources below are for the shape and order of magnitude only. max_health: the ceiling recovery reaches; 1.0 is the top of the existing 0 to 1 health_value scale (CARE). causes: the causes harm() accepts and a death can record (violence and intoxication have no caller until Phases 038 and 034). age_rate: chronic decline in health per year of age, by life stage (per-stage, from the seed's age_rate). Elders alone decline here, from the LIFE_STAGES elder band (65 and over): a decline of 0.05 a year takes a healthy elder to 0 in about 20 years, near 85. Sources: the mortality hazard rises roughly exponentially with age after early adulthood, doubling about every 8 years (Gompertz law; Gavrilov and Gavrilova, 2001, The Biology of Life Span). A linear decline is a simplification of that curve (APPROX). fragility: a multiplier on acute harm by life stage (the seed's bi_onset adds infant_fragility to an infant's acute drop). An infant takes twice the acute harm (APPROX; the seed gives no value). Infant deaths were a large share of births in pre-modern England, roughly 15 to 20 per cent in the first year (Wrigley and Schofield, 1981, The Population History of England 1541-1871, APPROX on the order of magnitude only). starve_harm: health lost each period while hunger is above starve_limit (CARE). The default 1.0 equals a healthy resident's full health, so a resident with no food dies in the first period past the limit, as before Phase 037 (the existing starvation timelines depend on this). A smaller value softens starvation into a slower decline. illness_harm: the acute drop when a meal makes its eater ill (illness_risk from FOOD_GRADING, rolled per meal; APPROX, the seed bl_acute illness_amount has no value). rest_health_gain: health regained per clock tick of ordinary sleep (not a collapse), up to max_health (APPROX; about 0.06 over an eight-hour sleep). exhaustion_harm: the acute drop for an exhaustion collapse beyond the free count. exhaustion_free_collapses: collapses in a run that do no harm (the first). exhaustion_window_periods: a collapse counts toward the run only if the previous collapse was within this many days, and a full rest (sleep to rest_cap) ends the run. These three are the Phase 037 rule for repeated collapse without recovery (APPROX; the seed names collapse and sleep but no harm from them).",
+  "_types": {},
+  "tables": {
+    "HEALTH": {
+      "max_health": 1.0,
+      "causes": [
+        "age",
+        "illness",
+        "injury",
+        "starvation",
+        "exhaustion",
+        "violence",
+        "intoxication"
+      ],
+      "age_rate": {
+        "infant": 0.0,
+        "child": 0.0,
+        "youth": 0.0,
+        "adult": 0.0,
+        "elder": 0.05
+      },
+      "fragility": {
+        "infant": 2.0,
+        "child": 1.0,
+        "youth": 1.0,
+        "adult": 1.0,
+        "elder": 1.0
+      },
+      "starve_harm": 1.0,
+      "illness_harm": 0.1,
+      "rest_health_gain": 0.002,
+      "exhaustion_harm": 0.1,
+      "exhaustion_free_collapses": 1,
+      "exhaustion_window_periods": 3
+    }
+  }
+}

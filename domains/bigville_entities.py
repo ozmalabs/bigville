@@ -611,6 +611,46 @@ def _check_exhaustion(errors, warnings, info):
         errors.append(f"EXHAUSTION: night hours must lie in [0, 24), not {hours}")
 
 
+def _check_health(errors, warnings, info):
+    """Phase 037: the HEALTH table. One health variable (health_value, 0 to 1) with its causes, the chronic
+    age decline and the acute fragility by life stage, and the harms and recovery rates. The causes must
+    name the seven routes the phase brief lists, and the per-stage tables must cover every LIFE_STAGES key."""
+    h = HEALTH
+    if isinstance(h["max_health"], bool) or not 0.0 < float(h["max_health"]) <= 1.0:
+        errors.append(f"HEALTH[max_health]: must lie in (0, 1], not {h['max_health']!r}")
+    causes = list(h["causes"])
+    for needed in ("age", "illness", "injury", "starvation", "exhaustion", "violence", "intoxication"):
+        if needed not in causes:
+            errors.append(f"HEALTH[causes]: '{needed}' is missing")
+    if len(set(causes)) != len(causes) or not all(isinstance(c, str) and c for c in causes):
+        errors.append(f"HEALTH[causes]: unique, non-empty names, not {causes!r}")
+    for table in ("age_rate", "fragility"):
+        if set(h[table]) != set(LIFE_STAGES):
+            errors.append(f"HEALTH[{table}]: must give one value per LIFE_STAGES key, not {sorted(h[table])}")
+    for stage, rate in h["age_rate"].items():
+        if isinstance(rate, bool) or not isinstance(rate, (int, float)) or rate < 0.0:
+            errors.append(f"HEALTH[age_rate][{stage}]: a decline per year, >= 0, not {rate!r}")
+    for stage, mult in h["fragility"].items():
+        if isinstance(mult, bool) or not isinstance(mult, (int, float)) or mult <= 0.0:
+            errors.append(f"HEALTH[fragility][{stage}]: a positive multiplier, not {mult!r}")
+    if float(h["starve_harm"]) <= 0.0:
+        errors.append(f"HEALTH[starve_harm]: must be positive, not {h['starve_harm']!r}")
+    if not 0.0 <= float(h["illness_harm"]) <= 1.0:
+        errors.append(f"HEALTH[illness_harm]: must lie in [0, 1], not {h['illness_harm']!r}")
+    for name in ("rest_health_gain", "exhaustion_harm"):
+        if float(h[name]) < 0.0:
+            errors.append(f"HEALTH[{name}]: must not be negative, not {h[name]!r}")
+    for name in ("exhaustion_free_collapses", "exhaustion_window_periods"):
+        if isinstance(h[name], bool) or not isinstance(h[name], int) or h[name] < 0:
+            errors.append(f"HEALTH[{name}]: a whole number >= 0, not {h[name]!r}")
+    elder = float(h["age_rate"].get("elder", 0.0))
+    if elder > 0.0:
+        info.append(f"HEALTH: a healthy elder declines to 0 in {float(h['max_health']) / elder:.1f} years "
+                    f"of elder age (age_rate {elder} a year, APPROX)")
+    info.append(f"HEALTH: starvation kills a healthy adult {-(-float(h['max_health']) // float(h['starve_harm'])):.0f} "
+                f"period(s) past starve_limit (starve_harm {h['starve_harm']}, APPROX)")
+
+
 def _check_contest(errors, warnings, info):
     """Phase 029: the CONTEST table (a contested take: force, cost, margins, reactions) and the SIZE table it
     draws body size from. Fractions stay in range, the margins and reaction bands keep their order, and the
@@ -1540,6 +1580,7 @@ def check_consistency():
     _check_handovers(errors, warnings, info)
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
+    _check_health(errors, warnings, info)
     _check_contest(errors, warnings, info)
     _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)

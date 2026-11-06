@@ -145,6 +145,8 @@ HUNGER_PER_STAMINA = _PACK["HUNGER_PER_STAMINA"]
 # seed bd_rest_recover gives no figure). One rest action spans one clock tick (TIME.minutes_per_tick).
 # The value lives in the EXHAUSTION pack table (Phase 024), with the sleep and slowdown parameters.
 EXHAUSTION = _PACK["EXHAUSTION"]
+# Phase 037: the health routes (one health variable, its causes, age decline, fragility and the harms).
+HEALTH = _PACK["HEALTH"]
 # Phase 029: a contested take (force, cost, margins, reactions). APPROX values; see the table's _doc.
 CONTEST = _PACK["CONTEST"]
 REST_RECOVERY_PER_UNIT = EXHAUSTION["rest_recovery_per_unit"]
