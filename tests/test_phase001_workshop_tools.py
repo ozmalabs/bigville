@@ -56,7 +56,10 @@ def test_smith_at_forge_forges_with_the_forges_hammer_and_it_wears():
     assert w.tool_condition(hammer) < first_wear, "each use wears the same hammer further"
 
 
-def test_a_broken_forge_hammer_refuses_forging_until_a_new_one_is_at_the_forge_or_in_hand():
+
+def test_a_broken_forge_hammer_forging_goes_on_with_bare_hands_and_wastes_the_batch():
+    # Phase 048: a missing or broken tool is not a refusal. The smith forges with bare hands (fitness 0.05), which
+    # uses the iron and yields nothing; a hammer in the smith's hands makes the nails.
     w = _smith_at_forge()
     hammer = w.workshop_tool("hammer", building="forge")
     w.eng.set_attr(hammer, "condition", 0.02)
@@ -64,48 +67,66 @@ def test_a_broken_forge_hammer_refuses_forging_until_a_new_one_is_at_the_forge_o
     assert w.tool_broken(hammer) and w.instrument_condition("hammer") == 0.0
 
     iron, nails = w.qty("iron"), w.qty("nails")
-    assert not w._recipe_inputs_available("forge_nails", "Smith")
-    assert not w.do("Smith", "forge_nails") and not w.start("Smith", "forge_nails")
-    assert w.qty("iron") == iron and w.qty("nails") == nails, "a refused forging consumes nothing"
+    assert not w._recipe_inputs_available("forge_nails", "Smith"), "the offer still wants a usable tool"
+    assert w.do("Smith", "forge_nails"), "with no hammer the smith works bare-handed"
+    assert w.qty("iron") == iron - 1.0, "the bare-hand batch uses its inputs"
+    assert w.qty("nails") == nails, "a bare-hand batch is wasted: it yields nothing"
     assert not w.busy("Smith")
 
+    # Two bare-hand batches cost the smith three times the stamina each, so rest before the batch with the hammer.
+    w.eng.set_attr(w._bodies["Smith"], "stamina_reserve", 1.0)
+    w.eng.set_attr(w._actors["Smith"], "collapsed", 0.0)
+    w.eng.set_attr(w._actors["Smith"], "asleep", 0.0)
     spare = w.give_tool("Smith", "hammer")
     assert w.do("Smith", "forge_nails"), "a hammer in the smith's hands is usable"
     assert w.tool_condition(spare) < 1.0 and w.qty("nails") == nails + 5.0
+
 
 
 def test_a_new_hammer_placed_at_the_forge_restores_forging():
     w = _smith_at_forge()
     w.eng.set_attr(w.workshop_tool("hammer", building="forge"), "condition", 0.0)
     w.eng.set_attr(w.workshop_tool("hammer", building="forge"), "broken", 1.0)
-    assert not w.do("Smith", "forge_nails")
+    nails = w.qty("nails")
+    assert w.do("Smith", "forge_nails"), "without a hammer the smith works bare-handed (Phase 048)"
+    assert w.qty("nails") == nails, "and the batch is wasted"
 
     new = w.give_tool("Smith", "hammer")
     assert w.stow_tool("Smith", new), "the smith places the new hammer on the forge's shelf"
     assert w.workshop_tool("hammer", building="forge") == new
-    assert w.do("Smith", "forge_nails") and w.tool_condition(new) < 1.0
+    assert w.do("Smith", "forge_nails") and w.tool_condition(new) < 1.0 and w.qty("nails") == nails + 5.0
+
 
 
 def test_a_worker_away_from_the_forge_cannot_use_its_tools_once_the_clock_runs():
+    # Phase 048: outside the forge the forge's hammer is out of reach, so the smith works bare-handed. The
+    # hammer is not worn, and the batch is wasted.
     w = _smith_at_forge()
     w.tick(1)
     assert w.do("Smith", "forge_nails"), "inside the forge, the smith forges"
+    hammer = w.workshop_tool("hammer", building="forge")
+    worn = w.tool_condition(hammer)
     w.actor_tick()                                   # a new turn frees the major-action slot
     w._move_actor_to("Smith", _outside(w, "forge"))
-    iron = w.qty("iron")
-    assert not w.do("Smith", "forge_nails"), "outside the forge the forge's hammer is out of reach"
-    assert w.qty("iron") == iron
+    iron, nails = w.qty("iron"), w.qty("nails")
+    assert w.do("Smith", "forge_nails"), "outside the forge the smith works with bare hands (Phase 048)"
+    assert w.tool_condition(hammer) == worn, "the forge's hammer is out of reach, so it is not used"
+    assert w.qty("iron") == iron - 1.0 and w.qty("nails") == nails
 
 
-def test_open_recipes_still_need_the_workers_own_held_tool():
+
+def test_open_recipes_use_the_workers_own_held_tool_and_not_a_shelf_tool():
     w = World()
     w.add_actor("Ash", role="forester", skill=0.8)
     w.set_stock("wood", 5)
-    # A tool on a building shelf does not serve a household recipe.
-    w.eng.add_edge_unchecked(w._places["forge"], "has_tool_item", w._new_tool_item("axe"))
-    assert not w.do("Ash", "split_firewood")
-    w.give_tool("Ash", "axe")
+    w.set_stock("lumber", 2)
+    # A tool on a building shelf does not serve a household recipe (Phase 048: the worker goes bare-handed).
+    shelf_axe = w._new_tool_item("axe")
+    w.eng.add_edge_unchecked(w._places["forge"], "has_tool_item", shelf_axe)
     assert w.do("Ash", "split_firewood")
+    assert w.tool_condition(shelf_axe) == 1.0, "the shelf's axe is not used"
+    own = w.give_tool("Ash", "axe")
+    assert w.do("Ash", "split_firewood") and w.tool_condition(own) < 1.0
 
 
 def test_founding_buildings_hold_their_trades_kits_and_recipe_only_tools():

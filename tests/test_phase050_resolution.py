@@ -117,6 +117,9 @@ def test_an_attempt_uses_the_action_slot_and_a_second_one_in_the_turn_is_refused
 # ------------------------------------------------------------------ damage: smashing a chest
 
 def test_smashing_a_wooden_chest_damages_it_each_attempt_until_it_breaks_and_then_it_is_refused():
+    # Phase 048: a hammer's fitness is its quality x condition, and its wear rises as its fit falls. So a hammer
+    # that has worn down stops progressing before it breaks; the attempts that follow do no damage and the hammer
+    # still wears out. Attempts damage the chest while the hammer is sound.
     w = _world(tool="hammer")
     falls = []
     for _ in range(60):
@@ -127,9 +130,11 @@ def test_smashing_a_wooden_chest_damages_it_each_attempt_until_it_breaks_and_the
         if _box(w)["destroyed"] == 1.0:
             break
     assert _box(w)["destroyed"] == 1.0, "the chest breaks"
-    assert all(d > 0.0 for d in falls), "each attempt damages it"
+    assert falls[0] > 0.0 and all(d > 0.0 for d in falls[:5]), "the first attempts damage it"
+    assert any(d == 0.0 for d in falls), "a worn hammer makes no progress (Phase 048)"
     assert w.last_attempt("Ada")["outcome"] == "broke"
     _turn(w)
+    _fresh_body(w)              # a worn hammer costs more stamina (Phase 048); rest, so the reason is the chest's
     assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is False
     assert _reason(w) == "destroyed"
     assert w._container_accessible("Ada", "box") is False, "a broken container is not opened"
@@ -381,9 +386,10 @@ def test_the_resolution_tables_name_the_lock_strength_and_the_accident_cause():
 
 # ---------------------------------------------------------------- Phase 050b: displace, spill, pace, slot, strain
 
-def _ground_world(strength=1.0, mass=100.0, gap=1):
+def _ground_world(strength=1.0, mass=100.0, gap=1, tool=None):
     """A resident on a map cell with a physical object (a cart of `mass` weight units) `gap` cells east of them,
-    on ground that lets a cell through. Returns (world, resident's cell)."""
+    on ground that lets a cell through. Returns (world, resident's cell). `tool` is a kind the resident holds
+    (Phase 048: bare hands fit a push at 0.05, so the cart tests hold a wagon, whose haul fits a push at 0.6)."""
     w = World(autonomous_actors=False)
     cell = next(c for c in _cells(w) if (c[0] + 1, c[1]) in w._map_cells and (c[0] + 2, c[1]) in w._map_cells
                 and w.terrain_state(c)["speed"] > 0 and w.terrain_state((c[0] + 1, c[1]))["speed"] > 0
@@ -395,6 +401,8 @@ def _ground_world(strength=1.0, mass=100.0, gap=1):
                                               "mass": float(mass), "cell": [cell[0] + gap, cell[1]]})
     w._physical_objects["cart"] = node
     w._physical_object_locations["cart"] = "world"
+    if tool is not None:
+        w.give_tool("Ada", tool)
     return w, cell
 
 
@@ -404,20 +412,22 @@ def _cart_cell(w):
 
 def test_a_strong_resident_pushes_a_cart_by_the_surplus_force():
     # Demand: 100 weight units over a push unit of 50, on grass (move time 1.0) = 2.0. Capability at intensity 3:
-    # strength 2.0 x technique 0.5 (no labour skill) x intensity 3 = 3.0. Surplus 1.0, two cells (2 per unit).
-    w, cell = _ground_world(strength=2.0)
+    # strength 4.0 x technique 0.5 (no labour skill) x intensity 3 x fit 0.6 (a wagon's haul against a push, Phase 048)
+    # = 3.6. Surplus 1.6, so floor(1.6 x 2) = 3 cells, the most a push moves. The cart starts one cell east, so it
+    # ends at cell + 4.
+    w, cell = _ground_world(strength=4.0, tool="wagon")
     _turn(w)
-    assert w.major_action("Ada", "attempt", verb="push", target="cart", intensity=3.0) is True
-    assert _cart_cell(w) == (cell[0] + 3, cell[1])
-    assert w.last_attempt("Ada")["cells_moved"] == 2
+    assert w.major_action("Ada", "attempt", verb="push", target="cart", with_kind="wagon", intensity=3.0) is True
+    assert _cart_cell(w) == (cell[0] + 4, cell[1])
+    assert w.last_attempt("Ada")["cells_moved"] == 3
     assert w.last_attempt("Ada")["outcome"] == "moved"
 
 
 def test_a_weak_resident_does_not_move_the_cart_even_at_full_force():
-    # Capability 0.5 x 0.5 x 3 = 0.75, below the demand of 2.0: no surplus, no movement.
-    w, cell = _ground_world(strength=0.5)
+    # Capability 0.5 x 0.5 x 3 x 0.6 (the wagon's fit) = 0.45, below the demand of 2.0: no surplus, no movement.
+    w, cell = _ground_world(strength=0.5, tool="wagon")
     _turn(w)
-    assert w.major_action("Ada", "attempt", verb="push", target="cart", intensity=3.0) is True
+    assert w.major_action("Ada", "attempt", verb="push", target="cart", with_kind="wagon", intensity=3.0) is True
     assert _cart_cell(w) == (cell[0] + 1, cell[1])
     assert w.last_attempt("Ada")["outcome"] == "stuck"
     assert w.last_attempt("Ada")["cells_moved"] == 0
@@ -433,9 +443,9 @@ def test_a_push_needs_the_object_next_to_the_resident():
 
 def test_a_pull_draws_the_cart_toward_the_resident_and_stops_short_of_them():
     # Two cells east, pulled west: the first cell is free, the second is the resident's own, so it stops there.
-    w, cell = _ground_world(strength=2.0, gap=2)
+    w, cell = _ground_world(strength=4.0, gap=2, tool="wagon")
     _turn(w)
-    assert w.major_action("Ada", "attempt", verb="pull", target="cart", intensity=3.0) is True
+    assert w.major_action("Ada", "attempt", verb="pull", target="cart", with_kind="wagon", intensity=3.0) is True
     assert _cart_cell(w) == (cell[0] + 1, cell[1])
     assert w.last_attempt("Ada")["cells_moved"] == 1
 

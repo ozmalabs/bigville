@@ -37,6 +37,11 @@
         "kind": "pace",
         "requires_target": false,
         "description": "Change the pace of a timed job you are running (a recipe) to a number, without losing its progress. 1.0 is the normal pace. Above 1 the job finishes sooner, at a cost in quality and stamina; below 1 it is slower and more careful. Uses no major action."
+      },
+      "stop": {
+        "kind": "abandon",
+        "requires_target": false,
+        "description": "Abandon the timed job (recipe) you are running. Its inputs are not yet taken, so only the progress is lost, and the stamina already spent stays spent. Uses no major action."
       }
     }
   }

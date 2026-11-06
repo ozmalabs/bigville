@@ -158,6 +158,8 @@ CONTEST = _PACK["CONTEST"]
 VERBS = _PACK["VERBS"]
 MATERIALS = _PACK["MATERIALS"]
 RESOLUTION = _PACK["RESOLUTION"]
+# Phase 048: TOOL_FIT, the tool-facing part of the resolution (closeness, hardness, edge, weight, authored rows).
+TOOL_FIT = _PACK["TOOL_FIT"]
 REST_RECOVERY_PER_UNIT = EXHAUSTION["rest_recovery_per_unit"]
 ANIMAL_SERVICES = _PACK["ANIMAL_SERVICES"]
 # World mechanics parameters (Phase 014): the clock, the town's starting state, a resident's

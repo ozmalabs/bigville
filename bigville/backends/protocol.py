@@ -182,6 +182,10 @@ class CognitionBackend(Protocol):
     # Phase 050: an ``attempt`` major action has the params ``verb`` (a name in the pack's VERBS table), ``target``
     # (a container name), ``with`` (the kind of a held tool, or omitted for bare hands) and ``intensity`` (a number;
     # 1.0 is normal, the world clamps it and reports the applied value in its outcome). The world resolves it.
+    #
+    # Phase 048: a ``work`` major action (a recipe) may carry ``tool``: the kind of a held tool, ``"none"`` (or null)
+    # for bare hands, or omitted for the right tool the worker has, else bare hands. A tool that fits poorly still
+    # works, slower and at a cost; the world reports what happened, never the fitness before it happens.
 
 
 def communication_capabilities(backend) -> dict[str, Any]:

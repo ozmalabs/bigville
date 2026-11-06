@@ -90,7 +90,10 @@ def test_a_forged_tool_is_a_discrete_item_whose_quality_is_the_makers_skill():
     w.do("Master", "forge_knife"); good = w.newest_tool()
     w.do("Novice", "forge_knife"); poor = w.newest_tool()
     assert w.tool_kind(good) == "knife" and w.tool_quality(good) == 0.9, "a discrete tool, quality = the maker's skill"
-    assert w.tool_fitness(good) == 1.44 and w.tool_fitness(poor) == 0.48, "fitness = base_mult * skill (1.6 * .9 vs .3)"
+    # Phase 048: the master's use wore the forge's hammer to 0.98, so the novice's knife is made at 0.99 of its skill
+    # (quality 0.297, fitness 1.6 x 0.297). The master's own knife, made with a fine hammer, is unchanged.
+    assert w.tool_fitness(good) == 1.44 and w.tool_fitness(poor) == pytest.approx(0.4752), \
+        "fitness = base_mult * skill (1.6 * .9 vs .3), scaled by the worn hammer's condition (Phase 048)"
 
 
 # ------------------------------------------------------ G-variety-of-tools-from-data (headline)
@@ -147,7 +150,10 @@ def test_a_composite_tool_is_assembled_by_an_action_on_two_items_with_a_hammer()
     assert w.tool_quality(handle) == 0.6, "the woodworker carves a handle"
     pick = w.forge("Smith", "assemble_pick")       # assemble = an action on two ITEM inputs + a hammer
     assert w.tool_kind(pick) == "pick", "assembly is just an action (two item inputs, a hammer) -- no special rule"
-    assert w.tool_quality(pick) == 0.6 and w.tool_fitness(pick) == 1.2, "a poor handle spoils it: quality = the weakest part"
+    # Phase 048: the head's forging and the assembly both wore the forge's hammer (to 0.96), so the pick's quality is
+    # the weaker part's 0.6 scaled by that hammer's fitness (0.99).
+    assert w.tool_quality(pick) == pytest.approx(0.594) and w.tool_fitness(pick) == pytest.approx(1.188), \
+        "a poor handle spoils it: quality = the weakest part, scaled by the worn hammer (Phase 048)"
 
 
 def test_the_parts_are_consumed_and_the_hammer_wears_in_assembly():
@@ -235,15 +241,20 @@ def test_the_new_trades_run_their_production_chains():
         w.add_tradesperson(f"{tr}1", tr)
     for k, q in (("timber", 20), ("hide", 10), ("wool", 20)):
         w.set_stock(k, q)
-    # cooper: timber -> staves -> barrel
-    w.do("cooper1", "rive_staves"); w.do("cooper1", "rive_staves")
-    assert w.qty("stave") == 6.0 and w.tool_kind(w.forge("cooper1", "raise_barrel")) == "barrel", "cooper: staves -> barrel"
+    # cooper: timber -> staves -> barrel. Each rive wears the cooperage's adze, and a worn adze yields less (Phase 048):
+    # three rives make 8.73 staves (2.91 + 2.82 + 3.0 by the fitness of each), enough for the barrel's six.
+    w.do("cooper1", "rive_staves"); w.do("cooper1", "rive_staves"); w.do("cooper1", "rive_staves")
+    assert w.qty("stave") == pytest.approx(8.73) and w.tool_kind(w.forge("cooper1", "raise_barrel")) == "barrel", \
+        "cooper: staves -> barrel"
     # tanner -> cobbler: hide -> leather -> shoes
     w.do("tanner1", "tan_hide")
     assert w.qty("leather") == 1.0 and w.tool_kind(w.forge("cobbler1", "make_shoes")) == "shoes", "tanner+cobbler: hide->leather->shoes"
     # weaver -> tailor: wool -> cloth -> coat
-    w.do("weaver1", "weave_cloth"); w.do("weaver1", "weave_cloth")
-    assert w.qty("cloth") == 2.0 and w.tool_kind(w.forge("tailor1", "sew_coat")) == "coat", "weaver+tailor: wool->cloth->coat"
+    # Phase 048: each weave wears the loom, and a worn loom yields less, so three weaves make 2.85 cloth (two made
+    # 1.95, short of the coat's two).
+    w.do("weaver1", "weave_cloth"); w.do("weaver1", "weave_cloth"); w.do("weaver1", "weave_cloth")
+    assert w.qty("cloth") == pytest.approx(2.85) and w.tool_kind(w.forge("tailor1", "sew_coat")) == "coat", \
+        "weaver+tailor: wool->cloth->coat"
 
 
 # ------------------------------------------------------ G-furniture-and-larger-tools (headline)
@@ -261,14 +272,17 @@ def test_furniture_and_larger_tools_are_made_as_data():
 def test_a_made_barrel_is_a_usable_container():
     w = World(); w.add_tradesperson("Barrow", "cooper"); w.add_actor("Tom", role="hand")
     w.set_stock("timber", 30); w.set_stock("charcoal", 60)
-    w.do("Barrow", "rive_staves"); w.do("Barrow", "rive_staves")
+    # Phase 048: three rives, because a worn adze yields less (two rives make 5.91 staves, short of the barrel's six).
+    w.do("Barrow", "rive_staves"); w.do("Barrow", "rive_staves"); w.do("Barrow", "rive_staves")
     barrel = w.forge("Barrow", "raise_barrel")
-    assert w.tool_kind(barrel) == "barrel" and w.tool_quality(barrel) == 0.7, "the cooper makes a barrel (a discrete good)"
+    # The barrel's quality is the cooper's 0.7, scaled by the adze's fitness (0.91 after three rives): 0.7 x 0.955.
+    assert w.tool_kind(barrel) == "barrel" and w.tool_quality(barrel) == pytest.approx(0.6685), \
+        "the cooper makes a barrel (a discrete good)"
     w.use_as_store("mybarrel", barrel, holds="charcoal")     # the SAME node becomes a container
     w.fill("Tom", "mybarrel", "charcoal", 40)
     assert w.contents("mybarrel", "charcoal") == 40.0 and w.capacity("mybarrel") == 40.0, "its capacity is the item's data (40)"
     assert w.qty("charcoal") == 20.0, "filling moved charcoal from the store into the made barrel (conserved)"
-    assert w.tool_quality(barrel) == 0.7, "it is still the SAME node -- a discrete item with quality AND a container"
+    assert w.tool_quality(barrel) == pytest.approx(0.6685), "it is still the SAME node -- a discrete item with quality AND a container"
 
 
 def test_a_made_chest_is_a_lockable_container():

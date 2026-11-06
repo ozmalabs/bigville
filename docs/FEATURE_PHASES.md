@@ -2034,14 +2034,7 @@ vehicles.
 
 ## Phase 048 -- Tools by fitness: use X with Y, and the wrong tool in a pinch
 
-**Status:** ready, after 037 (injury goes through `harm`) and 050 (decision 2026-11-05: tool use is rigid
-and should be graded; the world does not stop inhabitants from doing dumb things, it provides
-consequences). Spec: `seeds/bigville_tools.json` v2.0.0 (a tool is an effectiveness multiplier,
-held, with its fitness as data `Fitness{verb, mult, effort}`; bare hands attempt anything at mult
-about 0.05 and effort about 3; `tl_prep` makes a knife a multiplier on quality; use is gated on
-holding, never on owning), `bigville_craft` (an unfitted part has an improvised fitness of 0.2),
-`bigville_tool_wear` (condition falls by the wear rate each use and fitness scales with it). The
-seed's `tl_gather` says a wrong tool does not fire; that is superseded by the decision above.
+**Status:** done. A tool has a fitness for each verb (closeness x hardness x edge x weight, times quality and condition; the right tool at full quality and condition is 1.0, so committed recipe numbers are unchanged); bare hands fit at `hands_fit` 0.05. A missing tool is no longer a refusal: the job runs at 1/fit time, `clamp(1/fit, 1, effort_cap)` stamina, extra wear on a poorly fitting tool, strain to `accident`, quality and yield scaled by the lowest fit, and a batch below `waste_below` is wasted. Attempts use the same fitness. New `TOOL_FIT` table, free action `stop`, `tool` key on work proposals, `tool_tally` and `improvised_work()`. Offered options still need the right tool, so default backends are unchanged (a 192-turn town100 run matched HEAD exactly). Open: worn shelf tools now yield less in proportion to their condition; bare-hand strain may be lethal; push needs a tool (hands 0.05); `stop` needs game.py routing. See docs/phases/phase048/PHASE048_REPORT.md.
 
 **Today.** A recipe names tool kinds, and `_worker_tool` and `_held_tool` look for an unbroken
 item of exactly that `kind`, so a recipe either has its tool or is refused. `ToolFit.mult`
@@ -2841,3 +2834,4 @@ provider layer's retry and backoff (Phase 055).
 | 052 The agent view | done | (this commit) | docs/phases/phase052/PHASE052_REPORT.md -- `domains/agent_view.py` builds the view from a pack whitelist (`world/agent_view.json`), fail-closed; `BigvilleGame.agent_view(actor, mode)`, `GET /api/view`, `/api/state` 403 and `/api/turn` returns the view in agent mode (on when `--player` is named, `--referee` restores); leak test over 100 residents; 26 tests; 1378 passed |
 | 059 Autopilot and momentum | done | (this commit) | docs/phases/phase059/PHASE059_REPORT.md -- LLMBackend owns a DeterministicBackend; `ConsultGate` and `CallBudget` (`bigville/backends/autopilot.py`), pack `AUTOPILOT` table; consults at interrupts, routine boundaries, check-ins and idle; fallback by cause (provider error, invalid output, call or spend cap) is the autopilot's action; `waiting: true` rejected, no action carries on, `wait` idles; model plans hold; would-be choice and deviation counts in `llm_report`; 34 tests; simple backend identical to HEAD over 60 turns; 1412 passed |
 | 054 LLM prompt packet and reply schema | done | (this commit) | docs/phases/phase054/PHASE054_REPORT.md -- prompt built from the agent view (`bigville/prompt/3`, words only, per-section caps, persona and usual-now lead); reply schema in the pack with lexicon words for intensity and amounts and verb aliases; hostile speech quoted as inert data; lessons persist and merge over the cap; every `can` row has a handle (`domains/affordance_handles.py`) and a reply that names it runs the row as the simple backend would send it; 55 tests; simple backend identical to HEAD over 60 turns; 1467 passed |
+| 048 Tools by fitness | done | (this commit) | docs/phases/phase048/PHASE048_REPORT.md -- TOOL_FIT; bare hands 0.05; no tool refusals; time, stamina, wear, strain, yield and waste by fit; stop; 1483 passed |

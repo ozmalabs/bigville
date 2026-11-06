@@ -169,6 +169,11 @@ class SimulationReporter:
         no_progress, ...). Reads the world's per-resident attempt counts only."""
         return {verb: dict(outcomes) for verb, outcomes in self.world.attempt_counts().items()}
 
+    def improvised_work(self) -> dict[str, int]:
+        """Phase 048: jobs run without the tool they name (improvised_jobs), strains that became accidents
+        (accidents), and tools broken by use (broken_tools). Reads the world's tally only."""
+        return {key: int(value) for key, value in self.world.tool_tally().items()}
+
     def economy(self) -> dict[str, Any]:
         E = world_entities(self.world)
         stock = {}

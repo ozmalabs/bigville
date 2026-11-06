@@ -730,12 +730,9 @@ def _check_resolution(errors, warnings, info):
             # A null skill means the verb needs none (technique is then 1.0). Otherwise the skill must exist.
             if spec.get("skill") is not None and spec.get("skill") not in SKILLS:
                 errors.append(f"VERBS[{verb}]: skill {spec.get('skill')!r} is not in SKILLS")
-            closeness = spec.get("tool_verbs", {})
-            if not closeness:
-                errors.append(f"VERBS[{verb}]: needs a tool_verbs closeness table")
-            for tool_verb, value in closeness.items():
-                if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= float(value) <= 1.0:
-                    errors.append(f"VERBS[{verb}][tool_verbs][{tool_verb}]: a closeness in [0, 1], not {value!r}")
+            # Phase 048: a verb names the physical work it needs; a tool's closeness is read against it in TOOL_FIT.
+            if str(spec.get("work", "")).strip() == "" or spec.get("work") not in TOOL_FIT["verbs"]:
+                errors.append(f"VERBS[{verb}]: 'work' must name a verb in TOOL_FIT, not {spec.get('work')!r}")
         if primitive == "displace":
             # Phase 050b: a displace verb says whether the world runs it yet; an unimplemented one is refused.
             if not isinstance(spec.get("implemented"), bool):
@@ -831,6 +828,70 @@ def _check_resolution(errors, warnings, info):
         errors.append("FREE_ACTIONS: needs 'set_intensity' (Phase 050b: change a running job's pace)")
     info.append(f"RESOLUTION: {len(VERBS)} verbs, {len(MATERIALS)} materials; attempt cap {rs['attempt_cap_rate']}, "
                 f"max intensity {rs['max_intensity']}, i_safe {rs['i_safe']} (APPROX)")
+    _check_tool_fit(errors, warnings, info)
+
+
+def _check_tool_fit(errors, warnings, info):
+    """Phase 048: the tool-fitness table. Every verb a tool or an attempt names is in TOOL_FIT's vocabulary, so each
+    recipe's tool slot has a closeness row (a verb and its pairs). Pairs, rows and the edge, weight and hardness
+    figures are in range, and the rows name real tool kinds. The fit falls as effort rises, and a harder tool never
+    fits worse."""
+    tf = TOOL_FIT
+    verbs = set(tf["verbs"])
+    for a, b, value in tf["pairs"]:
+        if a not in verbs or b not in verbs:
+            errors.append(f"TOOL_FIT[pairs]: {a!r}/{b!r} is not in TOOL_FIT[verbs]")
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= float(value) <= 1.0:
+            errors.append(f"TOOL_FIT[pairs]: closeness of {a!r}/{b!r} must lie in [0, 1], not {value!r}")
+    for name in ("edge_verbs", "weight_verbs"):
+        for verb in tf[name]:
+            if verb not in verbs:
+                errors.append(f"TOOL_FIT[{name}]: {verb!r} is not in TOOL_FIT[verbs]")
+    tool_kinds = {kind for kind, spec in ITEMS.items() if spec.get("class") == "tool"}
+    for kind in tf["edged_kinds"]:
+        if kind not in tool_kinds:
+            errors.append(f"TOOL_FIT[edged_kinds]: {kind!r} is not a tool item")
+    for kind, rows in tf["rows"].items():
+        if kind not in tool_kinds:
+            errors.append(f"TOOL_FIT[rows]: {kind!r} is not a tool item")
+        for row in rows:
+            if row.get("verb") not in verbs:
+                errors.append(f"TOOL_FIT[rows][{kind}]: verb {row.get('verb')!r} is not in TOOL_FIT[verbs]")
+            mult = row.get("mult")
+            if isinstance(mult, bool) or not isinstance(mult, (int, float)) or not 0.0 <= float(mult) <= 1.0:
+                errors.append(f"TOOL_FIT[rows][{kind}]: mult must lie in [0, 1], not {mult!r}")
+            effort = row.get("effort")
+            if isinstance(effort, bool) or not isinstance(effort, (int, float)) or float(effort) < 0.0:
+                errors.append(f"TOOL_FIT[rows][{kind}]: effort must be at least 0, not {effort!r}")
+    for kind, spec in ITEMS.items():
+        if spec.get("class") == "tool" and spec.get("verb") not in verbs:
+            errors.append(f"TOOL_FIT[verbs]: tool {kind!r} has verb {spec.get('verb')!r}, which is not listed")
+    for recipe in RECIPES:
+        for kind in recipe.get("tools", []):
+            spec = ITEMS.get(kind, {})
+            if spec.get("verb") not in verbs:
+                errors.append(f"RECIPES[{recipe['name']}].tools: {kind!r} has no closeness row for its verb "
+                              f"{spec.get('verb')!r} (Phase 048)")
+    for name in ("same_verb", "no_edge"):
+        value = tf[name]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= float(value) <= 1.0:
+            errors.append(f"TOOL_FIT[{name}]: must lie in [0, 1], not {value!r}")
+    if float(tf["min_weight"]) <= 0.0 or float(tf["hardness_zero_gap"]) <= 0.0:
+        errors.append("TOOL_FIT: min_weight and hardness_zero_gap must be positive")
+    for name in ("fit_quality_loss", "waste_below"):
+        if not 0.0 <= float(RESOLUTION[name]) <= 1.0:
+            errors.append(f"RESOLUTION[{name}]: must lie in [0, 1], not {RESOLUTION[name]!r}")
+    if "stop" not in FREE_ACTIONS:
+        errors.append("FREE_ACTIONS: needs 'stop' (Phase 048: abandon a timed job)")
+    from worlds import resolution as R
+    grid = [i / 10.0 for i in range(0, 11)]
+    effort = [R.effort_multiplier(f, RESOLUTION["effort_cap"]) for f in grid[1:]]
+    if any(b > a + 1e-12 for a, b in zip(effort, effort[1:])):
+        errors.append("RESOLUTION: the effort of a tool must not rise as its fit rises (Phase 048)")
+    hard = [R.hardness_term(h / 10.0, 0.9, tf["hardness_zero_gap"]) for h in range(0, 11)]
+    if any(b < a - 1e-12 for a, b in zip(hard, hard[1:])):
+        errors.append("TOOL_FIT: a harder tool must not fit worse (Phase 048)")
+    info.append(f"TOOL_FIT: {len(tf['verbs'])} verbs, {len(tf['pairs'])} pairs, {len(tf['rows'])} authored tools (APPROX)")
 
 
 def _check_contest(errors, warnings, info):

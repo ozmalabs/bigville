@@ -242,6 +242,10 @@
       "file": "world/resolution.json"
     },
     {
+      "name": "TOOL_FIT",
+      "file": "world/resolution.json"
+    },
+    {
       "name": "CONTEST",
       "file": "world/contest.json"
     },

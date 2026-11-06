@@ -69,6 +69,24 @@ class SimplePolicy:
             return float(current)
         return float(current) + float(self.escalate_step)
 
+    # Phase 048 (off by default): when the right tool is missing, reach for a held tool. The choice method does not
+    # call this yet, so the default policy never improvises. Only visible properties are judged: the tool's verb and
+    # its condition, never the world's fitness number.
+    improvise: bool = False
+
+    def improvised_tool(self, held_tools, verb: str):
+        """The kind of the held tool to use for `verb` when the right tool is missing, or None (off, or nothing held).
+        Each entry of held_tools is a dict with `kind`, `verb` and `condition`. A tool whose verb is the work's verb
+        scores its condition; any other scores a third of it. Ties go to the first held."""
+        if not self.improvise or not held_tools:
+            return None
+        best, best_score = None, -1.0
+        for tool in held_tools:
+            score = float(tool.get("condition", 0.0)) * (1.0 if tool.get("verb") == verb else 1.0 / 3.0)
+            if score > best_score:
+                best, best_score = tool.get("kind"), score
+        return best
+
 
 # Scenario actors may name an explicitly registered backend profile. These
 # profiles affect choice only; they do not add affordances or change world rules.

@@ -25,6 +25,9 @@ from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
 from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 from domains.world_affordances import round_bp  # noqa: E402
 
+# Phase 048: the default for a job's or an attempt's tool: the right one the worker has, else bare hands.
+_DEFAULT_TOOL = object()
+
 DEFAULT_DATA_PACK = "bigville"
 
 
@@ -560,6 +563,8 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._town, "has_observation_schema", node)
             self._observation_schemas[name] = node
         self._places = {}; self._containers = {}
+        # Phase 048: plain counts of improvised work, accidents from strain, and broken tools (see tool_tally).
+        self._tool_tally = {"improvised_jobs": 0, "accidents": 0, "broken_tools": 0}
         # Building anchors are physical sites, not just labels. Keep each
         # authored footprint clear so adjacent facades cannot overlap.
         self._building_sites = {}
@@ -1006,23 +1011,30 @@ class BigvilleWorld:
                     continue
                 # Phase 050b: a job's pace multiplies its progress per tick (1.0 is the committed rate).
                 pace = float(ja.get("pace", 1.0))
-                remaining -= speed * pace
+                # Phase 048: the tools' fitness sets this tick's progress (1.0 for the right tool at full quality and
+                # condition, so the committed time is unchanged). The stamina spent follows the progress made.
+                fit = self._refresh_job_fit(job, speed * pace)
+                remaining -= speed * pace * fit
                 self.eng.set_attr(job, "remaining", max(0.0, remaining))
                 # The recipe's stamina cost is spread evenly over the ticks of the job (Phase 022), and over
                 # the progress it makes (Phase 024): a slowed worker spends less per tick.
-                self._spend_job_stamina(job, share=speed * pace)
+                self._spend_job_stamina(job, share=speed * pace * fit)
                 if remaining > 1e-9:
                     continue
                 remaining = 0.0
             asp_nodes = self.eng.neighbours(job, "runs")
             if not asp_nodes:
                 continue
+            # Phase 048: an instant job (or the tick that finished a timed one) reads the fitness of its tools now.
+            self._refresh_job_fit(job, 0.0)
             asp = asp_nodes[0]
             action = self.eng.node(asp)["attrs"]
             # Plan every input before changing anything. Each bulk unit comes from the worker's own
             # stock, then an accessible container at their cell, then the store (see `_plan_inputs`).
             # An unfulfilled job stays busy and can be completed after the missing good arrives.
             job_actor = str(ja.get("canonical_actor", ""))
+            # Phase 048: a missing tool is not a stall. The job uses the tool its worker has, or bare hands (see
+            # _job_tool_item and _refresh_job_fit), so it goes on at the fitness those hands give.
             need_specs = []
             for need in self.eng.neighbours(job, "need"):
                 na = self.eng.node(need)["attrs"]
@@ -1030,20 +1042,6 @@ class BigvilleWorld:
                                    float(na.get("is_item", 0.0)) == 1.0, na.get("slot_type", "")))
             plans = self._plan_inputs(job_actor, [(k, q, i, s) for _, k, q, i, s in need_specs])
             missing = plans is None
-            # Validate the required instruments before consuming any of the
-            # recipe inputs. A tool can be removed or broken while a timed job
-            # is underway, so the start-time check alone is not sufficient.
-            # Leave the job armed at zero remaining: it can finish later if
-            # the instrument is restored, without losing its materials.
-            job_own_tools = (bool(self._recipe_specs.get(action.get("name", ""), {}).get("open"))
-                             and job_actor in self._actors)
-            for tool_use in self.eng.neighbours(job, "uses"):
-                kind = self.eng.node(tool_use)["attrs"].get("kind", "")
-                if job_own_tools:                       # open recipes use the worker's own tool
-                    if self._held_tool(job_actor, kind) is None:
-                        missing = True
-                elif self._worker_tool(job_actor, kind) is None:
-                    missing = True
             # A burial job waits (armed, its inputs kept) until the worker stands in the graveyard and the
             # bury job's grave and body are still there.
             if not missing and not (self._at_recipe_building(job_actor, action.get("name", ""))
@@ -1098,13 +1096,23 @@ class BigvilleWorld:
             quality_at_reference = quality
             quality = R.pace_quality(quality, float(ja.get("pace", 1.0)), table["haste_penalty"])
             spoiled = R.ruined(quality, quality_at_reference, table["ruin_below"])
+            # Phase 048: the lowest tool fitness over the job lowers the quality and the yield; below waste_below the
+            # batch is wasted, so its inputs are gone and it yields nothing. The right tool at full condition leaves both.
+            fit_low = float(self.eng.node(job)["attrs"].get("fit_low", 1.0))
+            quality = R.fit_quality(quality, fit_low, table["fit_quality_loss"])
+            wasted = R.fit_wasted(fit_low, table["waste_below"])
             out_kind = action.get("out_kind", "")
             out_qty = float(action.get("out_qty", 0.0)) * R.pace_yield(float(ja.get("pace", 1.0)),
                                                                         table["haste_yield_loss"])
+            out_qty *= R.fit_yield(fit_low, table["waste_below"])
             if spoiled:
                 self.eng.set_attr(job, "ruined", 1.0)
                 self.create_event("batch_spoiled", subject=job_actor,
                                   detail=f"{job_actor}'s {action.get('name', '')} batch spoiled from being rushed.",
+                                  observer=job_actor, severity=0.1)
+            elif wasted:
+                self.create_event("batch_wasted", subject=job_actor,
+                                  detail=f"{job_actor}'s {action.get('name', '')} batch was wasted: the tool did not fit.",
                                   observer=job_actor, severity=0.1)
             elif float(action.get("out_discrete", 0.0)) == 1.0:
                 item_attrs = {"kind": out_kind, "weight": self.item_weight(out_kind),
@@ -1121,26 +1129,20 @@ class BigvilleWorld:
                     pass
             elif out_kind:
                 self.set_stock(out_kind, self.qty(out_kind) + out_qty)
-            for kind, qty in ({} if spoiled else self._recipe_specs.get(action.get("name", ""), {})
+            for kind, qty in ({} if spoiled or wasted else self._recipe_specs.get(action.get("name", ""), {})
                               .get("byproducts", {})).items():
                 self.set_stock(kind, self.qty(kind) + float(qty))      # e.g. bran from milling
             own_tools = bool(self._recipe_specs.get(action.get("name", ""), {}).get("open"))
             for tool_use in self.eng.neighbours(job, "uses"):
                 kind = self.eng.node(tool_use)["attrs"].get("kind")
-                if own_tools and actor_name in self._actors:
-                    tool = self._held_tool(actor_name, kind)
-                elif actor_name in self._actors:
-                    tool = self._worker_tool(actor_name, kind)
-                else:
-                    tool = None
+                # Phase 048: the tool the job used (its own, the one it was given, or none for bare hands).
+                tool = (self._job_tool_item(job, actor_name, kind, own_tools)
+                        if actor_name in self._actors else None)
                 if tool is not None:
                     ta = self.eng.node(tool)["attrs"]
-                    condition = max(0.0, float(ta.get("condition", 1.0)) - float(ta.get("wear", 0.02)))
-                    self.eng.set_attr(tool, "condition", condition)
-                    if self.eng.node(tool)["type"] == "ToolItem" and condition <= 0.0:
-                        self.eng.set_attr(tool, "broken", 1.0)      # a worn-out own tool must be replaced
+                    self._wear_tool(tool, float(ta.get("wear", 0.02)))
             burial = self._recipe_specs.get(action.get("name", ""), {}).get("burial")
-            if burial:
+            if burial and not wasted:                       # Phase 048: a wasted dig leaves no grave
                 self._enact_burial(job_actor, burial)
             self.eng.set_attr(job, "complete", 1.0)
             self.eng.set_attr(job, "remaining", 0.0)
@@ -7908,7 +7910,10 @@ class BigvilleWorld:
             return self.major_action(actor, "eat", **kwargs)
         if action == "work":
             pace = 1.0 if plan.get("intensity") is None else plan["intensity"]
-            return self.major_action(actor, "start", action_name=plan.get("recipe"), intensity=pace)
+            kwargs = {"action_name": plan.get("recipe"), "intensity": pace}
+            if "tool" in plan:                     # Phase 048: a kind of held tool, "none" for bare hands, or omitted
+                kwargs["tool"] = plan["tool"]
+            return self.major_action(actor, "start", **kwargs)
         if action == "sleep":
             return self.major_action(actor, "sleep")
         if action == "move":
@@ -8371,21 +8376,17 @@ class BigvilleWorld:
             return "unskilled"
         if not self._recipe_in_season(action_name):
             return "out_of_season"
-        recipe = self._recipe_specs.get(action_name, {})
         strength_needed, _stamina = self.E.recipe_exertion(action_name)
         if self.strength(actor) + 1e-9 < strength_needed:
             return "unskilled"
-        if recipe.get("open"):
-            if any(self._held_tool(actor, tool) is None for tool in recipe.get("tools", [])):
-                return "no_tool"
+        # Phase 048: a recipe does not refuse for want of its tool. The job uses the tool its worker has, or bare
+        # hands at the fitness they give (see _job_tool_item). What the world offers a backend is a separate matter.
         if not self._at_gathering_site(actor, action_name):
             return "not_at_site"
         if not self._at_recipe_building(actor, action_name):
             return "not_at_site"
         if not self._burial_ready(action_name):
             return "not_ready"
-        if not self._recipe_tools_usable(actor, action_name):
-            return "no_tool"
         return None
 
     def _attempt(self, actor, action, run):
@@ -8681,12 +8682,18 @@ class BigvilleWorld:
             code = self._recipe_refusal(actor, recipe)
             if code is not None:
                 return self._refuse(code)
+            # Phase 048: the proposal's tool is checked before the slot is claimed (an unheld named tool is refused).
+            tool = kwargs.get("tool", _DEFAULT_TOOL)
+            _mode, _item, tool_refusal = self._tool_choice(actor, tool)
+            if tool_refusal is not None:
+                return self._refuse(tool_refusal)
             if action == "start":
                 pace = kwargs.get("intensity", 1.0)
                 if self._as_amount(pace) is None:
                     return self._refuse("malformed")
-                return self._claimed_attempt(actor, action, lambda: self.start(actor, recipe, intensity=pace))
-            return self._claimed_attempt(actor, action, lambda: self.do(actor, recipe))
+                return self._claimed_attempt(actor, action,
+                                             lambda: self.start(actor, recipe, intensity=pace, tool=tool))
+            return self._claimed_attempt(actor, action, lambda: self.do(actor, recipe, tool=tool))
         if action in {"water", "harvest", "sow", "fertilise"}:
             target = kwargs.get("target", args[0] if args else None)
             if action == "sow":
@@ -8777,6 +8784,8 @@ class BigvilleWorld:
             return self.decline_request(actor, kwargs.pop("request", args[0]))
         if action == "set_intensity":
             return self.set_job_pace(actor, kwargs.pop("intensity", args[0] if args else None))
+        if action == "stop":
+            return self.stop_job(actor)
         raise ValueError(f"unknown free action: {action}")
 
     def set_job_pace(self, actor, intensity):
@@ -8894,7 +8903,7 @@ class BigvilleWorld:
 
 
     # ---------------------------------------------------- do an action (the ONE engine)
-    def _open_job(self, actor, action_name, remaining, pace=1.0):
+    def _open_job(self, actor, action_name, remaining, pace=1.0, tool_mode="default", tool_item=None):
         asp = self._actions[action_name]
         action_attrs = self.eng.node(asp)["attrs"]
         site_kind = self._recipe_specs.get(action_name, {}).get("gathered_from")
@@ -8912,11 +8921,16 @@ class BigvilleWorld:
                                         "strength_needed": float(self.E.recipe_exertion(action_name)[0]),
                                         # Phase 050b: the job's pace (intensity on a recipe), read each tick.
                                         "pace": float(pace),
+                                        # Phase 048: how the job's tool is chosen ("default", "item" or "hands"), and
+                                        # the fitness now and over the job (the lowest), read each tick.
+                                        "tool_mode": str(tool_mode), "fit": 1.0, "fit_low": 1.0, "effort_mult": 1.0,
                                         # Phase 032: a recipe with a strength requirement trains strength too.
                                         "uses_strength": 1.0 if self.E.recipe_exertion(action_name)[0] > 0.0 else 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
         self.eng.add_edge_unchecked(job, "runs", asp)
         self.eng.set_attr(self._actors[actor], "busy", 1.0)
+        if tool_item is not None:
+            self.eng.add_edge_unchecked(job, "tool_item", tool_item)      # the tool the proposal named
         # The cell the job started on: the job pauses while its worker stands elsewhere (Phase 023).
         here = self.actor_position(actor)
         if here is not None:
@@ -8927,10 +8941,19 @@ class BigvilleWorld:
                                             "is_item": float(a.get("is_item", 0.0)),
                                             "slot_type": a.get("slot_type", ""), "drawn_from": ""})
             self.eng.add_edge_unchecked(job, "need", jn)
+        improvised = False
         for tu in self.eng.neighbours(asp, "in_tool"):
             a = self.eng.node(tu)["attrs"]
             jt = self.eng.add_node("ToolUse", {"kind": a["kind"], "met": 0.0})
             self.eng.add_edge_unchecked(job, "uses", jt)
+            # Phase 048: the job runs without the tool its recipe names when that tool is not the one it uses.
+            used = self._job_tool_item(job, actor, a["kind"], bool(self._recipe_specs.get(action_name, {})
+                                                                    .get("open")))
+            if used is None or self.eng.node(used)["attrs"].get("kind") != a["kind"]:
+                improvised = True
+        if improvised:
+            self._tool_tally["improvised_jobs"] += 1
+        self._refresh_job_fit(job, 0.0)        # the job's fitness is known from the start, before any tick
 
     def _spend_job_stamina(self, job, final=False, share=1.0):
         """Spend a job's declared stamina through the Effort mechanism movement uses (Phase 022).
@@ -8945,10 +8968,12 @@ class BigvilleWorld:
             return
         ticks = float(ja.get("stamina_ticks", 0.0))
         if final or ticks <= 0.0:
-            amount = left
+            declared = left
         else:
-            amount = min(left, float(ja.get("stamina_total", 0.0)) / ticks * share)
-        self.eng.set_attr(job, "stamina_left", max(0.0, left - amount))
+            declared = min(left, float(ja.get("stamina_total", 0.0)) / ticks * share)
+        self.eng.set_attr(job, "stamina_left", max(0.0, left - declared))
+        # Phase 048: a poor tool fit costs more stamina for the same work (1 / fit, up to the effort cap).
+        amount = declared * float(ja.get("effort_mult", 1.0))
         actor = str(ja.get("canonical_actor", ""))
         if amount <= 0.0 or actor not in self._actors or self._bodies.get(actor) is None:
             return
@@ -9175,6 +9200,167 @@ class BigvilleWorld:
                 return False
         return True
 
+    # ------------------------------------------------------- Phase 048: tool fitness, improvised work, stop
+
+    def _tool_choice(self, actor, tool):
+        """How a job is tooled, from the proposal (Phase 048): (mode, item, refusal).
+
+        Omitted (_DEFAULT_TOOL): the right tool the worker has, else bare hands. None or "none": bare hands. A tool
+        kind: the held tool of that kind, refused as no_tool when the actor holds none. Anything else is malformed."""
+        if tool is _DEFAULT_TOOL:
+            return "default", None, None
+        if tool is None or (isinstance(tool, str) and tool == "none"):
+            return "hands", None, None
+        if not isinstance(tool, str) or tool == "":
+            return None, None, "malformed"
+        kind = self._as_key(tool)
+        if kind is None:
+            return None, None, "malformed"
+        item = self._held_tool(actor, kind)
+        if item is None:
+            return None, None, "no_tool"
+        return "item", item, None
+
+    def _holds_item(self, actor, item):
+        node = self._actor(actor)
+        return any(item in self.eng.neighbours(node, edge) for edge in ("holds_in_hand", "holds_tableware", "holds"))
+
+    def _job_tool_item(self, job, actor, kind, own_tools):
+        """The tool a job uses for one tool slot of `kind`, now (Phase 048). None is bare hands.
+
+        A named tool (tool_mode "item") is used while the worker holds it and it is serviceable; "hands" uses none;
+        the default uses the open recipe's own held tool, or a trade tool at the workplace or in hand."""
+        ja = self.eng.node(job)["attrs"]
+        mode = str(ja.get("tool_mode", "default"))
+        if mode == "hands":
+            return None
+        if mode == "item":
+            for item in self.eng.neighbours(job, "tool_item"):
+                if (self.eng.has_node(item) and self._holds_item(actor, item)
+                        and self._serviceable(self.eng.node(item)["attrs"])):
+                    return item
+            return None
+        if own_tools:
+            return self._held_tool(actor, kind)
+        return self._worker_tool(actor, kind)
+
+    def _tool_fit(self, item, verb, work_hardness, slot_kind=None):
+        """(fit, row_effort) of one tool for a verb on work of the given hardness (Phase 048).
+
+        Bare hands (item None) fit every verb at RESOLUTION hands_fit. An authored TOOL_FIT row for the verb gives the
+        row's mult, scaled by the tool's quality and condition, and the row's effort. The right tool for a recipe's
+        slot (an item of slot_kind) fits at 1 times its quality and condition. Any other tool gives closeness x
+        hardness x edge x weight, scaled the same way. The arithmetic is in worlds/resolution.py."""
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        tf = self.E.TOOL_FIT
+        if item is None:
+            return float(rs["hands_fit"]), 1.0
+        attrs = self.eng.node(item)["attrs"]
+        kind = str(attrs.get("kind", ""))
+        quality = float(attrs.get("quality", 1.0))
+        condition = float(attrs.get("condition", 1.0))
+        for row in tf["rows"].get(kind, []):
+            if row["verb"] == verb:
+                return R.fitness(float(row["mult"]), quality, condition), float(row["effort"])
+        if slot_kind is not None and kind == slot_kind:
+            return R.fitness(1.0, quality, condition), 1.0
+        spec = self._item_specs.get(kind, {})
+        tool_material = self.E.MATERIALS.get(spec.get("material"), {})
+        table = R.closeness_table(tf["pairs"])
+        physical = (R.closeness(str(spec.get("verb", "")), verb, table, same=tf["same_verb"],
+                                unrelated=rs["unrelated_fit"])
+                    * R.hardness_term(float(tool_material.get("hardness", 0.0)), work_hardness,
+                                      tf["hardness_zero_gap"])
+                    * R.edge_term(verb, tf["edge_verbs"], kind in tf["edged_kinds"], tf["no_edge"])
+                    * R.weight_term(verb, tf["weight_verbs"], float(attrs.get("weight", 1.0)), tf["min_weight"]))
+        return R.fitness(physical, quality, condition), 1.0
+
+    def _wear_tool(self, item, amount):
+        """Wear a tool by `amount` of its condition. A tool at 0 is broken, and the breaking is tallied."""
+        attrs = self.eng.node(item)["attrs"]
+        condition = max(0.0, float(attrs.get("condition", 1.0)) - float(amount))
+        self.eng.set_attr(item, "condition", condition)
+        if condition <= 0.0 and float(attrs.get("broken", 0.0)) != 1.0:
+            self.eng.set_attr(item, "broken", 1.0)
+            self._tool_tally["broken_tools"] += 1
+
+    def _accrue_strain(self, actor, amount):
+        """Add strain to a worker (Phase 050; jobs too, Phase 048). A full strain is an accident: the worker takes
+        accident_harm through harm(), and the strain resets to zero."""
+        rs = self.E.RESOLUTION
+        node = self._actors[actor]
+        strain = float(self.eng.node(node)["attrs"].get("strain", 0.0)) + float(amount)
+        if strain >= float(rs["strain_limit"]):
+            self.harm(actor, float(rs["accident_harm"]), "accident")
+            strain = 0.0
+            self._tool_tally["accidents"] += 1
+        self.eng.set_attr(node, "strain", strain)
+
+    def _refresh_job_fit(self, job, share):
+        """The fitness of a job's tools now (Phase 048), and the work it does this tick. Returns the fitness: the lowest
+        over the job's tool slots, 1.0 for a job with no tool slot.
+
+        The job keeps its fitness, its stamina multiplier (1 / fit up to the effort cap, times an authored row's
+        effort) and the lowest fitness so far. A tick of work (share > 0) wears each tool by the excess wear of a poor
+        fit, and strains the worker by its effort share x (1 - fit). Nothing here is random."""
+        from worlds import resolution as R
+        ja = self.eng.node(job)["attrs"]
+        actor = str(ja.get("canonical_actor", ""))
+        asp = next(iter(self.eng.neighbours(job, "runs")), None)
+        if actor not in self._actors or asp is None:
+            return 1.0
+        rs = self.E.RESOLUTION
+        name = str(self.eng.node(asp)["attrs"].get("name", ""))
+        own_tools = bool(self._recipe_specs.get(name, {}).get("open"))
+        fits, multipliers = [], []
+        for tu in self.eng.neighbours(job, "uses"):
+            kind = str(self.eng.node(tu)["attrs"].get("kind", ""))
+            spec = self._item_specs.get(kind, {})
+            work_hardness = float(self.E.MATERIALS.get(spec.get("material"), {}).get("hardness", 0.0))
+            item = self._job_tool_item(job, actor, kind, own_tools)
+            fit, row_effort = self._tool_fit(item, str(spec.get("verb", "")), work_hardness, kind)
+            fits.append(fit)
+            multipliers.append(R.effort_multiplier(fit, rs["effort_cap"], row_effort))
+            if item is not None and share > 0.0:
+                tool_material = self.E.MATERIALS.get(self._item_specs.get(
+                    str(self.eng.node(item)["attrs"].get("kind", "")), {}).get("material"), {})
+                gap = max(0.0, work_hardness - float(tool_material.get("hardness", 0.0)))
+                wear = float(self.eng.node(item)["attrs"].get("wear", spec.get("wear_rate", 0.02)))
+                excess = R.tool_wear_excess(wear, share, fit, rs["mismatch_wear"], 1.0 + float(rs["hardness_wear"]) * gap)
+                if excess > 0.0:
+                    self._wear_tool(item, excess)
+        fit_now = min(fits) if fits else 1.0
+        self.eng.set_attr(job, "fit", fit_now)
+        self.eng.set_attr(job, "effort_mult", max(multipliers) if multipliers else 1.0)
+        self.eng.set_attr(job, "fit_low", min(float(ja.get("fit_low", 1.0)), fit_now))
+        ticks = float(ja.get("stamina_ticks", 0.0))
+        if share > 0.0 and ticks > 0.0 and fit_now < 1.0:
+            self._accrue_strain(actor, R.strain(share / ticks, fit_now))
+        return fit_now
+
+    def stop_job(self, actor):
+        """Abandon the actor's timed job (free action stop, Phase 048). Its inputs are taken only at completion, so only
+        the progress is lost; the stamina already spent stays spent. False when there is no unfinished job."""
+        if actor not in self._actors:
+            return False
+        job = self._job_of(actor)
+        if job is None or float(self.eng.node(job)["attrs"].get("complete", 0.0)) == 1.0:
+            return False
+        node = self._actors[actor]
+        self.eng.set_attr(job, "complete", 1.0)
+        self.eng.set_attr(job, "remaining", 0.0)
+        self.eng.set_attr(job, "stopped", 1.0)
+        self.eng.set_attr(node, "busy", 0.0)
+        self._set_job_paused(actor, False)
+        self.eng.remove_edge_unchecked(node, "on_job", job)
+        return True
+
+    def tool_tally(self):
+        """Counts over the whole town (Phase 048): jobs run without their named tool (improvised_jobs), strains that
+        became accidents, and tools broken by use. Plain counts; nothing about any resident's capability."""
+        return dict(self._tool_tally)
+
     def _held_tool(self, actor, kind):
         """An unbroken tool of `kind` the actor holds (hand, belt, or carried), or None."""
         node = self._actor(actor)
@@ -9226,33 +9412,42 @@ class BigvilleWorld:
         self._refresh_carry_state(actor)
         return True
 
-    def do(self, actor, action_name):
+    def do(self, actor, action_name, tool=_DEFAULT_TOOL):
         """Perform an action INSTANTLY (no timer). Refused if the actor does not KNOW the recipe or is
-        not SKILLED enough (below its min_skill floor)."""
+        not SKILLED enough (below its min_skill floor).
+
+        ``tool`` (Phase 048): omitted, the job uses the right tool its worker has, else bare hands; None or "none"
+        for bare hands; a tool kind for the held tool of that kind (refused as no_tool when none is held)."""
         code = self._recipe_refusal(actor, action_name)
         if code is not None:
             return self._refuse(code)
+        mode, item, refusal = self._tool_choice(actor, tool)
+        if refusal is not None:
+            return self._refuse(refusal)
         # Calls made before the first simulation tick remain convenient setup
         # operations.  Once the clock is running, a direct craft is a major
         # action too; the explicit dispatcher suppresses this second charge.
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "work"):
             return self._refuse("slot_used")
-        self._open_job(actor, action_name, 0.0); self._run()
+        self._open_job(actor, action_name, 0.0, tool_mode=mode, tool_item=item); self._run()
         return True
 
-    def start(self, actor, action_name, intensity=1.0):
+    def start(self, actor, action_name, intensity=1.0, tool=_DEFAULT_TOOL):
         """START a TIMED action; refused if the actor does not know OR is not skilled enough for it.
 
         ``intensity`` is the job's pace (Phase 050b): above 1 the job finishes sooner, at a cost in quality and
-        stamina; below 1 it is slower and better. It is clamped to [1 / care_cap, haste_cap]."""
+        stamina; below 1 it is slower and better. It is clamped to [1 / care_cap, haste_cap]. ``tool`` is as for do."""
         code = self._recipe_refusal(actor, action_name)
         if code is not None:
             return self._refuse(code)
+        mode, item, refusal = self._tool_choice(actor, tool)
+        if refusal is not None:
+            return self._refuse(refusal)
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "start"):
             return self._refuse("slot_used")
         mins = float(self.eng.node(self._actions[action_name])["attrs"]["time_minutes"])
         self._open_job(actor, action_name, math.ceil(mins / float(self.E.TIME["minutes_per_tick"])),
-                       pace=self._pace_value(intensity)); self._run()
+                       pace=self._pace_value(intensity), tool_mode=mode, tool_item=item); self._run()
         return True
 
     def _pace_value(self, value):
@@ -9449,9 +9644,10 @@ class BigvilleWorld:
             return self._run_attempt(actor, plan)
         return self._claimed_attempt(actor, "attempt", lambda: self._run_attempt(actor, plan))
 
-    def _capability_terms(self, actor, spec, tool, requested):
+    def _capability_terms(self, actor, spec, tool, requested, target_material):
         """The capability terms every attempt shares (Phase 050): the intensity applied (clamped to the ceiling,
-        which the speed factor and health lower), force, technique, fit, and the tool's kind."""
+        which the speed factor and health lower), force, technique, fit, and the tool's kind. The fit is the tool's
+        fitness for the verb's work on the target's material (Phase 048); bare hands fit at hands_fit."""
         rs = self.E.RESOLUTION
         body = self.eng.node(self._bodies[actor])["attrs"]
         speed = self.speed_factor(actor)
@@ -9465,13 +9661,10 @@ class BigvilleWorld:
         technique = 1.0 if skill is None else R.technique_term(self.effective_skill(actor, skill),
                                                                rs["technique_floor"])
         tool_kind = "" if tool is None else str(self.eng.node(tool)["attrs"].get("kind", ""))
-        if tool is None:
-            fit = float(rs["hands_fit"])
-        else:
-            tool_verb = self._item_specs.get(tool_kind, {}).get("verb")
-            fit = float(spec["tool_verbs"].get(tool_verb, rs["unrelated_fit"]))
+        target_hardness = float(self.E.MATERIALS[target_material]["hardness"])
+        fit, row_effort = self._tool_fit(tool, str(spec.get("work", "")), target_hardness, None)
         return {"applied": applied, "clamped": clamped, "force": force, "technique": technique, "fit": fit,
-                "tool_kind": tool_kind}
+                "effort": row_effort, "tool_kind": tool_kind}
 
     def _resolve_terms(self, terms, spec, demand):
         """One resolution step for the terms and a demand. Returns (step, share): the step's outputs, and the cost
@@ -9494,14 +9687,16 @@ class BigvilleWorld:
         rs = self.E.RESOLUTION
         node = self._containers[name][0]
         attrs = self.eng.node(node)["attrs"]
-        terms = self._capability_terms(actor, spec, tool, requested)
         if spec["primitive"] == "damage":
             target_material = (self._item_specs.get(str(attrs.get("kind", "")), {}).get("material")
                                or rs["default_material"])
+        else:
+            target_material = rs["lock_material"]
+        terms = self._capability_terms(actor, spec, tool, requested, target_material)
+        if spec["primitive"] == "damage":
             condition = float(attrs.get("structure", 1.0))
             demand = float(self.E.MATERIALS[target_material]["toughness"]) * condition
         else:
-            target_material = rs["lock_material"]
             condition = float(attrs.get("lock_condition", 1.0))
             demand = float(attrs.get("lock_strength", 1.0)) * condition
         step, share = self._resolve_terms(terms, spec, demand)
@@ -9567,20 +9762,13 @@ class BigvilleWorld:
             tool_hardness = float(self.E.MATERIALS[tool_material]["hardness"]) if tool_material in self.E.MATERIALS else 0.0
             gap = max(0.0, float(mat["hardness"]) - tool_hardness)
             wear = R.tool_wear(rs["tool_wear"], applied, fit, rs["mismatch_wear"], float(rs["hardness_wear"]) * gap)
-            tool_condition = max(0.0, float(self.eng.node(tool)["attrs"].get("condition", 1.0)) - wear)
-            self.eng.set_attr(tool, "condition", tool_condition)
-            if tool_condition <= 0.0:
-                self.eng.set_attr(tool, "broken", 1.0)
-        # A trivial attempt (cost share below trivial_below, Phase 029) spends no stamina.
+            self._wear_tool(tool, wear)
+        # A trivial attempt (cost share below trivial_below, Phase 029) spends no stamina. The tool's effort (Phase 048)
+        # multiplies it: a row for a verb may cost more than the normal stroke.
         if plan["share"] >= float(rs["trivial_below"]):
-            self._spend_attempt_stamina(actor, float(step["stamina"]), applied)
-        actor_node = self._actors[actor]
+            self._spend_attempt_stamina(actor, float(step["stamina"]) * float(plan["terms"].get("effort", 1.0)), applied)
         # Overexertion and the rest of the strain build up; a full strain is an accident.
-        strain = float(self.eng.node(actor_node)["attrs"].get("strain", 0.0)) + float(step["strain"])
-        if strain >= float(rs["strain_limit"]):
-            self.harm(actor, float(rs["accident_harm"]), "accident")
-            strain = 0.0
-        self.eng.set_attr(actor_node, "strain", strain)
+        self._accrue_strain(actor, float(step["strain"]))
         if plan["primitive"] != "displace":
             self._publish_noise(actor, plan["verb"], plan["name"],
                                 R.noise_radius(rs["noise_base"], applied, mat["noise"]))
@@ -9656,7 +9844,7 @@ class BigvilleWorld:
         reference push, times the ground's friction, the terrain's move time), and the capability is the usual one."""
         from worlds import resolution as R
         rs = self.E.RESOLUTION
-        terms = self._capability_terms(actor, spec, tool, requested)
+        terms = self._capability_terms(actor, spec, tool, requested, rs["default_material"])
         friction = float(self.terrain_state(cell)["move_time"])
         demand = R.friction_demand(mass, rs["push_mass_unit"], friction)
         step, share = self._resolve_terms(terms, spec, demand)

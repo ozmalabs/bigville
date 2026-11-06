@@ -87,7 +87,10 @@ def test_job_trace_is_reproducible_for_fixed_seed():
     assert _run(_game()) == _run(_game())
 
 
-def test_missing_tool_rejects_start_without_consuming_inputs():
+
+def test_missing_tool_starts_on_bare_hands_and_the_batch_is_wasted():
+    # Phase 048: a recipe does not refuse for want of its tool. The job runs on bare hands, takes its inputs when it
+    # completes, and yields nothing (the fitness is below waste_below).
     world = BigvilleWorld()
     world.add_actor("Smith", role="smith", skill=0.9)
     world.set_stock("iron", 1)
@@ -95,13 +98,20 @@ def test_missing_tool_rejects_start_without_consuming_inputs():
     hammer = world.workshop_tool("hammer", building="forge")     # the forge's own hammer
     world.eng.remove_edge_unchecked(world._places["forge"], "has_tool_item", hammer)
 
-    assert not world.start("Smith", "forge_nails")
-    assert not world.do("Smith", "forge_nails")
-    assert world.qty("iron") == 1.0 and world.qty("charcoal") == 1.0
-    assert world.qty("nails") == 0.0 and not world.busy("Smith")
+    assert not world._recipe_inputs_available("forge_nails", "Smith"), "offers still want a usable tool"
+    assert world.start("Smith", "forge_nails")
+    assert world.qty("iron") == 1.0 and world.qty("charcoal") == 1.0, "inputs are taken at completion"
+    for _ in range(2000):
+        if not world.busy("Smith"):
+            break
+        world.tick(1)
+    assert not world.busy("Smith")
+    assert world.qty("iron") == 0.0 and world.qty("charcoal") == 0.0, "the completed batch used its inputs"
+    assert world.qty("nails") == 0.0, "and yielded nothing"
 
 
-def test_tool_lost_during_timed_job_blocks_completion_without_consuming_inputs():
+
+def test_tool_lost_during_timed_job_goes_on_at_bare_hand_speed_and_recovers_with_the_tool():
     world = BigvilleWorld()
     world.add_actor("Smith", role="smith", skill=0.9)
     world.set_stock("iron", 1)
@@ -111,14 +121,18 @@ def test_tool_lost_during_timed_job_blocks_completion_without_consuming_inputs()
     world._move_actor_to("Smith", (x, y))                      # ticking runs the clock: be at the forge
 
     assert world.start("Smith", "forge_nails")
+    job = world._job_of("Smith")
     world.eng.remove_edge_unchecked(world._places["forge"], "has_tool_item", hammer)
+    before = float(world.eng.node(job)["attrs"]["remaining"])
     world.tick(1)
     assert world.busy("Smith")
     assert world.qty("iron") == 1.0 and world.qty("charcoal") == 1.0
     assert world.qty("nails") == 0.0
+    assert 0.0 < before - float(world.eng.node(job)["attrs"]["remaining"]) < 0.1, "bare hands: a small step"
 
     world.eng.add_edge_unchecked(world._places["forge"], "has_tool_item", hammer)
+    before = float(world.eng.node(job)["attrs"]["remaining"])
     world.tick(1)
-    assert not world.busy("Smith")
-    assert world.qty("iron") == 0.0 and world.qty("charcoal") == 0.0
-    assert world.qty("nails") == 5.0
+    assert float(world.eng.node(job)["attrs"]["remaining"]) < before - 0.5, "with the hammer back, the job is quick again"
+
+

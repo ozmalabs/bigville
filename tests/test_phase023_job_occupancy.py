@@ -142,19 +142,21 @@ def test_a_paused_job_shows_on_the_affordances_with_a_way_back():
     assert back[0]["destination"] == w.job_start_cell("Smith")
 
 
-def test_a_job_short_of_its_tool_still_completes_when_the_tool_arrives():
+
+def test_a_job_whose_tool_breaks_midway_goes_on_with_bare_hands():
+    # Phase 048: the job does not wait for a tool. Its progress falls to the bare-hand fitness, so it advances far
+    # more slowly, and it keeps its worker busy.
     w = _smith()
     tool = w.workshop_tool("hammer")
     assert tool is not None
     assert w.start("Smith", "forge_plough")
+    job = w._job_of("Smith")
     w.eng.set_attr(tool, "broken", 1.0)              # the hammer breaks while the job is underway
-    for _ in range(_ticks("forge_plough") + 1):
-        w.tick(1)
-    assert w.busy("Smith") and w.newest_tool() is None, "the job waits for an unbroken hammer"
-    w.eng.set_attr(tool, "broken", 0.0)
-    w.eng.set_attr(tool, "condition", 1.0)
+    before = float(w.eng.node(job)["attrs"]["remaining"])
     w.tick(1)
-    assert not w.busy("Smith") and w.newest_tool() is not None
+    after = float(w.eng.node(job)["attrs"]["remaining"])
+    assert w.busy("Smith") and w.newest_tool() is None, "the job goes on"
+    assert 0.0 < before - after < 0.1, "it advances at the bare-hand fitness, far below one tick"
 
 
 def test_the_simple_backend_walks_back_to_a_paused_job():

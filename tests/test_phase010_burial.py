@@ -141,30 +141,36 @@ def test_a_corpse_is_not_buried_or_moved_by_the_world_on_its_own(town):
 
 
 # ----------------------------------------------------------------- digging
+
 def test_digging_needs_a_spade_and_the_graveyard(town):
     lab = _labourer(town)
     graveyard = _inside_graveyard(town)
     assert town._open_graves() == 0
     town._move_actor_to(lab, graveyard)
-    assert not town.do(lab, "dig_grave"), "refused without a spade"
-    assert town._open_graves() == 0
+    spoil = town.qty("grave_spoil")
+    # Phase 048: a missing spade is not a refusal. Bare hands dig, but the batch is wasted: no grave, no spoil.
+    assert town.do(lab, "dig_grave"), "bare hands dig too (Phase 048)"
+    assert town._open_graves() == 0 and town.qty("grave_spoil") == spoil, "a bare-handed dig yields nothing"
     town.give_tool(lab, "spade")
     town._move_actor_to(lab, _open_cell_outside(town))
     assert not town.do(lab, "dig_grave"), "refused outside the graveyard, spade or not"
     assert town._open_graves() == 0
     town._move_actor_to(lab, graveyard)
-    spoil = town.qty("grave_spoil")
     assert town.do(lab, "dig_grave")
     assert town._open_graves() == 1
     assert town.qty("grave_spoil") == spoil + 1.0
 
 
+
 def test_digging_uses_the_workers_own_spade_and_no_one_elses(town):
     lab = _labourer(town)
     other = _labourer(town, exclude=(lab,))
-    town.give_tool(other, "spade")
+    spade = town.give_tool(other, "spade")
     town._move_actor_to(lab, _inside_graveyard(town))
-    assert not town.do(lab, "dig_grave"), "a spade in someone else's hands does not count"
+    # Phase 048: a spade in someone else's hands is not used. The dig goes on bare-handed and is wasted.
+    assert town.do(lab, "dig_grave")
+    assert town._open_graves() == 0, "a spade in someone else's hands does not count"
+    assert town.tool_condition(spade) == 1.0
 
 
 # ----------------------------------------------------------------- burying

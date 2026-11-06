@@ -186,3 +186,85 @@ def friction_demand(mass, mass_unit, friction):
     """Demand of a ground displacement: the load's mass in units of the reference push (mass_unit kg, the average
     adult's push at normal intensity), times the ground's friction (terrain move time, grass 1.0)."""
     return max(0.0, float(mass)) / float(mass_unit) * max(0.0, float(friction))
+
+
+# ---------------------------------------------------------------- Phase 048: tool fitness
+
+def closeness_table(rows):
+    """A symmetric lookup from [verb_a, verb_b, closeness] rows: {(a, b): c, (b, a): c}."""
+    table = {}
+    for a, b, value in rows:
+        table[(str(a), str(b))] = float(value)
+        table[(str(b), str(a))] = float(value)
+    return table
+
+
+def closeness(verb, want, table, same=1.0, unrelated=0.0):
+    """How close a tool's verb is to the verb the work needs: `same` for the same verb, the table's value for a
+    near pair, `unrelated` otherwise."""
+    if str(verb) == str(want):
+        return float(same)
+    return float(table.get((str(verb), str(want)), unrelated))
+
+
+def hardness_term(tool_hardness, work_hardness, zero_gap):
+    """1 when the tool is at least as hard as the work. A tool softer than the work loses fitness in step with the
+    gap, and gives 0 at a gap of zero_gap or more (wood against iron)."""
+    gap = max(0.0, float(work_hardness) - float(tool_hardness))
+    if gap <= 0.0:
+        return 1.0
+    return clamp(1.0 - gap / float(zero_gap), 0.0, 1.0)
+
+
+def edge_term(verb, edge_verbs, has_edge, no_edge):
+    """A cutting verb needs an edge or a point. A tool without one keeps `no_edge` of its fitness."""
+    if str(verb) in edge_verbs and not has_edge:
+        return float(no_edge)
+    return 1.0
+
+
+def weight_term(verb, weight_verbs, weight, min_weight):
+    """A striking or digging verb needs weight. A tool lighter than min_weight keeps weight / min_weight."""
+    if str(verb) not in weight_verbs:
+        return 1.0
+    return clamp(float(weight) / float(min_weight), 0.0, 1.0)
+
+
+def fitness(physical, quality, condition):
+    """A tool's fitness for a verb: its physical fit (closeness x hardness x edge x weight, each in [0, 1]) scaled
+    by its quality (the maker's skill) and its condition (1 new, 0 broken). A new, well-made tool that fits has 1."""
+    return clamp(float(physical) * clamp(float(quality), 0.0, 1.0) * clamp(float(condition), 0.0, 1.0), 0.0, 1.0)
+
+
+def effort_multiplier(fit, effort_cap, row_effort=1.0):
+    """The stamina a job or attempt costs, relative to the declared cost, for a fitness: clamp(1 / f, 1, effort_cap),
+    times the authored row's effort (1.0 for a derived fitness). A fit of 1 costs the declared amount."""
+    f = clamp(float(fit), 0.0, 1.0)
+    base = float(effort_cap) if f <= 0.0 else clamp(1.0 / f, 1.0, float(effort_cap))
+    return base * float(row_effort)
+
+
+def fit_quality(quality, fit, loss):
+    """A finished batch's quality with a poor fit: quality x (1 - loss x (1 - fit)). A fit of 1 leaves it unchanged."""
+    if float(fit) >= 1.0:
+        return float(quality)
+    return clamp(float(quality) * (1.0 - float(loss) * (1.0 - clamp(float(fit), 0.0, 1.0))), 0.0, 1.0)
+
+
+def fit_wasted(fit, waste_below):
+    """A job whose tool fit fell below waste_below consumes its inputs for nothing."""
+    return float(fit) < float(waste_below)
+
+
+def fit_yield(fit, waste_below):
+    """The share of a batch's output a tool's fit keeps: the fit itself, or nothing below waste_below."""
+    if fit_wasted(fit, waste_below):
+        return 0.0
+    return clamp(float(fit), 0.0, 1.0)
+
+
+def tool_wear_excess(base, intensity, fit, mismatch, hardness_factor):
+    """Wear that a poor fit adds on top of a tool's ordinary wear, for one unit of work: zero for a tool that fits.
+    base x intensity x mismatch x (1 - fit) x hardness_factor."""
+    return (float(base) * float(intensity) * float(mismatch) * (1.0 - clamp(float(fit), 0.0, 1.0))
+            * max(0.0, float(hardness_factor)))
