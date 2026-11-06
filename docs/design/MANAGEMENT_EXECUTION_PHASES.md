@@ -23,7 +23,7 @@ The implementation is local-first and single-user for these phases. Bind the man
 
 ## Dependency order and scheduling
 
-`M01 → M02 → M03 → M04 → M05 → M06 → M07 → M08 → M09 → M10 → M11 → M12`.
+`M01 → M02 → M03 → M04 → M05 → M06 → M07 → M08 → M09 → M10 → M11 → M11A → M11B → M12`.
 
 This conservative sequence avoids simultaneous edits to the server and UI. The supervisor may parallelize read-only research or non-overlapping test design after freezing contracts, but must integrate in this order. M06 depends on committed agent-view work, and M08 on committed game checkpoint/restore; if unavailable, mark the affected phase blocked and continue only work explicitly independent of it. M01–M05 do not require those changes. M10–M12 are separate increments and do not block a usable M01–M09 product.
 
@@ -40,7 +40,9 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 | M09 | blocked by M08 | templates and versioned reuse |
 | M10 | blocked by M09 | backend profiles and actor assignments |
 | M11 | blocked by M10 | configurable cast generation and backend splits |
-| M12 | blocked by M11 | comparison and end-to-end release audit |
+| M11A | blocked by M11 | supported physical subsystem controls |
+| M11B | blocked by M11A | human-controlled sessions |
+| M12 | blocked by M11B | comparison and end-to-end release audit |
 
 ## M01 — Capability catalog and server skeleton
 
@@ -131,6 +133,24 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 **Tests:** `test_cast_generation.py`, `test_cast_browser.py`: same seed/config yields identical cast and backend assignments; changed seed affects generated traits; group totals/invalid distributions/duplicates rejected; preview matches the launched effective cast; old `town100` output remains unchanged when no new options are used. Run `python3 -m pytest -q tests/management/test_cast_generation.py tests/management/test_cast_browser.py` plus affected existing town100 tests.
 
 **Done:** User-specified populations influence the real simulation and invalid or unsupported options cannot be submitted.
+
+## M11A — Physical subsystem configuration
+
+**Scope:** Extend draft resolution, preview and run creation to accept only engine-supported physical subsystem overrides, displaying inherited and effective values and descriptions in the new-run form. Route the same resolved values to both preview and launched world for authored scenarios and town100; if a constructor cannot honor an override, reject it explicitly rather than modify it after initialization. Persist overrides, defaults and effective values in the immutable config. Do not add switches for purchases, banking or global speech without independent engine support.
+
+**Tests:** `test_subsystems.py`, `test_subsystems_browser.py`: defaults and explicit overrides, unknown names/non-booleans rejected, identical effective preview and launched world, scenario precedence, template round trip, and an observable engine behavior gated by one switch. Run `python3 -m pytest -q tests/management/test_subsystems.py tests/management/test_subsystems_browser.py` and relevant world subsystem tests.
+
+**Done:** Every enabled control changes the real world setting and review shows its source; unsupported world mechanics remain informational.
+
+## M11B — Human-controlled sessions
+
+**Prerequisite:** Committed agent-view changes and M06's perspective boundary are available.
+
+**Scope:** Add human-controlled run creation with a valid player from the resolved cast, mutually exclusive with autonomous mode. Support actual player turn submissions through a run-scoped API and preserve `waiting` when more human input is required; do not auto-advance a waiting session. Use the agent view for the player interface, and keep referee inspection separately explicit. Implement valid, state-checked transitions to and from waiting, and retain real engine reaction/turn semantics. Add mode and player selection and controls for legal player actions; reject malformed, stale or unauthorized actor submissions. Retain the local single-user boundary.
+
+**Tests:** `test_human_runs.py`, `test_human_runs_browser.py`: valid and invalid player selection, no simultaneous autonomous player, human waiting and submission for a real small scenario, rejected stale/invalid input, no referee data in agent responses, and continued normal autonomous operation. Run `python3 -m pytest -q tests/management/test_human_runs.py tests/management/test_human_runs_browser.py` plus existing human/agent-view tests.
+
+**Done:** A human can create and play a managed run without falsely advancing or leaking full world state to the player view.
 
 ## M12 — Comparison and release audit
 
