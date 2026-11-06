@@ -2390,8 +2390,8 @@ counters from 021 and 048). 057 follows 051 and 052, and shows a local patch of 
 
 ## Phase 051 -- Words for numbers and statuses
 
-**Status:** ready (decision 2026-11-05: the translations of numbers and statuses belong in the
-entity data, so the character sheet and the LLM share them).
+**Status:** done (see History). Decision 2026-11-05: the translations of numbers and statuses belong in
+the entity data, so the character sheet and the LLM share them. Tract B.
 
 **Goal.** A pack lexicon, with one function to read it, so no consumer invents its own words.
 1. **Bands.** For each quantity a resident can perceive, an ordered table of thresholds, each
@@ -2849,3 +2849,4 @@ provider layer's retry and backoff (Phase 055).
 | 030 Store lock and key | done | (this commit) | docs/phases/phase030/PHASE030_REPORT.md -- keys are items; lock/unlock actions; dual keys; _store_open guards; 967 passed |
 | 032 Use trains the body | done | (this commit) | docs/phases/phase032/PHASE032_REPORT.md -- seed training rules; effective stats; training switch; strength gate on all heavy recipes; 1003 passed |
 | 037 One health, several routes to death | done | (this commit) | docs/phases/phase037/PHASE037_REPORT.md -- harm(actor, amount, cause); age decline; starvation harm; recovery cap; deaths by cause; 1020 passed |
+| 051 Words for numbers and statuses | done | (this commit) | docs/phases/phase051/PHASE051_REPORT.md -- `domains/lexicon.py` (`describe`, `value_for`, reverse words, `resolve_verb`), 35 quantities in self and other perspectives read from the pack, source edges cross-checked, bigville and test_hamlet words differ; 179 tests; 1199 passed |

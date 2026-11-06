@@ -1,0 +1,1704 @@
+{
+  "_doc": "LEXICON (Phase 051): the words for numbers and statuses, read by domains/lexicon.py. Each LEXICON_QUANTITIES entry is a band table (kind 'numeric': ordered bands with a `min` threshold, a `label` and a `phrase` per perspective; the first band starts at range[0] and each band runs to the next min, the last to range[1]) or a status table (kind 'status': a phrase per key, with 'unknown' as the fallback). Perspectives: 'self' is how the resident feels; 'other' is only what an observer could see. A quantity with no 'other' is hidden from others. Phrases never contain digits. A table with published false has no world read-off yet; its _doc says so. Edges that the pack or the world names are cross-checked by domains/lexicon_check.py; the others are APPROX (model choices, not sourced figures). INTENSITY_WORDS (numbers where 1.0 is normal; APPROX), AMOUNT_WORDS (numbers), VERB_ALIASES (verbs resolve to a canonical verb; a canonical verb maps to itself) and LEXICON_PAYLOAD (which observation fields are numeric or status words, and which band table words them, or why a field is not perceivable) complete the file.",
+  "_types": {},
+  "tables": {
+    "LEXICON_QUANTITIES": {
+      "energy": {
+        "_doc": "ENERGY: the movement energy reserve, 0 to 100 (observation `energy`, which is body stamina_reserve x 100). Edges from EXHAUSTION (world/exhaustion.json, cross-checked by the self-test): 5 = e_collapse x 100 (below it a resident falls asleep where they stand), 15 = e_low x 100, 40 = e_mid x 100, 70 = e_high x 100 (full speed at 70 and above). 35 = the simple backend's rest_energy_threshold (bigville/backends/cheap.py, 35.0; a backend constant, not in the pack, so not cross-checked): 'flagging' is the band where that backend rests. The other perspective keeps the three bands an observer can judge (APPROX: a person reads a worn look, not a 5-point scale).",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          100.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "spent",
+            "phrase": "about to fall where you stand"
+          },
+          {
+            "min": 5.0,
+            "label": "exhausted",
+            "phrase": "exhausted"
+          },
+          {
+            "min": 15.0,
+            "label": "worn_out",
+            "phrase": "worn out"
+          },
+          {
+            "min": 35.0,
+            "label": "flagging",
+            "phrase": "flagging"
+          },
+          {
+            "min": 40.0,
+            "label": "tired",
+            "phrase": "tired"
+          },
+          {
+            "min": 70.0,
+            "label": "fresh",
+            "phrase": "fresh"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "exhausted",
+            "phrase": "looks exhausted"
+          },
+          {
+            "min": 15.0,
+            "label": "tired",
+            "phrase": "looks tired"
+          },
+          {
+            "min": 40.0,
+            "label": "fresh",
+            "phrase": "looks fresh"
+          }
+        ]
+      },
+      "hunger": {
+        "_doc": "HUNGER: the count of unmet meals, 0 to starve_limit (observation `hunger`). 1 = one unmet meal (the world adds 1.0 for each unmet meal, worlds/bigville_world.py). 2 = CARE.care_hunger_need and CARE.malnourished_hunger (world/care.json, cross-checked): an observer sees gauntness from there. 4 = CARE.starve_limit, the top of the range (cross-checked). 3 is APPROX, the midpoint of the top two bands.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          4.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "not_hungry",
+            "phrase": "not hungry"
+          },
+          {
+            "min": 1.0,
+            "label": "hungry",
+            "phrase": "hungry"
+          },
+          {
+            "min": 2.0,
+            "label": "famished",
+            "phrase": "famished"
+          },
+          {
+            "min": 3.0,
+            "label": "starving",
+            "phrase": "starving"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "well_fed",
+            "phrase": "looks well fed"
+          },
+          {
+            "min": 2.0,
+            "label": "gaunt",
+            "phrase": "looks gaunt"
+          }
+        ]
+      },
+      "health": {
+        "_doc": "HEALTH VALUE: body health, 0 to 1, where 1 is fully healthy (body_state 'health'; ACTOR_DEFAULTS.body.health is 1.0). 0.5 = CARE.treat_health_base, the value assumed for a resident with none recorded (cross-checked). 0.25 and 0.75 are APPROX. Only the low bands show to an observer. The payload carries the status string instead (see health_status).",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "failing",
+            "phrase": "barely hanging on"
+          },
+          {
+            "min": 0.25,
+            "label": "poor",
+            "phrase": "very ill"
+          },
+          {
+            "min": 0.5,
+            "label": "impaired",
+            "phrase": "unwell"
+          },
+          {
+            "min": 0.75,
+            "label": "sound",
+            "phrase": "in good health"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "failing",
+            "phrase": "looks near death"
+          },
+          {
+            "min": 0.25,
+            "label": "poor",
+            "phrase": "looks very ill"
+          },
+          {
+            "min": 0.5,
+            "label": "impaired",
+            "phrase": "looks unwell"
+          },
+          {
+            "min": 0.75,
+            "label": "sound",
+            "phrase": "looks well"
+          }
+        ]
+      },
+      "health_status": {
+        "_doc": "HEALTH STATUS: the string `health` in the observation, whose keys are HEALTH_CONDITIONS (world/health_conditions.json, cross-checked). 'unknown' is the fallback for any other string. Each phrase is the resident's own words; the other perspective has only what an observer can see (APPROX: a limp, a fever flush, a thin frame). A chronic illness shows only as ailing; 'unknown' has no other phrase.",
+        "kind": "status",
+        "published": true,
+        "keys_from": "HEALTH_CONDITIONS",
+        "self": {
+          "healthy": "in good health",
+          "injured": "hurt",
+          "malnourished": "underfed",
+          "fever": "feverish",
+          "chronic": "ailing",
+          "unknown": "of uncertain health"
+        },
+        "other": {
+          "healthy": "looks well",
+          "injured": "looks hurt",
+          "malnourished": "looks gaunt",
+          "fever": "looks feverish",
+          "chronic": "looks ailing"
+        }
+      },
+      "strength": {
+        "_doc": "STRENGTH: effective strength, (str_base + str_train) x health (bigville_world.effective_strength). str_base starts at 1.0 (ACTOR_DEFAULTS.body.str_base), so 1.0 reads as ordinary. Edges 0.5, 0.9 and 1.3 are APPROX; the 0 to 2 range is APPROX (training and health move the value; no published distribution). An observer judges build, so the other perspective is visible.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          2.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "feeble",
+            "phrase": "feeble"
+          },
+          {
+            "min": 0.5,
+            "label": "weak",
+            "phrase": "weak"
+          },
+          {
+            "min": 0.9,
+            "label": "ordinary",
+            "phrase": "of ordinary strength"
+          },
+          {
+            "min": 1.3,
+            "label": "strong",
+            "phrase": "strong"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "slight",
+            "phrase": "looks slight"
+          },
+          {
+            "min": 0.9,
+            "label": "ordinary",
+            "phrase": "looks of ordinary build"
+          },
+          {
+            "min": 1.3,
+            "label": "strong",
+            "phrase": "looks strong"
+          }
+        ]
+      },
+      "stamina": {
+        "_doc": "STAMINA CAPACITY: effective stamina, (sta_base + sta_train) x health (bigville_world.effective_stamina). The reserve is drawn from it (see energy). Edges and range as strength, APPROX. Self only: an observer cannot see a capacity.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          2.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "little_wind",
+            "phrase": "you have little wind"
+          },
+          {
+            "min": 0.5,
+            "label": "modest_wind",
+            "phrase": "you have a modest wind"
+          },
+          {
+            "min": 0.9,
+            "label": "good_wind",
+            "phrase": "you have good wind"
+          },
+          {
+            "min": 1.3,
+            "label": "great_wind",
+            "phrase": "you have great stamina"
+          }
+        ]
+      },
+      "mood": {
+        "_doc": "MOOD: body mood, 0 to 1 (body_state 'mood'). 0.5 = ACTOR_DEFAULTS.body.mood, the starting value (cross-checked). Quartile edges are APPROX. An observer reads mood from the face and the stance.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "miserable",
+            "phrase": "miserable"
+          },
+          {
+            "min": 0.25,
+            "label": "low",
+            "phrase": "low"
+          },
+          {
+            "min": 0.5,
+            "label": "content",
+            "phrase": "content"
+          },
+          {
+            "min": 0.75,
+            "label": "cheerful",
+            "phrase": "cheerful"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "miserable",
+            "phrase": "looks miserable"
+          },
+          {
+            "min": 0.25,
+            "label": "glum",
+            "phrase": "looks glum"
+          },
+          {
+            "min": 0.5,
+            "label": "calm",
+            "phrase": "looks calm"
+          },
+          {
+            "min": 0.75,
+            "label": "cheerful",
+            "phrase": "looks cheerful"
+          }
+        ]
+      },
+      "intoxication": {
+        "_doc": "INTOXICATION, 0 (sober) to 1. read-off not yet published: no world quantity exists until Phase 034. Edges APPROX. An observer sees a drunk person by their manner, so the other perspective is visible.",
+        "kind": "numeric",
+        "published": false,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "sober",
+            "phrase": "sober"
+          },
+          {
+            "min": 0.2,
+            "label": "tipsy",
+            "phrase": "tipsy"
+          },
+          {
+            "min": 0.5,
+            "label": "drunk",
+            "phrase": "drunk"
+          },
+          {
+            "min": 0.8,
+            "label": "stupefied",
+            "phrase": "stupefied"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "sober",
+            "phrase": "looks sober"
+          },
+          {
+            "min": 0.2,
+            "label": "tipsy",
+            "phrase": "looks tipsy"
+          },
+          {
+            "min": 0.5,
+            "label": "drunk",
+            "phrase": "visibly drunk"
+          },
+          {
+            "min": 0.8,
+            "label": "stupefied",
+            "phrase": "looks stupefied"
+          }
+        ]
+      },
+      "deficiency": {
+        "_doc": "DEFICIENCY, a nutrient shortfall, 0 (none) to 1. read-off not yet published (Phase 035, nutrition). Edges APPROX. Self only: a watcher sees its effects only through health.",
+        "kind": "numeric",
+        "published": false,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "well_nourished",
+            "phrase": "well nourished"
+          },
+          {
+            "min": 0.25,
+            "label": "short",
+            "phrase": "short of some goodness"
+          },
+          {
+            "min": 0.5,
+            "label": "run_down",
+            "phrase": "run down"
+          },
+          {
+            "min": 0.75,
+            "label": "badly_short",
+            "phrase": "badly short of goodness"
+          }
+        ]
+      },
+      "strain": {
+        "_doc": "STRAIN, what work above the safe intensity leaves behind, 0 to 1 (Phase 050). read-off not yet published. Edges APPROX. An observer sees a strained body, so the other perspective is visible.",
+        "kind": "numeric",
+        "published": false,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "at_ease",
+            "phrase": "at ease"
+          },
+          {
+            "min": 0.3,
+            "label": "taut",
+            "phrase": "taut"
+          },
+          {
+            "min": 0.6,
+            "label": "strained",
+            "phrase": "strained"
+          },
+          {
+            "min": 0.85,
+            "label": "breaking",
+            "phrase": "at breaking point"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "easy",
+            "phrase": "moving easily"
+          },
+          {
+            "min": 0.3,
+            "label": "taut",
+            "phrase": "looks taut"
+          },
+          {
+            "min": 0.6,
+            "label": "strained",
+            "phrase": "looks strained"
+          },
+          {
+            "min": 0.85,
+            "label": "breaking",
+            "phrase": "looks close to breaking"
+          }
+        ]
+      },
+      "condition": {
+        "_doc": "ITEM CONDITION, 1.0 (sound) down to 0.0 (ruined): held_items[].condition in the observation, and the world's condition attribute. Edges APPROX. These are generic words; the item's own class adjective (ADJECTIVES in world/adjectives.json: rusty, frayed, cracked) can refine them. Anyone can see the state of a thing.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "ruined",
+            "phrase": "ruined"
+          },
+          {
+            "min": 0.25,
+            "label": "badly_worn",
+            "phrase": "badly worn"
+          },
+          {
+            "min": 0.5,
+            "label": "worn",
+            "phrase": "worn"
+          },
+          {
+            "min": 0.75,
+            "label": "sound",
+            "phrase": "sound"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "ruined",
+            "phrase": "ruined"
+          },
+          {
+            "min": 0.25,
+            "label": "badly_worn",
+            "phrase": "badly worn"
+          },
+          {
+            "min": 0.5,
+            "label": "worn",
+            "phrase": "worn"
+          },
+          {
+            "min": 0.75,
+            "label": "sound",
+            "phrase": "sound"
+          }
+        ]
+      },
+      "quality": {
+        "_doc": "ITEM QUALITY, 0 to 1 (the quality attribute on goods; water_sources.json uses 0.65 to 0.98). Edges APPROX. Anyone handling goods can judge them.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "crude",
+            "phrase": "crude"
+          },
+          {
+            "min": 0.25,
+            "label": "plain",
+            "phrase": "plain"
+          },
+          {
+            "min": 0.5,
+            "label": "good",
+            "phrase": "good"
+          },
+          {
+            "min": 0.75,
+            "label": "fine",
+            "phrase": "fine work"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "crude",
+            "phrase": "crude"
+          },
+          {
+            "min": 0.25,
+            "label": "plain",
+            "phrase": "plain"
+          },
+          {
+            "min": 0.5,
+            "label": "good",
+            "phrase": "good"
+          },
+          {
+            "min": 0.75,
+            "label": "fine",
+            "phrase": "fine work"
+          }
+        ]
+      },
+      "load": {
+        "_doc": "LOAD, the carried weight over the carrying capacity, 0 to 3 (bigville_world.carry_state ratio). 1.0 = CARRYING.overload_ratio and 2.0 = CARRYING.drop_ratio (world/carrying.json, cross-checked): past drop_ratio the hand cannot keep the object. 0.5 and the top of the range 3.0 are APPROX.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          3.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "light",
+            "phrase": "you carry it easily"
+          },
+          {
+            "min": 0.5,
+            "label": "heavy",
+            "phrase": "you feel the weight"
+          },
+          {
+            "min": 1.0,
+            "label": "overloaded",
+            "phrase": "you can barely manage it"
+          },
+          {
+            "min": 2.0,
+            "label": "about_to_drop",
+            "phrase": "you cannot hold on much longer"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "easy",
+            "phrase": "walks easily"
+          },
+          {
+            "min": 1.0,
+            "label": "staggering",
+            "phrase": "staggers under a load"
+          },
+          {
+            "min": 2.0,
+            "label": "about_to_drop",
+            "phrase": "is about to drop a load"
+          }
+        ]
+      },
+      "chill": {
+        "_doc": "CHILL, 0 (warm) to 1 (numb with cold). read-off not yet published: the weather is in the world, a body's chill is not. Edges APPROX. An observer sees shivering.",
+        "kind": "numeric",
+        "published": false,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "warm",
+            "phrase": "warm"
+          },
+          {
+            "min": 0.3,
+            "label": "cool",
+            "phrase": "cool"
+          },
+          {
+            "min": 0.6,
+            "label": "chilled",
+            "phrase": "chilled"
+          },
+          {
+            "min": 0.85,
+            "label": "numb",
+            "phrase": "numb with cold"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "comfortable",
+            "phrase": "looks comfortable"
+          },
+          {
+            "min": 0.6,
+            "label": "chilled",
+            "phrase": "looks chilled"
+          },
+          {
+            "min": 0.85,
+            "label": "shivering",
+            "phrase": "shivers badly"
+          }
+        ]
+      },
+      "soaked": {
+        "_doc": "SOAKED, how wet a person is from rain, 0 (dry) to 1. read-off not yet published (weather exposure). Edges APPROX. An observer sees a wet person.",
+        "kind": "numeric",
+        "published": false,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "dry",
+            "phrase": "dry"
+          },
+          {
+            "min": 0.3,
+            "label": "damp",
+            "phrase": "damp"
+          },
+          {
+            "min": 0.6,
+            "label": "wet",
+            "phrase": "wet through"
+          },
+          {
+            "min": 0.85,
+            "label": "soaked",
+            "phrase": "soaked to the skin"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "dry",
+            "phrase": "looks dry"
+          },
+          {
+            "min": 0.3,
+            "label": "damp",
+            "phrase": "looks damp"
+          },
+          {
+            "min": 0.6,
+            "label": "wet",
+            "phrase": "looks wet through"
+          },
+          {
+            "min": 0.85,
+            "label": "soaked",
+            "phrase": "is streaming wet"
+          }
+        ]
+      },
+      "skill": {
+        "_doc": "SKILL LEVEL, 0 to 1, the trade skill (ACTOR_DEFAULTS.skill is 0.7 and the file calls the scale 0-1). Edges APPROX. Self only: a resident judges their own skill (self-assessment bias is out of scope). The phrases contain {what}: the caller names the skill or trade (describe(..., what='smithing')).",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "novice",
+            "phrase": "a novice at {what}"
+          },
+          {
+            "min": 0.2,
+            "label": "beginner",
+            "phrase": "a beginner at {what}"
+          },
+          {
+            "min": 0.4,
+            "label": "competent",
+            "phrase": "competent at {what}"
+          },
+          {
+            "min": 0.6,
+            "label": "skilled",
+            "phrase": "skilled at {what}"
+          },
+          {
+            "min": 0.8,
+            "label": "master",
+            "phrase": "a master of {what}"
+          }
+        ]
+      },
+      "trade": {
+        "_doc": "TRADE COMPETENCE: the same bands as skill, read against a named trade (describe('trade', v, what='smithing')).",
+        "alias": "skill"
+      },
+      "hour": {
+        "_doc": "HOUR OF DAY, 0 to 24 (observation calendar.hour; the clock runs from TIME.start_hour 6). Edges 5 and 21 = EXHAUSTION.night_end_hour and night_start_hour (world/exhaustion.json, cross-checked). 7, 12, 14 and 18 are APPROX: the day's blocks, until a sunrise and sunset model exists (Phase 042). Plain to everyone, so both perspectives share the words.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          24.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "deep_night",
+            "phrase": "in the deep of the night"
+          },
+          {
+            "min": 5.0,
+            "label": "dawn",
+            "phrase": "at dawn"
+          },
+          {
+            "min": 7.0,
+            "label": "morning",
+            "phrase": "in the morning"
+          },
+          {
+            "min": 12.0,
+            "label": "midday",
+            "phrase": "at midday"
+          },
+          {
+            "min": 14.0,
+            "label": "afternoon",
+            "phrase": "in the afternoon"
+          },
+          {
+            "min": 18.0,
+            "label": "evening",
+            "phrase": "in the evening"
+          },
+          {
+            "min": 21.0,
+            "label": "night",
+            "phrase": "at night"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "deep_night",
+            "phrase": "in the deep of the night"
+          },
+          {
+            "min": 5.0,
+            "label": "dawn",
+            "phrase": "at dawn"
+          },
+          {
+            "min": 7.0,
+            "label": "morning",
+            "phrase": "in the morning"
+          },
+          {
+            "min": 12.0,
+            "label": "midday",
+            "phrase": "at midday"
+          },
+          {
+            "min": 14.0,
+            "label": "afternoon",
+            "phrase": "in the afternoon"
+          },
+          {
+            "min": 18.0,
+            "label": "evening",
+            "phrase": "in the evening"
+          },
+          {
+            "min": 21.0,
+            "label": "night",
+            "phrase": "at night"
+          }
+        ]
+      },
+      "season": {
+        "_doc": "SEASON: the key of SEASONS (world/seasons.json, cross-checked). Plain to everyone: both perspectives.",
+        "kind": "status",
+        "published": true,
+        "keys_from": "SEASONS",
+        "self": {
+          "spring": "spring",
+          "summer": "summer",
+          "autumn": "autumn",
+          "winter": "winter",
+          "unknown": "an unsettled season"
+        },
+        "other": {
+          "spring": "spring",
+          "summer": "summer",
+          "autumn": "autumn",
+          "winter": "winter"
+        }
+      },
+      "weather": {
+        "_doc": "WEATHER: the key of WEATHER (world/weather.json, cross-checked). 'unknown' is the fallback. Plain to everyone: both perspectives.",
+        "kind": "status",
+        "published": true,
+        "keys_from": "WEATHER",
+        "self": {
+          "clear": "clear skies",
+          "rain": "raining",
+          "dry": "dry and dusty",
+          "storm": "stormy",
+          "cold": "cold",
+          "wet": "wet and muddy",
+          "frost": "frosty",
+          "wind": "windy",
+          "cool": "cool",
+          "mild": "mild",
+          "hot": "hot",
+          "unknown": "hard to say"
+        },
+        "other": {
+          "clear": "clear skies",
+          "rain": "raining",
+          "dry": "dry and dusty",
+          "storm": "stormy",
+          "cold": "cold",
+          "wet": "wet and muddy",
+          "frost": "frosty",
+          "wind": "windy",
+          "cool": "cool",
+          "mild": "mild",
+          "hot": "hot"
+        }
+      },
+      "light": {
+        "_doc": "LIGHT, 0 (pitch dark) to 1 (full daylight). read-off not yet published (Phase 042, day, night and lamps). Edges APPROX. Plain to everyone: both perspectives.",
+        "kind": "numeric",
+        "published": false,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "pitch_dark",
+            "phrase": "pitch dark"
+          },
+          {
+            "min": 0.1,
+            "label": "dim",
+            "phrase": "dim"
+          },
+          {
+            "min": 0.4,
+            "label": "bright",
+            "phrase": "bright"
+          },
+          {
+            "min": 0.8,
+            "label": "full_day",
+            "phrase": "full daylight"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "pitch_dark",
+            "phrase": "pitch dark"
+          },
+          {
+            "min": 0.1,
+            "label": "dim",
+            "phrase": "dim"
+          },
+          {
+            "min": 0.4,
+            "label": "bright",
+            "phrase": "bright"
+          },
+          {
+            "min": 0.8,
+            "label": "full_day",
+            "phrase": "full daylight"
+          }
+        ]
+      },
+      "distance": {
+        "_doc": "DISTANCE in tiles (observation nearby_residents[].distance). The top of the range, 52, is FOUNDING_MAP.width (world/founding_map.json, cross-checked). Edges 2, 6, 15 and 30 are APPROX. Plain to everyone: both perspectives.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          52.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "beside",
+            "phrase": "right beside you"
+          },
+          {
+            "min": 2.0,
+            "label": "few_steps",
+            "phrase": "a few steps off"
+          },
+          {
+            "min": 6.0,
+            "label": "short_walk",
+            "phrase": "a short walk away"
+          },
+          {
+            "min": 15.0,
+            "label": "good_walk",
+            "phrase": "a good walk away"
+          },
+          {
+            "min": 30.0,
+            "label": "far",
+            "phrase": "out past the mill"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "beside",
+            "phrase": "right beside you"
+          },
+          {
+            "min": 2.0,
+            "label": "few_steps",
+            "phrase": "a few steps off"
+          },
+          {
+            "min": 6.0,
+            "label": "short_walk",
+            "phrase": "a short walk away"
+          },
+          {
+            "min": 15.0,
+            "label": "good_walk",
+            "phrase": "a good walk away"
+          },
+          {
+            "min": 30.0,
+            "label": "far",
+            "phrase": "out past the mill"
+          }
+        ]
+      },
+      "duration": {
+        "_doc": "DURATION in minutes, 0 to one day. 15 = TIME.minutes_per_tick, one tick (cross-checked). 1440 = TIME.ticks_per_day x minutes_per_tick, one day (cross-checked). 60 (an hour) is a definition; 240 and 480 are APPROX. Plain to everyone: both perspectives.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          1440.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "moment",
+            "phrase": "a moment"
+          },
+          {
+            "min": 15.0,
+            "label": "little_while",
+            "phrase": "a little while"
+          },
+          {
+            "min": 60.0,
+            "label": "few_hours",
+            "phrase": "a few hours"
+          },
+          {
+            "min": 240.0,
+            "label": "half_day",
+            "phrase": "half a day"
+          },
+          {
+            "min": 480.0,
+            "label": "most_of_day",
+            "phrase": "most of a day"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "moment",
+            "phrase": "a moment"
+          },
+          {
+            "min": 15.0,
+            "label": "little_while",
+            "phrase": "a little while"
+          },
+          {
+            "min": 60.0,
+            "label": "few_hours",
+            "phrase": "a few hours"
+          },
+          {
+            "min": 240.0,
+            "label": "half_day",
+            "phrase": "half a day"
+          },
+          {
+            "min": 480.0,
+            "label": "most_of_day",
+            "phrase": "most of a day"
+          }
+        ]
+      },
+      "amount": {
+        "_doc": "AMOUNT, a count of things, 0 to 100 (the held-item quantity uses it). The edges are APPROX; the words are the ones AMOUNT_WORDS resolves back to numbers. Plain to everyone: both perspectives.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          100.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "none",
+            "phrase": "none"
+          },
+          {
+            "min": 1.0,
+            "label": "one",
+            "phrase": "one"
+          },
+          {
+            "min": 2.0,
+            "label": "few",
+            "phrase": "a few"
+          },
+          {
+            "min": 5.0,
+            "label": "handful",
+            "phrase": "a handful"
+          },
+          {
+            "min": 10.0,
+            "label": "several",
+            "phrase": "several"
+          },
+          {
+            "min": 25.0,
+            "label": "lot",
+            "phrase": "a lot"
+          },
+          {
+            "min": 50.0,
+            "label": "cartload",
+            "phrase": "a cartload"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "none",
+            "phrase": "none"
+          },
+          {
+            "min": 1.0,
+            "label": "one",
+            "phrase": "one"
+          },
+          {
+            "min": 2.0,
+            "label": "few",
+            "phrase": "a few"
+          },
+          {
+            "min": 5.0,
+            "label": "handful",
+            "phrase": "a handful"
+          },
+          {
+            "min": 10.0,
+            "label": "several",
+            "phrase": "several"
+          },
+          {
+            "min": 25.0,
+            "label": "lot",
+            "phrase": "a lot"
+          },
+          {
+            "min": 50.0,
+            "label": "cartload",
+            "phrase": "a cartload"
+          }
+        ]
+      },
+      "age": {
+        "_doc": "AGE in years, 0 to 100. Every edge is a LIFE_STAGES age_min (world/life_stages.json: 4 child, 13 youth, 18 adult, 65 elder; cross-checked). Plain to everyone: both perspectives.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          100.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "infant",
+            "phrase": "a baby"
+          },
+          {
+            "min": 4.0,
+            "label": "child",
+            "phrase": "a child"
+          },
+          {
+            "min": 13.0,
+            "label": "youth",
+            "phrase": "in your teens"
+          },
+          {
+            "min": 18.0,
+            "label": "adult",
+            "phrase": "grown"
+          },
+          {
+            "min": 65.0,
+            "label": "elder",
+            "phrase": "old"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "infant",
+            "phrase": "a baby"
+          },
+          {
+            "min": 4.0,
+            "label": "child",
+            "phrase": "a child"
+          },
+          {
+            "min": 13.0,
+            "label": "youth",
+            "phrase": "in your teens"
+          },
+          {
+            "min": 18.0,
+            "label": "adult",
+            "phrase": "grown"
+          },
+          {
+            "min": 65.0,
+            "label": "elder",
+            "phrase": "old"
+          }
+        ]
+      },
+      "life_stage": {
+        "_doc": "LIFE STAGE: the key of LIFE_STAGES (world/life_stages.json, cross-checked). Plain to everyone: both perspectives.",
+        "kind": "status",
+        "published": true,
+        "keys_from": "LIFE_STAGES",
+        "self": {
+          "infant": "a baby",
+          "child": "a child",
+          "youth": "a young person",
+          "adult": "an adult",
+          "elder": "an elder",
+          "unknown": "of uncertain age"
+        },
+        "other": {
+          "infant": "a baby",
+          "child": "a child",
+          "youth": "a young person",
+          "adult": "an adult",
+          "elder": "an elder",
+          "unknown": "of uncertain age"
+        }
+      },
+      "relationship_strength": {
+        "_doc": "RELATIONSHIP STRENGTH: tie_strength, 0 to 10 (observation nearby_residents[].tie_strength). The edges 0.5, 1.5, 3 and 5 are the bond band codes of worlds/bigville_bond_world.py (_band_code: 2 acquaintance from 0.5, 3 friend from 1.5, 4 intimate from 3, 5 family from 5). That code is not in the pack, so the self-test cannot cross-check it. Its codes 0 and 1 (tie 0, and under 0.5) are one band here, 'stranger'. The top of the range, 10, is APPROX. Shared.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          10.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "stranger",
+            "phrase": "a stranger"
+          },
+          {
+            "min": 0.5,
+            "label": "acquaintance",
+            "phrase": "an acquaintance"
+          },
+          {
+            "min": 1.5,
+            "label": "friend",
+            "phrase": "a friend"
+          },
+          {
+            "min": 3.0,
+            "label": "intimate",
+            "phrase": "very close"
+          },
+          {
+            "min": 5.0,
+            "label": "family",
+            "phrase": "as close as family"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "stranger",
+            "phrase": "a stranger"
+          },
+          {
+            "min": 0.5,
+            "label": "acquaintance",
+            "phrase": "an acquaintance"
+          },
+          {
+            "min": 1.5,
+            "label": "friend",
+            "phrase": "a friend"
+          },
+          {
+            "min": 3.0,
+            "label": "intimate",
+            "phrase": "very close"
+          },
+          {
+            "min": 5.0,
+            "label": "family",
+            "phrase": "as close as family"
+          }
+        ]
+      },
+      "relationship_kind": {
+        "_doc": "RELATIONSHIP KIND: the kind of a held tie. The keys cover the kinds in RELATIONSHIP_KINDS and RELATIONSHIP_DEFAULT (world's frames/relationship_kinds.json, cross-checked) and blood_kin and chosen (bigville_bond_world PRIORS). Self only: a resident knows what a tie means to them.",
+        "kind": "status",
+        "published": true,
+        "self": {
+          "feud": "a bitter feud",
+          "friend": "a friend",
+          "acquaintance": "an acquaintance",
+          "blood_kin": "kin",
+          "chosen": "chosen family",
+          "unknown": "a tie of unclear kind"
+        }
+      },
+      "temperament": {
+        "_doc": "TEMPERAMENT, -1 (sour) to 1 (sunny): FOUNDING_PERSONALITY.valence (population/founding_personality.json, cross-checked by key). The edges -0.33 and 0.33 are APPROX. Other sees a manner. read-off not yet published (Phase 058).",
+        "kind": "numeric",
+        "published": false,
+        "source": "valence",
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": -1.0,
+            "label": "sour",
+            "phrase": "sour-tempered"
+          },
+          {
+            "min": -0.33,
+            "label": "even",
+            "phrase": "even-tempered"
+          },
+          {
+            "min": 0.33,
+            "label": "sunny",
+            "phrase": "sunny-tempered"
+          }
+        ],
+        "other": [
+          {
+            "min": -1.0,
+            "label": "sour",
+            "phrase": "looks sour"
+          },
+          {
+            "min": -0.33,
+            "label": "even",
+            "phrase": "looks even-tempered"
+          },
+          {
+            "min": 0.33,
+            "label": "sunny",
+            "phrase": "looks sunny"
+          }
+        ]
+      },
+      "trust": {
+        "_doc": "TRUST in others, 0 to 1: FOUNDING_PERSONALITY.prior_others_trust. Edges APPROX. Self only. read-off not yet published (Phase 058).",
+        "kind": "numeric",
+        "published": false,
+        "source": "prior_others_trust",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "wary",
+            "phrase": "wary of others"
+          },
+          {
+            "min": 0.33,
+            "label": "guarded",
+            "phrase": "guarded"
+          },
+          {
+            "min": 0.67,
+            "label": "trusting",
+            "phrase": "trusting"
+          }
+        ]
+      },
+      "spite": {
+        "_doc": "SPITE, 0 to 1: FOUNDING_PERSONALITY.w_spite (mean 0.15, cited there). The 0.15 edge is that mean; 0.4 and 0.7 are APPROX. Self only. read-off not yet published (Phase 058).",
+        "kind": "numeric",
+        "published": false,
+        "source": "w_spite",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "forgiving",
+            "phrase": "forgiving"
+          },
+          {
+            "min": 0.15,
+            "label": "touchy",
+            "phrase": "touchy"
+          },
+          {
+            "min": 0.4,
+            "label": "vindictive",
+            "phrase": "vindictive"
+          },
+          {
+            "min": 0.7,
+            "label": "spiteful",
+            "phrase": "spiteful"
+          }
+        ]
+      },
+      "charm": {
+        "_doc": "CHARM, 0 to 1: FOUNDING_PERSONALITY.charm_weight. Edges APPROX. An observer sees charm in manner. read-off not yet published (Phase 058).",
+        "kind": "numeric",
+        "published": false,
+        "source": "charm_weight",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "awkward",
+            "phrase": "awkward with people"
+          },
+          {
+            "min": 0.33,
+            "label": "pleasant",
+            "phrase": "pleasant enough"
+          },
+          {
+            "min": 0.67,
+            "label": "charming",
+            "phrase": "charming"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "awkward",
+            "phrase": "looks awkward"
+          },
+          {
+            "min": 0.33,
+            "label": "pleasant",
+            "phrase": "looks pleasant"
+          },
+          {
+            "min": 0.67,
+            "label": "charming",
+            "phrase": "looks charming"
+          }
+        ]
+      },
+      "outlook": {
+        "_doc": "OUTLOOK, 0 to 1: FOUNDING_PERSONALITY.prior_world_safe, how safe a resident expects the world to be. Edges APPROX. Self only. read-off not yet published (Phase 058).",
+        "kind": "numeric",
+        "published": false,
+        "source": "prior_world_safe",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "dread",
+            "phrase": "expects trouble"
+          },
+          {
+            "min": 0.33,
+            "label": "cautious",
+            "phrase": "cautious"
+          },
+          {
+            "min": 0.67,
+            "label": "hopeful",
+            "phrase": "hopeful"
+          }
+        ]
+      },
+      "finery": {
+        "_doc": "FINERY of the clothes a person wears, 0 to 6: the sum of the garments' finery (ITEMS garments carry 1 or 2 each; the range and edges are APPROX). Other only: a resident does not judge their own finery from outside. read-off not yet published (the body's finery attribute is not in the observation).",
+        "kind": "numeric",
+        "published": false,
+        "range": [
+          0.0,
+          6.0
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "ragged",
+            "phrase": "in rags"
+          },
+          {
+            "min": 1.0,
+            "label": "plain",
+            "phrase": "plainly dressed"
+          },
+          {
+            "min": 3.0,
+            "label": "smart",
+            "phrase": "smartly dressed"
+          },
+          {
+            "min": 5.0,
+            "label": "fine",
+            "phrase": "finely dressed"
+          }
+        ]
+      },
+      "day_block": {
+        "_doc": "DAY BLOCK: what a resident is doing in the usual day. Phase 058 defines the blocks, so these keys are provisional. read-off not yet published.",
+        "kind": "status",
+        "published": false,
+        "self": {
+          "sleep": "asleep",
+          "morning": "seeing to the morning chores",
+          "work": "at work",
+          "midday": "taking a midday break",
+          "afternoon": "back at work",
+          "evening": "at leisure in the evening",
+          "unknown": "about your business"
+        },
+        "other": {
+          "sleep": "asleep",
+          "morning": "seeing to the morning chores",
+          "work": "at work",
+          "midday": "resting at midday",
+          "afternoon": "at work",
+          "evening": "at leisure"
+        }
+      }
+    },
+    "INTENSITY_WORDS": {
+      "gently": 0.5,
+      "carefully": 0.7,
+      "normally": 1.0,
+      "hard": 1.5,
+      "with all your strength": 2.0
+    },
+    "AMOUNT_WORDS": {
+      "none": 0.0,
+      "one": 1.0,
+      "a few": 3.0,
+      "a handful": 5.0,
+      "several": 10.0,
+      "a lot": 25.0,
+      "a cartload": 60.0
+    },
+    "VERB_ALIASES": {
+      "smash": "smash",
+      "break": "smash",
+      "bash": "smash",
+      "batter": "smash",
+      "crack": "smash",
+      "shatter": "smash",
+      "wreck": "smash",
+      "hit": "hit",
+      "strike": "hit",
+      "punch": "hit",
+      "thump": "hit",
+      "whack": "hit",
+      "cut": "cut",
+      "slice": "cut",
+      "sever": "cut",
+      "chop": "chop",
+      "hew": "chop",
+      "split": "chop",
+      "saw": "saw",
+      "dig": "dig",
+      "excavate": "dig",
+      "push": "push",
+      "shove": "push",
+      "press": "push",
+      "pull": "pull",
+      "drag": "pull",
+      "tug": "pull",
+      "haul": "pull",
+      "lift": "lift",
+      "raise": "lift",
+      "hoist": "lift",
+      "carry": "carry",
+      "bear": "carry",
+      "tote": "carry",
+      "lug": "carry",
+      "throw": "throw",
+      "toss": "throw",
+      "fling": "throw",
+      "chuck": "throw",
+      "hurl": "throw",
+      "open": "open",
+      "pry": "pry",
+      "prise": "pry",
+      "lever": "pry",
+      "force": "force",
+      "walk": "walk",
+      "stroll": "walk",
+      "march": "walk",
+      "eat": "eat",
+      "dine": "eat",
+      "drink": "drink",
+      "sip": "drink",
+      "quaff": "drink",
+      "sleep": "sleep",
+      "nap": "sleep",
+      "doze": "sleep",
+      "rest": "rest",
+      "sow": "sow",
+      "plant": "sow",
+      "harvest": "harvest",
+      "reap": "harvest",
+      "cook": "cook",
+      "mend": "mend",
+      "repair": "mend",
+      "fix": "mend"
+    },
+    "LEXICON_PAYLOAD": {
+      "energy": {
+        "quantity": "energy"
+      },
+      "hunger": {
+        "quantity": "hunger"
+      },
+      "health": {
+        "quantity": "health_status"
+      },
+      "calendar.hour": {
+        "quantity": "hour"
+      },
+      "calendar.season": {
+        "quantity": "season"
+      },
+      "calendar.weather": {
+        "quantity": "weather"
+      },
+      "held_items[].condition": {
+        "quantity": "condition"
+      },
+      "held_items[].quantity": {
+        "quantity": "amount"
+      },
+      "inventory.*": {
+        "quantity": "amount"
+      },
+      "nearby_residents[].distance": {
+        "quantity": "distance"
+      },
+      "nearby_residents[].tie_strength": {
+        "quantity": "relationship_strength"
+      },
+      "nearby_residents[].band_code": {
+        "hidden": "the engine's integer code of the tie band; its words are relationship_strength"
+      },
+      "nearby_residents[].position[]": {
+        "hidden": "a map cell; a resident sees the map (fog, Phase 053), not a coordinate"
+      },
+      "nearby_residents[].shared_bucket_count": {
+        "hidden": "an engine count of shared knowledge buckets"
+      },
+      "held_items[].id": {
+        "hidden": "an engine id for a discrete item"
+      },
+      "position[]": {
+        "hidden": "a map cell; a resident sees the map (fog, Phase 053), not a coordinate"
+      },
+      "calendar.clock": {
+        "hidden": "an engine clock count; the resident reads the hour"
+      },
+      "calendar.day": {
+        "hidden": "an engine calendar count; the resident reads the season and the weather"
+      },
+      "calendar.week": {
+        "hidden": "an engine calendar count"
+      },
+      "calendar.year": {
+        "hidden": "an engine calendar count"
+      },
+      "turn": {
+        "hidden": "the engine's turn counter"
+      },
+      "turn_state.turn": {
+        "hidden": "the engine's turn counter"
+      },
+      "terrain.terrain": {
+        "hidden": "a tile name; the pack's tile words are not in this phase"
+      },
+      "terrain.speed": {
+        "hidden": "an engine multiplier; the terrain shows as its effect on speed and energy"
+      },
+      "terrain.move_time": {
+        "hidden": "an engine multiplier; see terrain.speed"
+      },
+      "terrain.stamina_multiplier": {
+        "hidden": "an engine multiplier; see terrain.speed"
+      },
+      "terrain_movement.*.*": {
+        "hidden": "a table of every terrain's multipliers, not a resident's view"
+      },
+      "world_frames.laws[].understands": {
+        "hidden": "a knowledge state (Phase 019), not a perceivable band"
+      },
+      "world_frames.policies[].understands": {
+        "hidden": "a knowledge state (Phase 019), not a perceivable band"
+      }
+    }
+  }
+}

@@ -1587,6 +1587,8 @@ def check_consistency():
     _check_food_grading(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)
+    from domains.lexicon_check import check_lexicon      # Phase 051: the words for numbers and statuses
+    check_lexicon(_WORLD_PACK.path, errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

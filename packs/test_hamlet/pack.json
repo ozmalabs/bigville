@@ -796,6 +796,26 @@
     {
       "name": "FISCAL_BACKEND_OWNED",
       "file": "frames/fiscal_institutions.json"
+    },
+    {
+      "name": "LEXICON_QUANTITIES",
+      "file": "world/lexicon.json"
+    },
+    {
+      "name": "INTENSITY_WORDS",
+      "file": "world/lexicon.json"
+    },
+    {
+      "name": "AMOUNT_WORDS",
+      "file": "world/lexicon.json"
+    },
+    {
+      "name": "VERB_ALIASES",
+      "file": "world/lexicon.json"
+    },
+    {
+      "name": "LEXICON_PAYLOAD",
+      "file": "world/lexicon.json"
     }
   ]
 }

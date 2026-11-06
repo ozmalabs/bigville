@@ -1,0 +1,158 @@
+{
+  "_doc": "LEXICON for the hamlet test pack (Phase 051): a smaller set of bands with different words, so a test can show that describe() changes words when the pack changes. Same format as packs/bigville/world/lexicon.json.",
+  "_types": {},
+  "tables": {
+    "LEXICON_QUANTITIES": {
+      "energy": {
+        "_doc": "Hamlet's own words for the energy reserve, 0 to 100. Two bands only, to show a pack may use fewer bands. Edges are invented for this test pack (APPROX).",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          100.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "done_for",
+            "phrase": "done in"
+          },
+          {
+            "min": 40.0,
+            "label": "weary",
+            "phrase": "weary"
+          },
+          {
+            "min": 80.0,
+            "label": "lively",
+            "phrase": "lively"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "done_for",
+            "phrase": "looks done in"
+          },
+          {
+            "min": 40.0,
+            "label": "lively",
+            "phrase": "looks lively"
+          }
+        ]
+      },
+      "hunger": {
+        "_doc": "Hamlet's words for unmet meals, 0 to 4 (APPROX edges).",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          4.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "full",
+            "phrase": "stomach full"
+          },
+          {
+            "min": 1.0,
+            "label": "peckish",
+            "phrase": "peckish"
+          },
+          {
+            "min": 2.5,
+            "label": "ravenous",
+            "phrase": "ravenous"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "round",
+            "phrase": "looks round"
+          },
+          {
+            "min": 2.5,
+            "label": "thin",
+            "phrase": "looks thin"
+          }
+        ]
+      },
+      "hour": {
+        "_doc": "Hamlet's three parts of the day, 0 to 24 (APPROX edges). Shared by both perspectives.",
+        "kind": "numeric",
+        "published": true,
+        "range": [
+          0.0,
+          24.0
+        ],
+        "self": [
+          {
+            "min": 0.0,
+            "label": "dark_early",
+            "phrase": "before dawn"
+          },
+          {
+            "min": 6.0,
+            "label": "day",
+            "phrase": "in daylight"
+          },
+          {
+            "min": 18.0,
+            "label": "dark_late",
+            "phrase": "after dusk"
+          }
+        ],
+        "other": [
+          {
+            "min": 0.0,
+            "label": "dark_early",
+            "phrase": "before dawn"
+          },
+          {
+            "min": 6.0,
+            "label": "day",
+            "phrase": "in daylight"
+          },
+          {
+            "min": 18.0,
+            "label": "dark_late",
+            "phrase": "after dusk"
+          }
+        ]
+      }
+    },
+    "INTENSITY_WORDS": {
+      "gently": 0.6,
+      "normally": 1.0,
+      "hard": 1.8,
+      "with all your might": 2.0
+    },
+    "AMOUNT_WORDS": {
+      "none": 0.0,
+      "a pair": 2.0,
+      "a sack": 20.0
+    },
+    "VERB_ALIASES": {
+      "smash": "smash",
+      "bash": "smash",
+      "break": "smash",
+      "carry": "carry",
+      "lug": "carry",
+      "hit": "hit",
+      "strike": "hit"
+    },
+    "LEXICON_PAYLOAD": {
+      "energy": {
+        "quantity": "energy"
+      },
+      "hunger": {
+        "quantity": "hunger"
+      },
+      "calendar.hour": {
+        "quantity": "hour"
+      }
+    }
+  }
+}
