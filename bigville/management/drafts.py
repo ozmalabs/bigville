@@ -13,6 +13,8 @@ ALLOWED_FIELDS = {
     "scenario_id", "name", "seed", "autonomous", "default_backend",
     "ticks_per_period", "turn_limit",
 }
+OPTIONAL_PROFILE_FIELDS = {"default_profile_id", "actor_backend_profiles"}
+DRAFT_FIELDS = ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS
 MAX_NAME_LENGTH = 80
 MAX_TURN_LIMIT = 1_000_000
 MAX_SEED_ABS = (1 << 53) - 1
@@ -31,13 +33,13 @@ def _hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def resolve_draft(payload: Any) -> dict[str, Any]:
+def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
     """Validate and normalize a request without building a world or run."""
     errors: dict[str, str] = {}
     if not isinstance(payload, dict):
         payload = {}
         errors["draft"] = "Expected a JSON object."
-    unknown = sorted(str(key) for key in set(payload) - ALLOWED_FIELDS)
+    unknown = sorted(str(key) for key in set(payload) - DRAFT_FIELDS)
     for key in unknown:
         errors[key] = "Unknown field."
 
@@ -71,11 +73,43 @@ def resolve_draft(payload: Any) -> dict[str, Any]:
     if payload.get("autonomous") is not True:
         errors["autonomous"] = "Only autonomous runs are supported in this phase."
 
-    backend = payload.get("default_backend", "simple")
-    if not isinstance(backend, str) or backend not in {"simple", "cheap"}:
-        errors["default_backend"] = "Only the simple backend is supported in this phase."
+    if profile_registry is None:
+        from .profiles import BackendProfileRegistry
+        profile_catalog = BackendProfileRegistry().public_profiles()
     else:
-        backend = "simple"
+        profile_catalog = profile_registry.public_profiles()
+    profiles = {item["id"]: item for item in profile_catalog["profiles"]}
+    requested_backend = payload.get("default_backend", "simple")
+    if not isinstance(requested_backend, str):
+        errors["default_backend"] = "Choose a backend kind from an available profile."
+        requested_backend = ""
+    if requested_backend == "cheap":
+        requested_backend = "simple"
+    requested_profile = payload.get("default_profile_id")
+    if requested_profile is not None and not isinstance(requested_profile, str):
+        errors["default_profile_id"] = "Profile ID must be a string from the server profile list."
+        requested_profile = None
+    if requested_profile is None:
+        if requested_backend not in {"simple", "ocelot", "llm"}:
+            errors["default_backend"] = "Only the simple backend is supported unless an available server-configured profile is selected."
+            default_profile = None
+        else:
+            choices = [item for item in profile_catalog["profiles"]
+                       if item["kind"] == requested_backend and item["available"]]
+            if requested_backend == "simple":
+                choices = [item for item in choices if item["id"] == "simple.default"]
+            default_profile = choices[0] if len(choices) == 1 else None
+            if default_profile is None:
+                errors["default_backend"] = "Only the simple backend is supported unless an available server-configured profile is selected."
+    else:
+        default_profile = profiles.get(requested_profile)
+        if default_profile is None:
+            errors["default_profile_id"] = "Choose a listed backend profile."
+        elif not default_profile["available"]:
+            errors["default_profile_id"] = default_profile["reason"] or "This profile is unavailable."
+        elif requested_backend not in {"simple", "cheap", default_profile["kind"]}:
+            errors["default_backend"] = "Backend kind does not match the selected profile."
+    backend = default_profile["kind"] if default_profile else "simple"
 
     cadence = payload.get("ticks_per_period", "world")
     if cadence != "world" and cadence is not None and (
@@ -89,27 +123,78 @@ def resolve_draft(payload: Any) -> dict[str, Any]:
         errors["turn_limit"] = f"Turn limit must be an integer from 1 to {MAX_TURN_LIMIT}."
 
     actor_overrides: list[dict[str, str]] = []
+    actor_backend_profiles = payload.get("actor_backend_profiles", {})
+    if not isinstance(actor_backend_profiles, dict):
+        errors["actor_backend_profiles"] = "Actor profile assignments must be an object keyed by authored actor name."
+        actor_backend_profiles = {}
+    elif any(not isinstance(actor, str) or not isinstance(profile, str)
+             for actor, profile in actor_backend_profiles.items()):
+        errors["actor_backend_profiles"] = "Actor names and profile IDs must be strings."
+        actor_backend_profiles = {}
+    if scenario_id == "town100" and actor_backend_profiles:
+        errors["actor_backend_profiles"] = "Per-actor profile overrides are not supported for built-in town100."
+
+    definition = None
     if isinstance(scenario_id, str) and scenario_id and "scenario_id" not in errors:
         try:
-            if scenario_id != "town100" and scenario_id not in list_scenarios():
-                raise FileNotFoundError(scenario_id)
-            definition = load_scenario(scenario_id)
-            for actor in definition.actors:
+            if scenario_id != "town100":
+                definition = load_scenario(scenario_id)
+            actors = definition.actors if definition else []
+            actor_names = {str(actor.get("name", "")) for actor in actors}
+            for unknown_actor in sorted(set(actor_backend_profiles) - actor_names):
+                errors[f"actor_backend_profiles.{unknown_actor}"] = "Actor is not present in this authored scenario."
+            scenario_profile_ids = {}
+            scenario_kinds = {}
+            for actor in actors:
                 actor_backend = actor.get("backend")
                 if actor_backend is None:
                     continue
-                if not isinstance(actor_backend, str) or actor_backend not in {"simple", "cheap"}:
-                    actor_name = str(actor.get("name", "(unnamed actor)"))
+                actor_name = str(actor.get("name", "(unnamed actor)"))
+                # An explicit actor profile wins before scenario profile readiness is checked.
+                if actor_name in actor_backend_profiles:
+                    continue
+                kind = "simple" if actor_backend == "cheap" else actor_backend
+                candidates = [item for item in profile_catalog["profiles"]
+                              if item["kind"] == kind and item["available"]]
+                if kind == "simple":
+                    candidates = [item for item in candidates if item["id"] == "simple.default"]
+                if not isinstance(kind, str) or len(candidates) != 1:
                     errors["scenario_id"] = (
-                        f"Scenario actor {actor_name!r} selects unsupported backend "
-                        f"{actor_backend!r}; only simple is available in this phase.")
-                    break
-                actor_overrides.append({
-                    "actor": str(actor.get("name", "(unnamed actor)")), "backend": "simple",
-                    "source": "scenario_override",
-                })
+                        f"Scenario actor {actor_name!r} selects backend {actor_backend!r}, "
+                        "which has no unique available server profile.")
+                    continue
+                scenario_profile_ids[actor_name] = candidates[0]["id"]
+                scenario_kinds[actor_name] = kind
+                actor_overrides.append({"actor": actor_name, "backend": kind,
+                                        "source": "scenario_override"})
+            for actor_name, profile_id in actor_backend_profiles.items():
+                profile = profiles.get(profile_id)
+                if profile is None:
+                    errors[f"actor_backend_profiles.{actor_name}"] = "Choose a listed backend profile."
+                elif not profile["available"]:
+                    errors[f"actor_backend_profiles.{actor_name}"] = profile["reason"] or "This profile is unavailable."
+            resolved_actor_profiles = []
+            for actor_name in sorted(actor_names):
+                if actor_name in actor_backend_profiles:
+                    profile = profiles.get(actor_backend_profiles[actor_name])
+                    source = "user_override"
+                elif actor_name in scenario_profile_ids:
+                    profile = profiles.get(scenario_profile_ids[actor_name])
+                    source = "scenario_override"
+                else:
+                    profile = default_profile
+                    source = "default"
+                if profile:
+                    resolved_actor_profiles.append({
+                        "actor": actor_name, "profile_id": profile["id"],
+                        "profile_revision": profile["revision"], "backend": profile["kind"],
+                        "source": source,
+                    })
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
-            pass
+            definition = None
+            resolved_actor_profiles = []
+    else:
+        resolved_actor_profiles = []
 
     if isinstance(scenario_id, str) and scenario_id and "scenario_id" not in errors:
         try:
@@ -135,7 +220,8 @@ def resolve_draft(payload: Any) -> dict[str, Any]:
             pass
 
     catalog = build_capability_catalog()
-    capability_revision = catalog["revision"]
+    capability_revision = _hash({"capabilities": catalog["revision"],
+                                  "backend_profiles": profile_catalog["revision"]})
     warnings = []
     if actor_overrides:
         warnings.append("Authored scenario backend overrides take precedence over the default backend.")
@@ -152,6 +238,11 @@ def resolve_draft(payload: Any) -> dict[str, Any]:
             "seed": seed,
             "autonomous": True,
             "default_backend": backend,
+            "default_profile_id": default_profile["id"] if default_profile else "simple.default",
+            "default_profile_revision": default_profile["revision"] if default_profile else "unknown",
+            "actor_backend_profiles": dict(sorted(actor_backend_profiles.items())),
+            "resolved_actor_profiles": resolved_actor_profiles,
+            "backend_profiles_revision": profile_catalog["revision"],
             "ticks_per_period": cadence,
             "turn_limit": turn_limit,
             "scenario_source": scenario_entry["source"],
@@ -164,6 +255,14 @@ def resolve_draft(payload: Any) -> dict[str, Any]:
         canonical_config = {key: value for key, value in normalized.items()
                             if key != "capability_revision"}
         configuration_hash = _hash(canonical_config)
+    template_draft = {}
+    if normalized is not None:
+        for key in ALLOWED_FIELDS:
+            template_draft[key] = normalized[key]
+        if "default_profile_id" in payload:
+            template_draft["default_profile_id"] = normalized["default_profile_id"]
+        if "actor_backend_profiles" in payload:
+            template_draft["actor_backend_profiles"] = normalized["actor_backend_profiles"]
     return {
         "valid": not errors,
         "errors": errors,
@@ -172,16 +271,26 @@ def resolve_draft(payload: Any) -> dict[str, Any]:
         "normalized": normalized,
         "configuration_hash": configuration_hash,
         "canonical_config": canonical_config,
+        "template_draft": template_draft,
     }
 
 
-def preview_draft(payload: Any) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+def preview_draft(payload: Any, *, profile_registry=None) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     """Return (preview, resolution); preview is absent when the draft is invalid."""
-    resolution = resolve_draft(payload)
+    resolution = resolve_draft(payload, profile_registry=profile_registry)
     if not resolution["valid"]:
         return None, resolution
     config = resolution["normalized"]
-    world = create_world(scenario=config["scenario_id"], seed=config["seed"],
+    scenario = config["scenario_id"]
+    if scenario != "town100" and config["actor_backend_profiles"]:
+        scenario_data = load_scenario(scenario).to_dict()
+        for actor in scenario_data.get("actors", []):
+            profile_id = config["actor_backend_profiles"].get(actor.get("name"))
+            if profile_id:
+                actor["backend"] = (profile_registry.get(profile_id)["kind"]
+                                    if profile_registry else "simple")
+        scenario = scenario_data
+    world = create_world(scenario=scenario, seed=config["seed"],
                          autonomous_actors=False)
     grid = world._map_grid or []
     from worlds.bigville_sim_world import TILE_NAME
@@ -201,12 +310,13 @@ def preview_draft(payload: Any) -> tuple[dict[str, Any] | None, dict[str, Any]]:
         position = world.actor_position(actor)
         actor_node = world.eng.node(world._actors[actor])
         attrs = actor_node.get("attrs", {})
-        overridden = getattr(world, "_scenario_actor_backends", {}).get(actor)
+        assignment = next((item for item in config["resolved_actor_profiles"]
+                           if item["actor"] == actor), None)
         cast.append({
             "name": actor,
             "role": attrs.get("role"),
-            "backend": "simple" if overridden in {"simple", "cheap"} else config["default_backend"],
-            "backend_source": "scenario_override" if overridden else "default",
+            "backend": assignment["backend"] if assignment else config["default_backend"],
+            "backend_source": assignment["source"] if assignment else "default",
             "position": list(position) if position is not None else None,
         })
     full_cast_count = len(cast)
@@ -222,6 +332,7 @@ def preview_draft(payload: Any) -> tuple[dict[str, Any] | None, dict[str, Any]]:
         },
         "cast": {"count": full_cast_count, "actors": cast[:MAX_ACTORS],
                  "truncated": full_cast_count > MAX_ACTORS},
+        "profile_assignments": config["resolved_actor_profiles"],
     }
     encoded = json.dumps(result, sort_keys=True, separators=(",", ":"),
                          ensure_ascii=False, allow_nan=False).encode("utf-8")

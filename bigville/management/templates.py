@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .drafts import ALLOWED_FIELDS, resolve_draft
+from .drafts import ALLOWED_FIELDS, DRAFT_FIELDS, resolve_draft
 
 
 def _now() -> str:
@@ -46,10 +46,11 @@ class TemplateRegistry:
 
     SCHEMA_VERSION = 1
 
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, *, profile_registry=None):
         self.path = Path(path).expanduser().resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
+        self.profile_registry = profile_registry
         self._templates = self._load()
 
     def _load(self):
@@ -71,7 +72,9 @@ class TemplateRegistry:
                 if (not isinstance(version, dict) or version.get("version") != index or
                         version.get("schema_version") != self.SCHEMA_VERSION or
                         not isinstance(version.get("draft"), dict) or
-                        any(not isinstance(key, str) for key in version["draft"])):
+                        any(not isinstance(key, str) for key in version["draft"]) or
+                        not ALLOWED_FIELDS.issubset(set(version["draft"])) or
+                        not set(version["draft"]).issubset(DRAFT_FIELDS)):
                     raise ValueError(f"Template registry contains an invalid version; refusing to overwrite {self.path}")
         return data
 
@@ -91,8 +94,7 @@ class TemplateRegistry:
 
     @staticmethod
     def _clean_draft(resolution: dict[str, Any]) -> dict[str, Any]:
-        normalized = resolution["normalized"]
-        return {key: normalized[key] for key in ALLOWED_FIELDS}
+        return copy.deepcopy(resolution["template_draft"])
 
     @_synchronized
     def save(self, *, name: Any, draft: Any, template_id: str | None = None) -> dict[str, Any]:
@@ -100,7 +102,7 @@ class TemplateRegistry:
             raise TemplateInvalid("Template name must contain 1 to 80 characters.")
         if template_id is not None and (not isinstance(template_id, str) or not template_id.startswith("tpl_")):
             raise TemplateInvalid("Template ID is invalid.")
-        resolution = resolve_draft(draft)
+        resolution = resolve_draft(draft, profile_registry=self.profile_registry)
         if not resolution["valid"]:
             error = TemplateInvalid("Template draft is invalid for current capabilities.")
             error.fields = resolution["errors"]
@@ -172,9 +174,10 @@ class TemplateRegistry:
         version = self.get_version(template_id, version_number)
         if version["schema_version"] != self.SCHEMA_VERSION:
             raise TemplateUnavailable("This template uses an unsupported draft schema.")
-        if set(version["draft"]) != ALLOWED_FIELDS:
+        if (not ALLOWED_FIELDS.issubset(set(version["draft"])) or
+                not set(version["draft"]).issubset(DRAFT_FIELDS)):
             raise TemplateUnavailable("This template draft schema is incompatible with this version of the service.")
-        resolution = resolve_draft(version["draft"])
+        resolution = resolve_draft(version["draft"], profile_registry=self.profile_registry)
         if not resolution["valid"]:
             error = TemplateUnavailable("Template capabilities are unavailable in this checkout.")
             error.fields = resolution["errors"]
@@ -182,7 +185,7 @@ class TemplateRegistry:
         if (resolution["configuration_hash"] != version["configuration_hash"] or
                 resolution["capability_revision"] != version["capability_revision"]):
             raise TemplateUnavailable(
-                "Template capabilities or scenario content have changed. Review a compatible template version.")
+                "Template capability, backend profile, or scenario identity changed. This immutable version remains inspectable but cannot be loaded; save a compatible version from a current draft.")
         if self._clean_draft(resolution) != version["draft"]:
             raise TemplateUnavailable("This template draft is not in its exact canonical form; it was not normalized.")
         return version

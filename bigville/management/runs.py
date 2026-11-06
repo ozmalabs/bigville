@@ -252,7 +252,7 @@ class RunRegistry:
         if unknown:
             raise InvalidRunRequest("Unknown request fields: " + ", ".join(unknown))
         draft = request.get("draft")
-        resolution = resolve_draft(draft)
+        resolution = resolve_draft(draft, profile_registry=getattr(self, "profile_registry", None))
         if not resolution["valid"]:
             error = InvalidRunRequest("Draft validation failed.")
             error.fields = resolution["errors"]
@@ -315,7 +315,8 @@ class RunRegistry:
                 raise error
 
         try:
-            preview, preview_resolution = preview_draft(draft)
+            preview, preview_resolution = preview_draft(
+                draft, profile_registry=getattr(self, "profile_registry", None))
         except PreviewTooLarge as exc:
             raise InvalidRunRequest(str(exc)) from exc
         except Exception as exc:
@@ -357,6 +358,7 @@ class RunRegistry:
                 "capability_revision": revision,
                 "config": copy.deepcopy(canonical),
                 "resolved_actor_backends": actor_assignments,
+                "resolved_actor_profiles": copy.deepcopy(canonical.get("resolved_actor_profiles", [])),
                 "template": ({**template_provenance,
                               "run_configuration_hash": config_hash}
                              if template_provenance else None),
@@ -400,12 +402,14 @@ class RunRegistry:
 
     @staticmethod
     def _draft_from_config(config: dict[str, Any]) -> dict[str, Any]:
-        return {key: config[key] for key in (
+        fields = (
             "scenario_id", "name", "seed", "autonomous", "default_backend",
-            "ticks_per_period", "turn_limit")}
+            "ticks_per_period", "turn_limit", "default_profile_id", "actor_backend_profiles")
+        return {key: config[key] for key in fields if key in config}
 
     def _assert_config_current(self, record: dict[str, Any]) -> None:
-        resolution = resolve_draft(self._draft_from_config(record["config"]))
+        resolution = resolve_draft(self._draft_from_config(record["config"]),
+                                   profile_registry=getattr(self, "profile_registry", None))
         if not resolution["valid"]:
             raise RunConflict("Stored run configuration is no longer valid: " +
                               "; ".join(resolution["errors"].values()))
@@ -419,10 +423,34 @@ class RunRegistry:
     def _ensure_game(self, runtime: _Runtime, record: dict[str, Any]):
         if runtime.game is None:
             config = record["config"]
+            scenario = config["scenario_id"]
+            if scenario != "town100" and config.get("actor_backend_profiles"):
+                from ..scenarios import load_scenario
+                scenario = load_scenario(scenario).to_dict()
+                assignments = {item["actor"]: item["backend"]
+                               for item in config.get("resolved_actor_profiles", [])
+                               if item.get("source") == "user_override"}
+                for actor in scenario.get("actors", []):
+                    if actor.get("name") in assignments:
+                        actor["backend"] = assignments[actor["name"]]
+            profile_registry = getattr(self, "profile_registry", None)
+            actor_profiles = {item["actor"]: item["profile_id"]
+                              for item in config.get("resolved_actor_profiles", [])}
+            has_llm = (config["default_backend"] == "llm" or
+                       any(item.get("backend") == "llm"
+                           for item in config.get("resolved_actor_profiles", [])))
+            backend_factories = {}
+            if has_llm:
+                def llm_factory(world, character):
+                    profile_id = actor_profiles.get(character.character_id,
+                                                    config["default_profile_id"])
+                    return profile_registry.build_backend(profile_id, world, character)
+                backend_factories["llm"] = llm_factory
             runtime.game = create_game(
-                scenario=config["scenario_id"], seed=config["seed"],
+                scenario=scenario, seed=config["seed"],
                 default_backend=config["default_backend"], autonomous=True,
                 ticks_per_period=config["ticks_per_period"],
+                backend_factories=backend_factories,
             )
         return runtime.game
 

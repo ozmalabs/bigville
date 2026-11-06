@@ -12,6 +12,7 @@
   const runsStatus = $("#runs-load-status");
   const form = $("#new-run-form");
   let capabilityCatalog = null;
+  let backendProfiles = [];
   let reviewed = null;
   let submissionKey = null;
   let submitting = false;
@@ -122,26 +123,77 @@
   function renderBackends(backends) {
     backendList.replaceChildren();
     $("#backend-empty").hidden = backends.length !== 0;
-    const simple = backends.find(backend => backend.kind === "simple");
-    $("#default-backend").disabled = !simple || simple.available !== true;
-    if (!simple || simple.available !== true) {
-      setFieldErrors({default_backend: simple?.reason || "Simple backend is unavailable."});
-    }
+    const select = $("#default-backend");
+    const previous = select.value;
+    select.replaceChildren();
     for (const backend of backends) {
       const card = document.createElement("article");
       card.className = "backend-card";
       const heading = document.createElement("div");
       heading.className = "backend-head";
-      heading.append(text("h3", backend.kind || "Unknown backend"));
+      heading.append(text("h3", `${backend.name} · ${backend.kind}`));
       const available = backend.available === true;
-      const readiness = text("span", available ? "Available" : "Unavailable", `readiness${available ? "" : " unavailable"}`);
-      readiness.setAttribute("aria-label", `${backend.kind || "Backend"}: ${available ? "available" : "unavailable"}`);
+      const readiness = text("span", available ? "Ready" : "Unavailable", `readiness${available ? "" : " unavailable"}`);
+      readiness.setAttribute("aria-label", `${backend.name}: ${available ? "ready" : "unavailable"}`);
       heading.append(readiness);
       card.append(heading);
+      card.append(text("p", `Profile ${backend.id} · revision ${backend.revision}`));
       if (!available) card.append(text("p", backend.reason || "No availability details were provided."));
       backendList.append(card);
+      const option = new Option(`${backend.name} · ${backend.kind}${available ? "" : " · unavailable"}`, backend.id);
+      option.disabled = !available;
+      select.add(option);
+    }
+    const simpleOption = [...select.options].find(option => option.value === "simple.default");
+    if (simpleOption) simpleOption.value = "simple"; // retain the M01–M09 draft value alias
+    if (![...select.options].some(option => option.value === previous && !option.disabled)) {
+      select.value = select.options.find(option => !option.disabled)?.value || "";
+    } else select.value = previous;
+    select.disabled = !select.value;
+  }
+
+  function renderActorProfileControls(assignments = {}) {
+    const scenarioId = $("#scenario-id").value;
+    const scenario = capabilityCatalog?.scenarios?.find(item => item.id === scenarioId);
+    const actors = scenario?.actors || [];
+    const container = $("#actor-profile-assignments");
+    container.replaceChildren();
+    const authored = scenarioId && scenarioId !== "town100" && actors.length > 0;
+    $("#actor-profile-fieldset").hidden = !authored;
+    if (!authored) return;
+    for (const actor of actors) {
+      const row = document.createElement("div");
+      row.className = "actor-profile-row";
+      const label = text("label", actor.name);
+      const select = document.createElement("select");
+      select.dataset.actor = actor.name;
+      const inherited = actor.scenario_backend
+        ? `Inherit scenario profile (${actor.scenario_backend})`
+        : "Inherit default profile";
+      select.add(new Option(inherited, ""));
+      for (const profile of backendProfiles) {
+        if (!profile.available) continue;
+        select.add(new Option(`${profile.name} · ${profile.kind}`, profile.id));
+      }
+      select.value = assignments[actor.name] || "";
+      select.addEventListener("change", () => {
+        if (applyingTemplate) return;
+        formDirty = true;
+        invalidateReview();
+      });
+      label.htmlFor = `actor-profile-${actor.name.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+      select.id = label.htmlFor;
+      row.append(label, select);
+      container.append(row);
     }
   }
+
+  $("#scenario-id").addEventListener("change", () => {
+    const assignments = Object.fromEntries(
+      [...$("#actor-profile-assignments").querySelectorAll("select[data-actor]")]
+        .filter(select => select.value).map(select => [select.dataset.actor, select.value]));
+    renderActorProfileControls(assignments);
+  });
 
   function clearErrors() {
     document.querySelectorAll(".field-error").forEach(element => {
@@ -234,15 +286,25 @@
     if (cadenceChoice === "none") ticksPerPeriod = null;
     else if (cadenceChoice === "custom") ticksPerPeriod = Number($("#custom-cadence").value);
     const rawLimit = $("#turn-limit").value;
-    return {
+    const selectedProfileId = $("#default-backend").value === "simple"
+      ? "simple.default" : $("#default-backend").value;
+    const selectedProfile = backendProfiles.find(profile => profile.id === selectedProfileId);
+    const result = {
       scenario_id: $("#scenario-id").value,
       name: $("#run-name").value,
       seed,
       autonomous: true,
-      default_backend: $("#default-backend").value,
+      default_backend: selectedProfile?.kind || selectedProfileId,
       ticks_per_period: ticksPerPeriod,
       turn_limit: rawLimit === "" ? null : Number(rawLimit),
     };
+    if (selectedProfile) result.default_profile_id = selectedProfile.id;
+    const actorProfiles = {};
+    for (const select of $("#actor-profile-assignments").querySelectorAll("select[data-actor]")) {
+      if (select.value) actorProfiles[select.dataset.actor] = select.value;
+    }
+    if (Object.keys(actorProfiles).length) result.actor_backend_profiles = actorProfiles;
+    return result;
   }
 
   async function requestJson(path, options = {}) {
@@ -271,6 +333,7 @@
     const rows = [
       ["Run name", draft.name], ["Scenario", draft.scenario_id], ["World seed", draft.seed],
       ["Default backend", config.default_backend], ["Run mode", "Autonomous"],
+      ["Default profile", `${config.default_profile_id} · revision ${config.default_profile_revision}`],
       ["Ticks per period", draft.ticks_per_period === null ? "Disabled" : draft.ticks_per_period],
       ["Turn limit", draft.turn_limit == null ? "No limit" : draft.turn_limit],
     ];
@@ -281,9 +344,12 @@
     }
     const actors = $("#review-cast");
     actors.replaceChildren();
+    const assignments = new Map((preview.profile_assignments || []).map(item => [item.actor, item]));
     for (const actor of preview.cast.actors) {
       const row = document.createElement("li");
-      row.textContent = `${actor.name} · ${actor.backend} (${actor.backend_source.replaceAll("_", " ")})`;
+      row.append(text("span", `${actor.name} · ${actor.backend} (${actor.backend_source.replaceAll("_", " ")})`));
+      const assignment = assignments.get(actor.name);
+      if (assignment) row.append(text("small", `${assignment.profile_id} · revision ${assignment.profile_revision}`));
       actors.append(row);
     }
     if (preview.cast.truncated) actors.append(text("li", `Showing ${preview.cast.actors.length} of ${preview.cast.count} residents.`));
@@ -480,8 +546,14 @@
       scenario.add(new Option(`${draft.scenario_id} · unavailable`, draft.scenario_id));
     }
     scenario.value = draft.scenario_id;
+    const profileId = draft.default_profile_id ||
+      backendProfiles.find(profile => profile.kind === (draft.default_backend === "cheap" ? "simple" : draft.default_backend) && profile.available)?.id;
+    const profileChoice = profileId === "simple.default" ? "simple" : profileId;
+    if (profileChoice && [...$("#default-backend").options].some(option => option.value === profileChoice)) {
+      $("#default-backend").value = profileChoice;
+    }
+    renderActorProfileControls(draft.actor_backend_profiles || {});
     $("#world-seed").value = String(draft.seed);
-    $("#default-backend").value = draft.default_backend;
     $("#cadence-choice").value = draft.ticks_per_period === "world"
       ? "world" : draft.ticks_per_period === null ? "none" : "custom";
     $("#custom-cadence").value = draft.ticks_per_period == null || draft.ticks_per_period === "world"
@@ -992,16 +1064,21 @@
     status.textContent = "Loading capability catalog…";
     errorPanel.hidden = true;
     try {
-      const catalog = await requestJson("/capabilities");
-      if (!Array.isArray(catalog.scenarios) || !Array.isArray(catalog.backends)) {
-        throw new Error("Catalog response is missing scenario or backend data.");
+      const [catalog, profileCatalog] = await Promise.all([
+        requestJson("/capabilities"), requestJson("/backend-profiles"),
+      ]);
+      if (!Array.isArray(catalog.scenarios) || !Array.isArray(catalog.backends) ||
+          !Array.isArray(profileCatalog.profiles)) {
+        throw new Error("Catalog response is missing scenario or backend profile data.");
       }
       capabilityCatalog = catalog;
+      backendProfiles = profileCatalog.profiles;
       renderScenarios(catalog.scenarios);
-      renderBackends(catalog.backends);
+      renderBackends(backendProfiles);
+      renderActorProfileControls();
       const commit = catalog.engine_build && catalog.engine_build.git_commit;
       $("#build-label").textContent = commit ? `build ${commit.slice(0, 12)}` : "engine build unknown";
-      status.textContent = `Catalog ready · ${catalog.scenarios.length} scenarios · ${catalog.backends.length} backends`;
+      status.textContent = `Catalog ready · ${catalog.scenarios.length} scenarios · ${backendProfiles.length} backend profiles`;
     } catch (error) {
       status.hidden = true;
       errorMessage.textContent = error instanceof Error ? error.message : "Unexpected catalog error.";

@@ -65,3 +65,9 @@ a{color:inherit}
 .template-inspection { max-height: 18rem; overflow: auto; padding: .8rem; border-radius: .6rem; background: #17241f; color: #eaf3e9; white-space: pre-wrap; overflow-wrap: anywhere; }
 .template-save { grid-template-columns: minmax(10rem, 1fr) auto minmax(10rem, 1fr); align-items: center; }
 @media (max-width: 720px) { .template-save { grid-template-columns: 1fr; } .template-controls { align-items: stretch; flex-direction: column; } }
+.actor-profile-fieldset { grid-column: 1 / -1; min-width: 0; padding: 1rem; border: 1px solid var(--line); border-radius: .75rem; }
+.actor-profile-fieldset legend { padding: 0 .4rem; font-weight: 700; }
+.actor-profile-row { display: grid; grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr); align-items: center; gap: .8rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
+.actor-profile-row:last-child { border-bottom: 0; }
+.actor-profile-row select { min-width: 0; width: 100%; padding: .6rem; border: 1px solid var(--line); border-radius: .5rem; }
+@media (max-width: 640px) { .actor-profile-row { grid-template-columns: 1fr; gap: .35rem; } }

@@ -87,6 +87,9 @@ def _scenario_entry(identifier: str) -> dict[str, Any]:
         "content_hash": _canonical_hash(data),
         "content_hash_reason": None,
         "physical_subsystems": effective,
+        "actors": [{"name": str(actor.get("name", "")),
+                    "scenario_backend": actor.get("backend")}
+                   for actor in definition.actors],
     }
 
 

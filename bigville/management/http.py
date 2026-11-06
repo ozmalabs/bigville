@@ -15,6 +15,7 @@ from .catalog import build_capability_catalog
 from .drafts import MAX_PREVIEW_BYTES, PreviewTooLarge, preview_draft, resolve_draft
 from .runs import (InvalidRunRequest, InvalidTransition, RegistryError,
                    RunConflict, RunNotFound, RunRegistry, RunViewUnavailable)
+from .profiles import BackendAdapterRegistry, BackendProfileRegistry
 from .templates import (TemplateError, TemplateInvalid, TemplateNotFound,
                         TemplateRegistry, TemplateUnavailable)
 
@@ -91,6 +92,8 @@ class _Handler(BaseHTTPRequestHandler):
             except Exception:
                 return self._json(500, error_payload(
                     "catalog_unavailable", "Capability catalog could not be built."))
+        if path == f"{API_PREFIX}/backend-profiles":
+            return self._json(200, self.server.profile_registry.public_profiles())
         if path == f"{API_PREFIX}/templates":
             return self._json(200, {"templates": self.server.template_registry.list_templates()})
         if path.startswith(f"{API_PREFIX}/templates/"):
@@ -258,14 +261,14 @@ class _Handler(BaseHTTPRequestHandler):
 
         if path.endswith("/validate"):
             try:
-                resolution = resolve_draft(payload)
+                resolution = resolve_draft(payload, profile_registry=self.server.profile_registry)
             except Exception:
                 return self._json(500, error_payload(
                     "validation_failed", "Draft validation could not be completed."))
             return self._json(200, resolution)
 
         try:
-            preview, resolution = preview_draft(payload)
+            preview, resolution = preview_draft(payload, profile_registry=self.server.profile_registry)
         except PreviewTooLarge as exc:
             return self._json(413, error_payload("preview_too_large", str(exc)))
         except Exception:
@@ -294,7 +297,8 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def create_server(host: str = "127.0.0.1", port: int = 8766,
-                  data_dir: str | Path | None = None) -> ManagementHTTPServer:
+                  data_dir: str | Path | None = None, *,
+                  profile_adapters: BackendAdapterRegistry | None = None) -> ManagementHTTPServer:
     """Create a service bound to a loopback address only."""
     try:
         address = ipaddress.ip_address(host)
@@ -306,7 +310,11 @@ def create_server(host: str = "127.0.0.1", port: int = 8766,
     registry = RunRegistry(data_dir if data_dir is not None else default_data_dir())
     server = server_type((str(address), int(port)), _Handler)
     server.run_registry = registry
-    server.template_registry = TemplateRegistry(registry.data_dir / "templates.json")
+    server.profile_registry = BackendProfileRegistry(registry.data_dir / "backend_profiles.json",
+                                                    adapters=profile_adapters)
+    registry.profile_registry = server.profile_registry
+    server.template_registry = TemplateRegistry(registry.data_dir / "templates.json",
+                                                profile_registry=server.profile_registry)
     registry.template_registry = server.template_registry
     return server
 

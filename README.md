@@ -259,15 +259,33 @@ single-user service.
 python -m bigville.management.http
 # http://127.0.0.1:8766/api/management/v1/health
 # http://127.0.0.1:8766/api/management/v1/capabilities
+# http://127.0.0.1:8766/api/management/v1/backend-profiles
 # Open http://127.0.0.1:8766/ for the management shell.
 ```
 
 Run metadata is stored by default in `~/.local/share/bigville-management`.
 Set `BIGVILLE_MANAGEMENT_DATA_DIR` or pass `--data-dir` to choose another
-local directory. The service only binds to loopback IP addresses. Ocelot is
-marked unavailable when its external adapter cannot be imported, and LLM is
-unavailable until a server-side provider is configured. M04 supports
-autonomous simple-backend runs; human-input handling and provider invocation
-are unavailable. On service restart, unfinished in-memory runs are marked
-failed with an interruption reason; worlds are not silently resumed. Remote
-and multi-user deployment and authentication are out of scope.
+local directory. The service only binds to loopback IP addresses. Backend
+profiles are listed separately from engine capabilities. Ocelot is marked
+unavailable when its external adapter cannot be imported. An LLM profile
+requires a matching adapter registered in the server process; no provider or
+model is treated as available just because it appears in configuration.
+Optional `secret_ref` values in the local `backend_profiles.json` file are
+passed only to the registered server adapter and are omitted from API
+responses, run records and templates. Profile files may contain only IDs,
+revisions, adapter names and local secret references, never credential
+values. Authored scenarios can override an actor's profile; per-actor
+assignments are rejected for built-in `town100`. On service restart,
+unfinished in-memory runs are marked failed with an interruption reason;
+worlds are not silently resumed. Remote and multi-user deployment and
+authentication are out of scope.
+
+The command-line service starts without third-party LLM adapters, so configured
+LLM profiles remain unavailable there until an embedding server registers an
+adapter. Python integrations can pass a `BackendAdapterRegistry` to
+`create_server(profile_adapters=...)`; adapters receive the server-side profile
+including any local `secret_ref` and must return an `LLMBackend`. The management
+shell cannot register providers or submit credentials. Only the built-in
+`simple.default` and `ocelot.default` profiles are accepted for those kinds;
+custom simple/Ocelot variants are rejected because the engine does not route
+their settings separately.
