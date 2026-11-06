@@ -1,6 +1,7 @@
 """Phase 023: timed jobs occupy the worker.
 
-A worker with a timed job in progress cannot start another recipe (refusal `busy`). A job advances only on
+A worker with several timed jobs in progress shares their progress (Phase 049: each advances at the worker's rate
+divided by the number of open jobs; `stop` ends one of them). A job advances only on
 ticks when its worker stands on the cell where the job started: walking away pauses it, and it resumes on
 return. A paused job keeps its inputs and remaining ticks and spends no stamina. Eating stays allowed while
 busy. The paused state is published on the actor (`job_paused`) and on the affordances.
@@ -51,27 +52,32 @@ def _refusal_reason(w, name):
     return w.eng.node(w._actor(name))["attrs"]["last_outcome"]["reason"]
 
 
-def test_busy_is_a_refusal_reason_in_the_pack():
-    assert "busy" in E.REFUSAL_REASONS
-    assert E.REFUSAL_REASONS["busy"]["description"].strip()
+def test_busy_is_no_longer_a_refusal_reason_in_the_pack():
+    # Phase 049: a second job is allowed and shares the worker's progress, so `busy` is retired from the table.
+    assert "busy" not in E.REFUSAL_REASONS
 
 
-def test_a_second_start_while_busy_is_refused():
+def test_a_second_start_while_busy_is_accepted_and_shares_the_progress():
     w = _smith()
     assert w.start("Smith", "forge_plough")
-    assert w.busy("Smith")
-    assert not w.start("Smith", "forge_knife"), "one timed job at a time"
-    assert not w.do("Smith", "forge_knife"), "an instant craft is refused too"
+    plough = _job(w, "Smith")
+    before = float(w.eng.node(plough)["attrs"]["remaining"])
+    assert w.start("Smith", "forge_knife"), "a second job is allowed (Phase 049)"
+    assert len(w.eng.neighbours(w._actor("Smith"), "on_job")) == 2 and w.busy("Smith")
+    w.tick(1)
+    # Two open jobs share one worker's progress: each advances half a tick per tick (Phase 049).
+    assert abs((before - float(w.eng.node(plough)["attrs"]["remaining"])) - 0.5) < TOL
 
 
-def test_a_refused_start_while_busy_publishes_the_busy_reason_and_uses_no_slot():
+def test_stop_ends_one_of_a_workers_two_jobs():
     w = _smith()
-    assert w.major_action("Smith", "start", "forge_plough")
-    assert w.busy("Smith")
-    w.eng.set_attr(w._actor("Smith"), "major_action_used", 0.0)   # a fresh turn slot, no other attempt
-    assert not w.major_action("Smith", "work", "forge_knife")
-    assert _refusal_reason(w, "Smith") == "busy"
-    assert w.actor_turn_state("Smith")["major_action_used"] is False, "the refused attempt used no slot"
+    assert w.start("Smith", "forge_plough") and w.start("Smith", "forge_knife")
+    jobs = list(w.eng.neighbours(w._actor("Smith"), "on_job"))
+    knife = next(j for j in jobs if w.eng.node(w.eng.neighbours(j, "runs")[0])["attrs"]["name"] == "forge_knife")
+    assert w.stop_job("Smith", knife)
+    assert w.busy("Smith") and len(w.eng.neighbours(w._actor("Smith"), "on_job")) == 1
+    assert w.stop_job("Smith")
+    assert not w.busy("Smith") and not w.stop_job("Smith")
 
 
 def test_a_worker_who_is_busy_can_still_eat():

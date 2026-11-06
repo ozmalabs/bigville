@@ -15,20 +15,17 @@
       "slot_used": {
         "description": "You have already used your one major action this turn."
       },
-      "busy": {
-        "description": "You are still in the middle of a timed job. Finish it first; it waits while you are away from the place you started it."
-      },
       "asleep": {
         "description": "You are asleep. You cannot act until you wake."
       },
       "collapsed": {
         "description": "You have collapsed from exhaustion and are asleep where you fell. You cannot act until you wake, and you wake weaker than a proper sleep leaves you."
       },
+      "exhausted": {
+        "description": "You are too exhausted to set off on foot now. Rest first; you can walk again once you have recovered a little."
+      },
       "passed_out": {
         "description": "You have passed out from drink and are asleep where you fell. You cannot act until the drink wears off enough for you to wake."
-      },
-      "too_tired": {
-        "description": "You are too exhausted to walk. Rest or sleep first."
       },
       "not_in_reach": {
         "description": "You are not close enough. You must stand on the same cell as the person, object, or place, or one step away."
@@ -54,26 +51,14 @@
       "already_held": {
         "description": "You already hold it."
       },
-      "no_capacity": {
-        "description": "It does not fit. Your carrying capacity, the container's volume, its load limit, or the serving vessel's size is full or too small."
-      },
-      "no_tool": {
-        "description": "You do not have the tool or serving equipment this work needs in your hands or at your workplace."
-      },
       "unskilled": {
-        "description": "You are not skilled enough for this work, or your strength is below what it needs."
+        "description": "You do not have the skill this care needs."
       },
       "not_known": {
         "description": "You do not know how to do this work."
       },
-      "out_of_season": {
-        "description": "It is not the season for this crop or this work."
-      },
-      "on_cooldown": {
-        "description": "This cannot be done again yet. The animal or task has only just been tended."
-      },
       "not_ready": {
-        "description": "It is not ready yet (the crop is not mature, or the grave is not open or no body is waiting)."
+        "description": "It is not ready yet: the grave is not open, or no body is waiting to be buried."
       },
       "container_locked": {
         "description": "The container is locked, and you do not hold its key."

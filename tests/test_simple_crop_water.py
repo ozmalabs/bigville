@@ -102,6 +102,9 @@ def test_crop_loop_trace_replays_and_sowing_respects_season():
     out_of_season = _game(season="summer")
     context = out_of_season._context("Farmer")
     assert not any(option.get("action") == "sow" for option in context.affordances)
-    assert out_of_season.world.sow("Farmer", "wheat", land="farm_plot_00") is None
-    assert out_of_season.world.qty("wheat_seed") == 1.0
+    crop = out_of_season.world.sow("Farmer", "wheat", land="farm_plot_00")
+    assert crop is not None, "a sowing out of season is allowed (Phase 049): the seed is used"
+    assert out_of_season.world.qty("wheat_seed") == 0.0
+    out_of_season.world.pass_period()
+    assert not out_of_season.world.crop_alive(crop), "the out-of-season crop fails to the season's weather"
 

@@ -486,7 +486,7 @@ def _check_refusal_reasons(errors, warnings, info):
         errors.append("REFUSAL_REASONS: needs the 'not_possible' catch-all")
     if isinstance(REFUSAL_LOG_LIMIT, bool) or not isinstance(REFUSAL_LOG_LIMIT, int) or REFUSAL_LOG_LIMIT < 1:
         errors.append(f"REFUSAL_LOG_LIMIT: must be a whole number of at least 1, not {REFUSAL_LOG_LIMIT!r}")
-    for code in ("asleep", "collapsed", "too_tired"):
+    for code in ("asleep", "collapsed"):
         if code not in REFUSAL_REASONS:
             errors.append(f"REFUSAL_REASONS: needs the exhaustion code {code!r} (Phase 024)")
 
@@ -601,9 +601,10 @@ def _check_exhaustion(errors, warnings, info):
     if ex["collapse_gain"] > ex["rest_gain"]:
         errors.append("EXHAUSTION: collapse_gain must not exceed rest_gain (a collapse sleep is not restorative)")
     moves = ex["moves_per_tick"]
-    if (len(moves) != 4 or moves[-1] != 0 or any(moves[i] < moves[i + 1] for i in range(3))
+    # Phase 049: the last count is the slowest rate below e_low (walking slows until a collapse; it no longer stops).
+    if (len(moves) != 4 or moves[-1] <= 0 or any(moves[i] < moves[i + 1] for i in range(3))
             or moves[0] <= 0 or any(isinstance(m, bool) or not isinstance(m, (int, float)) for m in moves)):
-        errors.append(f"EXHAUSTION[moves_per_tick]: four counts, falling to 0, not {moves!r}")
+        errors.append(f"EXHAUSTION[moves_per_tick]: four counts, falling, the last above 0, not {moves!r}")
     if not isinstance(ex["slow_on"], bool):
         errors.append(f"EXHAUSTION[slow_on]: a boolean switch, not {ex['slow_on']!r}")
     hours = (ex["night_start_hour"], ex["night_end_hour"])
@@ -783,7 +784,7 @@ def _check_resolution(errors, warnings, info):
             errors.append(f"VERBS[{verb}]: needs a description")
     if "attempt" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["attempt"].get("description", "")).strip():
         errors.append("MAJOR_ACTIONS: needs 'attempt' with a description (Phase 050)")
-    for code in ("unsupported", "destroyed", "no_tool", "not_in_reach", "no_lock"):
+    for code in ("unsupported", "destroyed", "not_in_reach", "no_lock"):
         if code not in REFUSAL_REASONS:
             errors.append(f"REFUSAL_REASONS: '{code}' is missing (Phase 050)")
     for name, spec in MATERIALS.items():
@@ -813,7 +814,9 @@ def _check_resolution(errors, warnings, info):
         errors.append("RESOLUTION[max_intensity]: must be at least 1.0 (the normal intensity)")
     if not 0.0 < float(rs["i_safe"]) <= float(rs["max_intensity"]):
         errors.append("RESOLUTION[i_safe]: must lie in (0, max_intensity]")
-    for name in ("unrelated_fit", "hands_fit"):
+    # Phase 049: the consequence shares of a skill shortfall, an off-season gather, a poor serving, and a leak.
+    for name in ("unrelated_fit", "hands_fit", "skill_ruin_ratio", "off_season_yield", "unserved_waste",
+                 "leak_per_period"):
         if not 0.0 <= float(rs[name]) <= 1.0:
             errors.append(f"RESOLUTION[{name}]: must lie in [0, 1], not {rs[name]!r}")
     if float(rs["strain_limit"]) <= 0.0 or float(rs["accident_harm"]) < 0.0:

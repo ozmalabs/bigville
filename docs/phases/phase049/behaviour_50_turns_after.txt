@@ -1,0 +1,7 @@
+reference: docs/phases/fix024_starvation/behaviour_after_fix024.json, first 50 turns, seed 305000, seeding off
+Alby Marsh: first difference at turn index 14: reference 'rest', after 'move'
+Bryony Turnbull: first difference at turn index 13: reference 'rest', after 'move'
+Garnet Hollow: first difference at turn index 13: reference 'rest', after 'move'
+Ida Ditchwater: first difference at turn index 12: reference 'rest', after 'move'
+Verity Peaseblossom: first difference at turn index 14: reference 'rest', after 'move'
+hunger mean by turn identical: False

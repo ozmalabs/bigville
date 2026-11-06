@@ -213,8 +213,10 @@ def test_the_proposal_tool_names_the_held_tool_bare_hands_or_is_refused():
     assert w.start("Smith", "forge_nails", tool="hammer")
     assert _ticks_to_finish(w, "Smith") >= 1
     assert w.tool_condition(held) < 1.0 and w.tool_condition(shelf) == 1.0, "the held hammer was the one used"
-    assert not w.start("Smith", "forge_nails", tool="saw"), "a saw the smith does not hold is refused"
-    assert w._refusal_code == "no_tool"
+    # Phase 049: a saw the smith does not hold is no refusal; that job runs on bare hands at hands_fit.
+    assert w.start("Smith", "forge_nails", tool="saw")
+    hands = [j for j in w.eng.neighbours(w._actor("Smith"), "on_job") if w.eng.node(j)["attrs"]["tool_mode"] == "hands"]
+    assert len(hands) == 1 and float(w.eng.node(hands[0])["attrs"]["fit"]) == float(E.RESOLUTION["hands_fit"])
     assert not w.start("Smith", "forge_nails", tool=3)
     assert w._refusal_code == "malformed"
 

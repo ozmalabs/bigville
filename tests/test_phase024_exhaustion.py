@@ -86,9 +86,11 @@ def _job(w, name):
 # ------------------------------------------------------------------ the pack table and refusal codes
 
 def test_the_exhaustion_codes_are_refusal_reasons_in_the_pack():
-    for code in ("asleep", "collapsed", "too_tired"):
+    for code in ("asleep", "collapsed"):
         assert code in E.REFUSAL_REASONS
         assert E.REFUSAL_REASONS[code]["description"].strip()
+    # Phase 049: too_tired is retired. Walking below e_low is slower, not refused.
+    assert "too_tired" not in E.REFUSAL_REASONS
     assert "sleep" in E.MAJOR_ACTIONS and E.MAJOR_ACTIONS["sleep"]["description"].strip()
 
 
@@ -100,7 +102,7 @@ def test_the_rest_rate_is_read_from_the_exhaustion_table():
 def test_the_seeded_fractions_and_hop_budget_are_the_table_values():
     ex = E.EXHAUSTION
     assert (ex["e_high"], ex["e_mid"], ex["e_low"]) == (0.7, 0.4, 0.15)
-    assert list(ex["moves_per_tick"]) == [3, 2, 1, 0]
+    assert list(ex["moves_per_tick"]) == [3, 2, 1, 0.5]     # Phase 049: 0 (no walking below e_low) -> 0.5 (slowest)
 
 
 # ------------------------------------------------------------------ slowing
@@ -114,15 +116,29 @@ def test_a_walk_takes_x1_x1_5_and_x3_the_turns_by_reserve_band(reserve, interval
     assert moved == pytest.approx(turns / interval)
 
 
-def test_a_resident_below_e_low_cannot_start_a_walk():
+def test_a_resident_below_e_low_still_walks_until_the_collapse():
+    # Phase 049: below e_low a resident walks at the slowest rate (speed 1/6, moves_per_tick 0.5 of 3) until the
+    # reserve falls below e_collapse and they fall down. The walk is not refused; the collapse stops it. The simple
+    # backend is still offered no travel below e_low (the offers are unchanged).
     w = _resident()
     _flat_ground(w)
     _set_reserve(w, "Ada", 0.1)
+    assert w.exhaustion_step("Ada") == 3 and w.speed_factor("Ada") == pytest.approx(1 / 6, abs=1e-4)
     other = _neighbour(w, "Ada")
-    here = w.actor_position("Ada")
-    assert not w.major_action("Ada", "move", destination=other)
-    assert _reason(w, "Ada") == "too_tired"
-    assert w.actor_position("Ada") == here
+    home = w.actor_position("Ada")
+    moved = 0
+    for _ in range(60):
+        if w.asleep("Ada"):
+            break
+        w.eng.set_attr(w._actors["Ada"], "hunger", 0.0)
+        w.actor_tick("Ada")
+        destination = other if w.actor_position("Ada") == home else home
+        before = w.actor_position("Ada")
+        if not w.major_action("Ada", "move", destination=destination):
+            break
+        moved += w.actor_position("Ada") != before
+    assert moved >= 1, "the first step below e_low is taken"
+    assert w.collapsed("Ada"), "the collapse stops the walk, not a refusal"
     assert all(o["action"] != "move" for o in w.actor_affordances("Ada"))
 
 
@@ -241,13 +257,12 @@ def test_sleep_restores_to_rest_cap_and_wakes():
     assert ticks == math.ceil((E.EXHAUSTION["rest_cap"] - 0.5) / E.EXHAUSTION["rest_gain"])
 
 
-def test_sleep_is_refused_when_rested_and_other_actions_are_refused_while_asleep():
+def test_a_sleep_at_a_full_reserve_is_allowed_and_other_actions_are_refused_while_asleep():
     w = _resident()
     _set_reserve(w, "Ada", 1.0)
-    assert not w.major_action("Ada", "sleep")
-    assert _reason(w, "Ada") == "not_needed"
-    _set_reserve(w, "Ada", 0.5)
+    # Phase 049: a sleep at a full reserve is no longer refused; it uses the slot and the time.
     assert w.major_action("Ada", "sleep")
+    assert w.asleep("Ada")
     other = _neighbour(w, "Ada")
     assert not w.major_action("Ada", "move", destination=other)
     assert _reason(w, "Ada") == "asleep"
@@ -337,14 +352,15 @@ def test_a_tired_worker_advances_a_timed_job_at_the_movement_speed():
     assert before - w.eng.node(job)["attrs"]["remaining"] == pytest.approx(2 / 3, abs=1e-6)
 
 
-def test_a_worker_too_exhausted_to_walk_does_not_advance_the_job():
+def test_a_worker_below_e_low_advances_a_timed_job_at_the_slowest_rate():
+    # Phase 049: a worker below e_low is not stopped; the job advances at the slowest rate (1/6 of a tick).
     w = _smith_at_forge()
     assert w.start("Smith", "forge_plough")
     job = _job(w, "Smith")
     before = w.eng.node(job)["attrs"]["remaining"]
     _set_reserve(w, "Smith", 0.1)
     w.tick()
-    assert w.eng.node(job)["attrs"]["remaining"] == before
+    assert before - w.eng.node(job)["attrs"]["remaining"] == pytest.approx(1 / 6, abs=1e-6)
 
 
 def test_the_simple_backend_sleeps_at_night_on_a_safe_spot():

@@ -1,0 +1,9 @@
+plough spend hunger0 (0.4, 0.005)
+plough spend hunger2 (0.6, 2.0075)
+knife spend hunger0 (0.15, 0.005)
+knife instant hunger0 0.15
+knife instant hunger2 0.225
+walk moves reserve 0.9 60
+walk moves reserve 0.5 40
+walk moves reserve 0.2 20
+contest reference: E.CONTEST base_cost 0.2

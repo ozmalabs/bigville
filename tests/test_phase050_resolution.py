@@ -88,10 +88,11 @@ def test_a_target_out_of_reach_is_refused():
     assert _reason(w) == "not_in_reach"
 
 
-def test_a_tool_the_actor_does_not_hold_is_refused_as_no_tool():
+def test_a_tool_the_actor_does_not_hold_is_used_with_bare_hands():
+    # Phase 049: a named tool the actor does not hold is no refusal. The attempt goes on with bare hands (fitness 0.05).
     w = _world()
-    assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is False
-    assert _reason(w) == "no_tool"
+    assert w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer") is True
+    assert _reason(w) != "no_tool"
 
 
 def test_opening_a_container_with_no_lock_is_refused():
@@ -185,14 +186,17 @@ def test_a_strong_resident_with_a_hammer_forces_a_locked_chest_without_a_key():
 
 def test_a_frail_resident_with_a_spoon_makes_no_progress_and_breaks_the_spoon():
     w = _world(strength=0.5, lock_id=7, locked=True, tool="wooden_serving_spoon")
+    first_progress = None
     for _ in range(6):
         _turn(w)
         _fresh_body(w)
         w.major_action("Ada", "attempt", verb="pry", target="box", with_kind="wooden_serving_spoon")
+        if first_progress is None:
+            first_progress = w.last_attempt("Ada")["progress"]     # the spoon's first try, before it breaks
         if _box(w)["locked"] == 0.0:
             break
     assert _box(w)["locked"] == 1.0, "the lock holds"
-    assert w.last_attempt("Ada")["progress"] == 0.0
+    assert first_progress == 0.0, "the spoon makes no progress"
     spoon = w.eng.neighbours(w._actors["Ada"], "holds")[0]
     assert w.eng.node(spoon)["attrs"]["broken"] == 1.0, "the spoon breaks"
 
@@ -244,14 +248,15 @@ def test_an_intensity_above_the_ceiling_is_clamped_and_the_applied_value_is_repo
     assert seen["requested_intensity"] == 5.0
 
 
-def test_a_spent_reserve_lowers_the_ceiling_to_nothing():
+def test_a_spent_reserve_lowers_the_ceiling_to_the_slowest_rate():
+    # Phase 049: below e_low the speed factor is the slowest rate (1/6), not nothing, so the ceiling is a sixth.
     w = _world(tool="hammer")
     w.eng.set_attr(w._bodies["Ada"], "stamina_reserve", 0.1)
     _turn(w)
     w.major_action("Ada", "attempt", verb="smash", target="box", with_kind="hammer", intensity=2.0)
     seen = w.last_attempt("Ada")
-    assert seen["applied_intensity"] == 0.0 and seen["clamped"] is True
-    assert seen["progress"] == 0.0
+    assert seen["clamped"] is True
+    assert seen["applied_intensity"] == pytest.approx(E.RESOLUTION["max_intensity"] / 6, abs=1e-3)
 
 
 def test_twice_the_intensity_costs_more_than_twice_the_stamina():

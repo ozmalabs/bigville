@@ -69,7 +69,10 @@ def test_repeated_forging_raises_strength_with_diminishing_gains_toward_the_ceil
 def test_a_resident_trained_by_forging_can_attempt_a_recipe_that_was_above_them_at_the_start():
     w = _smith()
     assert not w.can_make("Smith", "forge_plough"), "a founding body (strength 1.0) is below the plough's 1.2"
-    assert not w.start("Smith", "forge_plough")
+    # Phase 049: the attempt itself is no refusal; a weak worker works slower and strains. The offer still withholds it.
+    assert w.start("Smith", "forge_plough")
+    assert w.strength("Smith") < PLOUGH_STRENGTH
+    w.stop_job("Smith")
     needed = E.efforts_to_train(1.0, PLOUGH_STRENGTH, KNIFE_COST)   # knife batches to reach strength 1.2
     assert needed is not None and needed > 0
     for count in range(1, 200):
@@ -98,10 +101,14 @@ def test_a_low_health_body_has_lower_effective_strength_and_stamina():
     assert w.strength("Ada") == pytest.approx(1.2, abs=TOL), "health back to full restores the potential"
 
 
-def test_a_low_health_smith_cannot_forge_a_knife_until_healthy():
+def test_a_low_health_smith_forges_a_knife_at_a_cost_until_healthy():
+    # Phase 049: below the knife's strength demand the forging goes on at a cost (the stamina cost ratio); it is no refusal.
     w = _smith()
     w.eng.set_attr(w._actors["Smith"], "health_value", 0.5)     # effective strength 0.5 is below the knife's 0.9
-    assert not w.do("Smith", "forge_knife")
+    assert w.strength("Smith") < float(E.recipe_exertion("forge_knife")[0])
+    before = w.stamina_reserve("Smith")
+    assert w.do("Smith", "forge_knife"), "a weak smith may still forge"
+    assert w.stamina_reserve("Smith") < before, "the weak forging spends stamina"
     w.eng.set_attr(w._actors["Smith"], "health_value", 1.0)
     assert w.do("Smith", "forge_knife")
 

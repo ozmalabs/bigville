@@ -1010,7 +1010,7 @@ class BigvilleWorld:
                     continue
                 # Phase 024: a tired worker advances the job at the movement speed (1, 2/3, 1/3 of a tick),
                 # and a worker too exhausted to walk does not advance it. The stamina is not spent then.
-                speed = self._job_speed(job)
+                speed = self._job_speed(job) / float(self._jobs_sharing(job))     # Phase 049: shared among open jobs
                 if speed <= 0.0:
                     continue
                 # Phase 050b: a job's pace multiplies its progress per tick (1.0 is the committed rate).
@@ -1018,11 +1018,13 @@ class BigvilleWorld:
                 # Phase 048: the tools' fitness sets this tick's progress (1.0 for the right tool at full quality and
                 # condition, so the committed time is unchanged). The stamina spent follows the progress made.
                 fit = self._refresh_job_fit(job, speed * pace)
-                remaining -= speed * pace * fit
+                # Phase 049: a worker weaker than the recipe's strength demand progresses more slowly (1.0 at or above it).
+                rate = self._job_strength_rate(job, speed * pace * fit)
+                remaining -= speed * pace * fit * rate
                 self.eng.set_attr(job, "remaining", max(0.0, remaining))
                 # The recipe's stamina cost is spread evenly over the ticks of the job (Phase 022), and over
                 # the progress it makes (Phase 024): a slowed worker spends less per tick.
-                self._spend_job_stamina(job, share=speed * pace * fit)
+                self._spend_job_stamina(job, share=speed * pace * fit * rate)
                 if remaining > 1e-9:
                     continue
                 remaining = 0.0
@@ -1109,6 +1111,14 @@ class BigvilleWorld:
             out_qty = float(action.get("out_qty", 0.0)) * R.pace_yield(float(ja.get("pace", 1.0)),
                                                                         table["haste_yield_loss"])
             out_qty *= R.fit_yield(fit_low, table["waste_below"])
+            # Phase 049: a worker below the recipe's skill floor gets the share of the batch the skill reaches, and
+            # below skill_ruin_ratio of the floor the batch is spoiled. A seasonal recipe worked out of its season
+            # yields off_season_yield of its batch.
+            skill_share = self._skill_share_of_floor(actor_name, action.get("name", "")) if actor_node else 1.0
+            if skill_share < float(table["skill_ruin_ratio"]):
+                spoiled = True
+            out_qty *= min(1.0, skill_share)
+            out_qty *= float(ja.get("season_yield", 1.0))     # Phase 049: the season the batch was started in
             if spoiled:
                 self.eng.set_attr(job, "ruined", 1.0)
                 self.create_event("batch_spoiled", subject=job_actor,
@@ -1164,9 +1174,10 @@ class BigvilleWorld:
                                                 learning="cognitive", recipe=action.get("name", ""),
                                                 turn=int(self._turn),
                                                 day=float(self.calendar().get("day") or 0.0))
-                self.eng.set_attr(actor_node, "busy", 0.0)
-                self._set_job_paused(actor_name, False)
                 self.eng.remove_edge_unchecked(actor_node, "on_job", job)
+                # Phase 049: a worker stays busy while another of their jobs is open.
+                self.eng.set_attr(actor_node, "busy", 1.0 if self._job_of(actor_name) is not None else 0.0)
+                self._set_job_paused(actor_name, self.job_paused(actor_name))
 
     def _resolve_actor_events(self):
         """Apply event nodes armed by the public convenience APIs."""
@@ -1334,6 +1345,10 @@ class BigvilleWorld:
                 self._advance_soil_nitrogen()
                 for crop in list(self._living_crops()):
                     ca = self.eng.node(crop)["attrs"]
+                    if float(ca.get("season_fail", 0.0)) == 1.0:
+                        # Phase 049: a crop sown out of its season fails to the season's weather at the next period.
+                        self.eng.set_attr(crop, "alive", 0.0)
+                        continue
                     if float(ca.get("water_armed", 0.0)) == 1.0:
                         self.eng.set_attr(crop, "thirst", 0.0); self.eng.set_attr(crop, "water_armed", 0.0)
                     else:
@@ -3520,15 +3535,21 @@ class BigvilleWorld:
         if self.qty(kind) < amount:
             return self._refuse("out_of_stock")
         inventory = self._inventory_container(actor)[0]
+        # Phase 049: the carrier takes what fits by volume; the rest drops at their feet (the carry model's drop).
         used = self.used_volume(self._actor_inventories[actor])
-        if used + amount * self.item_volume(kind) > self.capacity(self._actor_inventories[actor]) + 1e-9:
-            return self._refuse("no_capacity")
+        item_vol = float(self.item_volume(kind))
+        room = max(0.0, self.capacity(self._actor_inventories[actor]) - used)
+        fit = amount if item_vol <= 0.0 else min(amount, room / item_vol + 1e-9)
+        excess = amount - fit
         arriving = self._pile_condition(self._stock.get(kind))
         self.set_stock(kind, self.qty(kind) - amount)
-        stock = self._inventory_stock(actor, kind, create=True)
-        self._mix_freshness(stock, amount, arriving)
-        self.eng.set_attr(stock, "qty", float(self.eng.node(stock)["attrs"].get("qty", 0.0)) + amount)
-        self.eng.add_edge_unchecked(self._actor(actor), "holds_food", stock)
+        if fit > 0.0:
+            stock = self._inventory_stock(actor, kind, create=True)
+            self._mix_freshness(stock, fit, arriving)
+            self.eng.set_attr(stock, "qty", float(self.eng.node(stock)["attrs"].get("qty", 0.0)) + fit)
+            self.eng.add_edge_unchecked(self._actor(actor), "holds_food", stock)
+        if excess > 0.0:
+            self._drop_stock(actor, kind, excess)
         self._refresh_carry_state(actor)
         return True
 
@@ -3623,22 +3644,29 @@ class BigvilleWorld:
         return True
 
     def _move_inventory_to_inventory(self, giver, recipient, kind, amount):
-        """Move a held stock pile directly between two resident carriers."""
+        """Move a held stock pile directly between two resident carriers. The giver gives all of `amount`; the
+        recipient takes what fits by volume and the rest drops at their feet (Phase 049). Returns the amount the
+        recipient took into their hands, or False when the giver does not hold it."""
         amount = float(amount)
         if amount <= 0.0 or self.inventory_qty(giver, kind) < amount:
             return self._refuse("out_of_stock")
-        if (self.used_volume(self._actor_inventories[recipient])
-                + amount * self.item_volume(kind)
-                > self.capacity(self._actor_inventories[recipient]) + 1e-9):
-            return self._refuse("no_capacity")
+        room = max(0.0, self.capacity(self._actor_inventories[recipient])
+                    - self.used_volume(self._actor_inventories[recipient]))
+        item_vol = float(self.item_volume(kind))
+        fit = amount if item_vol <= 0.0 else min(amount, room / item_vol + 1e-9)
+        excess = amount - fit
         source = self._inventory_stock(giver, kind)
-        target = self._inventory_stock(recipient, kind, create=True)
-        self._mix_freshness(target, amount, self._pile_condition(source))
+        arriving = self._pile_condition(source)
         self.eng.set_attr(source, "qty", self.inventory_qty(giver, kind) - amount)
-        self.eng.set_attr(target, "qty", self.inventory_qty(recipient, kind) + amount)
+        if fit > 0.0:
+            target = self._inventory_stock(recipient, kind, create=True)
+            self._mix_freshness(target, fit, arriving)
+            self.eng.set_attr(target, "qty", self.inventory_qty(recipient, kind) + fit)
+        if excess > 0.0:
+            self._drop_stock(recipient, kind, excess)
         self._refresh_carry_state(giver)
         self._refresh_carry_state(recipient)
-        return True
+        return fit
 
     def _give_discrete_item(self, giver, recipient, item, handover_kind="give"):
         if self._item_owner_edge(giver, item) is None:
@@ -3677,17 +3705,22 @@ class BigvilleWorld:
                 return self._refuse("out_of_stock")
             self.set_coin(giver, self.coin(giver) - amount)
             self.set_coin(recipient, self.coin(recipient) + amount)
-        elif not self._move_inventory_to_inventory(giver, recipient, kind, amount):
-            return False
         else:
+            received = self._move_inventory_to_inventory(giver, recipient, kind, amount)
+            if received is False:
+                return False
             state = self._refresh_carry_state(recipient)
-            if state["will_drop"]:
-                self._remove_inventory_stock(recipient, kind, amount)
-                dropped = self._drop_stock(recipient, kind, amount)
+            if state["will_drop"] and received > 0.0:
+                self._remove_inventory_stock(recipient, kind, received)
+                dropped = self._drop_stock(recipient, kind, received)
                 self.eng.set_attr(self._actor(recipient), "last_carry_outcome", "dropped")
                 self.eng.set_attr(self._actor(recipient), "last_dropped_kind", str(kind))
                 self.eng.set_attr(self._actor(recipient), "last_dropped_node",
                                   int(dropped.value) if dropped is not None else -1.0)
+            elif received < amount - 1e-9:
+                # Phase 049: the part that did not fit by volume was dropped at the recipient's feet.
+                self.eng.set_attr(self._actor(recipient), "last_carry_outcome", "dropped")
+                self.eng.set_attr(self._actor(recipient), "last_dropped_kind", str(kind))
             else:
                 self.eng.set_attr(self._actor(recipient), "last_carry_outcome", "held")
         self.eng.add_edge_unchecked(self._actor(giver), "gave", self._actor(recipient))
@@ -3714,10 +3747,7 @@ class BigvilleWorld:
                 return True
             if self.inventory_qty(source, kind) < amount:
                 return self._refuse("out_of_stock")
-            if (self.used_volume(self._actor_inventories[recipient])
-                    + amount * self.item_volume(kind)
-                    > self.capacity(self._actor_inventories[recipient]) + 1e-9):
-                return self._refuse("no_capacity")
+            # Phase 049: a recipient over capacity is no refusal; the part that does not fit drops at their feet.
             return True
         if self._item_owner_edge(source, kind) is None:
             return self._refuse("not_held")
@@ -3961,11 +3991,13 @@ class BigvilleWorld:
         if self.inventory_qty(actor, kind) < 1.0:
             return self._refuse("not_held")
         service = self.E.food_service(kind)
+        unserved = False
         if service is not None:
-            if vessel is None or utensil is None:
-                return self._refuse("no_tool")
-            if not self._has_tableware(actor, vessel) or not self._has_tableware(actor, utensil):
-                return self._refuse("no_tool")
+            # Phase 049: a meal served without its vessel and utensil, or from a vessel too small for it, is allowed.
+            # The unserved share of the meal is wasted (RESOLUTION.unserved_waste).
+            if (vessel is None or utensil is None or not self._has_tableware(actor, vessel)
+                    or not self._has_tableware(actor, utensil)):
+                unserved = True
             source_kind = None
             if source is not None:
                 if source not in self._containers:
@@ -3973,8 +4005,8 @@ class BigvilleWorld:
                 if self.contents(source, kind) < 1.0:
                     return self._refuse("out_of_stock")
                 source_kind = self.eng.node(self._containers[source][0])["attrs"].get("kind", "")
-            if not self.E.can_serve(kind, vessel, utensil, source_kind=source_kind):
-                return self._refuse("no_capacity")
+            if not unserved and not self.E.can_serve(kind, vessel, utensil, source_kind=source_kind):
+                unserved = True
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "eat"):
             return self._refuse("slot_used")
         stock = self._inventory_stock(actor, kind)
@@ -3989,6 +4021,8 @@ class BigvilleWorld:
             self.eng.set_attr(scraps, "qty", self.inventory_qty(actor, leftover) + fraction)
         self._refresh_carry_state(actor)
         value = self.E.meal_value(kind, freshness)
+        if unserved:
+            value *= 1.0 - float(self.E.RESOLUTION["unserved_waste"])     # Phase 049: the share spilled or wasted
         hunger = float(self.eng.node(self._actor(actor))["attrs"].get("hunger", 0.0))
         self.eng.set_attr(self._actor(actor), "hunger", max(0.0, hunger - value))
         self._record_meal(actor, kind, value, freshness)
@@ -5168,7 +5202,9 @@ class BigvilleWorld:
         epoch_key = f"{task}_epoch"
         last = float(aa.get(epoch_key, -float(spec["cooldown"])))
         if period - last < float(spec["cooldown"]):
-            self._refuse("on_cooldown")
+            # Phase 049: tending again too soon is allowed. It yields nothing, costs the time, and the animal is fussed.
+            self._husbandry_fussed = True
+            self.eng.set_attr(an, "fussed", float(aa.get("fussed", 0.0)) + 1.0)
             return 0.0
         product = spec["product"]
         amount = float(self.E.ANIMALS[aa["species"]].get("gives", {}).get(product, 0.0))
@@ -5182,6 +5218,13 @@ class BigvilleWorld:
         self.eng.set_attr(an, epoch_key, period)
         self.eng.add_edge_unchecked(self._actors[actor], "performed_husbandry", an)
         return amount
+
+    def _tend_outcome(self, actor, animal, task):
+        """A tending major action is enacted when it yields, and also when it is too soon (Phase 049: the animal is
+        fussed and the time is spent). Refusals of impossible tending still return False through _husbandry_yield."""
+        self._husbandry_fussed = False
+        amount = self._husbandry_yield(actor, animal, task)
+        return amount > 0.0 or bool(self._husbandry_fussed)
 
     def milk(self, milker, cow):
         return self._husbandry_act(milker, cow, "milk")
@@ -5685,6 +5728,20 @@ class BigvilleWorld:
             self.record_report_snapshot(label=f"clock:{int(self.calendar()['clock'])}")
         return self.sanity_report()
 
+    def _leak_containers(self):
+        """Phase 049: a vessel that is not watertight loses leak_per_period of each fluid it holds, every period. The
+        lost fluid is gone; the vessel stays. Watertight vessels keep their fluid."""
+        share = float(self.E.RESOLUTION["leak_per_period"])
+        for name, (cn, inners) in self._containers.items():
+            if float(self.eng.node(cn)["attrs"].get("watertight", 0.0)) == 1.0:
+                continue
+            for kind, inner in inners.items():
+                if not self.is_fluid(kind):
+                    continue
+                qty = self.contents(name, kind)
+                if qty > 0.0:
+                    self.eng.set_attr(inner, "qty", qty * (1.0 - share))
+
     def pass_period(self, n=1):
         """Advance world metabolism and ecology without performing resident actions.
 
@@ -5696,6 +5753,7 @@ class BigvilleWorld:
                 self._draw_village_water()
                 self._draw_village_pasture()
             self._advance_infrastructure()
+            self._leak_containers()
             self.eng.set_attr(self._town, "period", float(self.eng.node(self._town)["attrs"]["period"]) + 1.0)
             self._run()
 
@@ -5707,9 +5765,9 @@ class BigvilleWorld:
         self.eng.set_attr(self._town, "season", season)
 
     def sow(self, sower, crop, *, land=None):
-        """Sow a crop from its SEED -- but only IN ITS SEASON (you cannot sow a spring crop in autumn).
-        Consumes one seed and plants a growing Crop (which then needs water each period, or it wilts).
-        Returns None if it is the wrong season."""
+        """Sow a crop from its SEED. Phase 049: sowing out of its season is allowed; the seed is used and the crop fails at
+        the next period (season_fail). Consumes one seed and plants a growing Crop (which then needs water each period,
+        or it wilts). Returns the crop node, or None when the sowing is refused (slot, store, or no seed)."""
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(sower, "sow"):
             self._refuse("slot_used")
             return None
@@ -5718,9 +5776,9 @@ class BigvilleWorld:
         if self._turn > 0 and land_cell is not None and self.actor_position(sower) != land_cell:
             return None
         spec = self.E.CROPS[crop]
-        if spec["season"] != self.season():
-            self._refuse("out_of_season")
-            return None                                     # out of season -- nothing is sown
+        # Phase 049: sowing out of season is allowed. The seed is used and the crop fails to the season's weather at
+        # the next period (season_fail), so the loss shows later.
+        failing = spec["season"] != self.season()
         if not self._store_open(sower):
             self._refuse("store_locked")
             return None                                     # the seed is in the store, which this sower cannot open
@@ -5730,6 +5788,7 @@ class BigvilleWorld:
         self.set_stock(spec["seed"], max(0.0, self.qty(spec["seed"]) - 1.0))    # a seed is used
         c = self.eng.add_node("Crop", {"crop": crop, "age": 0.0, "thirst": 0.0, "thirst_epoch": 0.0,
                                        "alive": 1.0, "water": float(spec["water"]), "wilt": float(spec["wilt"]),
+                                       "season_fail": 1.0 if failing else 0.0,
                                        "grow_periods": float(spec["grow_periods"]), "harvest": spec["harvest"],
                                        "water_armed": 0.0,
                                        "yield": float(spec["yield"]),
@@ -5753,6 +5812,8 @@ class BigvilleWorld:
             return False
         if float(attrs.get("alive", 0.0)) != 1.0:
             return self._refuse("wrong_target")
+        # Phase 049 (supervisor decision): watering an unthirsty crop stays refused (not_needed). The village trace and
+        # tests/test_simple_work_food_exchange.py depend on this gate.
         if float(attrs.get("thirst", 0.0)) <= 0.0:
             return self._refuse("not_needed")
         if not self._store_open(actor):
@@ -5782,8 +5843,11 @@ class BigvilleWorld:
             if harvester is None or not self._claim_major_action(harvester, "harvest"):
                 return 0.0
         a = self.eng.node(crop_node)["attrs"]
-        if float(a["alive"]) == 1.0 and float(a["age"]) >= float(a["grow_periods"]):
-            factor = self.crop_nitrogen_factor(crop_node)
+        if float(a["alive"]) == 1.0:
+            # Phase 049: a crop harvested before it is mature yields its maturity share of the full yield (the crop is
+            # gone either way). A mature crop (maturity 1) yields the committed amounts.
+            maturity = min(1.0, float(a["age"]) / max(float(a["grow_periods"]), 1e-9))
+            factor = self.crop_nitrogen_factor(crop_node) * maturity
             harvested = float(a["yield"]) * factor
             self.set_stock(a["harvest"], self.qty(a["harvest"]) + harvested)
             for kind, qty in self.E.CROPS[a["crop"]].get("byproducts", {}).items():
@@ -5792,14 +5856,11 @@ class BigvilleWorld:
             # The returned seed is a physical reserve, not a hidden crop
             # respawn; sowing still consumes it and remains seasonal.
             seed = self.E.CROPS[a["crop"]]["seed"]
-            self.set_stock(seed, self.qty(seed) + float(self.E.CROPS[a["crop"]].get("seed_return", 1.0)))
+            self.set_stock(seed, self.qty(seed) + float(self.E.CROPS[a["crop"]].get("seed_return", 1.0)) * maturity)
             self.eng.set_attr(crop_node, "alive", 0.0)
             self.eng.remove_edge_unchecked(self._town, "has_crop", crop_node)
             return round(harvested, 4)
-        if float(a["alive"]) != 1.0:
-            self._refuse("wrong_target")
-        else:
-            self._refuse("not_ready")
+        self._refuse("wrong_target")
         return 0.0
 
     # ---------------------------------------------------- the nitrogen cycle (data: E.NITROGEN)
@@ -6180,14 +6241,17 @@ class BigvilleWorld:
             return self._refuse("container_locked")
         if self.inventory_qty(actor, kind) < amount:
             return self._refuse("out_of_stock")
-        if self.used_volume(container) + amount * self.item_volume(kind) > self.capacity(container) + 1e-9:
-            return False
-        if (self.is_fluid(kind)
-                and float(self.eng.node(self._containers[container][0])["attrs"].get("watertight", 0.0)) != 1.0):
-            return False
-        if (self.contents_weight(container) + amount * self.item_weight(kind)
-                > float(self.eng.node(self._containers[container][0])["attrs"].get("max_load", 1e18)) + 1e-9):
-            return False
+        # Phase 049: what the vessel cannot hold (by volume or load) spills onto the cell; a fluid in a vessel that is not
+        # watertight is put in and leaks each period (leak_per_period). Nothing here refuses for want of room.
+        item_vol = float(self.item_volume(kind))
+        item_wt = float(self.item_weight(kind))
+        attrs = self.eng.node(self._containers[container][0])["attrs"]
+        room_vol = max(0.0, self.capacity(container) - self.used_volume(container))
+        room_load = max(0.0, float(attrs.get("max_load", 1e18)) - self.contents_weight(container))
+        fit_vol = amount if item_vol <= 0.0 else room_vol / item_vol
+        fit_load = amount if item_wt <= 0.0 else room_load / item_wt
+        fit = max(0.0, min(amount, fit_vol + 1e-9, fit_load + 1e-9))
+        excess = amount - fit
         if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(actor, "put"):
             return False
         inners = self._containers[container][1]
@@ -6197,12 +6261,15 @@ class BigvilleWorld:
             inners[kind] = self._new_inner_stock(node, container_kind, kind)
         source = self._inventory_stock(actor, kind)
         target = inners[kind]
-        self._mix_freshness(target, amount, self._pile_condition(source))
+        if fit > 0.0:
+            self._mix_freshness(target, fit, self._pile_condition(source))
+            self.eng.set_attr(target, "qty", self.contents(container, kind) + fit)
         self.eng.set_attr(source, "qty", self.inventory_qty(actor, kind) - amount)
-        self.eng.set_attr(target, "qty", self.contents(container, kind) + amount)
+        if excess > 0.0:
+            self._drop_stock(actor, kind, excess)
         self._refresh_carry_state(actor)
         self.eng.add_edge_unchecked(self._actor(actor), "put_into", self._containers[container][0])
-        self._record_handover("put", kind, amount, self._actor_endpoint(actor), ("container", str(container)))
+        self._record_handover("put", kind, fit, self._actor_endpoint(actor), ("container", str(container)))
         return True
 
     def fill(self, actor, container, kind, amount):
@@ -6252,8 +6319,7 @@ class BigvilleWorld:
                 return self._refuse("store_locked")
             if self.qty(kind) < amount:
                 return self._refuse("out_of_stock")
-            if not self._move_stock_to_inventory(actor, kind, amount):
-                return self._refuse("no_capacity")
+            self._move_stock_to_inventory(actor, kind, amount)
         else:
             if source not in self._containers or not self._container_accessible(actor, source):
                 return self._refuse("container_locked")
@@ -6261,14 +6327,19 @@ class BigvilleWorld:
                 return self._refuse("not_in_reach")
             if self.contents(source, kind) < amount:
                 return self._refuse("out_of_stock")
-            if (self.used_volume(self._actor_inventories[actor])
-                    + amount * self.item_volume(kind) > self.capacity(self._actor_inventories[actor]) + 1e-9):
-                return self._refuse("no_capacity")
+            # Phase 049: a carrier over capacity takes what fits; the rest drops at their feet.
+            used = self.used_volume(self._actor_inventories[actor])
+            item_vol = float(self.item_volume(kind))
+            room = max(0.0, self.capacity(self._actor_inventories[actor]) - used)
+            fit = amount if item_vol <= 0.0 else min(amount, room / item_vol + 1e-9)
             inner = self._containers[source][1][kind]
             target = self._inventory_stock(actor, kind, create=True)
-            self._mix_freshness(target, amount, self._pile_condition(inner))
+            if fit > 0.0:
+                self._mix_freshness(target, fit, self._pile_condition(inner))
+                self.eng.set_attr(target, "qty", self.inventory_qty(actor, kind) + fit)
             self.eng.set_attr(inner, "qty", self.contents(source, kind) - amount)
-            self.eng.set_attr(target, "qty", self.inventory_qty(actor, kind) + amount)
+            if amount - fit > 0.0:
+                self._drop_stock(actor, kind, amount - fit)
             self._refresh_carry_state(actor)
         self._record_handover("fetch", kind, amount, ("store", "store") if source is None else ("container", str(source)),
                               self._actor_endpoint(actor))
@@ -6904,10 +6975,9 @@ class BigvilleWorld:
             return self._refuse("unknown_target")
         if self._turn > 0 and self.actor_position(caregiver) != self.actor_position(patient):
             return self._refuse("not_in_reach")
+        # Phase 049: care for someone who is not in need is allowed. It costs the caregiver's time, and does nothing
+        # to a healthy, fed patient beyond the ordinary care's small effects.
         attrs = self.eng.node(self._actors[patient])["attrs"]
-        if (attrs.get("health") == "healthy" and float(attrs.get("injury", 0.0)) <= 0.0
-                and float(attrs.get("hunger", 0.0)) < float(self.E.CARE["care_hunger_need"])):
-            return self._refuse("not_needed")
         # Medicine comes from the town store; a caregiver with no access gives ordinary care instead.
         medicine = (1.0 if self._store_open(caregiver) and self.qty("medicine") >= 1.0 and attrs.get("disease")
                     else 0.0)
@@ -7780,9 +7850,10 @@ class BigvilleWorld:
                                 "target": target_key(start), "resumes_job": True, "score": 0.0})
             for option in options:
                 option["job_paused"] = True
-        # Phase 024: a resident too exhausted to walk (reserve below e_low) is offered no travel.
         band = self._exhaustion_band(actor)
-        if band["stopped"]:
+        if band["below_e_low"]:
+            # Phase 024: a resident too exhausted to walk (reserve below e_low) is offered no travel. Phase 049: the walk
+            # itself is allowed at the slowest rate, so the offer stays withheld to keep the simple backend's choices.
             options = [option for option in options if option.get("action") != "move"]
         # Target keys are intentionally opaque and may be rebuilt on every
         # observation.  Expose the physical destination alongside a movement
@@ -7902,10 +7973,9 @@ class BigvilleWorld:
                 recipient=plan.get("recipient"), kind=plan.get("kind"),
                 amount=plan.get("amount", 1.0))
         if action == "rest":
-            # Rest is a real major action, but a healthy resident's default
-            # idle option is not a physical rest event.  This prevents every
-            # unoccupied turn from consuming the slot while preserving rest
-            # as the chosen action once the body actually needs recovery.
+            # Rest is a real major action. Phase 049 (supervisor decision): the plan path still refuses a rest at a
+            # reserve of 0.8 or more as not_needed. The refusal makes the simple backend consult again next turn
+            # (task_failed), which tests/test_phase055_concurrency.py depends on. A direct major_action rest is allowed.
             if self.stamina_reserve(actor) >= 0.8:
                 return self._refuse("not_needed")
             return self.major_action(actor, "rest", amount=1.0)
@@ -7931,6 +8001,10 @@ class BigvilleWorld:
             if target is None:
                 target = target_of()
             if target is not None:
+                # Phase 049 (supervisor decision): a backend's walk below e_low is refused here, as before the
+                # conversion, so the backend's continuation is interrupted. Direct world calls still walk slowly.
+                if self._exhaustion_band(actor)["below_e_low"]:
+                    return self._refuse("exhausted")
                 return self.major_action(actor, "move", destination=target)
         if action == "move_object":
             return self.major_action(actor, "move_object",
@@ -7953,9 +8027,13 @@ class BigvilleWorld:
             if target in self._animals:
                 destination = self.map_position_node(self._animals[target])
                 if destination is not None and self.actor_position(actor) != destination:
+                    if self._exhaustion_band(actor)["below_e_low"]:
+                        return self._refuse("exhausted")
                     return self.major_action(actor, "move", destination=destination)
                 return self.major_action(actor, "tend_animals", animal=target, task=plan.get("kind"))
             if target is not None:
+                if self._exhaustion_band(actor)["below_e_low"]:
+                    return self._refuse("exhausted")
                 return self.major_action(actor, "move", destination=target)
         if action == "build":
             target = self._as_key(plan.get("project")) or target_of()
@@ -8379,16 +8457,10 @@ class BigvilleWorld:
         sleep_code = self._sleep_code(actor)
         if sleep_code is not None:
             return sleep_code
-        # One timed job at a time: a worker who is busy cannot start another (Phase 023).
-        if self.busy(actor):
-            return "busy"
-        if not self._skilled_enough(actor, action_name):
-            return "unskilled"
-        if not self._recipe_in_season(action_name):
-            return "out_of_season"
-        strength_needed, _stamina = self.E.recipe_exertion(action_name)
-        if self.strength(actor) + 1e-9 < strength_needed:
-            return "unskilled"
+        # Phase 049: skill, season, strength and a second open job are consequences, not refusals. A batch below the
+        # skill floor is poorer or spoiled (the completion of a job), an out-of-season batch yields little, a weak
+        # worker works slower and strains (_job_strength_rate), and a worker with several jobs shares their progress
+        # (_jobs_sharing).
         # Phase 048: a recipe does not refuse for want of its tool. The job uses the tool its worker has, or bare
         # hands at the fitness they give (see _job_tool_item). What the world offers a backend is a separate matter.
         if not self._at_gathering_site(actor, action_name):
@@ -8545,8 +8617,8 @@ class BigvilleWorld:
                 return self._refuse("invalid_destination")
             if self.distance(current, destination) is None:
                 return self._refuse("invalid_destination")
-            if self._exhaustion_band(actor)["stopped"]:
-                return self._refuse("too_tired")
+            # Phase 049: below e_low a resident walks at the slowest rate (not refused as too tired); the collapse at
+            # e_collapse stops them (see _exhaustion_band).
             return self._claimed_attempt(actor, "move", lambda: self._walked_toward(actor, destination))
         if action == "move_object":
             object_id = self._as_key(kwargs.get("object_id", kwargs.get("item", args[0] if args else None)))
@@ -8642,9 +8714,8 @@ class BigvilleWorld:
                 return self._refuse("malformed")
             return self._claimed_attempt(actor, "rest", lambda: self._rested(actor, amount))
         if action == "sleep":
-            # Phase 024: sleep is enacted here. Whether to sleep is the backend's decision.
-            if self.stamina_reserve(actor) >= float(self.E.EXHAUSTION["rest_cap"]) - 1e-12:
-                return self._refuse("not_needed")
+            # Phase 024: sleep is enacted here. Whether to sleep is the backend's decision. Phase 049: a sleep at a full
+            # reserve is allowed; it uses the slot and the time, and the sleeper wakes at once.
             return self._claimed_attempt(actor, "sleep", lambda: self._lie_down_as_major(actor))
         if action == "fetch":
             kind = self._as_key(kwargs.get("kind", args[0] if args else None))
@@ -8695,7 +8766,7 @@ class BigvilleWorld:
             if task not in self.E.ANIMAL_HUSBANDRY:
                 return self._refuse("malformed")
             return self._claimed_attempt(actor, "tend_animals",
-                                         lambda: self._husbandry_yield(actor, animal, task) > 0.0)
+                                         lambda: self._tend_outcome(actor, animal, task))
         if action in ("work", "make", "start"):
             recipe = self._as_key(kwargs.get("action_name", kwargs.get("recipe", args[0] if args else None)))
             if recipe is None:
@@ -8945,6 +9016,9 @@ class BigvilleWorld:
                                         # Phase 048: how the job's tool is chosen ("default", "item" or "hands"), and
                                         # the fitness now and over the job (the lowest), read each tick.
                                         "tool_mode": str(tool_mode), "fit": 1.0, "fit_low": 1.0, "effort_mult": 1.0,
+                                        # Phase 049: a seasonal recipe worked out of its season yields this share (read at completion).
+                                        "season_yield": 1.0 if self._recipe_in_season(action_name)
+                                        else float(self.E.RESOLUTION["off_season_yield"]),
                                         # Phase 032: a recipe with a strength requirement trains strength too.
                                         "uses_strength": 1.0 if self.E.recipe_exertion(action_name)[0] > 0.0 else 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
@@ -9228,7 +9302,7 @@ class BigvilleWorld:
         """How a job is tooled, from the proposal (Phase 048): (mode, item, refusal).
 
         Omitted (_DEFAULT_TOOL): the right tool the worker has, else bare hands. None or "none": bare hands. A tool
-        kind: the held tool of that kind, refused as no_tool when the actor holds none. Anything else is malformed."""
+        kind: the held tool of that kind, or bare hands when the worker holds none (Phase 049). Anything else is malformed."""
         if tool is _DEFAULT_TOOL:
             return "default", None, None
         if tool is None or (isinstance(tool, str) and tool == "none"):
@@ -9240,7 +9314,9 @@ class BigvilleWorld:
             return None, None, "malformed"
         item = self._held_tool(actor, kind)
         if item is None:
-            return None, None, "no_tool"
+            # Phase 049: a named tool the worker does not hold is not a refusal; the work goes on with bare hands
+            # (fitness RESOLUTION.hands_fit), as a missing tool did under Phase 048.
+            return "hands", None, None
         return "item", item, None
 
     def _holds_item(self, actor, item):
@@ -9361,21 +9437,71 @@ class BigvilleWorld:
             self._accrue_strain(actor, R.strain(share / ticks, fit_now))
         return fit_now
 
-    def stop_job(self, actor):
-        """Abandon the actor's timed job (free action stop, Phase 048). Its inputs are taken only at completion, so only
+    def _skill_share_of_floor(self, actor, action_name):
+        """The working skill of `actor` at a recipe, as a share of the recipe's min_skill floor (Phase 049). 1.0 when
+        the recipe has no floor, and it can exceed 1 above the floor."""
+        from worlds import resolution as R
+        floor = float(self.eng.node(self._actions[action_name])["attrs"].get("min_skill", 0.0))
+        if floor <= 0.0:
+            return 1.0
+        level = self.recipe_skill_level(actor, self._recipe_specs.get(action_name, {}))
+        return R.clamp(level / floor, 0.0, math.inf)
+
+    def _job_strength_rate(self, job, share):
+        """The progress rate a job keeps under its worker's strength (Phase 049), and the strain of a heavy trade.
+
+        A recipe with a strength demand keeps min(1, strength / demand) of its progress (Phase 050's progress term
+        at the reference of 1). A worker at or above the demand keeps all of it, so the committed times do not move.
+        A heavy trade also strains its worker by the shortfall in strength or in skill (Phase 050's strain term),
+        accrued like a poor tool fit. `share` is this tick's progress share, read for the strain only."""
+        from worlds import resolution as R
+        ja = self.eng.node(job)["attrs"]
+        actor = str(ja.get("canonical_actor", ""))
+        needed = float(ja.get("strength_needed", 0.0))
+        if actor not in self._actors or needed <= 0.0:
+            return 1.0
+        rho_strength = self.strength(actor) / needed
+        asp = next(iter(self.eng.neighbours(job, "runs")), None)
+        name = str(self.eng.node(asp)["attrs"].get("name", "")) if asp is not None else ""
+        rho = min(rho_strength, self._skill_share_of_floor(actor, name)) if name else rho_strength
+        ticks = float(ja.get("stamina_ticks", 0.0))
+        if share > 0.0 and ticks > 0.0 and rho < 1.0:
+            self._accrue_strain(actor, R.strain(share / ticks, rho))
+        return R.progress_rate(rho_strength, 1.0, 1.0)
+
+    def _jobs_sharing(self, job):
+        """How many of the worker's jobs advance at once (Phase 049): the unfinished, unpaused jobs they hold. A
+        worker's progress per tick is divided among them. At least 1."""
+        actor = str(self.eng.node(job)["attrs"].get("canonical_actor", ""))
+        if actor not in self._actors:
+            return 1
+        open_jobs = 0
+        for other in self.eng.neighbours(self._actors[actor], "on_job"):
+            oa = self.eng.node(other)["attrs"]
+            if float(oa.get("complete", 0.0)) != 1.0 and float(oa.get("remaining", 0.0)) > 0.0 \
+                    and not self._job_away(other):
+                open_jobs += 1
+        return max(1, open_jobs)
+
+    def stop_job(self, actor, job=None):
+        """Abandon one of the actor's timed jobs (free action stop, Phase 048). ``job`` names it; by default it is the
+        actor's first job (Phase 049: a worker may hold several). Its inputs are taken only at completion, so only
         the progress is lost; the stamina already spent stays spent. False when there is no unfinished job."""
         if actor not in self._actors:
             return False
-        job = self._job_of(actor)
+        if job is None:
+            job = self._job_of(actor)
+        elif job not in self.eng.neighbours(self._actors[actor], "on_job"):
+            return False
         if job is None or float(self.eng.node(job)["attrs"].get("complete", 0.0)) == 1.0:
             return False
         node = self._actors[actor]
         self.eng.set_attr(job, "complete", 1.0)
         self.eng.set_attr(job, "remaining", 0.0)
         self.eng.set_attr(job, "stopped", 1.0)
-        self.eng.set_attr(node, "busy", 0.0)
-        self._set_job_paused(actor, False)
         self.eng.remove_edge_unchecked(node, "on_job", job)
+        self.eng.set_attr(node, "busy", 1.0 if self._job_of(actor) is not None else 0.0)
+        self._set_job_paused(actor, self.job_paused(actor))
         return True
 
     def tool_tally(self):
@@ -9649,9 +9775,8 @@ class BigvilleWorld:
             kind = self._as_key(with_kind)
             if kind is None:
                 return self._refuse("malformed")
+            # Phase 049: a named tool the actor does not hold is not a refusal; the attempt uses bare hands.
             tool = self._held_tool(actor, kind)
-            if tool is None:
-                return self._refuse("no_tool")
         if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
             return self._refuse("malformed")
         return self._enact_attempt(actor, self._container_plan(actor, verb, spec, name, tool, float(intensity)))
@@ -9846,9 +9971,7 @@ class BigvilleWorld:
             tool_kind = self._as_key(with_kind)
             if tool_kind is None:
                 return self._refuse("malformed")
-            tool = self._held_tool(actor, tool_kind)
-            if tool is None:
-                return self._refuse("no_tool")
+            tool = self._held_tool(actor, tool_kind)     # Phase 049: no held tool means bare hands, not a refusal
         if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
             return self._refuse("malformed")
         # Push drives the object away from the actor; pull and drag draw it toward the actor.
@@ -10574,7 +10697,7 @@ class BigvilleWorld:
         slow_default = 1.0 if self.exhaustion_slow_on else 0.0
         slow_on = float(self.eng.node(node)["attrs"].get("slow_on", slow_default)) == 1.0 if node is not None else False
         if not slow_on:
-            return {"step": 0, "speed": 1.0, "interval": 1.0, "stopped": False}
+            return {"step": 0, "speed": 1.0, "interval": 1.0, "stopped": False, "below_e_low": False}
         body = self._bodies.get(actor)
         ba = self.eng.node(body)["attrs"] if body is not None else {}
         reserve = float(ba.get("stamina_reserve", 1.0))
@@ -10587,7 +10710,7 @@ class BigvilleWorld:
         speed = moves[step] / moves[0]
         return {"step": step, "speed": speed,
                 "interval": moves[0] / moves[step] if moves[step] > 0.0 else math.inf,
-                "stopped": moves[step] <= 0.0}
+                "stopped": moves[step] <= 0.0, "below_e_low": step == len(moves) - 1}
 
     def _refresh_exhaustion(self, actor):
         """Publish the band on the actor node: `exhaustion_step` and `speed_factor` (read-offs)."""

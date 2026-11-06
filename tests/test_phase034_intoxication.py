@@ -235,8 +235,8 @@ def test_a_smith_drunk_past_the_floor_fails_a_recipe_he_passes_sober():
     assert w.effective_skill("Smith", "smithing") >= floor
     _set_level(w, "Smith", 0.5)
     assert w.effective_skill("Smith", "smithing") < floor
-    assert not w.start("Smith", "forge_plough")
-    assert w._refusal_code == "unskilled"
+    assert w._skill_share_of_floor("Smith", "forge_plough") < 1.0, "below the floor the batch is poorer (Phase 049)"
+    assert w.start("Smith", "forge_plough"), "a drunk smith below the floor may still start; the batch is poorer"
     _set_level(w, "Smith", 0.0)
     assert w.effective_skill("Smith", "smithing") >= floor
     assert w.start("Smith", "forge_plough"), "sober again, the gate is passed"

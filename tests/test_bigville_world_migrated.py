@@ -694,13 +694,17 @@ def test_an_unwatered_crop_wilts():
 
 
 # ------------------------------------------------------ G-crops-are-seasonal (headline)
-def test_crops_are_sown_only_in_their_season():
+def test_crops_are_sown_in_their_season_and_an_out_of_season_sowing_fails():
+    # Phase 049: sowing out of season is no refusal. The seed is used, and the crop fails at the next period.
     w = World(); w.set_stock("carrot_seed", 5); w.set_stock("turnip_seed", 5)
     assert w.season() == "spring"
     assert w.sow("Hob", "carrot") is not None, "a spring crop sows in spring"
-    assert w.sow("Hob", "turnip") is None, "an autumn crop (turnip) will not sow in spring"
+    failed = w.sow("Hob", "turnip")
+    assert failed is not None and w.qty("turnip_seed") == 4.0, "an autumn crop (turnip) sown in spring uses its seed"
+    w.pass_period()
+    assert not w.crop_alive(failed), "the out-of-season crop fails to the season's weather"
     w.set_season("autumn")
-    assert w.sow("Hob", "turnip") is not None and w.sow("Hob", "carrot") is None, "the seasons swap what can be sown"
+    assert w.sow("Hob", "turnip") is not None and w.sow("Hob", "carrot") is not None, "the seasons swap what can be sown"
 
 
 # ------------------------------------------------------ G-residents-must-eat (headline)
@@ -929,7 +933,12 @@ def test_soup_consumption_requires_held_serving_equipment():
     assert w.stock_person("Cook", "gruel", 1, price=1)
     assert w.purchase_utterance("Tom", "Cook", "gruel", 1)
     assert w.give("Cook", "Tom", "gruel", 1, payment_kind="coin", payment_amount=1)
-    assert not w.eat("Tom", "gruel"), "a bowl meal cannot be consumed bare-handed"
+    # Phase 049: a bowl meal eaten bare-handed is no refusal; the unserved share of the meal is wasted.
+    assert w.eat("Tom", "gruel"), "a bowl meal cannot be served bare-handed, but it can be eaten (Phase 049)"
+    w.set_stock("gruel", 1)
+    assert w.stock_person("Cook", "gruel", 1, price=1)
+    assert w.purchase_utterance("Tom", "Cook", "gruel", 1)
+    assert w.give("Cook", "Tom", "gruel", 1, payment_kind="coin", payment_amount=1)
     w.give_tableware("Tom", "wooden_bowl")
     w.give_tableware("Tom", "wooden_ladle")
     assert w.eat("Tom", "gruel", vessel="wooden_bowl", utensil="wooden_ladle")
@@ -1095,12 +1104,12 @@ def test_fine_tailoring_is_a_learned_specialist_skill():
     assert "sew_smock" in tailor_recipes, "the configured backend catalog includes plain sewing"
     assert "sew_gown" not in tailor_recipes, "fine tailoring is not a default private prior"
     w.eng.set_attr(w._actors["Tessa"], "skill", 0.5)
-    assert w.do("Tessa", "sew_gown") is False and w.qty("silk") == 6.0, "insufficient mechanical skill blocks the work"
+    assert w._skill_share_of_floor("Tessa", "sew_gown") < 1.0, "insufficient mechanical skill makes a poorer batch (Phase 049)"
     w.add_tradesperson("Margery", "tailor")
     w.eng.add_edge_unchecked(w._actors["Margery"], "knows", w._actions["sew_gown"])   # a master already knows it
     assert w.teach("Margery", "Tessa", "sew_gown") is False
     assert not w.knows("Tessa", "sew_gown"), "the world records no assumed learning"
-    assert w.do("Tessa", "sew_gown") is False and w.qty("silk") == 6.0, "an explanation does not alter physical skill"
+    assert w._skill_share_of_floor("Tessa", "sew_gown") < 1.0, "an explanation does not alter physical skill"
     w.eng.set_attr(w._actors["Tessa"], "skill", 0.7)
     g = w.forge("Tessa", "sew_gown")
     assert w.garment_station(g) == "fine", "and can sew a fine gown"
@@ -1172,7 +1181,8 @@ def test_you_cannot_read_your_way_to_a_blacksmiths_hand():
     # Nan READS the fine-gown recipe -- she now KNOWS it, but her hand is untrained
     w.eng.add_edge_unchecked(w._actors["Nan"], "knows", w._actions["sew_gown"])
     assert w.knows("Nan", "sew_gown") and not w.can_make("Nan", "sew_gown"), "knowing it is not being able to do it"
-    assert w.do("Nan", "sew_gown") is False and w.qty("silk") == 10.0, "unskilled, she cannot make the gown (silk untouched)"
+    assert w.do("Nan", "sew_gown") is True, "unskilled, she may still try (Phase 049)"
+    assert w.qty("silk") < 10.0 and w.newest_tool() is None, "her batch is spoiled: the silk is used and no gown comes of it"
 
 
 # ------------------------------------------------------ G-apprenticeship-builds-skill (headline)

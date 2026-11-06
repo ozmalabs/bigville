@@ -104,6 +104,10 @@ def test_missing_tool_starts_on_bare_hands_and_the_batch_is_wasted():
     for _ in range(2000):
         if not world.busy("Smith"):
             break
+        # Phase 049: a bare-handed job strains its worker into accidents, and a hurt or spent worker progresses more
+        # slowly. Keep this one whole and rested, so the test isolates the outcome of the batch.
+        world.eng.set_attr(world._bodies["Smith"], "stamina_reserve", 1.0)
+        world.eng.set_attr(world._actors["Smith"], "health_value", 1.0)
         world.tick(1)
     assert not world.busy("Smith")
     assert world.qty("iron") == 0.0 and world.qty("charcoal") == 0.0, "the completed batch used its inputs"
