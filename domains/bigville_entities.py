@@ -1842,6 +1842,8 @@ def check_consistency():
     check_autopilot(_WORLD_PACK.path, errors, warnings, info)
     from domains.agent_view_check import check_agent_view  # Phase 052: the agent view's whitelist and words
     check_agent_view(_WORLD_PACK.path, errors, warnings, info)
+    from domains.narration_check import check_narration  # Phase 057: the terminal interface's sentence templates
+    check_narration(_WORLD_PACK.path, errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

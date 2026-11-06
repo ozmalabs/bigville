@@ -2635,7 +2635,7 @@ scenario, seed, pack hash and prompt schema.
 
 ## Phase 057 -- A terminal interface (TUI)
 
-**Status:** ready, after 051 and 052; shows a local patch of the map until 053 lands (decision
+**Status:** done (see History). Fog (vague labels), outcome detail and a day/place line wait for 053 and a richer view (decision
 2026-11-05: a TUI, using only what the agent can see).
 
 **Goal.** A terminal client, `python -m bigville.tui`, for one resident, built on the agent view and
@@ -2835,3 +2835,4 @@ provider layer's retry and backoff (Phase 055).
 | 059 Autopilot and momentum | done | (this commit) | docs/phases/phase059/PHASE059_REPORT.md -- LLMBackend owns a DeterministicBackend; `ConsultGate` and `CallBudget` (`bigville/backends/autopilot.py`), pack `AUTOPILOT` table; consults at interrupts, routine boundaries, check-ins and idle; fallback by cause (provider error, invalid output, call or spend cap) is the autopilot's action; `waiting: true` rejected, no action carries on, `wait` idles; model plans hold; would-be choice and deviation counts in `llm_report`; 34 tests; simple backend identical to HEAD over 60 turns; 1412 passed |
 | 054 LLM prompt packet and reply schema | done | (this commit) | docs/phases/phase054/PHASE054_REPORT.md -- prompt built from the agent view (`bigville/prompt/3`, words only, per-section caps, persona and usual-now lead); reply schema in the pack with lexicon words for intensity and amounts and verb aliases; hostile speech quoted as inert data; lessons persist and merge over the cap; every `can` row has a handle (`domains/affordance_handles.py`) and a reply that names it runs the row as the simple backend would send it; 55 tests; simple backend identical to HEAD over 60 turns; 1467 passed |
 | 048 Tools by fitness | done | (this commit) | docs/phases/phase048/PHASE048_REPORT.md -- TOOL_FIT; bare hands 0.05; no tool refusals; time, stamina, wear, strain, yield and waste by fit; stop; 1483 passed |
+| 057 Terminal interface | done | (this commit) | docs/phases/phase057/PHASE057_REPORT.md -- `python -m bigville.tui` (plain and curses) on the agent view only; pure `render` (80x24 snapshot), command parser with lexicon verbs, intensity and amount words, ambiguity questions; pack `NARRATION`; embedded and HTTP clients (no `/api/state`); agent-mode server binds a reply's handles and delivers reactions; view gains a `reaction` section; 48 tests; 1532 passed |

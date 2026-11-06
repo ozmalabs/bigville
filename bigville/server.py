@@ -66,10 +66,31 @@ class GameService:
         from .reporting import game_report
         return game_report(self.game)
 
+    def _bind_reply(self, reply: Any) -> dict[str, Any]:
+        """Phase 057 (agent mode): a reply in the LLM shape, checked against the pack's reply schema and bound to the
+        player's own affordance rows by handle, so a client sends words and handles, never the world's params."""
+        from .backends import reply_schema
+        if not isinstance(reply, dict):
+            raise TypeError("reply must be a JSON object")
+        pack = self.game.world.data_pack
+        errors = reply_schema.check(reply, pack)
+        if errors:
+            raise ValueError("; ".join(errors))
+        return reply_schema.to_wire(reply, pack, affordances=self.game.world.actor_affordances(self.game.player))
+
     def turn(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Submit one human response and advance the shared turn."""
-        response = ActorResponse.from_dict(payload)
-        self.game.submit_player_response(response)
+        if self.mode == "agent" and "reaction" in payload:
+            # Phase 057: the player's answer to a contested take (Phase 029), delivered to the human backend.
+            if self.game._suspended is None:
+                raise ValueError("no reaction is pending")
+            self.game.backends[self.game.player].submit_reaction(
+                ActorResponse(backend_state={"reaction": str(payload["reaction"])}))
+        else:
+            if self.mode == "agent" and "reply" in payload:
+                payload = self._bind_reply(payload["reply"])
+            response = ActorResponse.from_dict(payload)
+            self.game.submit_player_response(response)
         result = self.game.step()
         if self.mode == "agent":
             result["view"] = self.view()

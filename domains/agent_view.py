@@ -29,6 +29,9 @@ from domains.pack import load_pack
 from domains.persona import CARD_KEYS, traits as persona_traits
 
 MODES = ("agent", "referee")
+# Phase 057: the detail levels a map can carry (Phase 053 supplies hidden and vague; the patch is full).
+MAP_LEVEL_HIDDEN, MAP_LEVEL_VAGUE, MAP_LEVEL_FULL = "hidden", "vague", "full"
+MAP_LEVELS = (MAP_LEVEL_HIDDEN, MAP_LEVEL_VAGUE, MAP_LEVEL_FULL)
 NOTE_KINDS = ("note", "plan", "place_belief")
 LESSON_KIND = "lesson"
 NOTES_SHOWN = 10
@@ -360,8 +363,10 @@ def _map(world, actor, pack):
             used[glyphs[key]["glyph"]] = glyphs[key]["word"]
             line.append(glyphs[key]["glyph"])
         rows.append("".join(line))
-    return _check_keys("map", {"level": load_pack(pack)["VIEW_WORDS"]["map_level"], "rows": rows,
-                               "legend": dict(sorted(used.items()))}, pack)
+    # Phase 057: `level` is the word key of the map's detail (MAP_LEVELS); the renderer dispatches on it. The
+    # patch is cell detail, so it is "full". `caption` is the phrase the view shows above it.
+    return _check_keys("map", {"level": MAP_LEVEL_FULL, "caption": load_pack(pack)["VIEW_WORDS"]["map_level"],
+                               "rows": rows, "legend": dict(sorted(used.items()))}, pack)
 
 
 def _species(world, animal):
@@ -430,6 +435,37 @@ def _referee(game, actor):
             "nearby": sorted(nearby, key=lambda row: (row["distance"], row["name"]))}
 
 
+def _reaction(game, actor, pack, known):
+    """The contest the resident must answer (Phase 029): who takes what, and the reactions the world offers.
+    Present only while the resident is the holder of a pending take whose offer is eligible, so the prompt
+    carries the same options the world will accept (a reply outside them is treated as no reaction)."""
+    world = game.world
+    pending = world.contest_pending()
+    if not pending or str(pending.get("target")) != actor:
+        return None
+    offer = pending["offer"]
+    if not offer.get("eligible"):
+        return None
+    words = load_pack(pack)["VIEW_WORDS"]
+    if pending.get("kind_is_item"):
+        what = _words(world.eng.node(pending["kind"])["attrs"].get("kind"))
+    else:
+        what = _words(pending["kind"])
+    options = []
+    for option in offer["options"]:
+        if f"react_{option}" not in words:
+            raise KeyError(f"VIEW_WORDS has no react_{option}: the reaction '{option}' has no words")
+        options.append(_check_keys("option", {"choice": str(option), "words": words[f"react_{option}"]}, pack))
+    attacker = str(pending["attacker"])
+    return _check_keys("reaction", _clean({
+        "from": attacker if attacker in known else words["someone"],
+        "what": what,
+        "amount": _phrase("amount", float(pending["amount"]), "self", pack),
+        "late": words["reaction_late"] if offer.get("late") else None,
+        "options": options,
+    }), pack)
+
+
 def build_agent_view(game, actor, mode="agent"):
     """The agent view of one resident. `mode` is "agent" (words only) or "referee" (adds the numbers)."""
     if mode not in MODES:
@@ -449,6 +485,7 @@ def build_agent_view(game, actor, mode="agent"):
         "map": _map(world, actor, pack),
         "can": _can(world, actor, game.characters[actor], pack),
         "last": _last(world, actor, pack),
+        "reaction": _reaction(game, actor, pack, known),
     }
     if mode == "referee":
         view["referee"] = _referee(game, actor)

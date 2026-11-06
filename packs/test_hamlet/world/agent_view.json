@@ -13,6 +13,7 @@
         "map",
         "can",
         "last",
+        "reaction",
         "referee"
       ],
       "self": [
@@ -98,6 +99,7 @@
       ],
       "map": [
         "level",
+        "caption",
         "rows",
         "legend"
       ],
@@ -110,6 +112,17 @@
         "action",
         "outcome",
         "reason"
+      ],
+      "reaction": [
+        "from",
+        "what",
+        "amount",
+        "late",
+        "options"
+      ],
+      "option": [
+        "choice",
+        "words"
       ],
       "referee": [
         "body",
@@ -233,7 +246,12 @@
       "not_done": "it did not happen",
       "map_level": "a patch of ground around you",
       "understood": "you understand it",
-      "aware": "you have heard of it"
+      "aware": "you have heard of it",
+      "react_resist": "hold on and resist",
+      "react_brace": "brace yourself and hold on",
+      "react_evade": "step out of their reach",
+      "react_yield": "let it go",
+      "reaction_late": "you are slow to answer"
     },
     "PRECISION_WORDS": {
       "_doc": "How well a place is known (Phase 019 location). 'none' places are not listed.",

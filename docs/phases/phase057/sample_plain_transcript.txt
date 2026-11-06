@@ -1,0 +1,42 @@
+at dawn, spring, clear skies
+You feel fresh.
+You are not hungry.
+You are in good health.
+You feel content.
+Kester Furlong is right beside you, looking even-tempered and lively.
+A stranger (labourer) is right beside you, looking calm and even-tempered.
+A stranger (labourer) is right beside you, looking charming and lively.
+Peony Hobb is right beside you, looking charming and even-tempered.
+A stranger (labourer) is a few steps off, looking calm and easygoing.
+A stranger (labourer) is a few steps off, looking charming and even-tempered.
+Others are further off.
+> look
+at dawn, spring, clear skies
+You feel fresh.
+You are not hungry.
+You are in good health.
+You feel content.
+Kester Furlong is right beside you, looking even-tempered and lively.
+A stranger (labourer) is right beside you, looking calm and even-tempered.
+A stranger (labourer) is right beside you, looking charming and lively.
+Peony Hobb is right beside you, looking charming and even-tempered.
+A stranger (labourer) is a few steps off, looking calm and easygoing.
+A stranger (labourer) is a few steps off, looking charming and even-tempered.
+Others are further off.
+You can
+1. Burn charcoal
+2. Grind flour
+3. Brew ale
+4. Make gruel
+5. Propagate yeast
+> wait
+Time passes.
+> say Kester: good morning
+You say to Kester Furlong: "good morning"
+> wait
+Time passes.
+> work burn charcoal
+Last action: work. It happened.
+> wait
+Time passes.
+> quit

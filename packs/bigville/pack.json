@@ -944,6 +944,10 @@
     {
       "name": "PROMPT_REPLY",
       "file": "world/prompt_packet.json"
+    },
+    {
+      "name": "NARRATION",
+      "file": "world/narration.json"
     }
   ]
 }
