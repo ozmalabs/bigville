@@ -66,7 +66,13 @@ def record(*, output: Path, turns: int, frame_delay: int, scenario: str,
             page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle",
                       timeout=60000)
             page.wait_for_selector("#game canvas", timeout=60000)
-            page.click("#reset")
+            page.wait_for_selector("#actions button:not([disabled])", timeout=60000)
+            with page.expect_response(lambda response: response.url.endswith("/api/reset")
+                                      and response.request.method == "POST", timeout=60000) as reset:
+                page.click("#reset")
+            if not reset.value.ok:
+                raise RuntimeError(f"reset failed: {reset.value.status}")
+            page.wait_for_selector("#actions button:not([disabled])", timeout=60000)
             page.wait_for_timeout(900)
             if focus is not None:
                 page.evaluate("([x, y]) => window.bigvilleScene?.focusOnCell(x, y)", list(focus))

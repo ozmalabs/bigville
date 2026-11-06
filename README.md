@@ -132,7 +132,7 @@ The simple NPC backend uses that path preference when choosing comparable moves.
 
 ![Bigville town-square close-up at 200% zoom](docs/screenshots/bigville-detail.png)
 
-![Bigville after a turn, with resident speech in the event log](docs/screenshots/bigville-after-turn.png)
+![Bigville after a turn](docs/screenshots/bigville-after-turn.png)
 
 ![Animated Bigville simulation](docs/screenshots/bigville-simulation.gif)
 

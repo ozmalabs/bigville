@@ -599,84 +599,25 @@ SQUARE_FIXTURE_NAMES = [
 
 
 def build_square_fixtures() -> dict[str, int]:
-    """Build correctly scaled, transparent pixel-art objects for the town square.
+    """Extract the authored square fixtures into bottom-anchored 32px frames.
 
-    These are world fixtures rather than 16px interior parts. Every frame is one displayed map
-    cell (32px after the renderer's 2x terrain scale), with its feet on the cell baseline.
+    The source is a transparent row of six isolated objects. Keep the crop bounds
+    explicit so rebuilding the other style assets cannot replace them with
+    procedural placeholder art or accidentally mix neighbouring sprites.
     """
-    sheet = Image.new("RGBA", (SQUARE_FIXTURE * len(SQUARE_FIXTURE_NAMES), SQUARE_FIXTURE), (0, 0, 0, 0))
-    sprites: dict[str, int] = {}
-    dark = (67, 48, 43, 255)
-    wood = (126, 77, 46, 255)
-    wood_light = (181, 118, 62, 255)
-    cream = (242, 202, 128, 255)
-
-    def stall(colour: tuple[int, int, int, int], goods: tuple[int, int, int, int]):
-        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        # canopy with scalloped lower edge
-        draw.rectangle((3, 4, 28, 7), fill=dark)
-        draw.rectangle((4, 7, 27, 12), fill=colour)
-        for x in (4, 10, 16, 22):
-            draw.rectangle((x, 7, min(27, x + 2), 12), fill=cream)
-            draw.polygon(((x, 12), (min(27, x + 4), 12),
-                          (min(27, x + 2), 15), (x + 1, 14)), fill=colour)
-        # posts, counter, and two visible baskets/crates
-        draw.rectangle((6, 12, 8, 25), fill=dark)
-        draw.rectangle((24, 12, 26, 25), fill=dark)
-        draw.rectangle((5, 20, 27, 25), fill=dark)
-        draw.rectangle((7, 19, 25, 22), fill=wood_light)
-        draw.rectangle((8, 23, 12, 27), fill=goods)
-        draw.rectangle((20, 23, 24, 27), fill=goods)
-        draw.line((8, 23, 12, 27), fill=wood)
-        draw.line((12, 23, 8, 27), fill=wood)
-        draw.line((20, 23, 24, 27), fill=wood)
-        draw.line((24, 23, 20, 27), fill=wood)
-        return image
-
-    def noticeboard():
-        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        draw.rectangle((14, 16, 17, 29), fill=dark)
-        draw.rectangle((5, 5, 26, 19), fill=dark)
-        draw.rectangle((7, 7, 24, 17), fill=wood_light)
-        draw.rectangle((9, 9, 14, 14), fill=(246, 225, 168, 255))
-        draw.rectangle((16, 10, 22, 15), fill=(224, 191, 126, 255))
-        draw.point((10, 10), fill=(177, 69, 56, 255))
-        return image
-
-    def well():
-        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        draw.ellipse((3, 15, 28, 29), fill=dark)
-        draw.ellipse((5, 13, 26, 25), fill=(118, 133, 126, 255))
-        draw.ellipse((9, 16, 22, 22), fill=(48, 91, 101, 255))
-        draw.rectangle((7, 13, 24, 16), fill=(174, 171, 139, 255))
-        draw.rectangle((8, 8, 10, 16), fill=wood)
-        draw.rectangle((22, 8, 24, 16), fill=wood)
-        draw.rectangle((8, 6, 24, 9), fill=dark)
-        draw.line((15, 9, 15, 16), fill=wood_light, width=2)
-        return image
-
-    def bench():
-        image = Image.new("RGBA", (SQUARE_FIXTURE, SQUARE_FIXTURE), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        draw.rectangle((4, 13, 27, 17), fill=dark)
-        draw.rectangle((5, 12, 26, 14), fill=wood_light)
-        draw.rectangle((6, 20, 25, 23), fill=wood)
-        draw.rectangle((8, 17, 10, 24), fill=dark)
-        draw.rectangle((22, 17, 24, 24), fill=dark)
-        return image
-
-    images = [stall((181, 77, 65, 255), (202, 150, 71, 255)),
-              stall((76, 123, 148, 255), (189, 149, 80, 255)),
-              stall((169, 89, 124, 255), (103, 137, 80, 255)),
-              noticeboard(), well(), bench()]
-    for index, (name, image) in enumerate(zip(SQUARE_FIXTURE_NAMES, images)):
-        sheet.alpha_composite(image, (index * SQUARE_FIXTURE, 0))
-        sprites[name] = index
+    source = Image.open(ASSETS / "style_square_fixtures_atlas_source.png").convert("RGBA")
+    # Ignore faint transparency noise around the generated source objects.
+    alpha = source.getchannel("A").point(lambda value: 255 if value >= 128 else 0)
+    source.putalpha(alpha)
+    bounds = [(16, 339), (368, 710), (743, 1065),
+              (1102, 1436), (1475, 1779), (1828, 2158)]
+    sheet = Image.new("RGBA", (SQUARE_FIXTURE * len(SQUARE_FIXTURE_NAMES), SQUARE_FIXTURE))
+    for index, (left, right) in enumerate(bounds):
+        cell = source.crop((left, 0, right, source.height))
+        sprite = fit_sprite(cell, (SQUARE_FIXTURE, SQUARE_FIXTURE), pad=1, bottom=True)
+        sheet.alpha_composite(sprite, (index * SQUARE_FIXTURE, 0))
     sheet.save(ASSETS / "style_square_fixtures.png")
-    return sprites
+    return {name: index for index, name in enumerate(SQUARE_FIXTURE_NAMES)}
 
 
 def build_held_items(manifest: dict, item_sheet: Image.Image) -> dict[str, int]:
