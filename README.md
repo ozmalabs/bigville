@@ -248,3 +248,21 @@ python -m pytest -q
 
 The backend and prompt work is staged in
 [`docs/AGENT_BACKENDS_PLAN.md`](docs/AGENT_BACKENDS_PLAN.md).
+
+## Local management discovery service
+
+The separately launched management service currently exposes health and a
+read-only catalog of scenarios, physical subsystem defaults, and backend
+availability. It does not create or control runs.
+
+```bash
+python -m bigville.management.http
+# http://127.0.0.1:8766/api/management/v1/health
+# http://127.0.0.1:8766/api/management/v1/capabilities
+```
+
+The service only binds to loopback IP addresses. Ocelot is marked unavailable
+when its external adapter cannot be imported, and LLM is unavailable until a
+server-side provider is configured. Discovery never constructs a backend or
+contacts a provider. This is a local single-user service; remote and
+multi-user deployment and authentication are out of scope.
