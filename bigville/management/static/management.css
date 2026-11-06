@@ -71,3 +71,4 @@ a{color:inherit}
 .actor-profile-row:last-child { border-bottom: 0; }
 .actor-profile-row select { min-width: 0; width: 100%; padding: .6rem; border: 1px solid var(--line); border-radius: .5rem; }
 @media (max-width: 640px) { .actor-profile-row { grid-template-columns: 1fr; gap: .35rem; } }
+.checkpoint-section{margin-top:1.5rem;padding:1rem;border:1px solid #e3e8df;border-radius:8px}.checkpoint-list{display:grid;gap:8px;padding:0;list-style:none}.checkpoint-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;background:#f5f7f3;border-radius:6px;overflow-wrap:anywhere}@media(max-width:560px){.checkpoint-item{align-items:stretch;flex-direction:column}}

@@ -277,8 +277,17 @@ revisions, adapter names and local secret references, never credential
 values. Authored scenarios can override an actor's profile; per-actor
 assignments are rejected for built-in `town100`. On service restart,
 unfinished in-memory runs are marked failed with an interruption reason;
-worlds are not silently resumed. Remote and multi-user deployment and
-authentication are out of scope.
+worlds are not silently resumed. Each completed turn can be captured as a
+full game checkpoint and forked into a separate paused run. Checkpoint files
+and immutable metadata live below the management data directory. LLM adapter
+state has no registered game-checkpoint adapter and is rejected for checkpoint
+creation. Runs with provider-owned Ocelot resident minds are also rejected
+because this service does not configure Ocelot's resident restore loader. The
+UI reports both backend limitations before checkpoint creation. Local simple
+backend game checkpoints use the engine's built-in restore path. An interrupted
+run can be forked from a verified saved checkpoint, but it is never resumed
+automatically. Remote and multi-user deployment and authentication are out of
+scope.
 
 The command-line service starts without third-party LLM adapters, so configured
 LLM profiles remain unavailable there until an embedding server registers an

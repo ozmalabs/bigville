@@ -14,7 +14,8 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from .catalog import build_capability_catalog
 from .drafts import MAX_PREVIEW_BYTES, PreviewTooLarge, preview_draft, resolve_draft
 from .runs import (InvalidRunRequest, InvalidTransition, RegistryError,
-                   RunConflict, RunNotFound, RunRegistry, RunViewUnavailable)
+                   RunConflict, RunNotFound, RunRegistry, RunViewUnavailable,
+                   CheckpointUnavailable)
 from .profiles import BackendAdapterRegistry, BackendProfileRegistry
 from .templates import (TemplateError, TemplateInvalid, TemplateNotFound,
                         TemplateRegistry, TemplateUnavailable)
@@ -124,6 +125,14 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(404, error_payload(exc.code, str(exc)))
             except RunViewUnavailable as exc:
                 return self._json(409, error_payload(exc.code, str(exc)))
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/checkpoints"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/checkpoints")
+            if not run_id or "/" in run_id:
+                return self._json(404, error_payload("not_found", "Unknown management API path."))
+            try:
+                return self._json(200, {"checkpoints": self.server.run_registry.list_checkpoints(run_id)})
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
         if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/events"):
             run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/events")
             if not run_id or "/" in run_id:
@@ -192,8 +201,11 @@ class _Handler(BaseHTTPRequestHandler):
                         f"{API_PREFIX}/run-drafts/preview",
                         f"{API_PREFIX}/runs", f"{API_PREFIX}/templates"} and not (
                             path.startswith(f"{API_PREFIX}/runs/") and
-                            path.endswith("/commands") and
-                            path.count("/") == len(API_PREFIX.strip("/").split("/")) + 3):
+                            (path.endswith("/commands") or path.endswith("/checkpoints") or
+                             path.endswith("/fork")) and
+                            path.count("/") in {
+                                len(API_PREFIX.strip("/").split("/")) + 3,
+                                len(API_PREFIX.strip("/").split("/")) + 5}):
             return self._json(404, error_payload("not_found", "Unknown management API path."))
         try:
             length = int(self.headers.get("Content-Length", "-1"))
@@ -258,6 +270,34 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(400, error_payload(exc.code, str(exc)))
             except RegistryError as exc:
                 return self._json(409, error_payload(exc.code, str(exc)))
+
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/checkpoints"):
+            run_id = path.removeprefix(f"{API_PREFIX}/runs/").removesuffix("/checkpoints")
+            if not run_id or "/" in run_id or payload not in ({}, None):
+                return self._json(400, error_payload("invalid_request", "Checkpoint request body must be an empty object."))
+            try:
+                metadata = self.server.run_registry.create_checkpoint(run_id)
+                return self._json(201, metadata)
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except CheckpointUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except Exception:
+                return self._json(500, error_payload("checkpoint_failed", "Checkpoint could not be persisted."))
+
+        if path.startswith(f"{API_PREFIX}/runs/") and path.endswith("/fork"):
+            parts = path.removeprefix(f"{API_PREFIX}/runs/").split("/")
+            if len(parts) != 4 or parts[1] != "checkpoints" or payload not in ({}, None):
+                return self._json(400, error_payload("invalid_request", "Fork request body must be an empty object."))
+            try:
+                record = self.server.run_registry.fork_checkpoint(parts[0], parts[2])
+                return self._json(201, record)
+            except RunNotFound as exc:
+                return self._json(404, error_payload(exc.code, str(exc)))
+            except CheckpointUnavailable as exc:
+                return self._json(409, error_payload(exc.code, str(exc)))
+            except Exception:
+                return self._json(500, error_payload("fork_failed", "Checkpoint could not be restored into a new run."))
 
         if path.endswith("/validate"):
             try:

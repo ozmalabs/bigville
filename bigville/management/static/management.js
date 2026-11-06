@@ -777,6 +777,63 @@
     }
   }
 
+  function renderCheckpoints(record) {
+    const list = $("#checkpoint-list");
+    list.replaceChildren();
+    const checkpoints = record.checkpoints || [];
+    const unsupportedBackend = (record.resolved_actor_profiles || [])
+      .some(item => !["simple", "cheap"].includes(item.backend)) ||
+      (record.resolved_actor_backends || []).some(item => !["simple", "cheap"].includes(item.backend));
+    $("#checkpoint-status").textContent = unsupportedBackend
+      ? "Unavailable: this run uses provider-owned cognition without a compatible game restore adapter."
+      : checkpoints.length
+        ? `${checkpoints.length} immutable checkpoint${checkpoints.length === 1 ? "" : "s"}`
+        : "No checkpoints saved for this run.";
+    $("#create-checkpoint").disabled = ["starting", "waiting"].includes(record.status) ||
+      !(record.turn > 0) || unsupportedBackend;
+    for (const checkpoint of checkpoints) {
+      const item = document.createElement("li");
+      item.className = "checkpoint-item";
+      const detail = text("span", `Turn ${checkpoint.turn} · ${new Date(checkpoint.created_at).toLocaleString()} · ${checkpoint.id}`);
+      const fork = text("button", "Fork", "secondary");
+      fork.type = "button";
+      fork.addEventListener("click", async () => {
+        fork.disabled = true;
+        try {
+          const child = await requestJson(`/runs/${encodeURIComponent(record.id)}/checkpoints/${encodeURIComponent(checkpoint.id)}/fork`, {
+            method: "POST", body: "{}",
+          });
+          await refreshRuns();
+          await openRun(child);
+        } catch (error) {
+          showActionError(error.message, error.fields);
+        } finally {
+          fork.disabled = false;
+        }
+      });
+      item.append(detail, fork);
+      list.append(item);
+    }
+  }
+
+  $("#create-checkpoint").addEventListener("click", async event => {
+    const button = event.currentTarget;
+    if (!activeRunId) return;
+    button.disabled = true;
+    $("#checkpoint-status").textContent = "Saving checkpoint…";
+    try {
+      const checkpoint = await requestJson(`/runs/${encodeURIComponent(activeRunId)}/checkpoints`, {
+        method: "POST", body: "{}",
+      });
+      $("#checkpoint-status").textContent = `Saved checkpoint at turn ${checkpoint.turn}.`;
+      await refreshRunView();
+    } catch (error) {
+      $("#checkpoint-status").textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   async function refreshRunView() {
     if (!activeRunId || $("#run-view-panel").hidden) return;
     const revision = ++viewRevision;
@@ -799,6 +856,7 @@
         $("#run-view-error").hidden = false;
       }
       renderRunControls(record);
+      renderCheckpoints(record);
       fillAgentSelector(record);
 
       if (selectedPerspective === "agent") {

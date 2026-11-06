@@ -5,6 +5,8 @@ import copy
 import hashlib
 import json
 import os
+import re
+import shutil
 import tempfile
 import threading
 import time
@@ -55,6 +57,10 @@ class RunViewUnavailable(RegistryError):
     code = "snapshot_unavailable"
 
 
+class CheckpointUnavailable(RegistryError):
+    code = "checkpoint_unavailable"
+
+
 class _Runtime:
     def __init__(self):
         self.lock = threading.RLock()
@@ -93,11 +99,23 @@ class RunRegistry:
                 not isinstance(state.get("idempotency"), dict)):
             raise ValueError(f"Run registry schema is incompatible; refusing to overwrite {self.path}")
         for run_id, record in state["runs"].items():
-            if (not isinstance(run_id, str) or not isinstance(record, dict) or
+            if (not isinstance(run_id, str) or not re.fullmatch(r"run_[0-9a-f]{32}", run_id) or
+                    not isinstance(record, dict) or
                     record.get("schema_version") != 1 or record.get("id") != run_id or
                     record.get("status") not in VALID_STATES or
                     not isinstance(record.get("config"), dict)):
                 raise ValueError(f"Run registry contains an invalid record; refusing to overwrite {self.path}")
+            checkpoints = record.get("checkpoints", [])
+            if not isinstance(checkpoints, list) or any(
+                    not isinstance(item, dict) or item.get("schema_version") != 1 or
+                    not isinstance(item.get("id"), str) or
+                    not re.fullmatch(r"cp_[0-9a-f]{32}", item["id"]) or
+                    isinstance(item.get("turn"), bool) or not isinstance(item.get("turn"), int) or
+                    item["turn"] < 0 or not isinstance(item.get("config_hash"), str) or
+                    not isinstance(item.get("created_at"), str) or
+                    not isinstance(item.get("backend_profiles", []), list)
+                    for item in checkpoints):
+                raise ValueError(f"Run registry contains invalid checkpoint metadata; refusing to overwrite {self.path}")
         return state
 
     def _write_state(self, state: dict[str, Any]) -> None:
@@ -354,6 +372,7 @@ class RunRegistry:
                 "updated_at": now,
                 "status": "created",
                 "turn": 0,
+                "checkpoints": [],
                 "config_hash": config_hash,
                 "capability_revision": revision,
                 "config": copy.deepcopy(canonical),
@@ -388,6 +407,129 @@ class RunRegistry:
         with self._lock:
             self._record(run_id)
             return self._runtime.setdefault(run_id, _Runtime())
+
+    def list_checkpoints(self, run_id: str) -> list[dict[str, Any]]:
+        with self._lock:
+            return copy.deepcopy(self._record(run_id).get("checkpoints", []))
+
+    def create_checkpoint(self, run_id: str) -> dict[str, Any]:
+        """Persist a full game checkpoint while holding the per-run turn lock."""
+        runtime = self._runtime_for(run_id)
+        with runtime.lock:
+            with self._lock:
+                record = self._record(run_id)
+                game = runtime.game
+                state = record["status"]
+            if state in {"starting", "waiting"}:
+                raise CheckpointUnavailable(
+                    f"A checkpoint is unavailable while the run is {state}.")
+            if game is None:
+                raise CheckpointUnavailable(
+                    "Step or start this run before creating a checkpoint.")
+            from worlds.bigville_world import BigvilleOcelotActor
+            provider_minds = [name for name, mind in game.world._actor_minds.items()
+                              if type(mind) is not BigvilleOcelotActor]
+            if provider_minds:
+                raise CheckpointUnavailable(
+                    "This run contains provider-owned resident cognition that this service cannot restore; "
+                    "no checkpoint was created.")
+            from ..backends import DeterministicBackend, HumanBackend, OcelotBackend
+            supported_backends = {DeterministicBackend, HumanBackend, OcelotBackend}
+            unsupported_backends = sorted({type(backend).__name__
+                                           for backend in game.backends.values()
+                                           if type(backend) not in supported_backends})
+            if unsupported_backends:
+                raise CheckpointUnavailable(
+                    f"Unsupported backend {', '.join(unsupported_backends)} has no checkpoint adapter; "
+                    "no checkpoint was created.")
+            # Game persistence intentionally rejects provider-owned/custom cognition
+            # state. Do not serialize just the world or imply that a fork is complete.
+            checkpoint_id = "cp_" + uuid.uuid4().hex
+            artifact_dir = self.data_dir / "checkpoints" / run_id / checkpoint_id
+            from ..game_persistence import save_game_checkpoint
+            try:
+                save_game_checkpoint(game, artifact_dir)
+            except Exception as exc:
+                shutil.rmtree(artifact_dir, ignore_errors=True)
+                raise CheckpointUnavailable(
+                    "The game checkpoint adapter rejected or could not write this run's state "
+                    f"({type(exc).__name__}); no checkpoint was created.") from exc
+            metadata = {
+                "schema_version": 1,
+                "id": checkpoint_id,
+                "created_at": _utc_now(),
+                "turn": int(game.world._turn),
+                "config_hash": record["config_hash"],
+                "backend_profiles": [
+                    {"actor": item["actor"], "profile_id": item["profile_id"],
+                     "profile_revision": item["profile_revision"], "backend": item["backend"]}
+                    for item in record.get("resolved_actor_profiles", [])
+                ],
+            }
+            with self._lock:
+                previous = copy.deepcopy(record.get("checkpoints", []))
+                record.setdefault("checkpoints", []).append(metadata)
+                record["updated_at"] = _utc_now()
+                try:
+                    self._persist()
+                except Exception:
+                    record["checkpoints"] = previous
+                    shutil.rmtree(artifact_dir, ignore_errors=True)
+                    raise
+            return copy.deepcopy(metadata)
+
+    def fork_checkpoint(self, run_id: str, checkpoint_id: str) -> dict[str, Any]:
+        if not re.fullmatch(r"cp_[0-9a-f]{32}", checkpoint_id or ""):
+            raise RunNotFound("Checkpoint was not found.")
+        with self._lock:
+            parent = self._record(run_id)
+            metadata = next((item for item in parent.get("checkpoints", [])
+                             if item["id"] == checkpoint_id), None)
+            if metadata is None:
+                raise RunNotFound("Checkpoint was not found for this run.")
+            parent_copy = copy.deepcopy(parent)
+        artifact_dir = self.data_dir / "checkpoints" / run_id / checkpoint_id
+        from ..game_persistence import load_game_checkpoint
+        try:
+            game = load_game_checkpoint(artifact_dir)
+        except Exception as exc:
+            raise CheckpointUnavailable(
+                "Checkpoint restoration failed validation or requires an unsupported restore adapter "
+                f"({type(exc).__name__}); no fork was created.") from exc
+        if metadata["config_hash"] != parent_copy["config_hash"]:
+            raise CheckpointUnavailable("Checkpoint configuration identity does not match its source run.")
+        child_id = "run_" + uuid.uuid4().hex
+        now = _utc_now()
+        child = {
+            "schema_version": 1, "id": child_id,
+            "name": f"{parent_copy['name']} · fork", "scenario_id": parent_copy["scenario_id"],
+            "created_at": now, "updated_at": now,
+            "status": ("completed" if parent_copy["config"].get("turn_limit") is not None
+                       and int(game.world._turn) >= parent_copy["config"]["turn_limit"]
+                       else "paused"),
+            "turn": int(game.world._turn), "config_hash": parent_copy["config_hash"],
+            "capability_revision": parent_copy["capability_revision"],
+            "config": copy.deepcopy(parent_copy["config"]),
+            "resolved_actor_backends": copy.deepcopy(parent_copy["resolved_actor_backends"]),
+            "resolved_actor_profiles": copy.deepcopy(parent_copy.get("resolved_actor_profiles", [])),
+            "template": copy.deepcopy(parent_copy.get("template")),
+            "warnings": copy.deepcopy(parent_copy.get("warnings", [])), "error": None,
+            "checkpoints": [],
+            "forked_from": {"run_id": run_id, "checkpoint_id": checkpoint_id,
+                            "config_hash": parent_copy["config_hash"],
+                            "turn": int(game.world._turn)},
+        }
+        with self._lock:
+            self._state["runs"][child_id] = child
+            try:
+                self._persist()
+            except Exception:
+                del self._state["runs"][child_id]
+                raise
+            runtime = _Runtime()
+            runtime.game = game
+            self._runtime[child_id] = runtime
+        return self._public(child)
 
     def _update(self, record: dict[str, Any], **values) -> None:
         previous = copy.deepcopy(record)

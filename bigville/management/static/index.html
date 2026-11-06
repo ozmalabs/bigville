@@ -60,6 +60,11 @@
         <div id="run-view-meta" class="run-meta"></div>
         <div id="run-view-error" class="error inline-error" role="alert" hidden></div>
         <div id="run-view-controls" class="run-actions"></div>
+        <section class="checkpoint-section" aria-labelledby="checkpoints-heading">
+          <div class="panel-heading"><div><h3 id="checkpoints-heading">Checkpoints</h3><p class="help">Capture the full game state at a quiescent turn boundary. Forks start as separate paused runs.</p></div><button id="create-checkpoint" class="secondary" type="button">Create checkpoint</button></div>
+          <p id="checkpoint-status" class="status" role="status" aria-live="polite"></p>
+          <ul id="checkpoint-list" class="checkpoint-list"></ul>
+        </section>
 
         <div class="perspective-toolbar">
           <div class="field"><label for="perspective-choice">Perspective</label><select id="perspective-choice"><option value="referee">Referee · full run state</option><option value="agent">Resident · agent view</option></select></div>
