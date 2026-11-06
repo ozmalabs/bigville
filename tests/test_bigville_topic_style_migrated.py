@@ -212,6 +212,7 @@ def test_school_attendance_does_not_mint_an_unobserved_lesson_event():
 def test_production_requires_an_explicit_physical_action():
     w = World()
     w.add_actor("Smith", role="smith", skill=0.8)
+    w.eng.set_attr(w._bodies["Smith"], "str_base", 1.1)     # Phase 032: the scythe needs strength 1.1
     for kind in ("iron", "charcoal", "timber", "ore"):
         w.set_stock(kind, 50)
     before = len(list(w.eng.neighbours(w._town, "has_tool_item")))

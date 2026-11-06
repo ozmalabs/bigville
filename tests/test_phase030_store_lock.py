@@ -221,6 +221,7 @@ def test_recipe_inputs_draw_from_the_store_only_for_a_resident_with_access():
 def test_a_job_short_of_store_access_stays_pending_until_a_key_arrives():
     w = World(exhaustion_slow_on=False)
     w.add_tradesperson("Smith", "smith")
+    w.eng.set_attr(w._bodies["Smith"], "str_base", 1.3)     # Phase 032: the plough needs strength 1.2
     w.set_stock("iron", 10)
     w.set_stock("charcoal", 10)
     x, y, _fw, _fh = w._building_sites["forge"]

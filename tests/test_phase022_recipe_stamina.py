@@ -24,8 +24,10 @@ def _recipe_ticks(name):
 def _smith():
     # Built with the Phase 024 slowdown off: these tests predate it and assert full-speed job timing.
     # The slowdown itself is tested in tests/test_phase024_exhaustion.py.
+    # Phase 032: the plough needs strength 1.2 and an average body has 1.0, so this smith is strong (str_base 1.3).
     w = World(exhaustion_slow_on=False)
     w.add_tradesperson("Smith", "smith")
+    w.eng.set_attr(w._bodies["Smith"], "str_base", 1.3)
     w.set_stock("iron", 10)
     w.set_stock("charcoal", 10)
     x, y, _fw, _fh = w._building_sites["forge"]
@@ -67,7 +69,8 @@ def test_an_instant_craft_charges_its_stamina_at_completion_and_raises_hunger():
     assert w.newest_tool() is not None
     assert abs((start - _reserve(w, "Smith")) - declared) < TOL
     assert abs(w.hunger("Smith") - declared * float(E.HUNGER_PER_STAMINA)) < TOL, "exertion makes you hungrier"
-    assert abs(w.fatigue("Smith") - declared) < TOL, "fatigue is the stamina spent (a read-off)"
+    assert abs(w.fatigue("Smith") - (declared + E.train_gain(1.0, 0.0, declared))) < TOL, \
+        "fatigue is the deficit below capacity: the stamina spent, plus the capacity this same effort trains (Phase 032)"
 
 
 def test_a_light_recipe_leaves_the_reserve_unchanged():

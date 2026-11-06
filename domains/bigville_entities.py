@@ -694,6 +694,40 @@ def _check_contest(errors, warnings, info):
                 f"base cost {ct['base_cost']}; SIZE mean at age 18 {points[-1][1] if points else 'n/a'}")
 
 
+def _check_training(errors, warnings, info):
+    """Phase 032: TRAIN_HEADROOM and TRAIN_RATE (seed bd_train_strength, bd_train_stamina) and the body they
+    build. A recipe's strength requirement must be reachable by training from the founding body (base x
+    (1 + TRAIN_HEADROOM)); otherwise no resident could ever attempt it. Also records the time-to-train line
+    for the plough: how long a founding labourer takes to reach the plough's strength requirement."""
+    headroom, rate = TRAIN_HEADROOM, TRAIN_RATE
+    if isinstance(headroom, bool) or not isinstance(headroom, (int, float)) or not 0.0 <= headroom <= 1.0:
+        errors.append(f"TRAIN_HEADROOM: a fraction in [0, 1], not {headroom!r}")
+        return
+    if isinstance(rate, bool) or not isinstance(rate, (int, float)) or not 0.0 < rate <= 1.0:
+        errors.append(f"TRAIN_RATE: a fraction in (0, 1], not {rate!r}")
+        return
+    base = float(ACTOR_DEFAULTS["body"]["str_base"])
+    reach = base * (1.0 + float(headroom))
+    for name, (strength_req, stamina_cost) in RECIPE_EXERTION.items():
+        if float(stamina_cost) < 0.0:
+            errors.append(f"RECIPE_EXERTION[{name}]: stamina cost must not be negative, not {stamina_cost}")
+        if float(strength_req) > reach + 1e-12:
+            errors.append(f"RECIPE_EXERTION[{name}]: strength {strength_req} is above what training can reach "
+                          f"from the founding body ({reach}); no resident could attempt it")
+    if "forge_plough" in RECIPE_EXERTION:
+        req, cost = RECIPE_EXERTION["forge_plough"]
+        minutes = next((float(r["time_minutes"]) for r in RECIPES if r["name"] == "forge_plough"), None)
+        efforts = efforts_to_train(base, req, cost)
+        if efforts is None:
+            errors.append("TRAINING: a founding labourer cannot reach the plough's strength by training")
+        else:
+            hours = efforts * minutes / 60.0 if minutes else float("nan")
+            info.append(f"TRAINING time-to-train: a founding labourer (strength {base}, health 1.0) reaches the "
+                        f"plough's strength {req} in {efforts} efforts of {cost} stamina each, one per forge_plough "
+                        f"batch of {minutes:g} minutes: {hours:.1f} hours of forging "
+                        f"(TRAIN_RATE {rate}, TRAIN_HEADROOM {headroom}; ceiling {reach:g})")
+
+
 def _check_food_grading(errors, warnings, info):
     """Phase 027: every food item has a `feeds` value in loaf-equivalents (0 < feeds <= 1.5), a raw food that
     needs preparation is a food, and the FOOD_GRADING constants are fractions. Derived scraps carry no feeds
@@ -1507,6 +1541,7 @@ def check_consistency():
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_contest(errors, warnings, info)
+    _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)
     _check_food_grading(errors, warnings, info)
     _check_generated_seeds(errors)

@@ -316,6 +316,9 @@ class BigvilleWorld:
         # Loudness is the hearing radius (Phase 028, seeds/bigville_loud_comm.json). Off, every speech act
         # carries the flat radius from the HEARING table, whatever the speaker chose.
         "loudness": True,
+        # Use builds the body (Phase 032, seeds bd_train_strength, bd_train_stamina): each effort raises the
+        # trained strength or stamina it uses, toward base x TRAIN_HEADROOM. Off, no effort trains anyone.
+        "training": True,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -945,6 +948,7 @@ class BigvilleWorld:
         # ported world mechanics that used to be supplied by graph rules.
         self._resolve_jobs()
         self._resolve_actor_events()
+        self._resolve_body_stats()
         self._resolve_sleep()
         self._resolve_clothing_and_bodies()
         self._resolve_period_effects()
@@ -1223,10 +1227,13 @@ class BigvilleWorld:
                         self.eng.set_attr(body, "stamina_reserve", max(0.0, reserve - spent))
                         self.eng.set_attr(node, "hunger", hunger + spent * float(self.E.HUNGER_PER_STAMINA))
                         self.eng.set_attr(ea and event, "cost_done", 1.0)
+                        # bd_train_strength / bd_train_stamina (Phase 032): the effort trains what it uses, once.
+                        if self.physical_subsystems.get("training", True):
+                            self._train_from_effort(body, event)
                     else:
                         amount = float(ea.get("amount", 1.0))
                         self.eng.set_attr(body, "stamina_reserve",
-                                          min(float(ba.get("stamina", 1.0)), float(ba.get("stamina_reserve", 1.0)) + amount * float(self.E.REST_RECOVERY_PER_UNIT)))
+                                          min(self.effective_stamina(actor), float(ba.get("stamina_reserve", 1.0)) + amount * float(self.E.REST_RECOVERY_PER_UNIT)))
                         self.eng.set_attr(event, "rest_done", 1.0)
 
             for option in self.eng.neighbours(node, "has_option"):
@@ -1949,7 +1956,7 @@ class BigvilleWorld:
         if body is not None:
             exertion = self.eng.add_node("Effort", {
                 "uses_strength": 0.0, "uses_stamina": 1.0,
-                "intensity": min(1.0, effort), "stamina_cost": effort * 0.1,
+                "intensity": min(1.0, effort * 0.1), "stamina_cost": effort * 0.1,
                 "terrain": terrain["terrain"], "terrain_speed": float(terrain["speed"]),
                 "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
             self.eng.add_edge_unchecked(self._actor(actor), "exerted", exertion)
@@ -8092,10 +8099,10 @@ class BigvilleWorld:
         if not self._recipe_in_season(action_name):
             return "out_of_season"
         recipe = self._recipe_specs.get(action_name, {})
+        strength_needed, _stamina = self.E.recipe_exertion(action_name)
+        if self.strength(actor) + 1e-9 < strength_needed:
+            return "unskilled"
         if recipe.get("open"):
-            strength_needed, _stamina = self.E.recipe_exertion(action_name)
-            if self.strength(actor) + 1e-9 < strength_needed:
-                return "unskilled"
             if any(self._held_tool(actor, tool) is None for tool in recipe.get("tools", [])):
                 return "no_tool"
         if not self._at_gathering_site(actor, action_name):
@@ -8589,7 +8596,9 @@ class BigvilleWorld:
                                         "min_quality": 1.0, "item_inputs": 0.0,
                                         "canonical_actor": str(actor),
                                         "stamina_total": stamina, "stamina_left": stamina,
-                                        "stamina_ticks": float(remaining)})
+                                        "stamina_ticks": float(remaining),
+                                        # Phase 032: a recipe with a strength requirement trains strength too.
+                                        "uses_strength": 1.0 if self.E.recipe_exertion(action_name)[0] > 0.0 else 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
         self.eng.add_edge_unchecked(job, "runs", asp)
         self.eng.set_attr(self._actors[actor], "busy", 1.0)
@@ -8628,7 +8637,7 @@ class BigvilleWorld:
         actor = str(ja.get("canonical_actor", ""))
         if amount <= 0.0 or actor not in self._actors or self._bodies.get(actor) is None:
             return
-        effort = self.eng.add_node("Effort", {"uses_strength": 0.0, "uses_stamina": 1.0,
+        effort = self.eng.add_node("Effort", {"uses_strength": float(ja.get("uses_strength", 0.0)), "uses_stamina": 1.0,
                                               "intensity": min(1.0, amount), "stamina_cost": amount,
                                               "terrain": "", "terrain_speed": 1.0,
                                               "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
@@ -8813,17 +8822,18 @@ class BigvilleWorld:
 
     def _capable(self, actor, action_name):
         """Admissibility depends on mechanical capability, not assumed knowledge: the actor must be
-        SKILLED enough and (for seasonal gathering) it must be the right season. Open (household)
-        recipes also need a body strong enough for the work and the recipe's tools in the actor's
-        own hands. Location and site stock are not part of capability (see _can_attempt)."""
+        SKILLED enough and (for seasonal gathering) it must be the right season. Any recipe with a strength
+        requirement (RECIPE_EXERTION) needs an effective strength that meets it (Phase 032: trade or open).
+        Open (household) recipes also need the recipe's tools in the actor's own hands. Location and site
+        stock are not part of capability (see _can_attempt)."""
         if not (action_name in self._actions and self._skilled_enough(actor, action_name)
                 and self._recipe_in_season(action_name)):
             return False
         recipe = self._recipe_specs.get(action_name, {})
+        strength_needed, _stamina = self.E.recipe_exertion(action_name)
+        if self.strength(actor) + 1e-9 < strength_needed:
+            return False
         if recipe.get("open"):
-            strength_needed, _stamina = self.E.recipe_exertion(action_name)
-            if self.strength(actor) + 1e-9 < strength_needed:
-                return False
             if any(self._held_tool(actor, tool) is None for tool in recipe.get("tools", [])):
                 return False
         return True
@@ -9089,6 +9099,58 @@ class BigvilleWorld:
         """Read-off of stamina spent (Phase 022): the same as `exertion`. There is no separate accumulator."""
         return self.exertion(actor)
 
+    # ---------------------------------------------- body training and effective stats (Phase 032)
+    # Seeds bd_train_strength and bd_train_stamina (use builds the stat) and bd_effective_stats (health scales
+    # the stat; the reserve cannot exceed the effective stamina). Constants and the formulas: world_affordances
+    # (train_gain, effective_stat). The effort's `intensity` is its stamina cost, capped at 1.
+    def effective_strength(self, actor):
+        """(str_base + str_train) x health (seed bd_effective_stats). Read by the recipe gate and the contest."""
+        return self._effective_body_stat(actor, "str_base", "str_train")
+
+    def effective_stamina(self, actor):
+        """(sta_base + sta_train) x health: the stamina capacity the reserve is clamped to and the band reads."""
+        return self._effective_body_stat(actor, "sta_base", "sta_train")
+
+    def _effective_body_stat(self, actor, base_key, train_key):
+        ba = self.eng.node(self._bodies[actor])["attrs"]
+        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)),
+                                     float(ba.get("health", 1.0)))
+
+    def _train_from_effort(self, body, event):
+        """Apply the training rules to one resolved Effort: each stat the effort uses gains train_gain once,
+        and the effort is marked done for that stat (str_done, sta_done), as the seed's `where` clauses require."""
+        ea = self.eng.node(event)["attrs"]
+        ba = self.eng.node(body)["attrs"]
+        intensity = float(ea.get("intensity", 0.0))
+        for uses, done, base_key, train_key in (("uses_strength", "str_done", "str_base", "str_train"),
+                                                ("uses_stamina", "sta_done", "sta_base", "sta_train")):
+            if float(ea.get(uses, 0.0)) != 1.0 or float(ea.get(done, 0.0)) == 1.0:
+                continue
+            base = float(ba.get(base_key, 1.0))
+            trained = float(ba.get(train_key, 0.0))
+            self.eng.set_attr(body, train_key, trained + self.E.train_gain(base, trained, intensity))
+            self.eng.set_attr(body, "stats_dirty", 1.0)
+            self.eng.set_attr(event, done, 1.0)
+
+    def _resolve_body_stats(self):
+        """bd_effective_stats: strength and stamina are the effective values, and the reserve is clamped to the
+        effective stamina. Recomputed on every run (not only when stats_dirty is set), so a health change is seen
+        on the next run; the flag is cleared here, as the seed's rule does."""
+        for actor, body in self._bodies.items():
+            if not self.eng.has_node(body):
+                continue
+            ba = self.eng.node(body)["attrs"]
+            strength = self.effective_strength(actor)
+            stamina = self.effective_stamina(actor)
+            if float(ba.get("strength", -1.0)) != strength:
+                self.eng.set_attr(body, "strength", strength)
+            if float(ba.get("stamina", -1.0)) != stamina:
+                self.eng.set_attr(body, "stamina", stamina)
+            if float(self.eng.node(body)["attrs"].get("stamina_reserve", 1.0)) > stamina:
+                self.eng.set_attr(body, "stamina_reserve", stamina)
+            if float(ba.get("stats_dirty", 0.0)) != 0.0:
+                self.eng.set_attr(body, "stats_dirty", 0.0)
+
     # ---------------------------------------------- exhaustion, sleep and collapse (Phase 024)
     # The seeded rules are bigville_move_energy (mv_energy_budget, mv_deplete) and bigville_time_sleep
     # (bt_collapse, bt_replenish, bt_wake, bt_decide_sleep). The decision to sleep belongs to the backend;
@@ -9126,7 +9188,7 @@ class BigvilleWorld:
         body = self._bodies.get(actor)
         ba = self.eng.node(body)["attrs"] if body is not None else {}
         aa = self.eng.node(self._actors[actor])["attrs"]
-        strength = (float(ba.get("str_base", 1.0)) + float(ba.get("str_train", 0.0))) * float(ba.get("health", 1.0))
+        strength = self.effective_strength(actor)
         size = float(ba.get("size", 1.0))
         life = float(ct["life_stage_force"].get(str(aa.get("life_stage", "adult")), 1.0))
         step = float(self._exhaustion_band(actor)["speed"])
@@ -9439,7 +9501,7 @@ class BigvilleWorld:
         body = self._bodies.get(actor)
         ba = self.eng.node(body)["attrs"] if body is not None else {}
         reserve = float(ba.get("stamina_reserve", 1.0))
-        capacity = float(ba.get("stamina", 1.0))
+        capacity = self.effective_stamina(actor)
         step = len(moves) - 1
         for band, key in enumerate(("e_high", "e_mid", "e_low")):
             if reserve >= float(ex[key]) * capacity:
@@ -9582,8 +9644,8 @@ class BigvilleWorld:
         band = self._exhaustion_band(actor)
         return {"health": round(float(attrs.get("health", 1.0)), 4),
                 "mood": round(float(attrs.get("mood", 0.5)), 4),
-                "strength": round(float(attrs.get("strength", 1.0)), 4),
-                "stamina": round(float(attrs.get("stamina", 1.0)), 4),
+                "strength": round(self.effective_strength(actor), 4),
+                "stamina": round(self.effective_stamina(actor), 4),
                 "stamina_reserve": round(float(attrs.get("stamina_reserve", 1.0)), 4),
                 # Phase 024 read-offs: the exhaustion step (0 full speed .. 3 too exhausted to walk), the
                 # movement speed it gives (1, 2/3, 1/3, 0), and the sleep flags.

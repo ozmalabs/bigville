@@ -1,0 +1,37 @@
+ M README.md
+ M bigville/backends/ocelot.py
+ M bigville/game.py
+ M bigville/runtime.py
+ M bigville/seeds/bigville_actor_decision.json
+ M docs/AGENT_BACKENDS_PLAN.md
+ M domains/bigville_entities.py
+ M domains/world_affordances.py
+ M packs/bigville/world/constants.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M tests/test_bigville_topic_style_migrated.py
+ M tests/test_bigville_world_migrated.py
+ M tests/test_phase022_recipe_stamina.py
+ M tests/test_phase023_job_occupancy.py
+ M tests/test_phase024_exhaustion.py
+ M tests/test_phase030_store_lock.py
+ M tests/test_scenario_runner.py
+ M tests/test_simple_life.py
+ M worlds/bigville_world.py
+?? bigville/game_persistence.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/world_persistence.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase032/
+?? docs/runs/
+?? tests/test_bigville_game_persistence.py
+?? tests/test_bigville_graph_persistence.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_bigville_world_persistence.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase032_training.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

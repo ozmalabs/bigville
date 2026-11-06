@@ -1376,7 +1376,7 @@ yields an idle turn and a counted failure; the world never sees an exception.
 
 ## Phase 032 -- Use trains the body
 
-**Status:** ready, after 022.
+**Status:** done. Efforts train the stat they use by the seed rule, intensity x TRAIN_RATE x (base x TRAIN_HEADROOM - trained); effective strength and stamina are (base + trained) x health, the reserve is clamped to effective stamina, and the contest force (029) reads the same helper. Movement trains stamina; recipes train stamina and, with a strength requirement, strength. `training` switch, default on. Time-to-train: a base-1.0 labourer reaches the plough's 1.2 in 15 efforts (60 h of plough batches; 39 knife batches, 58.5 h). The strength gate now applies to every recipe with a requirement, not only open ones, so base-1.0 smiths and joiners cannot start the plough, wagon, scythe or cart until trained (open question for the user). See docs/phases/phase032/PHASE032_REPORT.md.
 
 **Goal.** Heavy recipes demand strength above an average body (a plough needs 1.2), and the
 data says only "a strong or trained smith" can do them, but nothing trains anyone: `str_train`
@@ -2854,3 +2854,4 @@ provider layer's retry and backoff (Phase 055).
 | 029 Contested take and reactions | done | (this commit) | docs/phases/phase029/PHASE029_REPORT.md -- CONTEST, SIZE, fighting skill; react() protocol; human reaction wait; 945 passed |
 | 031 Register and harden the LLM backend | done | (this commit) | docs/phases/phase031/PHASE031_REPORT.md -- `create_game(llm_provider=)` and `llm_backend_factory`; response validated against PROMPT_RESPONSE_FIELDS; one repair; idle fallback, never raises; counts in `game_report()['llm']`; 26 tests, fake provider only; no network, `.env` unread |
 | 030 Store lock and key | done | (this commit) | docs/phases/phase030/PHASE030_REPORT.md -- keys are items; lock/unlock actions; dual keys; _store_open guards; 967 passed |
+| 032 Use trains the body | done | (this commit) | docs/phases/phase032/PHASE032_REPORT.md -- seed training rules; effective stats; training switch; strength gate on all heavy recipes; 1003 passed |

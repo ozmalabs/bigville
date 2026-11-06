@@ -23,8 +23,10 @@ def _ticks(name):
 def _smith():
     # Built with the Phase 024 slowdown off: these tests predate it and assert full-speed job timing.
     # The slowdown itself is tested in tests/test_phase024_exhaustion.py.
+    # Phase 032: the plough needs strength 1.2 and an average body has 1.0, so this smith is strong (str_base 1.3).
     w = World(exhaustion_slow_on=False)
     w.add_tradesperson("Smith", "smith")
+    w.eng.set_attr(w._bodies["Smith"], "str_base", 1.3)
     w.set_stock("iron", 10)
     w.set_stock("charcoal", 10)
     x, y, _fw, _fh = w._building_sites["forge"]

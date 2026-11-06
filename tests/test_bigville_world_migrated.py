@@ -249,6 +249,7 @@ def test_the_new_trades_run_their_production_chains():
 # ------------------------------------------------------ G-furniture-and-larger-tools (headline)
 def test_furniture_and_larger_tools_are_made_as_data():
     w = World(); w.add_tradesperson("Joiner", "woodworker"); w.add_tradesperson("Smith", "smith")
+    w.eng.set_attr(w._bodies["Smith"], "str_base", 1.3)     # Phase 032: the plough needs strength 1.2
     w.set_stock("timber", 20); w.set_stock("iron", 10); w.set_stock("charcoal", 10)
     table = w.forge("Joiner", "make_table")            # furniture
     assert w.tool_kind(table) == "table" and w.tool_fitness(table) == 0.84, "the woodworker makes furniture (a table)"
@@ -327,6 +328,7 @@ def test_a_person_carries_little_bounded_by_weight():
 # ------------------------------------------------------ G-a-cart-needs-wheels-and-a-horse (headline)
 def test_a_cart_needs_wheels_and_a_horse_hauls_a_heavy_load():
     w = World(); w.add_tradesperson("Joiner", "woodworker"); w.add_actor("Tom", role="hand")
+    w.eng.set_attr(w._bodies["Joiner"], "str_base", 1.3)   # Phase 032: the cart needs strength 1.05
     w.set_stock("timber", 50); w.set_stock("iron", 200)
     w.do("Joiner", "make_wheel"); w.do("Joiner", "make_wheel")     # a cart needs 2 wheels
     cart = w.forge("Joiner", "make_cart")
@@ -401,6 +403,7 @@ def test_farmers_can_milk_cows_and_shear_sheep_with_data_defined_cooldowns():
 # ------------------------------------------------------ G-a-large-wagon (headline)
 def test_a_large_wagon_has_four_wheels_and_hauls_more():
     w = World(); w.add_tradesperson("Joiner", "woodworker"); w.add_actor("Tom", role="hand")
+    w.eng.set_attr(w._bodies["Joiner"], "str_base", 1.3)   # Phase 032: the wagon needs strength 1.2
     w.set_stock("timber", 60); w.set_stock("iron", 300)
     for _ in range(4):
         w.do("Joiner", "make_wheel")                 # a wagon needs 4 wheels

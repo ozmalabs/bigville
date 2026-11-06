@@ -19,8 +19,8 @@ from domains import world_affordances as WA
 from worlds.bigville_world import BigvilleWorld as World
 
 
-def _resident(name="Ada"):
-    w = World(autonomous_actors=False)
+def _resident(name="Ada", **world_kwargs):
+    w = World(autonomous_actors=False, **world_kwargs)
     cells = sorted(w._map_cells)
     w.add_actor(name, role="hand", home_cell=cells[len(cells) // 2])
     return w
@@ -71,6 +71,7 @@ def _walk_turns(w, name, reserve, turns=60):
 def _smith_at_forge():
     w = World()
     w.add_tradesperson("Smith", "smith")
+    w.eng.set_attr(w._bodies["Smith"], "str_base", 1.3)   # Phase 032: the plough needs strength 1.2
     w.set_stock("iron", 10)
     w.set_stock("charcoal", 10)
     x, y, _fw, _fh = w._building_sites["forge"]
@@ -193,7 +194,9 @@ def test_a_collapse_wakes_without_input_at_collapse_cap():
 
 
 def test_a_resident_who_keeps_working_after_a_collapse_falls_again():
-    w = _resident()
+    # Training off: a walking step trains stamina (Phase 032), which would move the e_low band boundary
+    # this test walks across. The test is about exhaustion, so the capacity stays at its founding value.
+    w = _resident(physical_subsystems={"training": False})
     _flat_ground(w)
     home = w.actor_position("Ada")
     other = _neighbour(w, "Ada")

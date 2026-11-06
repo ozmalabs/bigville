@@ -487,11 +487,30 @@ def train_ceiling(base):
     return float(base) * TRAIN_HEADROOM
 
 
-def train_gain(base, trained):
-    """Diminishing-returns increment to the trained component from ONE session -- a slow approach to the
-    base-relative ceiling. Anchored to base: a higher base has a higher ceiling and larger absolute gains.
-    (Mirrors the graph rule bd_train_* so a test can check the model; the agent's growth is the RULE.)"""
-    return float(TRAIN_RATE * max(0.0, train_ceiling(base) - float(trained)))
+def train_gain(base, trained, intensity=1.0):
+    """Diminishing-returns increment to the trained component from ONE effort (Phase 032): the seed's
+    bd_train_strength / bd_train_stamina, intensity x TRAIN_RATE x (ceiling - trained), where the ceiling is
+    base x TRAIN_HEADROOM. Anchored to base: a higher base has a higher ceiling and larger absolute gains.
+    `intensity` is the effort's stamina cost, capped at 1 (the seed's `intensity` on an Effort node)."""
+    intensity = min(1.0, max(0.0, float(intensity)))
+    return float(intensity * TRAIN_RATE * max(0.0, train_ceiling(base) - float(trained)))
+
+
+def efforts_to_train(base, target, intensity):
+    """How many efforts of `intensity` a body with base strength `base` (health 1.0) needs before its
+    effective strength reaches `target`, applying train_gain once per effort as the world does. None when
+    the target is above base x (1 + TRAIN_HEADROOM), the most training can add, or when intensity is 0."""
+    base, target = float(base), float(target)
+    need = target - base
+    if need <= 0.0:
+        return 0
+    if base * (1.0 + TRAIN_HEADROOM) + 1e-12 < target or float(intensity) <= 0.0:
+        return None
+    trained, count = 0.0, 0
+    while trained + 1e-12 < need:
+        trained += train_gain(base, trained, intensity)
+        count += 1
+    return count
 
 
 def effective_stat(base, trained, health):
