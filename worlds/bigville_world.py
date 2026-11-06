@@ -4689,6 +4689,13 @@ class BigvilleWorld:
         storage_class = (self._item_specs.get(kind, {}) or self.E.CONTAINERS.get(kind, {})).get("storage_class")
         if storage_class:
             self.eng.set_attr(node, "storage_class", storage_class)
+        # Phase 050: the container's structure (1 whole, 0 broken), its lock's strength (CONTAINERS, lockable
+        # kinds), and the lock's own wear and progress toward opening (see _run_attempt).
+        self.eng.set_attr(node, "structure", 1.0)
+        self.eng.set_attr(node, "destroyed", 0.0)
+        self.eng.set_attr(node, "lock_strength", float(self.E.CONTAINERS.get(kind, {}).get("lock_strength", 1.0)))
+        self.eng.set_attr(node, "lock_condition", 1.0)
+        self.eng.set_attr(node, "lock_progress", 0.0)
         self.eng.add_edge_unchecked(self._town, "has_container", node)
         inners = {}
         for hk in ([holds] if isinstance(holds, str) else holds):
@@ -6034,6 +6041,9 @@ class BigvilleWorld:
 
     def _container_accessible(self, actor, container):
         if container not in self._containers:
+            return False
+        # Phase 050: a container broken by an attempt is no longer opened (its contents are not spilled; see the report).
+        if float(self.eng.node(self._containers[container][0])["attrs"].get("destroyed", 0.0)) == 1.0:
             return False
         return self._node_accessible(actor, self._containers[container][0])
 
@@ -7785,6 +7795,17 @@ class BigvilleWorld:
                 target = (plan["sow_kind"], plan["land"])
             if target is not None:
                 return self.major_action(actor, action, target=target)
+        if action == "attempt":
+            # Phase 050: a native verb (walk, eat, sleep...) routes to the world's own action; a physics verb is an attempt.
+            verb = plan.get("verb")
+            spec = self.E.VERBS.get(verb) if isinstance(verb, str) else None
+            if spec is not None and spec.get("primitive") == "native":
+                route = spec.get("route")
+                if route is None:
+                    return self.major_action(actor, "attempt", verb=verb, target=None)
+                return self._enact_plan(actor, {**plan, "action": route})
+            return self.major_action(actor, "attempt", verb=verb, target=self._as_key(plan.get("target")),
+                                     with_kind=plan.get("with"), intensity=plan.get("intensity", 1.0))
         # The plan names no action this resident can take, or no target for it.
         return self._refuse("malformed")
 
@@ -8519,6 +8540,13 @@ class BigvilleWorld:
                 return self._refuse("unknown_target")
             operation = self.lock if action == "lock" else self.unlock
             return self._claimed_attempt(actor, action, lambda: operation(actor, name))
+        if action == "attempt":
+            # Phase 050: any verb the world has physics for, on a thing in reach, resolved by worlds/resolution.py.
+            verb = kwargs.get("verb", args[0] if args else None)
+            target = kwargs.get("target", args[1] if len(args) > 1 else None)
+            with_kind = kwargs.get("with_kind", kwargs.get("with", args[2] if len(args) > 2 else None))
+            intensity = kwargs.get("intensity", args[3] if len(args) > 3 else 1.0)
+            return self._attempt_verb(actor, verb, target, with_kind, intensity)
         if action == "complete_request":
             request = kwargs.get("request", args[0] if args else None)
             if isinstance(request, str):
@@ -8664,6 +8692,8 @@ class BigvilleWorld:
                                         "canonical_actor": str(actor),
                                         "stamina_total": stamina, "stamina_left": stamina,
                                         "stamina_ticks": float(remaining),
+                                        # Phase 050: the strength the recipe demands; the core's cost ratio reads it.
+                                        "strength_needed": float(self.E.recipe_exertion(action_name)[0]),
                                         # Phase 032: a recipe with a strength requirement trains strength too.
                                         "uses_strength": 1.0 if self.E.recipe_exertion(action_name)[0] > 0.0 else 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "on_job", job)
@@ -8704,6 +8734,13 @@ class BigvilleWorld:
         actor = str(ja.get("canonical_actor", ""))
         if amount <= 0.0 or actor not in self._actors or self._bodies.get(actor) is None:
             return
+        # Phase 050: the declared share is scaled by the resolution core's cost ratio, clamp(D/C, 1, effort_cap),
+        # with D the recipe's strength demand and C the worker's strength now. At the strength gate the ratio is 1,
+        # so the declared cost is paid as before; a worker whose strength has fallen mid-job pays more.
+        from worlds import resolution as R
+        ratio = R.cost_ratio(float(ja.get("strength_needed", 0.0)), self.strength(actor), 1.0,
+                             float(self.E.RESOLUTION["effort_cap"]))
+        amount *= ratio
         effort = self.eng.add_node("Effort", {"uses_strength": float(ja.get("uses_strength", 0.0)), "uses_stamina": 1.0,
                                               "intensity": min(1.0, amount), "stamina_cost": amount,
                                               "terrain": "", "terrain_speed": 1.0,
@@ -9121,6 +9158,204 @@ class BigvilleWorld:
     def soaked(self, actor):  return round(float(self.eng.node(self._actors[actor])["attrs"].get("soaked", 0.0)), 4)
 
     def busy(self, actor): return float(self.eng.node(self._actors[actor])["attrs"]["busy"]) == 1.0
+
+    # ---------------------------------------------------- one resolution rule (Phase 050)
+    def _attempt_verb(self, actor, verb, target, with_kind=None, intensity=1.0):
+        """An attempt (Phase 050): a verb from VERBS, a target container, a held tool and an intensity.
+
+        The checks that refuse an attempt run here, before the action slot is claimed, so a refused attempt costs
+        nothing: a malformed value, a verb with no physics (unsupported), an unknown or out-of-reach target, a
+        broken target, a lock that is not there or already open, and a tool the actor does not hold (no_tool).
+        Anything else is enacted, however unwise: the world charges for it and reports what it saw."""
+        if not isinstance(verb, str) or verb == "":
+            return self._refuse("malformed")
+        spec = self.E.VERBS.get(verb)
+        if spec is None or spec.get("primitive") not in ("damage", "open"):
+            return self._refuse("unsupported")
+        name = self._as_key(target)
+        if name is None:
+            return self._refuse("malformed")
+        if name not in self._containers:
+            return self._refuse("unknown_target")
+        node = self._containers[name][0]
+        attrs = self.eng.node(node)["attrs"]
+        cell = self.container_position(name)
+        if cell is not None and self.actor_position(actor) != cell:
+            return self._refuse("not_in_reach")
+        if float(attrs.get("destroyed", 0.0)) == 1.0:
+            return self._refuse("destroyed")
+        if spec["primitive"] == "open":
+            if float(attrs.get("lock_id", 0.0)) <= 0.0:
+                return self._refuse("no_lock")
+            if float(attrs.get("locked", 0.0)) != 1.0:
+                return self._refuse("already_unlocked")
+        tool = None
+        if with_kind is not None:
+            kind = self._as_key(with_kind)
+            if kind is None:
+                return self._refuse("malformed")
+            tool = self._held_tool(actor, kind)
+            if tool is None:
+                return self._refuse("no_tool")
+        if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
+            return self._refuse("malformed")
+        return self._claimed_attempt(actor, "attempt",
+                                     lambda: self._run_attempt(actor, verb, spec, name, tool, float(intensity)))
+
+    def _run_attempt(self, actor, verb, spec, name, tool, requested):
+        """One resolution step of a claimed attempt. Returns True: an attempt that makes no progress is still enacted.
+
+        The intensity is clamped to the ceiling (max_intensity, lowered by the exhaustion step and by health). Capability
+        is force x technique x fit x team x conditions (worlds/resolution.py); demand is the target's toughness x its
+        structure (damage) or its lock strength x lock condition (open). Stamina, strain, tool wear, the target's
+        wear and the noise all follow from the same step. Nothing here is random."""
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        node = self._containers[name][0]
+        attrs = self.eng.node(node)["attrs"]
+        actor_node = self._actors[actor]
+        body = self.eng.node(self._bodies[actor])["attrs"]
+        speed = self.speed_factor(actor)
+        ceiling = float(rs["max_intensity"]) * speed * self.health(actor)
+        applied, clamped = R.intensity_applied(requested, rs["max_intensity"], ceiling)
+        stage = str(self.eng.node(actor_node)["attrs"].get("life_stage", "adult"))
+        force = (self.effective_strength(actor) * float(body.get("size", 1.0))
+                 * float(self.E.CONTEST["life_stage_force"].get(stage, 1.0)) * speed)
+        skill = spec.get("skill")
+        technique = 1.0 if skill is None else R.technique_term(self.effective_skill(actor, skill),
+                                                               rs["technique_floor"])
+        tool_kind = "" if tool is None else str(self.eng.node(tool)["attrs"].get("kind", ""))
+        if tool is None:
+            fit = float(rs["hands_fit"])
+        else:
+            tool_verb = self._item_specs.get(tool_kind, {}).get("verb")
+            fit = float(spec["tool_verbs"].get(tool_verb, rs["unrelated_fit"]))
+        if spec["primitive"] == "damage":
+            target_material = (self._item_specs.get(str(attrs.get("kind", "")), {}).get("material")
+                               or rs["default_material"])
+            condition = float(attrs.get("structure", 1.0))
+            demand = float(self.E.MATERIALS[target_material]["toughness"]) * condition
+        else:
+            target_material = rs["lock_material"]
+            condition = float(attrs.get("lock_condition", 1.0))
+            demand = float(attrs.get("lock_strength", 1.0)) * condition
+        mat = self.E.MATERIALS[target_material]
+        step = R.resolve_step({
+            "force": force, "technique": technique, "fit": fit, "team": rs["neutral_team"],
+            "conditions": rs["neutral_conditions"], "intensity": applied, "demand": demand,
+            "cap_rate": rs["attempt_cap_rate"], "exponent": rs["progress_exponent"],
+            "base_cost": rs["base_cost"], "floor": rs["floor"], "effort_cap": rs["effort_cap"],
+            "k": rs["k"], "i_safe": rs["i_safe"], "m": rs["m"],
+        })
+        progress = float(step["progress"])
+        # The target's wear: its condition falls by progress, faster for fragile material.
+        loss = float(rs["damage_per_attempt"]) * progress * (0.5 + float(mat["fragility"]))
+        outcome = "no_progress"
+        if spec["primitive"] == "damage":
+            after = max(0.0, condition - loss)
+            self.eng.set_attr(node, "structure", after)
+            if after <= 0.0:
+                self.eng.set_attr(node, "destroyed", 1.0)
+                outcome = "broke"
+            elif loss > 0.0:
+                outcome = "damaged"
+        else:
+            after = max(0.0, condition - loss)
+            self.eng.set_attr(node, "lock_condition", after)
+            done = float(attrs.get("lock_progress", 0.0)) + progress
+            if after <= 0.0:
+                self.eng.set_attr(node, "locked", 0.0)
+                outcome = "broke_lock"
+            elif done >= 1.0:
+                self.eng.set_attr(node, "locked", 0.0)
+                self.eng.set_attr(node, "lock_progress", 0.0)
+                outcome = "opened"
+            else:
+                self.eng.set_attr(node, "lock_progress", done)
+                if progress > 0.0:
+                    outcome = "progress"
+        # The tool's wear: rises with intensity, with a poor fit, and with a material harder than the tool's.
+        if tool is not None:
+            tool_material = self._item_specs.get(tool_kind, {}).get("material")
+            tool_hardness = float(self.E.MATERIALS[tool_material]["hardness"]) if tool_material in self.E.MATERIALS else 0.0
+            gap = max(0.0, float(mat["hardness"]) - tool_hardness)
+            wear = R.tool_wear(rs["tool_wear"], applied, fit, rs["mismatch_wear"], float(rs["hardness_wear"]) * gap)
+            tool_condition = max(0.0, float(self.eng.node(tool)["attrs"].get("condition", 1.0)) - wear)
+            self.eng.set_attr(tool, "condition", tool_condition)
+            if tool_condition <= 0.0:
+                self.eng.set_attr(tool, "broken", 1.0)
+        self._spend_attempt_stamina(actor, float(step["stamina"]), applied)
+        # Overexertion and the rest of the strain build up; a full strain is an accident.
+        strain = float(self.eng.node(actor_node)["attrs"].get("strain", 0.0)) + float(step["strain"])
+        if strain >= float(rs["strain_limit"]):
+            self.harm(actor, float(rs["accident_harm"]), "accident")
+            strain = 0.0
+        self.eng.set_attr(actor_node, "strain", strain)
+        self._publish_noise(actor, verb, name, R.noise_radius(rs["noise_base"], applied, mat["noise"]))
+        self._record_attempt(actor, verb, name, tool_kind, requested, applied, clamped, progress, condition - after,
+                             outcome)
+        return True
+
+    def _spend_attempt_stamina(self, actor, amount, applied):
+        """Spend an attempt's stamina through an Effort node, as rest does. The hunger scaling and reserve floor
+        of the exerted branch apply (Phase 022)."""
+        if amount <= 0.0:
+            return
+        effort = self.eng.add_node("Effort", {"uses_strength": 0.0, "uses_stamina": 1.0,
+                                              "intensity": float(applied), "stamina_cost": float(amount),
+                                              "terrain": "", "terrain_speed": 1.0,
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+        self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
+        self._run()
+
+    def _publish_noise(self, actor, verb, name, radius):
+        """A loud attempt is an event that every awake resident within the hearing radius observes (Phase 028).
+        The radius is the attempt's loudness in cells, through speech_radius (so the loudness switch applies)."""
+        reach = self.speech_radius(radius)
+        event = self.create_event("noise", subject=str(name), detail=f"a {verb} at {name} was heard",
+                                  severity=min(1.0, float(radius) / 10.0))
+        here = self.actor_position(actor)
+        if here is None:
+            return event
+        for other in self._actors:
+            if other == actor or not self.is_alive(other) or self._sleep_code(other) is not None:
+                continue
+            there = self.actor_position(other)
+            if there is None:
+                continue
+            if max(abs(here[0] - there[0]), abs(here[1] - there[1])) <= reach:
+                self.observe_event(other, event)
+        return event
+
+    def _record_attempt(self, actor, verb, name, tool_kind, requested, applied, clamped, progress, damage, outcome):
+        """What the actor sees of its own attempt: the applied intensity (and whether it was clamped), the progress
+        and the damage, and the outcome. Never the capability or the demand. Also counted by verb and outcome."""
+        node = self._actors[actor]
+        attrs = self.eng.node(node)["attrs"]
+        self.eng.set_attr(node, "last_attempt", {
+            "turn": int(self._turn), "verb": str(verb), "target": str(name), "tool": str(tool_kind),
+            "requested_intensity": float(requested), "applied_intensity": round(float(applied), 4),
+            "clamped": bool(clamped), "progress": round(float(progress), 4), "damage": round(float(damage), 4),
+            "outcome": str(outcome)})
+        counts = {key: dict(value) for key, value in attrs.get("attempt_counts", {}).items()}
+        by_outcome = counts.setdefault(str(verb), {})
+        by_outcome[str(outcome)] = by_outcome.get(str(outcome), 0) + 1
+        self.eng.set_attr(node, "attempt_counts", counts)
+
+    def attempt_counts(self):
+        """Attempts over all residents, counted by verb and then by outcome (Phase 050)."""
+        totals = {}
+        for name in self._actors:
+            for verb, outcomes in self.eng.node(self._actors[name])["attrs"].get("attempt_counts", {}).items():
+                for outcome, count in outcomes.items():
+                    by_outcome = totals.setdefault(verb, {})
+                    by_outcome[outcome] = by_outcome.get(outcome, 0) + int(count)
+        return totals
+
+    def last_attempt(self, actor):
+        """The actor's own most recent attempt, as the actor observed it, or None."""
+        value = self.eng.node(self._actor(actor))["attrs"].get("last_attempt")
+        return None if value is None else dict(value)
 
     def _job_of(self, actor):
         """The actor's timed job (its `on_job` edge), or None."""

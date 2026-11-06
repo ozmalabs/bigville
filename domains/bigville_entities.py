@@ -651,6 +651,94 @@ def _check_health(errors, warnings, info):
                 f"period(s) past starve_limit (starve_harm {h['starve_harm']}, APPROX)")
 
 
+def _check_resolution(errors, warnings, info):
+    """Phase 050: the resolution core's tables. Each verb names a primitive the world implements, a skill that
+    exists, and a closeness in [0, 1] for each tool verb. Each material has the four figures, and every material an
+    item names is in MATERIALS. The RESOLUTION numbers are in range, every lockable kind and the town store have a
+    lock strength, and the pure function is monotone in capability (checked numerically on a grid)."""
+    for verb, spec in VERBS.items():
+        primitive = spec.get("primitive")
+        if primitive not in ("damage", "open", "displace", "native"):
+            errors.append(f"VERBS[{verb}]: primitive must be damage, open, displace or native, not {primitive!r}")
+        if primitive == "native":
+            # A verb the world already has routes to its own action (or to none: refused as unsupported).
+            route = spec.get("route")
+            if route is not None and route not in MAJOR_ACTIONS and route not in ("move", "eat", "sleep", "rest",
+                                                                                 "sow", "harvest"):
+                errors.append(f"VERBS[{verb}]: route {route!r} is not a major action")
+        else:
+            # A null skill means the verb needs none (technique is then 1.0). Otherwise the skill must exist.
+            if spec.get("skill") is not None and spec.get("skill") not in SKILLS:
+                errors.append(f"VERBS[{verb}]: skill {spec.get('skill')!r} is not in SKILLS")
+            closeness = spec.get("tool_verbs", {})
+            if not closeness:
+                errors.append(f"VERBS[{verb}]: needs a tool_verbs closeness table")
+            for tool_verb, value in closeness.items():
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= float(value) <= 1.0:
+                    errors.append(f"VERBS[{verb}][tool_verbs][{tool_verb}]: a closeness in [0, 1], not {value!r}")
+        if not str(spec.get("description", "")).strip():
+            errors.append(f"VERBS[{verb}]: needs a description")
+    if "attempt" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["attempt"].get("description", "")).strip():
+        errors.append("MAJOR_ACTIONS: needs 'attempt' with a description (Phase 050)")
+    for code in ("unsupported", "destroyed", "no_tool", "not_in_reach", "no_lock"):
+        if code not in REFUSAL_REASONS:
+            errors.append(f"REFUSAL_REASONS: '{code}' is missing (Phase 050)")
+    for name, spec in MATERIALS.items():
+        for field in ("hardness", "toughness", "fragility", "noise"):
+            value = spec.get(field)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or float(value) < 0.0:
+                errors.append(f"MATERIALS[{name}][{field}]: a figure >= 0, not {value!r}")
+        for field in ("hardness", "toughness", "fragility"):
+            if isinstance(spec.get(field), (int, float)) and not 0.0 <= float(spec[field]) <= 1.0:
+                errors.append(f"MATERIALS[{name}][{field}]: must lie in [0, 1], not {spec[field]!r}")
+    for kind, spec in ITEMS.items():
+        if spec.get("material") is not None and spec["material"] not in MATERIALS:
+            errors.append(f"MATERIALS: item {kind!r} is made of {spec['material']!r}, which has no entry")
+    for name in (RESOLUTION["default_material"], RESOLUTION["lock_material"]):
+        if name not in MATERIALS:
+            errors.append(f"RESOLUTION: material {name!r} is not in MATERIALS")
+    rs = RESOLUTION
+    if float(rs["attempt_cap_rate"]) < 1.0:
+        errors.append(f"RESOLUTION[attempt_cap_rate]: must be at least 1 (the reference), not {rs['attempt_cap_rate']!r}")
+    if float(rs["progress_exponent"]) <= 0.0:
+        errors.append(f"RESOLUTION[progress_exponent]: must be positive, not {rs['progress_exponent']!r}")
+    if not 0.0 <= float(rs["technique_floor"]) <= 1.0:
+        errors.append(f"RESOLUTION[technique_floor]: must lie in [0, 1], not {rs['technique_floor']!r}")
+    if float(rs["floor"]) > float(rs["effort_cap"]):
+        errors.append("RESOLUTION: floor must not exceed effort_cap")
+    if float(rs["max_intensity"]) < 1.0:
+        errors.append("RESOLUTION[max_intensity]: must be at least 1.0 (the normal intensity)")
+    if not 0.0 < float(rs["i_safe"]) <= float(rs["max_intensity"]):
+        errors.append("RESOLUTION[i_safe]: must lie in (0, max_intensity]")
+    for name in ("unrelated_fit", "hands_fit"):
+        if not 0.0 <= float(rs[name]) <= 1.0:
+            errors.append(f"RESOLUTION[{name}]: must lie in [0, 1], not {rs[name]!r}")
+    if float(rs["strain_limit"]) <= 0.0 or float(rs["accident_harm"]) < 0.0:
+        errors.append("RESOLUTION: strain_limit must be positive and accident_harm not negative")
+    if "accident" not in HEALTH["causes"]:
+        errors.append("HEALTH[causes]: 'accident' is missing (Phase 050 strain)")
+    for kind, spec in CONTAINERS.items():
+        if spec.get("lockable") and float(spec.get("lock_strength", 0.0)) <= 0.0:
+            errors.append(f"CONTAINERS[{kind}]: a lockable kind needs a positive lock_strength (Phase 050)")
+    if float(STORE_LOCK.get("lock_strength", 0.0)) <= 0.0:
+        errors.append("STORE_LOCK: needs a positive lock_strength (Phase 050)")
+    from worlds import resolution as R
+    grid = [i / 10.0 for i in range(0, 31)]
+    for d in (0.5, 1.0, 2.0):
+        progress = [R.progress_rate(R.rho(c, d), RESOLUTION["attempt_cap_rate"], RESOLUTION["progress_exponent"])
+                    for c in grid]
+        cost = [R.cost_ratio(d, c, RESOLUTION["floor"], RESOLUTION["effort_cap"]) for c in grid]
+        strain = [R.strain(R.cost_ratio(d, c, 0.0, 1.0), R.rho(c, d)) for c in grid]
+        if any(b < a - 1e-12 for a, b in zip(progress, progress[1:])):
+            errors.append(f"RESOLUTION: progress must not fall as capability rises (demand {d})")
+        if any(b > a + 1e-12 for a, b in zip(cost, cost[1:])):
+            errors.append(f"RESOLUTION: cost must not rise as capability rises (demand {d})")
+        if any(b > a + 1e-12 for a, b in zip(strain, strain[1:])):
+            errors.append(f"RESOLUTION: strain must not rise as capability rises (demand {d})")
+    info.append(f"RESOLUTION: {len(VERBS)} verbs, {len(MATERIALS)} materials; attempt cap {rs['attempt_cap_rate']}, "
+                f"max intensity {rs['max_intensity']}, i_safe {rs['i_safe']} (APPROX)")
+
+
 def _check_contest(errors, warnings, info):
     """Phase 029: the CONTEST table (a contested take: force, cost, margins, reactions) and the SIZE table it
     draws body size from. Fractions stay in range, the margins and reaction bands keep their order, and the
@@ -1582,6 +1670,7 @@ def check_consistency():
     _check_exhaustion(errors, warnings, info)
     _check_health(errors, warnings, info)
     _check_contest(errors, warnings, info)
+    _check_resolution(errors, warnings, info)
     _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)
     _check_food_grading(errors, warnings, info)

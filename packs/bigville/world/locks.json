@@ -7,7 +7,8 @@
     "STORE_LOCK": {
       "lock_id": 1,
       "locked": false,
-      "keys_required": 1
+      "keys_required": 1,
+      "lock_strength": 1.0
     }
   }
 }

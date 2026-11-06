@@ -11,7 +11,8 @@
         "starvation",
         "exhaustion",
         "violence",
-        "intoxication"
+        "intoxication",
+        "accident"
       ],
       "age_rate": {
         "infant": 0.0,

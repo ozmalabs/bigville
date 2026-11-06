@@ -55,6 +55,18 @@ class SimplePolicy:
     # Below this energy a resident on a safe spot sleeps by day as well, before the body collapses
     # (collapse is at energy 5, the seed's e_collapse). A valuation, not sourced.
     collapse_guard_energy: float = 20.0
+    # Escalation (Phase 050, NEW DESIGN, off by default): after this many ticks with no observed progress on its
+    # own attempt, a resident raises the intensity of its next attempt by escalate_step. The world clamps the
+    # result (RESOLUTION max_intensity). 0 turns escalation off, so the default intensity is always 1.0.
+    escalate_after_ticks: int = 0
+    escalate_step: float = 0.5
+
+    def escalated_intensity(self, current: float, ticks_without_progress: int) -> float:
+        """The intensity for the next attempt (Phase 050). Unchanged while escalation is off, or before the span
+        without progress is reached; then raised by escalate_step. A separate hook: it does not decide when to act."""
+        if self.escalate_after_ticks <= 0 or int(ticks_without_progress) < self.escalate_after_ticks:
+            return float(current)
+        return float(current) + float(self.escalate_step)
 
 
 # Scenario actors may name an explicitly registered backend profile. These

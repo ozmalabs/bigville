@@ -11,6 +11,10 @@
         "kind": "transfer",
         "description": "Hand a held good to a person in reach who has room to carry it. The world moves the goods. It does not decide whether the handover is a sale."
       },
+      "attempt": {
+        "kind": "attempt",
+        "description": "Try any physical action on a thing within reach, by a verb the world has physics for (smash, chop, pry, force). Name the verb, the target, the tool you hold (if any), and an intensity (1.0 is normal; more forces it, less is gentler). The world resolves it from your strength, skill, the tool, the target and your stamina, and reports the progress, damage and noise it sees. A verb the world has no physics for is refused as unsupported."
+      },
       "take": {
         "kind": "contest",
         "description": "Take held goods, coin, or an item from a person standing on your cell. The holder may resist, brace, yield, or step away. The outcome depends on strength, size, skill, and stamina; the world does not decide whether the taking is theft."

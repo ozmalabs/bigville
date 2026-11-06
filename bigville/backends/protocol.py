@@ -176,6 +176,10 @@ class CognitionBackend(Protocol):
     # the game calls ``react`` with a context whose ``observations["reaction"]`` names the taker, the goods
     # and the offered ``options``; the response's ``backend_state["reaction"]`` names one of them. A backend
     # without ``react`` does not react, and the game records that. A human backend returns ``waiting``.
+    #
+    # Phase 050: an ``attempt`` major action has the params ``verb`` (a name in the pack's VERBS table), ``target``
+    # (a container name), ``with`` (the kind of a held tool, or omitted for bare hands) and ``intensity`` (a number;
+    # 1.0 is normal, the world clamps it and reports the applied value in its outcome). The world resolves it.
 
 
 def communication_capabilities(backend) -> dict[str, Any]:

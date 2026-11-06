@@ -164,6 +164,11 @@ class SimulationReporter:
         starvation, exhaustion, violence, intoxication). Reads the world's death record only."""
         return _counts([death["cause"] for death in self.world._deaths])
 
+    def attempts_by_verb(self) -> dict[str, dict[str, int]]:
+        """Phase 050: attempts so far, counted by verb and then by outcome (broke, damaged, progress, opened,
+        no_progress, ...). Reads the world's per-resident attempt counts only."""
+        return {verb: dict(outcomes) for verb, outcomes in self.world.attempt_counts().items()}
+
     def economy(self) -> dict[str, Any]:
         E = world_entities(self.world)
         stock = {}

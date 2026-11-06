@@ -222,6 +222,18 @@
       "file": "world/health.json"
     },
     {
+      "name": "VERBS",
+      "file": "world/resolution.json"
+    },
+    {
+      "name": "MATERIALS",
+      "file": "world/resolution.json"
+    },
+    {
+      "name": "RESOLUTION",
+      "file": "world/resolution.json"
+    },
+    {
       "name": "CONTEST",
       "file": "world/contest.json"
     },

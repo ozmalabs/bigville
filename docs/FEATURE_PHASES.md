@@ -2175,14 +2175,7 @@ were written to follow the principle).
 
 ## Phase 050 -- The resolution core: one rule for every attempt
 
-**Status:** ready, after 037 (injury goes through `harm`) and before 029, 047, 048 and 049
-(decision 2026-11-05: the engine is becoming a deterministic tabletop game without a referee, and
-arbitrary actions should be allowed). A referee's most-used tool is one general rule: how capable,
-against how hard, and how it goes wrong. The plan had grown that rule several times with different
-formulas (Phase 022's effort, Phase 029's contest, 048's fitness, 049's skill gaps, 038 and 040's
-blows and throws, 047's teams). This phase defines it once. Phases 020 to 028 are committed: the
-core adopts their formulas as its terms, and changes a committed number only where this brief says
-so.
+**Status:** part done (stage 1 committed; the rest is listed below and follows as 050b). Committed: the pure core `worlds/resolution.py` (capability, rho, progress, cost ratio, intensity clamp, overexertion, strain, tool wear, noise; no RNG); `VERBS`, `MATERIALS`, `RESOLUTION` tables in both packs; `lock_strength` on lockable containers and the store; the `attempt` action with the `damage` (smash, hit, cut, chop, saw) and `open` (pry, force) primitives, native verbs routed to their actions, intensity clamped and reported, strain to `harm(..., "accident")`, tool wear and breakage, noise heard within the radius; the recipe cost term `cost_ratio` (inert at the strength gate, so committed numbers are unchanged; golden table in the report); `escalate` policy fields (off); `attempts_by_verb()`. Not yet done: `displace` (push, carry, the cart), spilling a broken container, quality and yield curves and ruin, recipe pace and `set_intensity`, the trivial and slot rules, strain recovery. Blows on people stay with 038. See docs/phases/phase050/PHASE050_REPORT.md.
 
 **Goal.** A pure resolution function plus pack tables, and a generic `attempt` action so that
 arbitrary actions are allowed.
@@ -2850,3 +2843,4 @@ provider layer's retry and backoff (Phase 055).
 | 032 Use trains the body | done | (this commit) | docs/phases/phase032/PHASE032_REPORT.md -- seed training rules; effective stats; training switch; strength gate on all heavy recipes; 1003 passed |
 | 037 One health, several routes to death | done | (this commit) | docs/phases/phase037/PHASE037_REPORT.md -- harm(actor, amount, cause); age decline; starvation harm; recovery cap; deaths by cause; 1020 passed |
 | 051 Words for numbers and statuses | done | (this commit) | docs/phases/phase051/PHASE051_REPORT.md -- `domains/lexicon.py` (`describe`, `value_for`, reverse words, `resolve_verb`), 35 quantities in self and other perspectives read from the pack, source edges cross-checked, bigville and test_hamlet words differ; 179 tests; 1199 passed |
+| 050 Resolution core, stage 1 | done (part) | (this commit) | docs/phases/phase050/PHASE050_REPORT.md -- pure core; VERBS, MATERIALS, RESOLUTION; attempt with damage and open; intensity, strain, wear, noise; recipe cost term inert at the gate; 1242 passed |

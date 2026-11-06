@@ -72,6 +72,8 @@ def build_system_text(pack) -> str:
     ]
     for name, spec in pack["MAJOR_ACTIONS"].items():
         lines.append(f"- {name}: {spec.get('description', spec.get('kind', ''))}")
+    # Phase 050: the verbs an attempt may name (VERBS in the pack).
+    lines.append("- attempt verbs: " + ", ".join(sorted(pack["VERBS"])) + ". A verb not listed is refused as unsupported.")
     lines += ["", "Free actions (communication; they use no major action):"]
     for name, spec in pack["FREE_ACTIONS"].items():
         lines.append(f"- {name}: {spec.get('description', spec.get('kind', ''))}")

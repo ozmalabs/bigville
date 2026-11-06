@@ -81,6 +81,9 @@
       "not_needed": {
         "description": "It is not needed now: you are not hurt or hungry enough for this care, your stamina is high enough not to rest, or the crop does not need water."
       },
+      "destroyed": {
+        "description": "The thing is broken apart and cannot be opened or used any more."
+      },
       "unsupported": {
         "description": "The world has no physical way to do this action yet."
       },

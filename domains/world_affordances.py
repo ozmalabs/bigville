@@ -149,6 +149,11 @@ EXHAUSTION = _PACK["EXHAUSTION"]
 HEALTH = _PACK["HEALTH"]
 # Phase 029: a contested take (force, cost, margins, reactions). APPROX values; see the table's _doc.
 CONTEST = _PACK["CONTEST"]
+# Phase 050: the one resolution rule. VERBS (the physics of a verb), MATERIALS (what a thing is made of) and
+# RESOLUTION (the numbers of worlds/resolution.py). APPROX values; see the tables' _doc.
+VERBS = _PACK["VERBS"]
+MATERIALS = _PACK["MATERIALS"]
+RESOLUTION = _PACK["RESOLUTION"]
 REST_RECOVERY_PER_UNIT = EXHAUSTION["rest_recovery_per_unit"]
 ANIMAL_SERVICES = _PACK["ANIMAL_SERVICES"]
 # World mechanics parameters (Phase 014): the clock, the town's starting state, a resident's

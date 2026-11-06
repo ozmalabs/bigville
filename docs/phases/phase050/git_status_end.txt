@@ -1,0 +1,55 @@
+ M README.md
+ M bigville/backends/cheap.py
+ M bigville/backends/ocelot.py
+ M bigville/backends/prompts.py
+ M bigville/backends/protocol.py
+ M bigville/game.py
+ M bigville/reporting.py
+ M bigville/runtime.py
+ M bigville/seeds/bigville_actor_decision.json
+ M docs/AGENT_BACKENDS_PLAN.md
+ M domains/bigville_entities.py
+ M domains/world_affordances.py
+ M packs/bigville/pack.json
+ M packs/bigville/world/containers.json
+ M packs/bigville/world/health.json
+ M packs/bigville/world/lexicon.json
+ M packs/bigville/world/locks.json
+ M packs/bigville/world/major_actions.json
+ M packs/bigville/world/refusal_reasons.json
+ M packs/test_hamlet/pack.json
+ M packs/test_hamlet/world/health.json
+ M packs/test_hamlet/world/lexicon.json
+ M packs/test_hamlet/world/locks.json
+ M packs/test_hamlet/world/major_actions.json
+ M packs/test_hamlet/world/refusal_reasons.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M worlds/bigville_world.py
+?? bigville/game_persistence.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/world_persistence.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase050/
+?? docs/phases/phase058/
+?? docs/runs/
+?? domains/persona.py
+?? domains/persona_check.py
+?? domains/relationship_seeding.py
+?? packs/bigville/world/persona.json
+?? packs/bigville/world/resolution.json
+?? packs/test_hamlet/world/persona.json
+?? packs/test_hamlet/world/resolution.json
+?? tests/test_bigville_game_persistence.py
+?? tests/test_bigville_graph_persistence.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_bigville_world_persistence.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase050_resolution.py
+?? tests/test_resolution_pure.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py
+?? worlds/resolution.py
