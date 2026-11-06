@@ -868,6 +868,7 @@ class BigvilleGame:
         self.last_order = order
         # Phase 029: the cells at the start of the turn, for whether a target could see a taker coming.
         self.world.mark_turn_start()
+        self._resolve_joint_groups(order, responses)
         return self._apply_turn(order, responses, 0)
 
     def _apply_turn(self, order, responses, start):
@@ -878,6 +879,8 @@ class BigvilleGame:
         for index in range(start, len(order)):
             actor = order[index]
             response = responses[actor]
+            if self._is_joint(response):
+                continue        # Phase 047: joint acts were resolved before the turn's own responses
             utterances_before = len(self.world._utterances)
             if self._is_contest(response):
                 pending, reason = self.world.contest_begin(actor, response.major_action.action,
@@ -965,6 +968,37 @@ class BigvilleGame:
     def _is_contest(response: ActorResponse) -> bool:
         """Phase 038: a take or a strike, each a contest that can wait for the target's reaction."""
         return response.major_action is not None and response.major_action.action in ("take", "strike")
+
+    @staticmethod
+    def _is_joint(response: ActorResponse) -> bool:
+        """Phase 047: a proposal to act with others, which carries a `joint` object in its params."""
+        proposal = response.major_action
+        return proposal is not None and proposal.action == "joint" and isinstance(proposal.params.get("joint"), dict)
+
+    def _resolve_joint_groups(self, order, responses):
+        """Resolve the turn's joint acts before its other responses (Phase 047).
+
+        Proposals with the same task key (one carry load and step, or one crewed worker) form one act, which the world
+        resolves for all of them at once. Groups are taken in sorted order, so the result does not depend on the order
+        the responses were listed. A member's other parts of the response (speech, memory) still apply."""
+        groups = {}
+        for actor in order:
+            if self._is_joint(responses[actor]):
+                task = dict(responses[actor].major_action.params["joint"])
+                key = (str(task.get("task")), str(task.get("object", task.get("worker", ""))),
+                       repr(task.get("toward")))
+                groups.setdefault(key, []).append(actor)
+        for key in sorted(groups):
+            members = sorted(groups[key])
+            task = dict(responses[members[0]].major_action.params["joint"])
+            results = self.world.enact_joint(task, members)
+            for actor in members:
+                applied = bool(results.get(actor, False))
+                self.last_results[actor] = applied
+                self._report_take_outcome(actor, applied, "joint")
+                utterances_before = len(self.world._utterances)
+                self._apply_response_contained(actor, replace(responses[actor], major_action=None))
+                self._record_speech_witnesses(actor, utterances_before)
 
     def _reaction_context(self, pending) -> ActorContext:
         """The holder's reaction context: who takes, what, by hand, and the reaction options only."""

@@ -164,6 +164,8 @@ MATERIALS = _PACK["MATERIALS"]
 RESOLUTION = _PACK["RESOLUTION"]
 # Phase 048: TOOL_FIT, the tool-facing part of the resolution (closeness, hardness, edge, weight, authored rows).
 TOOL_FIT = _PACK["TOOL_FIT"]
+# Phase 047: JOINT_TASKS, people acting together (carry and crew). Numbers and sources are in the table's _doc.
+JOINT_TASKS = _PACK["JOINT_TASKS"]
 REST_RECOVERY_PER_UNIT = EXHAUSTION["rest_recovery_per_unit"]
 ANIMAL_SERVICES = _PACK["ANIMAL_SERVICES"]
 # World mechanics parameters (Phase 014): the clock, the town's starting state, a resident's

@@ -8,7 +8,7 @@
     "generator": "tools/generate_seeds.py",
     "pack": "bigville",
     "record": null,
-    "sha256": "4c734fbc1e7606e6d0f7b496926dfd31f70bcbc2e182b1b5a64d882fe239fe22",
+    "sha256": "2c650907ee985f14039668662e2b547ba7c43a5af9f737f5548cb2df033a12b5",
     "tables": [
       "RECIPES"
     ]
@@ -17,7 +17,7 @@
   "nodes": [],
   "rules": [
     {
-      "body": "difficulty: 0.8; in: [[\"lumber\", 1]]; time_minutes: 20",
+      "body": "crew: {\"max\": 3, \"min\": 2}; difficulty: 0.8; in: [[\"lumber\", 1]]; time_minutes: 20",
       "head": "saw_planks makes timber x2 from a sawyer",
       "name": "saw_planks_know_how"
     },

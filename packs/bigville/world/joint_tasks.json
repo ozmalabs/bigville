@@ -1,0 +1,23 @@
+{
+  "_doc": "JOINT_TASKS (Phase 047): people acting together. Rendezvous, not command: the world publishes a joint option (action `joint`) to each resident who can take part, with `present`, the count of the other residents who can join now. Each participant proposes the same task key in the same turn, and nobody leads. The world resolves the group as one act, so the outcome does not depend on the order responses are listed. Switch: physical_subsystems.joint_actions (default off). With the switch off, no joint option is published and a joint proposal is refused as unsupported, so the simple village is unchanged.\n\nCARRY (heavy lift and carry). A physical object on the ground moves one cell toward the `toward` step that every member proposes. The load's demand is its mass over load_unit (one adult's carrying capacity, the inventory max_load of ACTOR_DEFAULTS, 50 weight units: APPROX, the pack's own figure). The team's capability is the members' summed force times coordination(n) (Phase 050's team term), so the core's rho = capability / demand decides it. rho below 1: the load stays where it is; the members strain and spend effort, and a strain at strain_limit is an accident (Phase 050). rho of 1 or more: the load moves floor(rho) cells in the turn, at most pace_cap. Each member's stamina and strain are its share of the summed force. A load is carried for the turn it moved: when a carrier then collapses, sleeps, or leaves reach before the turn ends, the load drops where it lies (event `load_dropped`). A carrier who is not part of the group is left out; the attempt still runs with the rest and fails physically if they are short. Items: the pack's only item above one person's capacity is the oven (200 weight, ITEMS), which needs more than max_members people (see the report); the tests use a 80-unit object.\n\nCREW (crewed recipes). A recipe with a `crew` field {min, max} needs min workers at the site, and its progress per tick is the worker's labour times crew_factor. A lone worker crawls at crew_penalty. With more people present (the worker and helpers who joined with a crew proposal, on the worker's cell and free), progress is members x coordination(members), up to max. Each helper pays stamina for each tick in proportion to the worker's own labour.\n\nCOORDINATION. coordination(n) = 1 / (1 + coordination_loss x (1 - skill_relief x skill) x (n - 1)), so a group of one keeps 1.0 and the summed force grows by less each time someone is added. Skill is the group's task skill (carry has none; crew uses the worker's recipe skill).\n\nSOURCES. All figures are APPROX model choices, not measured. The two-person pit saw (`saw_planks`, crew min 2 and max 3) follows the classic pit sawing practice of a sawyer above and a pitman below; no figure was consulted, so the crew sizes are APPROX. coordination_loss 0.1, crew_penalty 0.25, skill_relief 0.5 and pace_cap 3 are model choices, tuned only so that the test scenarios come out as described.\n\nNOT IN THIS TABLE (deferred, Phase 047 follow-ups): gangs (simultaneous labour and field work), group contests (several attackers or defenders in Phase 029), and taking a stack from a holder together.",
+  "_types": {},
+  "tables": {
+    "JOINT_TASKS": {
+      "carry": {
+        "trigger": "a physical object on the ground within reach whose load is above one adult's capacity (load_unit)",
+        "load_unit": 50.0,
+        "max_members": 4,
+        "coordination_loss": 0.1,
+        "skill_relief": 0.5,
+        "reach": 1,
+        "pace_cap": 3
+      },
+      "crew": {
+        "trigger": "a timed recipe whose `crew` field asks for more than one worker, with the worker at the site",
+        "coordination_loss": 0.1,
+        "skill_relief": 0.5,
+        "crew_penalty": 0.25
+      }
+    }
+  }
+}

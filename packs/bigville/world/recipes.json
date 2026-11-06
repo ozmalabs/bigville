@@ -18,6 +18,10 @@
         ],
         "difficulty": 0.8,
         "time_minutes": 20,
+        "crew": {
+          "min": 2,
+          "max": 3
+        },
         "knowledge": {
           "topics": [
             "carpentry_and_building"

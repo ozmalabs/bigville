@@ -326,6 +326,10 @@ class BigvilleWorld:
         # (MEDICAL_CARE). Off, no resident catches an illness from the dawn tick and the new care options are
         # not offered; the existing disease rules (diagnose, the burial condition) are unchanged.
         "illness": False,
+        # Phase 047: people acting together (JOINT_TASKS: a heavy load carried by several, a crewed recipe worked by
+        # several). Off, no joint option is published, a joint proposal is refused as unsupported, and every recipe
+        # runs as before, whatever its crew field says.
+        "joint_actions": False,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -1020,11 +1024,14 @@ class BigvilleWorld:
                 fit = self._refresh_job_fit(job, speed * pace)
                 # Phase 049: a worker weaker than the recipe's strength demand progresses more slowly (1.0 at or above it).
                 rate = self._job_strength_rate(job, speed * pace * fit)
-                remaining -= speed * pace * fit * rate
+                # Phase 047: the workers present (a crew) multiply the labour; each helper pays its share of the stamina.
+                own = speed * pace * fit * rate
+                remaining -= own * self._crew_factor(job)
                 self.eng.set_attr(job, "remaining", max(0.0, remaining))
                 # The recipe's stamina cost is spread evenly over the ticks of the job (Phase 022), and over
                 # the progress it makes (Phase 024): a slowed worker spends less per tick.
-                self._spend_job_stamina(job, share=speed * pace * fit * rate)
+                self._spend_job_stamina(job, share=own)
+                self._crew_spend(job, own)
                 if remaining > 1e-9:
                     continue
                 remaining = 0.0
@@ -7878,8 +7885,16 @@ class BigvilleWorld:
                         "path_preferred": (movement["terrain"] == "path"
                                            or step_movement["terrain"] == "path"),
                     })
+        options.extend(self.joint_options(actor))
         self._actor_targets[actor] = targets
         return options
+
+    def joint_options(self, actor):
+        """The joint options a resident can see (Phase 047): a load on the ground that one person cannot lift, and a
+        crewed job at the resident's cell. Nothing is published with the joint_actions switch off."""
+        if not self.joint_actions_on() or not self._joint_ready(actor):
+            return []
+        return self._carry_options(actor) + self._crew_options(actor)
 
     def _decide_actor(self, actor):
         """Ask the resident's Ocelot instance to choose from current affordances."""
@@ -8022,6 +8037,13 @@ class BigvilleWorld:
             target = target_of()
             source = target if target in self._containers else None
             return self.major_action(actor, "fetch", kind=plan.get("kind"), amount=1.0, source=source)
+        if action == "joint":
+            # Phase 047: a solo joint proposal (a lone member, or one the game did not group). Its result is the
+            # member's own; a short group still runs and fails physically.
+            joint = plan.get("joint")
+            if not isinstance(joint, dict):
+                return self._refuse("malformed")
+            return bool(self.enact_joint(joint, [actor]).get(actor))
         if action == "tend_animals":
             target = self._as_key(plan.get("animal")) or target_of()
             if target in self._animals:
@@ -9629,6 +9651,8 @@ class BigvilleWorld:
             # A world tick advances physical time only. Animal and resident
             # decisions are submitted by an explicit game/backend session.
             self._run()
+            # Phase 047: a load carried last turn drops if a carrier collapsed, slept or left reach during this tick.
+            self._settle_joint_loads()
             # Last, so every crossing this turn is counted before untrodden
             # ground grows back.
             self._terrain_recovery_tick()
@@ -10083,6 +10107,364 @@ class BigvilleWorld:
         """The actor's own most recent attempt, as the actor observed it, or None."""
         value = self.eng.node(self._actor(actor))["attrs"].get("last_attempt")
         return None if value is None else dict(value)
+
+    # ---------------------------------------------------- joint actions (Phase 047)
+    def joint_actions_on(self):
+        """The joint_actions switch (physical_subsystems). Off, no joint option is published and no joint act runs."""
+        return bool(self.physical_subsystems.get("joint_actions", False))
+
+    def _joint_ready(self, actor):
+        """A resident who can take part in a joint task now: alive, awake, and not on a timed job."""
+        return (actor in self._actors and self.is_alive(actor) and self._sleep_code(actor) is None
+                and not self.busy(actor))
+
+    def _within(self, actor, cell, reach):
+        """Whether a resident stands within `reach` cells of `cell` (Chebyshev, the world's grid distance)."""
+        from worlds import joint as J
+        here = self.actor_position(actor)
+        return here is not None and cell is not None and J.chebyshev(here, cell) <= int(reach)
+
+    def _joint_check(self, actor, cell, reach):
+        """Why a proposing resident cannot take part in a joint act, or None when it can (Phase 047).
+
+        Asleep, collapsed and passed-out residents are refused with their sleep code. A dead resident, or one on a
+        timed job, cannot act (not_possible). A resident whose action slot is spent cannot claim it (slot_used). A
+        resident out of reach of the cell is not_in_reach."""
+        if actor not in self._actors or not self.is_alive(actor):
+            return "not_possible"
+        code = self._sleep_code(actor)
+        if code is not None:
+            return code
+        if self.busy(actor):
+            return "not_possible"
+        if float(self.eng.node(self._actors[actor])["attrs"].get("major_action_used", 0.0)) == 1.0:
+            return "slot_used"
+        if cell is not None and not self._within(actor, cell, reach):
+            return "not_in_reach"
+        return None
+
+    def _member_force(self, actor):
+        """A member's force in a joint act: the terms the core's force term uses (Phase 050), without intensity."""
+        body = self.eng.node(self._bodies[actor])["attrs"]
+        stage = str(self.eng.node(self._actors[actor])["attrs"].get("life_stage", "adult"))
+        return (self.effective_strength(actor) * float(body.get("size", 1.0))
+                * float(self.E.CONTEST["life_stage_force"].get(stage, 1.0)) * self.speed_factor(actor))
+
+    def _joint_outcomes(self, names, applied, codes, publish):
+        """Each named resident's outcome: applied, or the code that refused it. Returns {resident: applied}.
+
+        `publish` is False inside another attempt, which publishes its own outcome; then a refusal sets the code."""
+        results = {}
+        for name in names:
+            ok = name in applied
+            results[name] = ok
+            if publish:
+                self._publish_outcome(name, "joint", ok, None if ok else codes.get(name, "not_possible"))
+            elif not ok:
+                self._refusal_code = codes.get(name, "not_possible")
+        return results
+
+    def _record_joint(self, name, task, target, joined, needed, outcome):
+        """What a joint act tells each member: how many took part, how many the act needs, and what happened."""
+        self.eng.set_attr(self._actors[name], "last_joint", {
+            "turn": int(self._turn), "task": str(task), "target": str(target), "joined": int(joined),
+            "needed": int(needed), "outcome": str(outcome)})
+
+    def last_joint(self, actor):
+        """The resident's own most recent joint act, as it observed it (joined k of needed), or None."""
+        value = self.eng.node(self._actor(actor))["attrs"].get("last_joint")
+        return None if value is None else dict(value)
+
+    def _joint_event(self, kind, cell, subject, detail, severity):
+        """A joint act is a physical event that every awake resident with sight of the site observes (Phase 028)."""
+        event = self.create_event(kind, subject=str(subject), detail=detail, severity=severity)
+        if cell is None:
+            return event
+        sight = int(self.E.HEARING["sight_range"])
+        from worlds import joint as J
+        for other in self._actors:
+            where = self.actor_position(other)
+            if (where is not None and self.is_alive(other) and self._sleep_code(other) is None
+                    and J.chebyshev(where, cell) <= sight):
+                self.observe_event(other, event)
+        return event
+
+    def _queue_effort(self, actor, amount, intensity, uses_strength=0.0):
+        """Queue stamina a resident spends through an Effort node. Nothing runs here, so it is safe inside a tick."""
+        if float(amount) <= 0.0:
+            return
+        effort = self.eng.add_node("Effort", {"uses_strength": float(uses_strength), "uses_stamina": 1.0,
+                                              "intensity": float(intensity), "stamina_cost": float(amount),
+                                              "terrain": "", "terrain_speed": 1.0,
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+        self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
+
+    def _carry_cell(self, name):
+        """The cell of a physical object lying on the ground, or None when it is held or in a container."""
+        if self._physical_object_locations.get(name, "world") != "world":
+            return None
+        cell = self._physical_location_cell(name)
+        return None if cell is None else tuple(cell)
+
+    def _carry_load(self, name):
+        """A physical object's load in ITEMS weight units: its own mass, or its kind's weight. None when neither."""
+        attrs = self.eng.node(self._physical_objects[name])["attrs"]
+        if "mass" in attrs:
+            return float(attrs["mass"])
+        kind = str(attrs.get("kind", ""))
+        return float(self.item_weight(kind)) if kind in self._item_specs else None
+
+    def _joint_steps(self, cell):
+        """The steps a load on `cell` may take: each neighbouring map cell the ground lets through and no resident
+        stands on, in sorted order. A load cannot be pushed into the people carrying it."""
+        occupied = {self.actor_position(name) for name in self._actors if self.is_alive(name)}
+        steps = []
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                nxt = (cell[0] + dx, cell[1] + dy)
+                if ((dx, dy) != (0, 0) and nxt in self._map_cells and nxt not in occupied
+                        and self.terrain_state(nxt)["speed"] > 0.0):
+                    steps.append([dx, dy])
+        return steps
+
+    def _carry_options(self, actor):
+        """Joint carry options: a load within reach that one person cannot lift (needs at least two)."""
+        from worlds import joint as J
+        task = self.E.JOINT_TASKS["carry"]
+        reach = int(task["reach"])
+        options = []
+        for name in sorted(self._physical_objects):
+            cell = self._carry_cell(name)
+            load = self._carry_load(name)
+            if cell is None or load is None or not self._within(actor, cell, reach):
+                continue
+            needs = J.members_needed(self._member_force(actor), load / float(task["load_unit"]),
+                                     task["max_members"], task["coordination_loss"], 0.0, task["skill_relief"])
+            if needs is None or needs < 2:
+                continue
+            steps = self._joint_steps(cell)
+            if not steps:
+                continue
+            present = [other for other in self._actors if other != actor and self._joint_ready(other)
+                       and self._within(other, cell, reach)]
+            options.append({"action": "joint", "task": "carry", "object": name, "toward": steps,
+                            "needs": int(needs), "present": len(present), "max": int(task["max_members"]),
+                            "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
+        return options
+
+    def _job_recipe_name(self, job):
+        runs = self.eng.neighbours(job, "runs")
+        return str(self.eng.node(runs[0])["attrs"].get("name", "")) if runs else ""
+
+    def _crew_members(self, job):
+        """The helpers who joined a crewed job and still work it: awake, free, and on the worker's cell."""
+        ja = self.eng.node(job)["attrs"]
+        worker = str(ja.get("canonical_actor", ""))
+        if worker not in self._actors:
+            return []
+        here = self.actor_position(worker)
+        return [helper for helper in (ja.get("crew") or []) if helper in self._actors and helper != worker
+                and self._joint_ready(helper) and self.actor_position(helper) == here]
+
+    def _crew_factor(self, job):
+        """The progress multiplier of a timed job from its crew (Phase 047). 1.0 with the switch off or no crew field."""
+        if not self.joint_actions_on():
+            return 1.0
+        from worlds import joint as J
+        recipe = self._job_recipe_name(job)
+        row = self._recipe_specs.get(recipe, {})
+        crew = row.get("crew")
+        if not crew:
+            return 1.0
+        task = self.E.JOINT_TASKS["crew"]
+        worker = str(self.eng.node(job)["attrs"].get("canonical_actor", ""))
+        skill = min(1.0, max(0.0, float(self.recipe_skill_level(worker, row)))) if worker in self._actors else 0.0
+        members = min(int(crew["max"]), 1 + len(self._crew_members(job)))
+        return J.crew_factor(members, task["crew_penalty"], skill, task["coordination_loss"], task["skill_relief"])
+
+    def _crew_spend(self, job, own):
+        """Each helper on a crewed job pays stamina for the tick in step with the worker's own labour (Phase 047)."""
+        if own <= 0.0 or not self.joint_actions_on():
+            return
+        helpers = self._crew_members(job)
+        if not helpers:
+            return
+        ja = self.eng.node(job)["attrs"]
+        ticks, total = float(ja.get("stamina_ticks", 0.0)), float(ja.get("stamina_total", 0.0))
+        if ticks <= 0.0 or total <= 0.0:
+            return
+        amount = total / ticks * own * float(ja.get("effort_mult", 1.0))
+        for helper in helpers:
+            self._queue_effort(helper, amount, min(1.0, amount), float(ja.get("uses_strength", 0.0)))
+
+    def _crew_options(self, actor):
+        """Crew options: a timed job whose worker stands on the resident's cell, whose recipe asks for more people,
+        and which has room. `needs` is the workers the job still lacks to reach its minimum."""
+        here = self.actor_position(actor)
+        if here is None:
+            return []
+        options = []
+        for job in sorted(self.eng.nodes("Job")):
+            ja = self.eng.node(job)["attrs"]
+            if float(ja.get("complete", 0.0)) == 1.0 or float(ja.get("remaining", 0.0)) <= 0.0:
+                continue
+            worker = str(ja.get("canonical_actor", ""))
+            if worker == actor or worker not in self._actors or self.actor_position(worker) != here:
+                continue
+            recipe = self._job_recipe_name(job)
+            crew = self._recipe_specs.get(recipe, {}).get("crew")
+            if not crew:
+                continue
+            crewing = self._crew_members(job)
+            count = 1 + len(crewing)
+            if count >= int(crew["max"]) or actor in crewing:
+                continue
+            present = [other for other in self._actors if other not in (actor, worker)
+                       and self._joint_ready(other) and self.actor_position(other) == here]
+            options.append({"action": "joint", "task": "crew", "worker": worker, "recipe": recipe,
+                            "needs": max(0, int(crew["min"]) - count), "present": len(present),
+                            "max": int(crew["max"]), "kind": "", "trade": "", "target": "", "score": 0.0})
+        return options
+
+    def enact_joint(self, task, participants):
+        """Resolve one joint act for the residents who proposed it (Phase 047). Returns {resident: applied}.
+
+        `task` names the act: {"task": "carry", "object": name, "toward": [dx, dy]} or {"task": "crew", "worker": name}.
+        Each proposing resident takes part, or is left out with a REFUSAL_REASONS code (asleep, collapsed, out of
+        reach, busy, slot_used). An act with fewer people than it needs still runs and fails physically: a load stays
+        where it is, and a crewed job crawls. The result does not depend on the order of `participants`."""
+        names = sorted({name for name in participants if isinstance(name, str) and name in self._actors})
+        if not names:
+            return {}
+        publish = not self._outcome_open
+        kind = task.get("task") if isinstance(task, dict) else None
+        if not self.joint_actions_on() or kind not in ("carry", "crew"):
+            return self._joint_outcomes(names, set(), {name: "unsupported" for name in names}, publish)
+        if kind == "carry":
+            return self._enact_carry(task, names, publish)
+        return self._enact_crew(task, names, publish)
+
+    def _enact_carry(self, task, names, publish):
+        """A group lifts a load one cell along `toward` if its summed capability reaches the load (Phase 047)."""
+        from worlds import joint as J
+        from worlds import resolution as R
+        spec = self.E.JOINT_TASKS["carry"]
+        rs = self.E.RESOLUTION
+        obj, steps = self._as_key(task.get("object")), task.get("toward")
+        cell = self._carry_cell(obj) if obj in self._physical_objects else None
+        load = self._carry_load(obj) if cell is not None else None
+        if cell is None or load is None:
+            return self._joint_outcomes(names, set(), {name: "unknown_target" for name in names}, publish)
+        if not (isinstance(steps, (list, tuple)) and len(steps) == 2 and tuple(steps) != (0, 0)
+                and all(isinstance(s, int) and not isinstance(s, bool) and s in (-1, 0, 1) for s in steps)):
+            return self._joint_outcomes(names, set(), {name: "malformed" for name in names}, publish)
+        reach = int(spec["reach"])
+        group, codes = [], {}
+        for name in names:
+            code = self._joint_check(name, cell, reach)
+            if code is None:
+                group.append(name)
+            else:
+                codes[name] = code
+        if not group:
+            return self._joint_outcomes(names, set(), codes, publish)
+        for name in group:
+            self._claim_major_action(name, "joint")
+        forces = [self._member_force(name) for name in group]
+        total, team = J.team_term(forces, spec["coordination_loss"], 0.0, spec["skill_relief"])
+        demand = load / float(spec["load_unit"])
+        # The core's rule (Phase 050), with the group's summed force and the team term from joint.team_term.
+        step = R.resolve_step({
+            "force": total, "technique": 1.0, "fit": 1.0, "team": team, "conditions": rs["neutral_conditions"],
+            "intensity": 1.0, "demand": demand, "cap_rate": rs["attempt_cap_rate"],
+            "exponent": rs["progress_exponent"], "base_cost": rs["base_cost"], "floor": rs["floor"],
+            "effort_cap": rs["effort_cap"], "k": rs["k"], "i_safe": rs["i_safe"], "m": rs["m"]})
+        pace = J.carry_pace(R.rho(step["capability"], demand), spec["pace_cap"])
+        cells_of_group = [self.actor_position(name) for name in group]
+        node = self._physical_objects[obj]
+        pos, moved = cell, 0
+        for _ in range(pace):
+            nxt = (pos[0] + int(steps[0]), pos[1] + int(steps[1]))
+            if nxt not in self._map_cells or nxt in cells_of_group or self.terrain_state(nxt)["speed"] <= 0.0:
+                break
+            pos, moved = nxt, moved + 1
+        if moved:
+            self.eng.set_attr(node, "cell", [int(pos[0]), int(pos[1])])
+            self.eng.set_attr(node, "carriers", list(group))
+            # The carriers walk with the load: each stands on the cell the load left, one step behind it.
+            behind = (pos[0] - int(steps[0]), pos[1] - int(steps[1]))
+            for name in group:
+                self._move_actor_to(name, behind)
+        outcome = "moved" if moved else "stuck"
+        # Each member pays its share of the summed force: stamina, and strain (an accident at the strain limit).
+        for name, force in zip(group, forces):
+            share = force / total if total > 0.0 else 1.0 / len(group)
+            self._queue_effort(name, float(step["stamina"]) * share, 1.0)
+            self._accrue_strain(name, float(step["strain"]) * share)
+        self._run()
+        needed = J.members_needed(total / len(group), demand, spec["max_members"], spec["coordination_loss"], 0.0,
+                                  spec["skill_relief"])
+        needed = int(spec["max_members"]) if needed is None else int(needed)
+        for name in group:
+            self._record_joint(name, "carry", obj, len(group), needed, outcome)
+        self._joint_event("joint", cell, obj, f"{len(group)} people tried to move {obj}; it "
+                          f"{'moved' if moved else 'stayed where it was'}", 0.1)
+        return self._joint_outcomes(names, set(group), codes, publish)
+
+    def _enact_crew(self, task, names, publish):
+        """Residents join a worker's crewed job. They pay for their share of each tick once they have joined."""
+        spec = self.E.JOINT_TASKS["crew"]
+        worker = self._as_key(task.get("worker"))
+        job = self._job_of(worker) if worker in self._actors else None
+        if job is None or float(self.eng.node(job)["attrs"].get("remaining", 0.0)) <= 0.0:
+            return self._joint_outcomes(names, set(), {name: "not_possible" for name in names}, publish)
+        recipe = self._job_recipe_name(job)
+        crew = self._recipe_specs.get(recipe, {}).get("crew")
+        if not crew:
+            return self._joint_outcomes(names, set(), {name: "unsupported" for name in names}, publish)
+        here = self.actor_position(worker)
+        crewing = self._crew_members(job)
+        room = int(crew["max"]) - (1 + len(crewing))
+        group, codes = [], {}
+        for name in names:
+            if name == worker or name in crewing:
+                codes[name] = "not_possible"
+                continue
+            code = self._joint_check(name, here, 0)
+            if code is not None:
+                codes[name] = code
+            elif len(group) >= room:
+                codes[name] = "not_possible"
+            else:
+                group.append(name)
+        for name in group:
+            self._claim_major_action(name, "joint")
+        if group:
+            already = list(self.eng.node(job)["attrs"].get("crew") or [])
+            self.eng.set_attr(job, "crew", sorted(set(already + group)))
+            for name in group:
+                self._record_joint(name, "crew", worker, len(group), int(crew["min"]), "joined")
+            self._joint_event("joint", here, worker, f"{len(group)} joined {worker} at {recipe}", 0.0)
+        return self._joint_outcomes(names, set(group), codes, publish)
+
+    def _settle_joint_loads(self):
+        """A load carried this turn stays up only while its carriers hold it. One who collapsed, slept or left reach
+        before the turn's tick ends drops it where it lies (event load_dropped). Nothing else changes."""
+        if not self.joint_actions_on():
+            return
+        for name in sorted(self._physical_objects):
+            node = self._physical_objects[name]
+            carriers = list(self.eng.node(node)["attrs"].get("carriers") or [])
+            if not carriers:
+                continue
+            self.eng.set_attr(node, "carriers", [])
+            cell = self._carry_cell(name)
+            held = cell is not None and all(self.is_alive(c) and self._sleep_code(c) is None
+                                            and self._within(c, cell, self.E.JOINT_TASKS["carry"]["reach"])
+                                            for c in carriers)
+            if not held:
+                self._joint_event("load_dropped", cell, name, f"{name} fell: someone holding it could not hold on",
+                                  0.2)
 
     def _job_of(self, actor):
         """The actor's timed job (its `on_job` edge), or None."""

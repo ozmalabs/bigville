@@ -1,0 +1,5 @@
+sub True True
+opts Ada [{'action': 'move_object', 'object_id': 'crate', 'destination': 'Ada', 'object': 'crate', 'kind': 'crate', 'source': 'world'}, {'action': 'move_object', 'object_id': 'crate', 'destination': 'Ben', 'object': 'crate', 'kind': 'crate', 'source': 'world'}, {'action': 'move_object', 'object_id': 'crate', 'destination': 'table', 'object': 'crate', 'kind': 'crate', 'source': 'world'}, {'action': 'joint', 'task': 'carry', 'object': 'crate', 'toward': [[-1, 1], [0, 1], [1, 0], [1, 1]], 'needs': 2, 'present': 1, 'max': 4, 'kind': '', 'trade': '', 'recipe': '', 'target': '', 'score': 0.0}]
+res {'Ada': True, 'Ben': True} (2, 0) (0, 0) {'turn': 1, 'task': 'carry', 'target': 'crate', 'joined': 2, 'needed': 2, 'outcome': 'moved'} {'turn': 1, 'action': 'joint', 'applied': True, 'reason': ''}
+solo {'Ada': True} (1, 0) {'turn': 1, 'task': 'carry', 'target': 'crate', 'joined': 1, 'needed': 2, 'outcome': 'stuck'} 0.84 0.6000000000000001
+after tick carriers [] {'kind': 'joint', 'subject': 'crate', 'detail': '2 people tried to move crate; it moved', 'public': 1.0, 'severity': 0.1, 'day': 0.0}

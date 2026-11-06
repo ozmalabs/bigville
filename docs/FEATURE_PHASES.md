@@ -1960,12 +1960,7 @@ nor requested); disease-specific wasting.
 
 ## Phase 047 -- Joint actions: people acting together
 
-**Status:** ready, after 020, 025 and 029 (decision 2026-11-05: added). The seeded case is
-`seeds/bigville_coin_safe.json` `cs_present` and `cs_open_threshold`: N distinct people present
-at once authorise a lock, which Phase 030 already carries. The general mechanism is NEW DESIGN,
-behind a `joint_actions` switch, default off. Cooperation in sequence already works and needs
-nothing here: two trades making a head and a handle (`bigville_craft`), or several residents
-adding labour to one building over turns.
+**Status:** part done, behind `physical_subsystems.joint_actions` (default off). Built: joint carry (a ground object above one adult's load moves floor(rho) cells, at most 3, when the members' summed force times `coordination(n)` meets mass / `load_unit`; short of it, the carriers strain; a carrier who collapses or leaves drops the load) and crewed recipes (`saw_planks` crew 2 to 3; a lone worker progresses at `crew_penalty` 0.25; each added worker adds less). The core's `team` term is real and is 1.0 for one person, so committed numbers are unchanged. The world publishes `joint` options with `present`; `BigvilleGame` resolves joint groups before the turn's other responses, so order does not matter; the simple backend joins when `present + 1 >= needs`. `joint` is not a MAJOR_ACTION (the Phase 054 snapshot is unchanged). Not built: group takes, gangs, group contests. Default village unchanged (0 deaths in 192 turns; 50-turn reference matches). See docs/phases/phase047/PHASE047_REPORT.md.
 
 **Goal.** Let several residents do one thing at once, where one cannot.
 1. **Rendezvous, not command.** The world publishes joint options in `actor_affordances`:
@@ -3197,3 +3192,4 @@ truth held apart. Unscheduled until the rule says it is needed.
 | 066 LLM harness: session, memory, whole log | done | (this commit) | docs/phases/phase066/PHASE066_REPORT.md -- per-resident message thread (full packet, then deltas, compaction by new thread, stable session id); provider returns `ProviderResult` with reasoning fields and the whole response; hash-chained append-only `LLMLog` that keeps thinking whole and detects edits and cuts; replay keyed on thread state naming the first differing message; `to_dict`/`from_dict` stop and resume; 17 tests; simple backend identical to HEAD; 1626 passed |
 | 056 Learning evaluation | done | (this commit) | docs/phases/phase056/PHASE056_REPORT.md -- `bigville/learning_eval.py` (per-resident metrics from engine records, repeat-mistake rate, tries before switch, lessons offered and used, leak guard that voids a run, scripted learner and non-learner, marginal effect against a simple control) and `tools/run_learning_eval.py`; learner repeat-mistake rate 0.000 against 0.967; Ocelot arm skipped; 8 tests; no shared file edited |
 | 049 Consequences instead of gates | done | (this commit) | docs/phases/phase049/PHASE049_REPORT.md -- skill, season, strength, busy, serving, leak, capacity, harvest, tending gates become consequences; plan-path walk, rest and watering refusals kept; 1653 passed |
+| 047 Joint actions | done (part) | (this commit) | docs/phases/phase047/PHASE047_REPORT.md -- joint carry and crewed recipes behind a switch; team term; group takes, gangs and group contests not built |

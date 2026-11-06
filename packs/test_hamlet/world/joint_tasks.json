@@ -1,0 +1,23 @@
+{
+  "_doc": "JOINT_TASKS (Phase 047): people acting together. The same tables as the bigville pack, so the shared joint-action code reads one shape. Switch: physical_subsystems.joint_actions (default off). The hamlet has no crewed recipe, so only the tables are here; their numbers and sources are in the bigville pack's _doc (APPROX model choices).",
+  "_types": {},
+  "tables": {
+    "JOINT_TASKS": {
+      "carry": {
+        "trigger": "a physical object on the ground within reach whose load is above one adult's capacity (load_unit)",
+        "load_unit": 50.0,
+        "max_members": 4,
+        "coordination_loss": 0.1,
+        "skill_relief": 0.5,
+        "reach": 1,
+        "pace_cap": 3
+      },
+      "crew": {
+        "trigger": "a timed recipe whose `crew` field asks for more than one worker, with the worker at the site",
+        "coordination_loss": 0.1,
+        "skill_relief": 0.5,
+        "crew_penalty": 0.25
+      }
+    }
+  }
+}

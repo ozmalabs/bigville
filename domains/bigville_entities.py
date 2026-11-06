@@ -1024,6 +1024,64 @@ def _check_contest(errors, warnings, info):
                 f"base cost {ct['base_cost']}; SIZE mean at age 18 {points[-1][1] if points else 'n/a'}")
 
 
+def _check_joint_tasks(errors, warnings, info):
+    """Phase 047: the joint-action tables. JOINT_TASKS holds exactly the carry and crew tasks, with in-range numbers.
+    The carry load unit is one adult's carrying capacity (ACTOR_DEFAULTS.inventory_max_load). A group's summed force
+    rises with each member by less than the one before, and a crewed recipe's crew field is 1 <= min <= max; a lone
+    worker crawls below two, and a further worker adds less than a full worker's labour."""
+    from worlds import joint as J
+    for name in ("carry", "crew"):
+        if name not in JOINT_TASKS:
+            errors.append(f"JOINT_TASKS: the {name!r} task is missing")
+    for name in JOINT_TASKS:
+        if name not in ("carry", "crew"):
+            errors.append(f"JOINT_TASKS: unknown task {name!r}")
+    if any(name not in JOINT_TASKS for name in ("carry", "crew")):
+        return
+    carry, crew = JOINT_TASKS["carry"], JOINT_TASKS["crew"]
+    loss, relief = float(carry["coordination_loss"]), float(carry["skill_relief"])
+    if not 0.0 <= loss < 1.0:
+        errors.append(f"JOINT_TASKS[carry][coordination_loss]: must lie in [0, 1), not {loss!r}")
+    if not 0.0 <= relief <= 1.0:
+        errors.append(f"JOINT_TASKS[carry][skill_relief]: must lie in [0, 1], not {relief!r}")
+    if float(carry["load_unit"]) != float(ACTOR_DEFAULTS["inventory_max_load"]):
+        errors.append("JOINT_TASKS[carry][load_unit]: must equal ACTOR_DEFAULTS.inventory_max_load (one adult's capacity)")
+    if not isinstance(carry["max_members"], int) or carry["max_members"] < 2:
+        errors.append(f"JOINT_TASKS[carry][max_members]: a whole number of at least 2, not {carry['max_members']!r}")
+    if not isinstance(carry["reach"], int) or carry["reach"] < 1:
+        errors.append(f"JOINT_TASKS[carry][reach]: a whole number of cells of at least 1, not {carry['reach']!r}")
+    if not isinstance(carry["pace_cap"], int) or carry["pace_cap"] < 1:
+        errors.append(f"JOINT_TASKS[carry][pace_cap]: a whole number of cells of at least 1, not {carry['pace_cap']!r}")
+    if float(carry["load_unit"]) <= 0.0:
+        errors.append("JOINT_TASKS[carry][load_unit]: must be positive")
+    penalty = float(crew["crew_penalty"])
+    if not 0.0 < penalty <= 1.0:
+        errors.append(f"JOINT_TASKS[crew][crew_penalty]: must lie in (0, 1], not {penalty!r}")
+    # The summed force of n people (times coordination) rises with each person, by less each time.
+    cap = int(carry["max_members"])
+    totals = [n * J.coordination(n, 0.0, loss, relief) for n in range(1, cap + 1)]
+    steps = [b - a for a, b in zip(totals, totals[1:])]
+    if any(step <= 0.0 for step in steps):
+        errors.append("JOINT_TASKS: the summed force of a group must rise with each member")
+    if any(later > earlier + 1e-12 for earlier, later in zip(steps, steps[1:])):
+        errors.append("JOINT_TASKS: each added member must add no more than the one before (coordination)")
+    # Crewed recipes: the crew field is 1 <= min <= max, and the crew factor crawls alone and adds less than a worker.
+    crewed = [row for row in RECIPES if "crew" in row]
+    for row in crewed:
+        field = row["crew"]
+        mn, mx = field.get("min"), field.get("max")
+        if not isinstance(mn, int) or not isinstance(mx, int) or not 1 <= mn <= mx:
+            errors.append(f"RECIPES[{row['name']}][crew]: needs whole numbers with 1 <= min <= max, not {field!r}")
+            continue
+        factors = [J.crew_factor(n, penalty, 0.0, loss, relief) for n in range(1, mx + 1)]
+        if mx >= 2 and not factors[0] < factors[1]:
+            errors.append(f"RECIPES[{row['name']}][crew]: a lone worker must progress more slowly than two")
+        for n in range(2, mx):
+            if factors[n] - factors[n - 1] >= 1.0:
+                errors.append(f"RECIPES[{row['name']}][crew]: worker {n + 1} adds a full worker's labour or more")
+    info.append(f"JOINT_TASKS: carry load unit {carry['load_unit']} up to {cap} people; crew on {len(crewed)} recipe(s)")
+
+
 def _check_training(errors, warnings, info):
     """Phase 032: TRAIN_HEADROOM and TRAIN_RATE (seed bd_train_strength, bd_train_stamina) and the body they
     build. A recipe's strength requirement must be reachable by training from the founding body (base x
@@ -1875,6 +1933,7 @@ def check_consistency():
     _check_illness(errors, warnings, info)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)
+    _check_joint_tasks(errors, warnings, info)
     _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)
     _check_food_grading(errors, warnings, info)

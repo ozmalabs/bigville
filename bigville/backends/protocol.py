@@ -186,6 +186,11 @@ class CognitionBackend(Protocol):
     # Phase 048: a ``work`` major action (a recipe) may carry ``tool``: the kind of a held tool, ``"none"`` (or null)
     # for bare hands, or omitted for the right tool the worker has, else bare hands. A tool that fits poorly still
     # works, slower and at a cost; the world reports what happened, never the fitness before it happens.
+    #
+    # Phase 047: a joint proposal is ``action`` "joint" with a ``joint`` object in its params: ``{"task": "carry",
+    # "object": name, "toward": [dx, dy]}`` or ``{"task": "crew", "worker": name}``. Proposals with the same task key
+    # are one act the world resolves together. Published as an affordance ``{"action": "joint", ...}`` with
+    # ``present``, the count of other residents who can take part now, only when the joint_actions switch is on.
 
 
 def communication_capabilities(backend) -> dict[str, Any]:

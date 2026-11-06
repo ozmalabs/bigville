@@ -184,7 +184,7 @@ class DeterministicBackend:
             if option.get("action") == "eat" and option.get("kind") and _feeds(option)
         }
         options = [o for o in context.affordances
-                   if o.get("action") not in {"rest", "", "sleep"}
+                   if o.get("action") not in {"rest", "", "sleep", "joint"}
                    and (self.policy.allow_transfers or o.get("action") != "transfer")
                    and (o.get("stock_source") != "town" or
                         (self.policy.allow_stock_fetches and
@@ -255,6 +255,14 @@ class DeterministicBackend:
                                 "time_band": self.time_band, "reason": "unlock_with_key"}
             params = {k: value for k, value in unlock.items() if k not in {"action", "score", "legal", "reason"}}
             return ActorResponse(major_action=ProposedAction("unlock", params, "cheap_psi_can"),
+                                 utterances=self._speech(context))
+        # Phase 047: a joint option the people present can complete (`present` counts the others who can join now).
+        # The rule reads only the published option, so each resident who sees the same option proposes the same act.
+        joint = self._joint_proposal(context) if sleep_reason is None and not fed_first else None
+        if joint is not None:
+            self.last_choice = {"action": "joint", **joint, "goal": self.current_goal.kind if self.current_goal else "observe",
+                                "time_band": self.time_band, "reason": "joint_present"}
+            return ActorResponse(major_action=ProposedAction("joint", {"joint": joint}, "cheap_psi_can"),
                                  utterances=self._speech(context))
         # Phase 038: the optional strike trigger (off by default). Sleep and food still come first only through the
         # sleep block above; a resident that is asleep does not strike.
@@ -531,6 +539,22 @@ class DeterministicBackend:
         options = list(offer.get("options", []))
         choice = next((option for option in ("resist", "brace", "yield") if option in options), "")
         return ActorResponse(backend_state={"reaction": choice, "reason": "fixed_reaction_policy"})
+
+    def _joint_proposal(self, context: ActorContext) -> dict | None:
+        """The `joint` object for the first published joint option this resident can complete, or None (Phase 047).
+
+        A carry needs `needs` people in all, counting this one, so the option is taken when `present` plus one reaches
+        it, along the first step the world listed (the same for everyone who sees it). A crew needs `needs` more workers
+        at the site, so it is taken on the same count. Options come in the world's order, so the choice is deterministic."""
+        for option in context.affordances:
+            if option.get("action") != "joint":
+                continue
+            needs, present = int(option.get("needs", 0)), int(option.get("present", 0))
+            if option.get("task") == "carry" and option.get("toward") and present + 1 >= needs:
+                return {"task": "carry", "object": str(option["object"]), "toward": list(option["toward"][0])}
+            if option.get("task") == "crew" and needs >= 1 and present + 1 >= needs:
+                return {"task": "crew", "worker": str(option["worker"])}
+        return None
 
     def _strike_proposal(self, context: ActorContext) -> dict | None:
         """Phase 038: the seeded strike trigger as an optional policy. Returns the proposal's params, or None.

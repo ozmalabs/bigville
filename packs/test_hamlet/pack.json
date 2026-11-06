@@ -250,6 +250,10 @@
       "file": "world/resolution.json"
     },
     {
+      "name": "JOINT_TASKS",
+      "file": "world/joint_tasks.json"
+    },
+    {
       "name": "CONTEST",
       "file": "world/contest.json"
     },
