@@ -22,13 +22,15 @@ from __future__ import annotations
 import math
 import re
 
+from domains.affordance_handles import handle_pairs
 from domains.data_view import entities
 from domains.lexicon import describe, quantities
 from domains.pack import load_pack
 from domains.persona import CARD_KEYS, traits as persona_traits
 
 MODES = ("agent", "referee")
-NOTE_KINDS = ("note", "lesson", "plan", "place_belief")
+NOTE_KINDS = ("note", "plan", "place_belief")
+LESSON_KIND = "lesson"
 NOTES_SHOWN = 10
 _SPECIES_TAIL = re.compile(r"_\d+$")
 
@@ -206,11 +208,20 @@ def _kin(world, actor, pack):
     return sorted(rows)
 
 
+def _texts(character, kinds):
+    return [memory.content["text"] for memory in character.memories
+            if memory.kind in kinds and isinstance(memory.content, dict)
+            and isinstance(memory.content.get("text"), str)]
+
+
 def _notes(character):
-    texts = [memory.content["text"] for memory in character.memories
-             if memory.kind in NOTE_KINDS and isinstance(memory.content, dict)
-             and isinstance(memory.content.get("text"), str)]
-    return texts[-NOTES_SHOWN:]
+    """The most recent notes, plans and place beliefs the resident wrote (Phase 054: lessons are listed apart)."""
+    return _texts(character, NOTE_KINDS)[-NOTES_SHOWN:]
+
+
+def _lessons(character):
+    """Every lesson the resident has written down, oldest first. The prompt packet applies the cap (Phase 054)."""
+    return _texts(character, (LESSON_KIND,))
 
 
 def _self(game, actor, pack, gist_table):
@@ -233,6 +244,7 @@ def _self(game, actor, pack, gist_table):
         "places": _places(character, pack),
         "kin": _kin(world, actor, pack),
         "notes": _notes(character),
+        "lessons": _lessons(character),
     })
     return _check_keys("self", out, pack)
 
@@ -307,7 +319,27 @@ def _around(game, actor, pack, known):
         who = str(event.get("actor", ""))
         who = words["you"] if who == actor else (who if who in known else words["someone"])
         seen.append(_check_keys("seen", {"who": who, "did": words["moved"]}, pack))
-    return _check_keys("around", {"people": people, "heard": heard, "seen": seen}, pack)
+    things = _things(world, actor, pack)
+    return _check_keys("around", {"people": people, "heard": heard, "seen": seen, "things": things}, pack)
+
+
+def _things(world, actor, pack):
+    """What the resident can act on: containers on the resident's own cell (an attempt needs the resident
+    there), and the physical objects the resident can see. A handle is the name the world uses for the thing,
+    copied into a reply; `what` is its kind in words (Phase 054)."""
+    position = world.actor_position(actor)
+    rows = []
+    if position is not None:
+        for name in sorted(world._containers, key=str):
+            node = world._containers[name][0]
+            if world.container_position(name) != position:
+                continue
+            if float(world.eng.node(node)["attrs"].get("destroyed", 0.0)) == 1.0:
+                continue
+            rows.append((str(name), _words(world.eng.node(node)["attrs"].get("kind") or name)))
+    for item in world.physical_object_observations(actor):
+        rows.append((str(item.get("id", "")), _words(item.get("kind") or item.get("id"))))
+    return [_check_keys("thing", {"handle": handle, "what": what}, pack) for handle, what in rows if handle]
 
 
 def _map(world, actor, pack):
@@ -339,14 +371,16 @@ def _species(world, animal):
 
 
 def _can(world, actor, character, pack):
+    """The options the resident may use. Each row's handle comes from domains/affordance_handles.py, computed
+    over the full list of the world's options, so the backend resolves the same handle to the same row (Phase
+    054 follow-up). A move is listed only to a place the resident knows."""
     pk = load_pack(pack)
     actions, words = pk["ACTION_WORDS"], pk["VIEW_WORDS"]
     places = _known_positions(character, pack)
-    out, seen = [], set()
-    for option in world.actor_affordances(actor):
+    out = []
+    for handle, option in handle_pairs(world.actor_affordances(actor)):
         action = str(option.get("action", ""))
         verb = actions.get(action) or _words(action)
-        handle = str(option.get("target") or "")
         if action == "move":
             destination = _cell(option.get("destination"))
             if destination not in places:
@@ -356,10 +390,6 @@ def _can(world, actor, character, pack):
         else:
             what = _words(option.get("recipe") or option.get("kind") or option.get("sow_kind")
                           or _species(world, option.get("animal")))
-        key = (handle, verb, what)
-        if key in seen:
-            continue
-        seen.add(key)
         out.append(_check_keys("can", {"handle": handle, "action": verb, "what": what}, pack))
     return out
 

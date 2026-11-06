@@ -25,16 +25,17 @@ def test_prompt_contains_private_character_and_public_choices():
 def test_llm_backend_accepts_provider_json_and_exposes_backend_state():
     class Provider:
         def complete(self, prompt):
-            assert prompt["schema"] == "bigville/prompt/2"
+            assert prompt["schema"] == "bigville/prompt/3"
             return '{"major_action":{"action":"rest","params":{}},"waiting":false}'
 
     character = CharacterDefinition(character_id="Ada", name="Ada")
     backend = LLMBackend(character, Provider())
-    response = backend.decide(ActorContext(character, 0, {}, [{"action": "rest"}]))
+    view = {"self": {"name": "Ada"}, "around": {}, "can": [{"handle": "", "action": "rest", "what": ""}]}
+    response = backend.decide(ActorContext(character, 0, {}, [{"action": "rest"}], agent_view=view))
     assert response.major_action.action == "rest"
     held = backend.dump_held_state().to_dict()
     assert held["backend"] == "llm"
-    assert held["backend_state"]["prompt_schema"] == "bigville/prompt/2"
+    assert held["backend_state"]["prompt_schema"] == "bigville/prompt/3"
     assert held["backend_state"]["prompt_hash"]
 
 

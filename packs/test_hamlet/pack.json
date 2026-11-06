@@ -932,6 +932,14 @@
     {
       "name": "ACTION_WORDS",
       "file": "world/agent_view.json"
+    },
+    {
+      "name": "PROMPT_PACKET",
+      "file": "world/prompt_packet.json"
+    },
+    {
+      "name": "PROMPT_REPLY",
+      "file": "world/prompt_packet.json"
     }
   ]
 }

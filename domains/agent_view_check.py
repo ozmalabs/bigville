@@ -25,7 +25,7 @@ from domains.lexicon import bands
 from domains.pack import PackError, load_pack
 
 SECTIONS = ("top", "self", "persona", "body", "carrying", "knows", "places", "now", "around", "person",
-            "heard", "seen", "map", "can", "last", "referee")
+            "heard", "seen", "thing", "map", "can", "last", "referee")
 REQUIRED = ("AGENT_VIEW_WHITELIST", "AGENT_VIEW_REFEREE_ONLY", "AGENT_VIEW_QUANTITIES", "AGENT_VIEW_KNOWS_LIMIT",
             "MAP_GLYPHS", "VIEW_WORDS", "PRECISION_WORDS", "ACTION_WORDS")
 VIEW_WORD_KEYS = ("asleep", "collapsed", "ill", "carried_line", "held_line", "kin_line", "unknown_kin",

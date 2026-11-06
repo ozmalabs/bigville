@@ -47,8 +47,17 @@ def _character(name="Ada"):
     return CharacterDefinition(character_id=name, name=name)
 
 
+def _view(name="Ada"):
+    """A minimal agent view (Phase 054: the LLM backend sends only what the view gives)."""
+    return {"mode": "agent", "actor": name,
+            "self": {"name": name, "job": "hand", "life_stage": "an adult", "age": "grown"},
+            "now": {"time": "at dawn"}, "around": {"people": [], "heard": [], "seen": [], "things": []},
+            "can": [{"handle": "", "action": "rest", "what": ""}], "last": {}}
+
+
 def _context(name="Ada"):
-    return ActorContext(_character(name), 3, {"energy": 50}, [{"action": "rest", "score": 1}])
+    return ActorContext(_character(name), 3, {"energy": 50}, [{"action": "rest", "score": 1}],
+                        agent_view=_view(name))
 
 
 def _world_game():
@@ -115,7 +124,7 @@ def test_callable_provider_is_accepted():
 
     backend = LLMBackend(_character(), provider)
     assert backend.decide(_context()).major_action.action == "rest"
-    assert seen == ["bigville/prompt/2"]
+    assert seen == ["bigville/prompt/3"]
 
 
 # -- good output, first call -------------------------------------------------
@@ -127,7 +136,7 @@ def test_first_good_reply_is_unchanged_and_counted_once():
     assert response.major_action.action == "rest"
     assert len(provider.prompts) == 1
     state = backend.last_backend_state
-    record = PromptBuilder().build(_context())
+    record = PromptBuilder().build(_context(), state["consult_reason"])
     assert state["prompt_hash"] == hashlib.sha256(record.as_json().encode()).hexdigest()
     parsed = json.loads(VALID)
     assert state["response_hash"] == hashlib.sha256(

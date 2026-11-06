@@ -42,6 +42,7 @@ from .autopilot import FALLBACK_CAUSES, CallBudget, ConsultGate
 from .cheap import DeterministicBackend, simple_policy_for
 from .prompts import PromptBuilder
 from .protocol import ActorContext, ActorResponse, ProposedAction
+from .reply_schema import check as check_reply, to_wire
 
 
 MAX_REPAIRS = 1
@@ -54,12 +55,6 @@ _SECRET_PATTERN = re.compile(
 )
 _COUNT_KEYS = ("calls", "repairs_used", "repaired_successes", "successes", "failures",
                "provider_errors", "invalid_outputs", "autopilot_turns", "carry_ons", "waits", "deviations")
-# What the model is told about the autopilot, once per consult (in the payload, not in the hashed record).
-CONSULT_RULES = (
-    "You are consulted now because your usual routine would otherwise carry on. Reply with a major_action "
-    "only to depart from the usual routine on purpose. A reply with no major_action carries on as usual. "
-    "To do nothing at all, reply with a major_action whose action is wait. Do not set waiting."
-)
 
 
 class LLMProvider(Protocol):
@@ -113,6 +108,14 @@ def _continuation_errors(value: Any) -> list[str]:
     if "poll_each_turn" in value and not isinstance(value["poll_each_turn"], bool):
         errors.append("continuation.poll_each_turn must be true or false")
     return errors
+
+
+def _check_reply(parsed: dict[str, Any], fields, pack: str, lesson_limit: int | None) -> list[str]:
+    """Structural checks, then the pack's reply schema (words for intensity and amounts, memory kinds)."""
+    errors = validate_response(parsed, fields)
+    if errors:
+        return errors
+    return check_reply(parsed, pack, lesson_limit=lesson_limit)
 
 
 def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str]) -> list[str]:
@@ -186,6 +189,8 @@ def _day(calendar) -> int | None:
 
 class LLMBackend:
     kind = "llm"
+    # Phase 054: the game gives this resident's context its agent view (words only), and nothing else.
+    wants_agent_view = True
     communication_mode = "free_text"
     supports_free_text = True
     understands_raw_speech = True
@@ -244,23 +249,32 @@ class LLMBackend:
     def _resident(self) -> str:
         return str(self.character.character_id)
 
-    def _check(self, raw: Any, fields) -> tuple[dict[str, Any] | None, list[str]]:
+    def _check(self, raw: Any, fields, affordances=None) -> tuple[dict[str, Any] | None, dict[str, Any] | None, list[str]]:
+        """(wire reply, the reply as the provider sent it, errors). The wire reply is None when a check fails.
+        ``affordances`` are the context's rows, so a handle in the reply names the full row (Phase 054 follow-up)."""
         try:
             parsed = _payload(raw)
         except (TypeError, ValueError):
-            return None, ["output is not a JSON object"]
-        errors = validate_response(parsed, fields)
+            return None, None, ["output is not a JSON object"]
+        errors = _check_reply(parsed, fields, self.prompt_builder.pack.name, self._lesson_limit())
         if errors:
-            return None, errors
-        return parsed, []
+            return None, None, errors
+        wire = to_wire(parsed, self.prompt_builder.pack.name, affordances=affordances)
+        return wire, parsed, []
 
-    def _ask(self, context: ActorContext, extra: dict[str, Any]):
+    def _lesson_limit(self) -> int:
+        return int(self.prompt_builder.pack["PROMPT_PACKET"]["lessons_max"])
+
+    def _ask(self, context: ActorContext, consult_reason: str | None, choices=None):
         """One consult: the provider call and at most one repair, within the budget.
 
-        Returns ("reply", parsed, attempts, prompt_record, prompt_hash) or
-        ("fallback", cause, error, prompt_record, prompt_hash)."""
-        record = self.prompt_builder.build(context)
-        base = {**record.as_dict(), **extra}
+        Returns ("reply", wire_reply, attempts, prompt_record, prompt_hash) or
+        ("fallback", cause, error, prompt_record, prompt_hash). A context without an agent view is never sent:
+        the prompt path is the Phase 054 packet, which is built from the view."""
+        if getattr(context, "agent_view", None) is None:
+            return ("fallback", "internal_error", "no agent view was built for this resident", None, None)
+        record = self.prompt_builder.build(context, consult_reason, choices)
+        base = record.as_dict()
         prompt_hash = hashlib.sha256(record.as_json().encode()).hexdigest()
         fields = tuple(self.prompt_builder.pack["PROMPT_RESPONSE_FIELDS"])
         resident, day = self._resident(), _day(context.observations.get("calendar"))
@@ -283,10 +297,11 @@ class LLMBackend:
                 self._record_cost()
                 return ("fallback", "provider_error", exc, record, prompt_hash)
             self._record_cost()
-            parsed, errors = self._check(raw, fields)
-            if parsed is not None:
-                return ("reply", parsed, attempt + 1, record, prompt_hash)
+            wire, as_sent, errors = self._check(raw, fields, context.affordances)
+            if wire is not None:
+                return ("reply", wire, attempt + 1, record, prompt_hash, as_sent)
         return ("fallback", "invalid_output", "; ".join(errors), record, prompt_hash)
+
 
     def _record_cost(self) -> None:
         if self.budget is not None:
@@ -328,25 +343,22 @@ class LLMBackend:
     def _consult(self, context: ActorContext, auto: ActorResponse | None, reason: str,
                  started: float, holder: dict) -> ActorResponse:
         self.consults_by_reason[reason] = self.consults_by_reason.get(reason, 0) + 1
-        extra: dict[str, Any] = {}
-        if self.gate is not None:
-            extra = {"autopilot": {"why_consulted": reason, "usual_now": self.gate.usual(context),
-                                   "rules": CONSULT_RULES}}
-        outcome = self._ask(context, extra)
+        outcome = self._ask(context, reason if self.gate is not None else None)
         if outcome[0] == "fallback":
             _, cause, error, record, prompt_hash = outcome
             response = self._fallback(cause, error, started, auto=auto, record=record,
                                       prompt_hash=prompt_hash, reason=reason)
         else:
-            _, parsed, attempts, record, prompt_hash = outcome
-            response = self._accept(parsed, auto, reason, attempts, started, record, prompt_hash)
+            _, parsed, attempts, record, prompt_hash, as_sent = outcome
+            response = self._accept(parsed, auto, reason, attempts, started, record, prompt_hash, as_sent)
         if self.gate is not None:
             self.gate.note(context, consulted=True)
         return response
 
     def _accept(self, parsed: dict[str, Any], auto: ActorResponse | None, reason: str, attempts: int,
-                started: float, record, prompt_hash: str) -> ActorResponse:
-        """Turn an accepted reply into this turn's response: an action, a carry-on, or a wait."""
+                started: float, record, prompt_hash: str, as_sent: dict[str, Any] | None = None) -> ActorResponse:
+        """Turn an accepted reply into this turn's response: an action, a carry-on, or a wait. ``parsed`` is the
+        wire form; ``as_sent`` is the reply as the provider wrote it, which the response hash covers."""
         model = ActorResponse.from_dict(parsed)
         action = parsed.get("major_action")
         would_be = auto.major_action if auto is not None else None
@@ -369,15 +381,18 @@ class LLMBackend:
             departs = would_be is not None and _key(model.major_action) != _key(would_be)
         if departs:
             self.counts["deviations"] += 1
+        if record.meta is not None and record.meta.get("merge"):
+            self._merge_lessons(record.meta.get("lesson_ids", []), parsed)
         elapsed_ms = round((time.perf_counter() - started) * 1000.0, 3)
         self.counts["successes"] += 1
         if attempts > 1:
             self.counts["repaired_successes"] += 1
         self.counts["latency_ms_total"] += elapsed_ms
-        raw_text = json.dumps(parsed, sort_keys=True, default=repr)
+        raw_text = json.dumps(as_sent if as_sent is not None else parsed, sort_keys=True, default=repr)
         self.last_backend_state = self._state({
             "prompt_schema": record.schema,
             "prompt_hash": prompt_hash,
+            "prompt_chars": int((record.context.get("sizes") or {}).get("total", 0)),
             "response_hash": hashlib.sha256(raw_text.encode()).hexdigest(),
             "latency_ms": elapsed_ms,
             "outcome": "repaired" if attempts > 1 else "ok",
@@ -389,6 +404,17 @@ class LLMBackend:
         })
         response.backend_state = {"llm_turn": kind}
         return response
+
+    def _merge_lessons(self, lesson_ids, parsed: dict[str, Any]) -> None:
+        """A merge replaces the lessons the prompt listed, once the reply carries lesson updates of its own. The
+        reply's lessons are then added by the game as ordinary memory updates. A reply without lessons keeps the
+        old ones, and the next consult asks again."""
+        if not any(item.get("kind") == "lesson" for item in parsed.get("memory_updates", []) or []):
+            return
+        listed = set(lesson_ids)
+        self.character.memories[:] = [memory for memory in self.character.memories
+                                      if memory.memory_id not in listed]
+        self.counts["lessons_merged"] = self.counts.get("lessons_merged", 0) + len(listed)
 
     def _fallback(self, cause: str, error: Any, started: float, *, auto: ActorResponse | None,
                   record=None, prompt_hash: str | None = None, reason: str | None = None) -> ActorResponse:
@@ -430,14 +456,12 @@ class LLMBackend:
             return fallback
         self.consults_by_reason["reaction"] = self.consults_by_reason.get("reaction", 0) + 1
         options = list((context.observations.get("reaction") or {}).get("options", []))
-        outcome = self._ask(context, {"autopilot": {"why_consulted": "reaction",
-                                                    "usual_now": self.gate.usual(context),
-                                                    "rules": CONSULT_RULES}})
+        outcome = self._ask(context, "reaction", options)
         if outcome[0] == "fallback":
             _, cause, error, record, prompt_hash = outcome
             return self._fallback(cause, error, started, auto=fallback, record=record,
                                   prompt_hash=prompt_hash, reason="reaction")
-        _, parsed, attempts, record, prompt_hash = outcome
+        _, parsed, attempts, record, prompt_hash, _as_sent = outcome
         action = parsed.get("major_action") or {}
         choice = str((action.get("params") or {}).get("option") or action.get("action") or "")
         if choice not in options:

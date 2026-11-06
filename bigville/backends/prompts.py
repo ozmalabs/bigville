@@ -28,6 +28,7 @@ from typing import Any
 from domains.pack import canonical, load_pack
 
 from .protocol import ActorContext
+from .prompt_packet import PACKET_SCHEMA, build_packet, packet_system
 
 
 PROMPT_SCHEMA = "bigville/prompt/2"
@@ -37,6 +38,12 @@ DEFAULT_PACK = "bigville"
 _DERIVED_KINDS = ("awareness", "understanding", "recipe_knowledge")
 # Memory kinds that hold a resident's own reading of a written law, policy, or reference.
 _STANDING_KINDS = ("law_knowledge", "policy_knowledge", "reference_knowledge")
+# Phase 034: how a drink is felt, by intoxication band (sober residents feel nothing and get no line).
+_DRINK_FEEL = {
+    "tipsy": "You feel a little drink in you.",
+    "drunk": "You are drunk: your hands are clumsy and your thinking is slow.",
+    "stupefied": "You are stupefied with drink and can barely keep hold of a thought.",
+}
 # Affordance and observation fields whose values name the things a turn touches.
 _TOUCH_AFFORDANCE_KEYS = ("kind", "recipe", "trade", "item", "good", "target")
 
@@ -94,6 +101,8 @@ class PromptRecord:
     context: dict[str, Any]
     pack: str = ""
     pack_hash: str = ""
+    # Phase 054: what the backend needs beside the record (lesson ids, merge flag). Not part of as_dict.
+    meta: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {"schema": self.schema, "pack": self.pack, "pack_hash": self.pack_hash,
@@ -258,11 +267,18 @@ class PromptBuilder:
         self.pack = load_pack(pack)
         self.pack_hash = pack_hash(self.pack)
         self.system = build_system_text(self.pack)
+        self.packet_system: str | None = None
         selection = dict(self.pack["PROMPT_SELECTION"])
         selection["gist"] = dict(self.pack["MEMORY_GIST"])
         self.selection = selection
 
-    def build(self, context: ActorContext) -> PromptRecord:
+    def build(self, context: ActorContext, consult_reason: str | None = None,
+              choices: list[str] | None = None) -> PromptRecord:
+        """A context with an agent view gets the Phase 054 packet (words only, from the view). A context without one
+        keeps the Phase 018 record below, which the simple tests and tools still read. The LLM backend never sends
+        the Phase 018 record: it refuses a context without a view."""
+        if getattr(context, "agent_view", None) is not None:
+            return self._packet(context, consult_reason, choices)
         character = context.character
         knowledge, memories, counts, frames = select_knowledge(character, context, self.selection)
         private = {
@@ -284,8 +300,21 @@ class PromptBuilder:
         if outcome:
             # Phase 021: the resident's own last major action, with what its refusal reason means.
             public["last_outcome"] = self._outcome_entry(outcome)
+        band = context.observations.get("intoxication_band")
+        if band in _DRINK_FEEL:
+            # Phase 034: the drink is felt body state. The resident is told how it feels, not what to do about it.
+            public["felt_body"] = [_DRINK_FEEL[band]]
         return PromptRecord(self.schema, self.system, {"private": private, "public": public},
                             pack=self.pack.name, pack_hash=self.pack_hash)
+
+    def _packet(self, context: ActorContext, consult_reason: str | None, choices) -> PromptRecord:
+        """The Phase 054 packet. The system text is the packet's own, built from the pack."""
+        if self.packet_system is None:
+            self.packet_system = packet_system(self.pack.name)
+        ctx, meta = build_packet(context, pack=self.pack.name, consult_reason=consult_reason, choices=choices)
+        ctx["sizes"]["system"] = len(self.packet_system)
+        return PromptRecord(PACKET_SCHEMA, self.packet_system, ctx, pack=self.pack.name,
+                            pack_hash=self.pack_hash, meta=meta)
 
     def _outcome_entry(self, outcome) -> dict[str, Any]:
         entry = _plain(outcome)

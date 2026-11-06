@@ -574,8 +574,17 @@ class BigvilleGame:
             name: communication_capabilities(backend)
             for name, backend in self.backends.items() if name != actor
         }
+        # Phase 054: a resident whose backend reads words only (the LLM backend) gets the agent view. Others keep
+        # the raw context they always had. A failure in the view is not raised into the world: the view is left
+        # out, and the LLM backend refuses to decide without one (counted as internal_error).
+        view = None
+        if getattr(self.backends.get(actor), "wants_agent_view", False):
+            try:
+                view = self.agent_view(actor)
+            except Exception:
+                view = None
         return ActorContext(character, int(self.world._turn), observations, affordances,
-                            recipient_interfaces=recipient_interfaces)
+                            recipient_interfaces=recipient_interfaces, agent_view=view)
 
     def _visible_object_snapshot(self, actor):
         return {item["id"]: str(item.get("location", "world"))

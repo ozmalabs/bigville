@@ -1773,6 +1773,8 @@ def check_consistency():
     _check_fiscal(errors, warnings, info)
     from domains.lexicon_check import check_lexicon      # Phase 051: the words for numbers and statuses
     check_lexicon(_WORLD_PACK.path, errors, warnings, info)
+    from domains.prompt_packet_check import check_prompt_packet  # Phase 054: the LLM prompt packet and reply schema
+    check_prompt_packet(_WORLD_PACK.path, errors, warnings, info)
     from domains.persona_check import check_persona      # Phase 058: persona, routine, founding ties
     check_persona(_WORLD_PACK.path, errors, warnings, info)
     from domains.autopilot_check import check_autopilot  # Phase 059: the autopilot's consult rules

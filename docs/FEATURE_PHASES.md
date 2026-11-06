@@ -2516,7 +2516,7 @@ checkpoint; the three levels render differently; replay is deterministic.
 
 ## Phase 054 -- The LLM backend, stage 2: the prompt packet and the response schema
 
-**Status:** ready, after 031, 051, 052, 058 and 059 (decision 2026-11-05: plan the build of the LLM
+**Status:** done (see History). Open: `target:N` as a move handle; repair keeps the 031 shape (decision 2026-11-05: plan the build of the LLM
 backend). Phase 031 is stage 1 (a registered, hardened backend with a fake provider); 054 to 056
 complete the build.
 
@@ -2840,3 +2840,4 @@ provider layer's retry and backoff (Phase 055).
 | 043 Screening, treatment, well-baby care and illness | done | (this commit) | docs/phases/phase043/PHASE043_REPORT.md -- illness switch (off); DISEASE and MEDICAL_CARE; checkup, treat, well-baby as care kinds; 1352 passed |
 | 052 The agent view | done | (this commit) | docs/phases/phase052/PHASE052_REPORT.md -- `domains/agent_view.py` builds the view from a pack whitelist (`world/agent_view.json`), fail-closed; `BigvilleGame.agent_view(actor, mode)`, `GET /api/view`, `/api/state` 403 and `/api/turn` returns the view in agent mode (on when `--player` is named, `--referee` restores); leak test over 100 residents; 26 tests; 1378 passed |
 | 059 Autopilot and momentum | done | (this commit) | docs/phases/phase059/PHASE059_REPORT.md -- LLMBackend owns a DeterministicBackend; `ConsultGate` and `CallBudget` (`bigville/backends/autopilot.py`), pack `AUTOPILOT` table; consults at interrupts, routine boundaries, check-ins and idle; fallback by cause (provider error, invalid output, call or spend cap) is the autopilot's action; `waiting: true` rejected, no action carries on, `wait` idles; model plans hold; would-be choice and deviation counts in `llm_report`; 34 tests; simple backend identical to HEAD over 60 turns; 1412 passed |
+| 054 LLM prompt packet and reply schema | done | (this commit) | docs/phases/phase054/PHASE054_REPORT.md -- prompt built from the agent view (`bigville/prompt/3`, words only, per-section caps, persona and usual-now lead); reply schema in the pack with lexicon words for intensity and amounts and verb aliases; hostile speech quoted as inert data; lessons persist and merge over the cap; every `can` row has a handle (`domains/affordance_handles.py`) and a reply that names it runs the row as the simple backend would send it; 55 tests; simple backend identical to HEAD over 60 turns; 1467 passed |

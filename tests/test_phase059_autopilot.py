@@ -63,8 +63,17 @@ def _obs(*, hour=10.0, day=0.0, hunger=0.0, energy=80.0, nearby=(), heard=(), ou
             "heard_utterances": list(heard), "last_outcome": outcome, "physical_events": list(events)}
 
 
+def _view(name="Ada"):
+    """A minimal agent view (Phase 054: an LLM resident's prompt is built from the view, never the raw context)."""
+    return {"mode": "agent", "actor": name,
+            "self": {"name": name, "job": "farmer", "life_stage": "an adult", "age": "grown"},
+            "now": {"time": "at mid-morning"}, "around": {"people": [], "heard": [], "seen": [], "things": []},
+            "can": [], "last": {}}
+
+
 def _ctx(turn, *, character=None, affordances=(MOVE,), backend_state=None, **obs):
-    context = ActorContext(character or _char(), turn, _obs(**obs), [dict(a) for a in affordances])
+    context = ActorContext(character or _char(), turn, _obs(**obs), [dict(a) for a in affordances],
+                           agent_view=_view())
     if backend_state:
         context.backend_state.update(backend_state)
     return context
@@ -191,7 +200,7 @@ def test_each_interrupt_and_routine_boundary_calls_the_provider(name, first, sec
     backend.decide(_ctx(1, **first))
     backend.decide(_ctx(2, **second))
     assert backend.llm_counts["consults_by_reason"].get(reason) == 1, name
-    assert provider.prompts[-1]["autopilot"]["why_consulted"] == reason
+    assert provider.prompts[-1]["context"]["public"]["consult"]["why_consulted"] == reason
 
 
 def test_an_idle_autopilot_asks_the_model_once_per_quiet_span():
@@ -258,7 +267,7 @@ def test_a_model_plan_holds_until_it_is_interrupted_and_then_the_model_is_asked_
     game.world.eng.set_attr(node, "hunger", 2.5)                      # the interrupt
     game.step()
     assert len(provider.prompts) == 2
-    assert provider.prompts[1]["autopilot"]["why_consulted"] == "hunger_threshold"
+    assert provider.prompts[1]["context"]["public"]["consult"]["why_consulted"] == "hunger_threshold"
 
 
 def test_a_finished_plan_resumes_the_autopilot_without_a_consult_for_its_completion():
@@ -352,10 +361,12 @@ def test_the_prompt_carries_what_the_resident_would_usually_do_now():
     provider = Fake(CARRY)
     backend = LLMBackend(_char(), provider)
     backend.decide(_ctx(1, hour=10.0))
-    autopilot = provider.prompts[0]["autopilot"]
-    assert autopilot["why_consulted"] == "check_in"
-    assert "Usually now:" in autopilot["usual_now"] and "(at work)" in autopilot["usual_now"]
-    assert "carries on as usual" in autopilot["rules"]
+    context = provider.prompts[0]["context"]
+    consult = context["public"]["consult"]
+    usual_lines = [line for line in context["private"]["lead"] if "Usually now:" in line]
+    assert consult["why_consulted"] == "check_in"
+    assert len(usual_lines) == 1 and "(at work)" in usual_lines[0]
+    assert "carries on as usual" in consult["rules"]
 
 
 def test_a_reaction_consults_the_model_over_the_offered_options():
@@ -364,7 +375,7 @@ def test_a_reaction_consults_the_model_over_the_offered_options():
     def reaction_context():
         return ActorContext(_char(), 5, {**_obs(), "reaction": {"actor": "Ben", "on": "bread", "by": "hand",
                                                                 "amount": 1.0, "late": False, "options": options}},
-                            [{"action": "react", "option": option} for option in options])
+                            [{"action": "react", "option": option} for option in options], agent_view=_view())
 
     backend = LLMBackend(_char(), Fake('{"major_action": {"action": "react", "params": {"option": "brace"}}}'))
     assert backend.react(reaction_context()).backend_state["reaction"] == "brace"
