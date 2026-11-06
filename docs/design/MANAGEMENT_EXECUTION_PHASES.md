@@ -34,8 +34,8 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 | M03 | done; full suite passed (1573 passed, 1 skipped) | draft validation and reproducible preview |
 | M04 | done; full suite passed (1590 passed, 1 skipped) | durable run registry and lifecycle |
 | M05 | integrated; full-suite gate pending | new-run and runs pages |
-| M06 | ready; agent-view prerequisite is committed | live overview, controls and resident perspectives |
-| M07 | blocked by M06 | reports, events and trace artifacts |
+| M06 | integrated; full-suite gate pending | live overview, controls and resident perspectives |
+| M07 | ready after M06 integration | reports, events and trace artifacts |
 | M08 | blocked by M07 and checkpoint integration | checkpoints and fork |
 | M09 | blocked by M08 | templates and versioned reuse |
 | M10 | blocked by M09 | backend profiles and actor assignments |
