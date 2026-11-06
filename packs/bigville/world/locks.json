@@ -1,0 +1,13 @@
+{
+  "_doc": "LOCKS (Phase 030): keys and locks. A key is a discrete item (a ToolItem of kind KEY_KIND, weighing KEY_WEIGHT) carried like a tool, so it can be given, dropped, picked up and taken. It opens every lock whose lock_id it carries. A lock is a container's lock_id and locked flags, or the town store's (STORE_LOCK). A lock with keys_required above 1 opens only once that many distinct keyholders have each unlocked it at the lock's cell; one person cannot supply two. STORE_LOCK is the founding state of the town store: unlocked, so the default town is unchanged. Its lock_id is an identifier, not a figure: it differs from the container lock ids the scenarios use, so one key does not open both. KEY_WEIGHT is APPROX: a design choice; no source was consulted (a door key is a few tens of grams).",
+  "_types": {},
+  "tables": {
+    "KEY_KIND": "key",
+    "KEY_WEIGHT": 0.05,
+    "STORE_LOCK": {
+      "lock_id": 1,
+      "locked": false,
+      "keys_required": 1
+    }
+  }
+}

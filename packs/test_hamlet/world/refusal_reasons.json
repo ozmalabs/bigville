@@ -86,6 +86,24 @@
       },
       "not_possible": {
         "description": "The attempt was refused for a physical reason that the world does not name more precisely."
+      },
+      "no_lock": {
+        "description": "There is no lock on the container or the town store you named."
+      },
+      "no_key": {
+        "description": "You do not hold a key that fits this lock."
+      },
+      "already_locked": {
+        "description": "It is already locked."
+      },
+      "already_unlocked": {
+        "description": "It is already unlocked."
+      },
+      "already_authorised": {
+        "description": "You have already turned your key in this lock. It needs another keyholder to turn a key before it opens."
+      },
+      "store_locked": {
+        "description": "The town store is locked. You do not hold a key that opens it alone, so you cannot take from it, put into it, or use its stock."
       }
     },
     "REFUSAL_LOG_LIMIT": 20

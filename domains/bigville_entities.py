@@ -511,6 +511,35 @@ def _check_handovers(errors, warnings, info):
         errors.append(f"HANDOVER_LOG_LIMIT: must be a whole number of at least 1, not {HANDOVER_LOG_LIMIT!r}")
 
 
+def _check_locks(errors, warnings, info):
+    """Phase 030: keys and the town store's founding lock (packs/*/world/locks.json). The key kind is a snake_case
+    word that is not a bulk good, its weight is positive, the store lock names a whole-number lock id of at least 1,
+    starts unlocked or locked as a flag, and needs a whole number of keyholders of at least 1. The refusal codes the
+    lock and unlock actions use, and both actions, must exist with descriptions."""
+    import re as _re
+    if not _re.fullmatch(r"[a-z]+(_[a-z]+)*", str(KEY_KIND)):
+        errors.append(f"KEY_KIND: a key kind is a snake_case word, not {KEY_KIND!r}")
+    if KEY_KIND in ITEMS:
+        errors.append(f"KEY_KIND: {KEY_KIND!r} is a bulk good in ITEMS; keys are discrete items")
+    if isinstance(KEY_WEIGHT, bool) or not isinstance(KEY_WEIGHT, (int, float)) or KEY_WEIGHT <= 0:
+        errors.append(f"KEY_WEIGHT: must be a positive number, not {KEY_WEIGHT!r}")
+    lock_id = STORE_LOCK.get("lock_id")
+    if isinstance(lock_id, bool) or not isinstance(lock_id, int) or lock_id < 1:
+        errors.append(f"STORE_LOCK: lock_id must be a whole number of at least 1, not {lock_id!r}")
+    if not isinstance(STORE_LOCK.get("locked"), bool):
+        errors.append(f"STORE_LOCK: locked must be true or false, not {STORE_LOCK.get('locked')!r}")
+    keys = STORE_LOCK.get("keys_required")
+    if isinstance(keys, bool) or not isinstance(keys, int) or keys < 1:
+        errors.append(f"STORE_LOCK: keys_required must be a whole number of at least 1, not {keys!r}")
+    for code in ("no_lock", "no_key", "already_locked", "already_unlocked", "already_authorised", "store_locked",
+                 "container_locked"):
+        if code not in REFUSAL_REASONS:
+            errors.append(f"REFUSAL_REASONS: needs the lock code {code!r} (Phase 030)")
+    for action in ("lock", "unlock"):
+        if action not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS[action].get("description", "")).strip():
+            errors.append(f"MAJOR_ACTIONS: needs {action!r} with a description (Phase 030)")
+
+
 def _check_hearing(errors, warnings, info):
     """Phase 028: the speech and sight figures (packs/*/world/hearing.json). Radii are cells and at least 0;
     the normal loudness is the floor of a chosen loudness and sits within the clamp; the sight range is a
@@ -1478,6 +1507,7 @@ def check_consistency():
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_contest(errors, warnings, info)
+    _check_locks(errors, warnings, info)
     _check_food_grading(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)

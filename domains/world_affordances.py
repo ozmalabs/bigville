@@ -69,6 +69,10 @@ REFUSAL_LOG_LIMIT = _PACK["REFUSAL_LOG_LIMIT"]
 HANDOVER_KINDS = _PACK["HANDOVER_KINDS"]
 HANDOVER_ENDPOINTS = _PACK["HANDOVER_ENDPOINTS"]
 HANDOVER_LOG_LIMIT = _PACK["HANDOVER_LOG_LIMIT"]
+# Phase 030: keys are discrete items of KEY_KIND, and the town store's founding lock (packs/*/world/locks.json).
+KEY_KIND = _PACK["KEY_KIND"]
+KEY_WEIGHT = _PACK["KEY_WEIGHT"]
+STORE_LOCK = _PACK["STORE_LOCK"]
 # Phase 028: the hearing and sight figures for speech (packs/*/world/hearing.json). Distances are cells.
 HEARING = _PACK["HEARING"]
 FENCE_TYPES = _PACK["FENCE_TYPES"]

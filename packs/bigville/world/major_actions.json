@@ -86,6 +86,14 @@
       "care": {
         "kind": "care",
         "description": "Care for a person or an animal in reach who needs it."
+      },
+      "lock": {
+        "kind": "security",
+        "description": "Lock a container you hold the key to, or the town store, from the cell it stands on. The key must be in your hand or carried by you."
+      },
+      "unlock": {
+        "kind": "security",
+        "description": "Unlock a locked container or the town store with a key you hold, from the cell it stands on. A lock that needs several keyholders opens only after that many of them have unlocked it."
       }
     }
   }

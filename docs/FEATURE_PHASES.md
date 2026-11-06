@@ -1209,8 +1209,7 @@ through effective skill and body state); several people acting together; the Oce
 
 ## Phase 030 -- The town store has a lock and key
 
-**Status:** ready, after 021 and best after 029 (decision 2026-11-05: the town store uses a
-lock and key).
+**Status:** done. Keys are `ToolItem`s (kind `key`, `opens` = lock id) that can be given, dropped, picked up and taken; `holds_key` is gone and `give_key` is a setup call that makes the item. `lock`/`unlock` are major actions on a named container or `"store"`, published only to a keyholder at the lock's cell; `keys_required` above 1 needs that many distinct keyholders' turns. The store has a `Lock` node founded from `STORE_LOCK` (unlocked), and `_store_open(actor)` guards every resident path to town stock (listed in the report); a job short of access waits. The 100-resident digest is byte-identical. Open: the non-executed container seed records still describe `holds_key`; named rather than counted dual keyholders. See docs/phases/phase030/PHASE030_REPORT.md.
 
 **Spec.** `seeds/bigville_container.json` `ck_lock` and `ck_unlock` (a person holding a key
 that opens the container locks or unlocks it; without the key a locked container stays shut) and
@@ -1841,3 +1840,4 @@ rearing priors (the backend's); carrying infants.
 | 027 Food value and graded eating | done | (this commit) | docs/phases/phase027/PHASE027_REPORT.md -- feeds x freshness; spoiled stock kept; illness_risk published; 907 passed |
 | 028 Hearing range and witnessing | done | (this commit) | docs/phases/phase028/PHASE028_REPORT.md -- loudness is Chebyshev hearing radius; sight witnesses the act; per-listener deliveries; 921 passed |
 | 029 Contested take and reactions | done | (this commit) | docs/phases/phase029/PHASE029_REPORT.md -- CONTEST, SIZE, fighting skill; react() protocol; human reaction wait; 945 passed |
+| 030 Store lock and key | done | (this commit) | docs/phases/phase030/PHASE030_REPORT.md -- keys are items; lock/unlock actions; dual keys; _store_open guards; 967 passed |

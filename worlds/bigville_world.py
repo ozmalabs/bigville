@@ -405,6 +405,14 @@ class BigvilleWorld:
                                                 **dict(self.E.TOWN_INITIAL), **initial})   # the weather clothes protect against
         self._store = self.eng.add_node("Store", {"name": "store"})           # holds Stock NODES, no commodity floats
         self.eng.add_edge_unchecked(self._town, "has_store", self._store)
+        # Phase 030: the store's lock is a Lock node of its own (the store keeps no lock attributes), with the
+        # founding state from packs/*/world/locks.json. The default is unlocked.
+        store_lock = self.eng.add_node("Lock", {"lock_id": float(self.E.STORE_LOCK["lock_id"]),
+                                                "locked": 1.0 if self.E.STORE_LOCK["locked"] else 0.0,
+                                                "keys_required": float(self.E.STORE_LOCK["keys_required"])})
+        self.eng.add_edge_unchecked(self._store, "has_lock", store_lock)
+        # True only while the founding village policy (_village_work_tick) runs: its store access is not guarded.
+        self._store_bypass = False
         self._stock = {}; self._last_stock_qty = {}
         self._actors = {}; self._items = {}; self._actions = {}
         self._reference_specs = {}
@@ -1031,6 +1039,12 @@ class BigvilleWorld:
             if not missing and not (self._at_recipe_building(job_actor, action.get("name", ""))
                                     and self._burial_ready(action.get("name", ""))):
                 missing = True
+            # Phase 030: a job that puts goods or waste into the town store waits while its worker has no access to it.
+            writes_store = ((bool(action.get("out_kind", "")) and float(action.get("out_discrete", 0.0)) != 1.0)
+                            or bool(self._recipe_specs.get(action.get("name", ""), {}).get("byproducts"))
+                            or (plans is not None and any(mode == "type" for mode, _ in plans)))
+            if not missing and writes_store and not self._store_open(job_actor):
+                missing = True
             if missing:
                 continue
             # Any stamina the job has not yet spent is charged at completion (an instant `do` spends all of it here).
@@ -1143,7 +1157,7 @@ class BigvilleWorld:
                                       if self._container_accessible(actor, name)
                                       and kind in self._containers[name][1]
                                       and self.container_position(name) is None), None)
-                if container is not None and amount > 0.0 and self.qty(kind) >= amount:
+                if container is not None and amount > 0.0 and self.qty(kind) >= amount and self._store_open(actor):
                     max_load = float(self.eng.node(self._containers[container][0])["attrs"].get("max_load", 1e18))
                     if (self.used_volume(container) + amount * self.item_volume(kind) <= self.capacity(container) + 1e-9
                             and self.contents_weight(container) + amount * self.item_weight(kind) <= max_load + 1e-9
@@ -1159,6 +1173,8 @@ class BigvilleWorld:
                 for container, (cn, inners) in self._containers.items():
                     if kind not in inners or not self._container_accessible(actor, container):
                         continue
+                    if not self._store_open(actor):
+                        break
                     amount = min(amount, self.contents(container, kind))
                     arriving = self._pile_condition(inners[kind])
                     self.eng.set_attr(inners[kind], "qty", self.contents(container, kind) - amount)
@@ -2838,6 +2854,9 @@ class BigvilleWorld:
         return self.publish_article(article, copies=copies) if article is not None else None
 
     def give_newspaper(self, reader, edition):
+        if not self._store_open(reader):
+            self._refuse("store_locked")
+            return None
         if self.qty("newspaper") < 1.0 or edition not in self.eng.nodes():
             return None
         self.set_stock("newspaper", self.qty("newspaper") - 1.0)
@@ -3132,6 +3151,8 @@ class BigvilleWorld:
         if amount <= 0.0:
             return self._refuse("not_needed")
         required = {kind: amount for kind in spec.get("maintenance", ())}
+        if required and not self._store_open(operator):
+            return self._refuse("store_locked")
         if any(self.qty(kind) < qty for kind, qty in required.items()):
             return self._refuse("out_of_stock")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(operator, "maintain"):
@@ -3258,12 +3279,18 @@ class BigvilleWorld:
                               min(float(a["capacity"]), float(a["stock"]) + float(a["growback"])))
             self.eng.set_attr(site["node"], "epoch", float(a.get("epoch", 0.0)) + 1.0)
 
-    def add_store(self, cell, kinds=()):
+    def add_store(self, cell, kinds=(), *, locked=None, keys_required=None):
+        """Place the town store on a cell. `locked` and `keys_required` (Phase 030) override the pack's
+        STORE_LOCK founding state; left as None, the store keeps that state (unlocked by default)."""
         cell = tuple(cell)
         assert cell in self._map_cells, f"store cell {cell} not walkable"
         self.eng.add_edge_unchecked(self._store, "at_cell", self._map_cells[cell])
         self.eng.set_attr(self._store, "market_x", float(cell[0]))
         self.eng.set_attr(self._store, "market_y", float(cell[1]))
+        if locked is not None:
+            self.eng.set_attr(self._store_lock_node(), "locked", 1.0 if locked else 0.0)
+        if keys_required is not None:
+            self.eng.set_attr(self._store_lock_node(), "keys_required", float(keys_required))
         for kind in kinds:
             self.set_stock(kind, self.qty(kind))
         return self._store
@@ -3379,6 +3406,9 @@ class BigvilleWorld:
         if price is None:
             price = self.E.PRICE_DEFAULTS["stock_price"]
         self._actor(seller)
+        if not self._store_open(seller):
+            self._refuse("store_locked")
+            return False
         if not self._move_stock_to_inventory(seller, kind, amount):
             return False
         self._record_handover("stock", kind, amount, ("store", "store"), self._actor_endpoint(seller))
@@ -4593,6 +4623,9 @@ class BigvilleWorld:
             return None
         scale = labour / float(attrs["labour"])
         required = {k: float(v) * scale for k, v in spec.get("inputs", {}).items()}
+        if required and not self._store_open(builder):
+            self._refuse("store_locked")
+            return None
         if any(self.qty(k) + 1e-9 < q for k, q in required.items()):
             self._refuse("out_of_stock")
             return None
@@ -4628,13 +4661,16 @@ class BigvilleWorld:
         return (float(spec.get("capacity", 10.0)), 1.0 if spec.get("watertight") else 0.0,
                 float(spec.get("decay_factor", 1.0)))
 
-    def _wire_container(self, name, node, kind, holds, lock_id, locked, max_load=None, capacity=None):
+    def _wire_container(self, name, node, kind, holds, lock_id, locked, max_load=None, capacity=None,
+                        keys_required=1):
+        assert name != "store", "'store' names the town store's lock (Phase 030)"
         cap, wt, df = self._vessel_data(kind)
         if capacity is not None:
             cap = float(capacity)
         ml = max_load if max_load is not None else float(self._item_specs.get(kind, {}).get("max_load", 1e9))
         for k, v in (("capacity", cap), ("watertight", wt), ("decay_factor", df), ("max_load", ml),
-                     ("lock_id", float(lock_id)), ("locked", 1.0 if locked else 0.0)):
+                     ("lock_id", float(lock_id)), ("locked", 1.0 if locked else 0.0),
+                     ("keys_required", float(keys_required))):
             self.eng.set_attr(node, k, v)
         storage_class = (self._item_specs.get(kind, {}) or self.E.CONTAINERS.get(kind, {})).get("storage_class")
         if storage_class:
@@ -4663,9 +4699,9 @@ class BigvilleWorld:
         self.eng.add_edge_unchecked(container_node, "contains", inner)
         return inner
 
-    def add_container(self, name, *, kind="barrel", holds, lock_id=0.0, locked=False, cell=None):
+    def add_container(self, name, *, kind="barrel", holds, lock_id=0.0, locked=False, cell=None, keys_required=1):
         c = self.eng.add_node("Container", {"kind": kind, "name": name})
-        c = self._wire_container(name, c, kind, holds, lock_id, locked)
+        c = self._wire_container(name, c, kind, holds, lock_id, locked, keys_required=keys_required)
         if cell is not None:
             self._attach_at_cell(c, tuple(cell))
         return c
@@ -5089,6 +5125,9 @@ class BigvilleWorld:
         if amount <= 0.0:
             self._refuse("wrong_target")
             return 0.0
+        if not self._store_open(actor):
+            self._refuse("store_locked")
+            return 0.0
         self.set_stock(product, self.qty(product) + amount)
         self.eng.set_attr(an, epoch_key, period)
         self.eng.add_edge_unchecked(self._actors[actor], "performed_husbandry", an)
@@ -5235,7 +5274,8 @@ class BigvilleWorld:
 
         A source is ("own", carrier), ("box", container) or ("store", None). Containers without a
         mapped cell are never at the worker's cell, so they are not drawn on. An actor who is not a
-        resident (or a call with no actor) draws from the store only."""
+        resident (or a call with no actor) draws from the store only. A resident with no access to the
+        locked town store (`_store_open`) is not offered the store tier, so the job waits (Phase 030)."""
         sources = []
         if actor in self._actors and actor in self._actor_inventories:
             sources.append(("own", self._actor_inventories[actor]))
@@ -5247,7 +5287,8 @@ class BigvilleWorld:
                         continue
                     if self._container_accessible(actor, name):
                         sources.append(("box", name))
-        sources.append(("store", None))
+        if self._store_open(actor):
+            sources.append(("store", None))
         return sources
 
     def _source_qty(self, src, kind):
@@ -5469,6 +5510,15 @@ class BigvilleWorld:
         return []
 
     def _village_work_tick(self, period):
+        """The founding village policy's work step. It acts as a non-resident process, so its store access is
+        not guarded by `_store_open` (Phase 030); the flag is restored when the step ends."""
+        previous, self._store_bypass = self._store_bypass, True
+        try:
+            return self._village_policy_pass(period)
+        finally:
+            self._store_bypass = previous
+
+    def _village_policy_pass(self, period):
         """Perform the small, explicit founding policy used by ``run_village``.
 
         This is a scenario policy, not a hidden body rule.  Each successful
@@ -5621,6 +5671,9 @@ class BigvilleWorld:
         if spec["season"] != self.season():
             self._refuse("out_of_season")
             return None                                     # out of season -- nothing is sown
+        if not self._store_open(sower):
+            self._refuse("store_locked")
+            return None                                     # the seed is in the store, which this sower cannot open
         if self.qty(spec["seed"]) < 1.0:
             self._refuse("out_of_stock")
             return None                                     # another actor may have used the last seed
@@ -5652,6 +5705,8 @@ class BigvilleWorld:
             return self._refuse("wrong_target")
         if float(attrs.get("thirst", 0.0)) <= 0.0:
             return self._refuse("not_needed")
+        if not self._store_open(actor):
+            return self._refuse("store_locked")
         if self.qty("water") < float(attrs.get("water", 0.0)):
             return self._refuse("out_of_stock")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "water"):
@@ -5669,6 +5724,9 @@ class BigvilleWorld:
         crop_cell = self.map_position_node(crop_node)
         if (self._turn > 0 and harvester is not None and crop_cell is not None
                 and self.actor_position(harvester) != crop_cell):
+            return 0.0
+        if harvester is not None and not self._store_open(harvester):
+            self._refuse("store_locked")
             return 0.0
         if self._turn > 0 and not self._major_dispatch:
             if harvester is None or not self._claim_major_action(harvester, "harvest"):
@@ -5766,6 +5824,9 @@ class BigvilleWorld:
         if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
             self._refuse("not_in_reach")
             return 0.0
+        if not self._store_open(actor):
+            self._refuse("store_locked")
+            return 0.0
         type_name = self.E.NITROGEN["fertiliser_type"]
         la = self.eng.node(node)["attrs"]
         room = float(la.get("nitrogen_capacity", 0.0)) - float(la.get("nitrogen", 0.0))
@@ -5850,6 +5911,9 @@ class BigvilleWorld:
         """BUTCHERY is a skill: a butcher turns a (living) animal into its meat + hide (the on-death
         products from ANIMALS), killing it. Only a butcher can do it."""
         assert self.eng.node(self._actors[butcher])["attrs"].get("role") == "butcher", f"{butcher} is not a butcher"
+        if not self._store_open(butcher):
+            self._refuse("store_locked")
+            return {}
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(butcher, "butcher"):
             return {}
         an = self._animals[animal]
@@ -5910,29 +5974,138 @@ class BigvilleWorld:
     def animal_gives(self, species): return dict(self.E.ANIMALS[species]["gives"])
     def animal_pull(self, animal): return round(float(self.eng.node(self._animals[animal])["attrs"]["pull"]), 4)
 
-    def use_as_store(self, name, item, holds, *, lock_id=0.0, locked=False):
+    def use_as_store(self, name, item, holds, *, lock_id=0.0, locked=False, keys_required=1):
         """Press a MADE container-item (a cooper's barrel, a joiner's chest) into service as a real
         container -- the SAME node gains a capacity (from the item data) + an inner Stock + a
         has_container edge, so the container rules fill it. A made barrel IS a container."""
         kind = self.tool_kind(item)
         spec = self._item_specs.get(kind, {})
         assert spec.get("container"), f"{kind} is not a container item"
-        return self._wire_container(name, item, kind, holds, lock_id, locked)
+        return self._wire_container(name, item, kind, holds, lock_id, locked, keys_required=keys_required)
 
     def give_key(self, actor, opens):
-        k = self.eng.add_node("Key", {"opens": float(opens)})
-        self.eng.add_edge_unchecked(self._actors[actor], "holds_key", k)
-        return k
+        """Setup: put a new key that opens the lock `opens` in an actor's carried things. A key is a discrete
+        ToolItem of kind KEY_KIND, held like a tool, so it can be given, dropped, picked up and taken."""
+        self._actor(actor)
+        item = self.eng.add_node("ToolItem", {"kind": self.E.KEY_KIND, "weight": float(self.E.KEY_WEIGHT),
+                                              "quality": 1.0, "condition": 1.0, "broken": 0.0, "wear": 0.0,
+                                              "decay": 0.0, "use_armed": 0.0, "repair_armed": 0.0,
+                                              "opens": float(opens)})
+        self.eng.add_edge_unchecked(self._actors[actor], "holds", item)
+        self._refresh_carry_state(actor)
+        return item
+
+    def _holds_key(self, actor, lock_id):
+        """Whether `actor` holds, in a hand or carried, a key whose `opens` is `lock_id`."""
+        if not lock_id or actor not in self._actors:
+            return False
+        node = self._actors[actor]
+        for edge in ("holds_in_hand", "holds_tableware", "holds"):
+            for item in self.eng.neighbours(node, edge):
+                attrs = self.eng.node(item)["attrs"]
+                if attrs.get("kind") == self.E.KEY_KIND and float(attrs.get("opens", 0.0)) == float(lock_id):
+                    return True
+        return False
+
+    def _node_accessible(self, actor, node):
+        """Whether `actor` may use a container or the store now. An unlocked one is open to everyone. A locked
+        one opens to a holder of its key, but only when one key is enough (keys_required 1): a lock that needs
+        several keyholders stays shut until they have unlocked it (see `unlock`)."""
+        attrs = self.eng.node(node)["attrs"]
+        if float(attrs.get("locked", 0.0)) != 1.0:
+            return True
+        if float(attrs.get("keys_required", 1.0)) > 1.0:
+            return False
+        return self._holds_key(actor, float(attrs.get("lock_id", 0.0)))
 
     def _container_accessible(self, actor, container):
         if container not in self._containers:
             return False
-        if not self.is_locked(container):
+        return self._node_accessible(actor, self._containers[container][0])
+
+    def _store_open(self, actor):
+        """The one check every resident-initiated path uses before it reads or writes the town stock (Phase 030).
+        Non-residents (and the founding village policy while `_store_bypass` is set) are not guarded: decay,
+        period effects and the founding policy act on the store directly."""
+        if self._store_bypass or actor not in self._actors:
             return True
-        node = self._containers[container][0]
-        lock_id = float(self.eng.node(node)["attrs"].get("lock_id", 0.0))
-        return any(float(self.eng.node(key)["attrs"].get("opens", 0.0)) == lock_id
-                   for key in self.eng.neighbours(self._actor(actor), "holds_key"))
+        return self._node_accessible(actor, self._store_lock_node())
+
+    def _store_lock_node(self):
+        return next(iter(self.eng.neighbours(self._store, "has_lock")))
+
+    def _lockable(self, name):
+        """(lock node, cell node) of a lockable thing: a container by name (its own node holds the lock and sits on
+        the cell), or the town store (name "store"), whose Lock node holds the lock and whose store node sits on
+        the cell. None for a name that is neither."""
+        if name == "store":
+            return self._store_lock_node(), self._store
+        if name in self._containers:
+            node = self._containers[name][0]
+            return node, node
+        return None
+
+    def _clear_authorisations(self, node):
+        for keyholder in list(self.eng.neighbours(node, "authorised_by")):
+            self.eng.remove_edge_unchecked(node, "authorised_by", keyholder)
+
+    def lock(self, actor, container):
+        """Lock a container or the town store ("store") with a key `actor` holds, from its cell (Phase 030).
+        Refused with no_lock, not_in_reach, no_key, or already_locked."""
+        self._actor(actor)
+        found = self._lockable(container)
+        if found is None:
+            return self._refuse("unknown_target")
+        node, place = found
+        attrs = self.eng.node(node)["attrs"]
+        lock_id = float(attrs.get("lock_id", 0.0))
+        if lock_id <= 0.0:
+            return self._refuse("no_lock")
+        cell = self.map_position_node(place)
+        if cell is not None and self.actor_position(actor) != cell:
+            return self._refuse("not_in_reach")
+        if not self._holds_key(actor, lock_id):
+            return self._refuse("no_key")
+        if float(attrs.get("locked", 0.0)) == 1.0:
+            return self._refuse("already_locked")
+        self._clear_authorisations(node)
+        self.eng.set_attr(node, "locked", 1.0)
+        return True
+
+    def unlock(self, actor, container):
+        """Unlock a container or the town store ("store") with a key `actor` holds, from its cell (Phase 030).
+        A lock with keys_required above 1 records this keyholder's turn of the key, and opens once that many
+        distinct keyholders have turned it. Refused with no_lock, not_in_reach, no_key, already_unlocked,
+        or already_authorised."""
+        self._actor(actor)
+        found = self._lockable(container)
+        if found is None:
+            return self._refuse("unknown_target")
+        node, place = found
+        attrs = self.eng.node(node)["attrs"]
+        lock_id = float(attrs.get("lock_id", 0.0))
+        if lock_id <= 0.0:
+            return self._refuse("no_lock")
+        cell = self.map_position_node(place)
+        if cell is not None and self.actor_position(actor) != cell:
+            return self._refuse("not_in_reach")
+        if not self._holds_key(actor, lock_id):
+            return self._refuse("no_key")
+        if float(attrs.get("locked", 0.0)) != 1.0:
+            return self._refuse("already_unlocked")
+        needed = max(1, int(float(attrs.get("keys_required", 1.0))))
+        if needed <= 1:
+            self.eng.set_attr(node, "locked", 0.0)
+            return True
+        keyholder = self._actor(actor)
+        turned = list(self.eng.neighbours(node, "authorised_by"))
+        if keyholder in turned:
+            return self._refuse("already_authorised")
+        self.eng.add_edge_unchecked(node, "authorised_by", keyholder)
+        if len(turned) + 1 >= needed:
+            self._clear_authorisations(node)
+            self.eng.set_attr(node, "locked", 0.0)
+        return True
 
     def put(self, actor, container, kind, amount=1.0):
         """Put held stock into a physical container as a major action.
@@ -5983,6 +6156,8 @@ class BigvilleWorld:
         """Fill `amount` of `kind` into a container (if it fits by volume and, for a fluid, the vessel
         is watertight). Containers accept content not listed in their initial `holds`; storage
         preferences affect decay, not permission."""
+        if not self._store_open(actor):
+            return self._refuse("store_locked")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "fill"):
             return False
         if kind not in self._containers[container][1]:
@@ -5995,6 +6170,8 @@ class BigvilleWorld:
         return True
 
     def empty(self, actor, container, kind, amount):
+        if not self._store_open(actor):
+            return self._refuse("store_locked")
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "empty"):
             return False
         self.eng.set_attr(self._actors[actor], "empty_kind", kind)
@@ -6018,6 +6195,8 @@ class BigvilleWorld:
             source_cell = self.map_position_node(self._store)
             if self._turn > 0 and self.actor_position(actor) != source_cell:
                 return self._refuse("not_at_site")
+            if not self._store_open(actor):
+                return self._refuse("store_locked")
             if self.qty(kind) < amount:
                 return self._refuse("out_of_stock")
             if not self._move_stock_to_inventory(actor, kind, amount):
@@ -6042,9 +6221,6 @@ class BigvilleWorld:
                               self._actor_endpoint(actor))
         self.eng.add_edge_unchecked(self._actor(actor), "fetched", self._store)
         return True
-
-    def lock(self, actor): self.eng.set_attr(self._actors[actor], "lock_armed", 1.0); self._run()
-    def unlock(self, actor): self.eng.set_attr(self._actors[actor], "unlock_armed", 1.0); self._run()
 
     def contents(self, container, kind):
         inners = self._containers[container][1]
@@ -6142,8 +6318,7 @@ class BigvilleWorld:
 
                                         # container-op state
                                         "fill_armed": 0.0, "fill_amount": 0.0, "fill_kind": "",
-                                        "empty_armed": 0.0, "empty_amount": 0.0, "empty_kind": "",
-                                        "lock_armed": 0.0, "unlock_armed": 0.0})
+                                        "empty_armed": 0.0, "empty_amount": 0.0, "empty_kind": ""})
         self.eng.add_edge_unchecked(self._town, "has_actor", a)
         self._actors[name] = a
         self._alive_snapshot[name] = True
@@ -6595,6 +6770,9 @@ class BigvilleWorld:
         return illness
 
     def treat(self, doctor, patient, *, medicine=0.0):
+        if medicine and not self._store_open(doctor):
+            self._refuse("store_locked")
+            return False
         if medicine and self.qty("medicine") < medicine:
             return False
         if medicine:
@@ -6618,7 +6796,9 @@ class BigvilleWorld:
         if (attrs.get("health") == "healthy" and float(attrs.get("injury", 0.0)) <= 0.0
                 and float(attrs.get("hunger", 0.0)) < float(self.E.CARE["care_hunger_need"])):
             return self._refuse("not_needed")
-        medicine = 1.0 if self.qty("medicine") >= 1.0 and attrs.get("disease") else 0.0
+        # Medicine comes from the town store; a caregiver with no access gives ordinary care instead.
+        medicine = (1.0 if self._store_open(caregiver) and self.qty("medicine") >= 1.0 and attrs.get("disease")
+                    else 0.0)
         if medicine:
             return self.treat(caregiver, patient, medicine=medicine)
         care = self.E.CARE
@@ -6884,6 +7064,9 @@ class BigvilleWorld:
         return source
 
     def process_waste(self, operator, kind="kitchen_scraps", amount=1.0):
+        if not self._store_open(operator):
+            self._refuse("store_locked")
+            return False
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(operator, "process_waste"):
             return False
         return self.add_waste(kind, amount)
@@ -7056,7 +7239,7 @@ class BigvilleWorld:
         # task relevance belongs to the actor's cognition, and stock remains
         # in the store until a selected fetch succeeds.
         market_cell = self.map_position_node(self._store)
-        if market_cell is not None:
+        if market_cell is not None and self._store_open(actor):
             market_move_added = False
             for kind in self._item_specs:
                 if self.qty(kind) < 1.0 or not self._inventory_can_receive(actor, kind):
@@ -7085,7 +7268,7 @@ class BigvilleWorld:
         # A tradesperson who has made or is collecting a good must physically
         # fetch it from the mapped store before carrying it to other people.
         market_cell = self.map_position_node(self._store)
-        if market_cell is not None:
+        if market_cell is not None and self._store_open(actor):
             for trade, shop_node in self._shops.items():
                 output = self.eng.node(shop_node)["attrs"].get("output_kind", "")
                 if output not in self._item_specs or self.qty(output) < 1.0:
@@ -7125,6 +7308,22 @@ class BigvilleWorld:
                     options.append({"action": "move", "kind": "", "trade": "", "recipe": "",
                                     "target": key, "score": 0.0})
                 break
+        # Phase 030: lock and unlock are published only where they are physically possible: a key this resident
+        # holds that fits the lock, with the resident at the lock's cell (or the lock has no cell). An unlock is
+        # not offered again to a keyholder who has already turned a key in a lock that needs several.
+        for name in ["store"] + list(self._containers):
+            node, place = self._lockable(name)
+            lock_attrs = self.eng.node(node)["attrs"]
+            if float(lock_attrs.get("lock_id", 0.0)) <= 0.0 or not self._holds_key(actor, float(lock_attrs["lock_id"])):
+                continue
+            cell = self.map_position_node(place)
+            if cell is not None and self.actor_position(actor) != cell:
+                continue
+            locked = float(lock_attrs.get("locked", 0.0)) == 1.0
+            if locked and self._actor(actor) in self.eng.neighbours(node, "authorised_by"):
+                continue
+            options.append({"action": "unlock" if locked else "lock", "kind": "", "trade": "", "recipe": "",
+                            "target": target_key(name), "score": 0.0})
         # Work coordinates describe an authored goal rather than a physical
         # property of the destination. Do not publish them as a special route.
         if self._actors:
@@ -7453,6 +7652,10 @@ class BigvilleWorld:
             return self.major_action(actor, "move_object",
                                      object_id=plan.get("object_id", plan.get("item")),
                                      destination=plan.get("destination", plan.get("target")))
+        if action in {"lock", "unlock"}:
+            target = target_of()
+            if target is not None:
+                return self.major_action(actor, action, container=target)
         if action == "put":
             target = target_of()
             if target is not None:
@@ -8233,6 +8436,15 @@ class BigvilleWorld:
             return self._claimed_attempt(
                 actor, action, lambda: attempt(actor, obligation),
                 consumed=lambda: float(self._obligation_attrs(obligation)["arrears"]) > arrears_before)
+        if action in ("lock", "unlock"):
+            # Phase 030: the named container, or the town store ("store"), from the cell it stands on.
+            name = self._as_key(kwargs.get("container", kwargs.get("target", args[0] if args else None)))
+            if name is None:
+                return self._refuse("malformed")
+            if name != "store" and name not in self._containers:
+                return self._refuse("unknown_target")
+            operation = self.lock if action == "lock" else self.unlock
+            return self._claimed_attempt(actor, action, lambda: operation(actor, name))
         if action == "complete_request":
             request = kwargs.get("request", args[0] if args else None)
             if isinstance(request, str):
@@ -8769,6 +8981,9 @@ class BigvilleWorld:
     def dye_garment(self, dyer, garment, dye_kind):
         """A dyer dyes a garment a colour from a dye pile -- the RULE (cl_dye) takes the colour from the
         dye's data and consumes one dye. The adapter only arms the garment against the dye Stock."""
+        if not self._store_open(dyer):
+            self._refuse("store_locked")
+            return None
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(dyer, "dye"):
             return None
         dye = self.set_stock(dye_kind, self.qty(dye_kind))

@@ -215,7 +215,7 @@ def test_a_locked_safe_needs_the_key():
     assert w.contents("safe", "coin") == 0.0, "no key -> the locked safe stays shut"
     w.give_key("Clerk", opens=7.0); w.fill("Clerk", "safe", "coin", 30)
     assert w.contents("safe", "coin") == 30.0 and w.qty("coin") == 0.0, "the keyholder opens and fills it"
-    w.unlock("Clerk"); w.empty("Tom", "safe", "coin", 10)
+    w.unlock("Clerk", "safe"); w.empty("Tom", "safe", "coin", 10)
     assert w.contents("safe", "coin") == 20.0 and w.qty("coin") == 10.0, "unlocked, anyone can take from it"
 
 

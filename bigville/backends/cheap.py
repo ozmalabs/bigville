@@ -189,6 +189,16 @@ class DeterministicBackend:
             rest = next((o for o in context.affordances if o.get("action") == "rest"), None)
             if rest is not None:
                 options = [rest]
+        # Phase 030: a resident who holds the key to a locked container or the town store, and stands at it,
+        # unlocks it. The world publishes an unlock only when the key fits and the resident is at the lock, so
+        # this is the cheap resident's whole lock policy. Food and sleep still come first.
+        unlock = next((o for o in options if o.get("action") == "unlock"), None)
+        if unlock is not None and sleep_reason is None and not fed_first:
+            self.last_choice = {**dict(unlock), "goal": self.current_goal.kind if self.current_goal else "observe",
+                                "time_band": self.time_band, "reason": "unlock_with_key"}
+            params = {k: value for k, value in unlock.items() if k not in {"action", "score", "legal", "reason"}}
+            return ActorResponse(major_action=ProposedAction("unlock", params, "cheap_psi_can"),
+                                 utterances=self._speech(context))
         # PSI/CAN weights the already-admissible options.  The durable goal
         # state remains useful as a modest task salience bonus, but it never
         # bypasses world legality.
