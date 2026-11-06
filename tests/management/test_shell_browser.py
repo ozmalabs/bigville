@@ -22,6 +22,28 @@ def browser_server(monkeypatch):
         ],
     }
     monkeypatch.setattr(http, "build_capability_catalog", lambda: catalog)
+    # The Backends page now renders the dedicated profile catalog. Keep the
+    # unavailable integration deterministic without relying on whether Ocelot
+    # happens to be installed in the developer's environment.
+    class ProfileRegistryFixture:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def public_profiles(self):
+            return {
+                "schema_version": 1,
+                "revision": "test-profile-revision",
+                "profiles": [
+                    {"id": "simple.default", "name": "Simple default",
+                     "kind": "simple", "revision": "builtin-1",
+                     "available": True, "reason": None},
+                    {"id": "ocelot.default", "name": "Ocelot default",
+                     "kind": "ocelot", "revision": "builtin-1",
+                     "available": False, "reason": "Install the Ocelot adapter."},
+                ],
+            }
+
+    monkeypatch.setattr(http, "BackendProfileRegistry", ProfileRegistryFixture)
     server = create_server(port=0)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
