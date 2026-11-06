@@ -26,6 +26,76 @@ Every phase shares these acceptance conditions, in addition to its own:
 Status values: **ready**, **blocked** (needs a decision or an earlier phase),
 **done** (with commit).
 
+## Tracts: how the remaining work is split between two runners
+
+**Decision 2026-11-05 (user).** Two runners work this plan in parallel. Tract A is the runner that
+has been committing phases 020 to 030 in order. Tract B is the runner that scoped Programmes C and D
+and built Phase 031. The split is by what a phase writes, because 21 of the 29 remaining phases write
+`worlds/bigville_world.py` and 22 write `domains/bigville_entities.py`, and two runners cannot both
+live in one file. The tract assignments below govern scheduling. The dependencies stated in each
+brief still hold, and the "Order" paragraphs in Programmes C and D are superseded by this section.
+
+**Tract A: the world's physics** (owns `worlds/bigville_world.py` and the world tables). In run order:
+030 (in flight), 037, 050, 043, 048, 034, 038, 049, 047, 035, 036, 032, 033, 040, 039, 041.
+It starts with the two phases that unblock the most work: 037 unblocks six phases and has a chain
+of five below it, and 050 and 048 follow from it.
+
+**Tract B: agents, interface and life** (owns `bigville/backends/`, the agent view, the server,
+the TUI, providers and the lexicon). In run order: 051, 058, 052, 059, 054, 057, 055, 056, 053, 042,
+044, 045, 046. It starts with 051, which unblocks four phases and has a chain of five below it.
+042 (day and night) sits here because it feeds fog, sight and the lexicon. 044 to 046 (births,
+dependants, ageing of the body) sit here because they need `add_resident`, a dependent backend, the
+persona (Phase 058) and the age curve that 045 and 046 share.
+
+**Hand-offs between tracts** (the only places one tract waits for the other):
+- B's 044 waits for A's 037 and 043. B's 046 waits for A's 032. By the time B reaches them, A is
+  well past them; if not, B takes the next phase in its list.
+- Nothing in A waits for B.
+- B's 056 reports improvised attempts and accidents, which come from A's 048. It can start without
+  them and adds those metrics when 048 lands.
+- Phase 052's leak test lists the engine's hidden values (fitness, demand, `rho`). It adds the names
+  from 048 and 050 once they exist.
+- Phase 051's `VERB_ALIASES` and `INTENSITY_WORDS` name things A's Phase 050 defines (`VERBS`,
+  `intensity`). Whichever of 050 and 051 lands second adds the test that every alias resolves.
+- A's 048 and 047 add one key each (`tool`, `joint`) to the proposal shape in
+  `bigville/backends/protocol.py`, a B file. Additive only.
+
+**Shared files**, edited by both tracts, so keep each edit small and additive, re-read the file
+before editing it, and commit promptly: `domains/bigville_entities.py` (22 remaining phases),
+`domains/world_affordances.py` (18), `bigville/backends/cheap.py` (15), `bigville/game.py` (13),
+`bigville/reporting.py` (11), and the `pack.json` manifests. In particular, B's Phases 058 and 059
+restructure `cheap.py` (`_update_goals`, `_time_band`, and a would-be-choice method). Until 059 is
+committed, A adds new behaviour to `cheap.py` as separate methods and hooks and does not edit those
+three. After 059, A rebases and reads the routine, not the hour bands.
+
+**Working practice.**
+1. **One tree per tract.** Both runners currently share one checkout, so the index mixes their work
+   and each runner's test run sees the other's half-finished edits. Give each tract its own git
+   worktree and branch (`git worktree add ../bigville-tract-b -b tract-b`), run the full suite in
+   its own tree, and merge into `main` by rebase at phase boundaries. Commit or park any unrelated
+   uncommitted work first, so a worktree starts clean.
+2. **One phase, one commit,** by explicit pathspec. Never `git add -A` or `git commit -a`. Use
+   `git add -p` for a shared file that has someone else's hunks in it.
+3. **This file.** A tract edits only its own phases' briefs, statuses and History rows, re-reading
+   before it writes. A change to the other tract's brief is a note to that tract, not an edit.
+4. **Sync points,** when both tracts pause to merge: (1) 037 and 051 committed, (2) 050 and 059,
+   (3) 043 and 054.
+
+**Work that belongs to neither tract.** A third stream of uncommitted work is in the tree: the
+Ocelot integration and persistence (`bigville/game_persistence.py`, `bigville/world_persistence.py`,
+`bigville/mixed_ocelot_scenario.py`, the `runtime.py` and `backends/ocelot.py` edits, the
+`resident_plan_from_context` method in `worlds/bigville_world.py`, the `record_action_outcome` lines
+in `bigville/game.py`, their tests and two docs). Its owner commits it or parks it on a branch before
+worktrees are made. Until then, staging `worlds/bigville_world.py` or `bigville/game.py` as a whole
+would sweep its hunks into a phase commit, which is why rule 2 requires `git add -p` for those two.
+
+| Tract | Phases |
+|---|---|
+| A, world physics | 030, 037, 050, 043, 048, 034, 038, 049, 047, 035, 036, 032, 033, 040, 039, 041 |
+| B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, 056, 053, 042, 044, 045, 046 |
+| Neither | Ocelot integration and persistence (uncommitted) |
+| Superseded | 003 (done with 016b), 013 and 016 (split into 013a and 013b, 016a and 016b) |
+
 ## Baseline (start of this plan)
 
 Commit `a59bc53` on `main`: 315 tests pass; self-test clean. Already in place:
@@ -722,6 +792,18 @@ set them were not kept), so each brief says which numbers come from the seed and
 (APPROX). A feature with no seed at all is marked NEW DESIGN, built behind a switch that
 defaults off, so the user can accept or reject it.
 
+**Stupidity is valid (user, 2026-11-05).** The world does not stop inhabitants from doing dumb
+things. It provides consequences. A refusal means the act cannot happen at all: nothing to act
+with or on, out of reach, the actor unconscious or dead, or a malformed proposal. A lock refuses only the
+ordinary opening: forcing it is an attempt, resolved by the core of Phase 050, so a locked door
+is a barrier with a strength, not a wall.
+Everything else, however unwise, is permitted and charged for: time, effort, hunger, wear and
+breakage, wasted inputs, bad results, injury. The consequences must be observable to the actor
+(progress, strain, damage, outcome), never announced beforehand, and a resident who has started
+something doomed needs a way to stop of their own accord. Whether the idea was dumb is the
+resident's lesson to draw, not the world's ruling. Phases 048 and 049 apply this to tools and to
+the gates that already exist; the briefs below were amended to follow it.
+
 Source: the 2026-11-05 grounding audit of `worlds/bigville_world.py` and `bigville/game.py`,
 and a survey of `seeds/` (184 files; the sections below cite the ones that matter).
 Findings this programme acts on:
@@ -758,9 +840,10 @@ Findings this programme acts on:
   authority and dual-key safes (`bigville_container`, `bigville_coin_safe`); custody
   (`bigville_jail`); day, night and lamps (`bigville_daynight`); screening, treatment and
   well-baby care (`bigville_doctor_care`, `bigville_infant_care`); rearing
-  (`bigville_life_rearing`). In the port, injury cannot kill and nothing dies of age. Not
-  seeded, so NEW DESIGN behind switches: weapons, illness onset, conception and birth,
-  and body growth. The world has `birth()` and nothing calls it.
+  (`bigville_life_rearing`). In the port, injury cannot kill and nothing dies of age. Striking
+  with a held tool is seeded (`bigville_tools` `tl_strike`). Not seeded, so NEW DESIGN behind
+  switches: throwing, illness onset, conception and birth, body growth, detraining and ageing of
+  stats, and joint actions beyond the dual-key lock. The world has `birth()` and nothing calls it.
 - Drunkenness was designed and never ported. `seeds/bigville_nutrition.json` (block R41) adds a
   drink's `alcohol` to the eater's `intoxication`, multiplies it by `sober_rate` each epoch,
   and raises mood and lowers focus with it. The pack has `ale`, `cider`, `mead` and `beer` as
@@ -803,11 +886,12 @@ saves and restores `_rng_state`); `complete_request` claims the action slot.
 **Order (proposed, for supervisor confirmation).** 020, 021, 025, 026, 037 are independent of
 Programme B and of 012. 022 and 023 follow 012 (both touch job completion and practice
 logging). 024 follows 021 and 022. 032 follows 022. 027 can run any time; 035 follows 027 and
-034. 034 follows 024 and 027. 036 follows 034 and 037. 029 follows 021, 024 and 025; 033 and
+034. 034 follows 024 and 027. 036 follows 034 and 037. 050 follows 037 and goes first of the rest. 029 follows 021, 024, 025 and 050; 033 and
 038 follow 029 (038 also 037). 030 follows 021 and is better after 029 (keys become takeable);
-039 follows 030. 028 can run any time. 031 follows 018 and 021. 040 follows 029, 034 and 038. 041 follows 030 and should land before 011, which needs coin
+039 follows 030. 028 can run any time. 031 follows 018 and 021. 040 follows 029, 034, 038 and 048. 048 follows 037 and 050; 049 follows 048 and 050. 041 follows 030 and should land before 011, which needs coin
 containers for its treasury and church purses. 042 follows 024 and 028. 043 follows 037;
-044 follows 009, 037 and 043; 045 follows 044. Phase 006 (household work
+044 follows 009, 037 and 043; 045 follows 044. 046 follows 032 and 045. 047 follows 020, 025 and 029, and uses 030's dual-key
+lock as its seeded case. Phase 006 (household work
 choice) should read the stamina reserve and exhaustion state once 022 and 024 land. Every phase
 here changes behaviour the preregistered village evaluation measured, so changed replay digests
 and numbers are listed in the report, and the preregistered documents themselves are not edited.
@@ -815,7 +899,8 @@ and numbers are listed in the report, and the preregistered documents themselves
 Decisions recorded 2026-11-05 (user): exhaustion slows you until you fall down (024);
 contested actions resolve in an interrupt style, where the other party gets a reaction turn
 depending on situation, skill, size and ability (029); the town store uses a lock and key (030); drunkenness and nutrition are restored, and the
-features set aside as out of scope are added, ported from their seeds (034-039).
+features set aside as out of scope are added, ported from their seeds (034-039); stupidity is valid, so the world refuses only what cannot
+happen and charges for everything else (048, 049).
 
 ## Phase 020 -- Validate before claiming the action slot; refuse malformed proposals
 
@@ -1126,7 +1211,13 @@ residents' institutions and stay with them. The seed takes unconditionally; the 
 reaction rules below are the grounded refinement the user decided on.
 
 **Goal.** Give residents the physical means to take what another holds, with the holder able
-to respond. The world attaches no ownership, crime or law to any of it.
+to respond. The world attaches no ownership, crime or law to any of it. A contest is Phase 050's
+resolution core with the opposing side as the demand. The terms every attempt shares (`base_cost`,
+`technique_weight`, `min_efficiency`, `trivial_below`, `slot_above`, force and technique) live in
+the core's `RESOLUTION` table, and `CONTEST` keeps only `grip`, `redirect_gap`, `overextend` and
+the reaction rules. A side chooses its intensity (Phase 050, default normal), which multiplies the
+force it applies: `resist` is at the chosen level, `brace` is a firm hold at low cost, and `yield`
+is none.
 1. **Pack table `CONTEST`.** For each contested action kind: the traits each side contributes
    (strength, size, relevant skill, stamina reserve, health, life stage, exhaustion factor), the
    margin bands for outcomes, the effort rule in item 5 (`base_cost`, `grip`, `technique_weight`, `min_efficiency`, `trivial_below`, `slot_above`,
@@ -1134,8 +1225,8 @@ to respond. The world attaches no ownership, crime or law to any of it.
    its effective strength scaled by size and the exhaustion step factor (Phase 024's 1, 2/3, 1/3, 0); skill enters
    separately, as item 5 describes.
 2. **Size and skill.** If the pack has no body size, add a `size` trait to the drawn person
-   capacities. The skills list has none for physical contest, so add one, `unarmed`
-   (kind general, `learning: physical` per Phase 012, with the cluster and closeness entries the
+   capacities. The skills list has none for physical contest, so add one, `fighting` (hitting,
+   grappling, throwing, with or without something in the hand; kind general, `learning: physical` per Phase 012, with the cluster and closeness entries the
    self-test requires). Its working level comes from `effective_skill` like any other skill.
    Most residents hold a low level; seed more where it plausibly belongs (the policing job) and
    leave authored scenario residents free to hold any level (a retired martial artist). Contests
@@ -1160,7 +1251,7 @@ to respond. The world attaches no ownership, crime or law to any of it.
    silently biasing results); the Ocelot and LLM adapters follow separately.
 5. **Resolution and effort.** Skill and force both count, in two separate places.
    - *Who prevails.* Each side's score is its force times a technique multiplier from its
-     `unarmed` level: `force x (1 + technique_weight x skill)`. A skilled, light resident can
+     `fighting` level: `force x (1 + technique_weight x skill)`. A skilled, light resident can
      beat a stronger clumsy one; between equally unskilled residents the stronger wins. A holder
      who does not react still holds with a passive grip (`grip` x its force).
    - *What it costs.* A side pays for the load the opponent puts on it, as a share of its own
@@ -1189,11 +1280,11 @@ to respond. The world attaches no ownership, crime or law to any of it.
 
 **Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, `bigville/backends/protocol.py`
 (optional `react`), `bigville/backends/cheap.py` (a deterministic reaction policy),
-`bigville/backends/human.py`, the pack (`CONTEST`, body size, the `unarmed` skill in the skills,
+`bigville/backends/human.py`, the pack (`CONTEST`, body size, the `fighting` skill in the skills,
 clusters and closeness files), `domains/bigville_entities.py` (self-test), a new `tests/test_phase029_contest.py`.
 
 **Acceptance.** Tests show: between equally unskilled residents a strong rested one takes a
-stack from a weak one and not the reverse; a light resident with high `unarmed` resists a
+stack from a weak one and not the reverse; a light resident with high `fighting` resists a
 heavier unskilled one, prevails, pays little, and the attacker is `redirected` and pays more
 (the numbers are chosen so these hold and listed in the report); the same load costs an
 unskilled defender the full share; an alert target gets a reaction and an unaware or collapsed one does not; `yield`
@@ -1205,7 +1296,7 @@ reach observes it and one out of reach does not; a backend without `react` is re
 deterministic; with no one in reach or no stock, `take` is refused with a reason.
 
 **Out of scope.** Restraint (Phase 033); strikes and injury (Phase 038, which reuses the rule above); intoxication (Phase 034 supplies it
-through effective skill and body state); several people acting together; the Ocelot and LLM `react` adapters.
+through effective skill and body state); several people acting together (Phase 047); the Ocelot and LLM `react` adapters.
 
 ## Phase 030 -- The town store has a lock and key
 
@@ -1247,12 +1338,17 @@ the key; the same for each guarded path; locking and unlocking by a key holder; 
 to another resident opens the store for them; an unlocked store and the 100-resident town
 behave as before; the existing container-lock tests pass.
 
-**Out of scope.** Copying keys and picking locks (not seeded); who may hold the key (residents
+**Out of scope.** Copying keys; picking and forcing locks (Phase 050: a lock has a strength, and forcing it is an attempt); who may hold the key (residents
 decide); coin kept in a safe (Phase 041); locked doors (Phase 039).
 
 ## Phase 031 -- Register and harden the LLM backend
 
-**Status:** blocked on 018 (prompts from the pack) and 021 (last outcome in the turn packet).
+**Status:** ready (018 and 021 are done). Stage 1 of the LLM build in Programme D; 054 (prompt packet
+and schema from the agent view), 055 (operations) and 056 (evaluation) follow it. Decided
+2026-11-05: on a provider error, or an invalid reply after the repair, the resident falls back to
+the simple backend (Phase 059) in place of an idle turn, so it keeps its routine; a model's
+`waiting: true` stops being accepted, since it would stall every resident; retry and backoff
+belong to Phase 055.
 
 **Goal.** Follow `AGENT_BACKENDS_PLAN.md` section 3: register the `"llm"` kind in
 `create_game` through a provider factory (no vendor SDK in core), validate provider output
@@ -1266,7 +1362,7 @@ them in the report beside Phase 021's refusals.
 `tests/test_phase031_llm_backend.py` using a fake provider.
 
 **Acceptance.** Tests show: `create_game(default_backend="llm", backend_factories=...)` builds
-LLM residents; invalid JSON then valid JSON succeeds on the repair; repeated invalid output
+LLM residents (a live OpenCode Go call is an opt-in test, never in the default suite); invalid JSON then valid JSON succeeds on the repair; repeated invalid output
 yields an idle turn and a counted failure; the world never sees an exception.
 
 **Out of scope.** Concrete vendor providers (optional extras per the backends plan).
@@ -1294,7 +1390,7 @@ toward the ceiling; an actor with low health has lower effective strength and st
 resident trained over a season can attempt a recipe that was above them at the start; with the
 switch off nothing changes.
 
-**Out of scope.** Detraining; ageing of stats (a later phase).
+**Out of scope.** Detraining and ageing of stats (Phase 046).
 
 ## Phase 033 -- Restraint
 
@@ -1317,8 +1413,8 @@ within reach see it. No arrest, crime or custody concept exists in the world.
 away; the holder tires and the hold fails on collapse; the target frees itself by winning a
 struggle; release lets the target leave; restraining someone out of reach is refused.
 
-**Out of scope.** Doors and confinement (Phase 039); blocking open paths and several people
-acting together (not seeded).
+**Out of scope.** Doors and confinement (Phase 039); blocking open paths (not seeded); several
+people acting together (Phase 047).
 
 ## Phase 034 -- Intoxication
 
@@ -1512,15 +1608,20 @@ lowers the victim's health by `amount`, lowers the aggressor's stamina by `cost`
 the aggressor's stamina being at least `attack_cost`. The decision to commit it
 (`snap_pressure + w_spite x spite_gain + hunger x desperation_gain` against a threshold) is
 the resident's. Evidence, prosecution and sentencing (`bigville_viol_evidence`,
-`bigville_viol_prosecute`) are the residents' institutions.
+`bigville_viol_prosecute`) are the residents' institutions. `seeds/bigville_tools.json`
+`tl_strike` is the held-object form of the same harm (use X on a person: harm = the tool's strike
+fitness, the striker spends effort, gated on holding); Phase 040 supplies the fitness.
 
 **Goal.** Add a `strike` major action by an actor on a resident within reach, reusing Phase 029's
 force, technique, efficiency, reaction turn and `redirected` rules:
 1. The harm `amount` and the attacker's `cost` come from the contest, so a strong skilled
    attacker does more harm, an unprepared target takes it in full, a braced or skilled one takes
    less, and a skilled defender can redirect it. A drunk, tired or collapsed attacker is worse
-   (Phases 034, 024). The attacker needs at least `attack_cost` stamina; otherwise the strike is
-   refused with that reason.
+   (Phases 034, 024). A strike can be tried at any stamina. Below `attack_cost` the blow is weak
+   and the effort drives the reserve to 0, so the attacker may collapse mid-blow (Phase 024).
+   The seed gates the decision (`bv_trigger`), which is the backend's; the world does not. The
+   blow's `intensity` (Phase 050, default 1.0) scales the harm and the attacker's cost, and a pulled
+   blow barely harms.
 2. A landed strike calls Phase 037's `harm(victim, amount, "violence")`, and a death by it is
    recorded as violence. A redirected strike leaves the attacker off balance and may harm it
    (`redirect_harm`, a table field, default small).
@@ -1533,7 +1634,7 @@ force, technique, efficiency, reaction turn and `redirected` rules:
 `bigville/backends/cheap.py` (react and the optional trigger), a new `tests/test_phase038_strikes.py`.
 
 **Acceptance.** Tests show: a strike lowers the victim's health and the attacker's stamina; a
-strike below `attack_cost` is refused; a skilled defender redirects an unskilled drunk attacker,
+strike below `attack_cost` lands weakly and leaves the attacker collapsed; a skilled defender redirects an unskilled drunk attacker,
 who pays more and may be hurt; a lethal strike kills with cause `violence`; a witness in sight
 observes it and one out of sight does not; replay is deterministic.
 
@@ -1568,45 +1669,79 @@ key lets them, a resident outside cannot enter without it, a dual-key door needs
 and an unlocked building behaves as before.
 
 **Out of scope.** Jail records, sentences, bell-driven serving and release (the institution);
-windows, digging and escape; night sight and lamps (Phase 042).
+windows; forcing, digging and escaping are attempts (Phase 050); night sight and lamps (Phase 042).
 
-## Phase 040 -- Weapons
+## Phase 040 -- Objects as arms: hitting and throwing
 
-**Status:** ready, after 029, 034 and 038 (decision 2026-11-05: weapons are added). NEW DESIGN:
-no seed defines a weapon. The word "armed" in `bigville_theft` `th_take` and elsewhere is a rule's
-trigger flag (`*_armed`), not a weapon. The existing tools (`knife`, `axe`, `hammer`, `pick`,
-`scythe`) carry a `verb` (cut, chop, strike, mine, reap), so they are already the natural
-improvised weapons. Behind a `weapons` switch, default off.
+**Status:** ready, after 029, 034, 038 and 048 (decision 2026-11-05: weapons are arbitrary; they are
+just things you use to hit people with or throw at them). Spec: `seeds/bigville_tools.json` v2.0.0
+(block R43), which I missed when I first wrote "no seed". A tool is an effectiveness multiplier
+physically held in hand, with its fitness as data, `tool -fit_for-> Fitness{verb, mult, effort}`.
+Bare hands attempt anything but bear almost nothing at large cost (mult about 0.05, effort about
+3). `tl_strike`: use X on a person, harm = `fit.mult`, the victim loses health and the striker
+spends effort, gated on holding and never on owning ("a thief can wield the inn's knife"). A knife
+is dual-use: one item with prep and strike rows, the verb selecting. Throwing has no seed and is
+NEW DESIGN. (The word "armed" in `bigville_theft` `th_take` is a rule's trigger flag, not a
+weapon.) Behind an `object_force` switch, default off.
 
-**Goal.**
-1. **Data.** An optional `weapon` row on an item: `force` (added to the wielder's force),
-   `harm` (multiplier on strike harm), `reach` (1 or 2 cells), `skill`, `wear_per_use`. A
-   pack table `IMPROVISED` gives the tools above a weaker row (poor fit, high wear). Add a few
-   purpose-made items with woodworker or smith recipes (a cudgel, a quarterstaff, a spear; cite
-   or mark APPROX), and a physical skill `arms` (kind general, learning physical, clustered with
-   `unarmed`), with the cluster and closeness entries the self-test needs.
-2. **Wielding.** A weapon counts only when held in hand (`holds_in_hand`). One in a pack does not.
-3. **Effect.** In contests (Phase 029) the wielder's force rises by `force` and the technique
-   uses `arms`; in strikes (Phase 038) harm is multiplied by `harm`. Reach lets a wielder
-   open a contest from 2 cells, so the target's reaction window is shorter. A weapon wears with
-   use and breaks at 0 (the tool-wear path, `bigville_tool_wear`).
-4. **Disarming.** A `redirected` outcome (Phase 029) with a large skill gap drops the
-   attacker's weapon on the cell, and `take` from a hand is an ordinary contest.
-5. Wielded weapons are visible to residents with sight, as held tools already are. New items
-   need sprites (regenerate assets). Owning or carrying a weapon is not an offence: law is the
-   residents'.
+**Goal.** There is no weapon class, no weapon list and no weapon skill. Any object a resident
+can hold in hand (a discrete item, or one unit of a bulk good they carry) can be swung or thrown,
+and what it does comes from physical data it already has: `weight` (185 of the 247 items have
+it; the rest take their class default), `material` (79 have it), `verb` (an edge or point is
+implied by cut, chop, reap, pierce, cleave, saw, mine), and `condition`. A stone, an iron hammer,
+a firewood log, a spade, a mug and a loaf are all arms; they differ only in what they weigh and
+are made of. The skill is Phase 029's `fighting`.
+1. **Table `OBJECT_FORCE` (pack).** Reuse Phase 048's `TOOL_FIT` for hardness, edge, weight and
+   breakage, and add here only the harm curve, `unwieldy_above` and range. Hardness by material (stone and metal over wood over leather,
+   cloth, paper, wax and food; unknown is soft); a harm multiplier for edge and point verbs; a
+   weight-to-harm curve with diminishing returns; `unwieldy_above`, the weight (relative to the
+   user's strength) beyond which a swing or throw is clumsy; breakage by material (a mug or a
+   pot shatters, a log does not); range as a function of strength and weight. Mark every number
+   APPROX; add no item. Where an item has an authored `strike` fitness row (the seed's
+   `Fitness{verb, mult, effort}`; one item may carry several rows, as the knife's prep and strike
+   rows do) that row wins, and this table only fills in objects with none. Bare hands are the
+   seed's row: mult about 0.05, effort about 3.
+2. **Hitting.** The `strike` action (Phase 038) takes an optional `with`: an object held in hand.
+   Harm is the object's strike fitness (`tl_strike`: harm = `fit.mult`; derived from weight x
+   hardness x edge when no row exists), scaled by the contest outcome and cut down when the
+   object is too heavy for the user. Use is gated on holding, never on owning. The attacker's stamina share (Phase 029's effort rule)
+   rises with the object's weight against the user's strength, so a heavy tool tires a weak
+   swinger. The object wears through the existing tool-wear path, or breaks if the table says
+   so. A held object in a pack does not count.
+3. **Throwing.** A new `throw` major action sends a held object to a target cell or resident
+   as far as its `range` carries it; heavier goes shorter, and a target beyond range is simply
+   out of reach of the throw, so it lands short. An obstacle on the line stops the flight there
+   (Phase 028's occluders). The world never refuses a throw. A throw is Phase 050's `displace` of a
+   held object, with `damage` on whatever it hits. Intensity sets how hard it is thrown: range and
+   harm rise with it and accuracy falls.
+   Against a resident it is a contest (Phase 029): the thrower's `fighting` skill, falling with
+   distance and with intoxication or exhaustion through effective skill, against the target's
+   evasion, with a reaction turn and an `evade` option if the target is eligible. A hit does the
+   object's harm, reduced by distance. Anything else lands on the target cell, or on a neighbouring
+   cell on a miss, and can be picked up. Breakable objects break. The object is conserved (it is
+   moved, or destroyed by breaking, never minted). Throwing is not only violent: with no target it
+   is moving an object across a gap, and the world reports no intent either way.
+4. **Taking and disarming.** `take` from a hand is Phase 029's contest. A `redirected` outcome
+   with a large skill gap drops the attacker's held object on the cell.
+5. **Observation.** What a resident holds is visible to those with sight, as held tools already
+   are, and a swing or throw is a physical event (who, what, where it landed). The world
+   records no assault, no threat and no offence; carrying or throwing a thing is not one.
 
-**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py`,
-`domains/shared_frames.py` (skill), `domains/bigville_entities.py` (self-test), the pack (items,
-recipes, skills), assets (regenerated only), `bigville/backends/cheap.py` (use a held weapon in
-contests and strikes; no other policy), a new `tests/test_phase040_weapons.py`.
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py` (the event only),
+`domains/world_affordances.py` (table), `domains/bigville_entities.py` (self-test),
+`bigville/backends/cheap.py` (strike or throw only if its policy already chose violence), a new
+`tests/test_phase040_objects_as_arms.py`.
 
-**Acceptance.** Tests show: a held cudgel adds force and one in a pack does not; a knife strike
-harms more than an unarmed one; the weapon wears and breaks; a skilled unarmed defender
-disarms an unskilled attacker; a spear opens a contest from 2 cells; with the switch off nothing
-changes; the asset manifest test passes after regeneration.
+**Acceptance.** Tests show: a thrown stone or iron hammer harms more than a thrown loaf at the
+same range, and harm falls with distance; a heavy tool is clumsy and costly in a weak user's
+hands and effective in a strong one's; range falls with weight; a miss lands on a neighbouring
+cell and the object can be picked up again; a mug thrown at a wall breaks; a throw out of range lands
+short and one with no clear line stops at the obstacle, and neither is refused; a skilled defender evades or disarms an
+unskilled thrower; the object count is conserved or reduced only by breakage; with the switch off
+nothing changes.
 
-**Out of scope.** Armour; ranged weapons; trade in weapons (residents).
+**Out of scope.** Bows, slings and anything built to shoot (they are designed items, not "just
+things"); armour; blocking with a held object; a trade in arms (residents).
 
 ## Phase 041 -- Physical coin and safes
 
@@ -1666,7 +1801,10 @@ sun, moon, cloud or lamp, and the town square has no lamp fixtures.
    task in `LABOUR_TASKS`).
 4. **Consequences.** Sight range for witnessing (Phase 028, and `bigville_time_concern`, which
    notes sight is "short at night") shortens in the dark. Outdoor work (field work, gathering,
-   outdoor building) is refused in the dark (reason `too_dark`), the seed's hook.
+   outdoor building) is allowed in the dark and goes badly: progress slows by a visibility
+   factor on Phase 048's fitness path, mistakes waste inputs, and strain and injury risk rise.
+   The seed's hook says you cannot work what you cannot see; here that is a consequence, not a
+   refusal.
 5. **Lateness.** Phase 024's `lateness` read-off now derives from the real sunset.
 6. **Extensions (not in the seed, flagged).** A lit carried light (a `candle`, which exists, or a
    new `lantern`) lets its holder see and burns fuel or wax. Travel in the dark is slowed by a
@@ -1681,7 +1819,7 @@ light and douse actions only if the resident is the lamplighter), a new
 **Acceptance.** Tests show: daylight is longer in summer than winter at the pack's latitude;
 a clear full-moon night is bright enough to see and a new-moon or overcast one is not; an
 outdoor resident sees in the dark beside a lit lamp and not beside an unlit one; lamps burn oil and
-go out when it runs out; field work is refused in the dark with the reason shown and allowed at
+go out when it runs out; field work in the dark is slow, wasteful and risky and goes normally at
 dawn; witnessing range shortens at night; the balance report includes lamp oil.
 
 **Out of scope.** Moon phase effects other than light; astronomy beyond the formulae; bells and
@@ -1729,8 +1867,9 @@ epidemic spread between residents (a later phase).
 **Status:** ready, after 009, 037 and 043 (decision 2026-11-05: births are added). NEW DESIGN:
 no seed covers conception, pregnancy or birth. `birth()` exists on the world and nothing calls
 it. Seeded neighbours: `bigville_life_inheritance` (death passes the estate), `bigville_will`,
-`bigville_infant_care` (infant fragility). Behind a `births` switch, default off, so a scenario
-can keep a fixed population.
+`bigville_infant_care` (infant fragility). Behind a `births` switch so a scenario can keep a fixed population: off for fixtures and, once
+the long-run growth-band check passes, on for the bigville pack, because a town that never
+renews cannot sustain itself over a long horizon (user decision 2026-11-05: births are added).
 
 **Goal.**
 1. **Fertility.** A pack table gives age-specific marital fecundability for a pre-industrial
@@ -1803,6 +1942,872 @@ tends its infant in the simple village without help.
 
 **Out of scope.** Schooling and apprenticeship (existing relations, Phase 012); the Mind-side
 rearing priors (the backend's); carrying infants.
+
+## Phase 046 -- Detraining and ageing of the body
+
+**Status:** ready, after 032 and 045 (decision 2026-11-05: added). NEW DESIGN, no seed: the Body
+seeds only train. `bd_train_strength` and `bd_train_stamina` raise the trained component toward
+base x (1 + `TRAIN_HEADROOM`) at `TRAIN_RATE` per effort, and nothing takes it away, so without
+this every resident who ever worked ratchets up for life. Behind a `detraining` switch, default
+off.
+
+**Goal.**
+1. **Detraining.** Each Body records the period of its last strength effort and last stamina
+   effort (the `Effort` nodes Phase 032 uses). After `detrain_after` periods without that kind of
+   effort the trained component falls by `detrain_rate` of itself each period, toward 0 and never
+   below the base. A pack table `DETRAIN` gives the grace and the rate for each stat. Strength is
+   lost more slowly than it was gained and stamina faster, as the detraining literature has it;
+   cite sports-science reviews or mark APPROX.
+2. **Ageing of the base.** One curve over age in a pack table `BODY_AGE`. Phase 045's growth is
+   its rising half. This adds the falling half: the base holds through `peak_until`, then declines
+   by `decline_per_year` toward a `floor`, with its own rates for strength and stamina. The
+   trained ceiling rides on the current base.
+3. **Illness, injury, confinement.** Health already scales effective stats. Someone confined,
+   bedridden or collapsed has no effort and so detrains by the same rule, with no special case.
+4. **Report.** Strength and stamina by age band and the share of trained residents; a self-test
+   check that a working town's mean effective strength stays within a plausible band over a
+   long run.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (tables),
+`domains/bigville_entities.py` (self-test), the pack, `bigville/reporting.py`, a new
+`tests/test_phase046_detraining.py`.
+
+**Acceptance.** Tests show: a smith who stops forging loses trained strength once the grace has
+passed and never falls below the base; one who keeps working keeps it; stamina and strength decay
+at their own rates; an elder's base falls past `peak_until` and a young adult's does not; with the
+switch off nothing changes; the run is deterministic.
+
+**Out of scope.** Forgetting of skills (the practice subsystem has none, and it is neither seeded
+nor requested); disease-specific wasting.
+
+## Phase 047 -- Joint actions: people acting together
+
+**Status:** ready, after 020, 025 and 029 (decision 2026-11-05: added). The seeded case is
+`seeds/bigville_coin_safe.json` `cs_present` and `cs_open_threshold`: N distinct people present
+at once authorise a lock, which Phase 030 already carries. The general mechanism is NEW DESIGN,
+behind a `joint_actions` switch, default off. Cooperation in sequence already works and needs
+nothing here: two trades making a head and a handle (`bigville_craft`), or several residents
+adding labour to one building over turns.
+
+**Goal.** Let several residents do one thing at once, where one cannot.
+1. **Rendezvous, not command.** The world publishes joint options in `actor_affordances`:
+   `{"action": "joint", "task": <key>, "needs": N, "present": k, "max": M}`, where `present`
+   counts the other eligible residents at the site who can take part now (a physical read-off).
+   Each participant proposes the same task key in the same turn. Nobody leads. Who agrees to
+   what is the residents' own business, by speech or by reading `present`.
+2. **Resolution.** `BigvilleGame` groups the turn's responses that carry a `joint` key (in Phase
+   025's order) and calls a new `world.enact_joint(task, participants)`, which resolves the whole
+   group and claims every member's slot together. With fewer than `needs` participants the
+   attempt is still made and fails physically: the load does not move, a crew job crawls at a
+   `crew_penalty`, and each participant spends effort and takes strain against the load (Phase
+   048) as they would for any too-heavy task. `joined k of N` is what they observe, not a
+   refusal. Only a member who cannot act at all (asleep, collapsed, out of reach) is left out.
+3. **Combined effect** (the core's `team` term, Phase 050). Team capability is the sum of the members' contributions times a
+   `coordination(n)` factor (diminishing in n, raised by skill at the task). Load and stamina are
+   split by contribution, each member paying Phase 029's share of its own force.
+4. **Task kinds** (pack table `JOINT_TASKS`, each with its trigger):
+   - *Heavy lift and carry.* Moving an object heavier than one member's capacity (today's
+     `will_drop` case). Carriers share it, and pace follows combined capacity against load. If a
+     member collapses or leaves reach, the load drops.
+   - *Crewed recipes.* A `crew` field `{min, max}` on a recipe, authored for a few (a pit saw for
+     `saw_planks`, wagon-making, raising a barn; cite or mark APPROX). A job needs `min` workers
+     at the site, and its progress per tick is their summed labour times `coordination`, up to
+     `max`.
+   - *Gangs.* Simultaneous building labour and field work finish sooner (table).
+   - *Group contests.* In Phase 029, several attackers combine into one force against a target,
+     who reacts once to the combined action; several defenders can guard a holder; group
+     restraint (Phase 033) shares the hold's load.
+   - *Dual-key authorisation* (Phase 030), listed so it shares the same reading.
+5. **Backends.** The simple backend takes a published joint option when its role or job covers
+   the task and `present` meets `needs`, which is deterministic. Ocelot and LLM residents see the
+   option and read `present`.
+6. **Observation.** A joint task is a physical event seen by everyone with sight of the site.
+
+**Write scope.** `worlds/bigville_world.py`, `bigville/game.py`, `bigville/backends/protocol.py`
+(a `joint` key in the proposal's params only), `domains/world_affordances.py` and the pack
+(`JOINT_TASKS`, recipe `crew`), `domains/bigville_entities.py` (self-test), `bigville/backends/cheap.py`,
+a new `tests/test_phase047_joint_actions.py`.
+
+**Acceptance.** Tests show: two residents carry an object one cannot, and one alone strains,
+spends effort and may be hurt, with the object unmoved; a lone worker on a crewed saw starts but
+crawls, and the job finishes faster with two than one, and with three by less than another full worker's worth; three
+children take a stack from a smith where one cannot, and each pays a share that follows its
+force; a member collapsing mid-carry drops the load; the outcome does not depend on the order the
+responses are listed; simple residents coordinate from `present` alone; with the switch off nothing
+changes. The executor first lists which pack items exceed one person's capacity, so the carry cases
+are real.
+
+**Out of scope.** Leadership, orders and wages for a crew (residents' institutions); standing
+teams and guilds (records); animals yoked to carts (draught exists as `pull`; a later phase);
+vehicles.
+
+## Phase 048 -- Tools by fitness: use X with Y, and the wrong tool in a pinch
+
+**Status:** ready, after 037 (injury goes through `harm`) and 050 (decision 2026-11-05: tool use is rigid
+and should be graded; the world does not stop inhabitants from doing dumb things, it provides
+consequences). Spec: `seeds/bigville_tools.json` v2.0.0 (a tool is an effectiveness multiplier,
+held, with its fitness as data `Fitness{verb, mult, effort}`; bare hands attempt anything at mult
+about 0.05 and effort about 3; `tl_prep` makes a knife a multiplier on quality; use is gated on
+holding, never on owning), `bigville_craft` (an unfitted part has an improvised fitness of 0.2),
+`bigville_tool_wear` (condition falls by the wear rate each use and fitness scales with it). The
+seed's `tl_gather` says a wrong tool does not fire; that is superseded by the decision above.
+
+**Today.** A recipe names tool kinds, and `_worker_tool` and `_held_tool` look for an unbroken
+item of exactly that `kind`, so a recipe either has its tool or is refused. `ToolFit.mult`
+(base_mult x quality x condition) is computed and updated, and then read by nothing but an
+accessor and tests, so a fine hammer and a battered one forge a plough alike.
+
+**Goal.** The right tool gives default effectiveness. Any other object, or none, gives what it
+physically gives, and the world charges for the difference. Fitness is the `fit` term of Phase
+050's core, and `TOOL_FIT` is the tool-facing part of its `VERBS` and `MATERIALS` tables
+(closeness, hardness, edge). This phase wires tools in and adds only the authored per-item rows,
+the `tool` parameter, the workplace shelf, wear and `stop`.
+1. **Fitness per verb.** A tool slot has a verb (from the named tool kind's `verb`). An item may
+   carry authored rows `{verb, mult, effort}` (a knife has cut and strike rows). Its fitness for
+   a verb is its authored row if it has one. Otherwise it is derived, in a pack table
+   `TOOL_FIT`: verb closeness (same verb 1.0; near pairs such as chop, cleave and hew, or strike,
+   pound and drive, or dig and scoop, or cut, saw and pierce; else 0, in the manner of
+   `SKILL_CLOSENESS`) times physical suitability (the tool's hardness against the work's, an
+   edge or point for cutting verbs, a weight band for striking and digging). Fitness is then
+   scaled by quality and condition, so the existing `ToolFit` finally matters. Bare hands are the
+   seed's row, floor 0.05 and effort 3. A hardness mismatch (cutting iron with wood) gives 0:
+   the attempt is allowed and makes no progress.
+2. **Any object, or none.** A work or gathering proposal may carry `tool`, a held item, or none
+   for bare hands. Omitted, the right kind is used if held or on the workplace shelf, else bare
+   hands. The world never refuses for want of a tool.
+3. **Consequences by fitness f.**
+   - Progress per tick is f, so duration scales by 1/f.
+   - Stamina and hunger cost scale by 1/f up to the seed's effort cap (Phase 022's path).
+   - Yield and quality fall with f; below `waste_below`, a job that completes consumes its inputs
+     for little or nothing.
+   - Tool wear per tick rises as f falls and with hardness mismatch, and the tool breaks at 0.
+   - Strain accumulates each tick by effort share x (1 - f), and at a threshold the worker is
+     hurt through `harm(actor, amount, "accident")`, then strain resets. It is deterministic.
+4. **Observed, not announced.** The world does not publish f beforehand. The resident sees the
+   tool's weight, material and condition, and observes progress per tick, strain, damage and
+   injury as they happen, and learns from them.
+5. **`stop`.** A new free action abandons a timed job. Inputs are taken at completion, so only the
+   progress is lost, and `busy` clears. A resident has to be able to quit a hopeless attempt, and
+   the world never decides it is hopeless.
+6. **Reuse.** Phase 040's strike and throw use the same table and the same `strike` row, and bare
+   hands are the same floor.
+7. **Simple backend.** It uses the right tool when it has it, as now. A parameter `improvise`
+   (default off) lets it reach for the held item with the best fitness it could judge from visible
+   properties when the right tool is missing.
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (`TOOL_FIT`),
+`domains/bigville_entities.py` (self-test: every verb in a recipe's tool slot has a closeness
+row), the pack (verb rows on a few items), `bigville/game.py` (`tool` in the proposal),
+`bigville/backends/cheap.py`, `bigville/reporting.py` (counts of improvised work and accidents),
+a new `tests/test_phase048_tool_fitness.py`.
+
+**Acceptance.** Tests show: the right tool at quality 1.0 and full condition does today's job in
+today's time (the default); a poor or worn hammer is slower than a fine one; a cleaver is faster
+than bare hands and slower than a knife for knife work; a wooden spoon on iron makes no progress,
+wears, snaps, and the worker is hurt after enough strain; no tool at all is allowed and takes
+about 1/0.05 of the time at triple effort; `stop` ends a hopeless job; the simple backend's
+default is unchanged. The existing tests that assert a refusal for a missing or broken tool (Phase
+001's hammer test among them) change to assert the consequence, and the report lists each.
+
+**Out of scope.** Place-bound equipment (oven, press, loom, mash tun, dye vat), a second slice;
+using one item with another in general (lashing, wedging, propping), which needs a physical
+property system; learning which tool suits (the resident's); the skill, season and strength
+gates (Phase 049).
+
+## Phase 049 -- Consequences instead of gates
+
+**Status:** ready, after 048 and 050 (decision 2026-11-05: stupidity is valid). Phases 020 to 028 are
+committed, so this phase converts what they left as refusals, one gate at a time.
+
+**Goal.** Find every refusal in the world that stops a possible act, and turn it into a
+consequence. Keep only the refusals for acts that cannot happen. The report lists each gate with
+the test changes it caused, and stops to ask if a conversion needs a design decision.
+Convert:
+1. **Skill floor** (`_skilled_enough`, `MIN_SKILL`). Attempting below the floor is allowed.
+   Quality and yield fall and the chance of a ruined batch rises with the gap; a failed batch
+   wastes its inputs and time; heavy trades can injure.
+2. **Season** (`_recipe_in_season`, `sow`). Gathering out of season yields what the season gives,
+   often nothing, for the time spent. Sowing out of season plants the seed and the crop fails
+   to the season's weather, so the seed is lost and the loss is seen later.
+3. **Strength requirement** on open recipes. Allowed. Effort scales by requirement over strength,
+   progress slows, and strain and injury risk rise (Phase 048's path).
+4. **Busy** (Phase 023's `busy` refusal). Starting a second job is allowed. Progress per tick is
+   divided among the worker's open jobs at the site, and `stop` ends any of them.
+5. **Serving equipment** in `eat` (soup without a bowl, drink without a mug). Allowed, with a
+   share of the meal spilled or wasted.
+6. **Watertight containers** for fluids in `put`. Allowed; a leaky vessel loses fluid each
+   period.
+7. **Over-capacity** in `give`, `transfer`, `fetch` and `put`. Allowed; a recipient or carrier
+   over capacity drops the excess (the carry model already does) and is slowed while overloaded,
+   and a full container spills onto its cell.
+8. **Pointless acts** that the world refuses today: `rest` at a reserve of 0.8 or more, caring for
+   someone healthy, watering an unthirsty crop. Allowed; they cost the time and, for the crop,
+   the water.
+9. **Too tired to walk** (Phase 024's `too_tired`). Below `e_low` a resident can still walk, at
+   the slowest rate, until the reserve falls below `e_collapse` and they fall down. The seed's
+   zero-move budget stops movement before the collapse; the decision was "slower until you fall
+   down", so the stop goes. Record it.
+10. **Harvesting a crop that is not mature** (`not_ready`). Allowed: the yield is the maturity
+   fraction of the full yield, and the crop is gone. Burying with no open grave stays refused,
+   because the act cannot happen.
+11. **Tending an animal again too soon** (`on_cooldown`). Allowed: it yields nothing and costs the
+   time.
+12. **Reason codes.** `unskilled`, `out_of_season`, `busy`, `no_tool`, `no_capacity`,
+   `too_tired`, `on_cooldown`, the harvest case of `not_ready`, and any other code for a
+   converted gate are retired from `REFUSAL_REASONS`, and what happens is observable instead.
+   The codes for acts that cannot happen stay (`not_known` means no such recipe exists,
+   `not_in_reach`, `not_at_site`, `out_of_stock`, `not_held`, `container_locked`, `asleep`,
+   `collapsed`, `unsupported`, `malformed`, the target codes).
+
+**Write scope.** `worlds/bigville_world.py`, `domains/world_affordances.py` (consequence
+tables), `domains/bigville_entities.py` (self-test), the pack, `bigville/backends/cheap.py`
+and `psi_can.py` (they may still prefer to avoid these, as choices), tests that assert the old
+refusals (each change listed), a new `tests/test_phase049_consequences.py`.
+
+**Acceptance.** Tests show, for each gate above, that the attempt is accepted, that the
+consequence appears and is observable to the actor and not announced, that the old refusal code
+no longer fires, and that a refusal for an impossible act (no stock, out of reach, locked,
+asleep) still does. The simple village's behaviour is unchanged, because its backends already
+avoid these acts, and the report says so with numbers.
+
+**Out of scope.** Refusals for impossible acts; the conversion of future phases' refusals (they
+were written to follow the principle).
+
+## Phase 050 -- The resolution core: one rule for every attempt
+
+**Status:** ready, after 037 (injury goes through `harm`) and before 029, 047, 048 and 049
+(decision 2026-11-05: the engine is becoming a deterministic tabletop game without a referee, and
+arbitrary actions should be allowed). A referee's most-used tool is one general rule: how capable,
+against how hard, and how it goes wrong. The plan had grown that rule several times with different
+formulas (Phase 022's effort, Phase 029's contest, 048's fitness, 049's skill gaps, 038 and 040's
+blows and throws, 047's teams). This phase defines it once. Phases 020 to 028 are committed: the
+core adopts their formulas as its terms, and changes a committed number only where this brief says
+so.
+
+**Goal.** A pure resolution function plus pack tables, and a generic `attempt` action so that
+arbitrary actions are allowed.
+1. **Capability against demand.** An attempt has a capability C and a demand D.
+   - *Capability terms (each a pack-set factor):* `force` (effective strength x size x the
+     exhaustion step of Phase 024), `technique` (the effective skill at the verb's skill, which
+     already carries intoxication and limitations), `fit` (the tool's fitness for the verb, Phase
+     048), `team` (Phase 047's coordination), and `conditions` (darkness, weather, load).
+   - *Demand terms:* a recipe's `difficulty` (all 166 recipes carry one, 0.2 to 3.5), an
+     object's mass, a material's toughness, a lock's strength, or an opposing side's applied force
+     and technique (Phase 029).
+   - The ratio rho = C / D. A pack table `RESOLUTION` maps it, deterministically, to every
+     output below. The reference point is fixed so that a worker meeting a recipe's `MIN_SKILL`
+     and strength requirement, with the right tool, has rho = 1, and the committed numbers do not
+     move there (see 5).
+2. **Outputs of one resolution step (per tick, or per instant action):**
+   - *progress rate* = min(`cap_rate`, rho^a), so 1 at the reference and 0 at no capability. For
+     recipes `cap_rate` is 1, so no one works faster than today;
+   - *cost* = `base_cost` x clamp(D / C, floor, `effort_cap`) x `efficiency(technique)`, through
+     Phase 022's stamina and hunger path. It is paid in full at the reference and rises toward the
+     seed's cap (about 3) as capability falls. For recipes `floor` is 1, so a strong worker pays
+     today's cost (Phase 022 is unchanged); for contests `floor` is 0, so a strong side pays
+     little, capped at the whole of one's own force (Phase 029);
+   - *quality* and *yield* curves in rho; below `ruin_below` a completed job spoils its inputs;
+   - *strain* per tick = cost share x (1 - min(1, rho)), accumulating deterministically until it
+     tips into `harm(actor, amount, "accident")` and resets;
+   - *wear* on each tool and on the target, rising as `fit` falls and with hardness mismatch;
+   - *noise*, a loudness set by force and material, published as a physical event heard within
+     Phase 028's radius (breaking things is loud);
+   - a trivial result (below `trivial_below`) is free in stamina, and below `slot_above` leaves
+     the major action unspent, as Phase 029 set out.
+   There is no randomness: the same state gives the same result.
+3. **Effect primitives, a closed and mechanical set.** `displace` (push, pull, lift, drag, carry,
+   throw; demand is mass over friction and terrain; the result is a position change by the
+   surplus force), `damage` (hit, smash, chop, cut, pierce, saw; demand is the target's
+   toughness; the result lowers its `condition`, destroying it at 0 and leaving pieces by a
+   byproduct table, and on a person goes through `harm`), `open` (unlock, force, pry, pick; demand
+   is the lock's `strength`; the result unlocks, or breaks the lock or the door), and `transform`
+   (a recipe, whose result is the existing job). Anything else is a new primitive in a later
+   phase, never an ad hoc rule.
+4. **The `attempt` action.** `{"action": "attempt", "verb": <name>, "target": <id or cell>,
+   "with": <held item or none>, "intensity": <number, default 1.0>}`. The verb comes from a pack table `VERBS`: its effect primitive,
+   the skill it uses, its closeness to the tool verbs, and its default time and effort. Any verb x
+   any target x any tool is allowed, and the core resolves it. An action the world already has
+   (`move`, `eat`, `sow`) still routes to its own primitive. A verb not in `VERBS` is `unsupported`,
+   the one refusal for "the world has no physics for that". Backends map their intent to a verb;
+   the world never parses free text.
+5. **Adoption of the committed phases.** The pure function lives in `worlds/resolution.py`
+   with no world state. The committed formulas become terms: Phase 022's effort and hunger scaling,
+   Phase 023's job occupancy, Phase 024's exhaustion step, and the carry model's speed. The report
+   gives golden numbers before and after for the existing recipe, movement and exhaustion cases,
+   and every difference with the reason.
+6. **Tables.** `VERBS`; `MATERIALS` (hardness, toughness, fragility, edge, a default for each item
+   class, covering every item with a `material`); `RESOLUTION` (the exponents, caps, curves and
+   thresholds); a `lock_strength` on lock kinds. Mark every number APPROX. The self-test checks
+   that each verb has a skill and a tool closeness, each material is complete, and the
+   `RESOLUTION` curves are monotone.
+7. **Observed, not announced.** An attempt publishes progress, strain, damage and noise as they
+   happen, never rho or the demand beforehand (Phase 048's rule).
+8. **Locks are barriers with a strength.** `container_locked` still refuses the ordinary opening
+   without a key. `attempt` `open`, `smash` or `pry` on the lock or the container resolves through
+   the core: the lock or container takes damage, it opens or breaks if the attempt completes, and
+   it is loud. A frail resident with a spoon makes no progress and breaks the spoon.
+9. **Intensity (conviction).** (decision 2026-11-05: actions can be done at any level of force.
+   An agent may try to cut metal with wood, fail, and then try harder.) Every `attempt`, recipe
+   job, gathering action, blow and throw takes an optional `intensity` i, default 1.0, the normal
+   level for that action (the reference point of item 1). Below 1 is gentle or careful, above 1 is
+   forcing it. The shape is the seed's `eff_loudness = clamp(chosen, max)` in `bigville_loud_comm`:
+   the world clamps the chosen value to `max_intensity` and reports the applied value. The ceiling
+   is a rested adult's limit, lowered by the exhaustion step (Phase 024), low health and a low
+   reserve. The world never refuses a level, and a clamp is shown to the actor.
+   - *Force-type primitives* (`displace`, `damage`, `open`, a blow, a throw, a grip). The `force`
+     term of C is multiplied by i, so progress, damage dealt and distance rise with it.
+   - *Cost.* Stamina and hunger scale with i^`k` (k above 1, so twice the push costs more than
+     twice), and fall below normal when gentle.
+   - *Overexertion.* Above `i_safe` the body takes strain whether or not the attempt works,
+     `max(0, i - i_safe)^m`, so forcing it can pull a muscle even when it succeeds. A reserve driven
+     to 0 collapses the actor (Phase 024).
+   - *Wear and noise.* Tools, the target and the room's sound rise with i. A gentle tap is quiet.
+   - *Recipes (`transform`).* i is pace. Above 1 the job is faster, up to `haste_cap`, at a cost in
+     quality that moves the batch toward `ruin_below`, where it spoils (deterministic, no dice). Below 1 it is slower and better, up to
+     `care_cap`.
+   - *Hopeless attempts.* Harder multiplies the capability. At zero fitness (wood against iron)
+     it changes nothing but how fast the tool snaps and how much the worker strains. At low,
+     non-zero fitness it gets there at a price.
+   - *Persistence.* Damage to a lock, chest or wall stays on its `condition`, so "fail, then try
+     harder" continues from where the first go left off. A half-worn lock is easier the second time.
+   - *Changing mid-job.* A new free action `set_intensity` changes a running timed job's level
+     without losing its progress. (Phase 048's `stop` does lose it.)
+   - *Pulling a blow.* A blow at low i barely harms, which allows play-fighting and
+     de-escalation.
+   - *Backends.* Default 1.0. The simple backend gets an optional `escalate` policy, default off:
+     after a set number of ticks with no observed progress it raises i by a step, up to the
+     clamp. LLM and Ocelot residents choose freely.
+   `RESOLUTION` gains `max_intensity`, `i_safe`, `k`, `m`, `haste_cap`, `care_cap` and
+   `haste_penalty`.
+
+**Write scope.** new `worlds/resolution.py`, `worlds/bigville_world.py`, `bigville/game.py` and
+`bigville/backends/protocol.py` (the `attempt` proposal), `domains/world_affordances.py` (tables),
+`domains/bigville_entities.py` (self-test), the pack (`VERBS`, `MATERIALS`, `RESOLUTION`, lock
+strengths), `bigville/backends/prompts.py` (the verb list in the action vocabulary),
+`bigville/reporting.py` (attempts by verb and outcome), new `tests/test_phase050_resolution.py`
+and `tests/test_resolution_pure.py`.
+
+**Acceptance.** Tests show: the pure function is monotone (more force, technique or fit never
+lowers progress or raises cost share or strain); at the reference point the recipe, movement and
+exhaustion results equal today's, and the existing suite passes with every changed number listed;
+`smash` a wooden chest with a hammer damages it each tick, breaks it at 0 condition and spills its
+contents, loudly enough to be heard within the radius; forcing a locked container with no key
+succeeds for a strong resident with a heavy tool and makes no progress, and breaks the tool, for a
+frail one with a spoon; `push` moves a cart by the surplus force; an unknown verb is
+`unsupported`; an impossible attempt (target out of reach, nothing held) is still refused;
+a recipe at intensity 1.0 equals today's, at 1.5 a pit-saw job finishes sooner with lower quality
+and more stamina spent, and at 0.5 slower and better; smashing a chest at intensity 2 deals more
+damage per tick than at 1, costs more than twice the stamina, and is louder; intensity above
+`i_safe` accumulates strain even on success; an intensity above `max_intensity` is clamped and the
+applied value reported, and a low reserve lowers the clamp; wood against iron at intensity 3
+changes nothing but breaks the spoon sooner; a second attempt on a half-damaged lock opens it
+sooner than the first; `set_intensity` changes a running job without losing progress; a blow at
+low intensity barely harms; the simple backend's default is 1.0 and `escalate` raises it only
+after the set span without progress; two
+different backends proposing the same attempt get the same result; no RNG is drawn.
+
+**Out of scope.** Further effect primitives (bind and lash, climb, swim, burn), each its own phase;
+free-text intent (the backend's); a verb for every item; magic and chemistry; the existing gates
+of Phase 049, which become core terms there.
+
+# Programme D: seeing and being seen -- words, the agent view, fog, the LLM and a TUI
+
+**Decision 2026-11-05 (user).** A resident, whether human, LLM or a terminal player, gets only
+what its character could perceive and know, in the words a person would use, not the engine's
+numbers. The same payload feeds the character sheet, the LLM prompt and a terminal interface.
+The map is fogged in three levels of detail.
+
+**Survey of the backends and their inputs** (read 2026-11-05; the observation payload below was
+printed for a resident of the 100-resident town at turn 0):
+- *Simple and psi_can* read raw numbers (energy thresholds such as 35.0, hunger floats). That is
+  fine for deterministic locals and stays.
+- *LLMBackend* is an 86-line shell: no provider is registered or concrete, bad output raises out
+  of `decide`, and the prompt is built from raw observations. *OcelotBackend* hands the context to
+  the adapter's `resident_plan_from_context`. *HumanBackend* queues responses and, for contests,
+  reactions.
+- The observation payload is about 15,000 characters a turn before the private part, and it
+  carries the engine's internals as well as the world: raw floats (`energy` 100.0, `hunger` 0.0,
+  item `condition` 1.0, `score` 0.0); internal multipliers (`speed_factor`, `exhaustion_step`,
+  `terrain_*`) and a full `terrain_movement` table of every terrain's speed and stamina cost;
+  `nearby_residents` with each resident's `role`, `klass` ("poor") and `group` ("low"), exact
+  position, `tie_strength` and `band_code` (8,068 characters at turn 0); and `world_frames`
+  (5,160 characters of laws and policies, whose filtering to what the resident holds needs
+  checking).
+- Affordances name exact `destination` cells for places the resident may not know (a cow at
+  [36, 29], the bakery). That breaches Phase 019's "never the map".
+- `/api/state` returns the whole world (every resident's hunger, energy, coin, inventory and
+  position) and the Phaser client draws from it, so a human player sees everything. No limited
+  view exists.
+- Phase 019 derives place knowledge at three precisions (exact, rough, none) with landmarks, and
+  nothing updates it after founding. The seed `bigville_move_nav` already designs a per-agent map
+  belief in which "unknown = absence".
+- *Continuity today.* A sampled founding resident (a councillor) holds 16 raw personality numbers
+  with no words, and several of them are Ocelot engine parameters (`w_supergraph`, `cred_on`,
+  `resolution_bins`, `emotional_core_enabled`, `carried_weight`) mixed in with real traits (charm,
+  hostility, spite, mood bias, the world-safety, trust and self-worth priors). It holds 238 memories,
+  all derived knowledge, and no biography. The world holds no relationship records at all (0 of 100
+  residents hold any), although every resident has genealogy edges (Phase 009) and 77 share a
+  household with someone, so the material to seed ties from exists and is unused. The simple backend's "routine" is
+  four hour bands written into `cheap.py` (before 9 morning, before 17 workday, before 21 evening,
+  else night) plus job-based preferences, and its only momentum is a continuation for walking to a
+  destination. A model dropped into this has no self, no day and no one to know, and a provider
+  error today costs it its turn.
+
+**Development access for the LLM backend (recorded 2026-11-05).** The repository's `.env`
+(gitignored, never in history) holds `OPENCODE_GO_API_KEY`, an OpenCode Go key the user supplied
+for testing and developing the LLM backend. Never print it, log it, commit it, or put it in a
+transcript, test output or error message. Checked against https://opencode.ai/docs/go/ on this date,
+with one tiny call:
+- Endpoint: `POST https://opencode.ai/inference/go/openai/v1/chat/completions`, `Authorization:
+  Bearer <key>`, OpenAI chat-completions body. The docs say every text model also works through
+  this endpoint, though some models' native API is Responses or Anthropic Messages. The model list
+  is `GET https://opencode.ai/inference/go/v1/models` (30 models at the time). The call returned
+  `ok` from `glm-5.3-flash` in 1.6 seconds.
+- Headers the service asks for: a `User-Agent` that names the client (not a generic library name),
+  and a stable `x-opencode-session` per conversation, for routing and prompt caching.
+- `max_tokens` includes the model's reasoning tokens (11 of the 14 completion tokens in the test),
+  so a JSON reply needs a generous limit or the answer is cut.
+- Each response reports `usage.opencode.allowance` and `list_cost`, which the provider should read
+  to keep a running spend.
+- Limits are monthly dollar amounts per model (5-hour 20 percent, weekly 50 percent). The cheapest
+  suitable development model is `glm-5.3-flash` ($0.15 in and $0.50 out per million tokens, not
+  trained on, 0-day retention).
+- **Intended use.** The service is "designed for OpenCode and other coding agents" and monitors for
+  abuse. A town of LLM residents is not coding-agent traffic. Light development and testing is
+  reasonable. Do not run hundreds of calls a turn against it, keep concurrency small, set a
+  spend cap, and treat anything larger as needing a different provider or the user's decision.
+- **Privacy.** Avoid the models marked as trained on prompts (the "Contributor" models and "Iceman
+  Contributor Free"). Never default to one.
+- **Scale (user, 2026-11-05).** LLM residents are not meant to run a large town for now. They are
+  for comparison, testing, and for someone with a bigger budget. Nothing here targets a hundred
+  model residents on a small plan; the concurrency and spend limits above are the design, not a
+  stopgap.
+
+**Order.** 051 first. 052 follows 051. 053 follows 052 (Phase 028's `sight_range` is done).
+058 follows 051 (and uses Phases 009 and 019, which are done); 059 follows 031 and 058;
+054 follows 031, 051, 052, 058 and 059; 055 and 056 follow 054 and 059 (056 also uses the
+counters from 021 and 048). 057 follows 051 and 052, and shows a local patch of the map until 053 lands.
+
+## Phase 051 -- Words for numbers and statuses
+
+**Status:** ready (decision 2026-11-05: the translations of numbers and statuses belong in the
+entity data, so the character sheet and the LLM share them).
+
+**Goal.** A pack lexicon, with one function to read it, so no consumer invents its own words.
+1. **Bands.** For each quantity a resident can perceive, an ordered table of thresholds, each
+   with a label and a phrase, in two perspectives. *Self* is how you feel ("famished", "worn
+   out", "strong for your age", "competent at smithing"). *Other* is only what an observer could
+   see ("looks gaunt", "visibly drunk", "limping", "looks strong"). Quantities: hunger, energy
+   and stamina reserve, health value and the status strings (`healthy`, `injured`,
+   `malnourished`, a disease), strength, stamina, mood, intoxication, deficiency, strain, item
+   condition and quality, load and carry ratio, chill and soaked, skill level (and trade
+   competence), the time of day (`hour`), season, weather, light, distance (a short walk, out past
+   the mill), durations, quantities (a few, a handful, a cartload), life stage and age,
+   relationship strength and kind, personality traits (temperament, trust, spite, charm, outlook),
+   the blocks of a usual day, and finery as seen on another.
+2. **Reverse words.** `INTENSITY_WORDS` (gently, carefully, normally, hard, with all your
+   strength, mapped to Phase 050's intensity), `AMOUNT_WORDS`, and `VERB_ALIASES` (smash, break,
+   bash, batter all to the verb `smash`), so proposals may use the words a person would. Numbers
+   stay accepted.
+3. **API.** `domains/lexicon.py`: `describe(quantity, value, perspective)` returns
+   `{label, phrase}`; `value_for(quantity, label)` returns a representative number. Lookup by
+   thresholds is monotone and total.
+4. **Pack-swappable.** Words belong to the pack, so a different world has different words. The
+   self-test checks that thresholds cover the range of each quantity with no gaps or overlaps, that
+   labels are unique within a quantity, and that every quantity in the observation payload that a
+   resident can perceive has a table.
+
+**Write scope.** `domains/lexicon.py` (new), `domains/world_affordances.py` and the pack (new
+`lexicon.json` tables), `domains/bigville_entities.py` (self-test), a new
+`tests/test_phase051_lexicon.py`.
+
+**Acceptance.** Tests show: every band table is monotone, complete and unambiguous; each label
+maps to a number that falls back into the same band; `describe` never returns a raw number;
+perspectives differ (hunger is felt by self and only seen as gauntness by others, and a
+hidden quantity such as another's strength gets no `other` phrase unless it is visible); a
+different pack gives different words; the reverse words resolve ("hard" to the pack's intensity
+value, "smash" and "bash" to one verb).
+
+**Out of scope.** Other languages; self-assessment bias (a resident misjudging their own skill);
+residents learning vocabulary.
+
+## Phase 052 -- The agent view: the one limited interface
+
+**Status:** ready, after 051 (decision 2026-11-05: a limited user interface that only gets the
+data available to the agent).
+
+**Goal.** One payload that is everything an agent may know, built by whitelist, used by the LLM
+prompt, the character sheet, the TUI and any other player client.
+1. **`BigvilleGame.agent_view(actor, mode="agent")`** returns:
+   - `self`: the character sheet. Identity, job and trade, life stage; the body in words; skills in
+     words; what is carried, worn and held; what the character knows (understood and aware-of,
+     with gist and without the basis) and which places, with the precision held; kin and
+     relationships in words; recent memories and notes.
+   - `now`: the time of day, weather and light, in words.
+   - `around`: the residents and things the character can perceive. A resident the character
+     knows (from Phase 019's knowledge) appears by name, a stranger as a description. Only the
+     `other`-perspective words are used, so nobody's `klass`, `group`, hidden stats or coin
+     appear. Events seen and heard (Phase 028) and any sound.
+   - `map`: Phase 053's fogged map, and until then a patch of cells within `sight_range`.
+   - `can`: the affordances restated as handle, action, target description and tool, with no
+     `score`, no multipliers and no coordinates for places the character does not know.
+   - `last`: the last outcome with its reason's meaning (Phase 021), and any strain, damage or
+     progress observed.
+2. **Whitelist and leak test.** The builder copies named fields only. A test fails if the view
+   contains a key outside the whitelist, a raw number for any lexicon quantity, or a
+   referee-only field (`score`, `speed_factor`, `exhaustion_step`, the `terrain_movement` table,
+   another resident's `klass`, `group` or stats, an unknown place's coordinates, Phase 048's
+   fitness or Phase 050's demand and `rho`). The executor records what `world_frames` carried and
+   filters it to what the resident holds.
+3. **Modes.** `agent` is words only. `referee` adds the numbers and the true state, for
+   debugging and tests. The simple backends keep their raw `ActorContext` unchanged.
+4. **Server.** `GET /api/view?actor=NAME` returns the agent view (the player by default).
+   `/api/turn` returns the view in place of the snapshot. A server started in agent mode, which
+   is the default for a human player, answers `/api/state` with 403, and `--referee` restores the
+   omniscient state for the Phaser client and tests.
+
+**Write scope.** `bigville/game.py` (`agent_view`), `bigville/backends/protocol.py` (the view on
+`ActorContext`), `bigville/server.py`, `domains/world_affordances.py` and the pack (the
+whitelist), `domains/bigville_entities.py` (self-test), a new `tests/test_phase052_agent_view.py`.
+
+**Acceptance.** Tests show: the leak test passes for a founding resident and after a run; two
+residents standing together get different views (their own sheet, what each knows); a stranger is
+a description and a known resident a name; the view is deterministic for a given state; `/api/view`
+returns it and `/api/state` is refused in agent mode; the full existing suite passes with the
+simple backends unchanged.
+
+**Out of scope.** The Phaser client in agent mode, which needs the fogged map first (a later
+phase); the LLM prompt (Phase 054).
+
+## Phase 053 -- Fog of map: three levels of detail
+
+**Status:** ready, after 052 (decision 2026-11-05: three levels; hidden, vaguely structural, and
+full). Spec: `seeds/bigville_move_nav.json` (a persistent per-agent map belief, "unknown =
+absence") and Phase 019's place knowledge (exact, rough, none, with landmarks).
+
+**Goal.** Each fogged character holds a map memory at three levels, by area and by cell:
+- **0, hidden.** Nothing is known, not even that it exists.
+- **1, vague.** The structure: area names, landmarks, named buildings and roughly where (a word
+  from the lexicon, "a short walk north, past the mill"), and the roads as paths between them. No
+  cell detail, no terrain, no occupants.
+- **2, full.** Cell-level terrain, objects, and what was seen there.
+1. **Data.** Map areas from the pack (`FOUNDING_MAP`, `FOUNDING_PLACE_LABELS`,
+   `FOUNDING_ANCHOR_ALIASES`) give the level-1 vocabulary. A `MapMemory` per character (cell to
+   level, `last_seen`, last seen terrain and occupants) lives in the character's held state, so it
+   is backend-owned memory and is checkpointed.
+2. **Initial map.** Derived from Phase 019: a place held as exact is level 2 around it, a rough one
+   level 1 for its area, none stays 0; the home and the job's routine routes are level 2; public
+   landmarks (the market, the well, the church) are level 1 for everyone.
+3. **Learning.** Each turn, every cell within `sight_range` (Phase 028; shorter at night after
+   Phase 042) becomes level 2 and is stamped. A landmark visible from beyond that range becomes
+   level 1. A `place_belief` memory update (told by someone, or read) raises a place to level 1, or
+   to level 2 if it carries a position. Nothing lowers a level, but detail ages: the view says "as
+   you remember it", with how long ago.
+4. **Filtering.** For fogged backends the agent view's `can` lists only targets the character
+   knows. A level-1 place is offered as "walk toward the mill". A level-0 target is not offered.
+   `move` gains `toward` (a landmark, area or compass direction), so exploring unknown ground is
+   always possible. By default the world walks the true shortest path to what the character is
+   heading for, as if they asked the way; a belief-based navigation that can get a traveller lost
+   is a later phase.
+5. **Who is fogged.** A per-backend flag `fogged`: true for LLM, human and TUI residents, false for
+   the simple locals, so the self-supporting town is unchanged. The referee view can overlay the
+   true map.
+6. **Map in the view.** The `map` section renders the three levels distinctly: hidden is blank,
+   vague is landmarks and area labels, full is cells.
+
+**Write scope.** `bigville/game.py`, `bigville/character.py` (held state), `bigville/game_persistence.py`,
+`worlds/bigville_world.py` (`toward`), `domains/world_affordances.py` and the pack (map memory
+constants, the level-1 vocabulary), `domains/bigville_entities.py` (self-test), a new
+`tests/test_phase053_fog.py`.
+
+**Acceptance.** Tests show: a farm labourer starts knowing their fields in full and the tannery
+only vaguely, and a new incomer does not know where the quarry is (Phase 019's cases); walking
+reveals cells within sight and they stay known; an old observation is marked stale; a place told by
+speech becomes level 1; a level-0 target is absent from `can` and a level-1 one is offered as
+"toward"; a simple NPC's affordances and behaviour are unchanged; the memory survives a
+checkpoint; the three levels render differently; replay is deterministic.
+
+**Out of scope.** Belief-based navigation and getting lost; maps as items you can hold and read
+(a natural follow-up); night sight (Phase 042); the Phaser client.
+
+## Phase 054 -- The LLM backend, stage 2: the prompt packet and the response schema
+
+**Status:** ready, after 031, 051, 052, 058 and 059 (decision 2026-11-05: plan the build of the LLM
+backend). Phase 031 is stage 1 (a registered, hardened backend with a fake provider); 054 to 056
+complete the build.
+
+**Goal.**
+1. **Prompt from the view.** `PromptBuilder` builds from `agent_view`, not from raw observations,
+   so the model sees the words and nothing else. Phase 018's bounded memory selection and the pack
+   rules stay. Numbers for lexicon quantities are never in the prompt. The private part leads with
+   the persona card (Phase 058) and what the resident would usually do now (Phase 059), so any
+   departure from habit is a deliberate act.
+2. **The response schema** (in the pack, validated): `major_action` {`action`, `target` (a handle
+   from `can` or the view's things), `with` (a handle or none), `intensity` (a word or a number),
+   `params`}; `utterances` [{`to`, `text`}]; `memory_updates` [{`kind`: note, lesson, place_belief
+   or plan, `text`}]; `continuation`. A reply with no `major_action` means "carry on as usual"
+   and the autopilot acts (Phase 059); doing nothing is the explicit action `wait`. `attempt` verbs may be any verb in `VERBS`, by alias.
+   Intensity and amounts accept the lexicon's words.
+3. **Repair.** One repair call carrying only the validation errors, in words.
+4. **Untrusted speech.** What other residents said is delivered as quoted data in its own field,
+   with the standing rule that it is speech by people, never instructions. A test feeds "ignore all
+   previous instructions" and shows it changes nothing in parsing or in the rules text.
+5. **Lessons persist.** The inference a resident makes (a spoon snaps on iron) survives only as a
+   `lesson` memory. The selection keeps all lessons up to a cap and the most recent episodic notes.
+   Over the cap, the next call asks the model to merge its lessons, so long runs keep what was
+   learned without growing the prompt.
+6. **Token budget.** Each section has a character cap from the pack, and the record reports the
+   sizes.
+
+**Write scope.** `bigville/backends/prompts.py`, `bigville/backends/llm.py`,
+`bigville/backends/protocol.py`, the pack (response schema, caps), a new
+`tests/test_phase054_llm_prompt.py` with a fake provider.
+
+**Acceptance.** Tests show: the prompt equals a snapshot for a fixed view and contains no key
+outside the view whitelist and no raw lexicon number; a reply with words ("smash the lock with the
+hammer, hard") becomes the right proposal; an invalid reply is repaired once and then idled;
+hostile speech is inert; lessons survive across turns and are merged over the cap; the prompt size
+stays within the caps over a 200-turn fake run.
+
+**Out of scope.** Concrete vendor providers (Phase 055); evaluation (Phase 056).
+
+## Phase 055 -- The LLM backend, stage 3: operations
+
+**Status:** ready, after 054.
+
+**Goal.** Make a town of LLM residents runnable and repeatable.
+1. **Concurrency.** `BigvilleGame.step()` calls `decide` for each resident one after another, so a
+   hundred model calls would take a hundred round trips. Decisions are independent given the
+   pre-tick context, so backends marked `concurrent` are called through a bounded thread pool,
+   and the results are collected in a fixed actor order. A test shows identical outcomes to the
+   sequential run.
+2. **Call budget.** Residents are not queried every tick. They are consulted at the points Phase 059
+   defines (interrupts, routine boundaries, a check-in), and between them the autopilot carries
+   them. A per-resident cap of calls per period applies, and over the cap the autopilot continues,
+   counted. Momentum is what keeps the call count to a few per resident per day.
+3. **Transcripts and replay.** An append-only JSONL per run: turn, actor, prompt hash, the prompt
+   (optional), the reply, latency and any token or cost fields. A replay provider serves recorded
+   replies by turn, actor and prompt hash, so a run repeats exactly, and a changed prompt is
+   detected as a mismatch.
+4. **Providers.** An OpenAI-compatible HTTP provider on the standard library alone (`urllib`, no
+   SDK), which also serves local servers that speak the same protocol, in optional modules under
+   `bigville/providers/`. OpenCode Go is the first concrete target and the development one:
+   - Configuration from the environment: `OPENCODE_GO_API_KEY`, a base URL defaulting to
+     `https://opencode.ai/inference/go/openai/v1`, and a model defaulting to `glm-5.3-flash`. A
+     minimal stdlib reader for the repository's `.env` fills in only variables that are unset. No
+     python-dotenv.
+   - Every request sends `User-Agent: bigville/<version>` and `x-opencode-session:
+     <run id>-<resident>`. `max_tokens` defaults high enough for reasoning plus a JSON reply, and the
+     JSON-mode parameter is tried and recorded per model, with the existing fenced-JSON parser as the
+     fallback.
+   - Redaction: the key is removed from every exception message, log line and transcript, and a
+     test greps a full run's output for it.
+   - Spend: the provider sums `usage.opencode.allowance` and stops at a configured cap
+     (`BIGVILLE_LLM_BUDGET`), after which residents fall back to their plan or idle, counted.
+   - Concurrency defaults to a small number. Do not exceed the intended use described in Programme
+     D's development note.
+   - Live tests live apart in `tests/live/`, skip unless `BIGVILLE_LIVE_LLM=1` and a key are
+     present, send tiny prompts to the cheapest suitable model, and never run in the default suite.
+   Timeouts, retries with backoff, and a rate limit are configured.
+5. **Mixed towns.** A scenario with a few LLM residents among simple locals, as
+   `mixed_ocelot_scenario` does for Ocelot.
+6. **Report.** Calls, repairs, idle fallbacks, latency and cost per resident and per period.
+
+**Write scope.** `bigville/game.py` (concurrent decide), `bigville/backends/llm.py`, new
+`bigville/providers/`, new `bigville/llm_scenario.py`, `bigville/reporting.py`, new tests with a
+fake and a slow fake provider.
+
+**Acceptance.** Tests show: a slow fake provider is faster concurrently with identical results;
+the call cap yields a continuation, not a failure; a recorded run replays with the same digest, and
+a changed prompt is reported; the core imports with no network or third-party modules; no key
+appears in any log or transcript; a mixed town of 3 LLM and 97 simple residents runs 100 turns on a
+fake provider.
+
+**Out of scope.** Choosing a model; fine-tuning; a hosted service.
+
+## Phase 056 -- Evaluation: how well do residents learn the world
+
+**Status:** ready, after 054 (decision 2026-11-05: the LLM may work out the rules by inference,
+which is the point).
+
+**Goal.** Measure it, with data the engine already counts.
+1. **Metrics per resident over time.** Refusals by reason (Phase 021), improvised and wrong-tool
+   attempts, accidents, tool breakages (Phase 048), strain, repeat-mistake rate (the same verb,
+   target and tool failing again after a failure), attempts to adaptation (how many tries before
+   switching tool or intensity), lessons recorded and later used, and survival, food and work
+   outcomes.
+2. **A report and a template.** A generator that writes a run's curves to a file, in the style of
+   the preregistered evaluations, and a comparison of backends (simple, LLM, Ocelot) on one
+   scenario and seed.
+3. **Leak guard.** The leak test from Phase 052 runs over every prompt in a run, and the run is
+   void if one fails.
+4. **Control fakes.** A scripted learner and a scripted non-learner provider, so the metrics can be
+   shown to tell them apart.
+5. **Marginal effect.** With Phase 059's autopilot every LLM resident has a counterfactual: what
+   the simple backend would have done on each consulted turn. Report the deviation rate, and
+   outcomes (survival, food, work, social ties) against a pure-simple control on the same seed, so
+   the report shows what the model changed and not only what it did.
+
+**Write scope.** `bigville/reporting.py`, new `bigville/learning_eval.py`, `tools/`, new tests.
+
+**Acceptance.** Tests show: the learner fake's repeat-mistake rate falls and the non-learner's does
+not; the metrics are deterministic; the guard voids a run with a leak; the report names the
+scenario, seed, pack hash and prompt schema.
+
+**Out of scope.** Scoring a model's quality in general; human baselines.
+
+## Phase 057 -- A terminal interface (TUI)
+
+**Status:** ready, after 051 and 052; shows a local patch of the map until 053 lands (decision
+2026-11-05: a TUI, using only what the agent can see).
+
+**Goal.** A terminal client, `python -m bigville.tui`, for one resident, built on the agent view and
+nothing else.
+1. **Pure rendering.** `bigville/tui/render.py`: `render(view, width, height)` returns lines. It
+   is pure, so it is testable without a terminal. Panels: a status bar (day, time, weather,
+   place); the map with three levels drawn differently (hidden blank, vague as landmark glyphs and
+   labels, full as cells), with a legend; the character sheet in tabs (Body, Skills, Knows, Carrying,
+   People), all in words; the log; the prompt line.
+2. **Narration.** A pack `NARRATION` table of sentence templates over the lexicon turns the view's
+   events and outcomes into text ("You are famished. Bram the miller is here, looking tired."),
+   including the results of your own attempts (progress, strain, damage, noise, a refusal and
+   what it means).
+3. **Commands.** `bigville/tui/commands.py` turns input into a proposal using the lexicon's verb
+   aliases and intensity words: `smash lock with hammer hard`, `walk toward the mill`,
+   `say Bram: good morning`, `wait`, `stop`, `look`, `sheet`, `map`, `inventory`, `help`; and a
+   numbered menu of the affordances for people who do not want to type. Ambiguity ("the chest")
+   asks which, listing the handles.
+4. **Keys.** hjkl and the arrows to step, `.` to wait, Tab to cycle the sheet tabs, `:` for a
+   command, `?` for help. Colour is optional.
+5. **Front ends.** A `curses` front end, and a plain line mode (`--plain`) for dumb terminals,
+   pipes and tests, which is the text-adventure interface. `curses` is in the standard library; if
+   it is missing the plain mode runs.
+6. **Connection.** Embedded (an in-process game) or over HTTP (`--url`) to `/api/view` and
+   `/api/turn`. The client has no method that fetches `/api/state` and no referee option.
+7. **Turn flow.** While the world waits for the player the screen says so. When something reacts
+   to the player's turn (a contest, Phase 029) the reaction prompt appears as an interrupt and waits
+   for input.
+
+**Write scope.** new `bigville/tui/` (`render.py`, `commands.py`, `client.py`, `app.py`,
+`__main__.py`), the pack (`NARRATION`), a new `tests/test_phase057_tui.py`.
+
+**Acceptance.** Tests show: render output for a fixed view matches a snapshot at 80 by 24; the
+command parser maps typed commands, aliases and intensity words to the right proposals and asks on
+ambiguity; a scripted plain-mode session through an embedded game plays five turns with `StringIO`;
+the client never requests `/api/state` (checked by a stub server); no rendered line contains a raw
+lexicon number or a referee-only field.
+
+**Out of scope.** The web client in agent mode; mouse; sound; more than one player.
+
+## Phase 058 -- Persona: personality, a usual day, and relationships
+
+**Status:** ready, after 051 (decision 2026-11-05: an agent should have a pre-existing personality, a
+typical routine and relationships, which gives continuity). Uses Phase 009 (kin and households)
+and Phase 019 (implied history and place knowledge), both done.
+
+**Goal.** Give every resident a self, a day and a circle, as data, so an LLM resident, a human
+resident, a simple resident and the character sheet all start from the same person.
+1. **Traits, not parameters.** Split `character.personality` into the traits (charm, hostility,
+   spite, mood bias, the world-safety, trust and self-worth priors, role identity, temperament
+   from arousal and valence) and the engine parameters Ocelot needs (`w_supergraph`, `cred_on`,
+   `resolution_bins`, `emotional_core_enabled`, `carried_weight`). The engine parameters stay where
+   they are. The traits get Phase 051 bands in the self and other perspectives ("warm", "guarded",
+   "quick to anger", "trusting").
+2. **A life sketch.** A few lines of biography derived from Phase 019's implied history (born here
+   or came as an adult, trained as, widowed, served on the council) by pack templates, so a
+   resident has a past to speak from. It is held state and carries no world facts the
+   resident would not know.
+3. **A usual day.** A pack table `ROUTINE`, by job and life stage, of time blocks (wake, morning
+   tasks, the workplace, the midday meal, the afternoon, the evening at home or with others, sleep),
+   a weekly rhythm (market day, the church day), and a seasonal one (sowing, harvest). The places
+   come from Phase 019's `JOB_ROUTINE`. Cite sources for the hours or mark them APPROX. A
+   routine is a habit and not a law: a resident may depart from it, and the world does not
+   refuse them for it. The hard-coded hour bands in `cheap.py` are replaced by reading this table.
+4. **Relationships at founding.** The world holds no relationship records today (0 of 100
+   residents), though every resident has genealogy edges and 77 share a household. Seed them from
+   what the world already records: household members, kin (Phase 009's genealogy and kin terms), people at
+   the same workplace, and neighbours, then a few friends and rivals chosen by compatibility of
+   traits and class. Each is a relationship record (`set_relationship`) with a kind, a strength and
+   a one-line history. Counts per person come from a pack table `RELATIONSHIP_SEEDING`
+   (a few to a dozen close ties, as small-community research has it; cite or mark APPROX). Ties are
+   directed and need not be reciprocal.
+5. **The persona card.** `persona(actor)` returns the traits in words, the life sketch, the usual
+   day for today, and the close ties in words (kind, warmth, how long). It is built from held state,
+   not from the world, and it is the first section of the agent view's `self` (Phase 052), of the
+   character sheet, and of the LLM's private prompt.
+6. **Reads.** The simple backends keep reading the same numbers as policy, so their behaviour moves
+   only where the routine table replaces the hour bands (and that change is recorded with numbers).
+
+**Write scope.** `domains/population.py`, `domains/world_affordances.py` and the pack (`ROUTINE`,
+`RELATIONSHIP_SEEDING`, biography templates, trait split), `domains/lexicon.py` (the trait bands),
+`bigville/game.py` (`_characters_from_world`, relationship seeding), `bigville/character.py`,
+`bigville/backends/cheap.py` (read the routine), `domains/bigville_entities.py` (self-test),
+a new `tests/test_phase058_persona.py`.
+
+**Acceptance.** Tests show: a founding resident has traits in words, no engine parameter among them,
+a biography consistent with their history, a usual day for their job, and a plausible number of
+relationships of the right kinds; household and kin ties exist and match Phase 009; the same seed
+gives the same persona; a different pack gives different words and a different day; a simple
+resident's behaviour matches the old hour bands where the routine agrees with them, and every
+difference is listed with numbers; the self-test checks every job has a routine and every
+trait a band; the persona card contains no raw lexicon number and no world fact the resident does
+not hold.
+
+**Out of scope.** Personality change over time; relationship change from events (the backend's, as
+before); full biographies for a hundred residents written by hand.
+
+## Phase 059 -- Autopilot and momentum: the simple backend carries a resident between decisions
+
+**Status:** ready, after 031 and 058 (decision 2026-11-05: on a provider error the simple backend
+should give some continuity, and an agent needs momentum to make this work properly).
+
+**Goal.** An LLM or human resident is the simple resident's persona and routine, plus
+deliberate departures from it. The simple backend is the autopilot, and the model is consulted
+for the deviations.
+1. **Autopilot.** `LLMBackend` owns a `DeterministicBackend` for the same character, reading the
+   same persona and routine (Phase 058). The autopilot sees every turn's context, so its goals
+   stay in step with what happened while the model was driving.
+2. **Fallback, not idle.** On a provider error, an invalid reply after the one repair, a spend or
+   call cap, or a turn in which the model was not consulted, the autopilot decides, counted as a
+   fallback. Idle is the last resort only when no autopilot exists (Phase 031's behaviour).
+   A model's `waiting: true` is not accepted, and a reply with no `major_action` means "carry on as
+   usual", so the autopilot acts. Doing nothing is the explicit action `wait`.
+3. **Momentum: when the model is consulted.** At an interrupt: someone with whom the resident
+   has a tie comes into view or speaks to them, speech is addressed to them, a hunger or energy
+   threshold is crossed, a task fails, a world event touches them, a reaction is needed (Phase
+   029), or a refusal repeats. At a routine boundary: the usual day changes block, a meal time,
+   the start and end of work. At a check-in every `max_quiet_ticks`. When the autopilot has
+   nothing to do. Otherwise the autopilot acts and the model is not called. This reuses the existing
+   continuation machinery and its interrupt conditions.
+4. **A plan outranks habit.** A plan the model sets (a continuation) holds until it completes or is
+   interrupted, and then the autopilot resumes, not an idle turn.
+5. **How strong the habit is.** A per-persona `routine_strength`, read from the traits (role
+   identity, conscientiousness-like weights), sets `max_quiet_ticks` and how readily a routine
+   boundary prompts a consult. A creature of habit is consulted less.
+6. **What the model is told.** The prompt carries "what you would usually do now" in words (Phase
+   054), so continuing is a choice and a departure is deliberate.
+7. **Counterfactual.** On every consulted turn the autopilot also computes its own would-be choice,
+   cheaply, so the report can record deviations (Phase 056). Counts: consults, autopilot turns,
+   fallbacks by cause, deviations, and the share of turns by each.
+8. **Humans too.** A human resident's waiting turn is the only case where the world waits. For an
+   unattended human or terminal session, an optional autopilot continues the persona between inputs.
+
+**Write scope.** `bigville/backends/llm.py`, `bigville/backends/cheap.py` (expose the would-be choice
+and the routine), `bigville/backends/protocol.py` (the "as usual" and `wait` semantics),
+`bigville/game.py` (the interrupt reasons, additive), `bigville/reporting.py`, the pack
+(`routine_strength`, `max_quiet_ticks`, consult triggers), a new `tests/test_phase059_autopilot.py`
+with a fake provider.
+
+**Acceptance.** Tests show: a provider error gives the autopilot's action, not an idle turn, and is
+counted; an invalid reply is repaired once and then falls back; a call cap falls back; on an
+ordinary routine turn the provider is not called; each interrupt and routine boundary calls it; a
+model plan holds until it completes and the autopilot then resumes; a reply with no action carries
+on as usual and `wait` idles; a resident with high `routine_strength` is consulted less than one
+with low; the fake-provider run over 200 turns makes far fewer calls than turns; deviations are
+counted against the counterfactual; the simple backend alone is unchanged.
+
+**Out of scope.** Learning the routine from experience; the model editing the routine table; the
+provider layer's retry and backoff (Phase 055).
 
 ---
 
