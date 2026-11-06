@@ -11,9 +11,11 @@ from typing import Any
 from urllib.parse import unquote, urlsplit
 
 from .catalog import build_capability_catalog
+from .drafts import MAX_PREVIEW_BYTES, PreviewTooLarge, preview_draft, resolve_draft
 
 API_PREFIX = "/api/management/v1"
 STATIC_ROOT = Path(__file__).with_name("static").resolve()
+MAX_REQUEST_BYTES = 65_536
 
 
 def error_payload(code: str, message: str) -> dict[str, Any]:
@@ -83,7 +85,50 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def do_POST(self):
-        return self._json(404, error_payload("not_found", "Unknown management API path."))
+        path = urlsplit(self.path).path
+        if path not in {f"{API_PREFIX}/run-drafts/validate",
+                        f"{API_PREFIX}/run-drafts/preview"}:
+            return self._json(404, error_payload("not_found", "Unknown management API path."))
+        try:
+            length = int(self.headers.get("Content-Length", "-1"))
+        except ValueError:
+            return self._json(400, error_payload("invalid_request", "Invalid Content-Length."))
+        if length < 0:
+            return self._json(411, error_payload("length_required", "Content-Length is required."))
+        if length > MAX_REQUEST_BYTES:
+            return self._json(413, error_payload("request_too_large", "Draft request exceeds 64 KB."))
+        try:
+            payload = json.loads(self.rfile.read(length))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return self._json(400, error_payload("invalid_json", "Request body must be valid JSON."))
+
+        if path.endswith("/validate"):
+            try:
+                resolution = resolve_draft(payload)
+            except Exception:
+                return self._json(500, error_payload(
+                    "validation_failed", "Draft validation could not be completed."))
+            return self._json(200, resolution)
+
+        try:
+            preview, resolution = preview_draft(payload)
+        except PreviewTooLarge as exc:
+            return self._json(413, error_payload("preview_too_large", str(exc)))
+        except Exception:
+            return self._json(422, {
+                **error_payload("preview_failed", "The selected scenario could not be previewed."),
+                "fields": {"scenario_id": "Check that the scenario is supported and well formed."},
+            })
+        if preview is None:
+            return self._json(422, {
+                **error_payload("invalid_draft", "Draft validation failed."),
+                "fields": resolution["errors"],
+            })
+        encoded_size = len(json.dumps(preview, sort_keys=True, separators=(",", ":"),
+                                      ensure_ascii=False).encode("utf-8"))
+        if encoded_size > MAX_PREVIEW_BYTES:
+            return self._json(413, error_payload("preview_too_large", "Preview response exceeds 1 MB."))
+        return self._json(200, preview)
 
     def do_PUT(self):
         return self._json(404, error_payload("not_found", "Unknown management API path."))
