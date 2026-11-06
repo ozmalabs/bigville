@@ -1,0 +1,65 @@
+{
+  "_doc": "---------------------------------------------------------------------------\nHANDOVERS (Phase 026): a completed physical handover of coin or goods between parties\n---------------------------------------------------------------------------\nEach time the world completes a physical handover it records one Handover fact: the turn, the giving\nparty (`from`), the receiving party (`to`), the kind of physical action that moved it, the good (an item\nkind, or `coin`), and the quantity. The world records what moved and where. It does not decide that a\nhandover was a sale, a wage, or a gift, and it does not pair handovers into trades.\n\nHANDOVER_KINDS: the physical action that completed the handover. A kind names the world primitive that\nmoved the goods, not the reason a resident had for it.\n\nHANDOVER_ENDPOINTS: what a party is. A resident is an actor; a purse is a fiscal holder of coin; a\ncontainer is a carrier or vessel with a name; the store is the town's stock; a merchant is an outside\ncarrier that unloads at the store.\n\nHANDOVER_LOG_LIMIT: the number of Handover facts the town keeps, newest kept, oldest dropped first.\nThe report's counts are cumulative over the whole run and do not depend on this bound. APPROX: a design\nchoice (no seed or source gives a figure). It bounds graph size for a 100-resident town, nothing else.",
+  "_types": {},
+  "tables": {
+    "HANDOVER_KINDS": {
+      "give": {
+        "description": "A resident hands coin, a held stock pile, or a held item to a resident standing on the same cell (give, or give_food, or a direct call)."
+      },
+      "transfer": {
+        "description": "The same physical hand-over as give, requested through the transfer action. The giver names the source and the recipient explicitly."
+      },
+      "accept": {
+        "description": "A resident takes a held item from another resident's hands (accept with a giver)."
+      },
+      "fetch": {
+        "description": "A resident takes stock from the store, or from a container it can reach, into its own carrier."
+      },
+      "put": {
+        "description": "A resident puts held stock into a container on its cell."
+      },
+      "fill": {
+        "description": "Stock moves from the store into a container, armed by a resident's fill call."
+      },
+      "empty": {
+        "description": "Stock moves from a container back into the store, armed by a resident's empty call."
+      },
+      "stock": {
+        "description": "Stock moves from the store into a resident's carrier as an offer (stock_person)."
+      },
+      "give_newspaper": {
+        "description": "One newspaper copy moves from the store's stock into a reader's hands."
+      },
+      "deliver": {
+        "description": "A merchant unloads the goods it carries into the store."
+      },
+      "pay_obligation": {
+        "description": "One period's coin moves from the debtor (a resident or a purse) to the creditor, face to face."
+      },
+      "collect": {
+        "description": "One period's coin moves from the debtor to the creditor, or to the hired collector as held coin."
+      },
+      "deliver_collected": {
+        "description": "The hired collector hands the share of held coin it chooses to the creditor."
+      }
+    },
+    "HANDOVER_ENDPOINTS": {
+      "actor": {
+        "description": "A resident."
+      },
+      "purse": {
+        "description": "A fiscal purse (council treasury, church funds), which holds coin for its holder."
+      },
+      "container": {
+        "description": "A named container: a carrier, cart, barrel, or store vessel."
+      },
+      "store": {
+        "description": "The town's stock, held at the store."
+      },
+      "merchant": {
+        "description": "An outside merchant who brings goods to the store."
+      }
+    },
+    "HANDOVER_LOG_LIMIT": 1000
+  }
+}

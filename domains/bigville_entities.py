@@ -491,6 +491,26 @@ def _check_refusal_reasons(errors, warnings, info):
             errors.append(f"REFUSAL_REASONS: needs the exhaustion code {code!r} (Phase 024)")
 
 
+def _check_handovers(errors, warnings, info):
+    """Phase 026: the handover kinds and endpoint kinds the world records. Each kind is a snake_case word with
+    a description, the endpoint kinds a Handover can name are all described, and the log keeps a whole number
+    of Handover facts, at least 1."""
+    import re as _re
+    for kind, spec in HANDOVER_KINDS.items():
+        if not _re.fullmatch(r"[a-z]+(_[a-z]+)*", str(kind)):
+            errors.append(f"HANDOVER_KINDS[{kind!r}]: a handover kind is a snake_case word")
+        if not str(spec.get("description", "")).strip():
+            errors.append(f"HANDOVER_KINDS[{kind}]: no description")
+    for endpoint in ("actor", "purse", "container", "store", "merchant"):
+        if endpoint not in HANDOVER_ENDPOINTS:
+            errors.append(f"HANDOVER_ENDPOINTS: needs the endpoint kind {endpoint!r}")
+    for endpoint, spec in HANDOVER_ENDPOINTS.items():
+        if not str(spec.get("description", "")).strip():
+            errors.append(f"HANDOVER_ENDPOINTS[{endpoint}]: no description")
+    if isinstance(HANDOVER_LOG_LIMIT, bool) or not isinstance(HANDOVER_LOG_LIMIT, int) or HANDOVER_LOG_LIMIT < 1:
+        errors.append(f"HANDOVER_LOG_LIMIT: must be a whole number of at least 1, not {HANDOVER_LOG_LIMIT!r}")
+
+
 def _check_exhaustion(errors, warnings, info):
     """Phase 024: the EXHAUSTION table. Reserve bands fall from e_high to e_low, their moves per tick fall
     from the full budget to zero, and the collapse, sleep and wake thresholds keep their order: a collapse
@@ -1307,6 +1327,7 @@ def check_consistency():
     _check_burial(errors, warnings, info)
     _check_prompt_instructions(errors, warnings, info)
     _check_refusal_reasons(errors, warnings, info)
+    _check_handovers(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_generated_seeds(errors)
     _check_fiscal(errors, warnings, info)

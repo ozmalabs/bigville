@@ -285,6 +285,21 @@ class BigvilleOcelotActor:
         }
 
 
+class _HandoverCount:
+    """len() of the fiscal coin handovers recorded so far (Phase 026).
+
+    village_eval.py reads ``len(world._transactions)`` for its registered transaction count. That count
+    used to come from the Transaction ledger, which only the fiscal actions wrote. This stands in for it:
+    a count, not a ledger, and it never shrinks when old Handover facts are dropped.
+    """
+
+    def __init__(self, count):
+        self._count = int(count)
+
+    def __len__(self):
+        return self._count
+
+
 class BigvilleWorld:
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
@@ -461,7 +476,8 @@ class BigvilleWorld:
         self._proposals = {}
         self._meetings = {}
         self._cases = {}
-        self._transactions = {}
+        self._handovers = {}
+        self._handover_totals = {"count": 0, "fiscal": 0, "by_good": {}, "by_kind": {}, "by_endpoint": {}}
         self._prices = {}
         self._illnesses = {}
         self._births = []
@@ -1135,6 +1151,7 @@ class BigvilleWorld:
                         inner = self._containers[container][1][kind]
                         self.set_stock(kind, self.qty(kind) - amount)
                         self.eng.set_attr(inner, "qty", self.contents(container, kind) + amount)
+                        self._record_handover("fill", kind, amount, ("store", "store"), ("container", str(container)))
                 self.eng.set_attr(node, "fill_armed", 0.0)
             if float(attrs.get("empty_armed", 0.0)) == 1.0:
                 kind, amount = attrs.get("empty_kind", ""), float(attrs.get("empty_amount", 0.0))
@@ -1144,6 +1161,8 @@ class BigvilleWorld:
                     amount = min(amount, self.contents(container, kind))
                     self.eng.set_attr(inners[kind], "qty", self.contents(container, kind) - amount)
                     self.set_stock(kind, self.qty(kind) + amount)
+                    if amount > 0.0:
+                        self._record_handover("empty", kind, amount, ("container", str(container)), ("store", "store"))
                     break
                 self.eng.set_attr(node, "empty_armed", 0.0)
             if float(attrs.get("lock_armed", 0.0)) == 1.0:
@@ -2821,6 +2840,7 @@ class BigvilleWorld:
         self.eng.add_edge_unchecked(self._actors[reader], "holds", copy)
         self.eng.add_edge_unchecked(copy, "of_edition", edition)
         self._newspaper_copies[f"copy:{len(self._newspaper_copies) + 1}"] = copy
+        self._record_handover("give_newspaper", "newspaper", 1.0, ("store", "store"), self._actor_endpoint(reader))
         return copy
 
     def read_newspaper(self, reader, copy):
@@ -3356,6 +3376,7 @@ class BigvilleWorld:
         self._actor(seller)
         if not self._move_stock_to_inventory(seller, kind, amount):
             return False
+        self._record_handover("stock", kind, amount, ("store", "store"), self._actor_endpoint(seller))
         node = self._actor(seller)
         self.eng.set_attr(node, "sell_price", float(price))
         self.eng.set_attr(node, "sell_willing", 1.0 if willing else 0.0)
@@ -3544,22 +3565,25 @@ class BigvilleWorld:
         self._refresh_carry_state(recipient)
         return True
 
-    def _give_discrete_item(self, giver, recipient, item):
+    def _give_discrete_item(self, giver, recipient, item, handover_kind="give"):
         if self._item_owner_edge(giver, item) is None:
             return self._refuse("not_held")
+        kind = self.eng.node(item)["attrs"].get("kind", "")
         accepted = self._accept_discrete_item(recipient, item, giver=giver)
         if accepted:
             self.eng.add_edge_unchecked(self._actor(giver), "gave_item", item)
             self.eng.add_edge_unchecked(item, "given_to", self._actor(recipient))
+            self._record_handover(handover_kind, kind, 1.0, self._actor_endpoint(giver), self._actor_endpoint(recipient))
         return accepted
 
     def give(self, giver, recipient, kind, amount=1.0, *, payment_kind=None,
-             payment_amount=None):
+             payment_amount=None, handover_kind="give"):
         """Physically hand a held good or coin to a nearby resident.
 
         Legacy payment arguments are accepted for call compatibility but have
         no world-side agreement semantics. The cognition layer must choose any
-        payment as a separate physical transfer.
+        payment as a separate physical transfer. ``handover_kind`` names the
+        action recorded for the handover ("give", or "transfer" from that action).
         """
         amount = max(0.0, float(amount))
         if amount <= 0.0:
@@ -3572,7 +3596,7 @@ class BigvilleWorld:
         if (self._turn > 0 and self.actor_position(giver) != self.actor_position(recipient)):
             return self._refuse("not_in_reach")
         if not isinstance(kind, str):
-            return self._give_discrete_item(giver, recipient, kind)
+            return self._give_discrete_item(giver, recipient, kind, handover_kind)
         if kind == "coin":
             if self.coin(giver) < amount:
                 return self._refuse("out_of_stock")
@@ -3592,6 +3616,8 @@ class BigvilleWorld:
             else:
                 self.eng.set_attr(self._actor(recipient), "last_carry_outcome", "held")
         self.eng.add_edge_unchecked(self._actor(giver), "gave", self._actor(recipient))
+        self._record_handover(handover_kind, kind, amount,
+                              self._actor_endpoint(giver), self._actor_endpoint(recipient))
         return True
 
     def _physical_transfer_precheck(self, source, recipient, kind, amount=1.0):
@@ -3622,7 +3648,7 @@ class BigvilleWorld:
             return self._refuse("not_held")
         return True
 
-    def _physical_transfer(self, source, recipient, kind, amount=1.0):
+    def _physical_transfer(self, source, recipient, kind, amount=1.0, *, handover_kind="give"):
         """Move an already-held physical good or object between nearby people.
 
         This deliberately has no trade, price, willingness, ownership, or
@@ -3638,7 +3664,7 @@ class BigvilleWorld:
         old_dispatch = self._major_dispatch
         self._major_dispatch = True
         try:
-            return self.give(source, recipient, kind, amount)
+            return self.give(source, recipient, kind, amount, handover_kind=handover_kind)
         finally:
             self._major_dispatch = old_dispatch
 
@@ -3807,7 +3833,11 @@ class BigvilleWorld:
 
     def accept_item(self, actor, item, *, giver=None):
         """Free handoff acceptance; extreme overload makes the item fall."""
-        return self._accept_discrete_item(actor, item, giver=giver)
+        accepted = self._accept_discrete_item(actor, item, giver=giver)
+        if accepted and giver is not None:
+            kind = self.eng.node(item)["attrs"].get("kind", "")
+            self._record_handover("accept", kind, 1.0, self._actor_endpoint(giver), self._actor_endpoint(actor))
+        return accepted
 
     accept = accept_item
 
@@ -4000,7 +4030,7 @@ class BigvilleWorld:
         `actor` is the debtor, or the holder of a purse debtor. A receiver elsewhere refuses the payment and
         nothing is recorded. A payer short of coin, with the receiver present, records one period of arrears
         and moves no coin. Otherwise the coin moves, the obligation's paid and periods_paid rise, and a
-        Transaction is recorded. Returns True only when coin moved.
+        Handover is recorded. Returns True only when coin moved.
         """
         attrs = self._obligation_attrs(obligation)
         if attrs is None:
@@ -4018,7 +4048,8 @@ class BigvilleWorld:
         self._move_fiscal_coin(payer, receiver, amount)
         self.eng.set_attr(obligation, "paid", float(attrs["paid"]) + amount)
         self.eng.set_attr(obligation, "periods_paid", float(attrs["periods_paid"]) + 1.0)
-        self._record_transaction(attrs["institution"], attrs["debtor"], attrs["creditor"], "coin", 1.0, amount)
+        self._record_handover("pay_obligation", "coin", amount, self._party_endpoint(payer, attrs["debtor"]),
+                              self._party_endpoint(receiver, attrs["creditor"]))
         return True
 
     def collect(self, collector, obligation):
@@ -4048,10 +4079,13 @@ class BigvilleWorld:
         if hired and collector == hired:
             self._move_fiscal_coin(debtor, ("resident", self._actors[collector]), amount)
             self.eng.set_attr(obligation, "held", float(attrs["held"]) + amount)
+            target = self._actor_endpoint(collector)
         else:
             self._move_fiscal_coin(debtor, creditor, amount)
+            target = self._party_endpoint(creditor, attrs["creditor"])
         self.eng.set_attr(obligation, "paid", float(attrs["paid"]) + amount)
         self.eng.set_attr(obligation, "periods_paid", float(attrs["periods_paid"]) + 1.0)
+        self._record_handover("collect", "coin", amount, self._party_endpoint(debtor, attrs["debtor"]), target)
         return True
 
     def deliver_collected(self, collector, obligation, share_bp=10000):
@@ -4083,16 +4117,55 @@ class BigvilleWorld:
         self.eng.set_attr(obligation, "held", 0.0)
         self.eng.set_attr(obligation, "delivered", float(attrs["delivered"]) + delivered)
         self.eng.set_attr(obligation, "skimmed", float(attrs["skimmed"]) + held - delivered)
-        self._record_transaction(attrs["institution"], collector, attrs["creditor"], "coin", 1.0, delivered)
+        self._record_handover("deliver_collected", "coin", delivered, self._actor_endpoint(collector),
+                              self._party_endpoint(creditor, attrs["creditor"]))
         return True
 
-    def _record_transaction(self, kind, actor, target, good, quantity, value):
-        node = self.eng.add_node("Transaction", {"kind": kind, "actor": str(actor), "target": str(target),
-                                                   "good": str(good), "quantity": float(quantity),
-                                                   "value": float(value), "day": float(self.calendar()["day"])})
-        self.eng.add_edge_unchecked(self._town, "has_transaction", node)
-        self._transactions[f"transaction:{len(self._transactions) + 1}"] = node
+    # ---------------------------------------------------- physical handovers (Phase 026)
+    # Each completed physical handover of coin or goods is one Handover fact: turn, kind (the action that moved
+    # it), good, quantity, and both endpoints. The world records what moved and where. It never decides that a
+    # handover was a sale, a wage or a gift, and never pairs handovers into trades.
+    def _actor_endpoint(self, name):
+        return ("actor", str(name))
+
+    def _party_endpoint(self, party, name):
+        """The endpoint of a fiscal party: a resident is an actor, a purse is a purse."""
+        return ("actor" if party[0] == "resident" else "purse", str(name))
+
+    def _record_handover(self, kind, good, quantity, source, target):
+        """Record one completed handover. `source` and `target` are (endpoint kind, name) pairs.
+
+        The newest HANDOVER_LOG_LIMIT Handover facts are kept; the counts in `_handover_totals` are cumulative
+        and are what the report reads.
+        """
+        if kind not in self.E.HANDOVER_KINDS:
+            raise ValueError(f"unknown handover kind: {kind}")
+        quantity = float(quantity)
+        from_kind, from_name = source
+        to_kind, to_name = target
+        node = self.eng.add_node("Handover", {"turn": float(self._turn), "kind": str(kind), "good": str(good),
+                                              "quantity": quantity, "from": str(from_name), "from_kind": from_kind,
+                                              "to": str(to_name), "to_kind": to_kind})
+        self.eng.add_edge_unchecked(self._town, "has_handover", node)
+        totals = self._handover_totals
+        totals["count"] += 1
+        if kind in ("pay_obligation", "collect", "deliver_collected"):
+            totals["fiscal"] += 1
+        for bucket, key in ((totals["by_good"], str(good)), (totals["by_kind"], str(kind)),
+                            (totals["by_endpoint"], f"{from_kind}->{to_kind}")):
+            entry = bucket.setdefault(key, {"count": 0, "quantity": 0.0})
+            entry["count"] += 1
+            entry["quantity"] += quantity
+        self._handovers[f"handover:{totals['count']}"] = node
+        while len(self._handovers) > int(self.E.HANDOVER_LOG_LIMIT):
+            oldest = next(iter(self._handovers))
+            self.eng.remove_node(self._handovers.pop(oldest))
         return node
+
+    @property
+    def _transactions(self):
+        """Fiscal coin handovers so far, as a count. village_eval.py reads its length; see _HandoverCount."""
+        return _HandoverCount(self._handover_totals["fiscal"])
 
     # ---------------------------------------------------- civic process and justice
     def propose_local_law(self, author, name, *, title=None, scope="bigville", concepts=()):
@@ -5733,6 +5806,8 @@ class BigvilleWorld:
             attrs = self.eng.node(stock)["attrs"]
             kind, amount = attrs.get("kind", ""), float(attrs.get("qty", 0.0))
             self.set_stock(kind, self.qty(kind) + amount)
+            if amount > 0.0:
+                self._record_handover("deliver", kind, amount, ("merchant", str(merchant)), ("store", "store"))
             self.eng.remove_edge_unchecked(node, "carries", stock)
             self.eng.remove_node(stock)
         self._run()
@@ -5826,6 +5901,7 @@ class BigvilleWorld:
         self.eng.set_attr(target, "qty", self.contents(container, kind) + amount)
         self._refresh_carry_state(actor)
         self.eng.add_edge_unchecked(self._actor(actor), "put_into", self._containers[container][0])
+        self._record_handover("put", kind, amount, self._actor_endpoint(actor), ("container", str(container)))
         return True
 
     def fill(self, actor, container, kind, amount):
@@ -5855,8 +5931,8 @@ class BigvilleWorld:
         """Carry physical stock from a store/container into the actor's carrier.
 
         Fetching is deliberately separate from buying: it is a handling action
-        that changes location and ownership of physical stock, with no market
-        or transaction record.  The default source is the town's mapped store;
+        that changes location and ownership of physical stock. It records a
+        Handover and no market record.  The default source is the town's mapped store;
         a named container may also be used when the actor can access it.
         """
         self._actor(actor)
@@ -5886,6 +5962,8 @@ class BigvilleWorld:
             target = self._inventory_stock(actor, kind, create=True)
             self.eng.set_attr(target, "qty", self.inventory_qty(actor, kind) + amount)
             self._refresh_carry_state(actor)
+        self._record_handover("fetch", kind, amount, ("store", "store") if source is None else ("container", str(source)),
+                              self._actor_endpoint(actor))
         self.eng.add_edge_unchecked(self._actor(actor), "fetched", self._store)
         return True
 
@@ -7529,7 +7607,7 @@ class BigvilleWorld:
                 "speech_events": list(self._speech_events[-event_tail if event_tail else None:]),
                 "paper": articles,
                 "editions": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._editions.items()],
-                "transactions": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._transactions.items()],
+                "handovers": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._handovers.items()],
                 "proposals": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._proposals.items()],
                 "cases": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._cases.items()],
                 "births": list(self._births), "deaths": list(self._deaths),
@@ -7839,7 +7917,7 @@ class BigvilleWorld:
             if not self._physical_transfer_precheck(source, recipient, kind, amount):
                 return False
             return self._claimed_attempt(actor, "transfer", lambda: self._physical_transfer(
-                source, recipient, kind, amount))
+                source, recipient, kind, amount, handover_kind="transfer"))
         if action == "take":
             # A resident's carried stock is not unattended merely because a
             # backend can name its holder.  Taking held goods needs an explicit

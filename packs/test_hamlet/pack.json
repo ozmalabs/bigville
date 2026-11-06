@@ -170,6 +170,18 @@
       "file": "world/refusal_reasons.json"
     },
     {
+      "name": "HANDOVER_KINDS",
+      "file": "world/handovers.json"
+    },
+    {
+      "name": "HANDOVER_ENDPOINTS",
+      "file": "world/handovers.json"
+    },
+    {
+      "name": "HANDOVER_LOG_LIMIT",
+      "file": "world/handovers.json"
+    },
+    {
       "name": "FREE_ACTIONS",
       "file": "world/free_actions.json"
     },

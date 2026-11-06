@@ -62,6 +62,11 @@ ANIMAL_NPC_SETUP = _PACK["ANIMAL_NPC_SETUP"]
 # each resident's log keeps (packs/*/world/refusal_reasons.json).
 REFUSAL_REASONS = _PACK["REFUSAL_REASONS"]
 REFUSAL_LOG_LIMIT = _PACK["REFUSAL_LOG_LIMIT"]
+# Phase 026: the physical handovers of coin and goods the world records, by the action that moved them,
+# by endpoint kind, and the number of Handover facts the town keeps (packs/*/world/handovers.json).
+HANDOVER_KINDS = _PACK["HANDOVER_KINDS"]
+HANDOVER_ENDPOINTS = _PACK["HANDOVER_ENDPOINTS"]
+HANDOVER_LOG_LIMIT = _PACK["HANDOVER_LOG_LIMIT"]
 FENCE_TYPES = _PACK["FENCE_TYPES"]
 ENCLOSURE_TYPES = _PACK["ENCLOSURE_TYPES"]
 ANIMAL_HUSBANDRY = _PACK["ANIMAL_HUSBANDRY"]

@@ -193,18 +193,13 @@ class SimulationReporter:
                 if self.world._item_specs.get(kind, {}).get("food"):
                     resident_food_qty += float(qty)
 
-        transactions = [self.world.eng.node(node)["attrs"] for node in self.world._transactions.values()]
-        by_kind = defaultdict(lambda: {"count": 0, "quantity": 0.0, "value": 0.0})
-        by_good = defaultdict(lambda: {"count": 0, "quantity": 0.0, "value": 0.0})
-        for transaction in transactions:
-            kind = str(transaction.get("kind", "unknown"))
-            good = str(transaction.get("good", "unknown"))
-            quantity = float(transaction.get("quantity", 0.0))
-            value = float(transaction.get("value", 0.0))
-            for bucket in (by_kind[kind], by_good[good]):
-                bucket["count"] += 1; bucket["quantity"] += quantity; bucket["value"] += value
-        for bucket in list(by_kind.values()) + list(by_good.values()):
-            bucket["quantity"] = _round(bucket["quantity"]); bucket["value"] = _round(bucket["value"])
+        handovers = self.world._handover_totals
+        by_good = {good: {"count": int(bucket["count"]), "quantity": _round(bucket["quantity"])}
+                   for good, bucket in sorted(handovers["by_good"].items())}
+        by_kind = {kind: {"count": int(bucket["count"]), "quantity": _round(bucket["quantity"])}
+                   for kind, bucket in sorted(handovers["by_kind"].items())}
+        by_endpoint = {pair: {"count": int(bucket["count"]), "quantity": _round(bucket["quantity"])}
+                       for pair, bucket in sorted(handovers["by_endpoint"].items())}
 
         shops = {}
         for trade, node in sorted(self.world._shops.items()):
@@ -246,9 +241,9 @@ class SimulationReporter:
                 "food_quantity": _round(food_qty + resident_food_qty),
                 "food_per_alive_resident": _round(
                     (food_qty + resident_food_qty) / max(1, sum(row["alive"] for row in self._actor_rows()))),
-                "transactions": {"count": len(transactions), "value": _round(
-                    sum(float(t.get("value", 0.0)) for t in transactions)),
-                    "by_kind": dict(sorted(by_kind.items())), "by_good": dict(sorted(by_good.items()))},
+                "handovers": {"count": int(handovers["count"]),
+                              "retained": len(self.world._handovers),
+                              "by_good": by_good, "by_kind": by_kind, "by_endpoint": by_endpoint},
                 "shops": shops, "storage": dict(sorted(storage.items())),
                 "land": dict(sorted(land.items())), "living_crops": dict(sorted(crops.items())),
                 "living_animals": dict(sorted(animals.items())),
@@ -304,8 +299,8 @@ class SimulationReporter:
                 "population_coin": float(report["population"]["coin"]["mean"] or 0.0),
                 "food_quantity": float(report["economy"]["food_quantity"]),
                 "stock_reference_value": float(report["economy"]["stock_reference_value"]),
-                "transaction_value": float(report["economy"]["transactions"]["value"]),
-                "transactions": float(report["economy"]["transactions"]["count"]),
+                "coin_handed_over": float(report["economy"]["handovers"]["by_good"].get("coin", {}).get("quantity", 0.0)),
+                "handovers": float(report["economy"]["handovers"]["count"]),
                 "relationships": float(report["social"]["relationships"]["directed_bonds"]),
                 "utterances": float(report["social"]["conversation"]["utterances"])}
 
@@ -318,7 +313,7 @@ class SimulationReporter:
         report = {"schema": "bigville/report/1", "clock": dict(self.world.calendar()),
                   "population": population, "economy": economy, "social": social,
                   "ecology": self.ecology(), "refusals": self.refusals(), "measurement": {
-                      "population": "complete_census", "economy": "complete_physical_and_transaction_readout",
+                      "population": "complete_census", "economy": "complete_physical_and_handover_readout",
                       "social": "complete_recorded_graph_events", "sample_estimate": "simple_random_sample_with_fpc"}}
         current = self._series_metrics(report)
         history = getattr(self.world, "_report_history", [])

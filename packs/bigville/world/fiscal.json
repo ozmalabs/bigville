@@ -39,7 +39,7 @@
           "acting resident and receiver stand on the same cell"
         ],
         "on_short": "when the paying side has less coin than the amount, no coin moves and one period is recorded as arrears",
-        "record": "coin moves between the two sides; the obligation's paid and periods_paid rise; a Transaction is recorded; a purse's recorded ledger moves with the coin"
+        "record": "coin moves between the two sides; the obligation's paid and periods_paid rise; a Handover is recorded; a purse's recorded ledger moves with the coin"
       },
       "collect": {
         "major": true,

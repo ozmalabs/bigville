@@ -1540,7 +1540,10 @@ def test_canonical_market_health_calendar_and_export_are_live():
     assert w.calendar()["day"] == 1.0
     snapshot = w.export_state()
     assert snapshot["residents"] and snapshot["map"]["grid"]
-    assert not snapshot["transactions"]  # no implicit purchase transaction
+    # The stock handover to the seller and the seller's give are two physical handovers; no coin moved,
+    # and nothing marks the give as a purchase.
+    assert [(h["kind"], h["good"], h["from"], h["to"]) for h in snapshot["handovers"]] == [
+        ("stock", "fish_ready", "store", seller), ("give", "fish_ready", seller, "John")]
     assert snapshot["events"]
 
 

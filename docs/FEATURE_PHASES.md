@@ -1031,8 +1031,7 @@ weather and failure stream is unchanged.
 
 ## Phase 026 -- Observable transfers replace the dead transaction record
 
-**Status:** ready (decision 2026-11-05: the world does not decide what counts as a trade; it
-records physical handovers).
+**Status:** done. Handover facts (`_record_handover`, registry `_handovers` with totals, capped at `HANDOVER_LOG_LIMIT` = 1000) replace `Transaction`/`_record_transaction`; handover kinds live in `packs/*/world/handovers.json`. Reporting exposes `economy.handovers` and the series `handovers`/`coin_handed_over`. A `_transactions` compatibility count of fiscal handovers is kept for `village_eval.py`. README.md is owned by the parallel session and was not edited; replacement report-example line: `print(report["economy"]["handovers"])  # physical handovers by good, kind and endpoint; not a record of sales`. See docs/phases/phase026/PHASE026_REPORT.md.
 
 **Goal.** Remove `_record_transaction` and the `Transaction` node (no caller exists). Record
 each completed physical handover (`give`, `transfer`, `fetch`, `put`) as a `Handover` fact:
@@ -1848,3 +1847,4 @@ rearing priors (the backend's); carrying infants.
 | 023 Timed jobs occupy the worker | done | (this commit) | docs/phases/phase023/PHASE023_REPORT.md -- busy refusal, jobs pause when the worker leaves the start cell, paused read-offs; 844 passed |
 | 024 Exhaustion, collapse and sleep | done | (this commit) | docs/phases/phase024/PHASE024_REPORT.md -- EXHAUSTION table, graded slowdown, collapse and sleep with refusals and job pause, sleep facts, simple-backend sleep rule; 872 passed |
 | 025 Fair turn order | done | (this commit) | docs/phases/phase025/PHASE025_REPORT.md -- per-turn seeded permutation of response order; last_order; 879 passed |
+| 026 Observable handovers | done | (this commit) | docs/phases/phase026/PHASE026_REPORT.md -- handover facts replace Transaction; economy.handovers; _transactions compat count; 894 passed |
