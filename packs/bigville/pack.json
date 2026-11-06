@@ -222,6 +222,10 @@
       "file": "world/health.json"
     },
     {
+      "name": "INTOXICATION",
+      "file": "world/intoxication.json"
+    },
+    {
       "name": "DISEASE",
       "file": "world/disease.json"
     },

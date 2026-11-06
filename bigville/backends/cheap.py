@@ -8,6 +8,7 @@ from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
 from .psi_can import CANWeightModel
 from domains.persona import simple_band   # Phase 058: the hour bands are the pack's ROUTINE_BANDS
+from domains.world_affordances import INTOXICATION as _INTOXICATION   # Phase 034: the drink policy numbers
 
 # Score added to the walk back to a paused timed job (Phase 023). A modest bias: the job
 # resumes unless a need (food, rest) scores higher. It is a valuation, not a world rule.
@@ -150,6 +151,8 @@ class DeterministicBackend:
         self.last_speech_turn = -100
         self.time_band = "morning"
         self.model = CANWeightModel()
+        # Phase 034: the last few intoxication bonuses given (the reason trace of a drunk resident's choices)
+        self.intoxication_trace: list[dict] = []
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self._update_goals(context)
@@ -342,9 +345,33 @@ class DeterministicBackend:
 
     def _hook_bonus(self, context, option):
         hook = self.policy.hook
+        bonus = self._intoxication_bonus(context, option)
         if hook is None:
+            return bonus
+        return float(hook.score_adjustment(self, context, dict(option))) + bonus
+
+    def _intoxication_bonus(self, context, option):
+        """Phase 034: a resident at drunk or above leans toward social options and away from effortful work. The
+        numbers are the INTOXICATION policy (social_bonus, effortful_penalty), and the level is the body read-off
+        `intoxication` in the observations. Each bonus given is kept in `intoxication_trace`, the reason trace. A
+        sober or tipsy resident gets none, and the world's physics is unchanged."""
+        level = float(context.observations.get("intoxication", 0.0) or 0.0)
+        if level < float(_INTOXICATION["bands"]["drunk"]):
             return 0.0
-        return float(hook.score_adjustment(self, context, dict(option)))
+        action = str(option.get("action", ""))
+        social = action in _INTOXICATION["social_actions"] or any(
+            option.get(key) for key in _INTOXICATION["social_keys"])
+        effortful = action in _INTOXICATION["effortful_actions"] and not social
+        if social:
+            bonus = float(_INTOXICATION["social_bonus"])
+        elif effortful:
+            bonus = -float(_INTOXICATION["effortful_penalty"])
+        else:
+            return 0.0
+        self.intoxication_trace.append({"action": action, "target": str(option.get("target", "")),
+                                        "bonus": bonus, "intoxication": level})
+        del self.intoxication_trace[:-20]
+        return bonus
 
     def _update_goals(self, context: ActorContext):
         observations = context.observations

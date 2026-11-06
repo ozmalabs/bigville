@@ -23,6 +23,8 @@ META_METASKILL = _PACK["META_METASKILL"]
 SPEECH_CHATTER = _PACK["SPEECH_CHATTER"]
 SPEECH_WEATHER = _PACK["SPEECH_WEATHER"]
 SKILL_LIMITATIONS = _PACK["SKILL_LIMITATIONS"]
+# Phase 034: the intoxication rates a working skill loses per unit of alcohol in the body (effective_skill).
+INTOXICATION = _PACK["INTOXICATION"]
 SKILL_CLUSTERS = _PACK["SKILL_CLUSTERS"]
 SKILL_CLOSENESS = _PACK["SKILL_CLOSENESS"]
 SKILL_AFFINITY = _PACK["SKILL_AFFINITY"]
@@ -146,6 +148,16 @@ def aptitude_factor(person, metaskill):
     return max(0.0, aptitude) ** loading
 
 
+def _intoxication_effect(person, skill):
+    """The level a working skill loses while the body holds alcohol (Phase 034): coordination_rate per unit of
+    intoxication for a physical skill, focus_rate for a cognitive one. Zero when sober or when no level is given."""
+    level = float((person or {}).get("intoxication", 0.0))
+    if level <= 0.0:
+        return 0.0
+    rate = INTOXICATION["focus_rate"] if skill_learning(skill) == "cognitive" else INTOXICATION["coordination_rate"]
+    return -float(rate) * level
+
+
 def _limitation_effects(person, skill):
     """(level delta, learn multiplier) from a person's limitations, for `skill` and its metaskill."""
     meta = skill_metaskill(skill)
@@ -170,6 +182,7 @@ def effective_skill(levels, metas, skill, person=None):
     meta = float(metas.get(meta_name, 0.0)) * aptitude_factor(person, meta_name)
     lift = transfer * (TRANSFER["base"] + TRANSFER["meta"] * min(1.0, meta))
     delta, _learn = _limitation_effects(person, skill)
+    delta += _intoxication_effect(person, skill)
     return max(0.0, min(1.0, own + (1.0 - own) * lift + delta))
 
 

@@ -1,0 +1,44 @@
+{
+  "_doc": "INTOXICATION (Phase 034): alcohol in the body. Each drink adds its alcohol (grams of ethanol per serving, on the item in items.json) to the body's intoxication, scaled by body size: gain = grams / (widmark_r x reference_kg x size x 10) / full_bac_percent, with blood alcohol in g/100 ml as grams / (r x kg x 10) (Widmark's formula, Widmark 1932). The result is 0 when sober and 1 at full scale. The level falls by a steady amount per clock tick: sober_per_hour x TIME.minutes_per_tick / 60 (computed in domains/world_affordances.py, so a longer tick sobers more per tick). The SOURCES: (1) 1 UK alcohol unit is 8 g of ethanol (NHS, alcohol units guidance). Ethanol is 0.789 g/ml (standard density at 20 C). A serving is one mug, taken as a UK pint of 568 ml (APPROX). Grams per serving are volume x strength x 0.789: ale at 4 per cent is 18 g; beer at 5 per cent is 22 g; cider at 4.5 per cent is 20 g (APPROX, UK cider runs 4 to 8.5 per cent); mead at 10 per cent is 45 g (APPROX, mead runs about 8 to 14 per cent). (2) widmark_r 0.68 is the Widmark distribution ratio for men (Watson, Watson and Batt, 1981, J Forensic Sci). The reference body is 70 kg (APPROX, the mean adult male weight of the period is not sourced here). (3) Elimination is about 0.015 g/100 ml of blood per hour, nearly linear at ordinary intoxication (Jones, 2010, Forensic Sci Int, evidence-based survey of ethanol elimination). The seed R41 (bigville_nutrition, nu_metabolize) multiplies intoxication by sober_rate per epoch; this table uses the measured near-linear fall instead, and the report notes the change. sober_per_hour = 0.015 / full_bac_percent. full_bac_percent (0.4, g/100 ml at intoxication 1) is APPROX: the top of the scale sits in the range where stupor and coma begin. bands: tipsy, drunk and stupefied are the lower edges of their bands on the 0 to 1 scale. APPROX, with 0.1 near a pint of 4 per cent ale in a 70 kg man (0.04 g/100 ml). pass_out: at or above it the resident passes out into the sleep state (reason passed_out, Phase 024's asleep flag). wake_below: a passed-out resident wakes unaided once intoxication is below it. APPROX. coordination_rate and focus_rate: the level a working skill loses per unit of intoxication, for physical skills (learning physical) and cognitive skills (learning cognitive). The shape (impairment of coordination and attention rising with blood alcohol) follows the psychomotor literature (Moskowitz and Fiorentino, 2000, NHTSA DOT HS 809 028); these magnitudes are APPROX. stagger_above: movement slows above this level, by stagger_speed (APPROX, a multiplier on the Phase 024 speed factor). social_bonus and effortful_penalty: the simple backend's policy bonus once the resident is at drunk or above (APPROX, policy, not world physics). social_actions and social_keys name the options that count as social (a transfer, or a move that carries a recipient); effortful_actions name the work and care options. No licence, price or opening rule is here: those are what residents do with these facts.",
+  "_types": {},
+  "tables": {
+    "INTOXICATION": {
+      "widmark_r": 0.68,
+      "reference_kg": 70.0,
+      "full_bac_percent": 0.4,
+      "elimination_bac_per_hour": 0.015,
+      "sober_per_hour": 0.0375,
+      "bands": {
+        "tipsy": 0.1,
+        "drunk": 0.35,
+        "stupefied": 0.6
+      },
+      "pass_out": 0.8,
+      "wake_below": 0.35,
+      "coordination_rate": 0.3,
+      "focus_rate": 0.25,
+      "stagger_above": 0.35,
+      "stagger_speed": 0.5,
+      "social_bonus": 20.0,
+      "effortful_penalty": 20.0,
+      "social_actions": [
+        "transfer"
+      ],
+      "social_keys": [
+        "recipient"
+      ],
+      "effortful_actions": [
+        "work",
+        "build",
+        "maintain",
+        "harvest",
+        "sow",
+        "water",
+        "fertilise",
+        "tend_animals",
+        "fetch",
+        "care"
+      ]
+    }
+  }
+}

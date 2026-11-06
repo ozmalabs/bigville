@@ -651,6 +651,46 @@ def _check_health(errors, warnings, info):
                 f"period(s) past starve_limit (starve_harm {h['starve_harm']}, APPROX)")
 
 
+def _check_intoxication(errors, warnings, info):
+    """Phase 034: the INTOXICATION table and the alcohol on the drinks. The bands rise from 0 to pass_out (at most 1),
+    wake_below sits under pass_out, and sober_per_tick equals the hourly fall over one clock tick. Every item with
+    alcohol is a food in the drink group, and every recipe whose output is a drink yields alcohol."""
+    t = INTOXICATION
+    b = t["bands"]
+    if not 0.0 < float(b["tipsy"]) < float(b["drunk"]) < float(b["stupefied"]) < float(t["pass_out"]) <= 1.0:
+        errors.append(f"INTOXICATION: 0 < tipsy < drunk < stupefied < pass_out <= 1 is required, not {b} "
+                      f"and pass_out {t['pass_out']!r}")
+    if not 0.0 <= float(t["wake_below"]) < float(t["pass_out"]):
+        errors.append(f"INTOXICATION[wake_below]: must lie in [0, pass_out), not {t['wake_below']!r}")
+    if not 0.0 <= float(t["stagger_above"]) <= 1.0 or not 0.0 < float(t["stagger_speed"]) <= 1.0:
+        errors.append("INTOXICATION: stagger_above in [0, 1] and stagger_speed in (0, 1] are required")
+    for name in ("coordination_rate", "focus_rate", "social_bonus", "effortful_penalty"):
+        if float(t[name]) < 0.0:
+            errors.append(f"INTOXICATION[{name}]: must not be negative, not {t[name]!r}")
+    if not 0.0 < float(t["widmark_r"]) < 1.0 or float(t["reference_kg"]) <= 0.0 or float(t["full_bac_percent"]) <= 0.0:
+        errors.append("INTOXICATION: widmark_r in (0, 1), reference_kg and full_bac_percent positive are required")
+    per_hour = float(t["elimination_bac_per_hour"]) / float(t["full_bac_percent"])
+    if abs(float(t["sober_per_hour"]) - per_hour) > 1e-9:
+        errors.append(f"INTOXICATION: sober_per_hour must equal elimination_bac_per_hour / full_bac_percent "
+                      f"({per_hour:.6f}), not {t['sober_per_hour']!r}")
+    for kind, spec in ITEMS.items():
+        if spec.get("alcohol") is None:
+            continue
+        if not isinstance(spec["alcohol"], (int, float)) or isinstance(spec["alcohol"], bool) or spec["alcohol"] <= 0:
+            errors.append(f"ITEMS[{kind}][alcohol]: grams per serving, > 0, not {spec['alcohol']!r}")
+        if not spec.get("food") or spec.get("food_group") != "drink":
+            errors.append(f"ITEMS[{kind}]: an item with alcohol must be a food in the drink group")
+    for recipe in RECIPES:
+        out = recipe.get("out")
+        kind = out[0] if isinstance(out, (list, tuple)) and out else None
+        if kind and ITEMS.get(kind, {}).get("food_group") == "drink" and not ITEMS[kind].get("alcohol"):
+            errors.append(f"recipe {recipe['name']}: makes the drink {kind} with no alcohol on it")
+    ale = intoxication_gain(alcohol("ale")) if alcohol("ale") else 0.0
+    if ale:
+        info.append(f"INTOXICATION: one serving of ale ({alcohol('ale'):g} g) raises a 70 kg body by {ale:.3f} of the "
+                    f"0 to 1 scale, and the level falls by {sober_per_tick():g} a tick")
+
+
 def _check_illness(errors, warnings, info):
     """Phase 043: the DISEASE and MEDICAL_CARE tables. Each disease is a HEALTH_CONDITIONS key that is not
     healthy, with a daily onset chance for every season and a multiplier for every life stage, and drops in
@@ -1824,6 +1864,7 @@ def check_consistency():
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_health(errors, warnings, info)
+    _check_intoxication(errors, warnings, info)
     _check_illness(errors, warnings, info)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)

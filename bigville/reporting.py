@@ -174,6 +174,11 @@ class SimulationReporter:
         (accidents), and tools broken by use (broken_tools). Reads the world's tally only."""
         return {key: int(value) for key, value in self.world.tool_tally().items()}
 
+    def intoxication(self) -> dict[str, Any]:
+        """Phase 034: residents now in each intoxication band (and asleep from drink), resident-ticks spent in each
+        band so far, and grams of alcohol drunk so far. Reads the world's counts only."""
+        return self.world.intoxication_tally()
+
     def economy(self) -> dict[str, Any]:
         E = world_entities(self.world)
         stock = {}
@@ -327,7 +332,8 @@ class SimulationReporter:
         social = self.social()
         report = {"schema": "bigville/report/1", "clock": dict(self.world.calendar()),
                   "population": population, "economy": economy, "social": social,
-                  "ecology": self.ecology(), "refusals": self.refusals(), "measurement": {
+                  "ecology": self.ecology(), "refusals": self.refusals(), "intoxication": self.intoxication(),
+                  "measurement": {
                       "population": "complete_census", "economy": "complete_physical_and_handover_readout",
                       "social": "complete_recorded_graph_events", "sample_estimate": "simple_random_sample_with_fpc"}}
         current = self._series_metrics(report)

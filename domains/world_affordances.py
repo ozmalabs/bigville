@@ -147,6 +147,10 @@ HUNGER_PER_STAMINA = _PACK["HUNGER_PER_STAMINA"]
 EXHAUSTION = _PACK["EXHAUSTION"]
 # Phase 037: the health routes (one health variable, its causes, age decline, fragility and the harms).
 HEALTH = _PACK["HEALTH"]
+# Phase 034: alcohol in the body (INTOXICATION: Widmark scaling, the sobering rate, the bands, pass-out and the
+# effect rates). The grams per drink are on the ITEMS (`alcohol`). APPROX values; see the table's _doc.
+INTOXICATION = _PACK["INTOXICATION"]
+INTOXICATION_BANDS = ("sober", "tipsy", "drunk", "stupefied")
 # Phase 043: the illness rules (DISEASE: onset, severity, progression, course) and the doctor's and midwife's
 # acts (MEDICAL_CARE: screening, treatment and well-baby durations, and the skills each act needs). APPROX.
 DISEASE = _PACK["DISEASE"]
@@ -188,6 +192,38 @@ def feeds(kind):
     if spec.get("scraps_of"):
         return 0.0
     return float(spec.get("feeds", 0.0))
+
+
+def alcohol(kind):
+    """Grams of ethanol in one serving of `kind` (ITEMS `alcohol`, Phase 034). 0 for a food with none."""
+    return float(ITEMS.get(kind, {}).get("alcohol", 0.0))
+
+
+def sober_per_tick():
+    """The fall in intoxication per clock tick: the table's hourly rate over one tick (TIME.minutes_per_tick)."""
+    return float(INTOXICATION["sober_per_hour"]) * float(TIME["minutes_per_tick"]) / 60.0
+
+
+def intoxication_gain(grams, size=1.0):
+    """What `grams` of alcohol adds to a body's intoxication (0 sober to 1 at full scale). Widmark's formula:
+    blood alcohol in g/100 ml is grams / (widmark_r x body kg x 10), with body kg = reference_kg x size, and the
+    level is that blood alcohol over full_bac_percent. A smaller body (size below 1) takes more."""
+    t = INTOXICATION
+    body_kg = float(t["reference_kg"]) * float(size)
+    blood_alcohol = float(grams) / (float(t["widmark_r"]) * body_kg * 10.0)
+    return blood_alcohol / float(t["full_bac_percent"])
+
+
+def intoxication_band(level):
+    """'sober', 'tipsy', 'drunk' or 'stupefied' for an intoxication level, by the table's lower band edges."""
+    bands = INTOXICATION["bands"]
+    if float(level) >= float(bands["stupefied"]):
+        return "stupefied"
+    if float(level) >= float(bands["drunk"]):
+        return "drunk"
+    if float(level) >= float(bands["tipsy"]):
+        return "tipsy"
+    return "sober"
 
 
 def meal_value(kind, freshness):

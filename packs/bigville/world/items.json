@@ -1125,7 +1125,8 @@
         "prepared": true,
         "food_group": "drink",
         "decay": 0.02,
-        "feeds": 0.2
+        "feeds": 0.2,
+        "alcohol": 20.0
       },
       "mead": {
         "class": "material",
@@ -1137,7 +1138,8 @@
         "prepared": true,
         "food_group": "drink",
         "decay": 0.015,
-        "feeds": 0.2
+        "feeds": 0.2,
+        "alcohol": 45.0
       },
       "book": {
         "class": "good",
@@ -1211,7 +1213,8 @@
         "prepared": true,
         "food_group": "drink",
         "decay": 0.02,
-        "feeds": 0.3
+        "feeds": 0.3,
+        "alcohol": 18.0
       },
       "oil": {
         "class": "material",
@@ -2057,7 +2060,8 @@
         "prepared": true,
         "food_group": "drink",
         "decay": 0.015,
-        "feeds": 0.2
+        "feeds": 0.2,
+        "alcohol": 22.0
       },
       "salad": {
         "class": "material",

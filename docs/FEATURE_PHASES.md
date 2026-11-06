@@ -1425,11 +1425,7 @@ people acting together (Phase 047).
 
 ## Phase 034 -- Intoxication
 
-**Status:** ready, after 024 and 027 (decision 2026-11-05: drunkenness existed in the design and
-is restored). Spec: `seeds/bigville_nutrition.json` (block R41) `nu_eat` (`intoxication` += the
-food's `alcohol`), `nu_metabolize` (it is multiplied by `sober_rate` each epoch), `nu_psych`
-(mood rises and focus falls, a Mind rule). The seed's rate and gain values are set nowhere, so
-the rates here are new and marked APPROX.
+**Status:** done. A drink adds its grams of alcohol (`alcohol` on ale 18 g, cider 20, mead 45, beer 22) to a body `intoxication` level by Widmark's formula, scaled by body size, and the level falls linearly per tick (`INTOXICATION` table; sources and APPROX figures in its `_doc`). It lowers working skill through `effective_skill` (coordination for physical skills, focus for cognitive), so recipe gates, contests and attempts see it; above 0.35 walking slows by half; at 0.8 the resident passes out (`passed_out`, no stamina regained) and wakes below 0.35. `body_state`, the observations and the lexicon publish the level and band; the simple backend leans social and away from effortful work when drunk; `SimulationReporter.intoxication()`. Founding town holds no drink, so the default village is unchanged until someone brews. Open: beer is not in `DRINK_FOODS`; practice learning ignores intoxication; no mood effect. See docs/phases/phase034/PHASE034_REPORT.md.
 
 **Goal.** Make alcohol a physical fact and give the body an intoxication state.
 1. **Data.** Add `alcohol` (strength per serving) to the drink items that have it (`ale`,
@@ -2836,3 +2832,4 @@ provider layer's retry and backoff (Phase 055).
 | 054 LLM prompt packet and reply schema | done | (this commit) | docs/phases/phase054/PHASE054_REPORT.md -- prompt built from the agent view (`bigville/prompt/3`, words only, per-section caps, persona and usual-now lead); reply schema in the pack with lexicon words for intensity and amounts and verb aliases; hostile speech quoted as inert data; lessons persist and merge over the cap; every `can` row has a handle (`domains/affordance_handles.py`) and a reply that names it runs the row as the simple backend would send it; 55 tests; simple backend identical to HEAD over 60 turns; 1467 passed |
 | 048 Tools by fitness | done | (this commit) | docs/phases/phase048/PHASE048_REPORT.md -- TOOL_FIT; bare hands 0.05; no tool refusals; time, stamina, wear, strain, yield and waste by fit; stop; 1483 passed |
 | 057 Terminal interface | done | (this commit) | docs/phases/phase057/PHASE057_REPORT.md -- `python -m bigville.tui` (plain and curses) on the agent view only; pure `render` (80x24 snapshot), command parser with lexicon verbs, intensity and amount words, ambiguity questions; pack `NARRATION`; embedded and HTTP clients (no `/api/state`); agent-mode server binds a reply's handles and delivers reactions; view gains a `reaction` section; 48 tests; 1532 passed |
+| 034 Intoxication | done | (this commit) | docs/phases/phase034/PHASE034_REPORT.md -- Widmark gain, linear sobering, skill loss via effective_skill, stagger, pass-out; 1553 passed |

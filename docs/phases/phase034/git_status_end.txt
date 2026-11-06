@@ -1,0 +1,74 @@
+ M README.md
+ M bigville/backends/cheap.py
+ M bigville/backends/llm.py
+ M bigville/backends/ocelot.py
+ M bigville/backends/prompts.py
+ M bigville/backends/protocol.py
+ M bigville/game.py
+ M bigville/game/game.js
+ M bigville/reporting.py
+ M bigville/runtime.py
+ M bigville/seeds/bigville_actor_decision.json
+ M bigville/server.py
+ M docs/AGENT_BACKENDS_PLAN.md
+ M domains/agent_view.py
+ M domains/agent_view_check.py
+ M domains/bigville_entities.py
+ M domains/shared_frames.py
+ M domains/world_affordances.py
+ M packs/bigville/pack.json
+ M packs/bigville/world/agent_view.json
+ M packs/bigville/world/free_actions.json
+ M packs/bigville/world/items.json
+ M packs/bigville/world/lexicon.json
+ M packs/bigville/world/refusal_reasons.json
+ M packs/bigville/world/resolution.json
+ M packs/test_hamlet/pack.json
+ M packs/test_hamlet/world/agent_view.json
+ M packs/test_hamlet/world/free_actions.json
+ M packs/test_hamlet/world/refusal_reasons.json
+ M packs/test_hamlet/world/resolution.json
+ M tests/test_bigville_backends.py
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M tests/test_bigville_server.py
+ M tests/test_bigville_world_migrated.py
+ M tests/test_phase001_workshop_tools.py
+ M tests/test_phase010_burial.py
+ M tests/test_phase023_job_occupancy.py
+ M tests/test_phase031_llm_backend.py
+ M tests/test_phase050_resolution.py
+ M tests/test_phase059_autopilot.py
+ M tests/test_simple_tools_materials_job.py
+ M worlds/bigville_world.py
+ M worlds/resolution.py
+?? bigville/backends/prompt_packet.py
+?? bigville/backends/reply_schema.py
+?? bigville/game_persistence.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/world_persistence.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase034/
+?? docs/phases/phase048/
+?? docs/phases/phase052/full_suite_live_tree_midedit.log
+?? docs/phases/phase054/
+?? docs/runs/
+?? domains/prompt_packet_check.py
+?? packs/bigville/world/intoxication.json
+?? packs/bigville/world/prompt_packet.json
+?? packs/test_hamlet/world/intoxication.json
+?? packs/test_hamlet/world/prompt_packet.json
+?? tests/fixtures/phase054_packet_snapshot.json
+?? tests/test_bigville_game_persistence.py
+?? tests/test_bigville_graph_persistence.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_bigville_world_persistence.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase034_intoxication.py
+?? tests/test_phase048_tool_fitness.py
+?? tests/test_phase054_llm_prompt.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

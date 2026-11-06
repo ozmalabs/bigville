@@ -536,6 +536,8 @@ class BigvilleGame:
             "health": attrs.get("health", "healthy"),
             "hunger": attrs.get("hunger", 0.0),
             "energy": self.world.energy(actor),
+            "intoxication": self.world.intoxication(actor),
+            "intoxication_band": self.world.intoxication_band(actor),
             "inventory": self.world.inventory(actor),
             "held_items": self.world.held_items(actor),
             "physical_objects": self.world.physical_object_observations(actor),

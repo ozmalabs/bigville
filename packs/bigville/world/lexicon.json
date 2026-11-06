@@ -311,9 +311,9 @@
         ]
       },
       "intoxication": {
-        "_doc": "INTOXICATION, 0 (sober) to 1. read-off not yet published: no world quantity exists until Phase 034. Edges APPROX. An observer sees a drunk person by their manner, so the other perspective is visible.",
+        "_doc": "INTOXICATION, 0 (sober) to 1. The read-off is body state `intoxication` (Phase 034), from the Body node. Edges are the INTOXICATION bands of world/intoxication.json (tipsy 0.1, drunk 0.35, stupefied 0.6), so the words and the world's bands agree. Edges APPROX. An observer sees a drunk person by their manner, so the other perspective is visible.",
         "kind": "numeric",
-        "published": false,
+        "published": true,
         "range": [
           0.0,
           1.0
@@ -325,17 +325,17 @@
             "phrase": "sober"
           },
           {
-            "min": 0.2,
+            "min": 0.1,
             "label": "tipsy",
             "phrase": "tipsy"
           },
           {
-            "min": 0.5,
+            "min": 0.35,
             "label": "drunk",
             "phrase": "drunk"
           },
           {
-            "min": 0.8,
+            "min": 0.6,
             "label": "stupefied",
             "phrase": "stupefied"
           }
@@ -347,17 +347,17 @@
             "phrase": "looks sober"
           },
           {
-            "min": 0.2,
+            "min": 0.1,
             "label": "tipsy",
             "phrase": "looks tipsy"
           },
           {
-            "min": 0.5,
+            "min": 0.35,
             "label": "drunk",
             "phrase": "visibly drunk"
           },
           {
-            "min": 0.8,
+            "min": 0.6,
             "label": "stupefied",
             "phrase": "looks stupefied"
           }
@@ -1786,6 +1786,9 @@
     "LEXICON_PAYLOAD": {
       "energy": {
         "quantity": "energy"
+      },
+      "intoxication": {
+        "quantity": "intoxication"
       },
       "hunger": {
         "quantity": "hunger"

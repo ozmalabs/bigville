@@ -565,6 +565,9 @@ class BigvilleWorld:
         self._places = {}; self._containers = {}
         # Phase 048: plain counts of improvised work, accidents from strain, and broken tools (see tool_tally).
         self._tool_tally = {"improvised_jobs": 0, "accidents": 0, "broken_tools": 0}
+        # Phase 034: resident-ticks spent in each intoxication band, and grams of alcohol drunk (plain counts)
+        self._intox_ticks = {band: 0 for band in self.E.INTOXICATION_BANDS}
+        self._intox_drunk_grams = 0.0
         # Building anchors are physical sites, not just labels. Keep each
         # authored footprint clear so adjacent facades cannot overlap.
         self._building_sites = {}
@@ -959,6 +962,7 @@ class BigvilleWorld:
         self._resolve_actor_events()
         self._resolve_body_stats()
         self._resolve_sleep()
+        self._resolve_intoxication()
         self._resolve_clothing_and_bodies()
         self._resolve_period_effects()
         # Freshness is mixed in where stock arrives (set_stock and the transfers), so a pile that gained
@@ -1993,7 +1997,7 @@ class BigvilleWorld:
         # Phase 024: a tired walker's interval is multiplied (x1, x1.5 or x3). Waiting ticks accumulate in
         # the float cooldown, so a step at interval I owes I - 1 waiting ticks. Whole intervals wait exactly
         # as they did before the factor existed.
-        interval = terrain_interval * band["interval"]
+        interval = terrain_interval * band["interval"] / self.stagger_speed(actor)
         self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
                           cooldown + interval - 1.0 if interval > 1.0 + 1e-9 else 0.0)
         if nxt is not None:
@@ -3988,6 +3992,7 @@ class BigvilleWorld:
         hunger = float(self.eng.node(self._actor(actor))["attrs"].get("hunger", 0.0))
         self.eng.set_attr(self._actor(actor), "hunger", max(0.0, hunger - value))
         self._record_meal(actor, kind, value, freshness)
+        self._drink_alcohol(actor, kind)
         self.eng.add_edge_unchecked(self._actor(actor), "ate", stock)
         return True
 
@@ -6379,7 +6384,9 @@ class BigvilleWorld:
             "size": float(defaults["body"]["size"]),
             "str_train": 0.0,
             "sta_train": 0.0, "strength": 1.0, "stamina": 1.0,
-            "stats_dirty": 0.0, "stamina_reserve": float(defaults["body"]["stamina_reserve"])})
+            "stats_dirty": 0.0, "stamina_reserve": float(defaults["body"]["stamina_reserve"]),
+            # Phase 034: alcohol in the body (0 sober to 1), on the Body node
+            "intoxication": 0.0})
         self.eng.add_edge_unchecked(a, "has_body", body)
         self._bodies[name] = body
         self._actor_minds[name] = (
@@ -7783,7 +7790,7 @@ class BigvilleWorld:
         # turns without retaining the world's temporary target map.
         for option in options:
             if option.get("action") == "move":
-                option["speed_factor"] = float(band["speed"])
+                option["speed_factor"] = float(band["speed"]) * self.stagger_speed(actor)
                 option["exhaustion_step"] = float(band["step"])
                 destination = targets.get(option.get("target"))
                 if isinstance(destination, tuple):
@@ -9080,8 +9087,9 @@ class BigvilleWorld:
         """The actor's working level at a skill: own level, lifted by their closest skill through the
         metaskill (sharpened by aptitude), lowered by any limitations."""
         a = self.eng.node(self._actors[actor])["attrs"]
+        person = {**self._person(actor), "intoxication": self.intoxication(actor)}
         return round(self.E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill,
-                                       self._person(actor)), 4)
+                                           person), 4)
 
     def recipe_skill_level(self, actor, recipe):
         """Working level for a recipe row (its skill per E.recipe_skill); a recipe with no named skill
@@ -10355,7 +10363,7 @@ class BigvilleWorld:
         if float(attrs.get("collapsed", 0.0)) == 1.0:
             return "collapsed"
         if float(attrs.get("asleep", 0.0)) == 1.0:
-            return "asleep"
+            return "passed_out" if float(attrs.get("sleep_kind", 0.0)) == 3.0 else "asleep"
         return None
 
     def asleep(self, actor):
@@ -10481,7 +10489,7 @@ class BigvilleWorld:
                     if self.is_alive(actor):
                         self._lie_down(actor, collapsed=True)
                     code = "collapsed"
-                elif code is not None and self._job_tick_armed:
+                elif code is not None and code != "passed_out" and self._job_tick_armed:
                     self._recover_strain(actor)
                     collapsed = code == "collapsed"
                     gain = float(ex["collapse_gain" if collapsed else "rest_gain"])
@@ -10499,6 +10507,80 @@ class BigvilleWorld:
                             self.eng.set_attr(node, "collapse_run", 0.0)     # a full rest ends a run of collapses
                         self._wake(actor)
             self._refresh_exhaustion(actor)
+
+    # ---------------------------------------------------- intoxication (Phase 034)
+    # Alcohol is a fact of the body. A drink adds its grams of alcohol to the body's intoxication (INTOXICATION,
+    # Widmark scale). The level falls by a steady amount each clock tick, and at pass_out the resident passes out
+    # (reason passed_out) until it falls below wake_below. The world publishes the level and its band. What a
+    # resident drinks, says or does is the backend's choice.
+    def intoxication(self, actor):
+        """The body's intoxication, 0 (sober) to 1 at full scale. It stays 0 while metabolism is off."""
+        return round(float(self.eng.node(self._bodies[actor])["attrs"].get("intoxication", 0.0)), 4)
+
+    def intoxication_band(self, actor):
+        """'sober', 'tipsy', 'drunk' or 'stupefied' (the table's bands)."""
+        return self.E.intoxication_band(self.intoxication(actor))
+
+    def stagger_speed(self, actor):
+        """The movement factor alcohol gives: stagger_speed above stagger_above, else 1. It multiplies the
+        Phase 024 speed factor; it does not replace it."""
+        ip = self.E.INTOXICATION
+        return float(ip["stagger_speed"]) if self.intoxication(actor) > float(ip["stagger_above"]) else 1.0
+
+    def _drink_alcohol(self, actor, kind):
+        """A drink's alcohol enters the body (a food with no alcohol changes nothing). Metabolism off: nothing."""
+        grams = self.E.alcohol(kind)
+        if grams <= 0.0 or not self.physical_subsystems["metabolism"]:
+            return
+        body = self._bodies[actor]
+        attrs = self.eng.node(body)["attrs"]
+        gain = self.E.intoxication_gain(grams, float(attrs.get("size", 1.0)))
+        self.eng.set_attr(body, "intoxication", min(1.0, float(attrs.get("intoxication", 0.0)) + gain))
+        self._intox_drunk_grams += grams
+
+    def _pass_out(self, actor):
+        """Put a resident into the sleep state for drink (sleep_kind 3). Their timed job pauses, as in any sleep."""
+        node = self._actors[actor]
+        self.eng.set_attr(node, "asleep", 1.0)
+        self.eng.set_attr(node, "collapsed", 0.0)
+        self.eng.set_attr(node, "sleep_kind", 3.0)
+        self._set_job_paused(actor, self.job_paused(actor))
+
+    def _resolve_intoxication(self):
+        """Sober by sober_per_tick on each clock tick, and pass out or wake at the table's thresholds. The check runs
+        on every pass, so a drink that crosses pass_out takes effect at once. Sleep does not sober a resident faster:
+        the passed-out resident simply waits for the level to fall (the sleep regains no stamina; see _resolve_sleep)."""
+        ip = self.E.INTOXICATION
+        armed = self._job_tick_armed
+        for actor in self._actors:
+            body = self._bodies.get(actor)
+            if body is None or not self.is_alive(actor):
+                continue
+            level = float(self.eng.node(body)["attrs"].get("intoxication", 0.0))
+            if level > 0.0 and armed:
+                level = max(0.0, level - self.E.sober_per_tick())
+                self.eng.set_attr(body, "intoxication", level)
+            code = self._sleep_code(actor)
+            if code is None and level >= float(ip["pass_out"]):
+                self._pass_out(actor)
+            elif code == "passed_out" and level < float(ip["wake_below"]):
+                self._wake(actor)
+            if armed:
+                self._intox_ticks[self.E.intoxication_band(level)] += 1
+
+    def intoxication_tally(self):
+        """Counts over the town (Phase 034): residents now in each band (passed_out counts residents asleep from
+        drink), resident-ticks spent in each band so far, and grams of alcohol drunk so far. Plain counts only."""
+        now = {band: 0 for band in self.E.INTOXICATION_BANDS}
+        now["passed_out"] = 0
+        for actor in self._actors:
+            if not self.is_alive(actor):
+                continue
+            now[self.intoxication_band(actor)] += 1
+            if self._sleep_code(actor) == "passed_out":
+                now["passed_out"] += 1
+        return {"now": now, "resident_ticks": dict(self._intox_ticks),
+                "alcohol_grams": round(self._intox_drunk_grams, 4)}
 
     def sleep_facts(self, actor):
         """The facts the seed says the adapter writes for a sleep decision (Phase 024).
@@ -10554,6 +10636,8 @@ class BigvilleWorld:
                 # movement speed it gives (1, 2/3, 1/3, 0), and the sleep flags.
                 "exhaustion_step": int(band["step"]), "speed_factor": round(float(band["speed"]), 4),
                 "asleep": self.asleep(actor), "collapsed": self.collapsed(actor),
+                # Phase 034 read-offs: intoxication (0 sober to 1) and its band.
+                "intoxication": self.intoxication(actor), "intoxication_band": self.intoxication_band(actor),
                 # Phase 043 read-offs: the illness flag and the care flags (screened, treated, well_baby), 0 or 1.
                 "illness": int(bool(self.eng.node(self._actors[actor])["attrs"].get("disease"))),
                 "screened": self._care_flag_value(actor, "screened"),

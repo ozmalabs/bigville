@@ -24,6 +24,9 @@
       "collapsed": {
         "description": "You have collapsed from exhaustion and are asleep where you fell. You cannot act until you wake, and you wake weaker than a proper sleep leaves you."
       },
+      "passed_out": {
+        "description": "You have passed out from drink and are asleep where you fell. You cannot act until the drink wears off enough for you to wake."
+      },
       "too_tired": {
         "description": "You are too exhausted to walk. Rest or sleep first."
       },
