@@ -1,4 +1,4 @@
-"""Provider-neutral LLM backend, with an autopilot (Phases 031 and 059).
+"""Provider-neutral LLM backend, with an autopilot (Phases 031, 059) and continued sessions (Phase 066).
 
 No vendor SDK is imported here. Applications provide a callable or an object with ``complete(prompt)``.
 
@@ -24,9 +24,23 @@ Phase 059 (the autopilot):
   and the reply's utterances and memory updates are used. The explicit action ``wait`` does nothing.
   A reply with ``waiting: true`` is an invalid output (it stops the whole turn for every resident).
 * A model plan (a continuation) is held by the game until it completes or is interrupted.
-* Counts: consults, autopilot turns, carry-ons, waits, fallbacks by cause, and deviations (an accepted
-  reply that names a different action from the autopilot's would-be choice, which is computed on every
-  turn).
+
+Phase 066 (the continued session and the log):
+
+* Each resident has a thread (bigville/backends/thread.py). The system text is sent once. A consult sends a user
+  message (the full packet first, then the changes since the last consult, with the full packet again every
+  ``full_every`` consults), and the reply's content is kept as the assistant message. A repaired reply keeps the
+  failed reply and the repair request in the thread, so the thread shows what was asked.
+* When the thread would pass ``thread_chars``, a new thread starts with the full packet (persona, usual day,
+  lessons and notes), and a new session id. A failed consult changes nothing.
+* The payload carries ``messages`` (what is sent), ``thread`` (the id, index, mode and session) and, for a
+  repair, ``repair``. The Phase 031 keys (``schema``, ``context``, ``system``) are still there for the current
+  packet. The replay key is the messages (llm_transcript.thread_key).
+* Every provider call attempt, and every budget refusal, is written to ``self.log`` when one is attached
+  (bigville/llm_log.py), with the whole response: thinking included. Thinking is never put in a message, the
+  packet, the response, the backend state or the held state.
+* ``to_dict`` and ``from_dict`` hold the backend's state (threads, counts, gate, autopilot, budget), so a run can
+  stop and resume. The character (memories and held frames) is not in this state: the game checkpoint holds it.
 """
 from __future__ import annotations
 
@@ -34,22 +48,27 @@ import hashlib
 import json
 import re
 import time
+from dataclasses import asdict
 from typing import Any, Protocol
 
 from domains.autopilot import DEFAULT_PACK, table
 from ..character import CharacterDefinition, HeldState
 from ..concurrency import DEFAULT_WORKERS
-from ..llm_transcript import call_provider
+from ..llm_transcript import call_provider, thread_hash
 from .autopilot import FALLBACK_CAUSES, CallBudget, ConsultGate
-from .cheap import DeterministicBackend, simple_policy_for
+from .cheap import DeterministicBackend, NPCGoal, simple_policy_for
+from .prompt_packet import PACKET_SCHEMA
 from .prompts import PromptBuilder
 from .protocol import ActorContext, ActorResponse, ProposedAction
 from .reply_schema import check as check_reply, to_wire
+from .thread import (DEFAULT_FULL_EVERY, DEFAULT_THREAD_CHARS, REPLY_RESERVE_CHARS, ConsultThread, canonical,
+                     message_text, state_changes)
 
 
 MAX_REPAIRS = 1
 ERROR_LIMIT = 160
 ERRORS_PER_RESPONSE = 5
+STATE_SCHEMA = "bigville/llm-backend-state/1"
 # Error text that looks like a credential is dropped rather than stored or reported.
 _SECRET_PATTERN = re.compile(
     r"authorization|bearer|api[_\- ]?key|secret|passw|token|\bsk-|[?&]key=|[A-Za-z0-9_\-]{28,}",
@@ -57,6 +76,7 @@ _SECRET_PATTERN = re.compile(
 )
 _COUNT_KEYS = ("calls", "repairs_used", "repaired_successes", "successes", "failures",
                "provider_errors", "invalid_outputs", "autopilot_turns", "carry_ons", "waits", "deviations")
+_THREAD_COUNTS = ("threads", "compactions", "full_consults", "delta_consults", "thread_chars_max")
 
 
 class LLMProvider(Protocol):
@@ -189,6 +209,11 @@ def _day(calendar) -> int | None:
         return None
 
 
+def _redactor(provider: Any):
+    redact = getattr(provider, "redact", None)
+    return redact if callable(redact) else None
+
+
 class LLMBackend:
     kind = "llm"
     # Phase 054: the game gives this resident's context its agent view (words only), and nothing else.
@@ -205,11 +230,15 @@ class LLMBackend:
 
     def __init__(self, character: CharacterDefinition, provider: LLMProvider,
                  *, prompt_builder: PromptBuilder | None = None, autopilot=True, policy=None,
-                 budget: CallBudget | None = None, pack: str = DEFAULT_PACK):
+                 budget: CallBudget | None = None, pack: str = DEFAULT_PACK,
+                 thread_chars: int = DEFAULT_THREAD_CHARS, full_every: int = DEFAULT_FULL_EVERY, log=None):
         """``autopilot``: True builds a DeterministicBackend for this character (with ``policy``, by default
         the "default" simple profile); a DeterministicBackend is used as given; False or None turns the
         autopilot off, which is the Phase 031 behaviour. ``budget`` caps the provider calls; with an
-        autopilot and no budget, the pack's per-resident daily cap applies."""
+        autopilot and no budget, the pack's per-resident daily cap applies.
+
+        Phase 066: ``thread_chars`` is the thread size that starts a new thread, and ``full_every`` the number of
+        consults between full packets. ``log`` is an ``LLMLog`` (bigville/llm_log.py), or None for no log."""
         self.character = character
         self.provider = provider
         self.prompt_builder = prompt_builder or PromptBuilder()
@@ -225,12 +254,20 @@ class LLMBackend:
         if budget is None and self.autopilot is not None:
             budget = CallBudget(max_calls_per_day=table(pack)["max_calls_per_resident_per_day"])
         self.budget = budget
+        if int(thread_chars) < 1 or int(full_every) < 1:
+            raise ValueError("thread_chars and full_every must be at least 1")
+        self.thread_chars = int(thread_chars)
+        self.full_every = int(full_every)
+        self.log = log
+        self.threads: dict[str, ConsultThread] = {}
         self.counts: dict[str, Any] = {key: 0 for key in _COUNT_KEYS}
         self.counts["latency_ms_total"] = 0.0
         self.counts["last_error"] = ""
         # Phase 055: spend and tokens reported by the provider, and the time spent in provider calls.
         self.counts.update({"cost": 0.0, "tokens_in": 0, "tokens_out": 0, "tokens_reasoning": 0,
                             "call_latency_ms_total": 0.0})
+        # Phase 066: the thread counts (threads started, compactions, full and delta consults, largest thread).
+        self.counts.update({key: 0 for key in _THREAD_COUNTS})
         self.fallbacks: dict[str, int] = {cause: 0 for cause in FALLBACK_CAUSES}
         self.consults_by_reason: dict[str, int] = {}
         # Phase 055: per calendar day (the period the call budget uses): calls, repairs, fallbacks, cost, latency.
@@ -244,7 +281,9 @@ class LLMBackend:
         ``successes`` are the accepted replies; the two together are the consults that were attempted."""
         return {**self.counts, "fallbacks_by_cause": dict(self.fallbacks),
                 "consults_by_reason": dict(self.consults_by_reason),
-                "by_day": {day: dict(row) for day, row in self.by_day.items()}}
+                "by_day": {day: dict(row) for day, row in self.by_day.items()},
+                "thread_length": {r: t.consults for r, t in sorted(self.threads.items())},
+                "thread_chars": {r: t.chars() for r, t in sorted(self.threads.items())}}
 
     def _bucket(self, day) -> dict[str, Any]:
         key = "none" if day is None else str(day)
@@ -279,10 +318,69 @@ class LLMBackend:
     def _lesson_limit(self) -> int:
         return int(self.prompt_builder.pack["PROMPT_PACKET"]["lessons_max"])
 
+    # -- the thread (Phase 066) -------------------------------------------------------------
+    def _text(self, key: str) -> str:
+        return str(self.prompt_builder.pack["PROMPT_PACKET"]["thread"][key])
+
+    def _message(self, key: str, body: dict[str, Any]) -> str:
+        """A user message: the pack's text for this kind, a newline, then the JSON body."""
+        return self._text(key) + "\n" + json.dumps(body, sort_keys=True, ensure_ascii=False, default=str)
+
+    def _next_turn(self, resident: str, record, context: ActorContext):
+        """The thread this consult will use, its user message, the mode (``full`` or ``delta``), the packet state
+        (a JSON copy), and whether the thread was created and whether it was compacted. Nothing is stored here:
+        ``_commit`` stores the thread once a reply is accepted."""
+        state = json.loads(canonical(record.context))
+        turn = int(context.turn)
+        current = self.threads.get(resident)
+        if current is None:
+            thread = ConsultThread(resident=resident, index=0, messages=[{"role": "system", "content": record.system}],
+                                   started_turn=turn)
+            text = self._message("first", {"schema": PACKET_SCHEMA, "context": state})
+            return thread, {"role": "user", "content": text}, "full", state, True, False
+        if current.last_state is not None and current.since_full < self.full_every:
+            mode = "delta"
+            text = self._message("delta", {"schema": PACKET_SCHEMA, **state_changes(current.last_state, state)})
+        else:
+            mode = "full"
+            text = self._message("full", {"schema": PACKET_SCHEMA, "context": state})
+        if current.consults and current.chars() + len(text) + REPLY_RESERVE_CHARS > self.thread_chars:
+            thread = ConsultThread(resident=resident, index=current.index + 1,
+                                   messages=[{"role": "system", "content": record.system}], started_turn=turn)
+            text = self._message("start", {"schema": PACKET_SCHEMA, "context": state})
+            return thread, {"role": "user", "content": text}, "full", state, True, True
+        return current.copy(), {"role": "user", "content": text}, mode, state, False, False
+
+    def _commit(self, resident: str, thread: ConsultThread, messages: list[dict[str, str]], text: str,
+                state: dict[str, Any], mode: str, created: bool, compacted: bool) -> None:
+        """Store an accepted consult: the messages sent, and the reply's content as the assistant message."""
+        thread.messages = list(messages) + [{"role": "assistant", "content": text}]
+        thread.consults += 1
+        thread.last_state = state
+        if mode == "full":
+            thread.since_full = 0
+            thread.full_consults += 1
+            self.counts["full_consults"] += 1
+        else:
+            thread.since_full += 1
+            thread.delta_consults += 1
+            self.counts["delta_consults"] += 1
+        thread.chars_max = max(thread.chars_max, thread.chars())
+        self.counts["thread_chars_max"] = max(self.counts["thread_chars_max"], thread.chars_max)
+        if created:
+            self.counts["threads"] += 1
+        if compacted:
+            self.counts["compactions"] += 1
+        self.threads[resident] = thread
+
+    def _repair_message(self, errors: list[str]) -> str:
+        return self._message("repair", {"errors": list(errors)})
+
+    # -- the consult ----------------------------------------------------------------------------
     def _ask(self, context: ActorContext, consult_reason: str | None, choices=None):
         """One consult: the provider call and at most one repair, within the budget.
 
-        Returns ("reply", wire_reply, attempts, prompt_record, prompt_hash) or
+        Returns ("reply", wire_reply, attempts, prompt_record, prompt_hash, as_sent) or
         ("fallback", cause, error, prompt_record, prompt_hash). A context without an agent view is never sent:
         the prompt path is the Phase 054 packet, which is built from the view."""
         if getattr(context, "agent_view", None) is None:
@@ -292,33 +390,114 @@ class LLMBackend:
         prompt_hash = hashlib.sha256(record.as_json().encode()).hexdigest()
         fields = tuple(self.prompt_builder.pack["PROMPT_RESPONSE_FIELDS"])
         resident, day = self._resident(), _day(context.observations.get("calendar"))
+        thread, user, mode, state, created, compacted = self._next_turn(resident, record, context)
+        messages = thread.messages + [user]
         errors: list[str] = []
+        last_text = ""
         for attempt in range(MAX_REPAIRS + 1):
+            if attempt:
+                # The repair is one extra message in the thread: the fixed errors. The failed reply is not echoed
+                # (Phase 031: no model output goes back in a repair).
+                messages = messages + [{"role": "user", "content": self._repair_message(errors)}]
             if self.budget is not None:
                 # Checked and recorded in one locked step, so residents decided in parallel cannot overrun the cap.
                 cause = self.budget.reserve(resident, day)
                 if cause is not None:
+                    self._log_refusal(context, consult_reason, thread, cause, attempt)
                     return ("fallback", cause, f"{cause}: the call budget for this resident is spent",
                             record, prompt_hash)
-            payload = base if attempt == 0 else {**base, "repair": {"errors": list(errors)}}
             if attempt:
                 self.counts["repairs_used"] += 1
                 self._bucket(day)["repairs"] += 1
             self.counts["calls"] += 1
             self._bucket(day)["calls"] += 1
-            meta = {"turn": int(context.turn), "actor": resident, "attempt": attempt, "period": day}
+            payload = {**base, "messages": messages,
+                       "thread": {"id": thread.thread_id(), "index": thread.index, "mode": mode,
+                                  "consult": thread.consults + 1, "session": thread.session(),
+                                  "compacted": compacted}}
+            if attempt:
+                payload["repair"] = {"errors": list(errors)}
+            meta = {"turn": int(context.turn), "actor": resident, "attempt": attempt, "period": day,
+                    "session": thread.session(), "thread": thread.thread_id()}
             started = time.perf_counter()
             try:
                 raw = self._call(payload, meta)
             except Exception as exc:
                 self._record_cost(day, started)
+                self._log_attempt(context, consult_reason, thread, mode, compacted, attempt, messages, None,
+                                  exc, [], "provider_error", "provider_error", started)
                 return ("fallback", "provider_error", exc, record, prompt_hash)
             self._record_cost(day, started)
+            last_text = message_text(raw)
             wire, as_sent, errors = self._check(raw, fields, context.affordances)
             if wire is not None:
+                outcome = "repaired" if attempt else "accepted"
+                self._log_attempt(context, consult_reason, thread, mode, compacted, attempt, messages, raw,
+                                  None, [], outcome, None, started)
+                self._commit(resident, thread, messages, last_text, state, mode, created, compacted)
                 return ("reply", wire, attempt + 1, record, prompt_hash, as_sent)
+            final = attempt == MAX_REPAIRS
+            self._log_attempt(context, consult_reason, thread, mode, compacted, attempt, messages, raw,
+                              None, errors, "invalid", "invalid_output" if final else None, started)
         return ("fallback", "invalid_output", "; ".join(errors), record, prompt_hash)
 
+    # -- the log (Phase 066) -------------------------------------------------------------------
+    def _log_attempt(self, context: ActorContext, reason: str | None, thread: ConsultThread, mode: str,
+                     compacted: bool, attempt: int, messages: list[dict[str, str]], raw: Any,
+                     exc: BaseException | None, errors: list[str], outcome: str, cause: str | None,
+                     started: float) -> None:
+        """Write one record for one provider call attempt. ``response`` is the whole response: for a provider that
+        returns a ProviderResult, the call's ``.result`` (reasoning and every other field, untruncated)."""
+        if self.log is None:
+            return
+        redact = _redactor(self.provider)
+        call = getattr(self.provider, "last_call", None) if exc is not None or raw is None else None
+        result = getattr(raw, "result", None) if raw is not None else None
+        if result is not None:
+            response = {"ok": True, **result.to_dict()}
+        elif raw is not None:
+            response = {"ok": True, "content": raw if isinstance(raw, (str, dict)) else str(raw)}
+        else:
+            response = {"ok": False, "error": f"{type(exc).__name__}: {exc}" if exc is not None else None,
+                        **({k: v for k, v in (call or {}).items() if k != "ok"} if isinstance(call, dict) else {})}
+        day = _day(context.observations.get("calendar"))
+        record = {
+            "kind": "call",
+            "resident": self._resident(),
+            "turn": int(context.turn),
+            "day": day,
+            "thread": thread.thread_id(),
+            "thread_index": thread.index,
+            "session": thread.session(),
+            "consult_no": thread.consults + 1,
+            "mode": mode,
+            "compacted": compacted,
+            "consult_reason": reason,
+            "attempt": attempt,
+            "messages": messages,
+            "thread_hash": thread_hash(messages),
+            "response": response,
+            "retries": list(response.get("attempts") or []) if isinstance(response, dict) else [],
+            "outcome": outcome,
+            "errors": list(errors),
+            "fallback_cause": cause,
+            "timings": {"latency_ms": round((time.perf_counter() - started) * 1000.0, 3),
+                        "provider_latency_ms": response.get("latency_ms") if isinstance(response, dict) else None,
+                        "started_at": response.get("started_at") if isinstance(response, dict) else None},
+        }
+        self.log.append(record, redact=redact)
+
+    def _log_refusal(self, context: ActorContext, reason: str | None, thread: ConsultThread, cause: str,
+                     attempt: int) -> None:
+        """A budget refusal: no call was made. Logged so the log shows every consult the cap stopped."""
+        if self.log is None:
+            return
+        self.log.append({"kind": "refused", "resident": self._resident(), "turn": int(context.turn),
+                          "day": _day(context.observations.get("calendar")), "thread": thread.thread_id(),
+                          "thread_index": thread.index, "consult_reason": reason, "attempt": attempt,
+                          "fallback_cause": cause}, redact=_redactor(self.provider))
+
+    # -- budget spend ---------------------------------------------------------------------------
     def _record_cost(self, day, started: float) -> None:
         """Book the provider's figures for the call that just returned, on this thread: spend (for the cap),
         tokens, and the time the call took."""
@@ -337,7 +516,7 @@ class LLMBackend:
         self.counts["tokens_out"] += int(usage.get("output", 0) or 0)
         self.counts["tokens_reasoning"] += int(usage.get("reasoning", 0) or 0)
 
-    # -- decisions -----------------------------------------------------------------------
+    # -- decisions -----------------------------------------------------------------------------
     def decide(self, context: ActorContext) -> ActorResponse:
         """Return the autopilot's action, or the model's, or an idle response after a counted failure.
 
@@ -534,3 +713,86 @@ class LLMBackend:
                 "requires_conversational_interface": self.requires_conversational_interface,
             }},
         )
+
+    # -- stop and resume (Phase 066) -------------------------------------------------------------
+    def to_dict(self) -> dict[str, Any]:
+        """The backend's state as JSON-able data: threads, counts, the consult gate, the autopilot's goals and
+        choices, and the call budget. Not the character (its memories and held frames are the game's)."""
+        gate = None
+        if self.gate is not None:
+            g = self.gate
+            gate = {"last_consult_turn": g.last_consult_turn, "last_block": g.last_block,
+                    "last_hunger": g.last_hunger, "last_energy": g.last_energy,
+                    "tied_in_view": sorted(g.tied_in_view), "heard_turn": g.heard_turn,
+                    "outcome_turn": g.outcome_turn, "fail_reason": g.fail_reason, "fail_streak": g.fail_streak}
+        autopilot = None
+        if self.autopilot is not None:
+            a = self.autopilot
+            autopilot = {"last_choice": json.loads(canonical(a.last_choice)),
+                         "rest_energy_threshold": a.rest_energy_threshold,
+                         "goals": [asdict(goal) for goal in a.goals],
+                         "current_goal": asdict(a.current_goal) if a.current_goal is not None else None,
+                         "last_speech_turn": a.last_speech_turn, "time_band": a.time_band,
+                         "intoxication_trace": json.loads(canonical(a.intoxication_trace)),
+                         "grievances": dict(a.grievances)}
+        budget = None
+        if self.budget is not None:
+            with self.budget._lock:
+                budget = {"calls_by_day": [[r, d, n] for (r, d), n in sorted(
+                              self.budget.calls_by_day.items(), key=lambda item: (item[0][0], str(item[0][1])))],
+                          "spent": self.budget.spent}
+        return {"schema": STATE_SCHEMA, "resident": self._resident(),
+                "threads": {r: t.to_dict() for r, t in sorted(self.threads.items())},
+                "counts": json.loads(canonical(self.counts)), "fallbacks": dict(self.fallbacks),
+                "consults_by_reason": dict(self.consults_by_reason),
+                "by_day": json.loads(canonical(self.by_day)),
+                "last_backend_state": json.loads(canonical(self.last_backend_state)),
+                "gate": gate, "autopilot": autopilot, "budget": budget,
+                "bucket_day": self._bucket_day}
+
+    def restore_state(self, data: dict[str, Any]) -> None:
+        """Load the state written by ``to_dict`` into this backend (which was built for the same character)."""
+        if data.get("schema") != STATE_SCHEMA:
+            raise ValueError(f"unsupported LLM backend state: {data.get('schema')!r}")
+        if data.get("resident") != self._resident():
+            raise ValueError(f"state is for {data.get('resident')!r}, not {self._resident()!r}")
+        self.threads = {r: ConsultThread.from_dict(t) for r, t in data["threads"].items()}
+        self.counts.update(data["counts"])
+        self.fallbacks = {cause: int(n) for cause, n in data["fallbacks"].items()}
+        self.consults_by_reason = {k: int(v) for k, v in data["consults_by_reason"].items()}
+        self.by_day = data["by_day"]
+        self.last_backend_state = data["last_backend_state"]
+        self._bucket_day = data.get("bucket_day")
+        if data.get("gate") is not None:
+            if self.gate is None:
+                raise ValueError("state has a consult gate but this backend has no autopilot")
+            g, s = self.gate, data["gate"]
+            g.last_consult_turn, g.last_block = s["last_consult_turn"], s["last_block"]
+            g.last_hunger, g.last_energy = s["last_hunger"], s["last_energy"]
+            g.tied_in_view = frozenset(s["tied_in_view"])
+            g.heard_turn, g.outcome_turn = s["heard_turn"], s["outcome_turn"]
+            g.fail_reason, g.fail_streak = s["fail_reason"], s["fail_streak"]
+        if data.get("autopilot") is not None:
+            if self.autopilot is None:
+                raise ValueError("state has an autopilot but this backend has none")
+            a, s = self.autopilot, data["autopilot"]
+            a.last_choice = s["last_choice"]
+            a.rest_energy_threshold = float(s["rest_energy_threshold"])
+            a.goals = [NPCGoal(**goal) for goal in s["goals"]]
+            a.current_goal = NPCGoal(**s["current_goal"]) if s["current_goal"] is not None else None
+            a.last_speech_turn, a.time_band = int(s["last_speech_turn"]), str(s["time_band"])
+            a.intoxication_trace = s["intoxication_trace"]
+            a.grievances = {str(k): int(v) for k, v in s["grievances"].items()}
+        if data.get("budget") is not None and self.budget is not None:
+            with self.budget._lock:
+                self.budget.calls_by_day = {(r, d): int(n) for r, d, n in data["budget"]["calls_by_day"]}
+                self.budget.spent = float(data["budget"]["spent"])
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], character: CharacterDefinition, provider: LLMProvider,
+                  **kwargs) -> "LLMBackend":
+        """A backend for ``character`` with the state in ``data``. ``kwargs`` are the constructor's (the same ``autopilot``,
+        ``pack``, ``policy``, ``thread_chars`` and ``full_every`` as the stopped backend, which the state does not hold)."""
+        backend = cls(character, provider, **kwargs)
+        backend.restore_state(data)
+        return backend

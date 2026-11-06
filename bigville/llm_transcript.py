@@ -41,10 +41,44 @@ class RecordedError(RuntimeError):
     """A call that failed in the recorded run fails the same way on replay."""
 
 
+def thread_key(payload: Any) -> Any:
+    """What a replay key covers. A continued thread (Phase 066) keys on its messages, the thread state as sent:
+    the system text, every earlier message, and this call's message, plus the repair errors if any. The other
+    fields of the payload (the packet's own copy, the thread's bookkeeping) are not part of the key. A payload
+    with no ``messages`` list (the Phase 055 form) keys on the whole payload, as before."""
+    if isinstance(payload, dict) and isinstance(payload.get("messages"), list):
+        return {"messages": payload["messages"], "repair": payload.get("repair")}
+    return payload
+
+
 def prompt_hash(payload: Any) -> str:
-    """SHA-256 of the canonical JSON of a prompt payload. The key the replay matches on."""
-    text = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str, ensure_ascii=False)
+    """SHA-256 of the canonical JSON of a prompt payload (see ``thread_key``). The key the replay matches on."""
+    text = json.dumps(thread_key(payload), sort_keys=True, separators=(",", ":"), default=str, ensure_ascii=False)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def thread_hash(messages: list[dict[str, Any]]) -> str:
+    """SHA-256 of a continued thread's messages as sent (the thread state hash)."""
+    text = json.dumps(messages, sort_keys=True, separators=(",", ":"), default=str, ensure_ascii=False)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def first_message_difference(requested: Any, recorded: Any) -> str | None:
+    """A short description of the first message that differs between two message lists, or None when they are
+    equal. Used to name the cause of a replay mismatch."""
+    if not isinstance(requested, list) or not isinstance(recorded, list):
+        return "the recording holds no messages to compare"
+    for index in range(max(len(requested), len(recorded))):
+        new = requested[index] if index < len(requested) else None
+        old = recorded[index] if index < len(recorded) else None
+        if new != old:
+            if new is None:
+                return f"the call has {len(requested)} messages and the recording {len(recorded)}; message {index} is missing"
+            if old is None:
+                return f"the recording has {len(recorded)} messages and the call {len(requested)}; message {index} is extra"
+            role = new.get("role", "?") if isinstance(new, dict) else "?"
+            return f"message {index} ({role}) differs from the recording"
+    return None
 
 
 def call_provider(provider: Any, payload: Any, meta: dict[str, Any] | None = None) -> Any:
@@ -189,6 +223,27 @@ class ReplayProvider:
     def last_usage(self):
         return getattr(self._local, "usage", None)
 
+    def _first_difference(self, payload: dict, slot_keys: list[tuple]) -> str | None:
+        """The first differing message against the recording that agrees with the call for longest (the closest
+        recording of this turn and actor). Returns None when no recording of the slot holds its messages."""
+        requested = payload.get("messages")
+        best_prefix, best = -1, None
+        for key in slot_keys:
+            recorded = self._index[key][0].get("prompt")
+            if not isinstance(recorded, dict) or not isinstance(recorded.get("messages"), list):
+                continue
+            difference = first_message_difference(requested, recorded["messages"])
+            if difference is None:
+                continue
+            prefix = 0
+            for new, old in zip(requested, recorded["messages"]):
+                if new != old:
+                    break
+                prefix += 1
+            if prefix > best_prefix:
+                best_prefix, best = prefix, difference
+        return best
+
     def _mismatch(self, message: str):
         self.mismatches.append(message)
         return ReplayMismatch(message)
@@ -205,6 +260,11 @@ class ReplayProvider:
                 same_slot = [k for k in self._index if k[0] == turn and k[1] == actor]
                 if same_slot:
                     detail = "the prompt differs from the recorded one for this turn and actor"
+                    if isinstance(payload, dict) and isinstance(payload.get("messages"), list):
+                        # Phase 066: name the first message of the thread that differs from the recording.
+                        first = self._first_difference(payload, same_slot)
+                        if first:
+                            detail = first
                 else:
                     detail = "the run has no recorded call for this turn and actor"
                 raise self._mismatch(f"replay mismatch at turn {turn} for {actor}: {detail} "

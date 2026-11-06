@@ -3058,7 +3058,7 @@ switch turns them off; the report counts wrong-percept actions; the self-test fi
 
 ## Phase 066 -- The LLM harness: continue the session, keep the memory, keep the whole log
 
-**Status:** ready, after 055 (decision 2026-11-06: the harness should continue the session, keep memory,
+**Status:** done (see History). Open: the game checkpoint (Ocelot stream) refuses LLM residents, and `create_game` attaches no log by default (decision 2026-11-06: the harness should continue the session, keep memory,
 and keep the complete log including thinking, which is critical).
 
 **Goal.**
@@ -3195,3 +3195,4 @@ truth held apart. Unscheduled until the rule says it is needed.
 | 034 Intoxication | done | (this commit) | docs/phases/phase034/PHASE034_REPORT.md -- Widmark gain, linear sobering, skill loss via effective_skill, stagger, pass-out; 1553 passed |
 | 055 LLM backend operations | done | (this commit) | docs/phases/phase055/PHASE055_REPORT.md -- bounded thread pool for `concurrent` backends with fixed result order; JSONL transcripts and a replay provider keyed by turn, actor and prompt hash; stdlib OpenAI-compatible provider with OpenCode Go settings, retries, rate limit, key redaction and spend cap; `llm_scenario` mixed towns; per-resident and per-day cost in `llm_report`; live test skipped by default; 3 LLM + 97 simple for 100 turns made 38 calls; 38 tests; simple backend identical to HEAD; 1569 passed on the previous base |
 | 038 Strikes and injury | done | (this commit) | docs/phases/phase038/PHASE038_REPORT.md -- strike through the contest rule; injury and violence harm; trigger off by default; 1609 passed |
+| 066 LLM harness: session, memory, whole log | done | (this commit) | docs/phases/phase066/PHASE066_REPORT.md -- per-resident message thread (full packet, then deltas, compaction by new thread, stable session id); provider returns `ProviderResult` with reasoning fields and the whole response; hash-chained append-only `LLMLog` that keeps thinking whole and detects edits and cuts; replay keyed on thread state naming the first differing message; `to_dict`/`from_dict` stop and resume; 17 tests; simple backend identical to HEAD; 1626 passed |

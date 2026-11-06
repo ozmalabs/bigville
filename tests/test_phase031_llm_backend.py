@@ -167,7 +167,11 @@ def test_repair_request_carries_the_original_prompt_and_only_the_error_messages(
     provider = ScriptedProvider(bad, VALID)
     LLMBackend(_character(), provider).decide(_context())
     first, repair = provider.prompts
-    assert {k: v for k, v in repair.items() if k != "repair"} == first
+    # Phase 066: the repair is one extra message in the thread (the errors); everything else is the original call.
+    assert {k: v for k, v in repair.items() if k not in ("repair", "messages", "thread")} == \
+        {k: v for k, v in first.items() if k not in ("messages", "thread")}
+    assert repair["messages"][:len(first["messages"])] == first["messages"]
+    assert len(repair["messages"]) == len(first["messages"]) + 1
     assert set(repair["repair"]) == {"errors"}
     assert repair["repair"]["errors"] == ["major_action.params must be an object"]
     assert marker not in json.dumps(repair)
@@ -325,6 +329,7 @@ def test_llm_report_ignores_backends_without_llm_counts():
                   "fallbacks_by_cause": {}, "consults_by_reason": {}, "share_consulted": None,
                   "share_autopilot": None, "latency_ms_total": 0.0, "mean_latency_ms": None,
                   "call_latency_ms_total": 0, "cost": 0.0, "tokens_in": 0, "tokens_out": 0,
-                  "tokens_reasoning": 0, "per_day": {}},
+                  "tokens_reasoning": 0, "per_day": {}, "threads": 0, "compactions": 0,
+                  "full_consults": 0, "delta_consults": 0, "thread_chars_max": 0},
         "residents": {},
     }

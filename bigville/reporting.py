@@ -395,7 +395,8 @@ def llm_report(backends: dict[str, Any]) -> dict[str, Any]:
                            "mean_latency_ms": round(float(counts["latency_ms_total"]) / decisions, 3)
                            if decisions else None,
                            "last_error": str(counts["last_error"]),
-                           **_spend_row(counts)}
+                           **_spend_row(counts),
+                           **_thread_row(counts)}
     total = {key: sum(row[key] for row in residents.values()) for key in LLM_TOTAL_KEYS}
     latency = round(sum(row["latency_ms_total"] for row in residents.values()), 3)
     decisions = total["successes"] + total["failures"]
@@ -422,7 +423,30 @@ def llm_report(backends: dict[str, Any]) -> dict[str, Any]:
         total[key] = round(sum(row[key] for row in residents.values()), 6)
     total["per_day"] = {day: {k: (round(v, 6) if isinstance(v, float) else v) for k, v in bucket.items()}
                         for day, bucket in sorted(per_day.items())}
+    for key in THREAD_SUM_KEYS:
+        total[key] = sum(row[key] for row in residents.values())
+    total["thread_chars_max"] = max((row["thread_chars_max"] for row in residents.values()), default=0)
     return {"residents_count": len(residents), "total": total, "residents": residents}
+
+
+THREAD_SUM_KEYS = ("threads", "compactions", "full_consults", "delta_consults")
+
+
+def _thread_row(counts: dict[str, Any]) -> dict[str, Any]:
+    """Phase 066: the continued session's figures for one resident. ``threads`` counts the threads started (the
+    first, and one per compaction); ``thread_length`` is the consults in the current thread, and ``thread_chars``
+    its size in characters. ``thinking_tokens`` is the provider's reasoning-token count (the same figure as
+    ``tokens_reasoning``): the thinking itself is in the LLM log, not in the report."""
+    lengths = dict(counts.get("thread_length") or {})
+    chars = dict(counts.get("thread_chars") or {})
+    return {"threads": int(counts.get("threads", 0)),
+            "compactions": int(counts.get("compactions", 0)),
+            "full_consults": int(counts.get("full_consults", 0)),
+            "delta_consults": int(counts.get("delta_consults", 0)),
+            "thread_chars_max": int(counts.get("thread_chars_max", 0)),
+            "thread_length": {str(k): int(v) for k, v in sorted(lengths.items())},
+            "thread_chars": {str(k): int(v) for k, v in sorted(chars.items())},
+            "thinking_tokens": int(counts.get("tokens_reasoning", 0))}
 
 
 def _spend_row(counts: dict[str, Any]) -> dict[str, Any]:

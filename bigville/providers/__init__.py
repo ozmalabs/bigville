@@ -9,9 +9,10 @@ from .dotenv import load_dotenv, parse_dotenv
 from .openai_compatible import OpenAICompatibleProvider, ProviderError, RateLimiter, allowance_cost
 from .opencode_go import (ConfigError, OpenCodeGoSettings, build_budget, build_provider, build_transport,
                           from_environment, validate_base_url, validate_model)
+from .result import CallResult, ProviderResult
 
 __all__ = [
-    "ConfigError", "OpenAICompatibleProvider", "OpenCodeGoSettings", "ProviderError", "RateLimiter",
-    "allowance_cost", "build_budget", "build_provider", "build_transport", "from_environment",
-    "load_dotenv", "parse_dotenv", "validate_base_url", "validate_model",
+    "CallResult", "ConfigError", "OpenAICompatibleProvider", "OpenCodeGoSettings", "ProviderError",
+    "ProviderResult", "RateLimiter", "allowance_cost", "build_budget", "build_provider", "build_transport",
+    "from_environment", "load_dotenv", "parse_dotenv", "validate_base_url", "validate_model",
 ]
