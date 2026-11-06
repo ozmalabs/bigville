@@ -37,8 +37,8 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 | M06 | done; full suite passed (1603 passed, 1 skipped) | live overview, controls and resident perspectives |
 | M07 | integrated; full-suite gate pending | reports, events and trace artifacts |
 | M08 | blocked by uncommitted checkpoint integration | checkpoints and fork |
-| M09 | ready; independent of checkpoint integration | templates and versioned reuse |
-| M10 | blocked by M09 | backend profiles and actor assignments |
+| M09 | integrated; full-suite gate pending | templates and versioned reuse |
+| M10 | ready after M09 integration | backend profiles and actor assignments |
 | M11 | blocked by M10 | configurable cast generation and backend splits |
 | M11A | blocked by M11 | supported physical subsystem controls |
 | M11B | blocked by M11A | human-controlled sessions |
