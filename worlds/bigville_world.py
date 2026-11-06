@@ -2035,26 +2035,40 @@ class BigvilleWorld:
 
     @classmethod
     def from_town100(cls, seed=305000, *, autonomous_actors=False,
-                     cognition_factory=None, data_pack=None):
+                     cognition_factory=None, data_pack=None, physical_subsystems=None):
         """Build the founding town of a data pack: its map, its seeded cast of residents, and its
         institutions. The default pack is bigville (the 100-resident town of the canonical world).
         A pack with no founding town (empty FOUNDING_JOBS) is refused by populate_town100."""
         world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
-                    cognition_factory=cognition_factory, data_pack=data_pack)
+                    cognition_factory=cognition_factory, data_pack=data_pack,
+                    physical_subsystems=physical_subsystems)
         world.populate_town100(seed=seed)
         return world
 
     @classmethod
     def from_scenario(cls, scenario, *, seed=305000, autonomous_actors=False,
-                      cognition_factory=None):
+                      cognition_factory=None, physical_subsystems=None):
         """Build any compact or large scenario from data.
 
         Actor cognition remains a game/backend concern; this method only
         installs the physical world and the scenario's initial actors.
         """
         definition = load_scenario(scenario)
+        if physical_subsystems is not None and "physical_subsystems" in definition.to_dict():
+            # The constructor deliberately treats scenario settings and explicit
+            # constructor settings as mutually exclusive. For a management run,
+            # materialize the scenario copy with its authored settings removed;
+            # the caller supplies the already-resolved effective values below.
+            data = definition.to_dict()
+            authored_switches = data.get("physical_subsystems")
+            if not isinstance(authored_switches, dict) or not isinstance(physical_subsystems, dict):
+                raise TypeError("physical_subsystems must be a mapping of names to booleans")
+            physical_subsystems = {**authored_switches, **physical_subsystems}
+            data.pop("physical_subsystems", None)
+            definition = load_scenario(data)
         world = cls(map_seed=seed, autonomous_actors=autonomous_actors,
-                    scenario=definition, cognition_factory=cognition_factory)
+                    scenario=definition, cognition_factory=cognition_factory,
+                    physical_subsystems=physical_subsystems)
         for actor in definition.actors:
             data = dict(actor)
             name = data.pop("name")

@@ -7,6 +7,8 @@ admissibility and physical effects.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+import math
 from typing import Any, Iterable
 
 
@@ -22,6 +24,83 @@ class NodeRef(int):
 class _Node:
     type: str
     attrs: dict[str, Any]
+
+
+def _checkpoint_encode(value: Any, path: str) -> Any:
+    """Encode supported graph values with explicit container/type tags."""
+    # NodeRef subclasses int, so its identity tag must precede primitive ints.
+    if isinstance(value, NodeRef):
+        return {"$type": "node_ref", "value": int(value)}
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise TypeError(f"non-finite graph value at {path}")
+        return value
+    if isinstance(value, dict):
+        items = [[_checkpoint_encode(key, path + ".key"),
+                  _checkpoint_encode(item, path + ".value")]
+                 for key, item in value.items()]
+        return {"$type": "dict", "items": items}
+    if isinstance(value, list):
+        return {"$type": "list", "items": [
+            _checkpoint_encode(item, f"{path}[{index}]")
+            for index, item in enumerate(value)]}
+    if isinstance(value, tuple):
+        return {"$type": "tuple", "items": [
+            _checkpoint_encode(item, f"{path}[{index}]")
+            for index, item in enumerate(value)]}
+    if isinstance(value, (set, frozenset)):
+        items = [_checkpoint_encode(item, path + "{member}") for item in value]
+        items.sort(key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")))
+        return {"$type": "frozenset" if isinstance(value, frozenset) else "set",
+                "items": items}
+    raise TypeError(f"unsupported graph value at {path}: {type(value).__name__}")
+
+
+def _checkpoint_decode(value: Any, path: str) -> Any:
+    if value is None or isinstance(value, (str, bool, int, float)):
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError(f"non-finite checkpoint number at {path}")
+        return value
+    if not isinstance(value, dict) or set(value) != {"$type", "items"} and set(value) != {"$type", "value"}:
+        raise ValueError(f"invalid typed graph value at {path}")
+    tag = value["$type"]
+    if tag == "node_ref" and set(value) == {"$type", "value"}:
+        node_id = value["value"]
+        if type(node_id) is not int:
+            raise ValueError(f"invalid NodeRef at {path}")
+        return NodeRef(node_id)
+    if "items" not in value or not isinstance(value["items"], list):
+        raise ValueError(f"invalid {tag!r} graph container at {path}")
+    items = value["items"]
+    if tag == "list":
+        return [_checkpoint_decode(item, f"{path}[{index}]")
+                for index, item in enumerate(items)]
+    if tag == "tuple":
+        return tuple(_checkpoint_decode(item, f"{path}[{index}]")
+                     for index, item in enumerate(items))
+    if tag in {"set", "frozenset"}:
+        decoded = [_checkpoint_decode(item, path + "{member}") for item in items]
+        try:
+            return frozenset(decoded) if tag == "frozenset" else set(decoded)
+        except TypeError as exc:
+            raise ValueError(f"unhashable member in {tag} at {path}") from exc
+    if tag == "dict":
+        result = {}
+        for index, pair in enumerate(items):
+            if not isinstance(pair, list) or len(pair) != 2:
+                raise ValueError(f"invalid dict entry at {path}[{index}]")
+            key = _checkpoint_decode(pair[0], path + ".key")
+            item = _checkpoint_decode(pair[1], path + ".value")
+            try:
+                if key in result:
+                    raise ValueError(f"duplicate dictionary key at {path}")
+                result[key] = item
+            except TypeError as exc:
+                raise ValueError(f"unhashable dictionary key at {path}") from exc
+        return result
+    raise ValueError(f"unknown typed graph value {tag!r} at {path}")
 
 
 class BigvilleGraph:
@@ -129,6 +208,95 @@ class BigvilleGraph:
                       for dst in sorted(targets)],
             "seeds": sorted(self.seed_manifests),
         }
+
+    def to_checkpoint_dict(self) -> dict[str, Any]:
+        """Return a strict, typed, JSON-safe representation for durable storage.
+
+        This is deliberately distinct from ``graph_to_dict()``, which is a
+        lossy inspection projection used by reports and held-state APIs.
+        Unknown values fail rather than being replaced with ``repr(value)``.
+        """
+        return {
+            "schema": "bigville/graph/1",
+            "next_id": self._next_id,
+            "nodes": [
+                {"id": int(ref), "type": record.type,
+                 "attrs": _checkpoint_encode(record.attrs, f"nodes[{int(ref)}].attrs")}
+                for ref, record in self._nodes.items()
+            ],
+            "edges": [
+                {"source": int(src), "kind": edge, "target": int(dst)}
+                for (src, edge), targets in self._edges.items()
+                for dst in sorted(targets)
+            ],
+            "seed_manifests": [
+                [seed_id, _checkpoint_encode(payload, f"seed_manifests[{seed_id!r}]")]
+                for seed_id, payload in self.seed_manifests.items()
+            ],
+        }
+
+    @classmethod
+    def from_checkpoint_dict(cls, data: dict[str, Any]) -> "BigvilleGraph":
+        """Rebuild a graph checkpoint, validating IDs and every edge endpoint."""
+        if not isinstance(data, dict) or data.get("schema") != "bigville/graph/1":
+            raise ValueError("unsupported Bigville graph checkpoint schema")
+        next_id = data.get("next_id")
+        if type(next_id) is not int or next_id < 1:
+            raise ValueError("Bigville graph checkpoint has invalid next_id")
+        nodes_data = data.get("nodes")
+        edges_data = data.get("edges")
+        manifests_data = data.get("seed_manifests")
+        if not isinstance(nodes_data, list) or not isinstance(edges_data, list):
+            raise ValueError("Bigville graph checkpoint nodes and edges must be lists")
+        if not isinstance(manifests_data, list):
+            raise ValueError("Bigville graph checkpoint seed_manifests must be a list")
+
+        graph = cls()
+        max_id = 0
+        for index, item in enumerate(nodes_data):
+            if not isinstance(item, dict):
+                raise ValueError(f"invalid Bigville graph node at index {index}")
+            node_id, type_name = item.get("id"), item.get("type")
+            if type(node_id) is not int or node_id < 1:
+                raise ValueError(f"invalid Bigville graph node ID at index {index}")
+            if node_id in graph._nodes:
+                raise ValueError(f"duplicate Bigville graph node ID: {node_id}")
+            if not isinstance(type_name, str) or not type_name:
+                raise ValueError(f"invalid Bigville graph node type at ID {node_id}")
+            attrs = _checkpoint_decode(item.get("attrs"), f"nodes[{node_id}].attrs")
+            if not isinstance(attrs, dict):
+                raise ValueError(f"Bigville graph node attrs at ID {node_id} must be a dict")
+            graph._nodes[NodeRef(node_id)] = _Node(type_name, attrs)
+            max_id = max(max_id, node_id)
+
+        if next_id <= max_id:
+            raise ValueError("Bigville graph checkpoint next_id must exceed all node IDs")
+        graph._next_id = next_id
+        for index, item in enumerate(edges_data):
+            if not isinstance(item, dict):
+                raise ValueError(f"invalid Bigville graph edge at index {index}")
+            src, kind, dst = item.get("source"), item.get("kind"), item.get("target")
+            if type(src) is not int or type(dst) is not int:
+                raise ValueError(f"invalid Bigville graph edge endpoint at index {index}")
+            if not isinstance(kind, str) or not kind:
+                raise ValueError(f"invalid Bigville graph edge kind at index {index}")
+            if NodeRef(src) not in graph._nodes or NodeRef(dst) not in graph._nodes:
+                raise ValueError(f"Bigville graph edge at index {index} references a missing node")
+            graph.add_edge_unchecked(NodeRef(src), kind, NodeRef(dst))
+
+        for index, pair in enumerate(manifests_data):
+            if not isinstance(pair, list) or len(pair) != 2:
+                raise ValueError(f"invalid seed manifest entry at index {index}")
+            seed_id, encoded = pair
+            if not isinstance(seed_id, str) or not seed_id:
+                raise ValueError(f"invalid seed manifest ID at index {index}")
+            if seed_id in graph.seed_manifests:
+                raise ValueError(f"duplicate seed manifest ID: {seed_id}")
+            payload = _checkpoint_decode(encoded, f"seed_manifests[{seed_id!r}]")
+            if payload is not None and not isinstance(payload, dict):
+                raise ValueError(f"seed manifest {seed_id!r} payload must be a dict or None")
+            graph.seed_manifests[seed_id] = payload
+        return graph
 
 
 class GraphEye:

@@ -194,6 +194,13 @@ function renderWorld() {
 
 function renderAll() { renderSidebar(); renderWorld(); }
 
+// Management embeds the same renderer for a run-scoped, read-only referee view.
+// The standalone game continues to use its own state and request flow.
+window.updateBigvilleSnapshot = (snapshot) => {
+  state = snapshot;
+  renderAll();
+};
+
 class BigvilleScene extends Phaser.Scene {
   constructor() { super('bigville'); this.objects = []; this.hasCentered = false; this.dragging = false; }
 
