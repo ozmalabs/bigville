@@ -548,7 +548,9 @@ class RunRegistry:
             "scenario_id", "name", "seed", "autonomous", "default_backend",
             "ticks_per_period", "turn_limit", "default_profile_id", "actor_backend_profiles",
             "cast_generation")
-        return {key: config[key] for key in fields if key in config}
+        draft = {key: config[key] for key in fields if key in config}
+        draft["physical_subsystems"] = config.get("physical_subsystem_overrides", {})
+        return draft
 
     def _assert_config_current(self, record: dict[str, Any]) -> None:
         resolution = resolve_draft(self._draft_from_config(record["config"]),
@@ -588,6 +590,7 @@ class RunRegistry:
                 default_backend=config["default_backend"], autonomous=True,
                 ticks_per_period=config["ticks_per_period"],
                 backend_factories=backend_factories,
+                physical_subsystems=config.get("physical_subsystem_overrides", {}),
             )
         return runtime.game
 

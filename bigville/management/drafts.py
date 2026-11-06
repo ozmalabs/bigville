@@ -16,7 +16,8 @@ ALLOWED_FIELDS = {
 }
 OPTIONAL_PROFILE_FIELDS = {"default_profile_id", "actor_backend_profiles"}
 OPTIONAL_CAST_FIELDS = {"cast_generation"}
-DRAFT_FIELDS = ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS | OPTIONAL_CAST_FIELDS
+OPTIONAL_SUBSYSTEM_FIELDS = {"physical_subsystems"}
+DRAFT_FIELDS = ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS | OPTIONAL_CAST_FIELDS | OPTIONAL_SUBSYSTEM_FIELDS
 MAX_NAME_LENGTH = 80
 MAX_TURN_LIMIT = 1_000_000
 MAX_SEED_ABS = (1 << 53) - 1
@@ -221,15 +222,18 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
     else:
         resolved_actor_profiles = []
 
+    from worlds.bigville_world import BigvilleWorld
+    subsystem_defaults = dict(BigvilleWorld.PHYSICAL_SUBSYSTEM_DEFAULTS)
+    scenario_subsystems = {}
     if isinstance(scenario_id, str) and scenario_id and "scenario_id" not in errors:
         try:
             scenario_data = load_scenario(scenario_id).to_dict()
-            from worlds.bigville_world import BigvilleWorld
-            supported = set(BigvilleWorld.PHYSICAL_SUBSYSTEM_DEFAULTS)
+            supported = set(subsystem_defaults)
             configured = scenario_data.get("physical_subsystems", {})
             if not isinstance(configured, dict):
                 errors["scenario_id"] = "Scenario physical_subsystems must be an object."
             else:
+                scenario_subsystems = configured
                 unknown_subsystems = sorted(set(configured) - supported)
                 invalid_values = sorted(name for name, value in configured.items()
                                         if not isinstance(value, bool))
@@ -243,6 +247,26 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
                         + ", ".join(invalid_values) + ".")
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
             pass
+
+    subsystem_overrides = payload.get("physical_subsystems", {})
+    if not isinstance(subsystem_overrides, dict):
+        errors["physical_subsystems"] = "Physical subsystem overrides must be an object of booleans."
+        subsystem_overrides = {}
+    if subsystem_defaults:
+        supported_subsystems = set(subsystem_defaults)
+        for key in sorted(set(subsystem_overrides) - supported_subsystems, key=str):
+            errors[f"physical_subsystems.{key}"] = "Unknown physical subsystem."
+        for key, value in subsystem_overrides.items():
+            if not isinstance(key, str) or key not in supported_subsystems:
+                continue
+            if not isinstance(value, bool):
+                errors[f"physical_subsystems.{key}"] = "Value must be a boolean."
+    effective_subsystems = {**subsystem_defaults, **scenario_subsystems, **subsystem_overrides}
+    subsystem_sources = {
+        name: ("user_override" if name in subsystem_overrides else
+               "scenario_override" if name in scenario_subsystems else "engine_default")
+        for name in subsystem_defaults
+    }
 
     catalog = build_capability_catalog()
     capability_revision = _hash({"capabilities": catalog["revision"],
@@ -273,7 +297,10 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             "scenario_source": scenario_entry["source"],
             "scenario_content_hash": scenario_entry["content_hash"],
             "actor_backend_overrides": actor_overrides,
-            "physical_subsystems": scenario_entry["physical_subsystems"],
+            "physical_subsystem_defaults": subsystem_defaults,
+            "physical_subsystem_overrides": dict(sorted(subsystem_overrides.items())),
+            "physical_subsystem_sources": subsystem_sources,
+            "physical_subsystems": effective_subsystems,
             "capability_revision": capability_revision,
             "engine_build": catalog["engine_build"],
         }
@@ -299,6 +326,8 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             template_draft["actor_backend_profiles"] = normalized["actor_backend_profiles"]
         if "cast_generation" in payload:
             template_draft["cast_generation"] = normalized["cast_generation"]
+        if "physical_subsystems" in payload:
+            template_draft["physical_subsystems"] = normalized["physical_subsystem_overrides"]
     return {
         "valid": not errors,
         "errors": errors,
@@ -320,7 +349,8 @@ def preview_draft(payload: Any, *, profile_registry=None) -> tuple[dict[str, Any
     from .cast_generation import materialize_scenario
     scenario = materialize_scenario(config["scenario_id"], config, profile_registry)
     world = create_world(scenario=scenario, seed=config["seed"],
-                         autonomous_actors=False)
+                         autonomous_actors=False,
+                         physical_subsystems=config["physical_subsystem_overrides"])
     grid = world._map_grid or []
     from worlds.bigville_sim_world import TILE_NAME
     full_width = max((len(row) for row in grid), default=0)

@@ -10,6 +10,17 @@ from typing import Any
 
 from ..scenarios import SCENARIO_ROOT, load_scenario, list_scenarios
 
+_SUBSYSTEM_DESCRIPTIONS = {
+    "metabolism": "Resident hunger, thirst, rest, and related body needs.",
+    "ecology": "Ecological growth and resource recovery over time.",
+    "decay": "Physical decay of stored or built materials over time.",
+    "practice": "Consolidation of physical skills from completed work.",
+    "cognitive_practice": "Consolidation of cognitive skills from completed work.",
+    "loudness": "Speech loudness affects how far a resident can be heard.",
+    "training": "Physical effort trains strength and stamina.",
+    "illness": "Illness onset and course, including medical care affordances.",
+}
+
 
 def _canonical_hash(value: Any) -> str:
     payload = json.dumps(value, sort_keys=True, separators=(",", ":"),
@@ -60,6 +71,7 @@ def _scenario_entry(identifier: str) -> dict[str, Any]:
             "type": "village", "content_hash": None,
             "content_hash_reason": "Built-in town100 pack identity is not exposed by the engine.",
             "physical_subsystems": defaults,
+            "physical_subsystem_sources": {name: "engine_default" for name in defaults},
         }
 
     definition = load_scenario(identifier)
@@ -68,6 +80,7 @@ def _scenario_entry(identifier: str) -> dict[str, Any]:
     defaults = dict(BigvilleWorld.PHYSICAL_SUBSYSTEM_DEFAULTS)
     overrides = data.get("physical_subsystems", {})
     effective = {**defaults, **overrides} if isinstance(overrides, dict) else defaults
+    override_names = set(overrides) if isinstance(overrides, dict) else set()
     source_path = (SCENARIO_ROOT / f"{identifier}.json").resolve()
     try:
         source = source_path.relative_to(SCENARIO_ROOT.resolve()).as_posix()
@@ -87,6 +100,10 @@ def _scenario_entry(identifier: str) -> dict[str, Any]:
         "content_hash": _canonical_hash(data),
         "content_hash_reason": None,
         "physical_subsystems": effective,
+        "physical_subsystem_sources": {
+            name: "scenario_override" if name in override_names else "engine_default"
+            for name in defaults
+        },
         "actors": [{"name": str(actor.get("name", "")),
                     "scenario_backend": actor.get("backend")}
                    for actor in definition.actors],
@@ -118,18 +135,20 @@ def build_capability_catalog() -> dict[str, Any]:
     scenarios.extend(_scenario_entry(identifier) for identifier in list_scenarios())
     from worlds.bigville_world import BigvilleWorld
     defaults = dict(BigvilleWorld.PHYSICAL_SUBSYSTEM_DEFAULTS)
+    subsystem_catalog = [
+        {"name": name, "default": enabled,
+         "description": _SUBSYSTEM_DESCRIPTIONS.get(name, "Engine-defined physical subsystem.")}
+        for name, enabled in defaults.items()
+    ]
     backends = _backend_catalog()
     return {
         "schema_version": 1,
         "revision": _canonical_hash({"scenarios": scenarios,
-                                    "subsystems": defaults,
+                                    "subsystems": subsystem_catalog,
                                     "backends": backends,
                                     "engine_build": (engine_build := _build_identity())}),
         "engine_build": engine_build,
         "scenarios": scenarios,
-        "physical_subsystems": [
-            {"name": name, "default": enabled}
-            for name, enabled in defaults.items()
-        ],
+        "physical_subsystems": subsystem_catalog,
         "backends": backends,
     }

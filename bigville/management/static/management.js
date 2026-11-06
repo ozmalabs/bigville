@@ -195,6 +195,37 @@
     }
   }
 
+  function renderPhysicalSubsystemControls(overrides = {}) {
+    const scenario = capabilityCatalog?.scenarios?.find(item => item.id === $("#scenario-id").value);
+    const container = $("#physical-subsystem-controls");
+    container.replaceChildren();
+    const entries = capabilityCatalog?.physical_subsystems || [];
+    $("#physical-subsystems-fieldset").hidden = !scenario || !entries.length;
+    if (!scenario) return;
+    for (const item of entries) {
+      const row = document.createElement("div");
+      row.className = "subsystem-control-row";
+      const label = text("label", item.name.replaceAll("_", " "));
+      const select = document.createElement("select");
+      select.dataset.subsystem = item.name;
+      const scenarioValue = scenario.physical_subsystems?.[item.name] ?? item.default;
+      const source = scenario.physical_subsystem_sources?.[item.name] === "scenario_override"
+        ? "scenario" : "engine default";
+      select.add(new Option(`Inherit · ${scenarioValue ? "on" : "off"} (${source})`, ""));
+      select.add(new Option("On", "true"));
+      select.add(new Option("Off", "false"));
+      if (Object.hasOwn(overrides, item.name)) select.value = String(overrides[item.name]);
+      select.addEventListener("change", () => {
+        if (!applyingTemplate) { formDirty = true; invalidateReview(); }
+      });
+      label.htmlFor = `physical-subsystem-${item.name.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+      select.id = label.htmlFor;
+      row.append(label, select);
+      if (item.description) row.append(text("small", item.description));
+      container.append(row);
+    }
+  }
+
   function castFeature() {
     const selected = capabilityCatalog?.scenarios?.find(item => item.id === $("#scenario-id").value);
     return selected?.cast_generation || null;
@@ -326,6 +357,7 @@
       [...$("#actor-profile-assignments").querySelectorAll("select[data-actor]")]
         .filter(select => select.value).map(select => [select.dataset.actor, select.value]));
     renderActorProfileControls(assignments);
+    renderPhysicalSubsystemControls();
     renderCastGenerationControls();
   });
 
@@ -438,6 +470,11 @@
       if (select.value) actorProfiles[select.dataset.actor] = select.value;
     }
     if (Object.keys(actorProfiles).length) result.actor_backend_profiles = actorProfiles;
+    const physicalSubsystems = {};
+    for (const select of $("#physical-subsystem-controls").querySelectorAll("select[data-subsystem]")) {
+      if (select.value !== "") physicalSubsystems[select.dataset.subsystem] = select.value === "true";
+    }
+    if (Object.keys(physicalSubsystems).length) result.physical_subsystems = physicalSubsystems;
     const castGeneration = currentCastGeneration();
     if (castGeneration) result.cast_generation = castGeneration;
     return result;
@@ -506,7 +543,8 @@
     const switches = $("#review-subsystems");
     switches.replaceChildren();
     for (const [name, enabled] of Object.entries(config.physical_subsystems || {})) {
-      switches.append(text("li", `${name}: ${enabled ? "on" : "off"}`));
+      const source = config.physical_subsystem_sources?.[name] || "engine_default";
+      switches.append(text("li", `${name.replaceAll("_", " ")}: ${enabled ? "on" : "off"} · ${source.replaceAll("_", " ")}`));
     }
     if (!switches.childElementCount) switches.append(text("li", "No subsystem details reported."));
     const map = preview.map;
@@ -702,6 +740,7 @@
       $("#default-backend").value = profileChoice;
     }
     renderActorProfileControls(draft.actor_backend_profiles || {});
+    renderPhysicalSubsystemControls(draft.physical_subsystems || {});
     renderCastGenerationControls(draft.cast_generation || null);
     $("#world-seed").value = String(draft.seed);
     $("#cadence-choice").value = draft.ticks_per_period === "world"
@@ -1284,6 +1323,7 @@
       renderScenarios(catalog.scenarios);
       renderBackends(backendProfiles);
       renderActorProfileControls();
+      renderPhysicalSubsystemControls();
       renderCastGenerationControls();
       const commit = catalog.engine_build && catalog.engine_build.git_commit;
       $("#build-label").textContent = commit ? `build ${commit.slice(0, 12)}` : "engine build unknown";
