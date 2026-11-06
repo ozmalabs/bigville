@@ -36,10 +36,10 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 | M05 | done; full suite passed (1599 passed, 1 skipped) | new-run and runs pages |
 | M06 | done; full suite passed (1603 passed, 1 skipped) | live overview, controls and resident perspectives |
 | M07 | done; full suite passed (1612 passed, 1 skipped) | reports, events and trace artifacts |
-| M08 | ready; prerequisite integrated and verified | checkpoints and fork |
+| M08 | integrated; full-suite gate pending | checkpoints and fork |
 | M09 | done; full suite passed (1620 passed, 1 skipped) | templates and versioned reuse |
 | M10 | done; full suite passed (1633 passed, 1 skipped) | backend profiles and actor assignments |
-| M11 | blocked by M10 | configurable cast generation and backend splits |
+| M11 | ready after M10 and M08 integration | configurable cast generation and backend splits |
 | M11A | blocked by M11 | supported physical subsystem controls |
 | M11B | blocked by M11A | human-controlled sessions |
 | M12 | blocked by M08 and M11B | comparison and end-to-end release audit |
