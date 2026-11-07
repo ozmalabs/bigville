@@ -140,7 +140,8 @@ def _game(*, seed=1414, water=6, participants=True):
                                      "wood": BAKE["fuel"],
                                      # the crop's watering budget plus one oven load's water
                                      "water": water + 1 + FIELD_WATER + BAKE["water"]})
-    game = create_game(scenario=definition, seed=seed, autonomous=True, ticks_per_period=2)
+    game = create_game(scenario=definition, seed=seed, autonomous=True,
+                       ticks_per_period=2, affordance_mode="menu")
     game.world.add_land("farm_plot_00", use="arable", soil="loam", cell=(1, 1))
     # Finite startup bread keeps the initial workers alive until the crop and
     # the grain-to-flour-to-bread work path can supply food.

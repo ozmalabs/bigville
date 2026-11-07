@@ -23,7 +23,7 @@ def _game(profile):
                           if actor["name"] == "Ruth" else actor
                           for actor in scenario["actors"]]
     return create_game(scenario=scenario, autonomous=True,
-                       ticks_per_period=None)
+                       ticks_per_period=None, affordance_mode="menu")
 
 
 def test_restaurant_room_policy_moves_same_physical_cup_or_refuses():

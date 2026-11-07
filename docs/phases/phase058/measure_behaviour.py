@@ -48,7 +48,8 @@ def run(turns, seeding):
     _install_seeding_switch(seeding)
     from bigville.api import create_game
     game = create_game(scenario="town100", seed=SEED, default_backend="simple",
-                       autonomous=True, ticks_per_period="world")
+                       autonomous=True, ticks_per_period="world",
+                       affordance_mode="menu")
     world = game.world
     names = sorted(game.backends)
     sample = [r["name"] for r in world._cast100["residents"][:SAMPLE]]

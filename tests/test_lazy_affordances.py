@@ -44,7 +44,7 @@ def _small(**kwargs):
 def _town(**kwargs):
     return create_game(scenario="town100", seed=305000,
                        default_backend="simple", autonomous=True,
-                       llm_log=False, **kwargs)
+                       llm_log=False, affordance_mode="menu", **kwargs)
 
 
 def _run(game, turns=TURNS):
@@ -55,11 +55,16 @@ def _run(game, turns=TURNS):
     return trace
 
 
-def test_affordance_mode_defaults_to_menu():
+def test_affordance_mode_default_is_auto_lazy_for_autonomous_simple():
+    # LA08 changed ``create_game``'s default to "auto", which resolves to lazy
+    # for an autonomous session with only built-in simple/cheap backends.
     game = _small()
-    assert game.affordance_mode == "menu"
+    assert game.affordance_mode_requested == "auto"
+    assert game.affordance_mode == "lazy"
 
-    # The option is a validated property, not just a stored string.
+    # Explicit modes still win, and the option remains a validated property.
+    assert _small(affordance_mode="menu").affordance_mode == "menu"
+
     with pytest.raises(ValueError):
         game.affordance_mode = "bogus"
 

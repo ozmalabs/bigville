@@ -263,7 +263,7 @@ def test_menu_mode_never_builds_lazy_candidates():
 def test_menu_mode_trace_digest_is_unchanged():
     game = create_game(scenario=MENU_SCENARIO, seed=305000,
                        default_backend="simple", autonomous=True,
-                       llm_log=False)
+                       llm_log=False, affordance_mode="menu")
     trace = TurnTrace()
     for _ in range(2):
         assert game.step()["status"] == "advanced"

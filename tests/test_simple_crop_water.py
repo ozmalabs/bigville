@@ -21,7 +21,7 @@ def _game(*, water=6.0, season="spring"):
     definition["stocks"] = {"wheat_seed": 1.0, "water": float(water)}
     definition["initial"]["season"] = season
     game = create_game(scenario=definition, seed=808, autonomous=True,
-                       ticks_per_period=2)
+                       ticks_per_period=2, affordance_mode="menu")
     # The scenario has one physical farm cell. Land remains a world object, so
     # install its parcel on that cell before the first game turn.
     game.world.add_land("farm_plot_00", use="arable", soil="loam", cell=(1, 1))

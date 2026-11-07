@@ -231,18 +231,24 @@ admissibility and one-major-action rules.
 
 ### Affordance modes
 
-`create_game(..., affordance_mode="menu")` keeps the exhaustive per-turn
-legal-action menu and is still the default. `affordance_mode="lazy"` gives a
-backend a cheap observation of local entities and capabilities; the backend
-proposes stable names, ids or cells and the world validates them, returning an
-ordinary refusal when a proposal is not admissible. Menu mode remains
-available for UI action pickers, Ocelot's adapter and debugging. Lazy mode is
-opt-in: the LA06 evaluation found it much cheaper to build a context but
-materially worse on health, because unvalidated work candidates caused
-improvised jobs and accidents. See
-`docs/design/LAZY_AFFORDANCES.md` and
-`docs/phases/lazy-affordances/LA06_REPORT.md` for the evidence and the next
-step.
+`create_game(..., affordance_mode="auto")` is the default.  `"auto"` resolves
+to **lazy** for an autonomous session whose resident backends are all built-in
+simple/cheap, and to **menu** for a player, an LLM, Ocelot, any other backend,
+or an explicitly menu-mode caller.  The game exposes both values:
+`game.affordance_mode_requested` is the request (`"auto"`, `"menu"` or
+`"lazy"`) and `game.affordance_mode` is the resolved mode.  A direct
+`BigvilleGame(world)` constructor still defaults to `menu`.
+
+In lazy mode a backend receives a cheap observation of local entities and
+capabilities; it proposes stable names, ids or cells and the world validates
+them, returning an ordinary refusal when a proposal is not admissible.  Menu
+mode keeps the exhaustive per-turn legal-action menu for UI action pickers,
+Ocelot's adapter, debugging and equivalence tests.  Both explicit
+`affordance_mode="menu"` and `affordance_mode="lazy"` remain available and
+always win.  See `docs/design/LAZY_AFFORDANCES.md`,
+`docs/phases/lazy-affordances/LA08_REPORT.md` and
+`docs/phases/lazy-affordances/FINAL_REPORT.md` for the evaluation and the
+small-room travel caveat.
 
 ### Real Ocelot integration
 

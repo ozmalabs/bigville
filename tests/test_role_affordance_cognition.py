@@ -11,7 +11,7 @@ def _game(role):
                            "home_cell": [2, 2]}]
     scenario["physical_subsystems"] = {"metabolism": False, "ecology": False, "decay": False}
     game = create_game(scenario=scenario, seed=612, autonomous=True,
-                       ticks_per_period=None)
+                       ticks_per_period=None, affordance_mode="menu")
     world = game.world
     world.add_enclosure("pen", [(2, 2), (2, 3), (3, 2), (3, 3)])
     world.add_animal("Daisy", "cow", cell=(2, 2), enclosure="pen")

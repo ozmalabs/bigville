@@ -137,15 +137,18 @@ def test_benchmark_reports_lazy_context_and_turn_time():
 
 
 # --------------------------------------------------------------- default decision
-def test_default_stays_menu_and_lazy_remains_opt_in():
-    assert _small().affordance_mode == "menu"
+def test_default_is_auto_lazy_and_explicit_modes_win():
+    game = _small()
+    assert game.affordance_mode_requested == "auto"
+    assert game.affordance_mode == "lazy"
     assert _small(affordance_mode="lazy").affordance_mode == "lazy"
+    assert _small(affordance_mode="menu").affordance_mode == "menu"
 
 
-def test_auto_mode_was_declined():
-    # LA06 declined the switch on health evidence, so "auto" is not accepted.
-    with pytest.raises(ValueError):
-        _small(affordance_mode="auto")
+def test_auto_mode_is_accepted_and_resolves_for_the_session():
+    game = _small(affordance_mode="auto")
+    assert game.affordance_mode_requested == "auto"
+    assert game.affordance_mode == "lazy"
 
 
 def test_direct_constructor_default_stays_menu():

@@ -349,7 +349,7 @@ MENU_DIGEST_AT_LA01 = "a3aa31304905a0f8705a41135eaade7ce50ed5d63758e7ebf056a1532
 
 def _small_trace(turns=2):
     game = create_game(scenario=SMALL_SCENARIO, seed=305000, default_backend="simple",
-                       autonomous=True, llm_log=False)
+                       autonomous=True, llm_log=False, affordance_mode="menu")
     trace = TurnTrace()
     for _ in range(turns):
         assert game.step()["status"] == "advanced"

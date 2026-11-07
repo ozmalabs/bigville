@@ -47,18 +47,21 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                 llm_provider=None, llm_log=True, llm_log_dir=None,
                 physical_subsystems=None, turn_semantics="sequential",
                 simultaneous_priority=None, executor="serial", executor_workers=4,
-                affordance_mode="menu"):
+                affordance_mode="auto"):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
     A game with LLM residents writes its complete log to ``llm_log_dir`` (else ``BIGVILLE_LLM_LOG_DIR``, else
     ``runs/llm_logs``); ``llm_log=False`` turns that off. A game without LLM residents writes nothing.
 
-    ``affordance_mode`` is ``"menu"`` (the exhaustive per-turn legal-action
-    menu, still the default) or ``"lazy"`` (observation/proposal/validation,
-    explicitly opt-in).  LA06 kept ``"menu"`` as the default after lazy work
-    candidates produced improvised jobs and accidents; see
-    ``docs/phases/lazy-affordances/LA06_REPORT.md``."""
+    ``affordance_mode`` defaults to ``"auto"``: it resolves to ``"lazy"``
+    (observation/proposal/validation) for an autonomous session whose resident
+    backends are all built-in simple/cheap, and to ``"menu"`` (the exhaustive
+    per-turn legal-action menu) for a player, an LLM, Ocelot or any other
+    backend.  ``"menu"`` and ``"lazy"`` may be passed explicitly and always
+    win; ``game.affordance_mode_requested`` keeps the requested value while
+    ``game.affordance_mode`` reports the resolved mode.  See
+    ``docs/phases/lazy-affordances/LA08_REPORT.md``."""
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:
@@ -101,6 +104,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
             raise ValueError("The llm backend needs llm_provider=... or backend_factories['llm']")
         elif kind not in {"cheap", "simple", "human"}:
             raise ValueError(f"Unknown backend: {kind}")
+    # LA08: backends are assigned after construction, so resolve "auto" now.
+    game.resolve_affordance_mode()
     game.llm_log = attach_default_llm_log(game.backends, enabled=llm_log, log_dir=llm_log_dir)
     return game
 

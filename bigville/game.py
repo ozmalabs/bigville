@@ -38,10 +38,13 @@ _PHYSICAL_EVENTS_LOCK = threading.RLock()
 _EXECUTORS = frozenset({"serial", "threaded", "partitioned"})
 _TURN_SEMANTICS = frozenset({"sequential", "simultaneous"})
 # LA01: "menu" is the historical exhaustive affordance menu; "lazy" is the
-# opt-in observation/proposal path.  In LA01 lazy is a placeholder that still
-# builds the menu, so the flag only selects the seam; the play path is
-# unchanged either way.
-_AFFORDANCE_MODES = frozenset({"menu", "lazy"})
+# observation/proposal path.  LA08 adds "auto": it resolves to "lazy" only for
+# an autonomous session whose resident backends are all built-in deterministic
+# simplicity, and to "menu" for anything involving a player, an LLM, Ocelot or
+# another cognition provider.
+_AFFORDANCE_MODES = frozenset({"menu", "lazy", "auto"})
+# LA08: backend kinds that may run autonomously on the lazy path.
+_AUTO_LAZY_BACKEND_KINDS = frozenset({"cheap", "simple"})
 
 
 def _default_simultaneous_priority(game, actor, index):
@@ -117,16 +120,17 @@ class BigvilleGame:
     _turn_semantics = "sequential"
     _simultaneous_priority = None
     # LA01: how a context obtains its legal action space.  "menu" keeps the
-    # exhaustive per-turn menu (the default); "lazy" (LA03) builds from
+    # exhaustive per-turn menu; "lazy" (LA03) builds from
     # ``world.observe(actor)`` and does not call the exhaustive menu builder.
-    # LA06 kept "menu" as the default: lazy mode is cheaper, but its unvalidated
-    # work candidates caused improvised jobs and accidents, and therefore a
-    # worse health outcome.  Lazy remains explicitly selectable while that is
-    # fixed and re-evaluated; see docs/phases/lazy-affordances/LA06_REPORT.md.
+    # LA08: the requested value may be "auto"; ``affordance_mode`` reports the
+    # resolved "menu"/"lazy" and ``affordance_mode_requested`` keeps the
+    # caller's value.  The direct constructor still defaults to "menu";
+    # ``create_game`` opts into "auto".
     _affordance_mode = "menu"
 
     @property
     def affordance_mode(self) -> str:
+        """The resolved mode in use: ``"menu"`` or ``"lazy"``."""
         return self._affordance_mode
 
     @affordance_mode.setter
@@ -135,7 +139,45 @@ class BigvilleGame:
             raise ValueError(
                 f"affordance_mode must be one of {sorted(_AFFORDANCE_MODES)}, "
                 f"got {value!r}")
-        self._affordance_mode = value
+        self.affordance_mode_requested = value
+        self.resolve_affordance_mode()
+
+    def resolve_affordance_mode(self) -> str:
+        """Resolve the requested mode against the current session.
+
+        Explicit ``"menu"`` and ``"lazy"`` always win.  ``"auto"`` selects
+        lazy only when the session is autonomous (no human player), every
+        registered resident backend is built-in deterministic simplicity
+        (cheap/simple), and none is an LLM, Ocelot or human backend.  Anything
+        else resolves to menu rather than silently downgrading an unsupported
+        combination.
+
+        Backends can be assigned after construction (``create_game`` does),
+        so callers that change them should call this again.  It is
+        deterministic and idempotent: the same session state always resolves
+        to the same mode.
+        """
+        requested = getattr(self, "affordance_mode_requested", "menu")
+        if requested == "auto":
+            self._affordance_mode = "lazy" if self._auto_resolves_lazy() else "menu"
+        else:
+            self._affordance_mode = requested
+        return self._affordance_mode
+
+    def _auto_resolves_lazy(self) -> bool:
+        """True when the current session satisfies the LA08 auto-lazy rule."""
+        if getattr(self, "player", None) is not None:
+            return False
+        backends = getattr(self, "backends", None)
+        if not isinstance(backends, dict):
+            return False
+        for backend in backends.values():
+            if isinstance(backend, CheapBackend):
+                continue
+            if str(getattr(backend, "kind", "")) in _AUTO_LAZY_BACKEND_KINDS:
+                continue
+            return False
+        return True
 
     @property
     def turn_semantics(self) -> str:
@@ -204,7 +246,6 @@ class BigvilleGame:
         self.executor_workers = executor_workers
         self.turn_semantics = turn_semantics
         self.simultaneous_priority = simultaneous_priority
-        self.affordance_mode = affordance_mode
         self.world._autonomous_actors = False
         self.conversation_interface = TemplateConversationInterface()
         self.world.set_conversation_adapter(self._adapt_speech)
@@ -246,6 +287,9 @@ class BigvilleGame:
         # contested takes (turn, attacker, target, offer, reaction, outcome). Not checkpointed.
         self._suspended: dict[str, Any] | None = None
         self.contest_log: deque = deque(maxlen=int(world_entities(self.world).CONTEST["log_limit"]))
+        # LA08: resolve after the player and every backend are known, so "auto"
+        # sees the real session rather than the partially built one.
+        self.affordance_mode = affordance_mode
 
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
@@ -414,6 +458,11 @@ class BigvilleGame:
     def set_backend(self, actor: str, backend):
         self.backends[actor] = backend
         self._sync_backend_metadata()
+        # LA08: an "auto" session resolves against the backends it actually has.
+        # Callers may inject an LLM, Ocelot or human backend after construction;
+        # the auto rule must then stop selecting lazy.
+        if getattr(self, "affordance_mode_requested", "menu") == "auto":
+            self.resolve_affordance_mode()
 
     def _derived_knowledge_memories(self, name, attrs, memories, *, explicit_recipes=False):
         """The derived knowledge priors of one resident as private memory records (Phase 019).

@@ -56,7 +56,8 @@ class _FakeWorld:
 
 def _game(scenario=SMALL_SCENARIO, *, executor="serial"):
     game = create_game(scenario=scenario, seed=SEED, default_backend="simple",
-                       autonomous=True, llm_log=False, executor=executor)
+                       autonomous=True, llm_log=False, executor=executor,
+                       affordance_mode="menu")
     return game
 
 

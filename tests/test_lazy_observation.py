@@ -259,7 +259,7 @@ def test_menu_context_and_trace_digest_are_unchanged():
     def _trace():
         menu_game = create_game(
             scenario=MENU_SCENARIO, seed=305000, default_backend="simple",
-            autonomous=True, llm_log=False)
+            autonomous=True, llm_log=False, affordance_mode="menu")
         trace = TurnTrace()
         for _ in range(2):
             assert menu_game.step()["status"] == "advanced"

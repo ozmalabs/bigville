@@ -9,7 +9,7 @@ def _food_game(*, food=10, ticks_per_period=8, metabolism=True):
         "metabolism": metabolism, "ecology": False, "decay": False,
     }
     game = create_game(scenario=scenario, seed=305006, autonomous=True,
-                       ticks_per_period=ticks_per_period)
+                       ticks_per_period=ticks_per_period, affordance_mode="menu")
     world = game.world
     if food:
         world.set_stock("apple", float(food))

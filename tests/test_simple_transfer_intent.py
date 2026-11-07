@@ -19,7 +19,7 @@ def _game(*, profile=None):
     if profile:
         scenario["actors"][0]["simple_profile"] = profile
     game = create_game(scenario=scenario, seed=905, autonomous=True,
-                       ticks_per_period=None)
+                       ticks_per_period=None, affordance_mode="menu")
     world = game.world
     world.set_stock("apple", 1)
     assert world._move_stock_to_inventory("Ada", "apple", 1)

@@ -105,7 +105,7 @@ def _session(actor_to_fetch):
     scenario = load_scenario("norms_property_sharing").to_dict()
     scenario["physical_objects"] = [{"id": "blue_cup", "kind": "cup", "location": "table"}]
     game = create_game(scenario=scenario, seed=713, autonomous=True,
-                       ticks_per_period=None)
+                       ticks_per_period=None, affordance_mode="menu")
     world = game.world
     world.add_container("shared_larder", kind="larder", holds=(), cell=(2, 2))
     world.set_stock("bread", 1)

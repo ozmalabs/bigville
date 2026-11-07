@@ -25,7 +25,7 @@ DOWN_STATES = {
 def _game():
     from bigville.api import create_game
     return create_game(scenario="town100", seed=SEED, default_backend="simple", autonomous=True,
-                       ticks_per_period="world")
+                       ticks_per_period="world", affordance_mode="menu")
 
 
 def _awake_walker(game):

@@ -24,7 +24,8 @@ def _game(*, role="hand", action="put", decay=True):
     scenario["actors"][0]["role"] = role
     scenario["actors"][0]["simple_profile"] = profile
     scenario["physical_subsystems"] = {"metabolism": False, "ecology": False, "decay": decay}
-    return create_game(scenario=scenario, seed=701, autonomous=True, ticks_per_period=None)
+    return create_game(scenario=scenario, seed=701, autonomous=True,
+                       ticks_per_period=None, affordance_mode="menu")
 
 
 def test_real_turn_put_moves_food_without_minting_or_losing_it():
@@ -107,7 +108,8 @@ def test_simple_backend_constructs_only_with_inputs_and_labor():
     scenario = load_scenario("simple_resident_food").to_dict()
     scenario["actors"][0].update(role="mason", simple_profile=profile)
     scenario["physical_subsystems"] = {"metabolism": False, "ecology": False, "decay": False}
-    game = create_game(scenario=scenario, seed=702, autonomous=True, ticks_per_period=None)
+    game = create_game(scenario=scenario, seed=702, autonomous=True,
+                       ticks_per_period=None, affordance_mode="menu")
     world = game.world
     world.set_stock("timber", 12)
     world.set_stock("thatch", 8)
@@ -136,7 +138,8 @@ def test_simple_backend_constructs_only_with_inputs_and_labor():
     assert world.qty("timber") == 0.0 and world.qty("thatch") == 0.0
     assert len(trace) == 10
 
-    missing = create_game(scenario=scenario, seed=703, autonomous=True, ticks_per_period=None)
+    missing = create_game(scenario=scenario, seed=703, autonomous=True,
+                          ticks_per_period=None, affordance_mode="menu")
     missing.world.propose_building("house", site=(2, 2), name="unfinished")
     missing_trace = [missing.step() for _ in range(3)]
     assert not any(o.get("action") == "build" for o in missing._context("Ada").affordances)

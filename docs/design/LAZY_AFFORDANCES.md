@@ -314,7 +314,7 @@ gate on an idle host.
 | LA05 | complete | `ab6d8e7` |
 | LA06 | complete | `e687661` |
 | LA07 | complete (uncommitted) | — |
-| LA08 | ready | — |
+| LA08 | complete (uncommitted) | — |
 
 ## Results
 
