@@ -75,7 +75,7 @@ def _idle(response: ActorResponse) -> bool:
 
 def test_create_game_builds_llm_residents_from_llm_provider():
     provider = ScriptedProvider(VALID)
-    game = create_game(scenario="town100", default_backend="llm", llm_provider=provider)
+    game = create_game(scenario="town100", default_backend="llm", llm_provider=provider, llm_log=False)
     npcs = [name for name in game.characters if name != game.player]
     assert npcs
     assert all(isinstance(game.backends[name], LLMBackend) for name in npcs)
@@ -85,7 +85,7 @@ def test_create_game_builds_llm_residents_from_llm_provider():
 
 def test_create_game_builds_llm_residents_from_backend_factories():
     provider = ScriptedProvider(VALID)
-    game = create_game(scenario="town100", default_backend="llm",
+    game = create_game(scenario="town100", default_backend="llm", llm_log=False,
                        backend_factories={"llm": llm_backend_factory(provider)})
     npcs = [name for name in game.characters if name != game.player]
     assert all(isinstance(game.backends[name], LLMBackend) for name in npcs)
@@ -110,7 +110,7 @@ def test_scenario_authored_llm_backend_is_built_from_the_provider():
         if actor["name"] == "Ben":
             actor["backend"] = "llm"
     provider = ScriptedProvider(VALID)
-    game = create_game(scenario=data, default_backend="simple", llm_provider=provider)
+    game = create_game(scenario=data, default_backend="simple", llm_provider=provider, llm_log=False)
     assert isinstance(game.backends["Ben"], LLMBackend)
     assert not isinstance(game.backends["Ada"], LLMBackend)
 

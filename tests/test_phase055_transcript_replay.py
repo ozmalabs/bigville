@@ -19,7 +19,7 @@ from llm_stub import REST_REPLY, VARIED_REPLIES, FakeProvider, StubServer, compl
 FAKE_KEY = "sk-test-0123456789abcdefghijklmnopqrstuvwxyz"
 def _record(path, *, turns=6, residents=3, run_id="rec55", error=None):
     recorder = RecordingProvider(FakeProvider(varied_reply, error=error), Transcript(path, run_id=run_id))
-    game = build_llm_town(recorder, llm_residents=residents)
+    game = build_llm_town(recorder, llm_residents=residents, llm_log=False)
     digest = RunDigest()
     for _ in range(turns):
         assert game.step()["status"] == "advanced"
@@ -31,7 +31,7 @@ def test_a_recorded_run_replays_with_the_same_digest_and_no_mismatch(tmp_path):
     path = tmp_path / "run.jsonl"
     _, recorded = _record(path)
     replay = ReplayProvider(path)
-    game = build_llm_town(replay, llm_residents=3)
+    game = build_llm_town(replay, llm_residents=3, llm_log=False)
     digest = RunDigest()
     for _ in range(6):
         assert game.step()["status"] == "advanced"
@@ -45,7 +45,7 @@ def test_a_changed_prompt_is_reported_as_a_mismatch_and_falls_back_counted(tmp_p
     path = tmp_path / "run.jsonl"
     _record(path)
     replay = ReplayProvider(path)
-    game = build_llm_town(replay, llm_residents=3)
+    game = build_llm_town(replay, llm_residents=3, llm_log=False)
     changed = game.llm_residents[0]
     game.characters[changed].memories.append(MemoryRecord(
         memory_id="changed-55", kind="lesson", content={"text": "Bread keeps better in the cold pantry."}, turn=0))
@@ -62,7 +62,7 @@ def test_a_changed_prompt_is_reported_as_a_mismatch_and_falls_back_counted(tmp_p
 def test_a_recorded_failure_replays_as_the_same_failure(tmp_path):
     path = tmp_path / "failed.jsonl"
     recorder = RecordingProvider(FakeProvider(VARIED_REPLIES[0], error=TimeoutError("boom")), Transcript(path, run_id="f"))
-    game = build_llm_town(recorder, llm_residents=1)
+    game = build_llm_town(recorder, llm_residents=1, llm_log=False)
     game.step()
     record = read_transcript(path)[0]
     assert record["error"] == "TimeoutError: boom" and "reply" not in record
@@ -104,7 +104,7 @@ def test_a_full_run_through_the_stub_leaks_no_key_into_logs_output_or_transcript
                                      "BIGVILLE_LLM_TRANSCRIPT": str(transcript), "BIGVILLE_LLM_RUN_ID": "leak55",
                                      "BIGVILLE_LLM_MIN_INTERVAL": "0", "BIGVILLE_LLM_MAX_RETRIES": "1"})
         provider = build_provider(settings, sleep=lambda seconds: None)
-        game = build_llm_town(build_transport(settings, provider), llm_residents=2)
+        game = build_llm_town(build_transport(settings, provider), llm_residents=2, llm_log=False)
         for _ in range(3):
             game.step()
     assert len(stub.requests) >= 3

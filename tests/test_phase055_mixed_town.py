@@ -12,7 +12,7 @@ LLM = 3
 
 def test_three_llm_residents_among_ninety_seven_simple_ones_run_a_hundred_turns_on_few_calls():
     provider = FakeProvider(varied_reply)
-    game = build_llm_town(provider, llm_residents=LLM)
+    game = build_llm_town(provider, llm_residents=LLM, llm_log=False)
     residents = len(game.characters)
     assert residents == 100
     assert len(game.llm_residents) == LLM

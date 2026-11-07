@@ -34,7 +34,7 @@ def _run(game, turns):
 def test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical():
     turns = 2
     sequential_provider = FakeProvider(varied_reply, delay=0.3)
-    sequential = build_llm_town(sequential_provider, llm_residents=8, concurrency=4)
+    sequential = build_llm_town(sequential_provider, llm_residents=8, concurrency=4, llm_log=False)
     for backend in (sequential.backends[name] for name in sequential.llm_residents):
         backend.concurrent = False
     started = time.perf_counter()
@@ -42,7 +42,7 @@ def test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are
     sequential_seconds = time.perf_counter() - started
 
     concurrent_provider = FakeProvider(varied_reply, delay=0.3)
-    concurrent = build_llm_town(concurrent_provider, llm_residents=8, concurrency=4)
+    concurrent = build_llm_town(concurrent_provider, llm_residents=8, concurrency=4, llm_log=False)
     started = time.perf_counter()
     concurrent_digest = _run(concurrent, turns)
     concurrent_seconds = time.perf_counter() - started
@@ -75,7 +75,7 @@ def test_the_pool_never_runs_more_decisions_at_once_than_its_size():
                     self.active -= 1
 
     provider = Counting()
-    game = build_llm_town(provider, llm_residents=8, concurrency=2)
+    game = build_llm_town(provider, llm_residents=8, concurrency=2, llm_log=False)
     _run(game, 1)
     assert 1 <= provider.most <= 2
 
@@ -127,7 +127,8 @@ def test_a_shared_call_budget_admits_exactly_its_cap_when_many_threads_ask_at_on
 def test_a_spend_cap_is_checked_before_each_call_and_can_overshoot_by_the_calls_in_flight():
     cost, cap, workers = 0.002, 0.01, 4
     provider = FakeProvider(varied_reply, delay=0.05, cost=cost)
-    game = build_llm_town(provider, llm_residents=8, concurrency=workers, budget=CallBudget(max_spend=cap))
+    game = build_llm_town(provider, llm_residents=8, concurrency=workers, budget=CallBudget(max_spend=cap),
+                          llm_log=False)
     _run(game, 3)
     # A call is refused once the recorded spend reaches the cap. Calls already in flight were admitted before
     # their cost was recorded, so at most workers - 1 extra calls can start after the cap is reached.
@@ -138,7 +139,7 @@ def test_a_spend_cap_is_checked_before_each_call_and_can_overshoot_by_the_calls_
 
 def test_a_call_cap_in_a_pooled_town_yields_the_autopilot_not_a_failure():
     provider = FakeProvider(varied_reply)
-    game = build_llm_town(provider, llm_residents=4, budget=CallBudget(max_calls_per_day=1))
+    game = build_llm_town(provider, llm_residents=4, budget=CallBudget(max_calls_per_day=1), llm_log=False)
     _run(game, 4)
     capped = [name for name in game.llm_residents
               if game.backends[name].llm_counts["fallbacks_by_cause"]["call_cap"] > 0]

@@ -1,0 +1,309 @@
+s................................s.......................s.............. [  4%]
+......F................................................................. [  8%]
+........................................................................ [ 12%]
+.........................................F......FF...................... [ 16%]
+........................................................................ [ 20%]
+........................................................................ [ 24%]
+........................................................................ [ 28%]
+........................................................................ [ 33%]
+........................................................................ [ 37%]
+........................................................................ [ 41%]
+........................................................................ [ 45%]
+........................................................................ [ 49%]
+........................................................................ [ 53%]
+........................................................................ [ 57%]
+........................................................................ [ 62%]
+........................................................................ [ 66%]
+........................................................................ [ 70%]
+........................................................................ [ 74%]
+........................................................................ [ 78%]
+........................................................................ [ 82%]
+........................................................................ [ 86%]
+............................FFFF........................................ [ 91%]
+........................................................................ [ 95%]
+........................................................................ [ 99%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7ca3c4e96ad0>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x7ca3c76e84a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+_______ test_a_game_saved_and_loaded_continues_to_the_same_run_digest[2] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-716/test_a_game_saved_and_loaded_c1')
+residents = 2
+
+    @pytest.mark.parametrize("residents", [0, 2])
+    def test_a_game_saved_and_loaded_continues_to_the_same_run_digest(tmp_path, residents):
+        gp = pytest.importorskip("bigville.game_persistence")
+        turns, stop_at = 6, 3
+    
+        def run(stop: bool):
+            provider = FakeProvider(varied_reply)
+            game = _town(provider, residents=residents)
+            digest = RunDigest()
+            for turn in range(turns):
+                if stop and turn == stop_at:
+                    path = tmp_path / f"ck-{stop_at}-{residents}"
+                    gp.save_game_checkpoint(game, path)
+                    game = gp.load_game_checkpoint(path, llm_provider=provider, llm_log=False)
+                assert game.step()["status"] == "advanced"
+                digest.add(game)
+            return digest.hexdigest(), [(c["meta"]["actor"], c["payload"]["messages"]) for c in provider.calls]
+    
+        control = run(stop=False)
+        resumed = run(stop=True)
+        assert resumed[0] == control[0]
+>       assert resumed[1] == control[1]
+E       assert [('Adelina No...e': 'user'}])] == [('Adelina Go...e': 'user'}])]
+E         
+E         At index 0 diff: ('Adelina Norbisham', [{'role': 'system', 'content': "You are one resident of Bigville. Bigville is a village of about one hundred residents on one shared map. Residents farm, craft, trade, keep households, tend animals, and make and keep village law. The world moves goods and people, validates each proposed action, and records what happens. Residents decide what to do, what to believe, and what to say.\n\nMajor actions: choose at most one. The actions you can take are listed in public.can.\n- move: Walk to a destination the affordances offer. Travel ta...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_fix_llm_checkpoint.py:186: AssertionError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7ca3979c0d70>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-716/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7ca389d9d390>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:52: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+___ test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it ___
+
+    def test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it():
+        server, service = _serve_with_service()
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            row = next(r for r in session.view["can"] if r["action"] == "work")
+            before = service.game.world._turn
+            session.line("look")
+            out = session.line(str([r["handle"] for r in session.view["can"]].index(row["handle"]) + 1))
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert service.game.world._turn == before + 1
+>       assert service.game.last_responses[PLAYER].major_action.action == "work"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:642: AttributeError
+______ test_over_http_walking_to_a_known_place_sends_the_rows_destination ______
+
+    def test_over_http_walking_to_a_known_place_sends_the_rows_destination():
+        walker = "Verity Peaseblossom"                      # a resident who knows exact places at the start
+        server, service = _serve_with_service(walker)
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", walker))
+            walk = next((r for r in session.view["can"] if r["action"] == "walk"), None)
+            assert walk is not None
+            session.line("walk to " + walk["what"].replace("walk to the ", ""))
+        finally:
+            server.shutdown()
+            server.server_close()
+        proposal = service.game.last_responses[walker].major_action
+>       assert proposal.action == "move" and proposal.params.get("destination") is not None
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:660: AttributeError
+_____________ test_over_http_a_reaction_is_delivered_to_the_holder _____________
+
+    def test_over_http_a_reaction_is_delivered_to_the_holder():
+        server, service = _serve_with_service()
+        game = service.game
+        taker = "Kester Furlong"
+        game.world._move_actor_to(taker, game.world.actor_position(PLAYER))
+        game.world.set_coin(PLAYER, 9.0)
+    
+        class Taker(DeterministicBackend):
+            def decide(self, context):
+                return ActorResponse(major_action=ProposedAction(
+                    "take", {"source": PLAYER, "kind": "coin", "amount": 3.0}))
+    
+        game.set_backend(taker, Taker(game.characters[taker]))
+        for name in game.characters:
+            if name not in (PLAYER, taker):
+                game.set_backend(name, DeterministicBackend(game.characters[name]))
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            out = session.line("wait")
+            assert session.view.get("reaction"), out
+            answer = session.line("resist")
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert answer[0] == "You hold on and resist."
+>       assert game.contest_log and game.contest_log[-1]["reaction"] == "resist"
+E       assert (deque([]))
+E        +  where deque([]) = <bigville.game.BigvilleGame object at 0x7ca38a3af980>.contest_log
+
+tests/test_phase057_tui.py:688: AssertionError
+___ test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for ___
+
+    def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
+        server, service = _serve_with_service()
+        try:
+            url = f"http://127.0.0.1:{server.server_port}/api/turn"
+    
+            def post(body):
+                req = urlrequest.Request(url, data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+                try:
+                    with urlrequest.urlopen(req) as response:
+                        return response.status, json.loads(response.read())
+                except urlrequest.HTTPError as exc:
+                    return exc.code, json.loads(exc.read())
+    
+            status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
+>           assert status == 400 and "intensity must be" in body["error"]
+E           assert (200 == 400)
+
+tests/test_phase057_tui.py:706: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_fix_llm_checkpoint.py::test_a_game_saved_and_loaded_continues_to_the_same_run_digest[2]
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+FAILED tests/test_phase057_tui.py::test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it
+FAILED tests/test_phase057_tui.py::test_over_http_walking_to_a_known_place_sends_the_rows_destination
+FAILED tests/test_phase057_tui.py::test_over_http_a_reaction_is_delivered_to_the_holder
+FAILED tests/test_phase057_tui.py::test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for
+SKIPPED [1] tests/live/test_live_opencode.py:30: live LLM test: set BIGVILLE_LIVE_LLM=1 and provide OPENCODE_GO_API_KEY
+SKIPPED [1] tests/test_bigville_game_api.py:190: real Ocelot provider is not on PYTHONPATH: No module named 'worlds.bigville_ocelot_adapter'
+SKIPPED [1] tests/test_bigville_game_persistence.py:56: could not import 'worlds.bigville_ocelot_adapter': No module named 'worlds.bigville_ocelot_adapter'
+8 failed, 1729 passed, 3 skipped in 1572.32s (0:26:12)
+EXIT 1

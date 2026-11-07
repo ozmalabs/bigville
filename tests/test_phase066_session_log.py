@@ -120,7 +120,7 @@ def test_a_thread_payload_is_sent_as_its_messages_under_the_threads_session():
 
 def test_a_second_consult_sends_the_changes_and_the_reply_comes_back_as_the_assistant_message():
     with StubServer(lambda i, b, h: (200, {}, completion(REST_REPLY))) as stub:
-        game = build_llm_town(_provider(stub), llm_residents=1)
+        game = build_llm_town(_provider(stub), llm_residents=1, llm_log=False)
         name, backend = _llm_backend(game)
         for _ in range(3):
             _consult(game, backend, name)
@@ -141,7 +141,7 @@ def test_a_second_consult_sends_the_changes_and_the_reply_comes_back_as_the_assi
 
 def test_full_packets_come_every_interval_and_a_new_thread_starts_when_the_budget_is_passed():
     with StubServer(lambda i, b, h: (200, {}, completion(REST_REPLY))) as stub:
-        game = build_llm_town(_provider(stub), llm_residents=1)
+        game = build_llm_town(_provider(stub), llm_residents=1, llm_log=False)
         name, backend = _llm_backend(game)
         rid = backend._resident()
         backend.full_every = 2
@@ -169,7 +169,7 @@ def test_full_packets_come_every_interval_and_a_new_thread_starts_when_the_budge
 
 def test_the_new_thread_carries_the_persona_and_the_held_lessons():
     with StubServer(lambda i, b, h: (200, {}, completion(REST_REPLY))) as stub:
-        game = build_llm_town(_provider(stub), llm_residents=1)
+        game = build_llm_town(_provider(stub), llm_residents=1, llm_log=False)
         name, backend = _llm_backend(game)
         backend.thread_chars = 1                                    # every consult after the first compacts
         _consult(game, backend, name)
@@ -186,7 +186,7 @@ def test_the_new_thread_carries_the_persona_and_the_held_lessons():
 def test_a_repaired_reply_is_one_extra_message_and_the_failed_text_is_not_echoed():
     with StubServer(lambda i, b, h: (200, {}, completion("this is not json") if i == 0
                                      else completion(REST_REPLY))) as stub:
-        game = build_llm_town(_provider(stub), llm_residents=1)
+        game = build_llm_town(_provider(stub), llm_residents=1, llm_log=False)
         name, backend = _llm_backend(game)
         response = _consult(game, backend, name)
     assert response.major_action is not None
@@ -207,7 +207,7 @@ def test_the_log_keeps_the_whole_reply_thinking_included_and_redacts_only_the_ke
     log_path = tmp_path / "llm.jsonl"
     with StubServer(lambda i, b, h: (200, {}, _thinking_completion(_rest_with_key()))) as stub:
         provider = _provider(stub)
-        game = build_llm_town(provider, llm_residents=1)
+        game = build_llm_town(provider, llm_residents=1, llm_log=False)
         name, backend = _llm_backend(game)
         assert attach(game.backends, LLMLog(log_path, run_id="p66", redact=provider.redact)) == 1
         _consult(game, backend, name)
@@ -244,7 +244,7 @@ def test_thinking_is_absent_from_the_replay_key_and_from_the_recorded_prompts(tm
     with StubServer(lambda i, b, h: (200, {}, _thinking_completion(REST_REPLY))) as stub:
         provider = _provider(stub)
         recorder = RecordingProvider(provider, Transcript(path, run_id="p66", redact=provider.redact))
-        game = build_llm_town(recorder, llm_residents=1)
+        game = build_llm_town(recorder, llm_residents=1, llm_log=False)
         name, backend = _llm_backend(game)
         _consult(game, backend, name)
         _consult(game, backend, name)
@@ -307,11 +307,12 @@ def test_a_log_that_fails_verification_is_not_appended_to(tmp_path):
 def test_a_recorded_continued_session_replays_with_the_same_replies(tmp_path):
     path = tmp_path / "thread.jsonl"
     provider = FakeProvider(varied_reply)
-    game = build_llm_town(RecordingProvider(provider, Transcript(path, run_id="p66")), llm_residents=1)
+    game = build_llm_town(RecordingProvider(provider, Transcript(path, run_id="p66")), llm_residents=1,
+                          llm_log=False)
     name, backend = _llm_backend(game)
     recorded = [_consult(game, backend, name) for _ in range(3)]
     replay = ReplayProvider(path)
-    replay_game = build_llm_town(replay, llm_residents=1)
+    replay_game = build_llm_town(replay, llm_residents=1, llm_log=False)
     _, replay_backend = _llm_backend(replay_game)
     replayed = [_consult(replay_game, replay_backend, name) for _ in range(3)]
     assert [r.major_action for r in replayed] == [r.major_action for r in recorded]
@@ -322,12 +323,13 @@ def test_a_recorded_continued_session_replays_with_the_same_replies(tmp_path):
 def test_a_replay_whose_thread_differs_names_the_first_message_that_differs(tmp_path):
     path = tmp_path / "thread.jsonl"
     provider = FakeProvider(varied_reply)
-    game = build_llm_town(RecordingProvider(provider, Transcript(path, run_id="p66")), llm_residents=1)
+    game = build_llm_town(RecordingProvider(provider, Transcript(path, run_id="p66")), llm_residents=1,
+                          llm_log=False)
     name, backend = _llm_backend(game)
     for _ in range(2):
         _consult(game, backend, name)
     replay = ReplayProvider(path)
-    changed_game = build_llm_town(replay, llm_residents=1)
+    changed_game = build_llm_town(replay, llm_residents=1, llm_log=False)
     _, changed = _llm_backend(changed_game)
     changed.full_every = 0                                       # the second consult sends the full packet, not a delta
     _consult(changed_game, changed, name)
@@ -353,7 +355,7 @@ def test_a_run_stopped_and_resumed_continues_the_thread_and_matches_the_uninterr
 
     def run(stop: bool):
         provider = FakeProvider(varied_reply)
-        game = build_llm_town(provider, llm_residents=2)
+        game = build_llm_town(provider, llm_residents=2, llm_log=False)
         names = list(game.llm_residents)
         digest = RunDigest()
         for turn in range(turns):
@@ -385,7 +387,7 @@ def test_a_run_stopped_and_resumed_continues_the_thread_and_matches_the_uninterr
 
 def test_the_backend_state_round_trips_through_json_and_refuses_another_resident():
     provider = FakeProvider(varied_reply)
-    game = build_llm_town(provider, llm_residents=2)
+    game = build_llm_town(provider, llm_residents=2, llm_log=False)
     name, backend = _llm_backend(game)
     for _ in range(3):
         _consult(game, backend, name)

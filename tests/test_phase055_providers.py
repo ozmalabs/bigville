@@ -283,7 +283,7 @@ def test_the_environment_budget_and_concurrency_reach_the_town():
     from domains.autopilot import table
     settings = from_environment({"OPENCODE_GO_API_KEY": FAKE_KEY, "BIGVILLE_LLM_BUDGET": "0.5",
                                  "BIGVILLE_LLM_CONCURRENCY": "2"})
-    game = build_llm_town(object(), llm_residents=2, settings=settings)
+    game = build_llm_town(object(), llm_residents=2, settings=settings, llm_log=False)
     for name in game.llm_residents:
         assert game.backends[name].budget.max_spend == 0.5
         assert game.backends[name].budget.max_calls_per_day == table()["max_calls_per_resident_per_day"]

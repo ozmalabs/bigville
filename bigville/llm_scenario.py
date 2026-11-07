@@ -18,6 +18,7 @@ from typing import Any
 from .api import create_game
 from .backends.autopilot import CallBudget
 from .backends.llm import LLMBackend
+from .llm_log import attach_default as attach_default_llm_log
 from domains.autopilot import DEFAULT_PACK, table
 
 DEFAULT_LLM_RESIDENTS = 3
@@ -38,13 +39,15 @@ def choose_llm_residents(names, count: int) -> list[str]:
 def build_llm_town(provider: Any, *, llm_residents: int = DEFAULT_LLM_RESIDENTS,
                    scenario: str = DEFAULT_SCENARIO, seed: int = DEFAULT_SEED,
                    budget: CallBudget | None = None, concurrency: int | None = None,
-                   pack: str = DEFAULT_PACK, settings: Any = None):
+                   pack: str = DEFAULT_PACK, settings: Any = None, llm_log: bool = True,
+                   llm_log_dir: str | None = None):
     """A game with ``llm_residents`` LLM residents and the rest on the simple backend.
 
     ``budget`` is shared by the LLM residents; the default is the pack's calls per resident per day, with no
     spend cap. ``concurrency`` sets each LLM resident's pool share (the game's pool is the largest share).
     ``settings`` (an ``OpenCodeGoSettings``) supplies the spend cap and the concurrency from the environment
-    when the other two are not given; the providers package is imported only then, so the core stays free of it."""
+    when the other two are not given; the providers package is imported only then, so the core stays free of it.
+    ``llm_log`` and ``llm_log_dir`` set the complete log (see ``create_game``); the log is ``game.llm_log``."""
     if settings is not None:
         from .providers.opencode_go import build_budget
         if budget is None:
@@ -61,6 +64,7 @@ def build_llm_town(provider: Any, *, llm_residents: int = DEFAULT_LLM_RESIDENTS,
             backend.concurrency = int(concurrency)
         game.set_backend(name, backend)
     game.llm_residents = tuple(chosen)
+    game.llm_log = attach_default_llm_log(game.backends, enabled=llm_log, log_dir=llm_log_dir)
     return game
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 from .backends import HumanBackend, LLMBackend, OcelotBackend
 from .game import BigvilleGame
 from .backends.ocelot import ocelot_resident_class
+from .llm_log import attach_default as attach_default_llm_log
 
 
 def _requires_ocelot(scenario, default_backend, player):
@@ -41,10 +42,12 @@ def llm_backend_factory(provider):
 def create_game(*, scenario="town100", seed=305000, player=None,
                 default_backend="cheap", backend_factories=None,
                 cognition_factory=None, autonomous=False, ticks_per_period="world",
-                llm_provider=None):
+                llm_provider=None, llm_log=True, llm_log_dir=None):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
-    ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both."""
+    ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
+    A game with LLM residents writes its complete log to ``llm_log_dir`` (else ``BIGVILLE_LLM_LOG_DIR``, else
+    ``runs/llm_logs``); ``llm_log=False`` turns that off. A game without LLM residents writes nothing."""
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:
@@ -82,6 +85,7 @@ def create_game(*, scenario="town100", seed=305000, player=None,
             raise ValueError("The llm backend needs llm_provider=... or backend_factories['llm']")
         elif kind not in {"cheap", "simple", "human"}:
             raise ValueError(f"Unknown backend: {kind}")
+    game.llm_log = attach_default_llm_log(game.backends, enabled=llm_log, log_dir=llm_log_dir)
     return game
 
 

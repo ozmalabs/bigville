@@ -29,6 +29,8 @@ import hashlib
 import json
 import os
 import threading
+import time
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -190,3 +192,35 @@ def attach(backends: dict[str, Any], log: LLMLog | None) -> int:
             backend.log = log
             count += 1
     return count
+
+
+DEFAULT_LOG_DIR = "runs/llm_logs"
+LOG_DIR_ENV = "BIGVILLE_LLM_LOG_DIR"
+
+
+def new_run_id() -> str:
+    """A run id: the UTC time to the second, and 8 random hex digits so two runs in one second differ."""
+    return time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]
+
+
+def attach_default(backends: dict[str, Any], *, enabled: bool = True, log_dir: str | os.PathLike | None = None,
+                   run_id: str | None = None) -> LLMLog | None:
+    """The default complete log for a game (fix_llm_ops). Returns None, and creates no file or directory, when
+    ``enabled`` is false or no LLM backend is in ``backends``. Otherwise one gzip log is created at
+    ``<dir>/<run id>.jsonl.gz``, where ``dir`` is ``log_dir``, else the ``BIGVILLE_LLM_LOG_DIR`` environment
+    variable, else ``runs/llm_logs`` relative to the working directory. The log is attached to every LLM backend.
+    Its redaction is the first LLM provider's ``redact`` (each call also redacts with its own provider)."""
+    if not enabled:
+        return None
+    llm = [backend for backend in backends.values() if hasattr(backend, "llm_counts") and hasattr(backend, "log")]
+    if not llm:
+        return None
+    run = run_id or new_run_id()
+    if not run or run in (".", "..") or "/" in run or "\\" in run:
+        raise ValueError(f"run id {run!r} must be a plain name")
+    directory = Path(log_dir or os.environ.get(LOG_DIR_ENV) or DEFAULT_LOG_DIR)
+    redact = next((fn for fn in (getattr(getattr(b, "provider", None), "redact", None) for b in llm)
+                   if callable(fn)), None)
+    log = LLMLog(directory / f"{run}.jsonl.gz", run_id=run, gzip=True, redact=redact)
+    attach(backends, log)
+    return log
