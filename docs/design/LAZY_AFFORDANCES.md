@@ -237,6 +237,38 @@ this plan's status table.
 suite when the host is not contended; if the full suite cannot finish, record
 the exact command, duration and failure/timeout rather than claiming a pass.
 
+### LA07 — Lazy work prefilter and re-evaluation (follow-up)
+
+**Scope:** Remove the LA06 health regression without rebuilding the menu: give
+the lazy work candidate the same cheap site/tool/ingredient prefilter the menu
+uses, then re-run the LA06 evaluation.
+
+**Files:** `worlds/bigville_world.py`, `bigville/backends/cheap.py`,
+`tools/evaluate_affordance_modes.py` only if the evidence needs another field,
+`tests/test_lazy_work.py` (new), report.
+
+**Deliverables:**
+- `world.recipe_preview(actor, recipe)` is read-only and returns
+  `{ok, reason}` using the same conditions the menu's work loop uses:
+  not busy, `_can_attempt`, and `_recipe_inputs_available`. It must not open a
+  job, consume stock, or claim the action slot.
+- `world.observe(actor)` publishes `busy` (or the equivalent the candidate
+  generator needs).
+- The lazy cheap backend only proposes `work` for recipes whose preview is ok,
+  and does not propose work while busy. A refused work proposal that still
+  slips through is handled by the existing refusal fallback.
+- Tests: preview agrees with the menu's work filter over a matrix of known /
+  unskilled / out-of-season / missing-input / missing-site cases; lazy
+  candidates contain no work when the preview is false; an 8-turn `town100`
+  lazy run has no improvised jobs or accidents, or the remaining causes are
+  identified.
+- Re-run the LA06 comparison (town100 seed 305000/305001, 8 turns; small, 12
+  turns). If lazy now matches menu on health and applied actions, revisit the
+  default decision; if not, keep `menu` and record the next cause. Do not add
+  `"auto"` or change the default without the evidence.
+
+**Gate:** targeted lazy tests, the work-filter matrix, and the re-evaluation.
+
 ## Status
 
 | Phase | Status | Commit |
@@ -246,7 +278,8 @@ the exact command, duration and failure/timeout rather than claiming a pass.
 | LA03 | complete | `9d54a86` |
 | LA04 | complete | `e1a8829` |
 | LA05 | complete | `ab6d8e7` |
-| LA06 | complete, uncommitted | `uncommitted` |
+| LA06 | complete | `e687661` |
+| LA07 | ready (follow-up from LA06) | — |
 
 ## Results
 
