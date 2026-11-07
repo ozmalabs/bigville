@@ -909,6 +909,81 @@ def _check_resolution(errors, warnings, info):
     info.append(f"RESOLUTION: {len(VERBS)} verbs, {len(MATERIALS)} materials; attempt cap {rs['attempt_cap_rate']}, "
                 f"max intensity {rs['max_intensity']}, i_safe {rs['i_safe']} (APPROX)")
     _check_tool_fit(errors, warnings, info)
+    _check_object_force(errors, warnings, info)
+
+
+def _check_object_force(errors, warnings, info):
+    """Phase 040: the OBJECT_FORCE table (what an object held in a hand does when swung or thrown). Every key is a finite
+    number in its range, the shape claims hold on a grid (heavier harms more and carries less; harder harms more; a
+    fragile container breaks at a lower fragility), the throw's cross-references exist, and the throw verb routes to a
+    major action that is in MAJOR_ACTIONS."""
+    import math
+    from worlds import resolution as R
+    of = OBJECT_FORCE
+    required = ("harm_scale", "weight_reference", "weight_exponent", "weight_term_min", "weight_term_max",
+                "hardness_reference", "unknown_hardness", "edge_bonus", "throw_harm", "throw_demand_unit",
+                "range_base", "range_max", "distance_reference", "accuracy_intensity_loss", "passive_defence",
+                "unwieldy_above", "container_fragility", "any_fragility")
+    missing = [name for name in required if name not in of]
+    if missing:
+        errors.append(f"OBJECT_FORCE: missing {', '.join(missing)}")
+        return
+    for name in required:
+        value = of[name]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value or abs(value) == float("inf"):
+            errors.append(f"OBJECT_FORCE[{name}]: must be a finite number, not {value!r}")
+    if errors and any(e.startswith("OBJECT_FORCE[") for e in errors):
+        return
+    for name in ("harm_scale", "weight_reference", "weight_term_min", "weight_term_max", "hardness_reference",
+                 "throw_harm", "throw_demand_unit", "range_base", "distance_reference", "passive_defence",
+                 "unwieldy_above"):
+        if float(of[name]) <= 0.0:
+            errors.append(f"OBJECT_FORCE[{name}]: must be positive, not {of[name]}")
+    if float(of["weight_term_max"]) < float(of["weight_term_min"]):
+        errors.append("OBJECT_FORCE: weight_term_max must not be below weight_term_min")
+    if not 0.0 < float(of["weight_exponent"]) <= 1.0:
+        errors.append(f"OBJECT_FORCE[weight_exponent]: must lie in (0, 1] (diminishing returns), not {of['weight_exponent']}")
+    for name in ("unknown_hardness", "container_fragility", "any_fragility"):
+        if not 0.0 <= float(of[name]) <= 1.0:
+            errors.append(f"OBJECT_FORCE[{name}]: must lie in [0, 1], not {of[name]}")
+    for name in ("edge_bonus", "accuracy_intensity_loss"):
+        if float(of[name]) < 0.0:
+            errors.append(f"OBJECT_FORCE[{name}]: must not be negative, not {of[name]}")
+    if not isinstance(of["range_max"], int) or isinstance(of["range_max"], bool) or of["range_max"] < 1:
+        errors.append(f"OBJECT_FORCE[range_max]: a whole number of cells of at least 1, not {of['range_max']!r}")
+    # Shape claims on a grid (Phase 040's acceptance): heavier harms more (and never less), range falls with weight,
+    # and a harder material harms more.
+    weights = [i / 10.0 for i in range(1, 51)]
+    terms = [float(_object_weight_term_of(of, w)) for w in weights]
+    if any(b < a - 1e-12 for a, b in zip(terms, terms[1:])):
+        errors.append("OBJECT_FORCE: the weight term must not fall as the weight rises")
+    ranges = [math.floor(float(of["range_base"]) / max(1.0, w / float(of["weight_reference"]))) for w in weights]
+    if any(b > a for a, b in zip(ranges, ranges[1:])):
+        errors.append("OBJECT_FORCE: the throw range must not rise as the weight rises")
+    hard = [R.clamp(h / 10.0 / float(of["hardness_reference"]), 0.0, 2.0) for h in range(0, 11)]
+    if any(b < a - 1e-12 for a, b in zip(hard, hard[1:])):
+        errors.append("OBJECT_FORCE: a harder material must not harm less (hardness term)")
+    # The throw verb and its action.
+    spec = VERBS.get("throw")
+    if spec is not None and spec.get("implemented"):
+        route = spec.get("route")
+        if route != "throw" or "throw" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["throw"].get("description", "")).strip():
+            errors.append("VERBS[throw]: an implemented throw must route to the 'throw' major action, which needs a description")
+        if "fighting" not in SKILLS:
+            errors.append("VERBS[throw]: skill 'fighting' is not in SKILLS")
+    for name in ("throw", "strike"):
+        if name in MAJOR_ACTIONS and not str(MAJOR_ACTIONS[name].get("description", "")).strip():
+            errors.append(f"MAJOR_ACTIONS: {name!r} needs a description (Phase 040)")
+    info.append(f"OBJECT_FORCE: harm scale {of['harm_scale']}, throw range {of['range_base']} cells for a reference "
+                f"object, range_max {of['range_max']}, breakage at fragility {of['container_fragility']} for "
+                f"containers and {of['any_fragility']} for any object (APPROX)")
+
+
+def _object_weight_term_of(of, weight):
+    """The weight term of OBJECT_FORCE at `weight` (the same formula as the world's _object_weight_term)."""
+    from worlds import resolution as R
+    ratio = max(0.0, float(weight)) / float(of["weight_reference"])
+    return R.clamp(ratio ** float(of["weight_exponent"]), float(of["weight_term_min"]), float(of["weight_term_max"]))
 
 
 def _check_tool_fit(errors, warnings, info):

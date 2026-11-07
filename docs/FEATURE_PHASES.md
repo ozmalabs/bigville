@@ -1651,16 +1651,7 @@ windows; forcing, digging and escaping are attempts (Phase 050); night sight and
 
 ## Phase 040 -- Objects as arms: hitting and throwing
 
-**Status:** ready, after 029, 034, 038 and 048 (decision 2026-11-05: weapons are arbitrary; they are
-just things you use to hit people with or throw at them). Spec: `seeds/bigville_tools.json` v2.0.0
-(block R43), which I missed when I first wrote "no seed". A tool is an effectiveness multiplier
-physically held in hand, with its fitness as data, `tool -fit_for-> Fitness{verb, mult, effort}`.
-Bare hands attempt anything but bear almost nothing at large cost (mult about 0.05, effort about
-3). `tl_strike`: use X on a person, harm = `fit.mult`, the victim loses health and the striker
-spends effort, gated on holding and never on owning ("a thief can wield the inn's knife"). A knife
-is dual-use: one item with prep and strike rows, the verb selecting. Throwing has no seed and is
-NEW DESIGN. (The word "armed" in `bigville_theft` `th_take` is a rule's trigger flag, not a
-weapon.) Behind an `object_force` switch, default off.
+**Status:** done, behind `physical_subsystems.object_force` (default off). A discrete object held in a hand can be swung (`strike` with `with`) or thrown (new `throw` major action; the `attempt` verb `throw` routes to it). Harm, range, breakage and effort come from the object's data (ITEMS weight, MATERIALS hardness and fragility, the container flag, TOOL_FIT's knife row and edge lists) through the new `OBJECT_FORCE` table (APPROX): a hammer blow does twice a bare blow; a load above one's strength is clumsy and costly; range falls with weight and rises with strength and intensity; a throw follows the grid line, stops before a sight occluder or at its range, and is a contest whose only reaction is stepping aside; a miss lands beside the target; a wooden mug breaks on impact, a metal pot and a hammer do not. A redirected grab drops the attacker's hand object. No randomness; the world records no assault. Bulk goods cannot be thrown yet. Simple village unchanged (0 deaths in 192 turns). The Phase 054 packet snapshot is regenerated. See docs/phases/phase040/PHASE040_REPORT.md.
 
 **Goal.** There is no weapon class, no weapon list and no weapon skill. Any object a resident
 can hold in hand (a discrete item, or one unit of a bulk good they carry) can be swung or thrown,
@@ -3430,3 +3421,4 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 | fix simple village | done | (this commit) | docs/phases/fix_simple_village/FIX_SIMPLE_VILLAGE_REPORT.md -- founding relationship seeding on for bigville (845 directed ties; four tests now assert them; simple-backend actions unchanged over 60 and 200 turns); the simple walk names a `body_down` interrupt so a fallen resident gets no replayed proposal (200 turns: `collapsed` refusals 15 to 0, Phase 049's `exhausted` refusals unchanged); 8 tests; 1736 passed |
 | 053 Fog of map | done | (this commit) | docs/phases/phase053/PHASE053_REPORT.md -- `domains/map_memory.py` keeps a fogged resident's map as one `map_memory` record (checkpoints with the character): level 0 absent, 1 named places and roughly where in words, 2 cells and exact places; learning by sight, landmarks and told places, ageing words; the view's `map` and `can` are built from it (`walk toward`), `move` takes `toward`; LLM and human backends are `fogged`, simple locals are not (60-turn run identical); 21 tests; 1756 passed |
 | 033 Restraint | done | (this commit) | docs/phases/phase033/PHASE033_REPORT.md -- restrain, release, struggle through the contest rule; hold blocks walking and costs stamina; 1795 passed |
+| 040 Objects as arms | done | (this commit) | docs/phases/phase040/PHASE040_REPORT.md -- strike with an object, throw; OBJECT_FORCE; switch off; 1800 passed |

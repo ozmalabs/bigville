@@ -340,6 +340,8 @@ class BigvilleWorld:
         # speaker's intoxication and the listener's distance, and the body fields read by the coping policy. Off,
         # a drink still raises intoxication as Phase 034 has it, and none of these rules, read-offs or fields exist.
         "alcohol_aftereffects": False,
+        # Phase 040: objects as arms (OBJECT_FORCE). Off, a strike ignores `with`, and a throw is refused as unsupported.
+        "object_force": False,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -3900,8 +3902,8 @@ class BigvilleWorld:
         for cell in list(self.eng.neighbours(item, "at_cell")):
             self.eng.remove_edge_unchecked(item, "at_cell", cell)
 
-    def _drop_discrete_item(self, actor, item):
-        """Drop an item from a hand onto the actor's current map cell."""
+    def _drop_discrete_item(self, actor, item, cell=None):
+        """Drop an item from a hand onto `cell`, or the actor's current map cell (Phase 040: a throw lands elsewhere)."""
         node = self._actor(actor)
         kind = self.eng.node(item)["attrs"].get("kind", "")
         for edge in ("holds_in_hand", "holds_tableware", "holds"):
@@ -3913,7 +3915,7 @@ class BigvilleWorld:
             self._actor_hands[actor] = None
         self._remove_item_location(item)
         self.eng.add_edge_unchecked(self._town, "has_tool_item", item)
-        cell = self.actor_position(actor)
+        cell = self.actor_position(actor) if cell is None else tuple(cell)
         if cell in self._map_cells:
             self._attach_at_cell(item, cell)
         self._refresh_carry_state(actor)
@@ -8088,6 +8090,7 @@ class BigvilleWorld:
             or action in {"rest", "eat", "work", "move_object"}
             or (action == "transfer" and plan.get("recipient"))
             or (action == "take") or (action == "strike") or action in ("restrain", "release", "struggle")
+            or action == "throw"
         )
         if needs_targets:
             self._actor_options(actor)
@@ -8121,7 +8124,10 @@ class BigvilleWorld:
             return self._refuse("wrong_target")
         if action == "strike":
             return self.major_action(actor, "strike", target=plan.get("target"),
-                                     intensity=plan.get("intensity", 1.0))
+                                     intensity=plan.get("intensity", 1.0), with_kind=plan.get("with"))
+        if action == "throw":
+            return self.major_action(actor, "throw", target=plan.get("target"),
+                                     with_kind=plan.get("with"), intensity=plan.get("intensity", 1.0))
         if action == "restrain":
             # Phase 033: a grab on a resident in reach (a reaction turn when the game runs it, none here).
             return self.major_action(actor, "restrain", target=plan.get("target"))
@@ -8835,13 +8841,24 @@ class BigvilleWorld:
         if action == "strike":
             # Phase 038: a strike without a game is a blow the target does not answer (no reaction).
             plan = {"target": kwargs.get("target", args[0] if args else None),
-                    "intensity": kwargs.get("intensity", args[1] if len(args) > 1 else 1.0)}
+                    "intensity": kwargs.get("intensity", args[1] if len(args) > 1 else 1.0),
+                    "with": kwargs.get("with_kind")}
             pending, code = self.strike_begin(actor, plan)
             if pending is None:
                 return self._refuse(code)
             applied, code = self.strike_resolve(pending, None)
             if not applied:
                 self._refusal_code = code
+            return applied
+        if action == "throw":
+            # Phase 040: a throw without a game is an object the target does not answer (no reaction, no contest).
+            plan = {"target": kwargs.get("target", args[0] if args else None),
+                    "with": kwargs.get("with_kind", args[1] if len(args) > 1 else None),
+                    "intensity": kwargs.get("intensity", args[2] if len(args) > 2 else 1.0)}
+            pending, code = self.throw_begin(actor, plan)
+            if pending is None:
+                return self._refuse(code)
+            applied, code = self.throw_resolve(pending, None)
             return applied
         if action == "take":
             # Phase 029: a take without a game is a contest the holder does not answer (no reaction).
@@ -9950,6 +9967,9 @@ class BigvilleWorld:
         if spec is None or spec.get("primitive") not in ("damage", "open", "displace") \
                 or spec.get("implemented") is False:
             return self._refuse("unsupported")
+        if spec.get("route") == "throw":
+            # Phase 040: the throw verb is the throw action (it takes the object, the target and the intensity).
+            return self.major_action(actor, "throw", target=target, with_kind=with_kind, intensity=intensity)
         name = self._as_key(target)
         if name is None:
             return self._refuse("malformed")
@@ -10953,6 +10973,8 @@ class BigvilleWorld:
         ``pending["result"]``. A reaction the target was not offered is treated as no reaction."""
         if pending.get("action") == "strike":
             return self.strike_resolve(pending, reaction)
+        if pending.get("action") == "throw":
+            return self.throw_resolve(pending, reaction)
         if pending.get("action") == "restrain":
             return self.restrain_resolve(pending, reaction)
         if self._contest is pending:
@@ -11033,6 +11055,11 @@ class BigvilleWorld:
             result.update(reason="dropped")
             self._release_contest_slot(pending)
             return False, "dropped"
+        if outcome == "redirected" and self._object_on():
+            # Phase 040: a grab turned back disarms the attacker. The object in its hand falls on the cell.
+            hand = list(self.eng.neighbours(self._actor(attacker), "holds_in_hand"))
+            if hand:
+                self._drop_discrete_item(attacker, hand[0])
         result.update(reason="held")
         self._release_contest_slot(pending)
         return False, "held"
@@ -11055,6 +11082,316 @@ class BigvilleWorld:
         self._publish_outcome(actor, str(action or "take"), bool(applied),
                               None if applied else (reason or "not_possible"))
 
+    # ---------------------------------------------- objects as arms (Phase 040)
+    # An object held in a hand can be swung (strike, with `with`) or thrown (the throw action). Its physics come from
+    # the pack's OBJECT_FORCE table, the ITEMS weight, the MATERIALS hardness and fragility, and TOOL_FIT's edge data.
+    # The switch physical_subsystems.object_force gates all of it. Nothing here is random, and no assault is recorded.
+    def _object_on(self):
+        return bool(self.physical_subsystems.get("object_force", False))
+
+    def _hand_held_item(self, actor, kind):
+        """An unbroken item of `kind` in one of the actor's hands (a pack does not count), or None."""
+        node = self._actor(actor)
+        for edge in ("holds_in_hand", "holds_tableware"):
+            for item in self.eng.neighbours(node, edge):
+                ia = self.eng.node(item)["attrs"]
+                if ia.get("kind") == kind and float(ia.get("broken", 0.0)) != 1.0:
+                    return item
+        return None
+
+    def _object_material(self, kind):
+        return self._item_specs.get(kind, {}).get("material")
+
+    def _object_weight_term(self, weight):
+        """Harm grows as the weight over the reference weight to weight_exponent (diminishing returns), clamped."""
+        from worlds import resolution as R
+        of = self.E.OBJECT_FORCE
+        ratio = max(0.0, float(weight)) / float(of["weight_reference"])
+        return R.clamp(ratio ** float(of["weight_exponent"]), float(of["weight_term_min"]), float(of["weight_term_max"]))
+
+    def _object_hardness_term(self, kind):
+        """The material's hardness over the reference hardness (0 to 2). A material the MATERIALS table lacks is soft."""
+        of = self.E.OBJECT_FORCE
+        mat = self._object_material(kind)
+        hardness = float(self.E.MATERIALS[mat]["hardness"]) if mat in self.E.MATERIALS else float(of["unknown_hardness"])
+        return max(0.0, min(2.0, hardness / float(of["hardness_reference"])))
+
+    def _object_edge_term(self, kind, verb):
+        """An edged kind used with a cutting verb (TOOL_FIT edge_verbs) harms more by edge_bonus."""
+        tf = self.E.TOOL_FIT
+        if verb in tf["edge_verbs"] and kind in tf["edged_kinds"]:
+            return 1.0 + float(self.E.OBJECT_FORCE["edge_bonus"])
+        return 1.0
+
+    def _object_mult(self, kind, verb):
+        """The object's physical multiplier for a verb: weight term x hardness term x edge term."""
+        return (self._object_weight_term(self.item_weight(kind)) * self._object_hardness_term(kind)
+                * self._object_edge_term(kind, verb))
+
+    def _weapon_mult(self, kind):
+        """(multiplier, effort) of an object swung in a blow. An authored TOOL_FIT row for `strike` is used as it is,
+        with its effort. Otherwise the multiplier is harm_scale x the object's physical multiplier, at normal effort."""
+        for row in self.E.TOOL_FIT["rows"].get(kind, []):
+            if row["verb"] == "strike":
+                return float(row["mult"]), float(row["effort"])
+        return float(self.E.OBJECT_FORCE["harm_scale"]) * self._object_mult(kind, "strike"), 1.0
+
+    def _object_breaks(self, kind):
+        """Whether the object breaks when it hits something: its material's fragility is at any_fragility or more, or
+        it is a container and the fragility is at container_fragility or more."""
+        of = self.E.OBJECT_FORCE
+        mat = self._object_material(kind)
+        if mat not in self.E.MATERIALS:
+            return False
+        fragility = float(self.E.MATERIALS[mat]["fragility"])
+        container = bool(self._item_specs.get(kind, {}).get("container"))
+        return fragility >= float(of["any_fragility"]) or (container and fragility >= float(of["container_fragility"]))
+
+    def _object_material_entry(self, kind):
+        mat = self._object_material(kind)
+        if mat in self.E.MATERIALS:
+            return self.E.MATERIALS[mat]
+        return self.E.MATERIALS[self.E.RESOLUTION["default_material"]]
+
+    def _weapon_for_strike(self, actor, kind, item):
+        """The object as a weapon for a blow: its multiplier divided by how clumsy its weight is for this swinger (the
+        weight over unwieldy_above x effective strength, when that exceeds 1), and its effort, the same clumsiness
+        (capped at effort_cap) times the row's effort."""
+        rs, of = self.E.RESOLUTION, self.E.OBJECT_FORCE
+        mult, row_effort = self._weapon_mult(kind)
+        limit = max(1e-9, float(of["unwieldy_above"]) * max(0.0, self.effective_strength(actor)))
+        clumsy = max(1.0, float(self.item_weight(kind)) / limit)
+        return {"item": int(item), "kind": kind, "mult": mult / clumsy,
+                "effort": row_effort * min(clumsy, float(rs["effort_cap"]))}
+
+    def _throw_range(self, actor, kind, applied):
+        """Cells the object carries: range_base x effective strength x intensity, over its weight (at least the reference
+        weight, so a light object does not carry further than a reference one), at most range_max."""
+        of = self.E.OBJECT_FORCE
+        divisor = max(1.0, float(self.item_weight(kind)) / float(of["weight_reference"]))
+        cells = math.floor(float(of["range_base"]) * max(0.0, self.effective_strength(actor)) * float(applied) / divisor)
+        return int(max(0, min(int(of["range_max"]), cells)))
+
+    def _cell_occludes(self, cell, codes):
+        grid = self._map_grid
+        x, y = cell
+        return bool(grid) and 0 <= y < len(grid) and 0 <= x < len(grid[y]) and grid[y][x] in codes
+
+    def _throw_flight(self, here, target, reach):
+        """The flight along the grid line from `here` toward `target`: (landing, reached, impact).
+
+        The object goes at most `reach` cells. It stops at the last open cell before an off-map cell or a sight occluder
+        (Phase 028) on the line, which is an impact. `reached` is True when it gets to `target`, and False when it stops
+        short (out of range) or against an obstacle."""
+        from worlds.bigville_sim_world import _line
+        codes = self._occluder_codes(self.E.HEARING["sight_occluders"])
+        landing = (int(here[0]), int(here[1]))
+        for step, cell in enumerate(_line(here[0], here[1], target[0], target[1])[1:], start=1):
+            if step > reach:
+                return landing, False, False
+            if cell not in self._map_cells or self._cell_occludes(cell, codes):
+                return landing, False, True
+            landing = (int(cell[0]), int(cell[1]))
+        return landing, True, False
+
+    def _throw_miss_cell(self, cell):
+        """The first open cell beside `cell` in sorted order: where a miss lands. `cell` itself when none is open."""
+        codes = self._occluder_codes(self.E.HEARING["sight_occluders"])
+        around = sorted((cell[0] + dx, cell[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx, dy) != (0, 0))
+        for nxt in around:
+            if nxt in self._map_cells and not self._cell_occludes(nxt, codes) \
+                    and float(self.terrain_state(nxt)["speed"]) > 0.0:
+                return nxt
+        return (int(cell[0]), int(cell[1]))
+
+    def _release_thrown(self, actor, item, cell, broken):
+        """The object leaves the hand onto `cell`. When `broken`, it is destroyed there: kept as a broken tool, off the map."""
+        self._drop_discrete_item(actor, item, cell=cell)
+        if broken:
+            self._wear_tool(item, 1.0)           # condition to 0: broken, and tallied (Phase 048)
+            self._remove_item_location(item)
+            self.eng.remove_edge_unchecked(self._town, "has_tool_item", item)
+
+    def _publish_throw(self, actor, kind, cell, outcome, witnesses):
+        """A throw is a physical event: who threw what, where it landed, and what happened. Witnesses see it; nobody else."""
+        event = self.create_event("throw", subject=str(kind), detail=f"{actor} threw {kind} to {cell}: {outcome}",
+                                  public=True)
+        for witness in witnesses:
+            self.observe_event(witness, event)
+        return event
+
+    @staticmethod
+    def _as_cell(value):
+        """A map cell from a proposal: two whole numbers [x, y], else None."""
+        if isinstance(value, (list, tuple)) and len(value) == 2 \
+                and all(isinstance(v, int) and not isinstance(v, bool) for v in value):
+            return (int(value[0]), int(value[1]))
+        return None
+
+    def throw_begin(self, actor, plan):
+        """Start a throw by `actor` of the object named in plan["with"], from a hand, at plan["target"]: a resident who
+        is within sight, or a map cell. Returns (pending, None), or (None, reason) when refused: the switch is off
+        (unsupported), an unknown actor or an actor asleep, a malformed value, an object not in a hand (not_held), a
+        target the world does not know or cannot reach at all (no cell), or a used action slot. Range and line never
+        refuse: the object lands where its flight stops."""
+        self._contest = None
+        if not self._object_on():
+            return None, "unsupported"
+        if actor not in self._actors:
+            return None, "unknown_target"
+        sleep_code = self._sleep_code(actor)
+        if sleep_code is not None:
+            return None, sleep_code
+        plan = plan if isinstance(plan, dict) else {}
+        kind = self._as_key(plan.get("with"))
+        if not isinstance(kind, str):
+            return None, "malformed"
+        item = self._hand_held_item(actor, kind)
+        if item is None:
+            return None, "not_held"
+        here = self.actor_position(actor)
+        if here is None:
+            return None, "not_in_reach"
+        cell = self._as_cell(plan.get("target"))
+        target = None
+        if cell is None:
+            target = self._as_key(plan.get("target"))
+            if not isinstance(target, str):
+                return None, "malformed"
+            if target not in self._actors or target == actor:
+                return None, "unknown_target" if target not in self._actors else "wrong_target"
+            if not self.is_alive(target):
+                return None, "wrong_target"
+            cell = self.actor_position(target)
+            if cell is None:
+                return None, "unknown_target"
+        elif cell not in self._map_cells:
+            return None, "unknown_target"
+        requested = plan.get("intensity", 1.0)
+        if isinstance(requested, bool) or not isinstance(requested, (int, float)) or math.isnan(float(requested)):
+            return None, "malformed"
+        from worlds import resolution as R
+        rs = self.E.RESOLUTION
+        ceiling = float(rs["max_intensity"]) * self.speed_factor(actor) * self.health(actor)
+        applied, clamped = R.intensity_applied(float(requested), rs["max_intensity"], ceiling)
+        reach = self._throw_range(actor, kind, applied)
+        landing, reached, impact = self._throw_flight(here, cell, reach)
+        attrs = self.eng.node(self._actor(actor))["attrs"]
+        before = {"major_action_used": attrs.get("major_action_used", 0.0),
+                  "major_action_kind": attrs.get("major_action_kind", ""),
+                  "last_major_action": attrs.get("last_major_action", "")}
+        if not self._claim_major_action(actor, "throw"):
+            return None, "slot_used"
+        attacker_side = self._contest_side(actor)
+        if target is not None and reached:
+            target_side = self._contest_side(target)
+            offer = self._contest_offer(actor, target, attacker_side, target_side)
+            # The only reaction a thrown object asks for is stepping aside. The take's other options do not apply.
+            offer["options"] = [option for option in offer["options"] if option == "evade"]
+            offer["eligible"] = bool(offer["eligible"] and offer["options"])
+        else:
+            target_side = None
+            offer = {"eligible": False, "reason": "no_target" if target is None else "out_of_reach", "late": False,
+                     "penalty": 1.0, "options": [], "aware": False, "evade_cell": None, "slot_free": True}
+        pending = {
+            "action": "throw", "attacker": str(actor), "target": str(target) if target is not None else "",
+            "kind": kind, "kind_is_item": False, "by": "throw", "amount": 1.0,
+            "turn": int(self._turn), "witnesses": self._strike_witnesses(actor),
+            "slot_before": before, "slot_record": self._turn_actions[actor][-1],
+            "attacker_side": attacker_side, "target_side": target_side, "offer": offer, "result": None,
+            "item": int(item), "cell": (int(cell[0]), int(cell[1])), "here": (int(here[0]), int(here[1])),
+            "landing": (int(landing[0]), int(landing[1])), "reached": bool(reached), "impact": bool(impact),
+            "range": int(reach), "distance": max(abs(cell[0] - here[0]), abs(cell[1] - here[1])),
+            "requested": float(requested), "intensity": float(applied), "clamped": bool(clamped),
+        }
+        self._contest = pending
+        return pending, None
+
+    def throw_resolve(self, pending, reaction=None):
+        """Resolve a pending throw once the target, if any, has chosen its reaction (or None).
+
+        Returns (True, None): a throw is enacted when the object leaves the hand, whatever it hits or misses. The outcome
+        is in ``pending["result"]``: hit, evaded, missed (a person was aimed at), stopped (an obstacle on the line), short
+        (out of range) or landed (a cell).
+
+        The aim is (1 + technique_weight x skill) x exhaustion step x distance falloff, divided by the accuracy loss at
+        intensity above 1. A person who does not step aside has a passive defence; one who steps aside has
+        (1 + technique_weight x skill) x exhaustion step. The throw hits when the aim reaches the defence."""
+        if self._contest is pending:
+            self._contest = None
+        from worlds import resolution as R
+        rs, of, ct = self.E.RESOLUTION, self.E.OBJECT_FORCE, self.E.CONTEST
+        actor, item, kind = pending["attacker"], pending["item"], pending["kind"]
+        target = pending["target"] or None
+        offer = pending["offer"]
+        choice = reaction if (offer["eligible"] and reaction in offer["options"]) else None
+        A = pending["attacker_side"]
+        here, cell, applied = tuple(pending["here"]), tuple(pending["cell"]), float(pending["intensity"])
+        distance = int(pending["distance"])
+        falloff = 1.0 / (1.0 + distance / float(of["distance_reference"]))
+        tw = float(ct["technique_weight"])
+        actor_step = float(self._exhaustion_band(actor)["speed"])
+        aim = ((1.0 + tw * float(A["skill"])) * actor_step * falloff
+               / (1.0 + float(of["accuracy_intensity_loss"]) * max(0.0, applied - 1.0)))
+        result = {"action": "throw", "reaction": choice or "", "outcome": "", "applied": True, "reason": "",
+                  "late": bool(offer["late"]) if choice is not None else False, "redirected": False,
+                  "attacker_cost": 0.0, "target_cost": 0.0, "harm": 0.0, "hit": False, "broken": False,
+                  "landed_at": [], "weapon": kind}
+        pending["result"] = result
+        harm, hit = 0.0, False
+        if target is None or not pending["reached"]:
+            landing = tuple(pending["landing"])
+            if target is None and pending["reached"]:
+                outcome = "landed"
+            elif pending["impact"]:
+                outcome = "stopped"
+            else:
+                outcome = "short"
+        else:
+            T = pending["target_side"] or self._contest_side(target)
+            defence = (of["passive_defence"] if choice != "evade"
+                       else (1.0 + tw * float(T["skill"])) * float(self._exhaustion_band(target)["speed"]))
+            defence = float(defence)
+            hit = aim >= defence
+            if hit:
+                margin = (aim - defence) / (aim + defence) if aim + defence > 0.0 else 0.0
+                quality = R.clamp((1.0 + margin) / 2.0, 0.0, 1.0)
+                harm = (float(of["throw_harm"]) * self._object_mult(kind, "throw") * applied * falloff * quality
+                        * actor_step)
+                outcome = "hit"
+                landing = cell                       # the object falls where the person stands
+                if harm > 0.0:
+                    self.harm(target, harm, "violence")
+            else:
+                outcome = "evaded" if choice == "evade" else "missed"
+                if choice == "evade":
+                    self._move_actor_to(target, offer["evade_cell"])
+                landing = self._throw_miss_cell(cell)
+            self._contest_practice_after(pending, choice)
+        impact = bool(pending["impact"]) or hit
+        broken = impact and self._object_breaks(kind)
+        mat_entry = self._object_material_entry(kind)
+        # The stamina and strain are the resolution core's: a demand of the object's weight, against the thrower's force.
+        demand = float(self.item_weight(kind)) / float(of["throw_demand_unit"])
+        terms = {"applied": applied, "clamped": bool(pending["clamped"]), "force": float(A["force"]),
+                 "technique": R.technique_term(float(A["skill"]), rs["technique_floor"]), "fit": 1.0, "effort": 1.0,
+                 "tool_kind": kind}
+        step, share = self._resolve_terms(terms, None, demand)
+        plan = {"primitive": "displace", "verb": "throw", "name": target or "cell", "node": item, "tool": item,
+                "terms": terms, "step": step, "share": share, "demand": demand, "condition": 1.0,
+                "material": mat_entry, "requested": pending["requested"], "actor": actor}
+        self._finish_attempt(actor, plan, outcome, 0.0, harm)
+        if share >= float(rs["trivial_below"]):
+            result["attacker_cost"] = float(step["stamina"])
+        self._release_thrown(actor, item, landing, broken)
+        if broken:
+            self._publish_noise(actor, "throw", kind, R.noise_radius(rs["noise_base"], applied,
+                                                                     float(mat_entry["noise"])))
+        self._publish_throw(actor, kind, landing, outcome, pending["witnesses"])
+        result.update(outcome=outcome, harm=float(harm), hit=bool(hit), broken=bool(broken),
+                      landed_at=[int(landing[0]), int(landing[1])])
+        return True, None
+
     # ---------------------------------------------- strikes (Phase 038)
     # A strike is a blow by one resident on another standing on the same cell (reach is the cell, as for a take).
     # It reuses the contest: the blow's power is the attacker's score (force x technique), the target's hold is
@@ -11068,6 +11405,8 @@ class BigvilleWorld:
             return self.strike_begin(actor, plan)
         if action == "restrain":
             return self.restrain_begin(actor, plan)
+        if action == "throw":
+            return self.throw_begin(actor, plan)
         return self.take_begin(actor, plan)
 
     def strike_begin(self, actor, plan):
@@ -11100,6 +11439,15 @@ class BigvilleWorld:
         rs = self.E.RESOLUTION
         ceiling = float(rs["max_intensity"]) * self.health(actor)   # tiredness weakens the blow (weak), not its ceiling
         applied, _clamped = R.intensity_applied(float(requested), rs["max_intensity"], ceiling)
+        weapon = None
+        if plan.get("with") is not None and self._object_on():
+            kind = self._as_key(plan.get("with"))
+            if not isinstance(kind, str):
+                return None, "malformed"
+            item = self._hand_held_item(actor, kind)
+            if item is None:
+                return None, "not_held"
+            weapon = self._weapon_for_strike(actor, kind, item)     # Phase 040: a blow with an object in hand
         attrs = self.eng.node(self._actor(actor))["attrs"]
         before = {"major_action_used": attrs.get("major_action_used", 0.0),
                   "major_action_kind": attrs.get("major_action_kind", ""),
@@ -11117,7 +11465,7 @@ class BigvilleWorld:
             "slot_before": before, "slot_record": self._turn_actions[actor][-1],
             "attacker_side": attacker_side, "target_side": target_side,
             "offer": self._contest_offer(actor, target, attacker_side, target_side),
-            "result": None,
+            "result": None, "weapon": weapon,
         }
         self._contest = pending
         return pending, None
@@ -11180,6 +11528,9 @@ class BigvilleWorld:
             brought = grip * T["force"]
         share_a = self._contest_share(brought, A["force"], A["skill"])
         cost_a = base * share_a * (intensity ** k) if share_a >= trivial else 0.0
+        weapon = pending.get("weapon")
+        if weapon is not None:
+            cost_a *= float(weapon["effort"])      # Phase 040: a heavy object tires the swinger
         if choice == "evade":
             share_t = self._contest_share(A["force"], T["force"], T["skill"])
             cost_t = base * share_t if share_t >= trivial else 0.0
@@ -11197,7 +11548,7 @@ class BigvilleWorld:
             hold = T["force"] * (1.0 + tw * T["skill"]) * penalty
         else:
             hold = grip * T["force"] * (1.0 + tw * T["skill"]) * penalty
-        att = A["power"]
+        att = A["power"] * (float(pending["weapon"]["mult"]) if pending.get("weapon") is not None else 1.0)
         total = att + hold
         margin = 0.0 if total <= 0.0 else (att - hold) / total
         landed = R.clamp((1.0 + margin) / 2.0, 0.0, 1.0)
@@ -11214,12 +11565,22 @@ class BigvilleWorld:
             self._claim_major_action(target, choice)
         self._contest_practice_after(pending, choice)
         result.update(attacker_cost=cost_a, target_cost=cost_t, landed=landed, harm=harm,
-                      redirected=redirected, outcome="redirected" if redirected else "struck", applied=True)
+                      redirected=redirected, outcome="redirected" if redirected else "struck", applied=True,
+                      weapon=pending["weapon"]["kind"] if pending.get("weapon") is not None else "")
         self._record_sight(attacker, "strike", pending["witnesses"])
         if harm > 0.0:
             self.harm(target, harm, "violence")
         if redirected:
             self.harm(attacker, float(ct["redirect_harm"]) * intensity, "violence")
+        weapon = pending.get("weapon")
+        if weapon is not None:
+            # Phase 040: the object takes the wear of the blow, and breaks when it hit and is breakable.
+            held = self._hand_held_item(attacker, weapon["kind"])
+            if held is not None and int(held) == int(weapon["item"]):
+                self._wear_tool(held, R.tool_wear(self.E.RESOLUTION["tool_wear"], intensity, 1.0,
+                                                  self.E.RESOLUTION["mismatch_wear"], 0.0))
+                if harm > 0.0 and self._object_breaks(weapon["kind"]):
+                    self._release_thrown(attacker, held, self.actor_position(attacker), broken=True)
         return True, None
 
     # ---------------------------------------------- restraint (Phase 033)

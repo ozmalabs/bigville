@@ -254,6 +254,10 @@
       "file": "world/resolution.json"
     },
     {
+      "name": "OBJECT_FORCE",
+      "file": "world/object_force.json"
+    },
+    {
       "name": "JOINT_TASKS",
       "file": "world/joint_tasks.json"
     },
