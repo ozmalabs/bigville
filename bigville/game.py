@@ -54,8 +54,10 @@ _AUTO_LAZY_BACKEND_KINDS = frozenset({"cheap", "simple"})
 _SNAPSHOT_MODES = frozenset({"every_turn", "on_demand", "auto"})
 # EN03: when world-rule sweeps run.  "action" is the historical behaviour: a
 # primitive action's ``_run()`` sweeps immediately.  "turn" defers those sweeps
-# to one authoritative sweep at the turn's finish boundary.
-_RULE_BATCHING = frozenset({"action", "turn"})
+# to one authoritative sweep at the turn's finish boundary.  EN05 adds "auto":
+# it selects turn only for the same autonomous simple/cheap session the LA08
+# affordance rule and the EN02 snapshot rule select, and action otherwise.
+_RULE_BATCHING = frozenset({"action", "turn", "auto"})
 
 
 def _default_simultaneous_priority(game, actor, index):
@@ -138,10 +140,13 @@ class BigvilleGame:
     # caller's value.  The direct constructor still defaults to "menu";
     # ``create_game`` opts into "auto".
     _affordance_mode = "menu"
-    # EN02: resolved snapshot mode; "every_turn" is the historical default.
+    # EN02: resolved snapshot mode; "every_turn" is the historical/default
+    # direct-constructor mode while ``create_game`` requests "auto" (EN05).
     _snapshot_mode = "every_turn"
     # EN03: "action" keeps the historical per-action rule sweep; "turn" defers
-    # every primitive sweep to the finish boundary.
+    # every primitive sweep to the finish boundary.  EN05: the requested value
+    # may be "auto"; the direct constructor still defaults to "action" while
+    # ``create_game`` opts into "auto".
     _rule_batching = "action"
 
     @property
@@ -234,7 +239,7 @@ class BigvilleGame:
 
     @property
     def rule_batching(self) -> str:
-        """``"action"`` (per-action sweeps) or ``"turn"`` (one finish sweep)."""
+        """The resolved mode: ``"action"`` or ``"turn"``."""
         return self._rule_batching
 
     @rule_batching.setter
@@ -243,7 +248,30 @@ class BigvilleGame:
             raise ValueError(
                 f"rule_batching must be one of {sorted(_RULE_BATCHING)}, "
                 f"got {value!r}")
-        self._rule_batching = value
+        self.rule_batching_requested = value
+        self.resolve_rule_batching()
+
+    def resolve_rule_batching(self) -> str:
+        """Resolve the requested rule-batching mode against the current session.
+
+        Explicit ``"action"`` and ``"turn"`` always win.  ``"auto"`` reuses the
+        LA08 auto rule: it selects turn batching only for an autonomous session
+        whose resident backends are all built-in cheap/simple, and the
+        historical per-action sweep for a player, an LLM, Ocelot or any other
+        backend.  The direct constructor still defaults to ``"action"``.
+
+        Backends can be assigned after construction (``create_game`` does), so
+        callers that change them should call this again.  It is deterministic
+        and idempotent: the same session state always resolves to the same
+        mode.
+        """
+        requested = getattr(self, "rule_batching_requested", "action")
+        if requested == "auto":
+            self._rule_batching = ("turn" if self._auto_resolves_lazy()
+                                   else "action")
+        else:
+            self._rule_batching = requested
+        return self._rule_batching
 
     def _rule_batch_scope(self):
         """The world batch scope for this mode; a no-op in the historical mode."""
@@ -374,7 +402,8 @@ class BigvilleGame:
         self.affordance_mode = affordance_mode
         # EN02: likewise, snapshot "auto" resolves against the finished session.
         self.snapshot_mode = snapshot_mode
-        # EN03: no auto resolution; the historical per-action mode is the default.
+        # EN05: rule-batching "auto" follows the same finished-session rule; a
+        # direct constructor still requests "action" unless the caller asks.
         self.rule_batching = rule_batching
 
     def _sync_animal_backends(self):
@@ -552,6 +581,9 @@ class BigvilleGame:
         # EN02: "auto" snapshot mode follows the same backend set.
         if getattr(self, "snapshot_mode_requested", "every_turn") == "auto":
             self.resolve_snapshot_mode()
+        # EN05: "auto" rule batching is the third mode with the same rule.
+        if getattr(self, "rule_batching_requested", "action") == "auto":
+            self.resolve_rule_batching()
 
     def _derived_knowledge_memories(self, name, attrs, memories, *, explicit_recipes=False):
         """The derived knowledge priors of one resident as private memory records (Phase 019).

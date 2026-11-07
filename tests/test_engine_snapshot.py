@@ -1,10 +1,11 @@
 """EN02: lazy snapshot and report building for headless turns.
 
-``snapshot_mode="every_turn"`` is the unchanged default.  ``"on_demand"``
-leaves the snapshot out of a turn result, so no ``world.report()`` /
-``report_history()`` work happens; ``game.snapshot()`` still builds the full
-snapshot when a UI or debugger asks.  ``"auto"`` reuses the LA08 simple-session
-rule.  ``snapshot(include_report=False)`` and
+``snapshot_mode="every_turn"`` is the historical explicit mode and the direct
+``BigvilleGame`` default; ``create_game`` now defaults to ``"auto"`` (EN05).
+``"on_demand"`` leaves the snapshot out of a turn result, so no
+``world.report()`` / ``report_history()`` work happens; ``game.snapshot()``
+still builds the full snapshot when a UI or debugger asks.  ``"auto"`` reuses
+the LA08 simple-session rule.  ``snapshot(include_report=False)`` and
 ``export_state(include_report=False)`` expose the same split directly.
 """
 from __future__ import annotations
@@ -88,9 +89,9 @@ class _KindBackend:
         self.kind = kind
 
 
-# ------------------------------------------------------------------ default mode
-def test_every_turn_default_step_includes_the_full_snapshot():
-    game = _game()
+# ------------------------------------------------------------------ explicit legacy mode
+def test_explicit_every_turn_step_includes_the_full_snapshot():
+    game = _game(snapshot_mode="every_turn")
     assert game.snapshot_mode_requested == "every_turn"
     assert game.snapshot_mode == "every_turn"
 

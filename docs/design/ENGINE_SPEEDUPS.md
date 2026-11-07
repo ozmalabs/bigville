@@ -189,11 +189,20 @@ pass.
 
 | Phase | Status | Commit |
 |---|---|---|
-| EN01 | ready | — |
-| EN02 | ready | — |
-| EN03 | ready | — |
-| EN04 | ready | — |
-| EN05 | blocked on EN04 | — |
+| EN01 | complete | `85d89a1` |
+| EN02 | complete | `44f3fb1` |
+| EN03 | complete | `7f71fbf` |
+| EN04 | complete | `a724d65` |
+| EN05 | implemented, uncommitted | — |
+
+EN05 adopts the combined rollout for autonomous simple/cheap sessions:
+`create_game` defaults `snapshot_mode="auto"` (on_demand) and
+`rule_batching="auto"` (turn) alongside the existing affordance auto (lazy).
+A player, LLM, Ocelot or other backend resolves to every_turn/action, explicit
+values always win, and a direct `BigvilleGame` constructor keeps the historical
+menu/every_turn/action defaults.  See
+[`docs/phases/engine-speedups/EN05_REPORT.md`](../phases/engine-speedups/EN05_REPORT.md)
+and [`FINAL_REPORT.md`](../phases/engine-speedups/FINAL_REPORT.md).
 
 ## Integration gates
 

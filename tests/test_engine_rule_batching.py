@@ -1,7 +1,8 @@
 """EN03: opt-in turn-batched world-rule resolution.
 
-``rule_batching="action"`` is the historical default: every primitive action's
-``_run()`` sweeps immediately.  ``"turn"`` opens one re-entrant
+``rule_batching="action"`` is the historical mode and the direct
+``BigvilleGame`` default (``create_game`` defaults to ``"auto"`` since EN05):
+every primitive action's ``_run()`` sweeps immediately.  ``"turn"`` opens one re-entrant
 ``world.batch_rules()`` scope around the action commit, records that a sweep is
 owed, and lets ``_finish_turn`` run the single authoritative sweep.  A turn is
 still one advanced turn with the same applied/refused records.
@@ -385,8 +386,12 @@ def test_nested_batches_run_exactly_one_sweep_on_the_outer_exit():
 
 
 # ------------------------------------------------------------------ option
-def test_rule_batching_defaults_to_action_and_validates():
-    game = _game()
+def test_rule_batching_direct_default_is_action_and_validates():
+    # EN05: create_game defaults to "auto"; the direct constructor keeps the
+    # historical per-action default.
+    world = create_world(scenario=_room(), seed=305000)
+    game = BigvilleGame(world, autonomous=True)
+    assert game.rule_batching_requested == "action"
     assert game.rule_batching == "action"
 
     game.rule_batching = "turn"

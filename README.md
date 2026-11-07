@@ -250,6 +250,28 @@ always win.  See `docs/design/LAZY_AFFORDANCES.md`,
 `docs/phases/lazy-affordances/FINAL_REPORT.md` for the evaluation and the
 small-room travel caveat.
 
+### Engine performance
+
+`create_game` resolves three session options by backend.  For an autonomous
+session whose resident backends are all built-in simple/cheap, the defaults are
+`affordance_mode="auto"` → **lazy**, `snapshot_mode="auto"` → **on_demand**,
+and `rule_batching="auto"` → **turn**.  That headless path skips the exhaustive
+menu, does not build a snapshot/report on every turn, and runs one world-rule
+sweep at the finish boundary instead of one per action.  A player, LLM, Ocelot
+or any other backend resolves to menu/every_turn/action, so UI and cognition
+sessions keep the historical semantics.  A direct `BigvilleGame(world)`
+constructor still defaults to menu/every_turn/action.
+
+Explicit values always win.  `snapshot_mode="every_turn"` restores the
+per-turn `step()["snapshot"]`; in `"on_demand"` call `game.snapshot()` when a
+UI or debugger needs one.  `rule_batching="turn"` is the batched finish sweep
+and `"action"` the historical per-action sweep.  `set_backend()` re-resolves
+all three auto modes.  On the synthetic simple town this cuts `step` time by
+about 55%/55%/66% at 50/100/200 residents, with `_run` sweeps falling from
+actions+3 to 3 per turn and identical behaviour on the evaluated town100 and
+small-room runs.  See
+[`docs/phases/engine-speedups/FINAL_REPORT.md`](docs/phases/engine-speedups/FINAL_REPORT.md).
+
 ### Real Ocelot integration
 
 Bigville does not bundle the Ocelot substrate. The Ocelot repository provides
