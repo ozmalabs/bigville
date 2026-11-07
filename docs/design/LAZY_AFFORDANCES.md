@@ -1,9 +1,10 @@
 # Lazy affordances: observations, proposals and validation
 
-Status: active plan, 7 November 2026. This plan replaces the per-turn,
-per-resident exhaustive list of legal actions with an observation/proposal/
-validation model. It builds on the tick-graph work but is an independent
-program.
+Status: complete, LA06 uncommitted, 8 November 2026. This plan replaces the
+per-turn, per-resident exhaustive list of legal actions with an observation/
+proposal/validation model. It builds on the tick-graph work but is an
+independent program. LA06 kept `menu` as the default on health evidence; the
+lazy path is implemented and opt-in.
 
 ## Principle
 
@@ -240,12 +241,41 @@ the exact command, duration and failure/timeout rather than claiming a pass.
 
 | Phase | Status | Commit |
 |---|---|---|
-| LA01 | ready | — |
-| LA02 | blocked on LA01 | — |
-| LA03 | blocked on LA02 | — |
-| LA04 | blocked on LA03 | — |
-| LA05 | blocked on LA04 | — |
-| LA06 | blocked on LA05 | — |
+| LA01 | complete | `9725e10` |
+| LA02 | complete | `6e54bb4` |
+| LA03 | complete | `9d54a86` |
+| LA04 | complete | `e1a8829` |
+| LA05 | complete | `ab6d8e7` |
+| LA06 | complete, uncommitted | `uncommitted` |
+
+## Results
+
+LA06 evaluated the two modes on the same scenarios and seeds with simple
+autonomous backends: `town100` seed 305000 and 305001 for 8 turns, and the
+small TG01-style room for 12 turns.  The full table is in
+`docs/phases/lazy-affordances/LA06_REPORT.md`.
+
+- **Applied actions and survival were not worse.** Both modes applied 100
+  actions per turn on `town100`, refused none, and kept all 100 residents
+  alive over 8 turns.  Lazy had lower hunger (0.0 vs 0.116) and higher energy
+  (95.1/95.7 vs 42.0/41.9).
+- **Health was materially worse in lazy mode.** The lazy work candidates
+  include common recipes without validating the site, tool or ingredients.
+  Over 8 `town100` turns that produced 84-94 improvised jobs and 43-49
+  accidents, lowering mean health to 0.951/0.957 (minimum 0.7/0.8) against
+  1.0 in menu mode.  The small run reproduced it: 36 applied `work` actions,
+  6 improvised jobs, 4 accidents, mean health 0.867 against 1.0.
+- **Context construction is much cheaper, but total turn time less so.** On the
+  synthetic benchmark, menu context was 13.8x lazy at 50 residents, 8.8x at
+  100 and 9.4x at 200; whole-turn time was 2.35x, 1.40x and 1.28x.  Commit and
+  physical work still dominate as resident count rises.
+
+**Decision:** `affordance_mode="menu"` remains the default.  No `"auto"` mode
+was added.  Lazy stays explicitly selectable and on-demand surfaces keep using
+the menu.  The next hypothesis is to make the lazy work proposal validate
+site, tool and ingredients (or simply stop proposing unvalidated common
+recipes) before re-running this evaluation; the speed result alone does not
+justify the health regression.
 
 ## Integration gates
 

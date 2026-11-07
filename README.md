@@ -229,6 +229,21 @@ construct `BigvilleGame(..., continuations=False)`, for reactive
 decide-every-turn behavior. Replayed actions still pass through the world's
 admissibility and one-major-action rules.
 
+### Affordance modes
+
+`create_game(..., affordance_mode="menu")` keeps the exhaustive per-turn
+legal-action menu and is still the default. `affordance_mode="lazy"` gives a
+backend a cheap observation of local entities and capabilities; the backend
+proposes stable names, ids or cells and the world validates them, returning an
+ordinary refusal when a proposal is not admissible. Menu mode remains
+available for UI action pickers, Ocelot's adapter and debugging. Lazy mode is
+opt-in: the LA06 evaluation found it much cheaper to build a context but
+materially worse on health, because unvalidated work candidates caused
+improvised jobs and accidents. See
+`docs/design/LAZY_AFFORDANCES.md` and
+`docs/phases/lazy-affordances/LA06_REPORT.md` for the evidence and the next
+step.
+
 ### Real Ocelot integration
 
 Bigville does not bundle the Ocelot substrate. The Ocelot repository provides

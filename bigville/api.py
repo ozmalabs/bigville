@@ -52,7 +52,13 @@ def create_game(*, scenario="town100", seed=305000, player=None,
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
     A game with LLM residents writes its complete log to ``llm_log_dir`` (else ``BIGVILLE_LLM_LOG_DIR``, else
-    ``runs/llm_logs``); ``llm_log=False`` turns that off. A game without LLM residents writes nothing."""
+    ``runs/llm_logs``); ``llm_log=False`` turns that off. A game without LLM residents writes nothing.
+
+    ``affordance_mode`` is ``"menu"`` (the exhaustive per-turn legal-action
+    menu, still the default) or ``"lazy"`` (observation/proposal/validation,
+    explicitly opt-in).  LA06 kept ``"menu"`` as the default after lazy work
+    candidates produced improvised jobs and accidents; see
+    ``docs/phases/lazy-affordances/LA06_REPORT.md``."""
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:

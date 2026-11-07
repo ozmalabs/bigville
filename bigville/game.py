@@ -119,6 +119,10 @@ class BigvilleGame:
     # LA01: how a context obtains its legal action space.  "menu" keeps the
     # exhaustive per-turn menu (the default); "lazy" (LA03) builds from
     # ``world.observe(actor)`` and does not call the exhaustive menu builder.
+    # LA06 kept "menu" as the default: lazy mode is cheaper, but its unvalidated
+    # work candidates caused improvised jobs and accidents, and therefore a
+    # worse health outcome.  Lazy remains explicitly selectable while that is
+    # fixed and re-evaluated; see docs/phases/lazy-affordances/LA06_REPORT.md.
     _affordance_mode = "menu"
 
     @property
