@@ -542,6 +542,21 @@ def _check_locks(errors, warnings, info):
             errors.append(f"MAJOR_ACTIONS: needs {action!r} with a description (Phase 030)")
 
 
+def _check_coin_storage(errors, warnings, info):
+    """Phase 041: coin stored in containers and purses. COIN_WEIGHT and COIN_VOLUME (packs/*/world/containers.json)
+    are numbers of at least 0. Coin is an item kind (ITEMS) so a container's coin pile has a kind. The codes that
+    a coin move can refuse with must exist in REFUSAL_REASONS."""
+    for name, value in (("COIN_WEIGHT", COIN_WEIGHT), ("COIN_VOLUME", COIN_VOLUME)):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            errors.append(f"{name}: must be a number of at least 0, not {value!r} (Phase 041)")
+    if "coin" not in ITEMS:
+        errors.append("ITEMS: 'coin' is needed for coin stored in containers (Phase 041)")
+    for code in ("full", "container_locked", "out_of_stock", "not_in_reach", "unknown_target", "malformed",
+                 "slot_used"):
+        if code not in REFUSAL_REASONS:
+            errors.append(f"REFUSAL_REASONS: needs the coin code {code!r} (Phase 041)")
+
+
 def _check_doors(errors, warnings, info):
     """Phase 039: a building's door (BUILDINGS[...].door, one per building). The lock is a whole-number lock_id of at
     least 1 that no other door shares and that differs from the store's, so one key opens one lock; `locked` is a
@@ -2148,6 +2163,7 @@ def check_consistency():
     _check_joint_tasks(errors, warnings, info)
     _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)
+    _check_coin_storage(errors, warnings, info)   # Phase 041: coin stored in containers and purses
     _check_doors(errors, warnings, info)   # Phase 039: building doors (BUILDINGS[...].door)
     _check_food_grading(errors, warnings, info)
     _check_nutrition(errors, warnings, info)

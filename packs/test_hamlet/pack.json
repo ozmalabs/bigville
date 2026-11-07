@@ -34,6 +34,14 @@
       "file": "world/containers.json"
     },
     {
+      "name": "COIN_WEIGHT",
+      "file": "world/containers.json"
+    },
+    {
+      "name": "COIN_VOLUME",
+      "file": "world/containers.json"
+    },
+    {
       "name": "SERVING_UTENSILS",
       "file": "world/serving_utensils.json"
     },

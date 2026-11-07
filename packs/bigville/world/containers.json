@@ -1,5 +1,5 @@
 {
-  "_doc": "---------------------------------------------------------------- CONTAINERS\nvessels with a capacity; some lockable (a safe is a lockable container). lock_strength (Phase 050, APPROX, a design choice; no source was consulted): the demand an attempt to open a lockable kind's lock must meet, in the units of RESOLUTION (one average adult's push is 1.0). A container is a peer\nclass of a pile -- a physical, located, claimable world-fact that holds contents.\nLong-term stores are deliberately distinct from ordinary containers. Their decay factors are\nmultipliers on the normal decay rate, so a dry, well-built granary preserves a harvest across\nseasons without making food immortal. `preferred_contents` is an affinity, not a whitelist:\npeople may put other things in the building, but unsuitable perishables keep worse there.\nAbstract vessel capabilities used when serving. The wooden/metal item variants above are the\nphysical vessels; these entries let consumption accept either material.",
+  "_doc": "---------------------------------------------------------------- CONTAINERS\nvessels with a capacity; some lockable (a safe is a lockable container). lock_strength (Phase 050, APPROX, a design choice; no source was consulted): the demand an attempt to open a lockable kind's lock must meet, in the units of RESOLUTION (one average adult's push is 1.0). A container is a peer\nclass of a pile -- a physical, located, claimable world-fact that holds contents.\nLong-term stores are deliberately distinct from ordinary containers. Their decay factors are\nmultipliers on the normal decay rate, so a dry, well-built granary preserves a harvest across\nseasons without making food immortal. `preferred_contents` is an affinity, not a whitelist:\npeople may put other things in the building, but unsuitable perishables keep worse there.\nAbstract vessel capabilities used when serving. The wooden/metal item variants above are the\nphysical vessels; these entries let consumption accept either material. COIN_WEIGHT and COIN_VOLUME (Phase 041): the weight (kg) and volume (litres) of one coin, as stored in a container or a purse, and carried in a resident's purse. The weight of a resident's own coin adds to the carried weight (carrying model) and the weight of stored coin counts toward a container's load. Both are APPROX: design choices, no source was consulted. Both are 0, so a coin adds no load and no volume, and the founding town's carrying and capacity numbers do not change.",
   "_types": {},
   "tables": {
     "CONTAINERS": {
@@ -131,6 +131,8 @@
         "lockable": false,
         "watertight": true
       }
-    }
+    },
+    "COIN_WEIGHT": 0.0,
+    "COIN_VOLUME": 0.0
   }
 }

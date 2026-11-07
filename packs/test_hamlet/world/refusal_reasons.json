@@ -63,6 +63,9 @@
       "container_locked": {
         "description": "The container is locked, and you do not hold its key."
       },
+      "full": {
+        "description": "The container has no room left for that much coin."
+      },
       "invalid_destination": {
         "description": "The place cannot be reached this way: it is the cell you already stand on, or it would put a container inside itself."
       },

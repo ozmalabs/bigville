@@ -250,6 +250,17 @@ class SimulationReporter:
         by_endpoint = {pair: {"count": int(bucket["count"]), "quantity": _round(bucket["quantity"])}
                        for pair, bucket in sorted(handovers["by_endpoint"].items())}
 
+        # Phase 041: where the coin is. A resident's purse, coin stored in containers, coin in fiscal purses, and
+        # the store's own coin pile. The total is the figure the conservation checks compare across moves.
+        coin_resident = sum(self.world.coin(actor) for actor in self.world._actors)
+        coin_stored = sum(self.world.contents(name, "coin") for name in self.world._containers)
+        coin_purses = sum(float(self.world.eng.node(node)["attrs"].get("coin", 0.0))
+                          for node in self.world.eng.nodes("Purse"))
+        coin_store = self.world.qty("coin")
+        coin = {"resident_purses": _round(coin_resident), "stored_in_containers": _round(coin_stored),
+                "in_purses": _round(coin_purses), "in_store": _round(coin_store),
+                "total": _round(coin_resident + coin_stored + coin_purses + coin_store)}
+
         shops = {}
         for trade, node in sorted(self.world._shops.items()):
             attrs = self.world.eng.node(node)["attrs"]
@@ -293,7 +304,7 @@ class SimulationReporter:
                 "handovers": {"count": int(handovers["count"]),
                               "retained": len(self.world._handovers),
                               "by_good": by_good, "by_kind": by_kind, "by_endpoint": by_endpoint},
-                "shops": shops, "storage": dict(sorted(storage.items())),
+                "shops": shops, "storage": dict(sorted(storage.items())), "coin": coin,
                 "land": dict(sorted(land.items())), "living_crops": dict(sorted(crops.items())),
                 "living_animals": dict(sorted(animals.items())),
                 "registered_land": len(self.world._titles),

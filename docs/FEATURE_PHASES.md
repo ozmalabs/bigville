@@ -1710,12 +1710,7 @@ things"); armour; blocking with a held object; a trade in arms (residents).
 
 ## Phase 041 -- Physical coin and safes
 
-**Status:** ready, after 030 (decision 2026-11-05: added). Spec:
-`seeds/bigville_coin_safe.json` v1.1.0 (block R47): coins are physical and must be stored, in a
-safe behind keys. `cs_present`, `cs_open_threshold` (opens at `keys_required` distinct
-authorisers, a dual-key safe is separation of duties), `cs_withdraw` and `cs_deposit` (conserved,
-capped at what the safe or purse holds), `cs_denied` (a closed safe refuses). Phase 011 builds
-treasury and church purses and needs this first.
+**Status:** done. A resident's own coin (their purse) moves into a lockable container with `put(..., "coin", n)` and back with `fetch(..., "coin", n, source=...)`, conserved, on the container's cell; a closed safe refuses `container_locked`, and a dual-key safe opens only after two distinct keyholders have turned their keys (Phase 030). A Phase 011 fiscal purse keeps its coin and its ledger, and only its holder may put or fetch. `COIN_WEIGHT` and `COIN_VOLUME` (both 0.0, APPROX) set a coin's carried and stored load, so the founding town is unchanged (0 deaths in 192 turns); a full container refuses `full`. `economy.coin` in the report counts where the coin is. No backend is offered coin storage yet. Open: village_eval's conservation snapshot does not count resident or purse coin (the preregistered evaluation is left unchanged); purses have no lock, so a dual-key treasury needs a safe. See docs/phases/phase041/PHASE041_REPORT.md.
 
 **Goal.** Coin is a number on the resident (`coin`) and can only move by `give`. Make it
 storable:
@@ -3419,6 +3414,7 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 | 033 Restraint | done | (this commit) | docs/phases/phase033/PHASE033_REPORT.md -- restrain, release, struggle through the contest rule; hold blocks walking and costs stamina; 1795 passed |
 | 040 Objects as arms | done | (this commit) | docs/phases/phase040/PHASE040_REPORT.md -- strike with an object, throw; OBJECT_FORCE; switch off; 1800 passed |
 | 039 Doors and confinement | done | (this commit) | docs/phases/phase039/PHASE039_REPORT.md -- one door and entrance per building, door_locked crossings, lock by building name, forcing by attempt, jail row; 2098 passed |
+| 041 Physical coin and safes | done | (this commit) | docs/phases/phase041/PHASE041_REPORT.md -- coin into and out of safes and purses, locks and dual keys, COIN_WEIGHT and COIN_VOLUME, economy.coin; 2132 passed |
 | 042 Day, night and lamps | done (switch off) | (this commit) | docs/phases/phase042/PHASE042_REPORT.md -- pure sky maths (`domains/daynight.py`), world facts in `worlds/daynight.py` (sees_dark, lamps with oil, light and douse actions, candles, shorter sight, slower and wasteful dark work on the fitness path, lateness from the real sunset), lamplighter job and backend round, light words in the view; off by default because the round never lights a lamp in 200 ticks; off is byte-identical to HEAD; 29 tests; 1807 passed |
 | 060 Structured speech in | done (switch off) | (this commit) | docs/phases/phase060/PHASE060_REPORT.md -- pack table `SPEECH_ACTS` (acts, slots, understood_by), `domains/speech_grammar.py` grammar, `bigville/backends/speech_in.py` places a heard utterance as an act and a `give` request changes what the listener does (fetch and tell are declined in words); `SPEECH_UNDERSTANDING.enabled` defaults off, and off is identical to HEAD (0 of 100 residents differ over 60 turns); 62 focused tests; 2076 passed, 1 timing-flaky speed test |
 | 061 Speech parser service | done (off) | (this commit) | docs/phases/phase061/PHASE061_REPORT.md -- `bigville/backends/speech_parser.py` asks a small model to place what the grammar cannot, with a fixed cached reference prefix (`SPEECH_PARSER`), a one-shot repair, and a failure counted by cause; `speech_in.using_parser` is the only way in, so with no parser the result is unchanged; on 200 labelled utterances the grammar alone places 47 (7 misplaced), grammar plus a scripted-perfect model 155, with 14 scripted mistakes 151 (14 misplaced); real-model run not done; 25 tests; 2100 passed, 2 timing flakes that pass alone |

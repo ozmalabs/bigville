@@ -1956,10 +1956,12 @@ class BigvilleWorld:
         return total
 
     def carried_weight(self, actor):
-        """The physical weight currently borne by a resident."""
+        """The physical weight currently borne by a resident. A resident's own coin (their purse) counts at
+        COIN_WEIGHT each; coin stored in a container or purse does not (Phase 041)."""
         self._actor(actor)
         return round(self.contents_weight(self._actor_inventories[actor])
-                     + self._held_discrete_weight(actor), 4)
+                     + self._held_discrete_weight(actor)
+                     + self.coin(actor) * float(self.E.COIN_WEIGHT), 4)
 
     def carrying_capacity(self, actor):
         return self.max_load(self._actor_inventories[actor])
@@ -3753,6 +3755,8 @@ class BigvilleWorld:
                 return self._refuse("out_of_stock")
             self.set_coin(giver, self.coin(giver) - amount)
             self.set_coin(recipient, self.coin(recipient) + amount)
+            self._refresh_carry_state(giver)
+            self._refresh_carry_state(recipient)
         else:
             received = self._move_inventory_to_inventory(giver, recipient, kind, amount)
             if received is False:
@@ -4703,7 +4707,10 @@ class BigvilleWorld:
 
     # ---------------------------------------------------- physical stock (piles), NOT floats
     def _phys(self, kind):
-        """The physical properties of a commodity, from the item data (defaults 1/1, not a fluid)."""
+        """The physical properties of a commodity, from the item data (defaults 1/1, not a fluid).
+        Coin takes the pack's COIN_WEIGHT and COIN_VOLUME (Phase 041)."""
+        if kind == "coin":
+            return (float(self.E.COIN_WEIGHT), float(self.E.COIN_VOLUME), 0.0)
         spec = self._item_specs.get(kind, {})
         return (float(spec.get("weight", 1.0)), float(spec.get("volume", 1.0)),
                 1.0 if spec.get("fluid") else 0.0)
@@ -6468,6 +6475,10 @@ class BigvilleWorld:
         """
         self._actor(actor)
         amount = float(amount)
+        if kind == "coin":
+            return self._put_coin(actor, container, amount)
+        if container not in self._containers:
+            return self._refuse("unknown_target")
         container_cell = self.container_position(container)
         if (self._turn > 0 and container_cell is not None and self.actor_position(actor) != container_cell):
             return False
@@ -6508,6 +6519,104 @@ class BigvilleWorld:
         self._record_handover("put", kind, fit, self._actor_endpoint(actor), ("container", str(container)))
         return True
 
+    # ---------------------------------------------------- coin in containers and purses (Phase 041)
+    # A resident's own coin is their `coin` attribute (the purse they carry). A lockable container keeps stored coin
+    # in its 'coin' pile, the same pile `fill` uses for coin from the store. A fiscal purse keeps it in its own `coin`.
+    # put and fetch move coin between the two, conserved. A container opens by its lock (Phase 030), and a purse only
+    # to its holder. Stored coin is not carried: it is not in carried_weight and moves only with its container.
+    def _coin_place(self, name):
+        """('container', name) or ('purse', node) for a name that can store coin, else None."""
+        if name in self._containers:
+            return ("container", name)
+        node = self._purse_node(name) if isinstance(name, str) else None
+        return ("purse", node) if node is not None else None
+
+    def _coin_open(self, actor, place):
+        kind, ref = place
+        if kind == "purse":
+            return self._acts_for(actor, ("purse", ref))
+        return self._container_accessible(actor, ref)
+
+    def _coin_stored(self, place, name):
+        if place[0] == "purse":
+            return float(self.eng.node(place[1])["attrs"].get("coin", 0.0))
+        return self.contents(name, "coin")
+
+    def _add_stored_coin(self, name, delta):
+        node, inners = self._containers[name]
+        if "coin" not in inners:
+            inners["coin"] = self._new_inner_stock(node, self.eng.node(node)["attrs"].get("kind", ""), "coin")
+        self.eng.set_attr(inners["coin"], "qty", self.contents(name, "coin") + float(delta))
+
+    def _coin_fits(self, name, amount):
+        """Whether `amount` more coin fits a container by volume and by load (COIN_VOLUME and COIN_WEIGHT)."""
+        attrs = self.eng.node(self._containers[name][0])["attrs"]
+        fits_volume = (self.used_volume(name) + amount * float(self.E.COIN_VOLUME)
+                       <= self.capacity(name) + 1e-9)
+        fits_load = (self.contents_weight(name) + amount * float(self.E.COIN_WEIGHT)
+                     <= float(attrs.get("max_load", 1e18)) + 1e-9)
+        return fits_volume and fits_load
+
+    def _put_coin(self, actor, name, amount):
+        """Move `amount` of the resident's own coin into a container or purse. Refused with unknown_target,
+        malformed, not_in_reach (a container with a cell, during a turn, when the resident is off that cell),
+        container_locked, out_of_stock, full, or slot_used."""
+        place = self._coin_place(name)
+        if place is None:
+            return self._refuse("unknown_target")
+        if amount <= 0.0:
+            return self._refuse("malformed")
+        if place[0] == "container":
+            cell = self.container_position(name)
+            if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
+                return self._refuse("not_in_reach")
+        if not self._coin_open(actor, place):
+            return self._refuse("container_locked")
+        if self.coin(actor) < amount:
+            return self._refuse("out_of_stock")
+        if place[0] == "container" and not self._coin_fits(name, amount):
+            return self._refuse("full")
+        if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(actor, "put"):
+            return self._refuse("slot_used")
+        if place[0] == "purse":
+            self._move_fiscal_coin(("resident", self._actors[actor]), place, amount)
+        else:
+            self.set_coin(actor, self.coin(actor) - amount)
+            self._add_stored_coin(name, amount)
+        self._refresh_carry_state(actor)
+        self._record_handover("put", "coin", amount, self._actor_endpoint(actor), self._coin_endpoint(place, name))
+        return True
+
+    def _fetch_coin(self, actor, name, amount):
+        """Move `amount` of coin from a container or purse into the resident's own coin. Refused with the same
+        codes as _put_coin, except that a purse's holder is the only one who may fetch from it."""
+        place = self._coin_place(name)
+        if place is None:
+            return self._refuse("unknown_target")
+        if amount <= 0.0:
+            return self._refuse("malformed")
+        if place[0] == "container":
+            cell = self.container_position(name)
+            if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
+                return self._refuse("not_in_reach")
+        if not self._coin_open(actor, place):
+            return self._refuse("container_locked")
+        if self._coin_stored(place, name) < amount:
+            return self._refuse("out_of_stock")
+        if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(actor, "fetch"):
+            return self._refuse("slot_used")
+        if place[0] == "purse":
+            self._move_fiscal_coin(place, ("resident", self._actors[actor]), amount)
+        else:
+            self._add_stored_coin(name, -amount)
+            self.set_coin(actor, self.coin(actor) + amount)
+        self._refresh_carry_state(actor)
+        self._record_handover("fetch", "coin", amount, self._coin_endpoint(place, name), self._actor_endpoint(actor))
+        return True
+
+    def _coin_endpoint(self, place, name):
+        return ("purse" if place[0] == "purse" else "container", str(name))
+
     def fill(self, actor, container, kind, amount):
         """Fill `amount` of `kind` into a container (if it fits by volume and, for a fluid, the vessel
         is watertight). Containers accept content not listed in their initial `holds`; storage
@@ -6547,6 +6656,8 @@ class BigvilleWorld:
         amount = float(amount)
         if amount <= 0.0:
             return self._refuse("malformed")
+        if kind == "coin" and source is not None:
+            return self._fetch_coin(actor, source, amount)
         if source is None:
             source_cell = self.map_position_node(self._store)
             if self._turn > 0 and self.actor_position(actor) != source_cell:
@@ -9019,7 +9130,7 @@ class BigvilleWorld:
             container = self._as_key(kwargs.get("container", args[0] if args else None))
             kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
             amount = self._as_amount(kwargs.get("amount", args[2] if len(args) > 2 else 1.0))
-            if container not in self._containers:
+            if container not in self._containers and not (kind == "coin" and self._coin_place(container)):
                 return self._refuse("unknown_target")
             if kind is None or amount is None:
                 return self._refuse("malformed")
@@ -9060,7 +9171,8 @@ class BigvilleWorld:
             source = None if raw_source is None else self._as_key(raw_source)
             if kind is None or amount is None:
                 return self._refuse("malformed")
-            if raw_source is not None and source not in self._containers:
+            if raw_source is not None and source not in self._containers and not (
+                    kind == "coin" and self._coin_place(source)):
                 return self._refuse("unknown_target")
             return self._claimed_attempt(actor, "fetch", lambda: self.fetch(actor, kind, amount, source=source))
         if action == "build":
