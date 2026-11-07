@@ -8,6 +8,7 @@ from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
 from .lamplighter import lamplighter_choice  # Phase 042: the lamplighter's round
 from .psi_can import CANWeightModel
+from . import speech_in as _speech_in   # Phase 060: what a simple resident makes of what it hears
 from domains.persona import simple_band   # Phase 058: the hour bands are the pack's ROUTINE_BANDS
 from domains.world_affordances import INTOXICATION as _INTOXICATION   # Phase 034: the drink policy numbers
 from domains.world_affordances import alcohol as _alcohol_grams   # Phase 036: grams of alcohol in a food (coping drink)
@@ -207,7 +208,7 @@ class DeterministicBackend:
         }
         options = [o for o in context.affordances
                    if o.get("action") not in {"rest", "", "sleep", "joint", "release"}
-                   and (self.policy.allow_transfers or o.get("action") != "transfer")
+                   and (self.policy.allow_transfers or o.get("action") != "transfer" or _speech_in.allows_transfer(self, o))
                    and (o.get("stock_source") != "town" or
                         (self.policy.allow_stock_fetches and
                          (not self.policy.stock_fetch_kinds or
@@ -442,6 +443,7 @@ class DeterministicBackend:
 
     def _update_goals(self, context: ActorContext):
         observations = context.observations
+        _speech_in.hear(self, context)   # Phase 060: the heard speech (no-op unless SPEECH_UNDERSTANDING is on)
         calendar = observations.get("calendar", {}) or {}
         hour = float(calendar.get("hour", 6.0))
         self.time_band = self._time_band(hour)
@@ -492,6 +494,7 @@ class DeterministicBackend:
             candidates.append(("travel", 25.0, "a nearby task is elsewhere"))
         if not candidates:
             candidates.append(("observe", 5.0, "no urgent affordance is available"))
+        _speech_in.add_goals(self, context, candidates)   # Phase 060: the heard request and the caution
         candidates.sort(key=lambda item: (-item[1], item[0]))
         candidates.sort(key=lambda item: (-float(self.policy.goal_priorities.get(item[0], 0.0)), -item[1], item[0]))
         kind, priority, reason = candidates[0]
@@ -537,6 +540,8 @@ class DeterministicBackend:
     def _goal_bonus(self, option):
         if self.current_goal is None:
             return 0.0
+        if str(self.current_goal.kind).startswith("speech_"):
+            return _speech_in.goal_bonus(self, option)   # Phase 060: the give goal from a heard request
         actions = {
             "eat": {"eat"}, "recover": {"rest"},
             "care_for_animals": {"tend_animals", "milk", "shear"},
@@ -548,6 +553,9 @@ class DeterministicBackend:
 
     def _speech(self, context: ActorContext) -> list[dict]:
         """Choose occasional structured speech to a person in the observation."""
+        reply = _speech_in.next_reply(self, context)   # Phase 060: a queued reply to speech heard
+        if reply is not None:
+            return [reply]
         nearby = context.observations.get("nearby_residents", []) or []
         if not nearby or context.turn - self.last_speech_turn < 5:
             return []

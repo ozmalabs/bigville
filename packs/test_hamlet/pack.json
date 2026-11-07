@@ -992,6 +992,14 @@
     {
       "name": "DAYNIGHT_MAJOR_ACTIONS",
       "file": "world/daynight.json"
+    },
+    {
+      "name": "SPEECH_ACTS",
+      "file": "world/speech_acts.json"
+    },
+    {
+      "name": "SPEECH_UNDERSTANDING",
+      "file": "world/speech_acts.json"
     }
   ]
 }

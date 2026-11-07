@@ -1,0 +1,2 @@
+{"deaths": 0, "elapsed_seconds": 133.4, "handovers": 0, "hunger_mean_end": 0.4442, "label": "t1_on60", "switch": "on", "turns": 60, "utterances": 360}
+{"act_answer": 58, "act_greeting": 39, "act_question": 81, "act_smalltalk": 163, "effect_greeting_reply": 25, "effect_question_reply": 81, "heard": 341, "placed_grammar": 341, "reply_expired": 5, "reply_sent": 90}

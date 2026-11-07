@@ -1,0 +1,459 @@
+{
+  "_doc": "SPEECH ACTS (Phase 060): the vocabulary of speech a resident can place, and the switch for a simple resident to act on what it hears. The rows are read by domains/speech_grammar.py (the deterministic grammar) and bigville/backends/speech_in.py (the listener); domains/speech_acts_check.py checks them against the surface templates (conversation.DEFAULT_TEMPLATES), the realised meanings (bigville/runtime.py _realize_meaning) and the acts the simple speakers emit (speech.py _meaning, cheap.py _speech).\n\nROW FIELDS. act: the name, as in the raw payload's `act`. slots: slot name to kind (name, text, word, question; see speech_grammar.py). description: plain words. understood_by: `simple` when a simple resident can place the act from text or raw payload; `none` when it is only sent (no pattern). emitted_by: which speaker emits it. `simple_meaning` is DeterministicSpeechBackend._meaning (the Ocelot mind's and board game seam); `simple_message` is a message the simple backend sends (cheap.py _speech, and speech_in's replies); `message` is a templated world message no simple resident sends yet. template: a key of conversation.DEFAULT_TEMPLATES that renders the act, or null. meaning: the keys of runtime _realize_meaning that render it as a meaning, or []. A row needs a template or a meaning (the self-test's rule). patterns: the extra wordings the grammar places, besides the template's own wording (a template that is only a slot, such as \"{answer}\", gives no pattern). lexicon: pack tables whose phrases are patterns, with lexicon_slot naming the slot the phrases' placeholders fill.\n\nROW ORDER is the grammar's priority: the first matching row wins. Rows with understood_by none carry no patterns.\n\nSPEECH_UNDERSTANDING. enabled: false by default. With it off the simple backend ignores what it hears, and its village is the same as before this phase (checked by tests/test_phase060_speech_in.py). effects: the tunables of what a heard act does. words: the sentences a simple resident says in reply. Each one is also a pattern of the answer act, so the grammar places a reply the same way it places any other answer.\n\nSOURCES. None of the numbers in SPEECH_UNDERSTANDING.effects is a measured figure: each is an APPROX model choice, marked in its comment key, and to be read against the measurements in docs/phases/phase060. The cheap backend's eat threshold, hunger 0.25 (cheap.py _update_goals), is the source of need_hunger. The acts and wordings are the repository's own templates and realisations, not a sourced vocabulary.",
+  "_types": {},
+  "tables": {
+    "SPEECH_ACTS": [
+      {
+        "act": "greeting",
+        "slots": {
+          "target": "name"
+        },
+        "description": "Greets a person: hello, good morning.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning",
+          "simple_message"
+        ],
+        "template": "greeting",
+        "meaning": [
+          "greeting"
+        ],
+        "patterns": [
+          "hi {target}",
+          "good morning {target}",
+          "good day {target}",
+          "good evening {target}",
+          "hello",
+          "hi",
+          "good morning",
+          "good day",
+          "good evening"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "thanks",
+        "slots": {
+          "target": "name"
+        },
+        "description": "Thanks a person.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": "thanks",
+        "meaning": [
+          "thanks"
+        ],
+        "patterns": [
+          "thank you",
+          "thanks",
+          "thanks {target}"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "apology",
+        "slots": {
+          "target": "name",
+          "reason": "text"
+        },
+        "description": "Apologises to a person.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": "apology",
+        "meaning": [
+          "apology"
+        ],
+        "patterns": [
+          "i am sorry",
+          "sorry",
+          "sorry {target}"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "farewell",
+        "slots": {
+          "target": "name"
+        },
+        "description": "Says goodbye.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": "farewell",
+        "meaning": [
+          "farewell"
+        ],
+        "patterns": [
+          "goodbye for now",
+          "goodbye",
+          "bye",
+          "farewell",
+          "bye {target}"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "promise",
+        "slots": {
+          "target": "name",
+          "commitment": "text"
+        },
+        "description": "Promises to do something for a person.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": "promise",
+        "meaning": [
+          "promise"
+        ],
+        "patterns": [
+          "i promise i will help",
+          "i will help"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "complaint",
+        "slots": {
+          "subject": "text"
+        },
+        "description": "Voices unhappiness about something.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": "complaint",
+        "meaning": [
+          "complaint"
+        ],
+        "patterns": [
+          "i am worried about this",
+          "this is not right"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "barb",
+        "slots": {
+          "target": "name"
+        },
+        "description": "A warning: be careful, watch yourself.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": "warning",
+        "meaning": [
+          "warning"
+        ],
+        "patterns": [
+          "be careful",
+          "careful {target}",
+          "watch yourself",
+          "watch out"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "request",
+        "slots": {
+          "request": "text"
+        },
+        "description": "Asks a person to do or give something.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning",
+          "simple_message"
+        ],
+        "template": "request",
+        "meaning": [
+          "request"
+        ],
+        "patterns": [
+          "could you help me with that",
+          "can you help me",
+          "please help me"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "offer",
+        "slots": {
+          "item": "text",
+          "recipient": "name"
+        },
+        "description": "Offers to help, or to give something to a person.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": "offer",
+        "meaning": [
+          "offer"
+        ],
+        "patterns": [
+          "i can help with that",
+          "i can help you"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "accept",
+        "slots": {
+          "thing": "text"
+        },
+        "description": "Accepts an offer.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_message"
+        ],
+        "template": "accept",
+        "meaning": [],
+        "patterns": [],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "decline",
+        "slots": {
+          "thing": "text"
+        },
+        "description": "Turns down an offer.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_message"
+        ],
+        "template": "decline",
+        "meaning": [],
+        "patterns": [],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "answer",
+        "slots": {
+          "answer": "text"
+        },
+        "description": "Replies to what was said: yes, I understand.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning",
+          "simple_message"
+        ],
+        "template": "answer",
+        "meaning": [
+          "acknowledgement"
+        ],
+        "patterns": [
+          "yes i understand",
+          "i understand",
+          "i am managing thank you",
+          "i cannot spare that just now",
+          "i do not know you well enough to give that"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "hedged",
+        "slots": {
+          "topic": "text"
+        },
+        "description": "Says the speaker is unsure about something.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": null,
+        "meaning": [
+          "uncertainty"
+        ],
+        "patterns": [
+          "i am not sure about {topic}",
+          "i do not know about {topic}"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "smalltalk",
+        "slots": {
+          "topic": "text"
+        },
+        "description": "Small talk about a trade or the weather.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning"
+        ],
+        "template": null,
+        "meaning": [
+          "topic",
+          "weather"
+        ],
+        "patterns": [
+          "the weather is {topic}"
+        ],
+        "lexicon": [
+          "SPEECH_CHATTER",
+          "SPEECH_WEATHER"
+        ],
+        "lexicon_slot": "topic"
+      },
+      {
+        "act": "share",
+        "slots": {
+          "news": "text"
+        },
+        "description": "Passes on news of an event, a place or a person.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning",
+          "simple_message"
+        ],
+        "template": "share",
+        "meaning": [
+          "news"
+        ],
+        "patterns": [
+          "i heard that {news}",
+          "i heard about {news}",
+          "{news} work is underway"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "question",
+        "slots": {
+          "question": "question"
+        },
+        "description": "Asks a question: how are things, how was your day.",
+        "understood_by": "simple",
+        "emitted_by": [
+          "simple_meaning",
+          "simple_message"
+        ],
+        "template": "question",
+        "meaning": [
+          "question"
+        ],
+        "patterns": [
+          "{question}"
+        ],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "inform",
+        "slots": {
+          "content": "text"
+        },
+        "description": "Tells a plain fact. Sent as text, not placed by the grammar.",
+        "understood_by": "none",
+        "emitted_by": [
+          "simple_message"
+        ],
+        "template": "inform",
+        "meaning": [
+          "inform"
+        ],
+        "patterns": [],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "purchase",
+        "slots": {
+          "quantity": "text",
+          "item": "text",
+          "seller": "name"
+        },
+        "description": "Asks to buy goods from a seller.",
+        "understood_by": "none",
+        "emitted_by": [
+          "message"
+        ],
+        "template": "purchase",
+        "meaning": [
+          "purchase"
+        ],
+        "patterns": [],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "give",
+        "slots": {
+          "quantity": "text",
+          "item": "text",
+          "recipient": "name"
+        },
+        "description": "Hands goods to a person.",
+        "understood_by": "none",
+        "emitted_by": [
+          "message"
+        ],
+        "template": "give",
+        "meaning": [],
+        "patterns": [],
+        "lexicon": [],
+        "lexicon_slot": null
+      },
+      {
+        "act": "put",
+        "slots": {
+          "item": "text",
+          "container": "text"
+        },
+        "description": "Says that goods were put into a container.",
+        "understood_by": "none",
+        "emitted_by": [
+          "message"
+        ],
+        "template": "put",
+        "meaning": [],
+        "patterns": [],
+        "lexicon": [],
+        "lexicon_slot": null
+      }
+    ],
+    "SPEECH_UNDERSTANDING": {
+      "enabled": false,
+      "effects": {
+        "tie_min": 0.2,
+        "raw_confidence": 0.95,
+        "grammar_confidence": 0.8,
+        "stranger_factor": 0.5,
+        "caution_min_confidence": 0.45,
+        "caution_ticks": 12,
+        "goal_ticks": 10,
+        "goal_priority": 90.0,
+        "goal_bonus": 30.0,
+        "reply_ticks": 3,
+        "greet_gap_ticks": 20,
+        "need_hunger": 0.25,
+        "memory_salience": 0.5
+      },
+      "words": {
+        "managing": "I am managing, thank you",
+        "stranger": "I do not know you well enough to give that",
+        "cannot": "I cannot spare that just now"
+      }
+    }
+  }
+}

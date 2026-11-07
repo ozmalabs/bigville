@@ -2822,7 +2822,7 @@ each brief. A's 063 can run any time after 050 and feeds 062.
 
 ## Phase 060 -- Structured speech in: the simple backend understands what it hears
 
-**Status:** ready, after 059 (decision 2026-11-06: speech interface for the simple backend).
+**Status:** done (switch off by default), see `docs/phases/phase060/PHASE060_REPORT.md`.
 
 **Goal.** A simple resident reads a heard utterance as a meaning and lets it change what it does.
 1. **The act vocabulary as data.** A pack table `SPEECH_ACTS` lists each act with its slots, a plain
@@ -3423,3 +3423,4 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 | 033 Restraint | done | (this commit) | docs/phases/phase033/PHASE033_REPORT.md -- restrain, release, struggle through the contest rule; hold blocks walking and costs stamina; 1795 passed |
 | 040 Objects as arms | done | (this commit) | docs/phases/phase040/PHASE040_REPORT.md -- strike with an object, throw; OBJECT_FORCE; switch off; 1800 passed |
 | 042 Day, night and lamps | done (switch off) | (this commit) | docs/phases/phase042/PHASE042_REPORT.md -- pure sky maths (`domains/daynight.py`), world facts in `worlds/daynight.py` (sees_dark, lamps with oil, light and douse actions, candles, shorter sight, slower and wasteful dark work on the fitness path, lateness from the real sunset), lamplighter job and backend round, light words in the view; off by default because the round never lights a lamp in 200 ticks; off is byte-identical to HEAD; 29 tests; 1807 passed |
+| 060 Structured speech in | done (switch off) | (this commit) | docs/phases/phase060/PHASE060_REPORT.md -- pack table `SPEECH_ACTS` (acts, slots, understood_by), `domains/speech_grammar.py` grammar, `bigville/backends/speech_in.py` places a heard utterance as an act and a `give` request changes what the listener does (fetch and tell are declined in words); `SPEECH_UNDERSTANDING.enabled` defaults off, and off is identical to HEAD (0 of 100 residents differ over 60 turns); 62 focused tests; 2076 passed, 1 timing-flaky speed test |

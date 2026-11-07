@@ -2114,6 +2114,8 @@ def check_consistency():
     check_narration(_WORLD_PACK.path, errors, warnings, info)
     from domains.fog_check import check_fog  # Phase 053: the fog of the map, in three levels
     check_fog(_WORLD_PACK.path, errors, warnings, info)
+    from domains.speech_acts_check import check_speech_acts  # Phase 060: the speech acts and their templates
+    check_speech_acts(_WORLD_PACK.path, errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),
