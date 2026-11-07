@@ -2230,6 +2230,8 @@ def check_consistency():
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_health(errors, warnings, info)
+    from domains.interoception_check import check_interoception  # Phase 069: the body's feelings (anatomy, sounds, sources)
+    check_interoception(_WORLD_PACK.path, errors, warnings, info)
     _check_marks(errors, warnings, info)   # Phase 063: visible marks and their causes
     _check_intoxication(errors, warnings, info)
     _check_aftereffects(errors, warnings, info)

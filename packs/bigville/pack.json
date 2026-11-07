@@ -5,6 +5,14 @@
   "description": "Bigville founding world. Base data only: domains/pack.py adds the derived entries (scrap items, fuel slots, default seed return, bundle origins, and the POLICIES, LAWS, and _SKILL_CLUSTER indexes).",
   "extends": null,
   "tables": [
+    {"name": "ANATOMY", "file": "world/interoception.json"},
+    {"name": "QUALITY_TREE", "file": "world/interoception.json"},
+    {"name": "VOCALISATIONS", "file": "world/interoception.json"},
+    {"name": "CHANNELS", "file": "world/interoception.json"},
+    {"name": "SIGNAL_SOURCES", "file": "world/interoception.json"},
+    {"name": "PATTERNS", "file": "world/interoception.json"},
+    {"name": "FEELING", "file": "world/interoception.json"},
+    {"name": "INTEROCEPTION", "file": "world/interoception.json"},
     {
       "name": "ITEMS",
       "file": "world/items.json"

@@ -484,11 +484,12 @@ class BigvilleGame:
         from domains.persona import persona as persona_card
         return persona_card(self.characters[actor], self)
 
-    def agent_view(self, actor: str, mode: str = "agent") -> dict:
+    def agent_view(self, actor: str, mode: str = "agent", interoception: str | None = None) -> dict:
         """The one limited interface (Phase 052): what the resident may know, in words. Mode "agent" is words
-        only; "referee" adds a `referee` block with the numbers. Built by domains/agent_view.py."""
+        only; "referee" adds a `referee` block with the numbers. Built by domains/agent_view.py. `interoception`
+        (Phase 069) is "felt" (default in agent mode) or "labelled" (the Phase 052 body words)."""
         from domains.agent_view import build_agent_view
-        return build_agent_view(self, actor, mode=mode)
+        return build_agent_view(self, actor, mode=mode, interoception=interoception)
 
     def _context(self, actor: str) -> ActorContext:
         character = self.characters[actor]

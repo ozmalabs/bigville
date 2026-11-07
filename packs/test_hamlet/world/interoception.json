@@ -1,0 +1,375 @@
+{
+  "_doc": "INTEROCEPTION (Phase 069): what a body lets its mind feel. A body (worlds/body.py) reads its world state and turns each read into a signal source. A source has an intensity (its read scaled between floor and ceiling), a channel (which caps how deep the feeling can be placed), a quality node (what kind of bad feeling, in QUALITY_TREE), a locus node (where, in ANATOMY) and an awareness threshold below which the source is not felt. The mind gets a sound for each felt signal and one background feeling; it never gets a cause. ANATOMY and QUALITY_TREE are trees with one root (depth 0). A feeling is resolved to a depth on each tree (domains/interoception.py resolve). VOCALISATIONS gives the sound forms of each quality node (a sound, not a word or a sentence), and the renderer varies them by intensity and by PATTERNS. CHANNELS caps the depth on each tree: a visceral signal cannot be placed deeper than its channel allows, while a surface signal can. Every number here is APPROX: a model choice of the right order, not a measured physiology. The sources in SIGNAL_SOURCES are the body's reads named in domains/interoception.py READS; a read is taken from the existing world accessors and never duplicated.",
+  "_types": {},
+  "tables": {
+    "ANATOMY": {
+      "_doc": "The regions of the body as a tree. label is the place in words (what a resident feels 'where' is). depth is the number of steps from the root, so the root 'body' is depth 0 and means all over. APPROX: a coarse anatomy of a human body for the first embodiment.",
+      "body": {
+        "parent": null,
+        "label": "all over"
+      },
+      "head": {
+        "parent": "body",
+        "label": "head"
+      },
+      "torso": {
+        "parent": "body",
+        "label": "torso"
+      },
+      "front_torso": {
+        "parent": "torso",
+        "label": "front of the torso"
+      },
+      "upper_belly": {
+        "parent": "front_torso",
+        "label": "upper belly"
+      },
+      "chest": {
+        "parent": "front_torso",
+        "label": "chest"
+      },
+      "back": {
+        "parent": "torso",
+        "label": "back"
+      },
+      "arm": {
+        "parent": "body",
+        "label": "arm"
+      },
+      "leg": {
+        "parent": "body",
+        "label": "leg"
+      },
+      "skin": {
+        "parent": "body",
+        "label": "skin"
+      }
+    },
+    "QUALITY_TREE": {
+      "_doc": "The kinds of bad feeling as a tree. The root 'bad' is the background feeling's kind (any unwell feeling). The second level is a coarse kind (sharp, dull, visceral, hot_cold, drained); the leaves are finer kinds. A source may name a node at any level. parent null marks the root.",
+      "bad": {
+        "parent": null
+      },
+      "sharp": {
+        "parent": "bad"
+      },
+      "dull": {
+        "parent": "bad"
+      },
+      "visceral": {
+        "parent": "bad"
+      },
+      "hot_cold": {
+        "parent": "bad"
+      },
+      "drained": {
+        "parent": "bad"
+      },
+      "cramp": {
+        "parent": "sharp"
+      },
+      "ache": {
+        "parent": "dull"
+      },
+      "queasy": {
+        "parent": "visceral"
+      },
+      "chill": {
+        "parent": "hot_cold"
+      },
+      "hunger": {
+        "parent": "drained"
+      },
+      "spent": {
+        "parent": "drained"
+      }
+    },
+    "VOCALISATIONS": {
+      "_doc": "The sound forms of each quality node: a list of forms, one picked by a seeded draw keyed on the seed and the node (so the same node gives the same form in one world). A form is a sound in letters, never a word and never a cause. The renderer stretches the first vowel (or the last letter when a form has no vowel) by intensity. APPROX: the forms are written sounds chosen for the kind of feeling; a different pack gives different sounds.",
+      "bad": {
+        "forms": [
+          "ugh",
+          "urgh"
+        ]
+      },
+      "sharp": {
+        "forms": [
+          "aargh",
+          "ow",
+          "hiss"
+        ]
+      },
+      "dull": {
+        "forms": [
+          "ngh",
+          "mm"
+        ]
+      },
+      "visceral": {
+        "forms": [
+          "gurgle",
+          "blech"
+        ]
+      },
+      "hot_cold": {
+        "forms": [
+          "brrr"
+        ]
+      },
+      "drained": {
+        "forms": [
+          "hhhh",
+          "hnnn"
+        ]
+      },
+      "cramp": {
+        "forms": [
+          "yaah",
+          "ow"
+        ]
+      },
+      "ache": {
+        "forms": [
+          "ooh",
+          "nnh"
+        ]
+      },
+      "queasy": {
+        "forms": [
+          "blech",
+          "ugh"
+        ]
+      },
+      "chill": {
+        "forms": [
+          "brrr",
+          "brr"
+        ]
+      },
+      "hunger": {
+        "forms": [
+          "grr",
+          "hnn"
+        ]
+      },
+      "spent": {
+        "forms": [
+          "phew",
+          "hhh"
+        ]
+      }
+    },
+    "CHANNELS": {
+      "_doc": "How deep a signal may be placed on each tree. quality_cap is the deepest quality level the channel allows (the root is 0) and locus_cap the deepest anatomy level. Gut and other visceral signals cap shallow on place; skin can resolve fully. Each cap must not be deeper than its tree (the self-test checks it). APPROX.",
+      "visceral": {
+        "quality_cap": 1,
+        "locus_cap": 1
+      },
+      "surface": {
+        "quality_cap": 2,
+        "locus_cap": 3
+      },
+      "deep": {
+        "quality_cap": 2,
+        "locus_cap": 2
+      },
+      "general": {
+        "quality_cap": 1,
+        "locus_cap": 1
+      }
+    },
+    "SIGNAL_SOURCES": {
+      "_doc": "The signal sources, one row each. read is a body read (domains/interoception.py READS); intensity is the read scaled from floor (0) to ceiling (1), clamped. channel names a CHANNELS row. quality and locus name nodes of QUALITY_TREE and ANATOMY. pattern is a PATTERNS row used when the signal is steady. awareness is the intensity below which the source is not felt (it still counts toward the background feeling). Several sources share a quality and locus on purpose: a hungry resident and an exhausted one can resolve to the same sound and place. APPROX: the floors, ceilings and awareness levels.",
+      "hunger": {
+        "read": "hunger",
+        "floor": 0.5,
+        "ceiling": 2.5,
+        "channel": "visceral",
+        "quality": "hunger",
+        "locus": "upper_belly",
+        "pattern": "waves",
+        "awareness": 0.15
+      },
+      "exertion": {
+        "read": "exertion",
+        "floor": 0.5,
+        "ceiling": 1.0,
+        "channel": "deep",
+        "quality": "spent",
+        "locus": "leg",
+        "pattern": "steady",
+        "awareness": 0.2
+      },
+      "exhaustion": {
+        "read": "exhaustion",
+        "floor": 0.0,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "drained",
+        "locus": "torso",
+        "pattern": "steady",
+        "awareness": 0.2
+      },
+      "chill": {
+        "read": "chill",
+        "floor": 0.1,
+        "ceiling": 1.0,
+        "channel": "surface",
+        "quality": "chill",
+        "locus": "skin",
+        "pattern": "pulsing",
+        "awareness": 0.2
+      },
+      "wetness": {
+        "read": "wetness",
+        "floor": 0.2,
+        "ceiling": 1.0,
+        "channel": "surface",
+        "quality": "hot_cold",
+        "locus": "skin",
+        "pattern": "steady",
+        "awareness": 0.2
+      },
+      "illness": {
+        "read": "illness",
+        "floor": 0.0,
+        "ceiling": 1.0,
+        "channel": "visceral",
+        "quality": "queasy",
+        "locus": "upper_belly",
+        "pattern": "waves",
+        "awareness": 0.3
+      },
+      "intoxication": {
+        "read": "intoxication",
+        "floor": 0.15,
+        "ceiling": 1.0,
+        "channel": "visceral",
+        "quality": "queasy",
+        "locus": "upper_belly",
+        "pattern": "fading",
+        "awareness": 0.2
+      },
+      "harm": {
+        "read": "harm",
+        "floor": 0.0,
+        "ceiling": 0.5,
+        "channel": "general",
+        "quality": "ache",
+        "locus": "body",
+        "pattern": "steady",
+        "awareness": 0.2
+      }
+    },
+    "PATTERNS": {
+      "_doc": "How a sound repeats and ends. repeat is how many times the form is said in a row; tail is added after the last one. A signal that is rising or fading (against its own last turn, by trend_delta) takes the rising or fading row whatever its source says. A felt sound at or above strong_at with no tail takes '!'. APPROX.",
+      "steady": {
+        "repeat": 1,
+        "tail": ""
+      },
+      "pulsing": {
+        "repeat": 2,
+        "tail": ""
+      },
+      "waves": {
+        "repeat": 2,
+        "tail": "..."
+      },
+      "rising": {
+        "repeat": 1,
+        "tail": "!"
+      },
+      "fading": {
+        "repeat": 1,
+        "tail": "..."
+      }
+    },
+    "FEELING": {
+      "_doc": "The background feeling: the sum of every source's intensity (felt or not), capped at 1. It is absent below floor. levels are the coarse words for the total, the highest min at or below the total wins. APPROX.",
+      "floor": 0.02,
+      "levels": [
+        {
+          "min": 0.0,
+          "label": "faint"
+        },
+        {
+          "min": 0.3,
+          "label": "clear"
+        },
+        {
+          "min": 0.6,
+          "label": "strong"
+        }
+      ]
+    },
+    "INTEROCEPTION": {
+      "_doc": "The depth rule and the interoceptor record (APPROX throughout). depth: raw = base + intensity_weight x intensity + acuity_weight x (acuity - 1) + attention_weight x attention - impairment_weight x impairment + a seeded jitter in [-jitter, +jitter]; the depth on each tree is floor(raw), clamped to 0 .. min(channel cap, the true node's depth). So a higher intensity, acuity or attention never resolves shallower, and a higher impairment never resolves deeper. acuity: a trait drawn once per resident from range, times the life-stage factor. attention: idle, absorbed in a timed job, or asleep. impairment is intoxication plus exhaustion step / 3 plus illness (each 0 to 1). signals_max caps the signal list. trend_delta is the change in intensity against the last turn that counts as rising or fading. stretch_max is how many extra vowel letters the strongest sound adds. strong_at is the intensity above which a sound gets '!'. felt_body_keys are the only keys of a felt body; forbidden_words are cause words that must not appear in a felt body (the leak rule, domains/agent_view_check.py).",
+      "depth": {
+        "base": 0.5,
+        "intensity_weight": 2.0,
+        "acuity_weight": 1.0,
+        "attention_weight": 1.0,
+        "impairment_weight": 1.5,
+        "jitter": 0.25
+      },
+      "acuity": {
+        "range": [
+          0.7,
+          1.3
+        ],
+        "life_stage": {
+          "infant": 0.6,
+          "child": 0.9,
+          "youth": 1.0,
+          "adult": 1.0,
+          "elder": 0.85
+        }
+      },
+      "attention": {
+        "idle": 1.0,
+        "absorbed": 0.5,
+        "asleep": 0.0
+      },
+      "signals_max": 4,
+      "trend_delta": 0.05,
+      "stretch_max": 3,
+      "strong_at": 0.7,
+      "felt_body_keys": [
+        "feeling",
+        "signals",
+        "strength",
+        "stamina",
+        "asleep",
+        "collapsed"
+      ],
+      "forbidden_words": [
+        "hunger",
+        "hungry",
+        "famished",
+        "peckish",
+        "energy",
+        "tired",
+        "exhausted",
+        "worn",
+        "spent",
+        "health",
+        "healthy",
+        "injured",
+        "injury",
+        "ill",
+        "illness",
+        "sick",
+        "drunk",
+        "intoxicated",
+        "wet",
+        "cold",
+        "chill",
+        "cramp",
+        "drained",
+        "withdrawal",
+        "hangover",
+        "pregnant"
+      ]
+    }
+  }
+}

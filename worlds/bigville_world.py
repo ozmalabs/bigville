@@ -31,6 +31,8 @@ _DEFAULT_TOOL = object()
 
 DEFAULT_DATA_PACK = "bigville"
 
+from worlds.body import BodyMixin  # noqa: E402  Phase 069: the body as a unit (worlds/body.py)
+
 
 def requested_data_pack(data_pack=None, scenario_data=None):
     """The data pack a world reads. `data_pack` (constructor) and the scenario's "data_pack" are
@@ -304,7 +306,7 @@ class _HandoverCount:
         return self._count
 
 
-class BigvilleWorld:
+class BigvilleWorld(BodyMixin):
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
         "ecology": True,
@@ -6819,6 +6821,7 @@ class BigvilleWorld:
             "tolerance": 0.0, "craving": 0.0, "dependent": 0.0, "hangover_ticks": 0.0, "episode_peak": 0.0})
         self.eng.add_edge_unchecked(a, "has_body", body)
         self._bodies[name] = body
+        self._body_init(name, defaults.get("embodiment", "human"), life_stage)   # Phase 069
         self._actor_minds[name] = (
             self._cognition_factory(name) if self._cognition_factory is not None
             else BigvilleOcelotActor(name, data_pack=self.data_pack))
@@ -7376,6 +7379,7 @@ class BigvilleWorld:
         health = max(0.0, self.health(actor) - max(0.0, float(drop)))
         self.eng.set_attr(node, "health_value", health)
         self.eng.set_attr(node, "last_cause", str(cause))
+        self._body_event(actor, {"kind": "harm", "amount": max(0.0, float(drop)), "cause": str(cause)})   # Phase 069
         # Phase 063: the harm leaves its marks (MARK_HARM, per point of health lost).
         self._add_marks(actor, {kind: float(gain) * max(0.0, float(drop))
                                 for kind, gain in self.E.MARK_HARM.get(str(cause), {}).items()})
@@ -10189,6 +10193,7 @@ class BigvilleWorld:
             self._terrain_recovery_tick()
             # Phase 033: each tick of a restraint costs the holder and the held resident by the contest rule.
             self._holds_tick()
+            self._body_tick()   # Phase 069: each body keeps its last intensities (no physical change)
 
     def run_turns(self, n=1):
         """Advance unified actor turns; an alias with an explicit simulation name."""

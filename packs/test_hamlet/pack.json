@@ -5,6 +5,14 @@
   "description": "Standalone test pack: a hamlet with one baker, one building, two recipes. Does not extend bigville. Every bound table name is present.",
   "extends": null,
   "tables": [
+    {"name": "ANATOMY", "file": "world/interoception.json"},
+    {"name": "QUALITY_TREE", "file": "world/interoception.json"},
+    {"name": "VOCALISATIONS", "file": "world/interoception.json"},
+    {"name": "CHANNELS", "file": "world/interoception.json"},
+    {"name": "SIGNAL_SOURCES", "file": "world/interoception.json"},
+    {"name": "PATTERNS", "file": "world/interoception.json"},
+    {"name": "FEELING", "file": "world/interoception.json"},
+    {"name": "INTEROCEPTION", "file": "world/interoception.json"},
     {
       "name": "ITEMS",
       "file": "world/items.json"

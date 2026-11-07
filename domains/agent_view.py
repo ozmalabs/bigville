@@ -32,6 +32,10 @@ from domains.pack import load_pack
 from domains.persona import CARD_KEYS, traits as persona_traits
 
 MODES = ("agent", "referee")
+# Phase 069: how the body is shown. "felt" (the default in agent mode): the background feeling and the felt signals,
+# sounds and places only. "labelled": the Phase 052 body words, kept for comparison. Referee mode shows "labelled"
+# in `self.body` and carries the felt view and the truth in `referee.interoception`.
+INTEROCEPTION_MODES = ("felt", "labelled")
 # Phase 057: the detail levels a map can carry (Phase 053 supplies hidden and vague; the patch is full).
 MAP_LEVEL_HIDDEN, MAP_LEVEL_VAGUE, MAP_LEVEL_FULL = "hidden", "vague", "full"
 MAP_LEVELS = (MAP_LEVEL_HIDDEN, MAP_LEVEL_VAGUE, MAP_LEVEL_FULL)
@@ -127,6 +131,31 @@ def _body(world, actor, pack):
         "ill": words["ill"] if state["illness"] else None,
     })
     return _check_keys("body", out, pack)
+
+
+def _felt_body(world, actor, pack):
+    """The body as the resident feels it (Phase 069): the background feeling and the felt signals, from the body
+    object (worlds/body.py), plus the plain capacities and facts the body reports. No cause, no number."""
+    body = world.body_of(actor)
+    if body is None:
+        return _check_keys("body", {"signals": []}, pack)
+    felt = body.afferents()
+    words = load_pack(pack)["VIEW_WORDS"]
+    capacities = body.capacities()
+    facts = body.facts()
+    out = {}
+    if "feeling" in felt:
+        out["feeling"] = _check_keys("feeling", dict(felt["feeling"]), pack)
+    out["signals"] = [_check_keys("signal", dict(row), pack) for row in felt["signals"]]
+    if "strength" in capacities:
+        out["strength"] = _phrase("strength", capacities["strength"], "self", pack)
+    if "stamina" in capacities:
+        out["stamina"] = _phrase("stamina", capacities["stamina"], "self", pack)
+    if facts.get("asleep"):
+        out["asleep"] = words["asleep"]
+    if facts.get("collapsed"):
+        out["collapsed"] = words["collapsed"]
+    return _check_keys("body", _clean(out), pack)
 
 
 def _skills(world, actor, pack):
@@ -230,7 +259,7 @@ def _lessons(character):
     return _texts(character, (LESSON_KIND,))
 
 
-def _self(game, actor, pack, gist_table):
+def _self(game, actor, pack, gist_table, interoception="labelled"):
     world = game.world
     character = game.characters[actor]
     attrs = world.eng.node(world._actors[actor])["attrs"]
@@ -243,7 +272,7 @@ def _self(game, actor, pack, gist_table):
         "age": _phrase("age", age, "self", pack),
         "persona": _check_keys("persona", {key: value for key, value in game.persona(actor).items()
                                            if key in CARD_KEYS}, pack),
-        "body": _body(world, actor, pack),
+        "body": _body(world, actor, pack) if interoception == "labelled" else _felt_body(world, actor, pack),
         "skills": _skills(world, actor, pack),
         "carrying": _carrying(world, actor, pack),
         "knows": _knows(character, pack, gist_table),
@@ -525,6 +554,7 @@ def _last(world, actor, pack):
 def _referee(game, actor):
     """The raw numbers and the true state. Only the referee mode carries this block."""
     world = game.world
+    body = world.body_of(actor)
     nearby = []
     position = world.actor_position(actor)
     for other in world._actors:
@@ -538,7 +568,9 @@ def _referee(game, actor):
     return {"body": world.body_state(actor), "calendar": world.calendar(),
             "carry": world.carry_state(actor), "skills": skills,
             "affordances": [dict(option) for option in world.actor_affordances(actor)],
-            "nearby": sorted(nearby, key=lambda row: (row["distance"], row["name"]))}
+            "nearby": sorted(nearby, key=lambda row: (row["distance"], row["name"])),
+            # Phase 069: the body's truth beside the felt view (each signal's true source, locus and depths).
+            "interoception": None if body is None else body.referee()}
 
 
 def _reaction(game, actor, pack, known):
@@ -572,10 +604,15 @@ def _reaction(game, actor, pack, known):
     }), pack)
 
 
-def build_agent_view(game, actor, mode="agent"):
-    """The agent view of one resident. `mode` is "agent" (words only) or "referee" (adds the numbers)."""
+def build_agent_view(game, actor, mode="agent", interoception=None):
+    """The agent view of one resident. `mode` is "agent" (words only) or "referee" (adds the numbers).
+    `interoception` is "felt" or "labelled" (Phase 069); None means felt in agent mode and labelled in referee mode."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, not {mode!r}")
+    if interoception is None:
+        interoception = "felt" if mode == "agent" else "labelled"
+    if interoception not in INTEROCEPTION_MODES:
+        raise ValueError(f"interoception must be one of {INTEROCEPTION_MODES}, not {interoception!r}")
     if actor not in game.characters:
         raise KeyError(f"no resident named {actor!r}")
     world = game.world
@@ -596,7 +633,7 @@ def build_agent_view(game, actor, mode="agent"):
     view = {
         "mode": mode,
         "actor": actor,
-        "self": _self(game, actor, pack, gist),
+        "self": _self(game, actor, pack, gist, interoception),
         "now": _now(world, pack, actor),
         "around": around,
         # Phase 053: a fogged resident's map is its own three-level map; a simple resident keeps the patch.

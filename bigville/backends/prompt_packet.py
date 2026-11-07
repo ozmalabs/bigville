@@ -28,7 +28,7 @@ from typing import Any
 from domains.autopilot import usual_words
 from domains.pack import load_pack
 
-PACKET_SCHEMA = "bigville/prompt/3"
+PACKET_SCHEMA = "bigville/prompt/4"   # Phase 069: the private body is the felt body (feeling, signals)
 LESSON_KIND = "lesson"
 
 

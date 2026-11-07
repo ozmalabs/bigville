@@ -4,6 +4,7 @@
   "tables": {
     "ANIMALS": {
       "pig": {
+        "embodiment": "none",
         "gives": {
           "pork": 40,
           "hide": 2
@@ -43,6 +44,7 @@
         }
       },
       "cow": {
+        "embodiment": "none",
         "gives": {
           "milk": 3,
           "beef": 200,
@@ -83,6 +85,7 @@
         }
       },
       "chicken": {
+        "embodiment": "none",
         "gives": {
           "eggs": 1,
           "poultry": 2,
@@ -123,6 +126,7 @@
         }
       },
       "horse": {
+        "embodiment": "none",
         "gives": {
           "labour": 1
         },
@@ -162,6 +166,7 @@
         }
       },
       "dog": {
+        "embodiment": "none",
         "gives": {
           "herding": 1
         },
@@ -194,6 +199,7 @@
         }
       },
       "cat": {
+        "embodiment": "none",
         "gives": {
           "ratting": 1
         },
@@ -226,6 +232,7 @@
         }
       },
       "sheep": {
+        "embodiment": "none",
         "gives": {
           "wool": 4,
           "mutton": 60
@@ -265,6 +272,7 @@
         }
       },
       "bee": {
+        "embodiment": "none",
         "gives": {
           "honey": 3,
           "wax": 1

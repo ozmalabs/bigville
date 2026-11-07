@@ -194,6 +194,16 @@ DOCUMENT_LITERACY = _PACK["DOCUMENT_LITERACY"]
 ENGINE_SEEDS = _PACK["ENGINE_SEEDS"]
 RESIDENT_SEEDS = _PACK["RESIDENT_SEEDS"]
 RESIDENT_CONCEPT_SEEDS = _PACK["RESIDENT_CONCEPT_SEEDS"]
+# Phase 069: the body's feelings (world/interoception.json): the anatomy and quality trees, the sounds,
+# the channels, the signal sources, the patterns, the background feeling and the depth rule. APPROX throughout.
+ANATOMY = _PACK["ANATOMY"]
+QUALITY_TREE = _PACK["QUALITY_TREE"]
+VOCALISATIONS = _PACK["VOCALISATIONS"]
+CHANNELS = _PACK["CHANNELS"]
+SIGNAL_SOURCES = _PACK["SIGNAL_SOURCES"]
+PATTERNS = _PACK["PATTERNS"]
+FEELING = _PACK["FEELING"]
+INTEROCEPTION = _PACK["INTEROCEPTION"]
 
 
 def scrap_kind(kind):

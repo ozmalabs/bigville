@@ -49,7 +49,17 @@
         "mood",
         "asleep",
         "collapsed",
-        "ill"
+        "ill",
+        "feeling",
+        "signals"
+      ],
+      "feeling": [
+        "sound",
+        "level"
+      ],
+      "signal": [
+        "sound",
+        "where"
       ],
       "carrying": [
         "inventory",
@@ -136,6 +146,7 @@
       ],
       "referee": [
         "body",
+        "interoception",
         "calendar",
         "carry",
         "skills",

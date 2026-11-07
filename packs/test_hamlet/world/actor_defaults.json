@@ -15,6 +15,7 @@
       "injury": 0.0,
       "inventory_max_load": 50.0,
       "inventory_capacity": 50.0,
+      "embodiment": "human",
       "body": {
         "mood": 0.5,
         "str_base": 1.0,
