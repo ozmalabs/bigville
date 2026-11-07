@@ -217,6 +217,8 @@ this plan's status table.
   scenarios.
 - Benchmark reports decisions, context build, world rules and commit times for
   50/100/200 residents and records the scaling curve.
+- `tools/verify_tick_equivalence.py` replays a multi-turn run through the
+  serial, threaded and partitioned executors and compares the semantic trace.
 - Integration report states what is ready for process/worker distribution and
   what still needs message transport, versioned shard snapshots and a durable
   tick log.
@@ -234,7 +236,7 @@ production distribution beyond what the tests prove.
 | TG04 | done | `1901b2e` |
 | TG05 | done | `1b6d2ad` |
 | TG06 | done | `a82a52e` |
-| TG07 | done | uncommitted (executor report) |
+| TG07 | done | `698a9ec` |
 
 ## Integration gates
 
