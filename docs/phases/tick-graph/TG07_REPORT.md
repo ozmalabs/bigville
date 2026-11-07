@@ -265,3 +265,13 @@ python3 tools/benchmark_tick_graph.py --sizes 50,100,200 --turns 2 --progress
 - **No API change needed.** `create_game(executor=...)` already passes the
   string through; `"partitioned"` is accepted by the same validator. The option
   is not separately surfaced in the TUI or server command line.
+
+## Supervisor follow-up (8-turn replay)
+
+`tools/verify_tick_equivalence.py --turns 8 --scenario town100 --affordance-mode menu`
+matched serial and threaded but found the first partitioned divergence at turn 6 in
+`world_sha256` (proposals, results, order, errors and continuations still identical).
+The four-turn equivalence test did not reach it. Partitioned scheduling is therefore a
+known limitation rather than a proven-equivalent executor; the default executor remains
+serial. The next hypothesis is an under-declared same-cell/terrain movement resource (or
+the coordinator-first ordering) in the partitioned path.

@@ -21,6 +21,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
+
+# Allow ``python3 tools/verify_tick_equivalence.py`` from the repository root.
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from bigville.api import create_game
 from bigville.tick_trace import TurnTrace, first_divergence, semantic_step_trace
@@ -44,10 +50,11 @@ SMALL_SCENARIO = {
 }
 
 
-def run_executor(*, scenario, seed: int, turns: int, executor: str) -> TurnTrace:
+def run_executor(*, scenario, seed: int, turns: int, executor: str,
+                 affordance_mode: str = "menu") -> TurnTrace:
     game = create_game(scenario=scenario, seed=seed, default_backend="simple",
                        autonomous=True, llm_log=False, executor=executor,
-                       turn_semantics="sequential")
+                       turn_semantics="sequential", affordance_mode=affordance_mode)
     trace = TurnTrace()
     for _ in range(turns):
         result = game.step()
@@ -65,6 +72,8 @@ def main(argv=None) -> int:
     parser.add_argument("--scenario", default="town100",
                         help="'town100' or 'small'")
     parser.add_argument("--executors", default="serial,threaded,partitioned")
+    parser.add_argument("--affordance-mode", default="menu",
+                        help="menu (tick-executor oracle) or lazy")
     args = parser.parse_args(argv)
 
     scenario = SMALL_SCENARIO if args.scenario == "small" else "town100"
@@ -75,10 +84,12 @@ def main(argv=None) -> int:
     traces = {}
     for name in names:
         traces[name] = run_executor(scenario=scenario, seed=args.seed,
-                                    turns=args.turns, executor=name)
+                                    turns=args.turns, executor=name,
+                                    affordance_mode=args.affordance_mode)
 
     baseline = traces["serial"]
     report = {"scenario": args.scenario, "seed": args.seed, "turns": args.turns,
+              "affordance_mode": args.affordance_mode,
               "digests": {name: trace.hexdigest() for name, trace in traces.items()},
               "comparisons": {}}
     ok = True

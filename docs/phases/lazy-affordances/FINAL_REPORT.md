@@ -190,6 +190,13 @@ remains the final gate for an idle host.
   reproducible but not a wide sweep.
 - Mode selection is per game, not per actor, except for Ocelot's explicit
   per-actor menu exception.
+- **A supervisor 8-turn replay found a partitioned-executor divergence in menu
+  mode too.**  `tools/verify_tick_equivalence.py --turns 8 --affordance-mode menu`
+  matched serial and threaded, but partitioned first diverged at turn 6 in the
+  semantic world hash (proposals/results/order still identical).  The four-turn
+  TG07 test did not reach it.  This is a tick-graph partition-scheduling
+  follow-up independent of the lazy default; the default executor is serial and
+  is unaffected.
 - **Lazy + partitioned executor is not yet equivalent to lazy + serial.**  The
   default executor is serial and is deterministic.  On `town100` seed 305000,
   the partitioned run first diverges from serial at turn 2 in the semantic
