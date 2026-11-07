@@ -24,7 +24,8 @@ from bigville.runtime import (BigvilleGraph, NodeRef, WorldAdapter, boot_core,
 from bigville.scenarios import load_scenario
 from domains.data_view import entities as _entities_view  # noqa: E402
 from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
-from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
+from worlds.bigville_bond_world import (BigvilleBondWorld,
+                                        SLOT_DEFAULTS as BOND_SLOTS)  # noqa: E402
 from domains.world_affordances import round_bp  # noqa: E402
 from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps
 
@@ -440,6 +441,105 @@ class _ActorPositions(dict):
         return sorted(names)
 
 
+class _PhysicalObjectLocations(dict):
+    """Object id -> location, with a derived location -> object-id bucket index (LA03).
+
+    The canonical mapping is a plain dictionary at rest and checkpoints as one.
+    This subclass keeps the location buckets in sync with every mutation, so
+    observation can answer "what is at this location?" without scanning every
+    physical object. The bucket map is derived state: it lives on the instance,
+    not in the mapping, so it never enters a checkpoint. A restored plain dict
+    is rewrapped (and rebuilt) by ``BigvilleWorld._ensure_physical_object_locations``.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self._location_buckets: dict[str, set[str]] = {}
+        if args or kwargs:
+            self.update(*args, **kwargs)
+
+    @staticmethod
+    def _location_key(location):
+        if isinstance(location, (tuple, list)) and len(location) == 2:
+            return (location[0], location[1])
+        try:
+            hash(location)
+        except TypeError:
+            return None
+        return location
+
+    def _bucket_add(self, object_id, location):
+        key = self._location_key(location)
+        if key is None:
+            return
+        self._location_buckets.setdefault(key, set()).add(object_id)
+
+    def _bucket_discard(self, object_id, location):
+        key = self._location_key(location)
+        if key is None:
+            return
+        bucket = self._location_buckets.get(key)
+        if bucket is None:
+            return
+        bucket.discard(object_id)
+        if not bucket:
+            del self._location_buckets[key]
+
+    def __setitem__(self, object_id, location):
+        if dict.__contains__(self, object_id):
+            self._bucket_discard(object_id, dict.__getitem__(self, object_id))
+        dict.__setitem__(self, object_id, location)
+        self._bucket_add(object_id, location)
+
+    def __delitem__(self, object_id):
+        location = dict.__getitem__(self, object_id)
+        dict.__delitem__(self, object_id)
+        self._bucket_discard(object_id, location)
+
+    def pop(self, object_id, *default):
+        if not dict.__contains__(self, object_id):
+            if default:
+                return default[0]
+            raise KeyError(object_id)
+        location = dict.__getitem__(self, object_id)
+        value = dict.pop(self, object_id)
+        self._bucket_discard(object_id, location)
+        return value
+
+    def popitem(self):
+        object_id, location = dict.popitem(self)
+        self._bucket_discard(object_id, location)
+        return object_id, location
+
+    def update(self, *args, **kwargs):
+        for object_id, location in dict(*args, **kwargs).items():
+            self[object_id] = location
+
+    def setdefault(self, object_id, default=None):
+        if dict.__contains__(self, object_id):
+            return dict.__getitem__(self, object_id)
+        self[object_id] = default
+        return default
+
+    def clear(self):
+        dict.clear(self)
+        self._location_buckets.clear()
+
+    def rebuild(self):
+        """Recompute the location bucket index from the current mapping."""
+        buckets: dict[str, set[str]] = {}
+        for object_id, location in dict.items(self):
+            key = self._location_key(location)
+            if key is None:
+                continue
+            buckets.setdefault(key, set()).add(object_id)
+        self._location_buckets = buckets
+
+    def ids_at(self, location):
+        """Object ids at one location, sorted; the index's read path."""
+        return sorted(self._location_buckets.get(self._location_key(location), ()))
+
+
 class BigvilleWorld:
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
@@ -657,7 +757,7 @@ class BigvilleWorld:
         # participants' held frames.
         self._physical_objects = {}
         self._physical_object_aliases = {}
-        self._physical_object_locations = {}
+        self._physical_object_locations = _PhysicalObjectLocations()
         self._actor_cells = {}
         self._actor_positions = _ActorPositions()
         self._actor_goals = {}
@@ -718,6 +818,11 @@ class BigvilleWorld:
         self._notes = {}
         self._conversations = {}
         self._utterances = {}
+        # LA03: derived recipient -> utterance index. It is maintained by
+        # ``speak`` for every delivery with heard=1; ``heard_utterances`` uses
+        # it when the log size still matches and falls back to a scan otherwise.
+        self._heard_utterance_index = {}
+        self._heard_utterance_log_size = 0
         self._speech_events = []
         self._market_expectation_specs = {}
         self._actor_market_expectations = {}
@@ -831,6 +936,9 @@ class BigvilleWorld:
         cognition frame may interpret the objects as a board game, tools,
         theatre props, or something else entirely.
         """
+        # LA03: the object-location index is derived from this mapping. Start
+        # clean here so construction and rebuilds share one maintenance path.
+        self._physical_object_locations = _PhysicalObjectLocations()
         for spec in self._scenario_data.get("physical_objects", ()):
             if not isinstance(spec, dict):
                 continue
@@ -936,12 +1044,107 @@ class BigvilleWorld:
                 if self._physical_object_accessible(actor, item.get("location", "world"),
                                                     object_id=item["id"])]
 
+    def _ensure_physical_object_locations(self):
+        """Return the indexed object-location mapping, rebuilding when needed (LA03).
+
+        A checkpoint decodes ``_physical_object_locations`` as a plain dict,
+        and tests or scenario authors may replace it outright. Whenever the
+        mapping is not the indexed subclass, or the object registry has grown
+        or shrunk under it, the derived index is rebuilt from the current
+        mapping (with the node's ``location`` attribute filling any missing
+        entry). The index is never canonical state.
+        """
+        locations = self.__dict__.get("_physical_object_locations")
+        if isinstance(locations, _PhysicalObjectLocations):
+            if len(locations) != len(self._physical_objects):
+                return self._rebuild_physical_object_locations(locations)
+            return locations
+        return self._rebuild_physical_object_locations(locations)
+
+    def _rebuild_physical_object_locations(self, source=None):
+        indexed = _PhysicalObjectLocations()
+        if isinstance(source, dict):
+            for object_id, location in source.items():
+                indexed[str(object_id)] = str(location)
+        for object_id, node in self._physical_objects.items():
+            if object_id in indexed:
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            indexed[str(object_id)] = str(attrs.get("location", "world"))
+        self._physical_object_locations = indexed
+        return indexed
+
+    @property
+    def _physical_object_index(self):
+        """location -> object ids, the LA03 derived index (read-only view)."""
+        return self._ensure_physical_object_locations()._location_buckets
+
+    def _visible_physical_object_records(self, actor):
+        """Objects visible to ``actor`` with the same contents as the public scan.
+
+        The location index gives a candidate set (the actor, the shared table
+        and world, and everything contained under them). The existing
+        accessibility predicate still decides reachability, so this agrees
+        with ``physical_object_observations`` while avoiding a containment walk
+        from every object in the world.
+        """
+        if actor not in self._actors:
+            return []
+        locations = self._ensure_physical_object_locations()
+        queue = deque([str(actor), "table", "world"])
+        seen_locations = set()
+        candidates = set()
+        while queue:
+            location = str(queue.popleft())
+            if location in seen_locations:
+                continue
+            seen_locations.add(location)
+            for object_id in locations.ids_at(location):
+                if object_id in candidates or object_id not in self._physical_objects:
+                    continue
+                candidates.add(object_id)
+                # An object can itself be a container: walk its contents too.
+                queue.append(object_id)
+        records = []
+        for object_id, node in self._physical_objects.items():
+            if object_id not in candidates:
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            if self._physical_object_accessible(
+                    actor, attrs.get("location", "world"), object_id=object_id):
+                records.append({"id": object_id, **dict(attrs)})
+        return records
+
+    def _physical_object_capabilities(self, record):
+        """The capability tags LA03 publishes for one visible object."""
+        attrs = dict(record)
+        kind = str(attrs.get("kind", "object"))
+        spec = self._item_specs.get(kind, {})
+        container = (kind in {"box", "tray", "container"}
+                     or bool(attrs.get("container"))
+                     or "open" in attrs)
+        reachable = bool(attrs.get("_reachable", False))
+        grabbable = reachable and not bool(attrs.get("fixed")) and kind not in {
+            "fixture", "building", "door"}
+        return {
+            "reachable": reachable,
+            "grabbable": grabbable,
+            "container": bool(container),
+            "open": bool(attrs.get("open", False)),
+            "locked": bool(attrs.get("locked", False)),
+            "edible": bool(spec.get("food") or attrs.get("edible")),
+            "tool": bool(spec.get("class") == "tool" or attrs.get("tool")),
+        }
+
     def move_physical_object(self, object_id, location):
         """Move an ordinary object; no game-specific admissibility is applied."""
         object_id = str(object_id)
         object_id = self.resolve_physical_object_id(object_id)
         if object_id not in self._physical_objects:
             return False
+        # LA03: move through the indexed mapping so the object-location index
+        # follows the canonical location assignment.
+        self._ensure_physical_object_locations()
         node = self._physical_objects[object_id]
         old_location = self._physical_object_locations.get(object_id)
         if old_location in self._physical_objects:
@@ -7092,7 +7295,15 @@ class BigvilleWorld:
             if delivery["heard"]:
                 self.eng.add_edge_unchecked(self._actor(name), "heard", utterance)
         with _EVENT_LOG_LOCK:
+            # LA03: keep the recipient -> utterance index in step with the log.
+            # If the log changed outside ``speak`` (a restore or an older
+            # checkpoint), rebuild it once from the canonical records.
+            index = self._prepare_heard_utterance_index()
             self._utterances[len(self._utterances) + 1] = utterance
+            for name, delivery in deliveries.items():
+                if delivery["heard"]:
+                    index.setdefault(str(name), []).append(utterance)
+            self._heard_utterance_log_size = len(self._utterances)
         return utterance
 
     def speech_radius(self, loudness):
@@ -7193,16 +7404,46 @@ class BigvilleWorld:
             deliveries[str(name)] = entry
         return deliveries
 
+    def _rebuild_heard_utterance_index(self):
+        """Rebuild actor -> heard utterance nodes from the canonical log (LA03)."""
+        index = {}
+        for node in self._utterances.values():
+            attrs = self.eng.node(node)["attrs"]
+            for name, delivery in (attrs.get("deliveries") or {}).items():
+                if float(delivery.get("heard", 0.0)):
+                    index.setdefault(str(name), []).append(node)
+        self._heard_utterance_index = index
+        self._heard_utterance_log_size = len(self._utterances)
+        return index
+
+    def _prepare_heard_utterance_index(self):
+        """Return a recipient index consistent with the current utterance log."""
+        index = self.__dict__.get("_heard_utterance_index")
+        size = self.__dict__.get("_heard_utterance_log_size")
+        if not isinstance(index, dict) or size != len(self._utterances):
+            return self._rebuild_heard_utterance_index()
+        return index
+
     def heard_utterances(self, actor, *, limit=20):
         """Return recent speech delivered to ``actor`` as cognition input.
 
         This is deliberately a projection of communication records, not a
         semantic interpretation by the world.  A backend receives the exact
         text and opaque provider payload that were delivered to it.
+
+        LA03 indexes deliveries by recipient in ``speak``; the old full-log
+        scan remains the fallback when the index is absent or out of date.
         """
         self._actor(actor)
+        try:
+            index = self._prepare_heard_utterance_index()
+            nodes = index.get(str(actor), ())
+        except Exception:
+            nodes = self._utterances.values()
         records = []
-        for node in self._utterances.values():
+        for node in nodes:
+            if not self.eng.has_node(node):
+                continue
             attrs = self.eng.node(node)["attrs"]
             target = str(attrs.get("target", ""))
             mine = (attrs.get("deliveries") or {}).get(str(actor), {})
@@ -8328,6 +8569,201 @@ class BigvilleWorld:
         else:
             choice["reason"] = "ocelot_decision"
         return choice
+
+    def _known_recipe_names(self, actor):
+        """Recipe names this world believes ``actor`` can attempt (LA03).
+
+        Every recipe is commonly known unless its data says otherwise; an
+        uncommon recipe is included when the actor holds a ``knows`` edge to
+        its ActionSpec. This reads knowledge, not full per-recipe validation:
+        ingredients, tools and location are proposal-time checks.
+        """
+        node = self._actors[actor]
+        known = {name for name, action in self._actions.items()
+                 if self.eng.has_edge(node, "knows", action)}
+        return sorted(name for name, spec in self._recipe_specs.items()
+                      if name in known or bool(spec.get("common", True)))
+
+    @staticmethod
+    def _observe_shared_bucket_count(actor_attrs, other_attrs):
+        count = 0
+        for key in ("role", "klass", "group"):
+            a, b = actor_attrs.get(key), other_attrs.get(key)
+            if a and b and a == b:
+                count += 1
+        return count
+
+    def _observe_relationship(self, actor, other):
+        """Mechanical relationship read-off for an observation (nothing decided)."""
+        relationship = self.relationship(actor, other)
+        if relationship is None:
+            return {"tie_strength": 0.0, "band_code": 0.0}
+        attrs = self.eng.node(relationship)["attrs"]
+        strength = float(attrs.get("strength", 0.0))
+        tie_strength = max(0.0, strength)
+        resentment = max(0.0, -strength) if attrs.get("kind") == "feud" else 0.0
+        return {"tie_strength": tie_strength,
+                "band_code": BigvilleBondWorld._band_code(
+                    {"tie_strength": tie_strength, "affect_resentment": resentment})}
+
+    def _observe_nearby_actors(self, actor, position):
+        if position is None:
+            return []
+        actor_attrs = self.eng.node(self._actors[actor])["attrs"]
+        nearby = []
+        for name in self.actors_near(position, 8, exclude=actor):
+            other_position = self.actor_position(name)
+            other_attrs = self.eng.node(self._actors[name])["attrs"]
+            nearby.append({
+                "id": name, "name": name,
+                "role": other_attrs.get("role", ""),
+                "klass": other_attrs.get("klass", ""),
+                "group": other_attrs.get("group", ""),
+                "position": other_position,
+                "distance": self.distance(position, other_position),
+                "shared_bucket_count": self._observe_shared_bucket_count(
+                    actor_attrs, other_attrs),
+                **self._observe_relationship(actor, name),
+            })
+        nearby.sort(key=lambda resident: (resident["distance"], resident["id"]))
+        return nearby
+
+    def _observe_job(self, actor):
+        job = self._job_of(actor)
+        if job is None:
+            return None
+        attrs = self.eng.node(job)["attrs"]
+        runs = self.eng.neighbours(job, "runs")
+        recipe = (self.eng.node(runs[0])["attrs"].get("name", "") if runs else "")
+        start = attrs.get("start_cell")
+        return {"recipe": str(recipe),
+                "remaining": round(float(attrs.get("remaining", 0.0)), 4),
+                "start_cell": tuple(start) if isinstance(start, (list, tuple)) else None,
+                "paused": bool(self.job_paused(actor))}
+
+    def _observe_cell(self, position):
+        terrain = self.terrain_state(position)
+        if not isinstance(position, tuple) or position not in self._map_cells:
+            return {"position": None, "terrain": terrain, "buildings": [],
+                    "land": [], "gathering_sites": [], "fixtures": [],
+                    "exits": [], "occupancy": 0}
+        buildings = []
+        for key, site in sorted(self._building_sites.items()):
+            x, y, width, height = site
+            if x <= position[0] < x + width and y <= position[1] < y + height:
+                attrs = self.eng.node(self._places[key])["attrs"]
+                buildings.append({"id": key, "name": attrs.get("name", key),
+                                  "kind": attrs.get("kind", "")})
+        land = []
+        for name, node in sorted(self._land_cells.items()):
+            if self.map_position_node(node) == position:
+                attrs = self.eng.node(node)["attrs"]
+                land.append({"id": name, "use": attrs.get("use", ""),
+                             "soil": attrs.get("soil", "")})
+        gathering_sites = []
+        for kind, site in sorted(self._gathering_sites.items()):
+            if tuple(site["cell"]) == position:
+                attrs = self.eng.node(site["node"])["attrs"]
+                gathering_sites.append({
+                    "kind": kind,
+                    "stock": round(float(attrs.get("stock", 0.0)), 4),
+                    "capacity": round(float(attrs.get("capacity", 0.0)), 4),
+                })
+        fixtures = []
+        for name, node in sorted(self._square_fixtures.items()):
+            attrs = self.eng.node(node)["attrs"]
+            if (int(attrs.get("x", -1)), int(attrs.get("y", -1))) == position:
+                fixtures.append({"id": name, "name": name,
+                                 "kind": attrs.get("kind", "fixture"),
+                                 "goods": list(attrs.get("goods", ()))})
+        exits = sorted(
+            (position[0] + dx, position[1] + dy)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+            if (position[0] + dx, position[1] + dy) in self._map_cells)
+        return {"position": position, "terrain": terrain,
+                "buildings": buildings, "land": land,
+                "gathering_sites": gathering_sites, "fixtures": fixtures,
+                "exits": exits,
+                "occupancy": len(self.actors_near(position, 0, alive_only=False))}
+
+    def observe(self, actor):
+        """Publish a cheap, JSON-safe, deterministic observation of ``actor`` (LA03).
+
+        This is the lazy-mode counterpart of the exhaustive menu: it reports
+        what exists and what capabilities it has, never the legal action list.
+        It is read-only with respect to canonical world state (the distance
+        caches are derived). It deliberately never calls ``actor_affordances``
+        or ``_actor_options``.
+        """
+        self._actor(actor)
+        attrs = self.eng.node(self._actors[actor])["attrs"]
+        position = self.actor_position(actor)
+        carrying = self.carry_state(actor)
+        visible = self._visible_physical_object_records(actor)
+        visible_objects = []
+        containers_in_reach = []
+        locations = self._ensure_physical_object_locations()
+        for item in visible:
+            record = {
+                "id": item["id"],
+                "name": item.get("name", item["id"]),
+                "kind": item.get("kind", "object"),
+                "location": item.get("location", "world"),
+            }
+            record.update(self._physical_object_capabilities(
+                {**item, "_reachable": True}))
+            visible_objects.append(record)
+            if not record["container"]:
+                continue
+            contents = []
+            if record["open"]:
+                for child_id in locations.ids_at(item["id"]):
+                    child = self._physical_objects.get(child_id)
+                    if child is None:
+                        continue
+                    child_attrs = self.eng.node(child)["attrs"]
+                    contents.append({"id": child_id,
+                                     "kind": child_attrs.get("kind", "object"),
+                                     "name": child_attrs.get("name", child_id)})
+            containers_in_reach.append({
+                "id": item["id"], "name": record["name"],
+                "kind": record["kind"], "open": record["open"],
+                "locked": record["locked"], "reachable": record["reachable"],
+                "contents": contents,
+            })
+        containers_in_reach.sort(key=lambda item: item["id"])
+        observation = {
+            "turn": int(self._turn),
+            "calendar": self.calendar(),
+            "position": position,
+            "terrain": self.terrain_state(position),
+            "terrain_movement": self.terrain_movement_rules(),
+            "health": attrs.get("health", "healthy"),
+            "hunger": attrs.get("hunger", 0.0),
+            "energy": self.energy(actor),
+            "intoxication": self.intoxication(actor),
+            "intoxication_band": self.intoxication_band(actor),
+            "inventory": self.inventory(actor),
+            "held_items": self.held_items(actor),
+            "worn": self.worn(actor),
+            "carrying": carrying,
+            "carried_weight": carrying["weight"],
+            "carry_ratio": carrying["ratio"],
+            "turn_state": self.actor_turn_state(actor),
+            "job": self._observe_job(actor),
+            "skills": self.skill_levels(actor),
+            "known_recipes": self._known_recipe_names(actor),
+            "last_outcome": self.last_outcome(actor),
+            "nearby_actors": self._observe_nearby_actors(actor, position),
+            "visible_objects": visible_objects,
+            "containers_in_reach": containers_in_reach,
+            "cell": self._observe_cell(position),
+            "heard": self.heard_utterances(actor, limit=20),
+        }
+        aftereffects = self.aftereffects(actor)
+        if aftereffects:
+            observation["aftereffects"] = aftereffects
+        return observation
 
     def actor_affordances(self, actor):
         """Return the current legal, observed choices for a backend or UI."""

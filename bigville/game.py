@@ -117,8 +117,8 @@ class BigvilleGame:
     _turn_semantics = "sequential"
     _simultaneous_priority = None
     # LA01: how a context obtains its legal action space.  "menu" keeps the
-    # exhaustive per-turn menu (the default); "lazy" is the opt-in seam that
-    # later phases will use for observation/proposal/validation.
+    # exhaustive per-turn menu (the default); "lazy" (LA03) builds from
+    # ``world.observe(actor)`` and does not call the exhaustive menu builder.
     _affordance_mode = "menu"
 
     @property
@@ -639,11 +639,18 @@ class BigvilleGame:
         ``skip_affordances`` is the LA01 measurement seam, used only by the
         benchmark and tests: it omits ``actor_affordances()`` (the exhaustive
         menu, which also populates ``_actor_targets``) and leaves
-        ``context.affordances`` empty.  Normal calls are unchanged, and the
-        game step does not pass it yet.
+        ``context.affordances`` empty.  Normal menu calls are unchanged.
+
+        In ``affordance_mode == "lazy"`` this method delegates to
+        ``_lazy_context``, which uses the world observation and never calls
+        the exhaustive builder.
         """
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
+        if self.affordance_mode == "lazy":
+            return self._lazy_context(actor, character,
+                                      practice_window=practice_window,
+                                      snapshot=snapshot)
         if skip_affordances:
             affordances = []
         else:
@@ -764,6 +771,75 @@ class BigvilleGame:
                 view = None
         return ActorContext(character, int(self.world._turn), observations, affordances,
                             recipient_interfaces=recipient_interfaces, agent_view=view)
+
+    def _lazy_context(self, actor: str, character, *,
+                      practice_window=None,
+                      snapshot: _DecisionSnapshot | None = None) -> ActorContext:
+        """Build the LA03 lazy context from the world observation, not the menu.
+
+        The observation owns entities and capabilities. Only the pieces the
+        world cannot know are added here: the per-turn physical event records,
+        the resident's practice records, the frames the character holds, an
+        active continuation, and the last major-action outcome. There is no
+        ``recipient_interfaces`` block: that menu-era field described every
+        backend to every other backend and is not part of a cheap per-resident
+        observation. No exhaustive affordance builder is called.
+        """
+        observations = {"entities": self.world.observe(actor)}
+        observations["physical_events"] = [
+            dict(event) for event in self._physical_events.get(actor, [])]
+        held_laws = {str(memory.content.get("name")) for memory in character.memories
+                     if memory.kind == "law_knowledge" and isinstance(memory.content, dict)}
+        held_policies = {str(memory.content.get("name")) for memory in character.memories
+                         if memory.kind == "policy_knowledge" and isinstance(memory.content, dict)}
+        known_references = {str(memory.content.get("name")) for memory in character.memories
+                            if memory.kind == "reference_knowledge"
+                            and isinstance(memory.content, dict)}
+        known_laws = [dict(spec) for name, spec in self.world._law_specs.items()
+                      if name in held_laws]
+        known_policies = [dict(spec) for name, spec in self.world._policy_specs.items()
+                          if name in held_policies]
+        derived_laws, derived_policies = self._derived_document_frames(
+            character, held_laws, held_policies)
+        known_laws += derived_laws
+        known_policies += derived_policies
+        read_documents = []
+        for (kind, name), document in self.world._documents.items():
+            if self.world.eng.has_edge(self.world._actors[actor], "read_document", document):
+                doc_attrs = self.world.eng.node(document)["attrs"]
+                read_documents.append({key: doc_attrs[key] for key in
+                                       ("kind", "name", "title", "scope", "version")
+                                       if key in doc_attrs})
+        observations["known_references"] = sorted(known_references)
+        observations["world_frames"] = {
+            "laws": known_laws,
+            "policies": known_policies,
+            "documents": read_documents,
+        }
+        # The actor's own practice records (Phase 012) use the same published
+        # window as the menu path, including the same first-call side effect.
+        practice = self.world.actor_observations(actor, "practice")
+        if practice_window is None and snapshot is not None:
+            practice_window = snapshot.practice_windows.get(actor)
+        if practice_window is None:
+            turn = int(self.world._turn)
+            last_turn, start, end = self._published_practice.get(actor, (None, 0, 0))
+            if last_turn != turn:
+                start, end = end, len(practice)
+                self._published_practice[actor] = (turn, start, end)
+        else:
+            if snapshot is not None:
+                assert snapshot.turn == int(self.world._turn), (
+                    "context built from a stale decision snapshot")
+            _, start, end = practice_window
+        observations["practice"] = [dict(record) for record in practice[start:end]]
+        if "last_outcome" not in observations:
+            observations["last_outcome"] = self.world.last_outcome(actor)
+        active = self._continuations.get(actor)
+        if active is not None:
+            observations["continuation"] = active.request.to_dict()
+        return ActorContext(character, int(self.world._turn), observations, [],
+                            recipient_interfaces={}, agent_view=None)
 
     def _visible_object_snapshot(self, actor):
         return {item["id"]: str(item.get("location", "world"))

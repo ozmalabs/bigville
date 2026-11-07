@@ -179,7 +179,12 @@ def test_world_does_not_store_actor_demand_beliefs_or_choose_recipes():
     w = _smith()
     attrs = w.eng.node(w._actors["Smith"])["attrs"]
     assert not {"belief_harvest", "belief_building", "belief_storage", "will_make", "want_qty"} & attrs.keys()
-    assert not any(hasattr(w, name) for name in ("observe", "belief", "will_make", "want_qty", "produce_run"))
+    # ``observe`` is the LA03 read-only physical observation API; it reports
+    # entities and capabilities, not demand beliefs or a chosen recipe.  Keep
+    # the negative check on the cognition-owned decision names.
+    assert not any(hasattr(w, name) for name in ("belief", "will_make", "want_qty", "produce_run"))
+    observation = w.observe("Smith")
+    assert "belief_harvest" not in observation and "will_make" not in observation
 
 
 def test_observation_and_recipe_choice_are_owned_by_cognition_backend():
