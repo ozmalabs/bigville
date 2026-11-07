@@ -1002,6 +1002,22 @@
       "file": "world/daynight.json"
     },
     {
+      "name": "MARKS",
+      "file": "world/marks.json"
+    },
+    {
+      "name": "MARK_RULES",
+      "file": "world/marks.json"
+    },
+    {
+      "name": "MARK_HARM",
+      "file": "world/marks.json"
+    },
+    {
+      "name": "MARK_EVENTS",
+      "file": "world/marks.json"
+    },
+    {
       "name": "SPEECH_ACTS",
       "file": "world/speech_acts.json"
     },

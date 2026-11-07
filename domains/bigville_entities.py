@@ -721,6 +721,81 @@ def _check_health(errors, warnings, info):
                 f"period(s) past starve_limit (starve_harm {h['starve_harm']}, APPROX)")
 
 
+def _check_marks(errors, warnings, info):
+    """Phase 063: MARKS (the visible surface states) and the causes that raise them. Every route of harm
+    (HEALTH causes) has a MARK_HARM row, even an empty one, so a cause that leaves no mark is said so on
+    purpose. Each recipe, shock and event that names a mark names a kind in MARKS."""
+    rules = MARK_RULES
+    if not 0.0 < float(rules["max_level"]) <= 1.0:
+        errors.append(f"MARK_RULES[max_level]: must lie in (0, 1], not {rules['max_level']!r}")
+    for name in ("wash_water", "wet_gain"):
+        if float(rules[name]) < 0.0:
+            errors.append(f"MARK_RULES[{name}]: must not be negative, not {rules[name]!r}")
+    if not 0.0 < float(rules["wash_drop"]) <= 1.0:
+        errors.append(f"MARK_RULES[wash_drop]: must lie in (0, 1], not {rules['wash_drop']!r}")
+    top = float(rules["max_level"])
+    for kind, spec in MARKS.items():
+        where = f"MARKS[{kind}]"
+        if not str(spec.get("label", "")).strip():
+            errors.append(f"{where}: needs a label (the word a view shows)")
+        if not isinstance(spec.get("washable"), bool):
+            errors.append(f"{where}[washable]: true or false, not {spec.get('washable')!r}")
+        for name in ("decay", "rain_wash"):
+            if float(spec[name]) < 0.0:
+                errors.append(f"{where}[{name}]: must not be negative, not {spec[name]!r}")
+        if spec.get("washable") is False and float(spec["rain_wash"]) > 0.0:
+            errors.append(f"{where}: a mark that washing cannot take must not be washed by rain")
+        if not 0.0 <= float(spec["clothes_change_drop"]) <= 1.0:
+            errors.append(f"{where}[clothes_change_drop]: must lie in [0, 1], not {spec['clothes_change_drop']!r}")
+        if not 0.0 < float(spec["visible_level"]) <= top:
+            errors.append(f"{where}[visible_level]: must lie in (0, max_level], not {spec['visible_level']!r}")
+        if isinstance(spec["see_range"], bool) or not isinstance(spec["see_range"], int) or spec["see_range"] < 0:
+            errors.append(f"{where}[see_range]: a whole number of cells >= 0, not {spec['see_range']!r}")
+        if not 0.0 <= float(spec["see_light"]) <= 1.0:
+            errors.append(f"{where}[see_light]: must lie in [0, 1], not {spec['see_light']!r}")
+        skill = spec.get("notice_skill")
+        if skill is not None and skill not in SKILLS:
+            errors.append(f"{where}[notice_skill]: '{skill}' is not a SKILLS name")
+    causes = list(HEALTH["causes"])
+    for cause in causes:
+        if cause not in MARK_HARM:
+            errors.append(f"MARK_HARM: HEALTH cause '{cause}' has no row (use {{}} for a cause that leaves no mark)")
+    for cause in MARK_HARM:
+        if cause not in causes:
+            errors.append(f"MARK_HARM[{cause}]: not a HEALTH cause")
+
+    def _known_marks(row, where):
+        for kind, gain in row.items():
+            if kind not in MARKS:
+                errors.append(f"{where}: '{kind}' is not a MARKS kind")
+            if isinstance(gain, bool) or not isinstance(gain, (int, float)) or gain <= 0.0:
+                errors.append(f"{where}[{kind}]: a gain above 0, not {gain!r}")
+
+    for cause, row in MARK_HARM.items():
+        _known_marks(row, f"MARK_HARM[{cause}]")
+    for event, row in MARK_EVENTS.items():
+        _known_marks(row, f"MARK_EVENTS[{event}]")
+    causes_of = {kind: 0 for kind in MARKS}
+    for r in RECIPES:
+        if "marks" in r:
+            _known_marks(r["marks"], f"RECIPES[{r['name']}].marks")
+            for kind in r["marks"]:
+                causes_of[kind] = causes_of.get(kind, 0) + 1
+    for name, spec in SHOCKS.items():
+        if "marks" in spec:
+            _known_marks(spec["marks"], f"SHOCKS[{name}].marks")
+            for kind in spec["marks"]:
+                causes_of[kind] = causes_of.get(kind, 0) + 1
+    for row in list(MARK_HARM.values()) + list(MARK_EVENTS.values()):
+        for kind in row:
+            causes_of[kind] = causes_of.get(kind, 0) + 1
+    for kind, count in causes_of.items():
+        if count == 0 and kind != "wetness":          # wetness comes from rain (MARK_RULES.wet_gain)
+            warnings.append(f"MARKS[{kind}]: no recipe, shock, harm or event raises it")
+    info.append(f"MARKS: {len(MARKS)} kinds, {sum(1 for r in RECIPES if 'marks' in r)} recipes and "
+                f"{sum(1 for s in SHOCKS.values() if 'marks' in s)} shocks name a mark (APPROX levels)")
+
+
 def _check_intoxication(errors, warnings, info):
     """Phase 034: the INTOXICATION table and the alcohol on the drinks. The bands rise from 0 to pass_out (at most 1),
     wake_below sits under pass_out, and sober_per_tick equals the hourly fall over one clock tick. Every item with
@@ -2155,6 +2230,7 @@ def check_consistency():
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_health(errors, warnings, info)
+    _check_marks(errors, warnings, info)   # Phase 063: visible marks and their causes
     _check_intoxication(errors, warnings, info)
     _check_aftereffects(errors, warnings, info)
     _check_illness(errors, warnings, info)

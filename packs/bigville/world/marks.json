@@ -1,0 +1,143 @@
+{
+  "_doc": "VISIBLE CONDITION: MARKS (Phase 063). Each resident carries a small set of surface marks, each a level from 0 (none) to MARK_RULES.max_level. A level rises from the work or event that causes it (the `marks` rows on RECIPES and SHOCKS, MARK_HARM for each route of harm, MARK_EVENTS for other events) and falls with time (decay per day), with rain (rain_wash per day of full exposure, washable marks only), with washing (the `wash` act, MARK_RULES.wash_water and wash_drop) and with changing clothes (clothes_change_drop). Rain also wets the resident (MARK_RULES.wet_gain per day of full exposure). The world publishes the marks and never decides what an observer concludes. A mark is visible to a viewer when the viewer is within see_range cells, in light of at least see_light (0 dark, 1 full day), and the mark's level is at least visible_level. notice_skill names the trade skill a viewer needs to notice the mark at that detail (null: anyone who can see it). Phase 062's perceiver reads these as evidence; nothing in the simple village reads them. Every number is APPROX: a design choice of the right order, not a measured or sourced figure, so the seed gives none. The levels are relative scales, not physical units. Sources for the kinds of work only: charcoal burning, milling and digging are the work the recipes already name (RECIPES); their marks are the kinds of dust, sweat and mud that work leaves on a worker, which is a plain-sense judgement, not a measured figure (APPROX).",
+  "_types": {},
+  "tables": {
+    "MARKS": {
+      "dirt": {
+        "label": "dirt",
+        "washable": true,
+        "decay": 0.03,
+        "rain_wash": 0.2,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.2,
+        "see_range": 1,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "soot": {
+        "label": "coal dust",
+        "washable": true,
+        "decay": 0.03,
+        "rain_wash": 0.2,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.3,
+        "see_range": 1,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "flour": {
+        "label": "flour dust",
+        "washable": true,
+        "decay": 0.1,
+        "rain_wash": 0.3,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.3,
+        "see_range": 2,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "blood": {
+        "label": "blood",
+        "washable": true,
+        "decay": 0.1,
+        "rain_wash": 0.1,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.2,
+        "see_range": 3,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "mud": {
+        "label": "mud",
+        "washable": true,
+        "decay": 0.1,
+        "rain_wash": 0.1,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.3,
+        "see_range": 2,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "sweat": {
+        "label": "sweat",
+        "washable": true,
+        "decay": 0.5,
+        "rain_wash": 0.5,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.4,
+        "see_range": 1,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "wetness": {
+        "label": "wet through",
+        "washable": false,
+        "decay": 0.5,
+        "rain_wash": 0.0,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.5,
+        "see_range": 2,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "soiled_clothes": {
+        "label": "soiled clothes",
+        "washable": true,
+        "decay": 0.02,
+        "rain_wash": 0.1,
+        "clothes_change_drop": 0.5,
+        "visible_level": 0.4,
+        "see_range": 2,
+        "see_light": 0.3,
+        "notice_skill": null
+      },
+      "injury": {
+        "label": "visible injury",
+        "washable": false,
+        "decay": 0.02,
+        "rain_wash": 0.0,
+        "clothes_change_drop": 0.0,
+        "visible_level": 0.2,
+        "see_range": 3,
+        "see_light": 0.3,
+        "notice_skill": "medicine"
+      }
+    },
+    "MARK_RULES": {
+      "max_level": 1.0,
+      "wash_water": 2.0,
+      "wash_drop": 0.5,
+      "wet_gain": 0.5
+    },
+    "MARK_HARM": {
+      "age": {},
+      "illness": {},
+      "injury": {
+        "injury": 2.0,
+        "blood": 1.0
+      },
+      "starvation": {},
+      "exhaustion": {
+        "dirt": 2.0,
+        "sweat": 1.0
+      },
+      "violence": {
+        "blood": 2.0,
+        "injury": 2.0,
+        "soiled_clothes": 1.0
+      },
+      "intoxication": {},
+      "accident": {
+        "injury": 1.0,
+        "dirt": 1.0
+      }
+    },
+    "MARK_EVENTS": {
+      "butcher": {
+        "blood": 0.5,
+        "sweat": 0.1,
+        "soiled_clothes": 0.1
+      }
+    }
+  }
+}

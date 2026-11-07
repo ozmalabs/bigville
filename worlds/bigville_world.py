@@ -1183,6 +1183,9 @@ class BigvilleWorld:
                 self._enact_burial(job_actor, burial)
             self.eng.set_attr(job, "complete", 1.0)
             self.eng.set_attr(job, "remaining", 0.0)
+            # Phase 063: the work leaves its marks on the worker (the recipe's `marks` row).
+            if actor_name in self._actors:
+                self._add_marks(actor_name, self._recipe_specs.get(action.get("name", ""), {}).get("marks", {}))
             if actor_node is not None:
                 practised = self.E.recipe_skill(recipe_row) if recipe_row else None
                 if practised:
@@ -1366,6 +1369,7 @@ class BigvilleWorld:
                 self._collect_night_soil()
                 self._burn_household_heat()
                 self._advance_animal_life(fed)
+            self._marks_period()                       # Phase 063: time, rain and weather on the marks
             if self.physical_subsystems["ecology"]:
                 self._advance_soil_nitrogen()
                 for crop in list(self._living_crops()):
@@ -3270,6 +3274,9 @@ class BigvilleWorld:
         n = self.eng.add_node("Shock", {"name": name, "kind": kind, "remaining": float(d),
                                          "active": 1.0, "effects": ",".join(spec["effects"])})
         self.eng.add_edge_unchecked(self._town, "has_shock", n)
+        # Phase 063: a shock's marks (its `marks` row) fall on every living resident at its onset.
+        for actor in self._actors:
+            self._add_marks(actor, spec.get("marks", {}))
         return n
 
     # ---------------------------------------------------- map economy: deposits, shops, and goods
@@ -6272,6 +6279,7 @@ class BigvilleWorld:
             if product in self.E.SLAUGHTER_PRODUCTS:
                 self.set_stock(product, self.qty(product) + float(qty)); got[product] = float(qty)
         self.eng.set_attr(an, "alive", 0.0)
+        self._add_marks(butcher, self.E.MARK_EVENTS.get("butcher", {}))   # Phase 063
         return got
 
     # ---------------------------------------------------- a merchant delivers imported goods
@@ -7257,6 +7265,99 @@ class BigvilleWorld:
         """The one health variable (health_value): 1 is fully healthy, 0 is dead."""
         return float(self.eng.node(self._actor(actor))["attrs"].get("health_value", self.E.HEALTH["max_health"]))
 
+    # ---------------------------------------------------- Phase 063: visible condition (marks)
+    # A mark is a surface state of a resident (dirt, coal dust, blood, ...). Its level is stored on the
+    # actor node as `mark_<kind>` and is 0 when absent. The world publishes marks and never decides what
+    # an observer makes of them (Phase 062 reads them as evidence).
+    _WET_MARK = "wetness"      # the mark that rain raises (MARK_RULES.wet_gain)
+
+    def mark_level(self, actor, kind):
+        """One mark's level on a resident, from 0 (none) up to MARK_RULES.max_level."""
+        if kind not in self.E.MARKS:
+            raise ValueError(f"unknown mark: {kind!r}; MARKS are {list(self.E.MARKS)}")
+        return round(float(self.eng.node(self._actor(actor))["attrs"].get(f"mark_{kind}", 0.0)), 4)
+
+    def marks(self, actor):
+        """The marks a resident carries now, {kind: level}, listing only the levels above 0."""
+        return {kind: level for kind in self.E.MARKS if (level := self.mark_level(actor, kind)) > 0.0}
+
+    def observable_marks(self, actor, distance, light=1.0):
+        """The marks an observer can see of a resident: a mark is seen when the observer is within its
+        see_range cells (`distance`, or None when out of reach), in `light` (0 dark, 1 full day) of at least
+        its see_light, and its level is at least its visible_level. Each row names the mark's notice_skill
+        (the trade skill a viewer needs to notice it at this detail, or None). The world states what is
+        visible. It does not conclude what the marks mean, or who notices them."""
+        rows = []
+        for kind, spec in self.E.MARKS.items():
+            level = self.mark_level(actor, kind)
+            if distance is None or level < float(spec["visible_level"]):
+                continue
+            if float(distance) > float(spec["see_range"]) or float(light) < float(spec["see_light"]):
+                continue
+            rows.append({"kind": kind, "label": spec["label"], "level": level,
+                         "notice_skill": spec["notice_skill"]})
+        return rows
+
+    def _set_mark(self, actor, kind, level):
+        node = self._actor(actor)
+        attr = f"mark_{kind}"
+        level = min(float(self.E.MARK_RULES["max_level"]), max(0.0, float(level)))
+        if level <= 0.0 and attr not in self.eng.node(node)["attrs"]:
+            return                                  # a clean resident keeps no mark attributes
+        self.eng.set_attr(node, attr, level)
+
+    def _add_marks(self, actor, gains):
+        """Raise a living resident's marks by `gains` ({kind: amount}); the dead keep what they bore."""
+        if actor not in self._actors or not self.is_alive(actor):
+            return
+        for kind, gain in (gains or {}).items():
+            if float(gain) > 0.0:
+                self._set_mark(actor, kind, self.mark_level(actor, kind) + float(gain))
+
+    def _change_clothes_marks(self, actor):
+        """Putting on a garment drops the marks it changes (MARKS.clothes_change_drop)."""
+        for kind, spec in self.E.MARKS.items():
+            drop = float(spec["clothes_change_drop"])
+            if drop > 0.0:
+                self._set_mark(actor, kind, self.mark_level(actor, kind) - drop)
+
+    def _marks_period(self):
+        """One period of time and weather on every living resident's marks. Each mark falls by its decay. A
+        washable mark also falls by rain_wash for each unit of rain that reaches the skin (the town's wet less
+        the garments' rain cover). Rain wets the resident by MARK_RULES.wet_gain for each unit that reaches it."""
+        rules = self.E.MARK_RULES
+        wet = float(self.eng.node(self._town)["attrs"].get("wet", 0.0))
+        for actor in self._actors:
+            if not self.is_alive(actor):
+                continue
+            exposure = min(1.0, max(0.0, wet - self.rain_cover(actor)))
+            for kind, spec in self.E.MARKS.items():
+                level = self.mark_level(actor, kind)
+                if level <= 0.0:
+                    continue
+                fall = float(spec["decay"]) + (float(spec["rain_wash"]) * exposure if spec["washable"] else 0.0)
+                self._set_mark(actor, kind, level - fall)
+            if exposure > 0.0 and self._WET_MARK in self.E.MARKS:
+                self._add_marks(actor, {self._WET_MARK: float(rules["wet_gain"]) * exposure})
+
+    def wash(self, actor):
+        """Washing with the town store's water. MARK_RULES.wash_water units leave the store, and each washable
+        mark falls to (1 - wash_drop) of its level. It takes the resident's turn and needs store access, as
+        watering does. The world does not decide whether the resident should wash. False when refused."""
+        rules = self.E.MARK_RULES
+        if not self._store_open(actor):
+            return self._refuse("store_locked")
+        if self.qty("water") < float(rules["wash_water"]):
+            return self._refuse("out_of_stock")
+        if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "wash"):
+            return False
+        self.set_stock("water", self.qty("water") - float(rules["wash_water"]))
+        for kind, spec in self.E.MARKS.items():
+            if spec["washable"]:
+                self._set_mark(actor, kind, self.mark_level(actor, kind) * (1.0 - float(rules["wash_drop"])))
+        self._run()
+        return True
+
     def harm(self, actor, amount, cause, *, fragility=True):
         """Acute harm: lower the resident's health by `amount` times their life stage's fragility (HEALTH), and
         tag the cause. Health at or below 0 is death by `cause` (record_death). Returns False when the resident
@@ -7275,6 +7376,9 @@ class BigvilleWorld:
         health = max(0.0, self.health(actor) - max(0.0, float(drop)))
         self.eng.set_attr(node, "health_value", health)
         self.eng.set_attr(node, "last_cause", str(cause))
+        # Phase 063: the harm leaves its marks (MARK_HARM, per point of health lost).
+        self._add_marks(actor, {kind: float(gain) * max(0.0, float(drop))
+                                for kind, gain in self.E.MARK_HARM.get(str(cause), {}).items()})
         if health <= 0.0:
             self.record_death(actor, cause=str(cause))
         return True
@@ -10149,6 +10253,7 @@ class BigvilleWorld:
         self.eng.set_attr(garment, "rain", float(spec.get("rain", 0.0)))
         self.eng.set_attr(garment, "finery", float(spec.get("finery", 0.0)))
         self.eng.add_edge_unchecked(self._actors[actor], "wears", garment)
+        self._change_clothes_marks(actor)     # Phase 063: a fresh garment drops soiled clothes
         self._run()
         return True
 
