@@ -158,6 +158,10 @@ class DeterministicBackend:
     supports_free_text = False
     understands_raw_speech = False
     requires_conversational_interface = True
+    # Phase 062: the simple backend models its own senses, impairment, skills, and literacy (its raw context is the
+    # truth it decides on), so the agent view, which it never reads, does not degrade them for it.
+    faculties = {"senses": "represented", "skill": "represented", "impairment": "represented",
+                 "literacy": "represented", "numeracy": "represented"}
 
     def __init__(self, character: CharacterDefinition, *, policy: SimplePolicy | None = None):
         self.character = character

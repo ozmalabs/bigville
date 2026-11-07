@@ -2185,6 +2185,8 @@ def check_consistency():
     check_fog(_WORLD_PACK.path, errors, warnings, info)
     from domains.speech_acts_check import check_speech_acts  # Phase 060: the speech acts and their templates
     check_speech_acts(_WORLD_PACK.path, errors, warnings, info)
+    from domains.perception_check import check_perception  # Phase 062: the perceiver's tiers, gates and switch
+    check_perception(_WORLD_PACK.path, errors, warnings, info)
     from domains.speech_parser_check import check_speech_parser  # Phase 061: the speech parser table and its prefix
     check_speech_parser(_WORLD_PACK.path, errors, warnings, info)
     stats = {

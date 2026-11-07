@@ -1,0 +1,101 @@
+{
+  "_doc": "PERCEPTION (Phase 062): what a resident perceives of a person or a thing, in tiers. The perceiver record (domains/perceiver.py) holds what the resident's faculties let it take in: the light it sees by, its sight range, its intoxication band, its skills, and its literacy. Each tier of a kind (PERCEIVER_TIERS) has a gate of named conditions; the highest tier whose gates all pass is the percept. The truth (referee block only) is the highest tier whose SUBJECT-side gates pass, that is what the thing is, whatever the observer's faculties.\n\nSWITCH. PERCEPTION.enabled defaults to false. Off, the agent view is what it was before Phase 062: every person and thing in sight is described as before and no perceiver block exists. The simple backend never reads the agent view, so its context is unchanged either way.\n\nGATES. PERCEPTION.gates names each gate kind and the side it reads. A 'perceiver' gate reads the observer (light, distance, intoxication, skill). A 'subject' gate reads the thing observed (a visible mark). light_not: the light the resident sees is not one of the listed keys (day, dim, dark, lamplight). distance: the subject is within the named band (distance_bands, Chebyshev cells). band_max: the intoxication band is no higher than the named one (sober, tipsy, drunk, stupefied). trade_skill: true means the resident's level in the subject's trade (its main skill) is at least trade_min_level, or the resident's skills are represented (see faculties). mark: the subject shows the named visible mark at at least mark_min_level. Marks are a Phase 063 fact; until it supplies them the world reports none and the mark tiers are reached only by a test.\n\nFACULTIES. Each backend declares, for each faculty, how it holds it: 'represented' (the backend models it; the adapter passes the full value, so the percept is the truth), 'enforced' (the adapter degrades what the backend is shown), or 'both'. Only 'represented' changes the record. The declaration sits on the backend class (`faculties`). A backend with none gets `fallback`.\n\nAPPROX AND AUTHORED. distance_bands.near (2 cells) is APPROX: an authored conversational distance, not measured. mark_min_level and trade_min_level (0.5) are authored thresholds on the 0..1 scales of the marks and the skill levels; they are not measured. stage_nouns are the words the lexicon uses for LIFE_STAGES; they are authored English, one per stage.\n\nHAND-OFF. Phase 063 supplies the visible marks through `world.visible_marks(actor)` (a dict of mark name to level, 0..1). Phase 064 reads the literacy tier of the record. Phase 065 reads the impairment band for distortion.",
+  "_types": {},
+  "tables": {
+    "PERCEPTION": {
+      "enabled": false,
+      "faculties": [
+        "senses",
+        "skill",
+        "impairment",
+        "literacy",
+        "numeracy"
+      ],
+      "fallback": "enforced",
+      "light_when_off": "day",
+      "distance_bands": {
+        "near": 2
+      },
+      "mark_min_level": 0.5,
+      "trade_min_level": 0.5,
+      "stage_nouns": {
+        "infant": "baby",
+        "child": "child",
+        "youth": "youth",
+        "adult": "grown person",
+        "elder": "elder"
+      },
+      "gates": {
+        "light_not": "perceiver",
+        "distance": "perceiver",
+        "band_max": "perceiver",
+        "trade_skill": "perceiver",
+        "mark": "subject"
+      }
+    },
+    "PERCEIVER_TIERS": {
+      "person": [
+        {
+          "tier": 0,
+          "words": "a person",
+          "gate": {}
+        },
+        {
+          "tier": 1,
+          "words": "a {stage}",
+          "gate": {
+            "light_not": [
+              "dark"
+            ]
+          }
+        },
+        {
+          "tier": 2,
+          "words": "a dirty {stage}",
+          "gate": {
+            "distance": "near",
+            "mark": "dirt"
+          }
+        },
+        {
+          "tier": 3,
+          "words": "a {stage} covered in coal dust",
+          "gate": {
+            "distance": "near",
+            "mark": "soot",
+            "light_not": [
+              "dark"
+            ]
+          }
+        },
+        {
+          "tier": 4,
+          "words": "{job}, judging by the work",
+          "gate": {
+            "light_not": [
+              "dark"
+            ],
+            "band_max": "tipsy",
+            "trade_skill": true
+          }
+        }
+      ],
+      "thing": [
+        {
+          "tier": 0,
+          "words": "something",
+          "gate": {}
+        },
+        {
+          "tier": 1,
+          "words": "{kind}",
+          "gate": {
+            "light_not": [
+              "dark"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

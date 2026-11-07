@@ -1012,6 +1012,14 @@
     {
       "name": "SPEECH_PARSER",
       "file": "world/speech_parser.json"
+    },
+    {
+      "name": "PERCEPTION",
+      "file": "world/perception.json"
+    },
+    {
+      "name": "PERCEIVER_TIERS",
+      "file": "world/perception.json"
     }
   ]
 }

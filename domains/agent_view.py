@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import re
 
-from domains import map_memory
+from domains import map_memory, perceiver
 from domains.affordance_handles import handle_pairs
 from domains.data_view import entities
 from domains.lexicon import describe, quantities
@@ -291,10 +291,13 @@ def _looks(game, other, pack):
     return looks
 
 
-def _around(game, actor, pack, known):
+def _around(game, actor, pack, known, rec=None, log=None):
+    """The people, speech, moves and things around the resident. `rec` is the perceiver record (Phase 062); given,
+    people and things are described by their percept, and each percept is appended to `log` (the referee block)."""
     world = game.world
     words = load_pack(pack)["VIEW_WORDS"]
-    sight = int(load_pack(pack)["HEARING"]["sight_range"])
+    log = [] if log is None else log
+    sight = int(load_pack(pack)["HEARING"]["sight_range"]) if rec is None else int(rec["sight"])
     position = world.actor_position(actor)
     ties = {str(target): world.eng.node(bond)["attrs"].get("kind")
             for (holder, target), bond in world._relationships.items() if holder == actor}
@@ -312,6 +315,24 @@ def _around(game, actor, pack, known):
     people = []
     for distance, other in sorted(nearby):
         role = _words(world.eng.node(world._actors[other])["attrs"].get("role"))
+        if rec is not None:
+            # Phase 062: the percept decides what is seen. Looks need a tier of 1 or more (some light to see by), and a
+            # resident is known by name only at that tier too; otherwise it is described by the percept's words.
+            seen = perceiver.percept("person", perceiver.person_subject(game, other, pack), distance, rec, pack)
+            log.append(perceiver.referee_row(other, "person", distance, seen))
+            recognised = other in known and seen["tier"] >= 1
+            entry = {"distance": _phrase("distance", distance, "self", pack)}
+            if seen["tier"] >= 1:
+                entry["looks"] = _looks(game, other, pack)
+            if recognised:
+                entry["name"] = other
+                entry["job"] = role
+            else:
+                entry["description"] = seen["words"]
+            if recognised and ties.get(other):
+                entry["tie"] = _phrase("relationship_kind", str(ties[other]), "self", pack)
+            people.append(_check_keys("person", _clean(entry), pack))
+            continue
         entry = {"distance": _phrase("distance", distance, "self", pack), "looks": _looks(game, other, pack)}
         if other in known:
             entry["name"] = other
@@ -333,14 +354,17 @@ def _around(game, actor, pack, known):
         who = str(event.get("actor", ""))
         who = words["you"] if who == actor else (who if who in known else words["someone"])
         seen.append(_check_keys("seen", {"who": who, "did": words["moved"]}, pack))
-    things = _things(world, actor, pack)
+    things = _things(world, actor, pack, rec, log)
     return _check_keys("around", {"people": people, "heard": heard, "seen": seen, "things": things}, pack)
 
 
-def _things(world, actor, pack):
+def _things(world, actor, pack, rec=None, log=None):
     """What the resident can act on: containers on the resident's own cell (an attempt needs the resident
     there), and the physical objects the resident can see. A handle is the name the world uses for the thing,
-    copied into a reply; `what` is its kind in words (Phase 054)."""
+    copied into a reply; `what` is its kind in words (Phase 054).
+
+    With a perceiver record (Phase 062) a thing is described by its percept. A thing seen at tier 0 is 'something'
+    with no handle, so the resident cannot name it in a reply."""
     position = world.actor_position(actor)
     rows = []
     if position is not None:
@@ -350,10 +374,27 @@ def _things(world, actor, pack):
                 continue
             if float(world.eng.node(node)["attrs"].get("destroyed", 0.0)) == 1.0:
                 continue
-            rows.append((str(name), _words(world.eng.node(node)["attrs"].get("kind") or name)))
+            rows.append((str(name), _words(world.eng.node(node)["attrs"].get("kind") or name), 0))
     for item in world.physical_object_observations(actor):
-        rows.append((str(item.get("id", "")), _words(item.get("kind") or item.get("id"))))
-    return [_check_keys("thing", {"handle": handle, "what": what}, pack) for handle, what in rows if handle]
+        distance = 0
+        if rec is not None and position is not None:
+            cell = world._physical_location_cell(item.get("id"))
+            distance = _chebyshev(position, cell) if cell is not None else 0
+        rows.append((str(item.get("id", "")), _words(item.get("kind") or item.get("id")), distance))
+    if rec is None:
+        return [_check_keys("thing", {"handle": handle, "what": what}, pack)
+                for handle, what, _distance in rows if handle]
+    out = []
+    for handle, what, distance in rows:
+        if not handle:
+            continue
+        seen = perceiver.percept("thing", perceiver.thing_subject(what), distance, rec, pack)
+        log.append(perceiver.referee_row(handle, "thing", distance, seen))
+        if seen["tier"] == 0:
+            out.append(_check_keys("thing", {"what": seen["words"]}, pack))
+        else:
+            out.append(_check_keys("thing", {"handle": handle, "what": seen["words"]}, pack))
+    return out
 
 
 def _map(world, actor, pack):
@@ -395,14 +436,16 @@ def _species(world, animal):
     return str(world.eng.node(world._animals[animal])["attrs"].get("species", ""))
 
 
-def _can(world, actor, character, pack, game=None):
+def _can(world, actor, character, pack, game=None, withheld=()):
     """The options the resident may use. Each row's handle comes from domains/affordance_handles.py, computed
     over the full list of the world's options, so the backend resolves the same handle to the same row (Phase
     054 follow-up). A move is listed only to a place the resident knows.
 
     A fogged resident (`game` given, Phase 053) gets only the rows whose cell it knows: a place it holds exactly
     is named ('walk to the mill'), one it holds roughly is offered as 'walk toward the mill', and a cell it has
-    seen is 'a spot you know'. A row to ground it does not know is not listed."""
+    seen is 'a spot you know'. A row to ground it does not know is not listed.
+
+    `withheld` (Phase 062) names the things the resident cannot see at all; a row that acts on one of them is left out."""
     pk = load_pack(pack)
     actions, words = pk["ACTION_WORDS"], pk["VIEW_WORDS"]
     fogged = game is not None and map_memory.is_fogged(game, actor)
@@ -411,6 +454,8 @@ def _can(world, actor, character, pack, game=None):
     offered_moves = set()
     for handle, option in handle_pairs(world.actor_affordances(actor)):
         action = str(option.get("action", ""))
+        if withheld and str(option.get("target", "")) in withheld:
+            continue
         verb = actions.get(action) or _words(action)
         destination = _cell(option.get("destination"))
         wording = None
@@ -524,15 +569,23 @@ def build_agent_view(game, actor, mode="agent"):
     gist = entities(pack).MEMORY_GIST
     known = _known_names(game, actor)
     fogged = map_memory.is_fogged(game, actor)
+    # Phase 062: the perceiver record, when PERCEPTION.enabled is on. Off, nothing below changes.
+    rec = None
+    if perceiver.enabled(pack):
+        rec = perceiver.record(game, actor, perceiver.declared(getattr(game, "backends", {}).get(actor), pack), pack)
+    log = []
+    around = _around(game, actor, pack, known, rec, log)
+    # Phase 062: a thing the resident cannot see at all (tier 0) is not offered as an option either.
+    withheld = {row["subject"] for row in log if row["kind"] == "thing" and row["tier"] == 0}
     view = {
         "mode": mode,
         "actor": actor,
         "self": _self(game, actor, pack, gist),
         "now": _now(world, pack, actor),
-        "around": _around(game, actor, pack, known),
+        "around": around,
         # Phase 053: a fogged resident's map is its own three-level map; a simple resident keeps the patch.
         "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
-        "can": _can(world, actor, game.characters[actor], pack, game if fogged else None),
+        "can": _can(world, actor, game.characters[actor], pack, game if fogged else None, withheld),
         "last": _last(world, actor, pack),
         "reaction": _reaction(game, actor, pack, known),
     }
@@ -540,4 +593,7 @@ def build_agent_view(game, actor, mode="agent"):
         view["referee"] = _referee(game, actor)
         if fogged:
             view["referee"]["true_map"] = map_memory.true_patch(game, actor)
+        if rec is not None:
+            view["referee"]["perception"] = {"faculties": dict(rec["modes"]), "perceiver": perceiver.summary(rec),
+                                             "subjects": log}
     return _check_keys("top", _clean(view), pack)
