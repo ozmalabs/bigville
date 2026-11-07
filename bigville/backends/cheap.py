@@ -6,6 +6,7 @@ from typing import Callable
 
 from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
+from .lamplighter import lamplighter_choice  # Phase 042: the lamplighter's round
 from .psi_can import CANWeightModel
 from domains.persona import simple_band   # Phase 058: the hour bands are the pack's ROUTINE_BANDS
 from domains.world_affordances import INTOXICATION as _INTOXICATION   # Phase 034: the drink policy numbers
@@ -174,6 +175,13 @@ class DeterministicBackend:
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self._update_goals(context)
+        lamp = lamplighter_choice(context)   # Phase 042: a lamplighter's round (offered to a lamplighter only)
+        if lamp is not None:
+            action, params, continuation = lamp
+            self.last_choice = {"action": action, "goal": "lamplighter", "time_band": self.time_band,
+                                "reason": "lamplighter"}
+            return ActorResponse(major_action=ProposedAction(action, params, "cheap_psi_can"),
+                                 continuation=continuation)
         # Phase 033: a held resident's one way out is a struggle, so it struggles before anything else. The
         # cheap policy never restrains anyone, and it does not choose release (no release policy yet).
         if any(option.get("action") == "struggle" for option in context.affordances):

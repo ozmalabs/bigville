@@ -394,6 +394,11 @@
       "category": "job",
       "definition": "spare: true; tools: [\"axe\"]; trades: [\"labourer\"]",
       "name": "job_labourer"
+    },
+    {
+      "category": "job",
+      "definition": "fixed: 0.0; per_100: 0.0; tools: []; trades: [\"labourer\"]",
+      "name": "job_lamplighter"
     }
   ],
   "depends_on": [],
@@ -404,7 +409,7 @@
     "generator": "tools/generate_seeds.py",
     "pack": "bigville",
     "record": null,
-    "sha256": "1cc835f8b595f56cbda62ad60221e1c36c18ffc44b27202f753368bc70433b5e",
+    "sha256": "8aace310abff93d739cada0cc947a5a6e9831e8cbafe7b15e945ce3234e1fe5d",
     "tables": [
       "TRADES",
       "JOBS"

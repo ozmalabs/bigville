@@ -24,6 +24,7 @@ from domains.data_view import entities as _entities_view  # noqa: E402
 from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
 from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 from domains.world_affordances import round_bp  # noqa: E402
+from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps
 
 # Phase 048: the default for a job's or an attempt's tool: the right one the worker has, else bare hands.
 _DEFAULT_TOOL = object()
@@ -616,6 +617,7 @@ class BigvilleWorld:
             self.eng.add_edge_unchecked(self._square, "at_cell", self._map_cells[square_cell])
             self.eng.add_edge_unchecked(self._noticeboard, "at_cell", self._map_cells[square_cell])
         self._install_square_fixtures()
+        _dn.install(self)   # Phase 042: lamps and the lamplighter, when the pack switch is on
 
         # The canonical store is also a physical place on the integrated map.
         market = self._map_layout.get("work", {}).get("market") if self._map_layout else None
@@ -2036,7 +2038,7 @@ class BigvilleWorld:
         # Phase 024: a tired walker's interval is multiplied (x1, x1.5 or x3). Waiting ticks accumulate in
         # the float cooldown, so a step at interval I owes I - 1 waiting ticks. Whole intervals wait exactly
         # as they did before the factor existed.
-        interval = terrain_interval * band["interval"] / self.stagger_speed(actor)
+        interval = terrain_interval * band["interval"] / self.stagger_speed(actor) * _dn.travel_factor(self, actor)
         self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
                           cooldown + interval - 1.0 if interval > 1.0 + 1e-9 else 0.0)
         if nxt is not None:
@@ -6936,7 +6938,8 @@ class BigvilleWorld:
             dist = max(abs(pos[0] - speaker_pos[0]), abs(pos[1] - speaker_pos[1]))
             heard = ((target is None or name == target) and dist <= radius
                      and not self._line_blocked(speaker_pos, pos, hear_codes))
-            seen = dist <= sight_range and not self._line_blocked(speaker_pos, pos, sight_codes)
+            seen = dist <= _dn.sight_range(self, name, sight_range) and not self._line_blocked(
+                speaker_pos, pos, sight_codes)   # Phase 042: shorter sight in the dark
             if not (heard or seen):
                 continue
             entry = {"heard": 1.0 if heard else 0.0, "seen": 1.0 if seen else 0.0}
@@ -8087,7 +8090,7 @@ class BigvilleWorld:
     def actor_affordances(self, actor):
         """Return the current legal, observed choices for a backend or UI."""
         self._actor(actor)
-        return [dict(option) for option in self._actor_options(actor)]
+        return [dict(option) for option in self._actor_options(actor)] + _dn.lamp_options(self, actor)   # Phase 042
 
     def perform_plan(self, actor):
         """Enact the action selected by the resident's Ocelot graph."""
@@ -8800,6 +8803,8 @@ class BigvilleWorld:
         """The branch for each major action. Returns True when the attempt is enacted."""
         if actor not in self._actors:
             return self._refuse("unknown_target")
+        if action in _dn.ACTIONS:   # Phase 042: light and douse, at a lamp or with a held candle
+            return self._claimed_attempt(actor, action, lambda: _dn.act(self, actor, action, kwargs, args))
         if action == "move":
             # Phase 033: a held resident and a resident holding someone cannot walk.
             if self.holder_of(actor) is not None:
@@ -9654,7 +9659,7 @@ class BigvilleWorld:
                 excess = R.tool_wear_excess(wear, share, fit, rs["mismatch_wear"], 1.0 + float(rs["hardness_wear"]) * gap)
                 if excess > 0.0:
                     self._wear_tool(item, excess)
-        fit_now = min(fits) if fits else 1.0
+        fit_now = (min(fits) if fits else 1.0) * _dn.work_visibility(self, actor)   # Phase 042: dark work
         self.eng.set_attr(job, "fit", fit_now)
         self.eng.set_attr(job, "effort_mult", max(multipliers) if multipliers else 1.0)
         self.eng.set_attr(job, "fit_low", min(float(ja.get("fit_low", 1.0)), fit_now))
@@ -9846,6 +9851,7 @@ class BigvilleWorld:
             self.eng.set_attr(self._town, "clock", float(self.eng.node(self._town)["attrs"]["clock"]) + 1.0)
             old_day = int(float(self.eng.node(self._town)["attrs"].get("day", 0.0)))
             self._advance_calendar()
+            _dn.tick(self)   # Phase 042: the sky, lamp oil and candles, once day and night is on
             if int(float(self.eng.node(self._town)["attrs"].get("day", 0.0))) > old_day:
                 self._daily_life_tick()
                 self._regrow_gathering_sites()
@@ -11501,7 +11507,7 @@ class BigvilleWorld:
             if pos is None:
                 continue
             dist = max(abs(pos[0] - here[0]), abs(pos[1] - here[1]))
-            if dist <= sight_range and not self._line_blocked(here, pos, codes):
+            if dist <= _dn.sight_range(self, other, sight_range) and not self._line_blocked(here, pos, codes):
                 seen.append(other)
         return seen
 
@@ -12163,6 +12169,7 @@ class BigvilleWorld:
                     x, y, w, h = site[:4]
                     if x <= here[0] < x + w and y <= here[1] < y + h:
                         safe = True
+        lateness = _dn.lateness(self, lateness)   # Phase 042: from the real sunset when day and night is on
         return {"lateness": round(lateness, 4), "safe": bool(safe)}
 
     def fatigue(self, actor):

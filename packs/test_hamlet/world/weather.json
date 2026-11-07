@@ -6,57 +6,68 @@
       "clear": {
         "rain": 0.0,
         "temperature": 0.6,
-        "firewood_demand": 0.8
+        "firewood_demand": 0.8,
+        "cloud": 0.1
       },
       "rain": {
         "rain": 1.0,
         "temperature": 0.4,
-        "firewood_demand": 0.9
+        "firewood_demand": 0.9,
+        "cloud": 0.7
       },
       "dry": {
         "rain": 0.0,
         "temperature": 0.8,
-        "firewood_demand": 0.8
+        "firewood_demand": 0.8,
+        "cloud": 0.1
       },
       "storm": {
         "rain": 1.0,
         "temperature": 0.5,
-        "firewood_demand": 0.9
+        "firewood_demand": 0.9,
+        "cloud": 0.9
       },
       "cold": {
         "rain": 0.3,
         "temperature": 0.1,
-        "firewood_demand": 1.5
+        "firewood_demand": 1.5,
+        "cloud": 0.5
       },
       "wet": {
         "rain": 1.0,
         "temperature": 0.2,
-        "firewood_demand": 1.2
+        "firewood_demand": 1.2,
+        "cloud": 0.75
       },
       "frost": {
         "rain": 0.0,
         "temperature": 0.0,
-        "firewood_demand": 1.7
+        "firewood_demand": 1.7,
+        "cloud": 0.1
       },
       "wind": {
         "rain": 0.2,
         "temperature": 0.3,
-        "firewood_demand": 1.1
+        "firewood_demand": 1.1,
+        "cloud": 0.3
       },
       "cool": {
         "rain": 0.2,
         "temperature": 0.4,
-        "firewood_demand": 1.0
+        "firewood_demand": 1.0,
+        "cloud": 0.4
       },
       "mild": {
         "rain": 0.3,
         "temperature": 0.55,
-        "firewood_demand": 0.85
+        "firewood_demand": 0.85,
+        "cloud": 0.3
       },
       "hot": {
         "rain": 0.0,
         "temperature": 0.95,
-        "firewood_demand": 0.6
+        "firewood_demand": 0.6,
+        "cloud": 0.1
       }
     }
   }

@@ -1698,6 +1698,25 @@
             "phrase": "wedded to your trade"
           }
         ]
+      },
+      "daylight": {
+        "_doc": "DAYLIGHT, the light a resident perceives where they stand (Phase 042): 'day' (sunlight through the cloud), 'dim' (night, with moonlight enough to see by), 'dark' (night, with nothing to see by: the resident sees_dark), 'lamplight' (a lit street lamp within DAYNIGHT.lamp_reach, a lit candle in hand, or indoors at night). Words only: no number is published, so a fogged resident reads 'it is dark' or 'by lamplight'. Shown only when DAYNIGHT is on. Plain to everyone: both perspectives.",
+        "kind": "status",
+        "published": true,
+        "self": {
+          "unknown": "hard to tell",
+          "day": "in daylight",
+          "dim": "dim, in the moonlight",
+          "dark": "it is dark",
+          "lamplight": "by lamplight"
+        },
+        "other": {
+          "unknown": "hard to tell",
+          "day": "in daylight",
+          "dim": "dim, in the moonlight",
+          "dark": "it is dark",
+          "lamplight": "by lamplight"
+        }
       }
     },
     "INTENSITY_WORDS": {

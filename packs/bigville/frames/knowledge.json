@@ -323,7 +323,8 @@
       "fisher": 0.4,
       "dairymaid": 0.3,
       "forester": 0.2,
-      "labourer": 0.1
+      "labourer": 0.1,
+      "lamplighter": 0.4
     },
     "JOB_ROUTINE": {
       "farmer": [
@@ -469,6 +470,10 @@
         "field",
         "lumber",
         "stone"
+      ],
+      "lamplighter": [
+        "market",
+        "townhall"
       ]
     },
     "KNOWABLE_PLACES": {

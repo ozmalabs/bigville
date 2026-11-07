@@ -1747,7 +1747,7 @@ counterfeiting.
 
 ## Phase 042 -- Day, night and lamps
 
-**Status:** ready, after 024 and 028 (decision 2026-11-05: added). Spec:
+**Status:** done, behind `DAYNIGHT.enabled` (default off): the lamplighter's round does not light a lamp under the simple policy yet (see the report). ready, after 024 and 028 (decision 2026-11-05: added). Spec:
 `seeds/bigville_daynight.json` (block R59): daylight length is astronomical, a function of
 latitude and day of year; `moon_illum` is the synodic cycle over sim-days; `is_night` compares
 the hour with the calculated sunrise and sunset; `light_level` is moonlight x (1 - cloud) at
@@ -3422,3 +3422,4 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 | 053 Fog of map | done | (this commit) | docs/phases/phase053/PHASE053_REPORT.md -- `domains/map_memory.py` keeps a fogged resident's map as one `map_memory` record (checkpoints with the character): level 0 absent, 1 named places and roughly where in words, 2 cells and exact places; learning by sight, landmarks and told places, ageing words; the view's `map` and `can` are built from it (`walk toward`), `move` takes `toward`; LLM and human backends are `fogged`, simple locals are not (60-turn run identical); 21 tests; 1756 passed |
 | 033 Restraint | done | (this commit) | docs/phases/phase033/PHASE033_REPORT.md -- restrain, release, struggle through the contest rule; hold blocks walking and costs stamina; 1795 passed |
 | 040 Objects as arms | done | (this commit) | docs/phases/phase040/PHASE040_REPORT.md -- strike with an object, throw; OBJECT_FORCE; switch off; 1800 passed |
+| 042 Day, night and lamps | done (switch off) | (this commit) | docs/phases/phase042/PHASE042_REPORT.md -- pure sky maths (`domains/daynight.py`), world facts in `worlds/daynight.py` (sees_dark, lamps with oil, light and douse actions, candles, shorter sight, slower and wasteful dark work on the fitness path, lateness from the real sunset), lamplighter job and backend round, light words in the view; off by default because the round never lights a lamp in 200 ticks; off is byte-identical to HEAD; 29 tests; 1807 passed |

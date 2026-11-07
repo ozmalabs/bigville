@@ -170,6 +170,12 @@
         "role_identity_mean": 0.6,
         "role_identity_sd": 0.07,
         "workplace": "press"
+      },
+      "lamplighter": {
+        "group": "low",
+        "role_identity_mean": 0.3,
+        "role_identity_sd": 0.07,
+        "workplace": "market"
       }
     },
     "FOUNDING_AGE": {

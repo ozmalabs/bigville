@@ -273,6 +273,14 @@
           "axe"
         ],
         "spare": true
+      },
+      "lamplighter": {
+        "trades": [
+          "labourer"
+        ],
+        "tools": [],
+        "fixed": 0.0,
+        "per_100": 0.0
       }
     }
   }

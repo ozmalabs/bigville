@@ -86,6 +86,9 @@ STARTING_STOCK = _PACK["STARTING_STOCK"]
 STARTING_CROPS = _PACK["STARTING_CROPS"]
 FREE_ACTIONS = _PACK["FREE_ACTIONS"]
 MAJOR_ACTIONS = _PACK["MAJOR_ACTIONS"]
+MAJOR_ACTIONS = {**MAJOR_ACTIONS, **_PACK["DAYNIGHT_MAJOR_ACTIONS"]}   # Phase 042: light and douse
+DAYNIGHT = _PACK["DAYNIGHT"]               # Phase 042: day, night and lamps
+DAYNIGHT_LAMPS = _PACK["DAYNIGHT_LAMPS"]
 # Phase 018: the LLM prompt's premise, rules, response fields, memory selection caps, and gist text.
 WORLD_PREMISE = _PACK["WORLD_PREMISE"]
 PROMPT_BOUNDARY_RULES = _PACK["PROMPT_BOUNDARY_RULES"]
@@ -814,4 +817,8 @@ def _balance_flows(sc):
     notes.append(f"stamina: labour spends {spend / per_resident:.3f} stamina per resident per period on declared "
                  f"recipe costs (lower bound); rest can restore {free_ticks * REST_RECOVERY_PER_UNIT:.3f} in the "
                  f"{free_ticks:.1f} ticks labour leaves free (upper bound, no sleep reserved)")
+    if DAYNIGHT["enabled"]:   # Phase 042: lamp oil, stock against one period's burn
+        from domains.daynight import lamp_oil_per_period
+        flows["lamp oil (stock vs one period)"] = (float(DAYNIGHT["starting_oil"]), lamp_oil_per_period(
+            len(DAYNIGHT_LAMPS), DAYNIGHT["lamp_burn_per_tick"], TIME, DAYNIGHT))
     return flows, notes, work

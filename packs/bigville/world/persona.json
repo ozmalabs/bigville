@@ -1259,6 +1259,46 @@
             "task": "in bed for the night"
           }
         ]
+      },
+      "lamplighter": {
+        "blocks": [
+          {
+            "block": "morning",
+            "start": 6.0,
+            "place": "market",
+            "task": "putting out the square's lamps at dawn"
+          },
+          {
+            "block": "work",
+            "start": 9.0,
+            "place": "market",
+            "task": "trimming the lamps and filling their oil"
+          },
+          {
+            "block": "midday",
+            "start": 12.0,
+            "place": "home",
+            "task": "eating the midday meal"
+          },
+          {
+            "block": "afternoon",
+            "start": 13.0,
+            "place": "market",
+            "task": "mending the lamp glass"
+          },
+          {
+            "block": "evening",
+            "start": 17.0,
+            "place": "market",
+            "task": "lighting the square's lamps at dusk"
+          },
+          {
+            "block": "sleep",
+            "start": 21.0,
+            "place": "home",
+            "task": "in bed for the night"
+          }
+        ]
       }
     },
     "ROUTINE_STAGE": {

@@ -1,0 +1,40 @@
+{
+  "_doc": "DAY, NIGHT AND LAMPS (Phase 042), test pack. The same numbers as packs/bigville/world/daynight.json, switched off. The minimal test pack has no lamp oil, candle, lamplighter job or lamps, so those references are empty; a pack switched on must name them (domains/daynight_check.py). See the bigville file for every source and APPROX mark.",
+  "_types": {},
+  "tables": {
+    "DAYNIGHT": {
+      "enabled": false,
+      "latitude_deg": 52.0,
+      "summer_solstice_day": 135,
+      "noon_hour": 12.0,
+      "synodic_month_days": 29.530588853,
+      "new_moon_day": 0.0,
+      "sun_light": 1.0,
+      "see_threshold": 0.2,
+      "dark_sight_range": 2,
+      "dark_work_fit": 0.3,
+      "travel_dark_factor": 1.0,
+      "lamp_reach": 1,
+      "lamp_fuel_capacity": 4.0,
+      "lamp_burn_per_tick": 0.05,
+      "starting_oil": 40.0,
+      "oil_item": "",
+      "carried_lights": [],
+      "candle_fuel": 1.0,
+      "candle_burn_per_tick": 0.05,
+      "lamplighters": 0,
+      "lamplighter_job": ""
+    },
+    "DAYNIGHT_LAMPS": [],
+    "DAYNIGHT_MAJOR_ACTIONS": {
+      "light": {
+        "kind": "light",
+        "description": "Light a lamp or a candle. Stand on a street lamp's cell to light the lamp: it is filled from the town's lamp oil first (what the reservoir can hold), and it burns until its oil is gone. Or hold a candle and name it to light the candle, which burns down. The world does not decide whether the light is needed or who may light it."
+      },
+      "douse": {
+        "kind": "light",
+        "description": "Put out the lamp on the cell where you stand, or the candle you hold. A lamp keeps the oil it has left. The world does not decide whether it should be put out."
+      }
+    }
+  }
+}

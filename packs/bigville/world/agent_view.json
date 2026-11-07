@@ -69,7 +69,8 @@
       "now": [
         "time",
         "season",
-        "weather"
+        "weather",
+        "light"
       ],
       "around": [
         "people",
@@ -192,7 +193,8 @@
       "weather": "weather",
       "relationship_kind": "relationship_kind",
       "relationship_strength": "relationship_strength",
-      "temperament": "temperament"
+      "temperament": "temperament",
+      "light": "daylight"
     },
     "AGENT_VIEW_KNOWS_LIMIT": 60,
     "MAP_GLYPHS": {

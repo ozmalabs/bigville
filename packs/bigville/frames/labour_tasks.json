@@ -143,6 +143,16 @@
         "outputs": [
           "decision"
         ]
+      },
+      "lamplighting": {
+        "seasonal": false,
+        "skills": [
+          "labourer"
+        ],
+        "inputs": [
+          "oil"
+        ],
+        "outputs": []
       }
     }
   }

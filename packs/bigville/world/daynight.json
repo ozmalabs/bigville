@@ -1,0 +1,71 @@
+{
+  "_doc": "DAY, NIGHT AND LAMPS (Phase 042). Seed: seeds/bigville_daynight.json (block R59). The sky is computed each tick from the clock, the calendar and the weather's cloud (domains/daynight.py); the consequences of light are switched by DAYNIGHT.enabled, which defaults OFF so the simple village is unchanged until it is switched on (a scenario or a test calls worlds/daynight.py switch_on). Sources: latitude_deg, summer_solstice_day, noon_hour, see_threshold, dark_sight_range, dark_work_fit, lamp, candle and oil figures are APPROX and are design choices, not measured; the seed gives no number for any of them. synodic_month_days 29.530588853 is the mean synodic month (Meeus, Astronomical Algorithms, ch. 49). The declination formula is Cooper (1969). june solstice day 172 is the standard day of the year (non-leap). new_moon_day 0 is a choice: the founding clock starts at a new moon (APPROX). The consequence switches are: enabled (everything below the sky), travel_dark_factor (1.0 is the seed: travel in the dark costs nothing extra), and the lamplighter, who is appointed on switch-on and whose round is a backend choice. DAYNIGHT_LAMPS are street lamps at the market square's corners (offsets from the square's centre, TOWN_SQUARE_FIXTURES' convention). DAYNIGHT_MAJOR_ACTIONS are merged into MAJOR_ACTIONS by domains/world_affordances.py. Lamp and lantern art is not generated (follow-up); the lantern is not added (it would need an ITEMS row and art).",
+  "_types": {},
+  "tables": {
+    "DAYNIGHT": {
+      "enabled": false,
+      "latitude_deg": 52.0,
+      "summer_solstice_day": 135,
+      "noon_hour": 12.0,
+      "synodic_month_days": 29.530588853,
+      "new_moon_day": 0.0,
+      "sun_light": 1.0,
+      "see_threshold": 0.2,
+      "dark_sight_range": 2,
+      "dark_work_fit": 0.3,
+      "travel_dark_factor": 1.0,
+      "lamp_reach": 1,
+      "lamp_fuel_capacity": 4.0,
+      "lamp_burn_per_tick": 0.05,
+      "starting_oil": 40.0,
+      "oil_item": "oil",
+      "carried_lights": [
+        "candle"
+      ],
+      "candle_fuel": 1.0,
+      "candle_burn_per_tick": 0.05,
+      "lamplighters": 1,
+      "lamplighter_job": "lamplighter"
+    },
+    "DAYNIGHT_LAMPS": [
+      {
+        "name": "square_north_west",
+        "offset": [
+          -5,
+          -3
+        ]
+      },
+      {
+        "name": "square_north_east",
+        "offset": [
+          5,
+          -3
+        ]
+      },
+      {
+        "name": "square_south_west",
+        "offset": [
+          -5,
+          3
+        ]
+      },
+      {
+        "name": "square_south_east",
+        "offset": [
+          5,
+          3
+        ]
+      }
+    ],
+    "DAYNIGHT_MAJOR_ACTIONS": {
+      "light": {
+        "kind": "light",
+        "description": "Light a lamp or a candle. Stand on a street lamp's cell to light the lamp: it is filled from the town's lamp oil first (what the reservoir can hold), and it burns until its oil is gone. Or hold a candle and name it to light the candle, which burns down. The world does not decide whether the light is needed or who may light it."
+      },
+      "douse": {
+        "kind": "light",
+        "description": "Put out the lamp on the cell where you stand, or the candle you hold. A lamp keeps the oil it has left. The world does not decide whether it should be put out."
+      }
+    }
+  }
+}

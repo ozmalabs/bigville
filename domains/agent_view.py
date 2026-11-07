@@ -255,12 +255,20 @@ def _self(game, actor, pack, gist_table):
     return _check_keys("self", out, pack)
 
 
-def _now(world, pack):
+def _daylight(world, actor, pack):
+    """The light the resident sees, in words (Phase 042). None when day and night is off."""
+    from worlds import daynight as _dn
+    key = _dn.view_light(world, actor)
+    return _phrase("daylight", key, "self", pack) if key else None
+
+
+def _now(world, pack, actor=None):
     clock = world.calendar()
     out = _clean({
         "time": _phrase("hour", float(clock["hour"]), "self", pack) if clock.get("hour") is not None else None,
         "season": _phrase("season", clock["season"], "self", pack) if clock.get("season") else None,
         "weather": _phrase("weather", clock["weather"], "self", pack) if clock.get("weather") else None,
+        "light": _daylight(world, actor, pack),
     })
     return _check_keys("now", out, pack)
 
@@ -520,7 +528,7 @@ def build_agent_view(game, actor, mode="agent"):
         "mode": mode,
         "actor": actor,
         "self": _self(game, actor, pack, gist),
-        "now": _now(world, pack),
+        "now": _now(world, pack, actor),
         "around": _around(game, actor, pack, known),
         # Phase 053: a fogged resident's map is its own three-level map; a simple resident keeps the patch.
         "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
