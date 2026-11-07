@@ -179,7 +179,7 @@
       }
     },
     "SIGNAL_SOURCES": {
-      "_doc": "The signal sources, one row each. read is a body read (domains/interoception.py READS); intensity is the read scaled from floor (0) to ceiling (1), clamped. channel names a CHANNELS row. quality and locus name nodes of QUALITY_TREE and ANATOMY. pattern is a PATTERNS row used when the signal is steady. awareness is the intensity below which the source is not felt (it still counts toward the background feeling). Several sources share a quality and locus on purpose: a hungry resident and an exhausted one can resolve to the same sound and place. APPROX: the floors, ceilings and awareness levels.",
+      "_doc": "The signal sources, one row each. read is a body read (domains/interoception.py READS); intensity is the read scaled from floor (0) to ceiling (1), clamped. channel names a CHANNELS row. quality and locus name nodes of QUALITY_TREE and ANATOMY. pattern is a PATTERNS row used when the signal is steady. awareness is the intensity below which the source is not felt (it still counts toward the background feeling). Several sources share a quality and locus on purpose: a hungry resident and an exhausted one can resolve to the same sound and place. APPROX: the floors, ceilings and awareness levels. Phase 070: a row with \"located\" names a located-injury read (the body's ledger, one row per locus with a value; its locus is null and each signal takes the locus it is on). The silent states (deficiency, hangover, withdrawal, sleep_debt) and the incubation ramp of illness are rows too: each has an awareness floor, so the early phase is felt only in the background feeling or not at all.",
       "hunger": {
         "read": "hunger",
         "floor": 0.5,
@@ -259,6 +259,68 @@
         "locus": "body",
         "pattern": "steady",
         "awareness": 0.2
+      },
+      "injury_sharp": {
+        "located": "injury",
+        "read": "injury",
+        "floor": 0.02,
+        "ceiling": 0.3,
+        "channel": "surface",
+        "quality": "sharp",
+        "locus": null,
+        "pattern": "steady",
+        "awareness": 0.1
+      },
+      "injury_dull": {
+        "located": "injury",
+        "read": "injury",
+        "floor": 0.02,
+        "ceiling": 0.3,
+        "channel": "surface",
+        "quality": "ache",
+        "locus": null,
+        "pattern": "steady",
+        "awareness": 0.1
+      },
+      "deficiency": {
+        "read": "deficiency",
+        "floor": 0.1,
+        "ceiling": 1.0,
+        "channel": "deep",
+        "quality": "spent",
+        "locus": "torso",
+        "pattern": "steady",
+        "awareness": 0.3
+      },
+      "hangover": {
+        "read": "hangover",
+        "floor": 0.0,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "queasy",
+        "locus": "head",
+        "pattern": "fading",
+        "awareness": 0.2
+      },
+      "withdrawal": {
+        "read": "withdrawal",
+        "floor": 0.3,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "ache",
+        "locus": "chest",
+        "pattern": "waves",
+        "awareness": 0.25
+      },
+      "sleep_debt": {
+        "read": "sleep_debt",
+        "floor": 0.1,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "spent",
+        "locus": "head",
+        "pattern": "steady",
+        "awareness": 0.3
       }
     },
     "PATTERNS": {
@@ -303,7 +365,7 @@
       ]
     },
     "INTEROCEPTION": {
-      "_doc": "The depth rule and the interoceptor record (APPROX throughout). depth: raw = base + intensity_weight x intensity + acuity_weight x (acuity - 1) + attention_weight x attention - impairment_weight x impairment + a seeded jitter in [-jitter, +jitter]; the depth on each tree is floor(raw), clamped to 0 .. min(channel cap, the true node's depth). So a higher intensity, acuity or attention never resolves shallower, and a higher impairment never resolves deeper. acuity: a trait drawn once per resident from range, times the life-stage factor. attention: idle, absorbed in a timed job, or asleep. impairment is intoxication plus exhaustion step / 3 plus illness (each 0 to 1). signals_max caps the signal list. trend_delta is the change in intensity against the last turn that counts as rising or fading. stretch_max is how many extra vowel letters the strongest sound adds. strong_at is the intensity above which a sound gets '!'. felt_body_keys are the only keys of a felt body; forbidden_words are cause words that must not appear in a felt body (the leak rule, domains/agent_view_check.py).",
+      "_doc": "The depth rule and the interoceptor record (APPROX throughout). depth: raw = base + intensity_weight x intensity + acuity_weight x (acuity - 1) + attention_weight x attention - impairment_weight x impairment + a seeded jitter in [-jitter, +jitter]; the depth on each tree is floor(raw), clamped to 0 .. min(channel cap, the true node's depth). So a higher intensity, acuity or attention never resolves shallower, and a higher impairment never resolves deeper. acuity: a trait drawn once per resident from range, times the life-stage factor. attention: idle, absorbed in a timed job, or asleep. impairment is intoxication plus exhaustion step / 3 plus illness (each 0 to 1). signals_max caps the signal list. trend_delta is the change in intensity against the last turn that counts as rising or fading. stretch_max is how many extra vowel letters the strongest sound adds. strong_at is the intensity above which a sound gets '!'. felt_body_keys are the only keys of a felt body; forbidden_words are cause words that must not appear in a felt body (the leak rule, domains/agent_view_check.py). Phase 070 reads: illness is an incubation ramp (days since onset over BODY_RATES.incubation_days, capped at 1), hangover and withdrawal are the Phase 036 read-offs graded, deficiency the Phase 035 read, sleep_debt the body's own chronic short-sleep store.",
       "depth": {
         "base": 0.5,
         "intensity_weight": 2.0,
@@ -368,8 +430,84 @@
         "drained",
         "withdrawal",
         "hangover",
-        "pregnant"
+        "pregnant",
+        "bruise",
+        "bruised",
+        "limp",
+        "pallor",
+        "deficiency",
+        "deficient",
+        "incubating",
+        "incubation",
+        "debt",
+        "sleepless"
       ]
+    },
+    "HARM_LOCUS": {
+      "_doc": "HARM_LOCUS (Phase 070): where an acute harm lands when the caller gives no locus. Keyed by HEALTH cause; each value maps ANATOMY nodes to weights (drawn by a stateless seeded draw, domains/interoception.py draw). An empty row is whole-body harm: it changes health and leaves no located ledger entry (starvation, exhaustion, age, intoxication, illness). The weights are APPROX: a blow lands on the head, chest, back, arm or leg; a fall or accident mostly on the limbs. Loci are leaves or near-leaves (not the root).",
+      "injury": {
+        "head": 0.2,
+        "chest": 0.2,
+        "back": 0.15,
+        "arm": 0.25,
+        "leg": 0.2
+      },
+      "violence": {
+        "head": 0.35,
+        "chest": 0.25,
+        "back": 0.1,
+        "arm": 0.2,
+        "leg": 0.1
+      },
+      "accident": {
+        "head": 0.2,
+        "arm": 0.3,
+        "leg": 0.3,
+        "back": 0.2
+      },
+      "age": {},
+      "illness": {},
+      "starvation": {},
+      "exhaustion": {},
+      "intoxication": {}
+    },
+    "BODY_RATES": {
+      "_doc": "BODY_RATES (Phase 070): the rates of the body's own state, all APPROX. located_heal_per_tick: a located injury's ledger falls by this much each clock tick (96 ticks a day, TIME), at the time-healing rate; the health scalar's own recovery is unchanged. care_share: the share of each health gain (rest, care, treatment) that also lowers the located ledger. habituation_rate and habituation_recover: a steady signal's felt intensity falls by habituation_rate of the remainder each tick and recovers by habituation_recover of the missing part when the stimulus stops; a rise larger than INTEROCEPTION.trend_delta resets it (noticed at full strength), a steady stimulus habituates, and a stimulus that stops or eases recovers at habituation_recover. incubation_days: an illness's felt intensity ramps up over this many days since onset. sleep_debt_rise and sleep_debt_fall: the debt grows by rise on each awake tick and falls by fall on each asleep tick; with fall = 2 x rise a resident asleep one third of the time (about eight hours of 24, TIME: 96 ticks a day) holds steady, and a resident asleep a quarter of the time gains debt. sleep_debt_full: the debt that reads as 1. Adult sleep need of seven to nine hours is the working basis (Hirshkowitz and others, 2015, National Sleep Foundation recommendations, Sleep Health 1(1), cited from memory and not re-checked: APPROX).",
+      "located_heal_per_tick": 0.0005,
+      "care_share": 0.5,
+      "habituation_rate": 0.05,
+      "habituation_recover": 0.1,
+      "incubation_days": 5.0,
+      "sleep_debt_rise": 0.001,
+      "sleep_debt_fall": 0.002,
+      "sleep_debt_full": 0.5
+    },
+    "OBSERVABLE_SIGNS": {
+      "_doc": "OBSERVABLE_SIGNS (Phase 070): what an observer may see of the body's ledger and reads, as signs. from is an INTEROCEPTION read name or 'injury' (the located ledger: summed over the loci named by locus, or over all loci when locus is null). A sign shows when its level is at least min, the observer is within see_range cells and the light is at least see_light (the Phase 063 rules). Signs are the visible side of what the resident may not feel; the observer draws the conclusion. APPROX throughout.",
+      "bruise": {
+        "from": "injury",
+        "locus": null,
+        "min": 0.2,
+        "see_range": 2,
+        "see_light": 0.3,
+        "label": "bruise"
+      },
+      "limp": {
+        "from": "injury",
+        "locus": "leg",
+        "min": 0.1,
+        "see_range": 6,
+        "see_light": 0.3,
+        "label": "limp"
+      },
+      "pallor": {
+        "from": "deficiency",
+        "locus": null,
+        "min": 0.5,
+        "see_range": 6,
+        "see_light": 0.3,
+        "label": "pallor"
+      }
     }
   }
 }

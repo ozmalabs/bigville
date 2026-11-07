@@ -24,7 +24,9 @@ from domains import interoception as I
 from domains.pack import PackError, load_pack
 
 REQUIRED = ("ANATOMY", "QUALITY_TREE", "VOCALISATIONS", "CHANNELS", "SIGNAL_SOURCES", "PATTERNS", "FEELING",
-            "INTEROCEPTION")
+            "INTEROCEPTION", "HARM_LOCUS", "BODY_RATES", "OBSERVABLE_SIGNS")
+RATE_KEYS = ("located_heal_per_tick", "care_share", "habituation_rate", "habituation_recover", "incubation_days",
+             "sleep_debt_rise", "sleep_debt_fall", "sleep_debt_full")
 DEPTH_KEYS = ("base", "intensity_weight", "acuity_weight", "attention_weight", "impairment_weight", "jitter")
 ATTENTION_KINDS = ("idle", "absorbed", "asleep")
 LETTERS = re.compile(r"^[a-z]+$")
@@ -116,7 +118,12 @@ def check_interoception(pack_name, errors, warnings, info):
         if not isinstance(row, dict):
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] must be a row")
             continue
-        if row.get("read") not in I.READS:
+        located = row.get("located")
+        if located is not None:
+            if located not in I.LOCATED_READS or row.get("read") != located or row.get("locus") is not None:
+                errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] is located on {located!r}: its read must be that "
+                              f"located read, in {list(I.LOCATED_READS)}, and its locus null")
+        elif row.get("read") not in I.READS:
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] names read {row.get('read')!r}; the body computes "
                           f"{list(I.READS)}")
         if row.get("channel") not in channels:
@@ -124,7 +131,7 @@ def check_interoception(pack_name, errors, warnings, info):
         if qtree_ok and row.get("quality") not in qtree:
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] names quality {row.get('quality')!r}, not a "
                           f"QUALITY_TREE node")
-        if anatomy_ok and row.get("locus") not in anatomy:
+        if located is None and anatomy_ok and row.get("locus") not in anatomy:
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] names locus {row.get('locus')!r}, not an ANATOMY node")
         if row.get("pattern") not in patterns:
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] names pattern {row.get('pattern')!r}, not in PATTERNS")
@@ -135,6 +142,7 @@ def check_interoception(pack_name, errors, warnings, info):
                 errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}].awareness must be in [0, 1]")
         except (KeyError, TypeError, ValueError):
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] needs numeric floor, ceiling and awareness")
+    _check_phase070(pack, anatomy, anatomy_ok, errors)
     for name, row in patterns.items():
         if not isinstance(row.get("repeat"), int) or isinstance(row.get("repeat"), bool) or row["repeat"] < 1:
             errors.append(f"INTEROCEPTION: PATTERNS[{name}].repeat must be a whole number of at least 1")
@@ -173,3 +181,57 @@ def check_interoception(pack_name, errors, warnings, info):
     if len(errors) == before:
         info.append(f"INTEROCEPTION ({pack.name}): {len(anatomy)} body regions, {len(qtree)} quality kinds, "
                     f"{len(sources)} signal sources; all interoception checks pass")
+
+
+def _check_phase070(pack, anatomy, anatomy_ok, errors):
+    """Phase 070: the harm loci, the body's rates and the observable signs. Each HEALTH cause that a harm can carry has a
+    HARM_LOCUS row (empty when whole-body), the loci are ANATOMY nodes other than the root, the rates are in range and
+    each sign reads a real read or the located injury."""
+    causes = list(pack["HEALTH"].get("causes", [])) if "HEALTH" in pack else []
+    table = _rows(pack["HARM_LOCUS"])
+    for cause in causes:
+        if cause not in table:
+            errors.append(f"INTEROCEPTION: HARM_LOCUS has no row for HEALTH cause {cause!r} (use {{}} for whole-body)")
+    for cause, weights in table.items():
+        if cause not in causes:
+            errors.append(f"INTEROCEPTION: HARM_LOCUS[{cause}] is not a HEALTH cause")
+        if not isinstance(weights, dict):
+            errors.append(f"INTEROCEPTION: HARM_LOCUS[{cause}] must map loci to weights")
+            continue
+        for locus, weight in weights.items():
+            if locus not in anatomy or not anatomy_ok:
+                if anatomy_ok:
+                    errors.append(f"INTEROCEPTION: HARM_LOCUS[{cause}] names locus {locus!r}, not an ANATOMY node")
+                continue
+            if locus == _root_of(anatomy):
+                errors.append(f"INTEROCEPTION: HARM_LOCUS[{cause}] names the root {locus!r}; a located harm needs a place")
+            if not isinstance(weight, (int, float)) or isinstance(weight, bool) or float(weight) <= 0.0:
+                errors.append(f"INTEROCEPTION: HARM_LOCUS[{cause}][{locus}] must be a positive number")
+    rates = pack["BODY_RATES"]
+    for key in RATE_KEYS:
+        value = rates.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or value < 0:
+            errors.append(f"INTEROCEPTION: BODY_RATES.{key} must be a number of at least 0")
+    for key in ("care_share", "habituation_rate", "habituation_recover"):
+        if isinstance(rates.get(key), (int, float)) and not 0.0 <= float(rates[key]) <= 1.0:
+            errors.append(f"INTEROCEPTION: BODY_RATES.{key} must be in [0, 1]")
+    if isinstance(rates.get("sleep_debt_full"), (int, float)) and float(rates["sleep_debt_full"]) <= 0.0:
+        errors.append("INTEROCEPTION: BODY_RATES.sleep_debt_full must be above 0")
+    signs = _rows(pack["OBSERVABLE_SIGNS"])
+    for name, row in signs.items():
+        source = row.get("from")
+        if source not in I.READS and source not in I.LOCATED_READS:
+            errors.append(f"INTEROCEPTION: OBSERVABLE_SIGNS[{name}] reads {source!r}, which the body does not compute")
+        locus = row.get("locus")
+        if locus is not None and (not anatomy_ok or locus not in anatomy):
+            errors.append(f"INTEROCEPTION: OBSERVABLE_SIGNS[{name}] names locus {locus!r}, not an ANATOMY node")
+        for key in ("min", "see_range", "see_light"):
+            if not isinstance(row.get(key), (int, float)) or isinstance(row.get(key), bool):
+                errors.append(f"INTEROCEPTION: OBSERVABLE_SIGNS[{name}].{key} must be a number")
+        if not isinstance(row.get("label"), str) or not LETTERS.match(row.get("label", "")):
+            errors.append(f"INTEROCEPTION: OBSERVABLE_SIGNS[{name}].label must be a word of letters")
+
+
+def _root_of(anatomy):
+    roots = [node for node, row in anatomy.items() if isinstance(row, dict) and row.get("parent") is None]
+    return roots[0] if len(roots) == 1 else None

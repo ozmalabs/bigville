@@ -204,6 +204,10 @@ SIGNAL_SOURCES = _PACK["SIGNAL_SOURCES"]
 PATTERNS = _PACK["PATTERNS"]
 FEELING = _PACK["FEELING"]
 INTEROCEPTION = _PACK["INTEROCEPTION"]
+# Phase 070: the located harm loci, the body rates and the observable signs (world/interoception.json).
+HARM_LOCUS = _PACK["HARM_LOCUS"]
+BODY_RATES = _PACK["BODY_RATES"]
+OBSERVABLE_SIGNS = _PACK["OBSERVABLE_SIGNS"]
 
 
 def scrap_kind(kind):

@@ -13,6 +13,9 @@
     {"name": "PATTERNS", "file": "world/interoception.json"},
     {"name": "FEELING", "file": "world/interoception.json"},
     {"name": "INTEROCEPTION", "file": "world/interoception.json"},
+    {"name": "HARM_LOCUS", "file": "world/interoception.json"},
+    {"name": "BODY_RATES", "file": "world/interoception.json"},
+    {"name": "OBSERVABLE_SIGNS", "file": "world/interoception.json"},
     {
       "name": "ITEMS",
       "file": "world/items.json"

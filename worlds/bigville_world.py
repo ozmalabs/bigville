@@ -7361,25 +7361,32 @@ class BigvilleWorld(BodyMixin):
         self._run()
         return True
 
-    def harm(self, actor, amount, cause, *, fragility=True):
+    def harm(self, actor, amount, cause, locus=None, *, fragility=True):
         """Acute harm: lower the resident's health by `amount` times their life stage's fragility (HEALTH), and
         tag the cause. Health at or below 0 is death by `cause` (record_death). Returns False when the resident
         is dead. `cause` must be one of HEALTH.causes. Phase 043: `fragility=False` applies `amount` as given,
-        for the illness course, whose infant penalty is its own (MEDICAL_CARE.infant_fragility)."""
+        for the illness course, whose infant penalty is its own (MEDICAL_CARE.infant_fragility). Phase 070: `locus`
+        is the ANATOMY node the harm lands on; when None the body draws one from HARM_LOCUS by cause (whole-body
+        causes draw none). The health scalar is lowered once either way; the locus only feeds the body's ledger."""
         if str(cause) not in self.E.HEALTH["causes"]:
             raise ValueError(f"harm: unknown cause {cause!r}; HEALTH.causes are {list(self.E.HEALTH['causes'])}")
+        if locus is not None and not self._body_locus_ok(locus):
+            raise ValueError(f"harm: locus {locus!r} is not an ANATOMY node")
         stage = str(self.eng.node(self._actor(actor))["attrs"].get("life_stage", "adult"))
         mult = float(self.E.HEALTH["fragility"].get(stage, 1.0)) if fragility else 1.0
-        return self._drop_health(actor, float(amount) * mult, cause)
+        if locus is None:
+            locus = self._body_harm_locus(actor, cause)
+        return self._drop_health(actor, float(amount) * mult, cause, locus=locus)
 
-    def _drop_health(self, actor, drop, cause):
+    def _drop_health(self, actor, drop, cause, locus=None):
         if not self.is_alive(actor):
             return False
         node = self._actor(actor)
         health = max(0.0, self.health(actor) - max(0.0, float(drop)))
         self.eng.set_attr(node, "health_value", health)
         self.eng.set_attr(node, "last_cause", str(cause))
-        self._body_event(actor, {"kind": "harm", "amount": max(0.0, float(drop)), "cause": str(cause)})   # Phase 069
+        self._body_event(actor, {"kind": "harm", "amount": max(0.0, float(drop)), "cause": str(cause),
+                                 "locus": locus})   # Phase 069; Phase 070 adds the locus to the body's ledger
         # Phase 063: the harm leaves its marks (MARK_HARM, per point of health lost).
         self._add_marks(actor, {kind: float(gain) * max(0.0, float(drop))
                                 for kind, gain in self.E.MARK_HARM.get(str(cause), {}).items()})
@@ -7392,7 +7399,9 @@ class BigvilleWorld(BodyMixin):
         if not self.is_alive(actor):
             return
         cap = float(self.E.HEALTH["max_health"])
-        self.eng.set_attr(self._actor(actor), "health_value", min(cap, self.health(actor) + max(0.0, float(gain))))
+        before = self.health(actor)
+        self.eng.set_attr(self._actor(actor), "health_value", min(cap, before + max(0.0, float(gain))))
+        self._body_event(actor, {"kind": "heal", "amount": max(0.0, self.health(actor) - before)})   # Phase 070
 
     def _stable_draw(self, *parts):
         """A stateless draw in [0, 1) keyed on the world seed and `parts` (as _burial_roll; nothing is stored)."""
@@ -7567,6 +7576,7 @@ class BigvilleWorld(BodyMixin):
             return self._refuse(code)
         self._set_care_flag(patient, "screened", True, self.E.MEDICAL_CARE["screen_days"])
         self.eng.add_edge_unchecked(self._actors[doctor], "examined", self._actors[patient])
+        self._body_screen(patient)      # Phase 070: the checkup records the silent conditions (referee state)
         return True
 
     def treat_patient(self, doctor, patient):

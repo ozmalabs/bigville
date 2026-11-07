@@ -23,7 +23,11 @@ import re
 
 # The reads a source may name. Each one is computed by an embodiment (worlds/body.py); a source naming another
 # read is a self-test error.
-READS = ("hunger", "exertion", "exhaustion", "chill", "wetness", "illness", "intoxication", "harm")
+READS = ("hunger", "exertion", "exhaustion", "chill", "wetness", "illness", "intoxication", "harm",
+         "deficiency", "hangover", "withdrawal", "sleep_debt")
+# Phase 070: the located reads. A source row with "located" takes one row per locus that holds a value here (the
+# body's ledger of located injury); its own locus is null. The body computes each one (worlds/body.py located()).
+LOCATED_READS = ("injury",)
 VOWELS = "aeiouy"
 
 
@@ -170,7 +174,38 @@ def level_of(feeling_table, total):
     return label
 
 
-def derive(tables, reads, record, seed, actor, turn, previous=None):
+def pick_locus(weights, seed, *parts):
+    """A locus drawn from {node: weight} by a stateless draw keyed on the seed and parts (Phase 070: where a harm
+    lands when the caller names none). Nodes are taken in sorted order, so the same draw gives the same node. Returns
+    None for an empty table (whole-body harm)."""
+    items = sorted((str(node), float(weight)) for node, weight in weights.items() if float(weight) > 0.0)
+    if not items:
+        return None
+    total = sum(weight for _node, weight in items)
+    point = draw(seed, "locus", *parts) * total
+    running = 0.0
+    for node, weight in items:
+        running += weight
+        if point < running:
+            return node
+    return items[-1][0]
+
+
+def source_rows(tables, reads, located=None):
+    """Every source as (name, spec, value): one per source row, or, for a located row, one per locus that holds a
+    value (name 'source@locus', the spec's locus set to that node). Zero-valued loci are not rows."""
+    out = []
+    for name, spec in sorted(_rows(tables["sources"]).items()):
+        if spec.get("located"):
+            for locus, value in sorted((located or {}).get(str(spec["located"]), {}).items()):
+                if float(value) > 0.0:
+                    out.append((f"{name}@{locus}", dict(spec, locus=str(locus)), float(value)))
+        else:
+            out.append((name, spec, reads.get(str(spec["read"]), 0.0)))
+    return out
+
+
+def derive(tables, reads, record, seed, actor, turn, previous=None, located=None, habituation=None):
     """Every source's truth for one resident at one turn.
 
     tables    {"anatomy", "quality_tree", "vocalisations", "channels", "sources", "patterns", "feeling", "rules"}
@@ -187,9 +222,11 @@ def derive(tables, reads, record, seed, actor, turn, previous=None):
     rules = tables["rules"]
     feeling_table = tables["feeling"]
     rows = []
-    for name, spec in sorted(_rows(tables["sources"]).items()):
+    habit = habituation or {}
+    for name, spec, value in source_rows(tables, reads, located):
         read = str(spec["read"])
-        intensity = intensity_of(spec, reads.get(read, 0.0))
+        raw_intensity = intensity_of(spec, value)
+        intensity = raw_intensity * (1.0 - float(habit.get(name, 0.0)))
         jitter = 2.0 * draw(seed, "jitter", actor, turn, name) - 1.0
         raw = raw_depth(rules, intensity, float(record["acuity"]), float(record["attention"]),
                         float(record["impairment"]), jitter)
@@ -199,12 +236,13 @@ def derive(tables, reads, record, seed, actor, turn, previous=None):
         q_shown = resolve(qtree, spec["quality"], q_depth)
         l_shown = resolve(anatomy, spec["locus"], l_depth)
         last = None if previous is None else previous.get(name)
-        trend = trend_of(intensity, last, rules["trend_delta"])
+        trend = trend_of(raw_intensity, last, rules["trend_delta"])
         pattern = trend or str(spec["pattern"])
         rows.append({
             "source": name,
             "read": read,
             "intensity": round(intensity, 6),
+            "raw_intensity": round(raw_intensity, 6),
             "felt": intensity > 0.0 and intensity >= float(spec["awareness"]),
             "channel": str(spec["channel"]),
             "quality_true": str(spec["quality"]),
@@ -235,10 +273,10 @@ def _root(tree):
     raise KeyError("quality tree has no root")
 
 
-def intensities(tables, reads):
-    """{source name: intensity} for every source (felt or not). The body keeps these for the trend."""
-    return {name: intensity_of(spec, reads.get(str(spec["read"]), 0.0))
-            for name, spec in sorted(_rows(tables["sources"]).items())}
+def intensities(tables, reads, located=None):
+    """{source name: raw intensity} for every source row (felt or not), before habituation. A located row gives one
+    entry per locus ('source@locus'). The body keeps these for the trend and for habituation."""
+    return {name: intensity_of(spec, value) for name, spec, value in source_rows(tables, reads, located)}
 
 
 def felt_body(derived):
