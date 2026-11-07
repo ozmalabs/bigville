@@ -39,6 +39,7 @@ DEFAULT_SCENARIO = "town100"
 DEFAULT_SEED = 305000
 DEFAULT_TURNS = 8
 DEFAULT_MODES = ("menu", "lazy")
+DEFAULT_RULE_BATCHING = "action"
 DEFAULT_TIMEOUT = 180.0
 SCENARIOS = ("town100", "resource_social_stress", "small")
 
@@ -72,14 +73,15 @@ def scenario_definition(scenario: str) -> Any:
     raise ValueError(f"unknown scenario {scenario!r}; choose from {list(SCENARIOS)}")
 
 
-def build_game(scenario: str, mode: str, *, seed: int = DEFAULT_SEED):
+def build_game(scenario: str, mode: str, *, seed: int = DEFAULT_SEED,
+               rule_batching: str = DEFAULT_RULE_BATCHING):
     """Build one autonomous simple-backed game in the requested mode."""
     from bigville.api import create_game
 
     return create_game(
         scenario=scenario_definition(scenario), seed=seed,
         default_backend="simple", autonomous=True, llm_log=False,
-        affordance_mode=mode)
+        affordance_mode=mode, rule_batching=rule_batching)
 
 
 class _Timer:
@@ -211,10 +213,11 @@ def _refusal_delta(before: dict[str, Any], after: dict[str, Any]) -> dict[str, i
 
 def run_mode(scenario: str, mode: str, *, seed: int = DEFAULT_SEED,
              turns: int = DEFAULT_TURNS,
-             timeout: float = DEFAULT_TIMEOUT) -> dict[str, Any]:
+             timeout: float = DEFAULT_TIMEOUT,
+             rule_batching: str = DEFAULT_RULE_BATCHING) -> dict[str, Any]:
     """Run one mode and return its per-turn and final evidence."""
     started = time.perf_counter()
-    game = build_game(scenario, mode, seed=seed)
+    game = build_game(scenario, mode, seed=seed, rule_batching=rule_batching)
     context_timer = _Timer()
     if hasattr(game, "_build_contexts"):
         context_timer.wrap(game, "_build_contexts")
@@ -305,6 +308,7 @@ def run_mode(scenario: str, mode: str, *, seed: int = DEFAULT_SEED,
     denominator = max(1, total_proposed)
     return {
         "mode": mode,
+        "rule_batching": rule_batching,
         "scenario": scenario,
         "seed": seed,
         "requested_turns": int(turns),
@@ -418,19 +422,25 @@ def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
 def evaluate(scenario: str = DEFAULT_SCENARIO, *, seed: int = DEFAULT_SEED,
              turns: int = DEFAULT_TURNS,
              modes: Iterable[str] = DEFAULT_MODES,
-             timeout: float = DEFAULT_TIMEOUT) -> dict[str, Any]:
+             timeout: float = DEFAULT_TIMEOUT,
+             rule_batching: str = DEFAULT_RULE_BATCHING) -> dict[str, Any]:
     """Run every requested mode on the same scenario/seed and compare them."""
     chosen = [str(mode) for mode in modes]
     unknown = [mode for mode in chosen if mode not in {"menu", "lazy"}]
     if unknown:
         raise ValueError(f"unknown modes {unknown}; choose from ['menu', 'lazy']")
-    results = [run_mode(scenario, mode, seed=seed, turns=turns, timeout=timeout)
+    if rule_batching not in {"action", "turn"}:
+        raise ValueError(
+            f"unknown rule_batching {rule_batching!r}; choose from ['action', 'turn']")
+    results = [run_mode(scenario, mode, seed=seed, turns=turns, timeout=timeout,
+                        rule_batching=rule_batching)
                for mode in chosen]
     return {
         "scenario": scenario,
         "seed": seed,
         "turns": int(turns),
         "modes": chosen,
+        "rule_batching": rule_batching,
         "timeout_seconds": timeout,
         "results": results,
         "comparison": _summary(results),
@@ -440,10 +450,10 @@ def evaluate(scenario: str = DEFAULT_SCENARIO, *, seed: int = DEFAULT_SEED,
 def markdown_table(document: dict[str, Any]) -> str:
     """A compact table for the LA06 report."""
     lines = [
-        "| mode | status | turns | proposed | applied | refused | refusal rate | "
+        "| mode | batching | status | turns | proposed | applied | refused | refusal rate | "
         "applied/turn | alive | hunger | energy | health | health min | work | "
         "handovers | accidents | context s | wall s |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for row in document["results"]:
         final = row["final"]
@@ -451,11 +461,13 @@ def markdown_table(document: dict[str, Any]) -> str:
         report = final.get("report", {})
         tally = final.get("attempts", {}).get("tool_tally", {}) or {}
         lines.append(
-            "| {mode} | {status} | {turns} | {proposed} | {applied} | {refused} | "
+            "| {mode} | {batching} | {status} | {turns} | {proposed} | {applied} | {refused} | "
             "{rate} | {per_turn} | {alive} | {hunger} | {energy} | {health} | "
             "{health_min} | {work} | {handovers} | {accidents} | {context} | "
             "{wall} |".format(
-                mode=row["mode"], status=row["status"],
+                mode=row["mode"],
+                batching=row.get("rule_batching", DEFAULT_RULE_BATCHING),
+                status=row["status"],
                 turns=row["turns_completed"], proposed=totals["proposed"],
                 applied=totals["applied"], refused=totals["refused"],
                 rate=totals["refusal_rate"],
@@ -487,6 +499,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--modes", type=_parse_modes,
                         default=list(DEFAULT_MODES),
                         help="comma-separated: menu,lazy")
+    parser.add_argument("--rule-batching", default=DEFAULT_RULE_BATCHING,
+                        choices=["action", "turn"],
+                        help="world-rule batching (default action)")
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT,
                         help="wall-clock budget per mode in seconds")
     parser.add_argument("--json-only", action="store_true",
@@ -498,7 +513,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--timeout must be positive")
 
     document = evaluate(args.scenario, seed=args.seed, turns=args.turns,
-                        modes=args.modes, timeout=args.timeout)
+                        modes=args.modes, timeout=args.timeout,
+                        rule_batching=args.rule_batching)
     print(json.dumps(_jsonable(document), indent=2, sort_keys=True))
     if not args.json_only:
         print()

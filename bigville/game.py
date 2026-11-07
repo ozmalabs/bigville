@@ -7,6 +7,7 @@ import random
 import threading
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -51,6 +52,10 @@ _AUTO_LAZY_BACKEND_KINDS = frozenset({"cheap", "simple"})
 # the LA08 simple-session rule and resolves to on_demand for an autonomous
 # simple/cheap session, every_turn otherwise.
 _SNAPSHOT_MODES = frozenset({"every_turn", "on_demand", "auto"})
+# EN03: when world-rule sweeps run.  "action" is the historical behaviour: a
+# primitive action's ``_run()`` sweeps immediately.  "turn" defers those sweeps
+# to one authoritative sweep at the turn's finish boundary.
+_RULE_BATCHING = frozenset({"action", "turn"})
 
 
 def _default_simultaneous_priority(game, actor, index):
@@ -135,6 +140,9 @@ class BigvilleGame:
     _affordance_mode = "menu"
     # EN02: resolved snapshot mode; "every_turn" is the historical default.
     _snapshot_mode = "every_turn"
+    # EN03: "action" keeps the historical per-action rule sweep; "turn" defers
+    # every primitive sweep to the finish boundary.
+    _rule_batching = "action"
 
     @property
     def affordance_mode(self) -> str:
@@ -225,6 +233,25 @@ class BigvilleGame:
         return self.snapshot_mode != "on_demand"
 
     @property
+    def rule_batching(self) -> str:
+        """``"action"`` (per-action sweeps) or ``"turn"`` (one finish sweep)."""
+        return self._rule_batching
+
+    @rule_batching.setter
+    def rule_batching(self, value: str) -> None:
+        if value not in _RULE_BATCHING:
+            raise ValueError(
+                f"rule_batching must be one of {sorted(_RULE_BATCHING)}, "
+                f"got {value!r}")
+        self._rule_batching = value
+
+    def _rule_batch_scope(self):
+        """The world batch scope for this mode; a no-op in the historical mode."""
+        if self.rule_batching == "turn":
+            return self.world.batch_rules()
+        return nullcontext()
+
+    @property
     def turn_semantics(self) -> str:
         return self._turn_semantics
 
@@ -274,7 +301,8 @@ class BigvilleGame:
                  executor: str = "serial", executor_workers: int = 4,
                  turn_semantics: str = "sequential", simultaneous_priority=None,
                  affordance_mode: str = "menu",
-                 snapshot_mode: str = "every_turn"):
+                 snapshot_mode: str = "every_turn",
+                 rule_batching: str = "action"):
         if ticks_per_period == "world":
             # Read the period length from the world's data pack (TIME); worlds
             # without a pack keep the historical 96-tick day.
@@ -338,6 +366,8 @@ class BigvilleGame:
         self.affordance_mode = affordance_mode
         # EN02: likewise, snapshot "auto" resolves against the finished session.
         self.snapshot_mode = snapshot_mode
+        # EN03: no auto resolution; the historical per-action mode is the default.
+        self.rule_batching = rule_batching
 
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
@@ -1359,9 +1389,10 @@ class BigvilleGame:
         self.world.mark_turn_start()
         self.last_tick_graph = (build_tick_graph(order, responses, self.world)
                                 if self.tick_graph_enabled else None)
-        self._resolve_joint_groups(order, responses)
-        return self._apply_turn(order, responses, 0,
-                                include_snapshot=include_snapshot)
+        with self._rule_batch_scope():
+            self._resolve_joint_groups(order, responses)
+            return self._apply_turn(order, responses, 0,
+                                    include_snapshot=include_snapshot)
 
     def _step_deferred(self, *, include_snapshot: bool = True) -> dict:
         """Build every decision context from one snapshot, then ask backends (TG03)."""
@@ -1448,9 +1479,10 @@ class BigvilleGame:
         self.world.mark_turn_start()
         self.last_tick_graph = (build_tick_graph(order, responses, self.world)
                                 if self.tick_graph_enabled else None)
-        self._resolve_joint_groups(order, responses)
-        return self._apply_turn(order, responses, 0,
-                                include_snapshot=include_snapshot)
+        with self._rule_batch_scope():
+            self._resolve_joint_groups(order, responses)
+            return self._apply_turn(order, responses, 0,
+                                    include_snapshot=include_snapshot)
 
     # ---------------------------------------------------- TG06 simultaneous claims
     def _turn_claim_graph(self, order, responses):
@@ -1531,6 +1563,19 @@ class BigvilleGame:
         self.last_results[actor] = False
 
     def _apply_turn(self, order, responses, start, *, include_snapshot: bool = True):
+        """Commit one turn inside the configured rule-batching scope.
+
+        EN03 ``"turn"`` mode defers the primitives' sweeps and lets
+        ``_finish_turn`` force the one authoritative pass.  The scope is
+        re-entrant, so the wider scope opened around joint resolution (and a
+        resumed contest) shares this one.
+        """
+        with self._rule_batch_scope():
+            return self._apply_turn_inner(order, responses, start,
+                                          include_snapshot=include_snapshot)
+
+    def _apply_turn_inner(self, order, responses, start,
+                          *, include_snapshot: bool = True):
         """Apply each actor's response in ``order`` from position ``start``, then finish the turn.
 
         Returns waiting when a human target must react to a contested take. The turn then resumes on the
@@ -1865,6 +1910,11 @@ class BigvilleGame:
                 for index in component]
 
     def _resume_suspended(self, *, include_snapshot: bool = True) -> dict:
+        """Continue a suspended turn inside the configured rule-batching scope."""
+        with self._rule_batch_scope():
+            return self._resume_suspended_inner(include_snapshot=include_snapshot)
+
+    def _resume_suspended_inner(self, *, include_snapshot: bool = True) -> dict:
         """Continue a turn that waited for a human holder's reaction, or wait again."""
         suspended = self._suspended
         actor = suspended["actor"]
@@ -1904,6 +1954,11 @@ class BigvilleGame:
             ]
         if self.ticks_per_period is not None and self.world._turn % self.ticks_per_period == 0:
             self.world.pass_period()
+            # EN03: pass_period changes the world (metabolism, decay, ...); in
+            # turn mode its sweep was deferred into this batch.  Settle it now,
+            # before continuations and the snapshot read world state.
+            if self.world.rules_pending:
+                self.world.resolve_actor_turn()
         for actor, response in responses.items():
             request = response.continuation if self.continuations_enabled else None
             if request is not None and self.world.is_alive(actor):

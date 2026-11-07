@@ -63,6 +63,7 @@ DEFAULT_SIZE = 50
 DEFAULT_TURNS = 2
 DEFAULT_AFFORDANCE_MODE = "lazy"
 DEFAULT_SNAPSHOT_MODE = "every_turn"
+DEFAULT_RULE_BATCHING = "action"
 DEFAULT_EXECUTOR = "serial"
 DEFAULT_TIME_BUDGET = 120.0
 PROFILE_FUNCTIONS = 35
@@ -82,6 +83,7 @@ COMPONENTS_NOTE = (
 def build_game(size: int, *, seed: int = DEFAULT_SEED,
                affordance_mode: str = DEFAULT_AFFORDANCE_MODE,
                snapshot_mode: str = DEFAULT_SNAPSHOT_MODE,
+               rule_batching: str = DEFAULT_RULE_BATCHING,
                executor: str = DEFAULT_EXECUTOR):
     """Build one benchmark game without timing it."""
     from bigville.api import create_game
@@ -89,7 +91,8 @@ def build_game(size: int, *, seed: int = DEFAULT_SEED,
     return create_game(scenario=build_scenario(size, seed=seed), seed=seed,
                        default_backend="simple", autonomous=True, llm_log=False,
                        affordance_mode=affordance_mode,
-                       snapshot_mode=snapshot_mode, executor=executor)
+                       snapshot_mode=snapshot_mode,
+                       rule_batching=rule_batching, executor=executor)
 
 
 class _Timer:
@@ -163,11 +166,13 @@ def _proposed(game: Any) -> int:
 def run_one(size: int, *, turns: int = DEFAULT_TURNS, seed: int = DEFAULT_SEED,
             affordance_mode: str = DEFAULT_AFFORDANCE_MODE,
             snapshot_mode: str = DEFAULT_SNAPSHOT_MODE,
+            rule_batching: str = DEFAULT_RULE_BATCHING,
             executor: str = DEFAULT_EXECUTOR,
             time_budget: float = DEFAULT_TIME_BUDGET) -> dict[str, Any]:
     """Run one size and return per-turn component measurements."""
     game = build_game(size, seed=seed, affordance_mode=affordance_mode,
-                      snapshot_mode=snapshot_mode, executor=executor)
+                      snapshot_mode=snapshot_mode, rule_batching=rule_batching,
+                      executor=executor)
     timers = instrument(game)
     started = time.perf_counter()
     rows: list[dict[str, Any]] = []
@@ -254,6 +259,7 @@ def run_one(size: int, *, turns: int = DEFAULT_TURNS, seed: int = DEFAULT_SEED,
         "size": size,
         "affordance_mode": affordance_mode,
         "snapshot_mode": snapshot_mode,
+        "rule_batching": rule_batching,
         "executor": executor,
         "turns_completed": completed,
         "turns_requested": max(1, int(turns)),
@@ -280,11 +286,13 @@ def run_one(size: int, *, turns: int = DEFAULT_TURNS, seed: int = DEFAULT_SEED,
 def profile_run(size: int, *, turns: int = DEFAULT_TURNS, seed: int = DEFAULT_SEED,
                 affordance_mode: str = DEFAULT_AFFORDANCE_MODE,
                 snapshot_mode: str = DEFAULT_SNAPSHOT_MODE,
+                rule_batching: str = DEFAULT_RULE_BATCHING,
                 executor: str = DEFAULT_EXECUTOR,
                 limit: int = PROFILE_FUNCTIONS) -> dict[str, Any]:
     """cProfile the same size/turns request and return the top functions."""
     game = build_game(size, seed=seed, affordance_mode=affordance_mode,
-                      snapshot_mode=snapshot_mode, executor=executor)
+                      snapshot_mode=snapshot_mode, rule_batching=rule_batching,
+                      executor=executor)
     profiler = cProfile.Profile()
     profiler.enable()
     completed = 0
@@ -308,6 +316,7 @@ def profile_run(size: int, *, turns: int = DEFAULT_TURNS, seed: int = DEFAULT_SE
         "turns_completed": completed,
         "affordance_mode": affordance_mode,
         "snapshot_mode": snapshot_mode,
+        "rule_batching": rule_batching,
         "executor": executor,
         "functions": limit,
         "text": text,
@@ -318,6 +327,7 @@ def profile(sizes: Iterable[int], *, turns: int = DEFAULT_TURNS,
             seed: int = DEFAULT_SEED,
             affordance_mode: str = DEFAULT_AFFORDANCE_MODE,
             snapshot_mode: str = DEFAULT_SNAPSHOT_MODE,
+            rule_batching: str = DEFAULT_RULE_BATCHING,
             executor: str = DEFAULT_EXECUTOR,
             time_budget: float = DEFAULT_TIME_BUDGET) -> dict[str, Any]:
     """Run every size and return a JSON-friendly document."""
@@ -326,6 +336,7 @@ def profile(sizes: Iterable[int], *, turns: int = DEFAULT_TURNS,
         "turns": max(1, int(turns)),
         "affordance_mode": affordance_mode,
         "snapshot_mode": snapshot_mode,
+        "rule_batching": rule_batching,
         "executor": executor,
         "time_budget_seconds": time_budget,
         "physical_subsystems": dict(DISABLED_SUBSYSTEMS),
@@ -333,6 +344,7 @@ def profile(sizes: Iterable[int], *, turns: int = DEFAULT_TURNS,
         "results": [run_one(size, turns=turns, seed=seed,
                             affordance_mode=affordance_mode,
                             snapshot_mode=snapshot_mode,
+                            rule_batching=rule_batching,
                             executor=executor, time_budget=time_budget)
                     for size in sizes],
     }
@@ -341,18 +353,19 @@ def profile(sizes: Iterable[int], *, turns: int = DEFAULT_TURNS,
 def markdown_table(document: dict[str, Any]) -> str:
     """A compact table for the phase report."""
     lines = [
-        "| size | mode | snapshot | turns | step ms/turn | context ms | world tick ms | "
+        "| size | mode | batching | snapshot | turns | step ms/turn | context ms | world tick ms | "
         "commit ms | finish ms | snapshot ms (subset) | other ms | "
         "_run/turn | node/turn | near/turn | applied/turn | note |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for row in document["results"]:
         cell = row["per_turn"]
         lines.append(
-            "| {size} | {mode} | {snap_mode} | {done}/{asked} | {step} | {context} | "
+            "| {size} | {mode} | {batching} | {snap_mode} | {done}/{asked} | {step} | {context} | "
             "{tick} | {commit} | {finish} | {snapshot} | {other} | {run} | "
             "{node} | {near} | {applied} | {note} |".format(
                 size=row["size"], mode=row["affordance_mode"],
+                batching=row.get("rule_batching", DEFAULT_RULE_BATCHING),
                 snap_mode=row.get("snapshot_mode", DEFAULT_SNAPSHOT_MODE),
                 done=row["turns_completed"], asked=row["turns_requested"],
                 step=cell["step_ms"], context=cell["context_ms"],
@@ -386,6 +399,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--snapshot-mode", default=DEFAULT_SNAPSHOT_MODE,
                         choices=["every_turn", "on_demand", "auto"],
                         help="snapshot mode (default every_turn)")
+    parser.add_argument("--rule-batching", default=DEFAULT_RULE_BATCHING,
+                        choices=["action", "turn"],
+                        help="world-rule batching (default action)")
     parser.add_argument("--executor", default=DEFAULT_EXECUTOR,
                         choices=["serial", "threaded", "partitioned"],
                         help="commit executor (default serial)")
@@ -411,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
     document = profile(sizes, turns=args.turns, seed=args.seed,
                        affordance_mode=args.affordance_mode,
                        snapshot_mode=args.snapshot_mode,
+                       rule_batching=args.rule_batching,
                        executor=args.executor, time_budget=args.time_budget)
     print(json.dumps(document, indent=2, sort_keys=True))
     if not args.json:
@@ -423,6 +440,7 @@ def main(argv: list[str] | None = None) -> int:
         result = profile_run(profile_size, turns=args.turns, seed=args.seed,
                              affordance_mode=args.affordance_mode,
                              snapshot_mode=args.snapshot_mode,
+                             rule_batching=args.rule_batching,
                              executor=args.executor, limit=args.profile_limit)
         print()
         print(f"cProfile top {result['functions']} by cumulative time "

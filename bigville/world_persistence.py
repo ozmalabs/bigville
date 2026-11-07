@@ -27,6 +27,8 @@ _EXTERNAL_FIELDS = {
     "_distance_fields", "_travel_time_fields",
     # TG05: per-attempt thread-local state; a restored world constructs a fresh one.
     "_attempt_state",
+    # EN03: turn-batch bookkeeping; a restored world starts with no open batch.
+    "_rule_batch_depth", "_rule_batch_pending",
 }
 
 
@@ -134,6 +136,9 @@ def save_world_checkpoint(world, path: str | Path) -> None:
     root = Path(path)
     if getattr(world, "_actor_tick_in_progress", False) or getattr(world, "_major_dispatch", False):
         raise ValueError("cannot checkpoint Bigville during an actor tick or major-action dispatch")
+    if (getattr(world, "_rule_batch_depth", 0)
+            or getattr(world, "_rule_batch_pending", False)):
+        raise ValueError("cannot checkpoint Bigville during an open rule batch")
     extensions = getattr(world, "_physical_subsystem_extensions", {})
     if not isinstance(extensions, dict) or any(not callable(fn) for fn in extensions.values()):
         raise TypeError("invalid physical subsystem extension registry")

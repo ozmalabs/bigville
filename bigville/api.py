@@ -47,7 +47,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                 llm_provider=None, llm_log=True, llm_log_dir=None,
                 physical_subsystems=None, turn_semantics="sequential",
                 simultaneous_priority=None, executor="serial", executor_workers=4,
-                affordance_mode="auto", snapshot_mode="every_turn"):
+                affordance_mode="auto", snapshot_mode="every_turn",
+                rule_batching="action"):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
@@ -71,7 +72,12 @@ def create_game(*, scenario="town100", seed=305000, player=None,
     sessions the affordance auto rule selects, and to ``"every_turn"`` for a
     player, LLM, Ocelot or other backend.  Explicit values always win;
     ``game.snapshot_mode_requested`` keeps the requested value while
-    ``game.snapshot_mode`` reports the resolved mode."""
+    ``game.snapshot_mode`` reports the resolved mode.
+
+    ``rule_batching`` defaults to ``"action"``: each primitive action's rule
+    sweep runs immediately, the historical behaviour.  ``"turn"`` defers those
+    sweeps and runs one authoritative sweep at the turn's finish boundary.  See
+    ``docs/phases/engine-speedups/EN03_REPORT.md``."""
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:
@@ -100,7 +106,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                         simultaneous_priority=simultaneous_priority,
                         executor=executor, executor_workers=executor_workers,
                         affordance_mode=affordance_mode,
-                        snapshot_mode=snapshot_mode)
+                        snapshot_mode=snapshot_mode,
+                        rule_batching=rule_batching)
     scenario_backends = getattr(world, "_scenario_actor_backends", {})
     for name, character in game.characters.items():
         kind = "human" if name == game.player else scenario_backends.get(name, default_backend)

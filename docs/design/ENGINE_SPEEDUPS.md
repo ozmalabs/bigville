@@ -191,7 +191,7 @@ pass.
 |---|---|---|
 | EN01 | ready | — |
 | EN02 | ready | — |
-| EN03 | blocked on EN02 | — |
+| EN03 | ready | — |
 | EN04 | blocked on EN03 | — |
 | EN05 | blocked on EN04 | — |
 

@@ -17,6 +17,7 @@ import heapq
 import threading
 import weakref
 from collections import deque
+from contextlib import contextmanager
 from pathlib import Path
 
 from bigville.runtime import (BigvilleGraph, NodeRef, WorldAdapter, boot_core,
@@ -832,6 +833,13 @@ class BigvilleWorld:
         self._turn = 0
         self._resolved_period = 0.0
         self._job_tick_armed = False
+        # EN03: opt-in turn batching.  ``_rule_batch_depth`` counts open
+        # ``batch_rules()`` scopes; while it is positive a primitive ``_run()``
+        # records that one full sweep is owed (``_rule_batch_pending``) instead
+        # of sweeping immediately.  Both are ephemeral: a checkpoint excludes
+        # them and a restored world starts at 0/False.
+        self._rule_batch_depth = 0
+        self._rule_batch_pending = False
         # TG05: the per-attempt flags belong to the thread running one actor's
         # attempt, never to the world.  They are exposed through the same
         # private names below so existing assignments and reads are unchanged.
@@ -1350,7 +1358,14 @@ class BigvilleWorld:
                 self.eng.add_edge_unchecked(node, "at_cell", self._map_cells[cell])
             self._square_fixtures[fixture["name"]] = node
 
-    def _run(self):
+    def _run(self, *, force=False):
+        # EN03: inside a turn batch a primitive action records that a full
+        # sweep is owed instead of running one per action.  The finish boundary
+        # calls ``_run(force=True)``; ``batch_rules`` runs the single owed sweep
+        # if the caller exits without one.
+        if not force and self._rule_batch_depth > 0:
+            self._rule_batch_pending = True
+            return
         # A stock node survives after its last batch spoils, so an empty pile
         # may retain condition=0.  Treat the next batch as newly made rather
         # than allowing the spoil rule to discard it in the same rule sweep.
@@ -1378,6 +1393,42 @@ class BigvilleWorld:
                 qty = 0.0
             self._last_stock_qty[kind] = qty
         self._record_unlogged_deaths()
+        self._rule_batch_pending = False
+
+    @contextmanager
+    def batch_rules(self):
+        """Defer primitive ``_run()`` sweeps until one authoritative finish sweep.
+
+        Re-entrant: nested scopes share the outer batch.  Only the outermost
+        exit runs the owed sweep (when no caller forced one), so a normal
+        turn still runs exactly one full pass after its actions.  Exceptions
+        propagate unchanged; the depth is always balanced, and an exception
+        leaves ``_rule_batch_pending`` set so the next scope settles it.
+        """
+        self._rule_batch_depth += 1
+        try:
+            yield self
+        finally:
+            self._rule_batch_depth -= 1
+        if self._rule_batch_depth == 0 and self._rule_batch_pending:
+            self._run(force=True)
+
+    @property
+    def rules_pending(self) -> bool:
+        """True when a batched turn owes its authoritative ``_run()`` sweep."""
+        return bool(self._rule_batch_pending)
+
+    def _request_rule_sweep(self, *, force=False):
+        """Ask for a rule sweep without invoking ``_run`` inside an open batch.
+
+        Primitive actions use this instead of calling ``_run`` directly, so the
+        measured sweep count stays constant in turn mode.  ``_run`` retains the
+        same guard for any direct caller.
+        """
+        if not force and self._rule_batch_depth > 0:
+            self._rule_batch_pending = True
+            return
+        self._run(force=force)
 
     def _job_input(self, job, kind, is_item=False):
         """Find one physical input for a job without inventing ownership."""
@@ -2463,7 +2514,7 @@ class BigvilleWorld:
                 "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
             self.eng.add_edge_unchecked(self._actor(actor), "exerted", exertion)
             if not self._actor_tick_in_progress:
-                self._run()
+                self._request_rule_sweep()
         cooldown = float(attrs.get("carry_move_cooldown", 0.0))
         if cooldown >= 1.0 - 1e-9:
             self.eng.set_attr(self._actor(actor), "carry_move_cooldown", cooldown - 1.0)
@@ -6332,7 +6383,7 @@ class BigvilleWorld:
             self._advance_infrastructure()
             self._leak_containers()
             self.eng.set_attr(self._town, "period", float(self.eng.node(self._town)["attrs"]["period"]) + 1.0)
-            self._run()
+            self._request_rule_sweep()
 
     # ---------------------------------------------------- crops (seed -> grow -> harvest)
     def season(self): return self.eng.node(self._town)["attrs"]["season"]
@@ -6404,7 +6455,7 @@ class BigvilleWorld:
         self.set_stock("water", self.qty("water") - float(attrs.get("water", 0.0)))
         self.eng.set_attr(crop_node, "thirst", 0.0)
         self.eng.set_attr(crop_node, "water_armed", 0.0)
-        self._run()
+        self._request_rule_sweep()
         return float(self.eng.node(crop_node)["attrs"].get("thirst", 0.0)) == 0.0
 
     def harvest_crop(self, crop_node, *, harvester=None):
@@ -6636,7 +6687,7 @@ class BigvilleWorld:
                 self._record_handover("deliver", kind, amount, ("merchant", str(merchant)), ("store", "store"))
             self.eng.remove_edge_unchecked(node, "carries", stock)
             self.eng.remove_node(stock)
-        self._run()
+        self._request_rule_sweep()
 
     # ---------------------------------------------------- books (physical records; cognition owns learning)
     def write_in_book(self, author, book, recipe):
@@ -6863,7 +6914,7 @@ class BigvilleWorld:
             self._containers[container][1][kind] = self._new_inner_stock(node, container_kind, kind)
         self.eng.set_attr(self._actors[actor], "fill_kind", kind)
         self.eng.set_attr(self._actors[actor], "fill_amount", float(amount))
-        self.eng.set_attr(self._actors[actor], "fill_armed", 1.0); self._run()
+        self.eng.set_attr(self._actors[actor], "fill_armed", 1.0); self._request_rule_sweep()
         return True
 
     def empty(self, actor, container, kind, amount):
@@ -6873,7 +6924,7 @@ class BigvilleWorld:
             return False
         self.eng.set_attr(self._actors[actor], "empty_kind", kind)
         self.eng.set_attr(self._actors[actor], "empty_amount", float(amount))
-        self.eng.set_attr(self._actors[actor], "empty_armed", 1.0); self._run()
+        self.eng.set_attr(self._actors[actor], "empty_armed", 1.0); self._request_rule_sweep()
         return True
 
     def fetch(self, actor, kind, amount=1.0, *, source=None):
@@ -9285,7 +9336,7 @@ class BigvilleWorld:
 
     def resolve_actor_turn(self):
         """Settle deferred physical effects after an explicitly submitted turn."""
-        self._run()
+        self._run(force=True)
 
     def _ocelot_actor_tick(self):
         """Pump each private mind and enact major choices plus free speech."""
@@ -10874,7 +10925,7 @@ class BigvilleWorld:
         # action too; the explicit dispatcher suppresses this second charge.
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "work"):
             return self._refuse("slot_used")
-        self._open_job(actor, action_name, 0.0, tool_mode=mode, tool_item=item); self._run()
+        self._open_job(actor, action_name, 0.0, tool_mode=mode, tool_item=item); self._request_rule_sweep()
         return True
 
     def start(self, actor, action_name, intensity=1.0, tool=_DEFAULT_TOOL):
@@ -10892,7 +10943,7 @@ class BigvilleWorld:
             return self._refuse("slot_used")
         mins = float(self.eng.node(self._actions[action_name])["attrs"]["time_minutes"])
         self._open_job(actor, action_name, math.ceil(mins / float(self.E.TIME["minutes_per_tick"])),
-                       pace=self._pace_value(intensity), tool_mode=mode, tool_item=item); self._run()
+                       pace=self._pace_value(intensity), tool_mode=mode, tool_item=item); self._request_rule_sweep()
         return True
 
     def _pace_value(self, value):
@@ -10948,14 +10999,18 @@ class BigvilleWorld:
         return tools[-1] if tools else None
 
     def use_tool(self, tool, times=1):
-        for _ in range(int(times)):
-            self.eng.set_attr(tool, "use_armed", 1.0); self._run()
+        # EN03: each use arms the tool and relies on the rule sweep to consume
+        # one use.  A multi-use call must therefore sweep per use; only the
+        # ordinary single use can share the turn's authoritative sweep.
+        uses = int(times)
+        for _ in range(uses):
+            self.eng.set_attr(tool, "use_armed", 1.0); self._request_rule_sweep(force=uses > 1)
 
     def repair_tool(self, maker, tool):
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(maker, "repair"):
             return False
         self.eng.add_edge_unchecked(self._actors[maker], "repairs", tool)
-        self.eng.set_attr(tool, "repair_armed", 1.0); self._run()
+        self.eng.set_attr(tool, "repair_armed", 1.0); self._request_rule_sweep()
         return True
 
     def tool_kind(self, tool): return self.eng.node(tool)["attrs"]["kind"]
@@ -10985,7 +11040,7 @@ class BigvilleWorld:
         colour = self._item_specs.get(dye_kind, {}).get("colour", dye_kind)
         self.eng.set_attr(garment, "colour", colour)
         self.set_stock(dye_kind, max(0.0, self.qty(dye_kind) - 1.0))
-        self._run()
+        self._request_rule_sweep()
         return self.garment_colour(garment)
 
     def wear(self, actor, garment):
@@ -10998,7 +11053,7 @@ class BigvilleWorld:
         self.eng.set_attr(garment, "rain", float(spec.get("rain", 0.0)))
         self.eng.set_attr(garment, "finery", float(spec.get("finery", 0.0)))
         self.eng.add_edge_unchecked(self._actors[actor], "wears", garment)
-        self._run()
+        self._request_rule_sweep()
         return True
 
     def take_off(self, actor, garment):
@@ -11006,7 +11061,7 @@ class BigvilleWorld:
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "take_off"):
             return False
         self.eng.remove_edge_unchecked(self._actors[actor], "wears", garment)
-        self._run()
+        self._request_rule_sweep()
         return True
 
     def worn(self, actor):
@@ -11021,7 +11076,7 @@ class BigvilleWorld:
         chill/soaked AFTER their clothes take their share."""
         self.eng.set_attr(self._town, "cold", float(cold))
         self.eng.set_attr(self._town, "wet", float(wet))
-        self._run()
+        self._request_rule_sweep()
 
     def garment_station(self, garment):
         """How fine a garment is (plain/ordinary/fine) -- from the item data."""
@@ -11337,7 +11392,7 @@ class BigvilleWorld:
                                               "terrain": "", "terrain_speed": 1.0,
                                               "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
-        self._run()
+        self._request_rule_sweep()
 
     def _publish_noise(self, actor, verb, name, radius):
         """A loud attempt is an event that every awake resident within the hearing radius observes (Phase 028).
@@ -11682,7 +11737,7 @@ class BigvilleWorld:
             share = force / total if total > 0.0 else 1.0 / len(group)
             self._queue_effort(name, float(step["stamina"]) * share, 1.0)
             self._accrue_strain(name, float(step["strain"]) * share)
-        self._run()
+        self._request_rule_sweep()
         needed = J.members_needed(total / len(group), demand, spec["max_members"], spec["coordination_loss"], 0.0,
                                   spec["skill_relief"])
         needed = int(spec["max_members"]) if needed is None else int(needed)
@@ -12021,7 +12076,7 @@ class BigvilleWorld:
                                               "terrain": "", "terrain_speed": 1.0,
                                               "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
-        self._run()
+        self._request_rule_sweep()
 
     def _contest_log_practice(self, actor, minutes):
         """Contests are practice in fighting (Phase 012, physical learning, consolidated at period end)."""
@@ -13248,7 +13303,7 @@ class BigvilleWorld:
         self._actor(actor)
         rest = self.eng.add_node("Rest", {"amount": float(amount), "rest_done": 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "rested", rest)
-        self._run()
+        self._request_rule_sweep()
         return self.stamina_reserve(actor)
     def body_state(self, actor):
         body = self._bodies[actor]
