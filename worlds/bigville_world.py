@@ -8621,6 +8621,8 @@ class BigvilleWorld:
                 "group": other_attrs.get("group", ""),
                 "position": other_position,
                 "distance": self.distance(position, other_position),
+                "health": other_attrs.get("health", "healthy"),
+                "injury": round(float(other_attrs.get("injury", 0.0)), 4),
                 "shared_bucket_count": self._observe_shared_bucket_count(
                     actor_attrs, other_attrs),
                 **self._observe_relationship(actor, name),
@@ -8646,7 +8648,8 @@ class BigvilleWorld:
         if not isinstance(position, tuple) or position not in self._map_cells:
             return {"position": None, "terrain": terrain, "buildings": [],
                     "land": [], "gathering_sites": [], "fixtures": [],
-                    "exits": [], "occupancy": 0}
+                    "exits": [], "occupancy": 0, "animals": [], "crops": [],
+                    "building_projects": [], "infrastructure": [], "shops": []}
         buildings = []
         for key, site in sorted(self._building_sites.items()):
             x, y, width, height = site
@@ -8658,14 +8661,22 @@ class BigvilleWorld:
         for name, node in sorted(self._land_cells.items()):
             if self.map_position_node(node) == position:
                 attrs = self.eng.node(node)["attrs"]
-                land.append({"id": name, "use": attrs.get("use", ""),
-                             "soil": attrs.get("soil", "")})
+                entry = {"id": name, "use": attrs.get("use", ""),
+                         "soil": attrs.get("soil", "")}
+                # LA04: the pack's sowable crop for this parcel when it names
+                # one.  This is pack data, not a per-recipe admissibility check.
+                if attrs.get("use") == "arable":
+                    crop = self._rotation_crop(name)
+                    if crop is not None:
+                        entry["sow_kind"] = crop
+                land.append(entry)
         gathering_sites = []
         for kind, site in sorted(self._gathering_sites.items()):
             if tuple(site["cell"]) == position:
                 attrs = self.eng.node(site["node"])["attrs"]
                 gathering_sites.append({
                     "kind": kind,
+                    "cell": tuple(site["cell"]),
                     "stock": round(float(attrs.get("stock", 0.0)), 4),
                     "capacity": round(float(attrs.get("capacity", 0.0)), 4),
                 })
@@ -8676,6 +8687,63 @@ class BigvilleWorld:
                 fixtures.append({"id": name, "name": name,
                                  "kind": attrs.get("kind", "fixture"),
                                  "goods": list(attrs.get("goods", ()))})
+        animals = []
+        for name, node in sorted(self._animals.items()):
+            if self.map_position_node(node) != position:
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            species = str(attrs.get("species", ""))
+            task = next((task for task, spec in self.E.ANIMAL_HUSBANDRY.items()
+                         if spec["species"] == species), "")
+            animals.append({"id": name, "name": attrs.get("name", name),
+                            "species": species,
+                            "alive": float(attrs.get("alive", 0.0)) == 1.0,
+                            "task": task})
+        crops = []
+        for crop in sorted(self._living_crops(), key=lambda node: int(node.value)):
+            if self.map_position_node(crop) != position:
+                continue
+            attrs = self.eng.node(crop)["attrs"]
+            age = float(attrs.get("age", 0.0))
+            grow_periods = float(attrs.get("grow_periods", 0.0))
+            crops.append({"id": int(crop.value),
+                          "kind": str(attrs.get("crop", "")),
+                          "stage": "mature" if age >= grow_periods else "growing",
+                          "mature": age >= grow_periods,
+                          "age": round(age, 4),
+                          "grow_periods": round(grow_periods, 4),
+                          "thirst": round(float(attrs.get("thirst", 0.0)), 4)})
+        projects = []
+        for project_id, node in sorted(self._building_projects.items()):
+            if self.map_position_node(node) != position:
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            spec = self.E.BUILDING_PROJECTS.get(attrs.get("project", ""), {})
+            projects.append({"id": project_id,
+                             "name": attrs.get("name", project_id),
+                             "project": attrs.get("project", ""),
+                             "status": attrs.get("status", ""),
+                             "progress": round(float(attrs.get("progress", 0.0)), 4),
+                             "labour": round(float(attrs.get("labour", 0.0)), 4),
+                             "inputs": dict(spec.get("inputs", {}))})
+        infrastructure = []
+        for name, node in sorted(self._infrastructure.items()):
+            if self.map_position_node(node) != position:
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            spec = self.E.INFRASTRUCTURE.get(attrs.get("kind", ""), {})
+            infrastructure.append({
+                "id": name, "kind": attrs.get("kind", ""),
+                "condition": round(float(attrs.get("condition", 0.0)), 4),
+                "maintenance": list(spec.get("maintenance", ()))})
+        shops = []
+        for trade, node in sorted(self._shops.items()):
+            if self.map_position_node(node) != position:
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            shops.append({"trade": trade,
+                          "input_kind": attrs.get("input_kind", ""),
+                          "output_kind": attrs.get("output_kind", "")})
         exits = sorted(
             (position[0] + dx, position[1] + dy)
             for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
@@ -8684,7 +8752,91 @@ class BigvilleWorld:
                 "buildings": buildings, "land": land,
                 "gathering_sites": gathering_sites, "fixtures": fixtures,
                 "exits": exits,
-                "occupancy": len(self.actors_near(position, 0, alive_only=False))}
+                "occupancy": len(self.actors_near(position, 0, alive_only=False)),
+                "animals": animals, "crops": crops,
+                "building_projects": projects, "infrastructure": infrastructure,
+                "shops": shops}
+
+    def _observe_place_cell(self, actor, attrs, prefix):
+        """A stable cell named by ``home_x``/``home_y`` or ``work_x``/``work_y``, else the edge (LA04)."""
+        x_key, y_key = f"{prefix}_x", f"{prefix}_y"
+        if x_key in attrs and y_key in attrs:
+            cell = (int(round(float(attrs[x_key]))), int(round(float(attrs[y_key]))))
+            if cell in self._map_cells:
+                return cell
+        edge = "home_at" if prefix == "home" else "works_at"
+        for node in self.eng.neighbours(self._actors[actor], edge):
+            cell = self.map_position_node(node)
+            if cell in self._map_cells:
+                return cell
+        return None
+
+    def _observe_places(self, actor, attrs):
+        """Named destinations a local candidate generator may propose (LA04).
+
+        Every value is a stable map cell, or a short sorted list of records
+        with stable ids and cells.  Unknown places are omitted.
+        """
+        home = self._observe_place_cell(actor, attrs, "home")
+        work = self._observe_place_cell(actor, attrs, "work")
+        market = None
+        if self._map_layout:
+            value = self._map_layout.get("work", {}).get("market")
+            if isinstance(value, (list, tuple)) and len(value) == 2:
+                candidate = (int(value[0]), int(value[1]))
+                if candidate in self._map_cells:
+                    market = candidate
+        buildings = []
+        for key in sorted(self._building_sites):
+            cell = self.building_position(key)
+            if cell is None or cell not in self._map_cells:
+                continue
+            node = self._places.get(key)
+            place = self.eng.node(node)["attrs"] if node is not None else {}
+            buildings.append({"id": key, "name": place.get("name", key),
+                              "kind": place.get("kind", ""), "cell": cell})
+            if len(buildings) >= 24:
+                break
+        gathering_sites = []
+        for kind, site in sorted(self._gathering_sites.items()):
+            cell = tuple(site["cell"])
+            if cell not in self._map_cells:
+                continue
+            gathering_sites.append({"kind": kind, "cell": cell})
+            if len(gathering_sites) >= 8:
+                break
+        farms = []
+        for name, node in sorted(self._land_cells.items()):
+            cell = self.map_position_node(node)
+            if cell not in self._map_cells:
+                continue
+            attrs = self.eng.node(node)["attrs"]
+            farms.append({"id": name, "cell": cell, "use": attrs.get("use", "")})
+            if len(farms) >= 24:
+                break
+        return {"home": home, "work": work, "market": market,
+                "buildings": buildings, "gathering_sites": gathering_sites,
+                "farms": farms}
+
+    def _observe_inventory_details(self, actor):
+        """Carried kinds with the capability facts a local generator needs (LA04).
+
+        This reads item specs, quantities and the already-defined meal value;
+        it runs no recipe, tool or site validation.
+        """
+        details = []
+        for kind, qty in sorted(self.inventory(actor).items()):
+            spec = self._item_specs.get(kind, {})
+            edible = bool(spec.get("food"))
+            details.append({
+                "kind": kind,
+                "qty": round(float(qty), 4),
+                "edible": edible,
+                "meal_value": self.meal_value(actor, kind) if edible else 0.0,
+                "prepared": bool(spec.get("prepared")),
+                "tool": bool(spec.get("class") == "tool"),
+            })
+        return details
 
     def observe(self, actor):
         """Publish a cheap, JSON-safe, deterministic observation of ``actor`` (LA03).
@@ -8729,11 +8881,45 @@ class BigvilleWorld:
                 "id": item["id"], "name": record["name"],
                 "kind": record["kind"], "open": record["open"],
                 "locked": record["locked"], "reachable": record["reachable"],
-                "contents": contents,
+                "contents": contents, "world_container": False,
+            })
+        # LA04: the world's own containers (barrels, chests, the store) are
+        # what fetch/put accept.  Publish only accessible containers on this
+        # actor's cell, with a bounded contents summary.
+        for name in sorted(self._containers):
+            node, inners = self._containers[name]
+            container_attrs = self.eng.node(node)["attrs"]
+            if container_attrs.get("kind") == "carrier":
+                continue
+            if self.container_position(name) != position:
+                continue
+            if not self._container_accessible(actor, name):
+                continue
+            locked = self.is_locked(name)
+            contents = [
+                {"id": f"{name}:{kind}", "kind": kind, "name": kind,
+                 "qty": round(self.contents(name, kind), 4)}
+                for kind in sorted(inners)
+                if self.contents(name, kind) > 0.0
+            ]
+            containers_in_reach.append({
+                "id": name, "name": container_attrs.get("name", name),
+                "kind": container_attrs.get("kind", "container"), "open": not locked,
+                "locked": locked, "reachable": True, "contents": contents,
+                "world_container": True,
             })
         containers_in_reach.sort(key=lambda item: item["id"])
+        by_id = {}
+        for item in containers_in_reach:
+            existing = by_id.get(item["id"])
+            if existing is None or (item.get("world_container")
+                                    and not existing.get("world_container")):
+                by_id[item["id"]] = item
+        containers_in_reach = [by_id[key] for key in sorted(by_id)]
+        holder = self.holder_of(actor)
         observation = {
             "turn": int(self._turn),
+            "actor": actor,
             "calendar": self.calendar(),
             "position": position,
             "terrain": self.terrain_state(position),
@@ -8744,11 +8930,15 @@ class BigvilleWorld:
             "intoxication": self.intoxication(actor),
             "intoxication_band": self.intoxication_band(actor),
             "inventory": self.inventory(actor),
+            "inventory_details": self._observe_inventory_details(actor),
             "held_items": self.held_items(actor),
             "worn": self.worn(actor),
             "carrying": carrying,
             "carried_weight": carrying["weight"],
             "carry_ratio": carrying["ratio"],
+            "held": holder is not None,
+            "holder": holder,
+            "holding": self.holding_of(actor),
             "turn_state": self.actor_turn_state(actor),
             "job": self._observe_job(actor),
             "skills": self.skill_levels(actor),
@@ -8758,6 +8948,7 @@ class BigvilleWorld:
             "visible_objects": visible_objects,
             "containers_in_reach": containers_in_reach,
             "cell": self._observe_cell(position),
+            "places": self._observe_places(actor, attrs),
             "heard": self.heard_utterances(actor, limit=20),
         }
         aftereffects = self.aftereffects(actor)

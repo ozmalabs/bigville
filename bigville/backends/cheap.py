@@ -174,6 +174,29 @@ class DeterministicBackend:
         self.grievances: dict[str, int] = {}
 
     def decide(self, context: ActorContext) -> ActorResponse:
+        # LA04: in lazy mode the world publishes entities, not a legal menu.
+        # Build a bounded local candidate list and reuse every later stage
+        # (goals, valuation, selection, continuation) unchanged.
+        lazy_candidates = False
+        entities = context.observations.get("entities")
+        if not context.affordances and isinstance(entities, dict):
+            lazy_candidates = True
+            # The valuation model reads the body and calendar from the
+            # context root.  A lazy context carries them under `entities`;
+            # copy the missing aliases without replacing anything menu mode
+            # already publishes.
+            for key in ("hunger", "energy", "health", "illness", "calendar",
+                        "intoxication", "position", "terrain", "terrain_movement",
+                        "inventory", "held_items", "worn", "job", "known_recipes",
+                        "nearby_actors", "last_outcome", "heard"):
+                if key not in context.observations and key in entities:
+                    context.observations[key] = entities[key]
+            candidates = self._lazy_candidates(context)
+            refused = self._refused_signature(context)
+            if refused is not None:
+                candidates = [candidate for candidate in candidates
+                              if self._proposal_signature(candidate) != refused]
+            context.affordances = candidates
         self._update_goals(context)
         lamp = lamplighter_choice(context)   # Phase 042: a lamplighter's round (offered to a lamplighter only)
         if lamp is not None:
@@ -197,6 +220,13 @@ class DeterministicBackend:
             if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
             and memory.content.get("recipe")
         }
+        # LA04: the observation's broad recipe knowledge supplements the
+        # backend's private recipe memories in lazy mode only (menu contexts
+        # have no `entities` key).
+        if isinstance(context.observations.get("entities"), dict):
+            known_recipes.update(
+                str(name) for name in
+                context.observations["entities"].get("known_recipes", []))
         # Phase 027: held food that would relieve no hunger (a spoiled pile) is not a meal, so it
         # neither counts as carried food nor blocks fetching a fresh one.
         def _feeds(option):
@@ -357,6 +387,13 @@ class DeterministicBackend:
                                    + (3.0 if candidate.get("path_preferred") else 0.0))
             weighted_options.append(candidate)
         choice = self.model.choose(context, weighted_options)
+        # LA04: a refusal is ordinary feedback.  If the chosen local proposal
+        # repeats the previous refused proposal, or nothing scores, make a
+        # fresh, safer proposal.  The world still validates it.
+        if lazy_candidates and choice is not None and self._is_refused(context, choice):
+            choice = None
+        if lazy_candidates and choice is None:
+            choice = self._refusal_fallback(context)
         if choice is None:
             rest = next((o for o in context.affordances
                          if o.get("action") == "rest"), None)
@@ -393,6 +430,406 @@ class DeterministicBackend:
             utterances=self._speech(context),
             continuation=continuation,
         )
+
+    # LA04: candidate bounds and the direct proposal keys used to recognise a
+    # refused proposal.  Scores, labels and trace fields are not part of the
+    # physical proposal.
+    _LAZY_MAX_CANDIDATES = 64
+    _LAZY_MAX_RECIPES = 12
+    _LAZY_MAX_COMMON_RECIPES = 8
+    _LAZY_PRIORITY_ACTIONS = {"eat", "rest", "sleep", "struggle", "release"}
+    _PROPOSAL_PARAM_KEYS = (
+        "kind", "recipe", "target", "destination", "recipient", "container",
+        "source", "object_id", "crop_node", "animal", "land", "sow_kind",
+        "project", "name", "patient", "care_kind", "intensity", "amount",
+    )
+
+    def _lazy_candidates(self, context: ActorContext) -> list[dict]:
+        """Menu-shaped proposals from needs and the local observation (LA04).
+
+        The world still validates every proposal.  This method only reads the
+        LA03 observation (`context.observations["entities"]`) and returns a
+        bounded, deterministic, plain-dict list with direct params accepted by
+        ``BigvilleWorld._enact_plan``.  No exhaustive menu is consulted.
+        """
+        entities = context.observations.get("entities")
+        if not isinstance(entities, dict):
+            return []
+        observations = context.observations
+        position = entities.get("position")
+        if isinstance(position, (list, tuple)) and len(position) == 2:
+            position = (int(position[0]), int(position[1]))
+        else:
+            position = None
+        cell = entities.get("cell") or {}
+        hunger = float(observations.get("hunger", entities.get("hunger", 0.0)) or 0.0)
+        energy_value = observations.get("energy", entities.get("energy", 100.0))
+        try:
+            energy = float(energy_value)
+        except (TypeError, ValueError):
+            energy = 100.0
+        calendar = observations.get("calendar", entities.get("calendar", {})) or {}
+        try:
+            hour = float(calendar.get("hour", 6.0))
+        except (TypeError, ValueError):
+            hour = 6.0
+        night = self._time_band(hour) == "night"
+        inventory = list(entities.get("inventory_details") or [])
+        inventory.sort(key=lambda detail: str(detail.get("kind", "")))
+        nearby = list(entities.get("nearby_actors") or [])
+        nearby.sort(key=lambda actor: str(actor.get("id", "")))
+        candidates: list[dict] = []
+
+        def add(action, **params):
+            option = {
+                "action": action,
+                "kind": params.pop("kind", ""),
+                "trade": "",
+                "recipe": params.pop("recipe", ""),
+                "target": params.pop("target", ""),
+                "score": 0.0,
+            }
+            option.update(params)
+            candidates.append(option)
+
+        # --- needs: a carried meal, rest, and sleep -------------------------
+        for detail in inventory:
+            kind = str(detail.get("kind", ""))
+            if not kind or not detail.get("edible"):
+                continue
+            if hunger > 0.0:
+                add("eat", kind=kind, target=f"item:{kind}",
+                    meal_value=float(detail.get("meal_value", 0.0) or 0.0))
+        if energy < self.policy.rest_energy_threshold:
+            add("rest")
+        # Sleep is proposed only at night or near collapse.  The world decides
+        # whether the spot is actually safe; a refusal is ordinary feedback.
+        if (energy < self.policy.sleep_energy_threshold
+                and (night or energy < self.policy.collapse_guard_energy)):
+            add("sleep", safe=True, lateness=1.0 if night else 0.0)
+
+        # --- movement: named places, adjacent exits, nearby actors ----------
+        seen_cells = set()
+        if position is not None:
+            seen_cells.add(position)
+
+        def add_move(cell_value, label):
+            if not isinstance(cell_value, (list, tuple)) or len(cell_value) != 2:
+                return
+            try:
+                destination = (int(cell_value[0]), int(cell_value[1]))
+            except (TypeError, ValueError):
+                return
+            if destination in seen_cells:
+                return
+            seen_cells.add(destination)
+            add("move", destination=destination, target=label)
+
+        places = entities.get("places") or {}
+        for kind in ("home", "work", "market"):
+            add_move(places.get(kind), f"place:{kind}")
+        for building in places.get("buildings") or []:
+            add_move(building.get("cell"), f"building:{building.get('id', '')}")
+        for site in places.get("gathering_sites") or []:
+            add_move(site.get("cell"), f"gathering:{site.get('kind', '')}")
+        for farm in places.get("farms") or []:
+            add_move(farm.get("cell"), f"farm:{farm.get('id', '')}")
+        exits = sorted(
+            (int(item[0]), int(item[1]))
+            for item in (cell.get("exits") or [])
+            if isinstance(item, (list, tuple)) and len(item) == 2
+        )
+        for exit_cell in exits:
+            add_move(exit_cell, f"cell:{exit_cell[0]},{exit_cell[1]}")
+        for actor in nearby:
+            try:
+                distance = float(actor.get("distance"))
+            except (TypeError, ValueError):
+                continue
+            if distance <= 0.0:
+                continue
+            add_move(actor.get("position"), f"actor:{actor.get('id', '')}")
+
+        # --- work: the current job, local buildings, then common recipes ----
+        known = {
+            str(memory.content.get("recipe"))
+            for memory in self.character.memories
+            if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
+            and memory.content.get("recipe")
+        }
+        known.update(str(name) for name in entities.get("known_recipes", []))
+        try:
+            from domains import bigville_entities as entities_pack
+            recipe_specs = {str(recipe.get("name")): recipe
+                            for recipe in entities_pack.RECIPES}
+        except Exception:
+            recipe_specs = {}
+        job_recipe = str((entities.get("job") or {}).get("recipe") or "")
+        local_buildings = {
+            str(value) for value in
+            [*(building.get("id") for building in cell.get("buildings") or []),
+             *(building.get("kind") for building in cell.get("buildings") or [])]
+            if value
+        }
+        ordered_recipes = []
+        if job_recipe and job_recipe in known:
+            ordered_recipes.append(job_recipe)
+        for name in sorted(known):
+            spec = recipe_specs.get(name, {})
+            if spec.get("at_building") in local_buildings and name not in ordered_recipes:
+                ordered_recipes.append(name)
+        common = 0
+        for name in sorted(known):
+            if name in ordered_recipes:
+                continue
+            if common >= self._LAZY_MAX_COMMON_RECIPES:
+                break
+            ordered_recipes.append(name)
+            common += 1
+        for name in ordered_recipes[:self._LAZY_MAX_RECIPES]:
+            outputs = recipe_specs.get(name, {}).get("out") or []
+            output = str(outputs[0]) if outputs and outputs[0] else ""
+            add("work", recipe=name, kind=output, intensity=1.0,
+                target=f"recipe:{name}")
+
+        # --- containers: fetch contents and put carried kinds ---------------
+        containers = sorted(
+            (item for item in (entities.get("containers_in_reach") or [])
+             if item.get("world_container") and item.get("open")
+             and not item.get("locked")),
+            key=lambda item: str(item.get("id", "")))
+        fetched = 0
+        for container in containers:
+            container_id = str(container.get("id", ""))
+            if not container_id:
+                continue
+            contents = sorted(container.get("contents") or [],
+                              key=lambda child: str(child.get("kind", "")))
+            for child in contents:
+                kind = str(child.get("kind", ""))
+                if not kind:
+                    continue
+                add("fetch", kind=kind, source=container_id,
+                    physical_source="container",
+                    target=f"container:{container_id}")
+                fetched += 1
+                if fetched >= 8:
+                    break
+            if fetched >= 8:
+                break
+        for container in containers:
+            container_id = str(container.get("id", ""))
+            if not container_id:
+                continue
+            for detail in inventory:
+                kind = str(detail.get("kind", ""))
+                if kind:
+                    add("put", kind=kind, container=container_id,
+                        target=f"container:{container_id}")
+
+        # --- social: give/transfer to a co-located actor --------------------
+        for actor in nearby:
+            try:
+                distance = float(actor.get("distance"))
+            except (TypeError, ValueError):
+                continue
+            if distance != 0.0:
+                continue
+            recipient = str(actor.get("id", ""))
+            if not recipient:
+                continue
+            for detail in inventory:
+                kind = str(detail.get("kind", ""))
+                if not kind:
+                    continue
+                add("give", recipient=recipient, kind=kind, amount=1.0,
+                    target=f"actor:{recipient}")
+                if self.policy.allow_transfers:
+                    add("transfer", recipient=recipient, kind=kind, amount=1.0,
+                        target=f"actor:{recipient}")
+
+        # --- objects: move a visible grabbable object to a local destination
+        if self.policy.allow_object_moves:
+            destinations = []
+            self_id = str(entities.get("actor")
+                          or getattr(self.character, "character_id", ""))
+            nearby_destinations = []
+            for actor in nearby:
+                try:
+                    distance = float(actor.get("distance"))
+                except (TypeError, ValueError):
+                    continue
+                if distance <= 1.0:
+                    nearby_destinations.append(str(actor.get("id", "")))
+            container_destinations = [str(item.get("id", ""))
+                                      for item in containers]
+            for value in ([self_id] + nearby_destinations
+                          + container_destinations + ["table", "world"]):
+                if value and value not in destinations:
+                    destinations.append(value)
+            objects = sorted(
+                (item for item in (entities.get("visible_objects") or [])
+                 if item.get("grabbable")),
+                key=lambda item: str(item.get("id", "")))
+            for item in objects:
+                object_id = str(item.get("id", ""))
+                source = str(item.get("location", ""))
+                if not object_id:
+                    continue
+                for destination in destinations:
+                    if destination == source:
+                        continue
+                    add("move_object", object_id=object_id,
+                        destination=destination, kind=str(item.get("kind", "")),
+                        target=f"object:{object_id}")
+
+        # --- local cell work: animals, crops, land, projects, infrastructure
+        for animal in sorted(cell.get("animals") or [],
+                             key=lambda item: str(item.get("id", ""))):
+            if not animal.get("alive", True):
+                continue
+            animal_id = str(animal.get("id", ""))
+            if animal_id:
+                add("tend_animals", animal=animal_id,
+                    kind=str(animal.get("task") or "tend"),
+                    target=f"animal:{animal_id}")
+        for crop in sorted(cell.get("crops") or [],
+                           key=lambda item: int(item.get("id", 0))):
+            crop_id = crop.get("id")
+            if crop_id is None:
+                continue
+            if float(crop.get("thirst", 0.0) or 0.0) > 0.0:
+                add("water", crop_node=int(crop_id), target=f"crop:{crop_id}")
+            if crop.get("mature"):
+                add("harvest", crop_node=int(crop_id), target=f"crop:{crop_id}")
+        for land in sorted(cell.get("land") or [],
+                           key=lambda item: str(item.get("id", ""))):
+            land_id = str(land.get("id", ""))
+            if not land_id:
+                continue
+            sow_kind = land.get("sow_kind")
+            if sow_kind:
+                add("sow", sow_kind=str(sow_kind), land=land_id, target=land_id)
+            add("fertilise", target=land_id, land=land_id,
+                fertilise_land=land_id)
+        for project in sorted(cell.get("building_projects") or [],
+                              key=lambda item: str(item.get("id", ""))):
+            if project.get("status") == "complete":
+                continue
+            project_id = str(project.get("id", ""))
+            if project_id:
+                add("build", project=project_id,
+                    recipe=str(project.get("project", "")),
+                    target=f"project:{project_id}")
+        for infrastructure in sorted(cell.get("infrastructure") or [],
+                                     key=lambda item: str(item.get("id", ""))):
+            if float(infrastructure.get("condition", 1.0) or 0.0) >= 0.8:
+                continue
+            name = str(infrastructure.get("id", ""))
+            if name:
+                add("maintain", name=name, target=f"infrastructure:{name}")
+        for actor in nearby:
+            try:
+                distance = float(actor.get("distance"))
+            except (TypeError, ValueError):
+                continue
+            if distance != 0.0:
+                continue
+            if (str(actor.get("health", "healthy")) != "healthy"
+                    or float(actor.get("injury", 0.0) or 0.0) > 0.0):
+                patient = str(actor.get("id", ""))
+                if patient:
+                    add("care", patient=patient, target=f"actor:{patient}")
+
+        # --- restraint ------------------------------------------------------
+        if entities.get("held"):
+            add("struggle")
+        if entities.get("holding"):
+            add("release")
+
+        candidates.sort(key=self._candidate_sort_key)
+        if len(candidates) > self._LAZY_MAX_CANDIDATES:
+            priority = [item for item in candidates
+                        if item.get("action") in self._LAZY_PRIORITY_ACTIONS]
+            others = [item for item in candidates
+                      if item.get("action") not in self._LAZY_PRIORITY_ACTIONS]
+            candidates = (priority + others)[:self._LAZY_MAX_CANDIDATES]
+        return candidates
+
+    @staticmethod
+    def _candidate_sort_key(option):
+        """A stable order for repeated candidate lists."""
+        extra = sorted((str(key), repr(value)) for key, value in option.items()
+                       if key not in {"action", "target", "kind", "recipe"})
+        return (str(option.get("action", "")),
+                str(option.get("target", "")),
+                str(option.get("kind", "")),
+                str(option.get("recipe", "")),
+                tuple(extra))
+
+    def _proposal_signature(self, option):
+        """The physical action/params of a proposal, ignoring scores and labels."""
+        if not isinstance(option, dict):
+            return None
+        values = []
+        for key in self._PROPOSAL_PARAM_KEYS:
+            if key not in option or option[key] is None:
+                continue
+            value = option[key]
+            if isinstance(value, list):
+                value = tuple(value)
+            values.append((key, value))
+        return (str(option.get("action", "")), tuple(sorted(values,
+                                                           key=lambda item: item[0])))
+
+    def _refused_signature(self, context):
+        """The signature of this backend's previous refused proposal, if any."""
+        observations = context.observations or {}
+        entities = observations.get("entities")
+        outcome = observations.get("last_outcome")
+        if not isinstance(outcome, dict) and isinstance(entities, dict):
+            outcome = entities.get("last_outcome")
+        if not isinstance(outcome, dict) or outcome.get("applied", True):
+            return None
+        action = str(outcome.get("action", ""))
+        if not action:
+            return None
+        previous = self.last_choice
+        if isinstance(previous, dict) and str(previous.get("action", "")) == action:
+            return self._proposal_signature(previous)
+        # Without a retained parameter set only a parameterless repeat can be
+        # recognised as the exact same proposal.
+        return (action, ())
+
+    def _is_refused(self, context, option):
+        refused = self._refused_signature(context)
+        return refused is not None and self._proposal_signature(option) == refused
+
+    def _refusal_fallback(self, context):
+        """A fresh safe proposal after a refusal, or when nothing scores (LA04)."""
+        observations = context.observations or {}
+        entities = observations.get("entities")
+        entities = entities if isinstance(entities, dict) else {}
+        energy = float(observations.get("energy", entities.get("energy", 100.0)) or 0.0)
+        refused = self._refused_signature(context)
+        rest = {"action": "rest", "kind": "", "trade": "", "recipe": "",
+                "target": "", "score": 0.0}
+        if energy < self.rest_energy_threshold and self._proposal_signature(rest) != refused:
+            return rest
+        exits = sorted(
+            (int(item[0]), int(item[1]))
+            for item in ((entities.get("cell") or {}).get("exits") or [])
+            if isinstance(item, (list, tuple)) and len(item) == 2
+        )
+        for exit_cell in exits:
+            candidate = {
+                "action": "move", "kind": "", "trade": "", "recipe": "",
+                "target": f"cell:{exit_cell[0]},{exit_cell[1]}",
+                "destination": exit_cell, "score": 0.0,
+            }
+            if self._proposal_signature(candidate) != refused:
+                return candidate
+        return None
 
     def _hook_bonus(self, context, option):
         hook = self.policy.hook
@@ -463,6 +900,10 @@ class DeterministicBackend:
             if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
             and memory.content.get("recipe")
         }
+        if isinstance(observations.get("entities"), dict):
+            known_recipes.update(
+                str(name) for name in
+                observations["entities"].get("known_recipes", []))
         has_known_work = self.policy.allow_work and any(
             option.get("action") == "work" and str(option.get("recipe", "")) in known_recipes
             for option in context.affordances
