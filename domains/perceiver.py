@@ -14,9 +14,11 @@ resident. Off (PERCEPTION.enabled false, the pack default), the module is not ca
 
 The tier table (PERCEIVER_TIERS) and the gate vocabulary (PERCEPTION.gates) live in world/perception.json. A
 perceiver gate reads the observer: the light (domains/daynight via worlds/daynight.view_light), the distance
-band, the intoxication band, and the skill in the subject's trade. A subject gate reads the thing seen: a visible
-mark, which the world supplies through `world.visible_marks(actor)` when Phase 063 provides it. Until then the
-world reports none.
+band, the intoxication band, and the skill in the subject's trade. The mark gate (Phase 062B) reads the marks the
+observer sees: the world's `observable_marks(actor, distance, light)` (Phase 063) applies each mark's see_range,
+see_light and visible_level, and the observer's notice_skill is applied here. The truth reads the subject's own
+marks (`world.marks(actor)`), whatever the observer sees. A subject built by hand (no `observe` callable) shows its
+`marks` as given.
 
 Faculties are declared per backend: 'represented' (the backend models the faculty, so the adapter passes the full
 value), 'enforced' (the adapter degrades what the backend is shown), or 'both'. Only 'represented' changes the
@@ -104,15 +106,36 @@ def record(game, actor, modes, pack):
     }
 
 
-def visible_marks(game, subject):
-    """The marks a resident's body shows, {name: level 0..1}. Phase 063's hand-off: the world method
-    `visible_marks(actor)`. Without it, no marks are visible."""
-    reader = getattr(game.world, "visible_marks", None)
-    return {str(k): float(v) for k, v in dict(reader(subject)).items()} if callable(reader) else {}
+def subject_marks(game, subject):
+    """The marks a resident truly carries, {name: level 0..1}: the world's `marks(actor)` (Phase 063). A test may
+    script a `visible_marks(actor)` method on the world; when it exists it is read instead."""
+    world = game.world
+    reader = getattr(world, "visible_marks", None)
+    if callable(reader):
+        return {str(k): float(v) for k, v in dict(reader(subject)).items()}
+    return {str(k): float(v) for k, v in dict(world.marks(subject)).items()}
+
+
+def _seen_marks(subject, ctx, pack):
+    """The marks the observer sees: the subject's `observe(distance, light)` rows (the world's visibility rule at
+    the observer's distance and light), each kept unless the row names a notice_skill the observer lacks. A
+    subject with no `observe` (built by hand) shows its marks as given."""
+    observe = subject.get("observe")
+    if observe is None:
+        return dict(subject["marks"])
+    pk = table(pack)
+    seen = {}
+    for row in observe(ctx["distance"], float(pk["light_level"][ctx["light"]])):
+        skill = row.get("notice_skill")
+        if skill and not ctx["skill_full"] and float(ctx["skills"].get(skill, 0.0)) < float(pk["notice_min_level"]):
+            continue
+        seen[str(row["kind"])] = float(row["level"])
+    return seen
 
 
 def person_subject(game, other, pack):
-    """What is there to see of a resident: its life stage and job words, the main skills of its trades, its marks."""
+    """What is there to see of a resident: its life stage and job words, the main skills of its trades, its marks.
+    `observe` gives what an observer at a distance and in a light could see of its marks (Phase 063)."""
     world = game.world
     attrs = world.eng.node(world._actors[other])["attrs"]
     role = str(attrs.get("role") or "")
@@ -120,8 +143,11 @@ def person_subject(game, other, pack):
     trade_skills = [SF.trade_skills(trade)[0] for trade in trades if SF.trade_skills(trade)]
     stage = str(attrs.get("life_stage") or "adult")
     stage_noun = table(pack)["stage_nouns"].get(stage, stage)
+
+    def observe(distance, light):
+        return world.observable_marks(other, distance, light)
     return {"stage": stage_noun, "job": _words(role), "trade_skills": trade_skills,
-            "marks": visible_marks(game, other)}
+            "marks": subject_marks(game, other), "observe": observe}
 
 
 def thing_subject(kind_words):
@@ -144,7 +170,8 @@ def _passes(gate, ctx, subject, pack, truth):
     pk = table(pack)
     for kind, value in gate.items():
         if kind == "mark":
-            ok = float(subject["marks"].get(value, 0.0)) >= float(pk["mark_min_level"])
+            marks = subject["marks"] if truth else _seen_marks(subject, ctx, pack)
+            ok = float(marks.get(value, 0.0)) >= float(pk["mark_min_level"])
         elif kind == "trade_skill":
             has_trade = bool(subject["trade_skills"])
             if truth:

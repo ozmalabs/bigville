@@ -9,7 +9,11 @@ so a test can plant a kind with no tier 0, or a tier with an unknown gate, and s
   * the gate vocabulary: PERCEPTION.gates names exactly the gates the perceiver reads, each on the side the perceiver
     reads it from;
   * the numbers: the distance bands, the light the view takes when day and night is off, and the two thresholds;
-  * the stage words cover every LIFE_STAGES stage, and carry no digit;
+  * the light levels (Phase 062B): dark is below every MARKS see_light and each other light is at or above all of
+    them, so the perceiver's light gate and the world's visibility rule agree (checked when the pack has marks);
+  * the stage words cover every LIFE_STAGES stage, carry no digit, and start with a consonant (the tier words say
+    'a {stage}');
+  * each mark gate names a MARKS kind (checked when the pack has marks);
   * each kind (PERCEIVER_TIERS) has tiers numbered 0, 1, 2, ... with tier 0 unconditional; each gate names a known
     condition with a value of the right kind; each words template has no digit, and names only the fields its kind
     fills (a person: stage and job; a thing: kind).
@@ -43,8 +47,10 @@ def check_perception(pack_path, errors, warnings, info, *, tiers=None):
     _check_switch_and_faculties(pk, errors)
     _check_gates(pk, errors)
     _check_numbers(pk, errors)
+    _check_light_levels(pk, pack, errors)
     _check_stages(pk, pack, errors)
     _check_tiers(pk, rows_by_kind, errors)
+    _check_marks_named(rows_by_kind, pack, errors)
     if not errors:
         state = "on" if pk["enabled"] else "off"
         info.append(f"PERCEPTION: {len(rows_by_kind)} kinds ({', '.join(sorted(rows_by_kind))}), "
@@ -85,10 +91,33 @@ def _check_numbers(pk, errors):
                               f"not {cells!r}")
     if pk.get("light_when_off") not in P.LIGHTS:
         errors.append(f"PERCEPTION.light_when_off must be one of {list(P.LIGHTS)}, not {pk.get('light_when_off')!r}")
-    for key in ("mark_min_level", "trade_min_level"):
+    for key in ("mark_min_level", "trade_min_level", "notice_min_level"):
         value = pk.get(key)
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0.0 < float(value) <= 1.0:
             errors.append(f"PERCEPTION.{key} must be a level above 0 and at most 1, not {value!r}")
+
+
+def _check_light_levels(pk, pack, errors):
+    """The light the mark gate reads (PERCEPTION.light_level) must agree with the perceiver's light gate: dark is
+    below every MARKS see_light, and each other light is at or above all of them. Checked when the pack has marks."""
+    levels = pk.get("light_level")
+    if not isinstance(levels, dict) or set(levels) != set(P.LIGHTS):
+        errors.append(f"PERCEPTION.light_level must give a level for each of {list(P.LIGHTS)}, not {levels!r}")
+        return
+    for light, value in levels.items():
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0.0 <= float(value) <= 1.0:
+            errors.append(f"PERCEPTION.light_level[{light}] must be a level from 0 to 1, not {value!r}")
+    marks = pack["MARKS"] if "MARKS" in pack.names() else {}
+    if not marks:
+        return
+    see = [float(spec["see_light"]) for spec in marks.values()]
+    if float(levels["dark"]) >= min(see):
+        errors.append(f"PERCEPTION.light_level[dark] ({levels['dark']}) is not below every MARKS see_light "
+                      f"(lowest {min(see)}), so a mark could be seen in the dark that the perceiver calls dark")
+    for light in P.LIGHTS:
+        if light != "dark" and float(levels[light]) < max(see):
+            errors.append(f"PERCEPTION.light_level[{light}] ({levels[light]}) is below the highest MARKS see_light "
+                          f"({max(see)}), so the perceiver would call a light a mark is hidden in 'not dark'")
 
 
 def _check_stages(pk, pack, errors):
@@ -102,6 +131,29 @@ def _check_stages(pk, pack, errors):
     for stage, noun in nouns.items():
         if not isinstance(noun, str) or not noun.strip() or DIGIT.search(noun):
             errors.append(f"PERCEPTION.stage_nouns[{stage}] must be words with no digit, not {noun!r}")
+    _check_articles(nouns, errors)
+
+
+def _check_articles(nouns, errors):
+    """A tier template puts 'a' before {stage} ('a {stage}', 'a dirty {stage}'), so no stage noun may start with a
+    vowel: 'a elder' is wrong. The templates are the perceiver's (world/perception.json PERCEIVER_TIERS)."""
+    for stage, noun in nouns.items():
+        if isinstance(noun, str) and noun.strip()[:1].lower() in "aeiou":
+            errors.append(f"PERCEPTION.stage_nouns[{stage}] is {noun!r}, which starts with a vowel; the tier words "
+                          f"say 'a {{stage}}', so the noun needs a consonant to read correctly")
+
+
+def _check_marks_named(rows_by_kind, pack, errors):
+    """A mark gate names a mark of MARKS (Phase 063). Checked when the pack has marks."""
+    marks = pack["MARKS"] if "MARKS" in pack.names() else {}
+    if not marks:
+        return
+    for kind, rows in rows_by_kind.items():
+        for row in rows if isinstance(rows, list) else []:
+            name = (row.get("gate") or {}).get("mark") if isinstance(row, dict) else None
+            if name is not None and name not in marks:
+                errors.append(f"PERCEIVER_TIERS[{kind}] tier {row.get('tier')}: mark '{name}' is not a MARKS kind "
+                              f"({sorted(marks)})")
 
 
 def _check_tiers(pk, rows_by_kind, errors):
