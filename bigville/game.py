@@ -35,7 +35,7 @@ _MISSING = object()   # an absent per-actor entry, e.g. no published practice wi
 # calling into the world (the world may take the graph lock in the meantime).
 _PHYSICAL_EVENTS_LOCK = threading.RLock()
 
-_EXECUTORS = frozenset({"serial", "threaded"})
+_EXECUTORS = frozenset({"serial", "threaded", "partitioned"})
 _TURN_SEMANTICS = frozenset({"sequential", "simultaneous"})
 
 
@@ -100,8 +100,11 @@ class BigvilleGame:
     tick_graph_enabled = True
     # The graph built for the last advanced turn (None when disabled or waiting).
     last_tick_graph: TickGraph | None = None
+    # TG07: the shard assignment used by the last partitioned turn (None otherwise).
+    last_shard_plan = None
     # TG05: opt-in commit executor.  "serial" (default) is the historical loop;
-    # "threaded" commits declared-independent actor units in a bounded pool.
+    # "threaded" commits declared-independent actor units in a bounded pool;
+    # "partitioned" (TG07) assigns units to spatial shards first.
     _executor = "serial"
     _executor_workers = 4
     # TG06: opt-in simultaneous claim policy.  "sequential" is the historical
@@ -1296,10 +1299,17 @@ class BigvilleGame:
         item claims from the frozen responses before either commit path runs.
         Losers are suppressed; winners enact normally.  The default
         ``"sequential"`` never calls claim resolution.
+
+        TG07: ``executor="partitioned"`` assigns the same actor units to
+        in-process spatial shards.  Cross-shard units run serially at the
+        coordinator barrier; independent shards may run concurrently.
         """
         suppressed = {}
+        self.last_shard_plan = None
         if self.turn_semantics == "simultaneous":
             suppressed = self._simultaneous_suppressed(order, responses)
+        if self._partitioned_eligible(order, responses, start):
+            return self._apply_turn_partitioned(order, responses, suppressed)
         if self._threaded_eligible(order, responses, start):
             return self._apply_turn_threaded(order, responses, suppressed)
         for index in range(start, len(order)):
@@ -1354,6 +1364,21 @@ class BigvilleGame:
         """Whether this turn can use the declared-independent threaded commit."""
         if self.executor != "threaded":
             return False
+        return self._concurrent_commit_eligible(order, responses, start)
+
+    def _partitioned_eligible(self, order, responses, start) -> bool:
+        """Whether this turn can use the TG07 partitioned shard commit.
+
+        The restrictions match the threaded path: a resumed turn, a contest
+        (which may suspend for a human reaction) or a missing tick graph stays
+        on the historical serial loop.
+        """
+        if self.executor != "partitioned":
+            return False
+        return self._concurrent_commit_eligible(order, responses, start)
+
+    def _concurrent_commit_eligible(self, order, responses, start) -> bool:
+        """Shared restrictions for every non-serial commit path."""
         if start != 0:
             return False
         if self.last_tick_graph is None:
@@ -1531,6 +1556,44 @@ class BigvilleGame:
                 for future in futures:
                     for actor, result, error in future.result():
                         completed[actor] = (actor, result, error)
+
+        self.last_errors.clear()
+        self.last_errors.update(preexisting_errors)
+        for actor in order:
+            entry = completed.get(actor)
+            if entry is None:
+                continue        # joint member; already resolved before commit
+            _actor, result, error = entry
+            self.last_results[actor] = bool(result)
+            if error is not None:
+                self.last_errors[actor] = error
+        return self._finish_turn(responses)
+
+    def _apply_turn_partitioned(self, order, responses, suppressed=None):
+        """Commit one turn through in-process spatial shards (TG07).
+
+        The result/error bookkeeping is identical to ``_apply_turn_threaded``:
+        joint results were written before commit, workers only return
+        ``(actor, result, error)``, and the calling thread rebuilds both dicts in
+        turn order before ``_finish_turn`` runs exactly once.
+
+        The shard map is conservative: cross-shard units and units owning a
+        non-spatial resource run serially at the coordinator barrier first.
+        Only units wholly inside one spatial shard run concurrently.  All
+        workers share this world instance; TG05's locks make that safe for the
+        declared resource sets.  This is not process or network distribution.
+        """
+        from .sharding import PartitionedExecutor
+
+        suppressed = suppressed or {}
+        executor = PartitionedExecutor(workers=self.executor_workers)
+        units = executor.units(self, order, responses)
+        plan = executor.plan(units, self.world)
+        self.last_shard_plan = plan
+        # Joint resolution has already written its results and errors.  Capture
+        # that insertion order, then rebuild both dicts deterministically.
+        preexisting_errors = dict(self.last_errors)
+        completed = executor.commit(self, order, responses, suppressed, plan=plan)
 
         self.last_errors.clear()
         self.last_errors.update(preexisting_errors)

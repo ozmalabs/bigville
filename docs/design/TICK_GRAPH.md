@@ -228,13 +228,13 @@ production distribution beyond what the tests prove.
 
 | Phase | Status | Commit |
 |---|---|---|
-| TG01 | ready | — |
-| TG02 | blocked on TG01 | — |
-| TG03 | blocked on TG02 | — |
-| TG04 | blocked on TG03 | — |
-| TG05 | blocked on TG04 | — |
-| TG06 | ready | — |
-| TG07 | blocked on TG06 | — |
+| TG01 | done | `c72fcb6` |
+| TG02 | done | `d0d0484` |
+| TG03 | done | `939180f` |
+| TG04 | done | `1901b2e` |
+| TG05 | done | `1b6d2ad` |
+| TG06 | done | `a82a52e` |
+| TG07 | done | uncommitted (executor report) |
 
 ## Integration gates
 
