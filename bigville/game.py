@@ -19,6 +19,7 @@ from .backends.protocol import communication_capabilities
 from .concurrency import decide_pooled
 from .character import CharacterDefinition, FrameSeed, MemoryRecord
 from worlds.bigville_bond_world import BigvilleBondWorld
+from worlds.tick_graph import TickGraph, build_tick_graph
 from domains.data_view import world_entities
 
 
@@ -68,12 +69,19 @@ class BigvilleGame:
     # context construction. Off by default; tests may enable it or call
     # _assert_decision_snapshot_unchanged directly.
     _verify_context_purity = False
+    # TG04: build and store the turn's read/write graph before any response is
+    # applied. The graph is observational in this phase; set to False to keep
+    # the pre-TG04 path with no graph object at all.
+    tick_graph_enabled = True
+    # The graph built for the last advanced turn (None when disabled or waiting).
+    last_tick_graph: TickGraph | None = None
 
     def __init__(self, world, *, player: str | None = None,
                  characters: dict[str, CharacterDefinition] | None = None,
                  backends: dict[str, Any] | None = None,
                  continuations: bool = True, autonomous: bool = False,
-                 ticks_per_period: int | str | None = "world"):
+                 ticks_per_period: int | str | None = "world",
+                 tick_graph_enabled: bool | None = None):
         if ticks_per_period == "world":
             # Read the period length from the world's data pack (TIME); worlds
             # without a pack keep the historical 96-tick day.
@@ -85,6 +93,8 @@ class BigvilleGame:
             raise ValueError("autonomous sessions cannot have a player")
         self.world = world
         self.ticks_per_period = ticks_per_period
+        if tick_graph_enabled is not None:
+            self.tick_graph_enabled = bool(tick_graph_enabled)
         self.world._autonomous_actors = False
         self.conversation_interface = TemplateConversationInterface()
         self.world.set_conversation_adapter(self._adapt_speech)
@@ -119,6 +129,9 @@ class BigvilleGame:
         self.last_errors: dict[str, str] = {}
         # Actors in the order their responses were applied on the last advanced turn (Phase 025).
         self.last_order: list[str] = []
+        # TG04: the read/write graph of the last advanced turn. Built but not
+        # used as an executor in this phase.
+        self.last_tick_graph: TickGraph | None = None
         # Phase 029: a turn waiting for a holder's reaction (None when no turn is waiting), and the newest
         # contested takes (turn, attacker, target, offer, reaction, outcome). Not checkpointed.
         self._suspended: dict[str, Any] | None = None
@@ -1005,6 +1018,8 @@ class BigvilleGame:
         self.last_order = order
         # Phase 029: the cells at the start of the turn, for whether a target could see a taker coming.
         self.world.mark_turn_start()
+        self.last_tick_graph = (build_tick_graph(order, responses, self.world)
+                                if self.tick_graph_enabled else None)
         self._resolve_joint_groups(order, responses)
         return self._apply_turn(order, responses, 0)
 
@@ -1091,6 +1106,8 @@ class BigvilleGame:
         self.last_order = order
         # Phase 029: the cells at the start of the turn, for whether a target could see a taker coming.
         self.world.mark_turn_start()
+        self.last_tick_graph = (build_tick_graph(order, responses, self.world)
+                                if self.tick_graph_enabled else None)
         self._resolve_joint_groups(order, responses)
         return self._apply_turn(order, responses, 0)
 
