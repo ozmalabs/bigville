@@ -14,7 +14,7 @@ No commit or stage was performed by the phase agents.
 | LA05 | `ab6d8e7` | Added the lazy agent view and lazy prompt packet, direct-param reply handling, refusal feedback in the next prompt, and kept menu mode for UI pickers and Ocelot's `replace_options` path. |
 | LA06 | `e687661` | Added the mode evaluation tool and tests, extended the benchmark to the real lazy path and whole-turn time, evaluated the modes, and declined the default switch on a lazy health regression. |
 | LA07 | uncommitted | Added `world.recipe_preview(actor, recipe)` and the observation's bounded `work_candidates`, so the lazy cheap backend only proposes work whose site, tool and ingredients the menu would also publish. Re-evaluated: the health regression is gone. |
-| LA08 | uncommitted | Added `affordance_mode="auto"`, made it the `create_game` default, kept the direct constructor on `menu`, resolved lazy only for autonomous simple/cheap sessions, re-resolved on backend changes, and rolled out the evaluation/docs. |
+| LA08 | `689b499` | Added `affordance_mode="auto"`, made it the `create_game` default, kept the direct constructor on `menu`, resolved lazy only for autonomous simple/cheap sessions, re-resolved on backend changes, and rolled out the evaluation/docs. |
 
 Design plan: `docs/design/LAZY_AFFORDANCES.md`.  Per-phase evidence:
 `docs/phases/lazy-affordances/LA0x_REPORT.md`.

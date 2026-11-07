@@ -313,8 +313,8 @@ gate on an idle host.
 | LA04 | complete | `e1a8829` |
 | LA05 | complete | `ab6d8e7` |
 | LA06 | complete | `e687661` |
-| LA07 | complete (uncommitted) | — |
-| LA08 | complete (uncommitted) | — |
+| LA07 | complete | `3f0ef4e` |
+| LA08 | complete | `689b499` |
 
 ## Results
 
