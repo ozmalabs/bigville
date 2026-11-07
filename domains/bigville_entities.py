@@ -2265,6 +2265,8 @@ def check_consistency():
     check_perception(_WORLD_PACK.path, errors, warnings, info)
     from domains.reading_check import check_reading  # Phase 064: the reading and numeracy tables
     check_reading(_WORLD_PACK.path, errors, warnings, info)
+    from domains.impairment_check import check_impairment  # Phase 065: the impairment sources, rows and neighbours
+    check_impairment(_WORLD_PACK.path, errors, warnings, info)
     from domains.speech_parser_check import check_speech_parser  # Phase 061: the speech parser table and its prefix
     check_speech_parser(_WORLD_PACK.path, errors, warnings, info)
     stats = {

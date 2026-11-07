@@ -736,6 +736,9 @@ class BigvilleGame:
             from domains.map_memory import route_plan
             plan = route_plan(self, actor, plan)
             ok = bool(self.world.enact_plan(actor, plan))
+            # Phase 065: counts a major action taken on a percept the impaired resident was shown wrongly (off by default).
+            from domains import impairment
+            impairment.note_action(self, actor, proposal.params, ok, self.world.data_pack)
         for utterance in response.utterances:
             if hasattr(utterance, "to_dict"):
                 utterance = utterance.to_dict()

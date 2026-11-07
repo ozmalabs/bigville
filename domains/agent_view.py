@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import re
 
-from domains import map_memory, perceiver, reading
+from domains import impairment, map_memory, perceiver, reading
 from domains.affordance_handles import handle_pairs
 from domains.data_view import entities
 from domains.lexicon import describe, quantities
@@ -318,18 +318,23 @@ def _around(game, actor, pack, known, rec=None, log=None):
         if rec is not None:
             # Phase 062: the percept decides what is seen. Looks need a tier of 1 or more (some light to see by), and a
             # resident is known by name only at that tier too; otherwise it is described by the percept's words.
-            seen = perceiver.percept("person", perceiver.person_subject(game, other, pack), distance, rec, pack)
-            log.append(perceiver.referee_row(other, "person", distance, seen))
-            recognised = other in known and seen["tier"] >= 1
+            subject = perceiver.person_subject(game, other, pack)
+            seen = perceiver.percept("person", subject, distance, rec, pack)
+            # Phase 065: an impaired resident may be given a wrong percept; the truth stays in the referee row.
+            seen = impairment.distort(game, actor, "person", other, subject, seen, rec, pack,
+                                      others=[name for _d, name in nearby if name != other], known=known)
+            log.append({**perceiver.referee_row(other, "person", distance, seen), **impairment.referee_extra(seen)})
+            identity = seen.get("as", other)
+            recognised = identity in known and seen["tier"] >= 1
             entry = {"distance": _phrase("distance", distance, "self", pack)}
             if seen["tier"] >= 1:
                 entry["looks"] = _looks(game, other, pack)
             if recognised:
-                entry["name"] = other
-                entry["job"] = role
+                entry["name"] = identity
+                entry["job"] = seen.get("as_job", role)
             else:
                 entry["description"] = seen["words"]
-            if recognised and ties.get(other):
+            if recognised and ties.get(other) and "as" not in seen:
                 entry["tie"] = _phrase("relationship_kind", str(ties[other]), "self", pack)
             people.append(_check_keys("person", _clean(entry), pack))
             continue
@@ -354,7 +359,7 @@ def _around(game, actor, pack, known, rec=None, log=None):
         who = str(event.get("actor", ""))
         who = words["you"] if who == actor else (who if who in known else words["someone"])
         seen.append(_check_keys("seen", {"who": who, "did": words["moved"]}, pack))
-    things = _things(world, actor, pack, rec, log)
+    things = _things(world, actor, pack, rec, log, game)
     around = {"people": people, "heard": heard, "seen": seen, "things": things}
     # Phase 064: written marks in sight, read at the resident's literacy (off unless READING.enabled).
     writing = reading.writing_rows(game, actor, rec, pack, log) if rec is not None else None
@@ -363,7 +368,7 @@ def _around(game, actor, pack, known, rec=None, log=None):
     return _check_keys("around", around, pack)
 
 
-def _things(world, actor, pack, rec=None, log=None):
+def _things(world, actor, pack, rec=None, log=None, game=None):
     """What the resident can act on: containers on the resident's own cell (an attempt needs the resident
     there), and the physical objects the resident can see. A handle is the name the world uses for the thing,
     copied into a reply; `what` is its kind in words (Phase 054).
@@ -393,8 +398,12 @@ def _things(world, actor, pack, rec=None, log=None):
     for handle, what, distance in rows:
         if not handle:
             continue
-        seen = perceiver.percept("thing", perceiver.thing_subject(what), distance, rec, pack)
-        log.append(perceiver.referee_row(handle, "thing", distance, seen))
+        subject = perceiver.thing_subject(what)
+        seen = perceiver.percept("thing", subject, distance, rec, pack)
+        # Phase 065: an impaired resident may be given a wrong percept; the truth stays in the referee row.
+        seen = impairment.distort(game, actor, "thing", handle, subject, seen, rec, pack,
+                                  others=[(h, w) for h, w, _d in rows if h and h != handle])
+        log.append({**perceiver.referee_row(handle, "thing", distance, seen), **impairment.referee_extra(seen)})
         if seen["tier"] == 0:
             out.append(_check_keys("thing", {"what": seen["words"]}, pack))
         else:
@@ -580,6 +589,8 @@ def build_agent_view(game, actor, mode="agent"):
         rec = perceiver.record(game, actor, perceiver.declared(getattr(game, "backends", {}).get(actor), pack), pack)
     log = []
     around = _around(game, actor, pack, known, rec, log)
+    # Phase 065: remember the subjects shown wrongly this turn (the ledger of actions on a wrong percept).
+    impairment.note_view(game, actor, rec, log, pack)
     # Phase 062: a thing the resident cannot see at all (tier 0) is not offered as an option either.
     withheld = {row["subject"] for row in log if row["kind"] == "thing" and row["tier"] == 0}
     view = {
@@ -600,5 +611,5 @@ def build_agent_view(game, actor, mode="agent"):
             view["referee"]["true_map"] = map_memory.true_patch(game, actor)
         if rec is not None:
             view["referee"]["perception"] = {"faculties": dict(rec["modes"]), "perceiver": perceiver.summary(rec),
-                                             "subjects": log}
+                                             "subjects": log, **impairment.referee_block(game, log, pack)}
     return _check_keys("top", _clean(view), pack)

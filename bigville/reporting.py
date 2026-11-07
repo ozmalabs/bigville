@@ -508,4 +508,6 @@ def game_report(game) -> dict[str, Any]:
     Read-only. Takes a ``BigvilleGame`` (it uses ``game.world`` and ``game.backends``)."""
     report = game.world.report()
     report["llm"] = llm_report(game.backends)
+    from domains import impairment   # Phase 065: the wrong-percept ledger (empty unless IMPAIRMENT.enabled)
+    report.update(impairment.report_block(game, game.world.data_pack))
     return report
