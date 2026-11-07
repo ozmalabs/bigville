@@ -248,3 +248,119 @@ python -m pytest -q
 
 The backend and prompt work is staged in
 [`docs/AGENT_BACKENDS_PLAN.md`](docs/AGENT_BACKENDS_PLAN.md).
+
+## Local management discovery service
+
+The separately launched management service exposes health, capabilities, a
+local run registry, and run lifecycle commands. It remains a loopback-only,
+single-user service.
+
+```bash
+python -m bigville.management.http
+# http://127.0.0.1:8766/api/management/v1/health
+# http://127.0.0.1:8766/api/management/v1/capabilities
+# http://127.0.0.1:8766/api/management/v1/backend-profiles
+# Open http://127.0.0.1:8766/ for the management shell.
+```
+
+Run metadata is stored by default in `~/.local/share/bigville-management`.
+Set `BIGVILLE_MANAGEMENT_DATA_DIR` or pass `--data-dir` to choose another
+local directory. The service only binds to loopback IP addresses. Backend
+profiles are listed separately from engine capabilities. Ocelot is marked
+unavailable when its external adapter cannot be imported. An LLM profile
+requires a matching adapter registered in the server process; no provider or
+model is treated as available just because it appears in configuration.
+Optional `secret_ref` values in the local `backend_profiles.json` file are
+passed only to the registered server adapter and are omitted from API
+responses, run records and templates. Profile files may contain only IDs,
+revisions, adapter names and local secret references, never credential
+values. Authored scenarios can override an actor's profile; per-actor
+assignments are rejected for built-in `town100`. On service restart,
+unfinished in-memory runs are marked failed with an interruption reason;
+worlds are not silently resumed. Each completed turn can be captured as a
+full game checkpoint and forked into a separate paused run. Checkpoint files
+and immutable metadata live below the management data directory. LLM adapter
+state has no registered game-checkpoint adapter and is rejected for checkpoint
+creation. Runs with provider-owned Ocelot resident minds are also rejected
+because this service does not configure Ocelot's resident restore loader. The
+UI reports both backend limitations before checkpoint creation. Local simple
+backend game checkpoints use the engine's built-in restore path. An interrupted
+run can be forked from a verified saved checkpoint, but it is never resumed
+automatically. Remote and multi-user deployment and authentication are out of
+scope.
+
+The command-line service starts without third-party LLM adapters, so configured
+LLM profiles remain unavailable there until an embedding server registers an
+adapter. Python integrations can pass a `BackendAdapterRegistry` to
+`create_server(profile_adapters=...)`; adapters receive the server-side profile
+including any local `secret_ref` and must return an `LLMBackend`. The management
+shell cannot register providers or submit credentials. Only the built-in
+`simple.default` and `ocelot.default` profiles are accepted for those kinds;
+custom simple/Ocelot variants are rejected because the engine does not route
+their settings separately.
+
+Authored scenarios may opt into management cast generation with a
+`management_cast_generation` declaration. The bundled `management_cast_demo`
+scenario declares schema version 1 and supports up to eight generated residents
+because it has eight free home cells. A scenario may declare up to 100 generated
+actors, subject to its map's walkable, unoccupied home cells and the 200-actor
+service limit. Each group selects a declared role, a server backend profile, a
+population count, and optional bounded age/skill/literacy/capability/learning
+ranges. Generated names are stable from group IDs (`group-001`, etc.); each
+generated actor gets a distinct free home. Authored home sharing is preserved,
+but the generator does not infer household relationships or share generated
+homes. The generator uses deterministic trait streams derived from the run's
+single world seed and scenario/config identity, and records its version, inputs,
+generated actor data and hash in the immutable run configuration. Preview and
+launch use the same resolved actor records. `town100` does not declare this
+contract and rejects cast-generation options; its normal cast remains unchanged.
+
+### Recorded reports and comparisons
+
+The report shown under **Reports & events** is a read-only live readout of the
+current in-memory run. Use **Record report snapshot** to preserve an immutable
+report for comparison; snapshots and their run/configuration provenance are
+stored in the local registry and survive a service restart. A restart still
+does not restore the world itself. Compare selects the latest recorded snapshot
+for each selected run. The comparison currently supports schema
+`bigville/report/1` and a small allowlist of count/value metrics with explicit
+units. Unknown schemas, absent snapshots, missing values, and non-numeric
+values are shown as unavailable. Population/social counts have common defined
+units; economic values are compared only when scenario source and content
+identity match. No values are interpolated or reconstructed.
+
+The API offers `POST /api/management/v1/runs/{id}/report-snapshots` to capture,
+`GET /api/management/v1/runs/{id}/report-snapshots` to list,
+`POST /api/management/v1/reports/compare` with `{"run_ids":[...]}`, and
+`GET /api/management/v1/runs/{id}/reproducibility` for a downloadable metadata
+document. Reproducibility export includes normalized configuration, its hash,
+capability/profile revisions, template/checkpoint references, and report
+snapshot IDs. It omits secret-bearing keys and never contains provider
+credential values. Engine build identity is copied from the normalized run
+configuration; if no canonical identifier was available at creation, it stays
+null rather than being guessed.
+
+The shell remains a local, single-user operator tool. Runs use in-memory worlds;
+on service restart unfinished runs are marked interrupted and are not resumed.
+Checkpoints are a separate supported recovery path with adapter restrictions
+described above. Agent perspective responses are server-filtered and do not
+include referee reports. At narrow widths the navigation and form controls
+stack, while wide comparison tables scroll inside their own region. Inputs and
+actions retain visible labels, headings, status announcements, and keyboard
+focus behavior. There is no remote/multi-user deployment or authentication
+claim.
+
+#### Troubleshooting
+
+- If the shell does not load, start the service with `python -m
+  bigville.management.http` and check the local `/api/management/v1/health`
+  endpoint. The service refuses non-loopback bind addresses.
+- If an LLM profile is unavailable, register its adapter in the server process
+  and verify the adapter ID and local profile revision. The shell cannot submit
+  credentials or make an unregistered provider ready.
+- If a run is marked interrupted after restart, its world was in memory and is
+  not recoverable from run metadata. Fork from a supported checkpoint when one
+  exists, or create a new run from the saved template/configuration.
+- If a comparison says a value is unavailable, check that each run has a
+  recorded snapshot and that the report schema is supported. Economic values
+  additionally require matching known scenario and engine/pack source identity.

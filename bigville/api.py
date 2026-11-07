@@ -17,16 +17,18 @@ def _requires_ocelot(scenario, default_backend, player):
 
 
 def create_world(*, scenario="town100", seed=305000, autonomous_actors=False,
-                 cognition_factory=None):
+                 cognition_factory=None, physical_subsystems=None):
     from worlds.bigville_world import BigvilleWorld
 
     if isinstance(scenario, str) and scenario in {"town100", "default"}:
         return BigvilleWorld.from_town100(
             seed=seed, autonomous_actors=autonomous_actors,
-            cognition_factory=cognition_factory)
+            cognition_factory=cognition_factory,
+            physical_subsystems=physical_subsystems)
     return BigvilleWorld.from_scenario(scenario, seed=seed,
                                        autonomous_actors=autonomous_actors,
-                                       cognition_factory=cognition_factory)
+                                       cognition_factory=cognition_factory,
+                                       physical_subsystems=physical_subsystems)
 
 
 def llm_backend_factory(provider):
@@ -42,7 +44,8 @@ def llm_backend_factory(provider):
 def create_game(*, scenario="town100", seed=305000, player=None,
                 default_backend="cheap", backend_factories=None,
                 cognition_factory=None, autonomous=False, ticks_per_period="world",
-                llm_provider=None, llm_log=True, llm_log_dir=None):
+                llm_provider=None, llm_log=True, llm_log_dir=None,
+                physical_subsystems=None):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
@@ -65,7 +68,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                                             kinds.get(name, default_backend) == "ocelot"
                                             else BigvilleOcelotActor(name))
     world = create_world(scenario=scenario, seed=seed, autonomous_actors=False,
-                         cognition_factory=cognition_factory)
+                         cognition_factory=cognition_factory,
+                         physical_subsystems=physical_subsystems)
     factories = dict(backend_factories or {})
     if llm_provider is not None:
         factories["llm"] = llm_backend_factory(llm_provider)

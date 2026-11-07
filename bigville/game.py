@@ -77,6 +77,11 @@ class BigvilleGame:
         self.player = None if autonomous else (player or next(iter(self.characters), None))
         if self.player is not None and not isinstance(self.backends[self.player], HumanBackend):
             self.backends[self.player] = HumanBackend(self.characters[self.player])
+        if self.player is not None:
+            # Ask the waiting human backend before any NPC backend. A missing
+            # human response must not discard already-computed NPC decisions.
+            player_backend = self.backends.pop(self.player)
+            self.backends = {self.player: player_backend, **self.backends}
         self._sync_backend_metadata()
         self._sync_animal_backends()
         self.last_responses: dict[str, ActorResponse] = {}

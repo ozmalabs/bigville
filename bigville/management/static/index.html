@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#20392e">
+  <title>Bigville · Management</title>
+  <link rel="stylesheet" href="/management/management.css">
+  <script src="/management/management.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="side" aria-label="Workspace navigation">
+      <a class="brand" href="/" aria-label="Bigville management home">bigville<span>Simulation workspace</span></a>
+      <nav class="nav" aria-label="Workspace">
+        <span class="nav-label">Workspace</span>
+        <button type="button" class="nav-item active" aria-current="page" aria-controls="runs-panel">Runs</button>
+        <button type="button" class="nav-item" aria-controls="worlds-panel">Worlds &amp; casts</button>
+        <button type="button" class="nav-item" aria-controls="backends-panel">Backends</button>
+      </nav>
+      <p class="side-note">A place to set up, observe and understand your worlds.</p>
+    </aside>
+
+    <main class="main">
+      <header class="top"><span>LOCAL WORKSPACE</span><a class="game-link" href="http://127.0.0.1:8765/">Open existing game <span aria-hidden="true">↗</span></a></header>
+      <section class="intro" aria-labelledby="page-title">
+        <div><p class="eyebrow">BIGVILLE MANAGEMENT</p><h1 id="page-title">Runs</h1>
+          <p id="intro-copy">Create, find and monitor autonomous simulations.</p></div>
+        <span class="tag">Local · management</span>
+      </section>
+
+      <div id="catalog-status" class="status" role="status" aria-live="polite">Loading capability catalog…</div>
+      <div id="catalog-error" class="error" role="alert" hidden>
+        <h2>Catalog could not be loaded</h2><p id="catalog-error-message">Check that the management service is ready, then try again.</p>
+        <button id="retry-button" class="secondary" type="button">Retry catalog</button>
+      </div>
+
+      <div id="action-error" class="error" role="alert" hidden>
+        <h2>Action could not be completed</h2><p id="action-error-message"></p>
+      </div>
+
+      <section id="runs-panel" class="panel" aria-labelledby="runs-heading">
+        <div class="panel-heading"><div><p class="eyebrow">RUNS</p><h2 id="runs-heading">Your simulations</h2></div>
+          <button id="new-run-button" class="primary" type="button">New run</button></div>
+        <p class="section-copy">Create an autonomous simulation or take control of one resident.</p>
+        <section class="template-library" aria-labelledby="template-library-heading">
+          <div class="panel-heading"><h3 id="template-library-heading">Configuration templates</h3><span class="pill">Draft only · not a checkpoint</span></div>
+          <div class="template-controls"><label for="template-choice">Template version</label><select id="template-choice"><option value="">No saved templates</option></select><button id="inspect-template" class="secondary" type="button" disabled>Inspect</button><button id="load-template" class="secondary" type="button" disabled>Load into draft</button></div>
+          <p id="template-status" class="status" role="status" aria-live="polite"></p>
+          <pre id="template-inspection" class="template-inspection" hidden></pre>
+        </section>
+        <div id="runs-load-status" class="status" role="status" aria-live="polite">Loading runs…</div>
+        <div id="run-list" class="run-list" aria-live="polite"></div>
+        <p id="runs-empty" class="empty" hidden>No runs yet. Create a run to begin.</p>
+        <section class="comparison-tools" aria-labelledby="compare-heading">
+          <h3 id="compare-heading">Compare recorded reports</h3>
+          <label for="compare-runs">Runs (select two or more)</label>
+          <select id="compare-runs" multiple size="4" aria-describedby="compare-help"></select>
+          <p id="compare-help" class="help">Only explicitly captured reports are compared. Missing snapshots and incompatible report schemas are shown as unavailable.</p>
+          <button id="compare-button" class="secondary" type="button">Compare latest recorded reports</button>
+          <p id="compare-status" role="status" aria-live="polite"></p>
+          <div id="compare-results" class="comparison-results" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section id="run-view-panel" class="panel" aria-labelledby="run-view-heading" hidden>
+        <button id="back-from-run-view" class="text-button" type="button">← Back to Runs</button>
+        <div class="panel-heading"><div><p class="eyebrow">RUN OVERVIEW</p><h2 id="run-view-heading">Run</h2></div><span id="run-view-status" class="run-status">Loading</span></div>
+        <div id="run-view-meta" class="run-meta"></div>
+        <div id="run-view-error" class="error inline-error" role="alert" hidden></div>
+        <div id="run-view-controls" class="run-actions"></div>
+        <section id="human-turn-panel" class="human-turn-panel" aria-labelledby="human-turn-heading" hidden>
+          <h3 id="human-turn-heading">Player input</h3>
+          <p id="human-turn-status" class="status" role="status" aria-live="polite"></p>
+          <pre id="human-agent-view" class="agent-view-content"></pre>
+          <div id="human-action-options" class="human-action-options"></div>
+        </section>
+        <section class="checkpoint-section" aria-labelledby="checkpoints-heading">
+          <div class="panel-heading"><div><h3 id="checkpoints-heading">Checkpoints</h3><p class="help">Capture the full game state at a quiescent turn boundary. Forks start as separate paused runs.</p></div><button id="create-checkpoint" class="secondary" type="button">Create checkpoint</button></div>
+          <p id="checkpoint-status" class="status" role="status" aria-live="polite"></p>
+          <ul id="checkpoint-list" class="checkpoint-list"></ul>
+        </section>
+
+        <div class="perspective-toolbar">
+          <div class="field"><label for="perspective-choice">Perspective</label><select id="perspective-choice"><option value="referee">Referee · full run state</option><option value="agent">Resident · agent view</option></select></div>
+          <div id="agent-resident-choice" class="field" hidden><label for="agent-resident">Resident</label><select id="agent-resident"></select></div>
+          <p class="perspective-note">The service returns a separate referee or resident view. This local single-user tool is not a multi-user authorization system.</p>
+        </div>
+
+        <section id="referee-view" aria-labelledby="referee-heading" hidden>
+          <h3 id="referee-heading">Referee world</h3>
+          <button id="open-reports" class="secondary" type="button">Reports &amp; events</button>
+          <p id="mapless-fallback" class="empty" hidden>This scenario has no map. Use the resident table below to inspect the run.</p>
+          <iframe id="referee-renderer" class="referee-renderer" title="Referee world map" hidden></iframe>
+          <section class="resident-section" aria-labelledby="population-heading">
+            <h3 id="population-heading">Population</h3>
+            <div class="table-wrap"><table><thead><tr><th scope="col">Resident</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Position</th></tr></thead><tbody id="resident-rows"></tbody></table></div>
+            <div id="resident-detail" class="resident-detail" aria-live="polite"></div>
+          </section>
+        </section>
+        <section id="agent-view" aria-labelledby="agent-heading" hidden>
+          <h3 id="agent-heading">Resident perspective</h3>
+          <p id="agent-view-status" class="status" role="status" aria-live="polite">Choose a resident to load their agent view.</p>
+          <pre id="agent-view-content" class="agent-view-content"></pre>
+        </section>
+      </section>
+
+      <section id="reports-panel" class="panel" aria-labelledby="reports-heading" hidden>
+        <button id="back-from-reports" class="text-button" type="button">← Back to run</button>
+        <div class="panel-heading"><div><p class="eyebrow">REPORTS &amp; EVENTS</p><h2 id="reports-heading">Run report</h2></div><span id="reports-run-status" class="run-status"></span></div>
+        <p class="section-copy">Live reports read current in-memory state. Capture a report to preserve an immutable snapshot for later comparison. World events are recorded history.</p>
+        <div id="report-error" class="error inline-error" role="alert" hidden></div>
+        <section aria-labelledby="latest-report-heading">
+          <div class="panel-heading"><h3 id="latest-report-heading">Live report</h3><div><button id="capture-report" class="secondary" type="button">Record report snapshot</button> <button id="download-reproducibility" class="secondary" type="button">Download reproducibility metadata</button> <button id="download-report" class="secondary" type="button" disabled>Download report JSON</button></div></div>
+          <p id="snapshot-status" class="status" role="status" aria-live="polite"></p>
+          <p id="report-provenance" class="run-meta"></p>
+          <p class="help">Census and sampled measures are labelled in the report's measurement field. Missing values remain null.</p>
+          <pre id="report-json" class="artifact-json"></pre>
+        </section>
+        <section aria-labelledby="events-heading">
+          <div class="panel-heading"><h3 id="events-heading">Recorded events</h3><button id="download-events" class="secondary" type="button" disabled>Download events JSON</button></div>
+          <p id="events-provenance" class="run-meta"></p>
+          <div class="event-filters"><label>Kind <input id="event-kind-filter" type="search" placeholder="All kinds"></label><label>Actor <input id="event-actor-filter" type="search" placeholder="All actors"></label><button id="apply-event-filter" class="secondary" type="button">Apply filters</button></div>
+          <ol id="event-list" class="event-list"></ol>
+          <div class="event-pagination"><button id="events-previous" class="secondary" type="button" disabled>Previous</button><span id="events-page-status" role="status" aria-live="polite"></span><button id="events-next" class="secondary" type="button" disabled>Next</button></div>
+        </section>
+        <section aria-labelledby="trace-heading"><h3 id="trace-heading">Decision trace</h3><p class="notice">Unavailable: this engine does not retain a per-turn decision trace. Reading reports or events will not replay turns or change affordance state.</p></section>
+      </section>
+
+      <section id="new-run-panel" class="panel" aria-labelledby="new-run-heading" hidden>
+        <button id="back-to-runs" class="text-button" type="button">← Back to Runs</button>
+        <div class="panel-heading form-title"><div><p class="eyebrow">NEW RUN</p><h2 id="new-run-heading">Set up a simulation</h2></div></div>
+        <p class="section-copy">Validate and inspect the exact world before creating it. Random creates one concrete seed for this draft.</p>
+        <form id="new-run-form" novalidate>
+          <div class="form-grid">
+            <div class="field"><label for="run-name">Run name</label><input id="run-name" name="name" maxlength="80" required value="Morning in Bigville" autocomplete="off"><p id="error-name" class="field-error" hidden></p></div>
+            <div class="field"><label for="scenario-id">Scenario</label><select id="scenario-id" name="scenario_id" required><option value="">Choose a scenario</option></select><p id="error-scenario_id" class="field-error" hidden></p></div>
+            <div class="field"><label for="world-seed">World seed</label><div class="input-action"><input id="world-seed" name="seed" type="number" min="0" max="9007199254740991" step="1" value="305000" required><button id="random-seed" class="secondary" type="button">Random</button></div><p class="help">The displayed integer is used for preview and launch.</p><p id="error-seed" class="field-error" hidden></p></div>
+            <div class="field"><label for="default-backend">Default backend profile</label><select id="default-backend" name="default_backend"><option value="simple.default">Simple default</option></select><p class="help">Server-configured profiles are used for actors without a scenario or per-actor assignment.</p><p id="error-default_backend" class="field-error" hidden></p></div>
+            <fieldset id="actor-profile-fieldset" class="field actor-profile-fieldset" hidden><legend>Per-actor profile overrides</legend><p class="help">Available only for authored scenarios. Explicit overrides take precedence over scenario assignments and the default profile.</p><div id="actor-profile-assignments"></div><p id="error-actor_backend_profiles" class="field-error" hidden></p></fieldset>
+            <fieldset id="physical-subsystems-fieldset" class="field" hidden><legend>Physical subsystems</legend><p class="help">Inherit each scenario value or engine default, or set an explicit override for this run.</p><div id="physical-subsystem-controls"></div><p id="error-physical_subsystems" class="field-error" hidden></p></fieldset>
+            <div class="field"><label for="run-mode">Run mode</label><select id="run-mode"><option value="autonomous">Autonomous</option><option value="human">Human-controlled</option></select><p class="help">Human-controlled runs wait at the selected resident’s turn for your action.</p><p id="error-autonomous" class="field-error" hidden></p></div>
+            <fieldset id="human-player-fieldset" class="field" hidden><legend>Player resident</legend><label for="human-player">Choose a resident</label><select id="human-player"><option value="">Load the resolved cast first</option></select><button id="load-player-cast" class="secondary" type="button">Load players from preview</button><p class="help">Actions come from the resident’s filtered agent view.</p><p id="error-player" class="field-error" hidden></p></fieldset>
+            <fieldset id="cast-generation-fieldset" class="field cast-generation-fieldset" hidden>
+              <legend>Generated cast</legend>
+              <label class="check-row"><input id="enable-cast-generation" type="checkbox"> Generate residents for this scenario</label>
+              <p class="help">Generated actors use distinct unoccupied walkable home cells. Homes are not shared, and household relationships are not inferred.</p>
+              <div id="cast-generation-editor" hidden><div id="cast-generation-groups"></div>
+                <button id="add-cast-group" class="secondary" type="button">Add cast group</button>
+                <p id="cast-generation-total" class="status" role="status" aria-live="polite"></p>
+              </div>
+              <p id="error-cast_generation" class="field-error" hidden></p>
+            </fieldset>
+            <div class="field"><label for="cadence-choice">Ticks per period</label><select id="cadence-choice" name="ticks_per_period"><option value="world">World default</option><option value="none">Disabled</option><option value="custom">Set a number</option></select><input id="custom-cadence" class="custom-cadence" type="number" min="1" step="1" aria-label="Ticks per period number" hidden><p id="error-ticks_per_period" class="field-error" hidden></p></div>
+            <div class="field"><label for="turn-limit">Turn limit <span class="optional">Optional</span></label><input id="turn-limit" name="turn_limit" type="number" min="1" max="1000000" step="1" placeholder="No limit"><p class="help">A limited run completes after the requested number of turns.</p><p id="error-turn_limit" class="field-error" hidden></p></div>
+          </div>
+          <div class="form-actions"><button id="validate-preview" class="secondary" type="button">Validate &amp; preview</button><span id="validation-status" class="status-inline" role="status" aria-live="polite"></span></div>
+          <p id="error-review" class="field-error" hidden></p>
+        </form>
+        <section id="review-panel" class="review-panel" aria-labelledby="review-heading" hidden>
+          <div class="panel-heading"><div><p class="eyebrow">REVIEW</p><h3 id="review-heading">Resolved configuration</h3></div><span class="pill">Preview only</span></div>
+          <dl id="review-summary" class="review-summary"></dl>
+          <div class="review-columns"><div><h4>Resolved cast</h4><ul id="review-cast"></ul></div><div><h4>Physical subsystems</h4><ul id="review-subsystems"></ul></div></div>
+          <div class="preview-map"><h4>Map preview</h4><div id="map-summary"></div><pre id="map-grid" aria-label="Preview map"></pre></div>
+          <p class="hash-line">Configuration hash <code id="config-hash"></code></p>
+          <p id="review-warning" class="notice" hidden></p>
+          <div class="template-save"><label for="template-name">Template name</label><input id="template-name" maxlength="80" placeholder="Optional · uses run name"><button id="save-template" class="secondary" type="button">Save this version</button><span id="template-save-status" class="status-inline" role="status" aria-live="polite"></span></div>
+          <div class="form-actions"><button id="create-start" class="primary" type="button" disabled>Create &amp; start run</button><span id="launch-status" class="status-inline" role="status" aria-live="polite"></span></div>
+        </section>
+      </section>
+
+      <section id="worlds-panel" class="panel" aria-labelledby="worlds-heading">
+        <div class="panel-heading"><div><p class="eyebrow">WORLDS &amp; CASTS</p><h2 id="worlds-heading">Scenario catalog</h2></div><span id="scenario-count" class="count"></span></div>
+        <p class="section-copy">Built-in and authored scenarios discovered from the engine. This catalog does not preview or create worlds.</p>
+        <div id="scenario-list" class="scenario-grid" aria-live="polite"></div>
+        <p id="scenario-empty" class="empty" hidden>No scenarios are available.</p>
+      </section>
+
+      <section id="backends-panel" class="panel" aria-labelledby="backends-heading" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">BACKENDS</p><h2 id="backends-heading">Decision integrations</h2></div></div>
+        <p class="section-copy">Availability reflects this service configuration. No provider is started or contacted here.</p>
+        <div id="backend-list" class="backend-list" aria-live="polite"></div>
+        <p id="backend-empty" class="empty" hidden>No backends are reported.</p>
+      </section>
+      <footer class="footer">Local single-user service · <span id="build-label">engine build unknown</span></footer>
+    </main>
+  </div>
+</body>
+</html>
