@@ -269,6 +269,40 @@ uses, then re-run the LA06 evaluation.
 
 **Gate:** targeted lazy tests, the work-filter matrix, and the re-evaluation.
 
+### LA08 — Default rollout
+
+**Scope:** Add an `"auto"` mode and make it the `create_game` default after the
+LA07 evidence. `auto` resolves to `lazy` only for an autonomous session with no
+player, a built-in simple/cheap default backend, and no LLM or Ocelot actor.
+Everything else resolves to `menu`. A direct `BigvilleGame` constructor keeps
+`menu` as its default; callers may pass `"auto"` explicitly.
+
+**Files:** `bigville/game.py`, `bigville/api.py`,
+`tests/test_lazy_default.py` (new), `tools/evaluate_affordance_modes.py` only
+if the evidence needs another mode label, `docs/phases/lazy-affordances/LA08_REPORT.md`,
+`FINAL_REPORT.md`, `README.md`, this plan's status table.
+
+**Deliverables:**
+- `"auto"` is a validated request value; the game exposes the resolved mode
+  (`affordance_mode`) and the requested value.
+- `create_game` defaults to `"auto"`; explicit `"menu"`/`"lazy"` still win.
+- Resolution is deterministic and documented. It never silently downgrades an
+  unsupported combination; it selects menu for player/LLM/Ocelot.
+- Tests: resolution matrix (autonomous simple -> lazy; player -> menu;
+  LLM/Ocelot -> menu; explicit modes unchanged); menu remains available for
+  UI/Ocelot/debug.
+- Run the affected existing tests. If the new default breaks tests that
+  specifically assert menu behaviour, pass `affordance_mode="menu"` in those
+  tests only where they are menu tests; do not weaken behavioural assertions.
+  If failures cannot be resolved without hiding a regression, revert the
+  default and report it.
+- Re-run the LA06/LA07 evaluation on the resolved defaults and record the
+  final numbers. Update `FINAL_REPORT.md` and the README to say what is now
+  the default and what remains menu-only.
+
+**Gate:** targeted suites plus the evaluation; full suite remains the final
+gate on an idle host.
+
 ## Status
 
 | Phase | Status | Commit |
@@ -279,7 +313,8 @@ uses, then re-run the LA06 evaluation.
 | LA04 | complete | `e1a8829` |
 | LA05 | complete | `ab6d8e7` |
 | LA06 | complete | `e687661` |
-| LA07 | ready (follow-up from LA06) | — |
+| LA07 | complete (uncommitted) | — |
+| LA08 | ready | — |
 
 ## Results
 
