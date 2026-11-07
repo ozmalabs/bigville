@@ -1000,6 +1000,10 @@
     {
       "name": "SPEECH_UNDERSTANDING",
       "file": "world/speech_acts.json"
+    },
+    {
+      "name": "SPEECH_PARSER",
+      "file": "world/speech_parser.json"
     }
   ]
 }

@@ -1,0 +1,179 @@
+s....................................................................... [  3%]
+........................................................................ [  6%]
+......................................................s................. [ 10%]
+......s....................ssss..............F.......................... [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 20%]
+.....ss................................................................. [ 23%]
+........................................................................ [ 26%]
+........................................................................ [ 30%]
+........................................................................ [ 33%]
+........................................................................ [ 37%]
+........................................................................ [ 40%]
+........................................................................ [ 43%]
+........................................................................ [ 47%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 67%]
+........................................................................ [ 70%]
+........................................................................ [ 74%]
+........................................................................ [ 77%]
+........................................................................ [ 80%]
+.................................F...................................... [ 84%]
+..................................................FFFF.................. [ 87%]
+........................................................................ [ 90%]
+...................sss.................................................. [ 94%]
+........................................................................ [ 97%]
+....................................................                     [100%]
+=================================== FAILURES ===================================
+________ test_asset_manifest_covers_entity_items_and_modular_buildings _________
+
+    def test_asset_manifest_covers_entity_items_and_modular_buildings():
+        import json
+        from domains import bigville_entities as entities
+        from bigville.server import GAME_ROOT
+    
+        manifest = json.loads((GAME_ROOT / "assets/manifest.json").read_text())
+        assert set(entities.ITEMS) <= set(manifest["items"]["icons"])
+>       assert set(entities.BUILDINGS) <= set(manifest["buildings"]["sprites"])
+E       AssertionError: assert {'bakery', 'b...st_yard', ...} <= {'bakery', 'b...cobbler', ...}
+E         
+E         Extra items in the left set:
+E         'jail'
+
+/home/matt/ozmadev/bigville/tests/test_bigville_server.py:60: AssertionError
+_ test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical _
+
+    def test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical():
+        turns = 2
+        sequential_provider = FakeProvider(varied_reply, delay=0.3)
+        sequential = build_llm_town(sequential_provider, llm_residents=8, concurrency=4, llm_log=False)
+        for backend in (sequential.backends[name] for name in sequential.llm_residents):
+            backend.concurrent = False
+        started = time.perf_counter()
+        sequential_digest = _run(sequential, turns)
+        sequential_seconds = time.perf_counter() - started
+    
+        concurrent_provider = FakeProvider(varied_reply, delay=0.3)
+        concurrent = build_llm_town(concurrent_provider, llm_residents=8, concurrency=4, llm_log=False)
+        started = time.perf_counter()
+        concurrent_digest = _run(concurrent, turns)
+        concurrent_seconds = time.perf_counter() - started
+    
+        assert concurrent_digest == sequential_digest
+        assert _calls(concurrent_provider) == _calls(sequential_provider)
+        # Consults are gated by the autopilot, so not every resident is asked every turn.
+        assert 0 < len(concurrent_provider.calls) <= 8 * turns
+        print(f"\nSPEEDUP sequential={sequential_seconds:.2f}s concurrent={concurrent_seconds:.2f}s "
+              f"ratio={concurrent_seconds / sequential_seconds:.2f} calls={len(concurrent_provider.calls)}")
+>       assert concurrent_seconds < 0.75 * sequential_seconds, (sequential_seconds, concurrent_seconds)
+E       AssertionError: (14.098930655047297, 10.786454366985708)
+E       assert 10.786454366985708 < (0.75 * 14.098930655047297)
+
+/home/matt/ozmadev/bigville/tests/test_phase055_concurrency.py:56: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+SPEEDUP sequential=14.10s concurrent=10.79s ratio=0.77 calls=13
+___ test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it ___
+
+    def test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it():
+        server, service = _serve_with_service()
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            row = next(r for r in session.view["can"] if r["action"] == "work")
+            before = service.game.world._turn
+            session.line("look")
+            out = session.line(str([r["handle"] for r in session.view["can"]].index(row["handle"]) + 1))
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert service.game.world._turn == before + 1
+>       assert service.game.last_responses[PLAYER].major_action.action == "work"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+/home/matt/ozmadev/bigville/tests/test_phase057_tui.py:642: AttributeError
+______ test_over_http_walking_to_a_known_place_sends_the_rows_destination ______
+
+    def test_over_http_walking_to_a_known_place_sends_the_rows_destination():
+        walker = "Verity Peaseblossom"                      # a resident who knows exact places at the start
+        server, service = _serve_with_service(walker)
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", walker))
+            walk = next((r for r in session.view["can"] if r["action"] == "walk"), None)
+            assert walk is not None
+            session.line("walk to " + walk["what"].replace("walk to the ", ""))
+        finally:
+            server.shutdown()
+            server.server_close()
+        proposal = service.game.last_responses[walker].major_action
+>       assert proposal.action == "move" and proposal.params.get("destination") is not None
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+/home/matt/ozmadev/bigville/tests/test_phase057_tui.py:660: AttributeError
+_____________ test_over_http_a_reaction_is_delivered_to_the_holder _____________
+
+    def test_over_http_a_reaction_is_delivered_to_the_holder():
+        server, service = _serve_with_service()
+        game = service.game
+        taker = "Kester Furlong"
+        game.world._move_actor_to(taker, game.world.actor_position(PLAYER))
+        game.world.set_coin(PLAYER, 9.0)
+    
+        class Taker(DeterministicBackend):
+            def decide(self, context):
+                return ActorResponse(major_action=ProposedAction(
+                    "take", {"source": PLAYER, "kind": "coin", "amount": 3.0}))
+    
+        game.set_backend(taker, Taker(game.characters[taker]))
+        for name in game.characters:
+            if name not in (PLAYER, taker):
+                game.set_backend(name, DeterministicBackend(game.characters[name]))
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            out = session.line("wait")
+            assert session.view.get("reaction"), out
+            answer = session.line("resist")
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert answer[0] == "You hold on and resist."
+>       assert game.contest_log and game.contest_log[-1]["reaction"] == "resist"
+E       assert (deque([]))
+E        +  where deque([]) = <bigville.game.BigvilleGame object at 0x733ecb393e50>.contest_log
+
+/home/matt/ozmadev/bigville/tests/test_phase057_tui.py:688: AssertionError
+___ test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for ___
+
+    def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
+        server, service = _serve_with_service()
+        try:
+            url = f"http://127.0.0.1:{server.server_port}/api/turn"
+    
+            def post(body):
+                req = urlrequest.Request(url, data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+                try:
+                    with urlrequest.urlopen(req) as response:
+                        return response.status, json.loads(response.read())
+                except urlrequest.HTTPError as exc:
+                    return exc.code, json.loads(exc.read())
+    
+            status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
+>           assert status == 400 and "intensity must be" in body["error"]
+E           assert (200 == 400)
+
+/home/matt/ozmadev/bigville/tests/test_phase057_tui.py:706: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_server.py::test_asset_manifest_covers_entity_items_and_modular_buildings
+FAILED tests/test_phase055_concurrency.py::test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical
+FAILED tests/test_phase057_tui.py::test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it
+FAILED tests/test_phase057_tui.py::test_over_http_walking_to_a_known_place_sends_the_rows_destination
+FAILED tests/test_phase057_tui.py::test_over_http_a_reaction_is_delivered_to_the_holder
+FAILED tests/test_phase057_tui.py::test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for
+6 failed, 2122 passed, 12 skipped in 2993.26s (0:49:53)
+PYTEST_EXIT=1

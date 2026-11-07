@@ -2858,7 +2858,7 @@ persuasion and multi-turn dialogue beyond a reply to the last remark.
 
 ## Phase 061 -- Speech parser service: a small model, a cache, and the fixed reference
 
-**Status:** ready, after 055 and 060.
+**Status:** done (parser off unless a caller passes one), see `docs/phases/phase061/PHASE061_REPORT.md`.
 
 **Goal.** Place free text that the grammar cannot, cheaply and repeatably, for listeners that are simple
 backends. Optional, off unless a provider is configured.
@@ -3421,3 +3421,4 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 | 039 Doors and confinement | done | (this commit) | docs/phases/phase039/PHASE039_REPORT.md -- one door and entrance per building, door_locked crossings, lock by building name, forcing by attempt, jail row; 2098 passed |
 | 042 Day, night and lamps | done (switch off) | (this commit) | docs/phases/phase042/PHASE042_REPORT.md -- pure sky maths (`domains/daynight.py`), world facts in `worlds/daynight.py` (sees_dark, lamps with oil, light and douse actions, candles, shorter sight, slower and wasteful dark work on the fitness path, lateness from the real sunset), lamplighter job and backend round, light words in the view; off by default because the round never lights a lamp in 200 ticks; off is byte-identical to HEAD; 29 tests; 1807 passed |
 | 060 Structured speech in | done (switch off) | (this commit) | docs/phases/phase060/PHASE060_REPORT.md -- pack table `SPEECH_ACTS` (acts, slots, understood_by), `domains/speech_grammar.py` grammar, `bigville/backends/speech_in.py` places a heard utterance as an act and a `give` request changes what the listener does (fetch and tell are declined in words); `SPEECH_UNDERSTANDING.enabled` defaults off, and off is identical to HEAD (0 of 100 residents differ over 60 turns); 62 focused tests; 2076 passed, 1 timing-flaky speed test |
+| 061 Speech parser service | done (off) | (this commit) | docs/phases/phase061/PHASE061_REPORT.md -- `bigville/backends/speech_parser.py` asks a small model to place what the grammar cannot, with a fixed cached reference prefix (`SPEECH_PARSER`), a one-shot repair, and a failure counted by cause; `speech_in.using_parser` is the only way in, so with no parser the result is unchanged; on 200 labelled utterances the grammar alone places 47 (7 misplaced), grammar plus a scripted-perfect model 155, with 14 scripted mistakes 151 (14 misplaced); real-model run not done; 25 tests; 2100 passed, 2 timing flakes that pass alone |

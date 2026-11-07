@@ -32,6 +32,7 @@ from domains.pack import load_pack
 from ..character import MemoryRecord
 
 _OVERRIDE = None          # None: the pack's switch. True or False: a test or a measurement forces it.
+_PARSER = None            # Phase 061: a SpeechParser for `understand` (None: no parser).
 _GIVE = re.compile(r"^(?:give|bring|hand|pass)(?: me| us)?(?: the| a| an| some)? (?P<item>[a-z][a-z' \-]*)$")
 
 
@@ -44,6 +45,18 @@ def switched(value: bool):
         yield
     finally:
         _OVERRIDE = previous
+
+
+@contextmanager
+def using_parser(parser):
+    """Phase 061: the speech parser that `hear` gives to `understand` inside the block. None (the default) means no
+    parser, so an utterance the grammar cannot place stays unplaced."""
+    global _PARSER
+    previous, _PARSER = _PARSER, parser
+    try:
+        yield
+    finally:
+        _PARSER = previous
 
 
 @lru_cache(maxsize=None)
@@ -95,11 +108,14 @@ def _from_raw(raw, rows):
     return act, slots
 
 
-def understand(utterance, listener_context=None):
+def understand(utterance, listener_context=None, parser=None):
     """Place one heard utterance (a heard_utterances record, or {"text", "raw_data"}).
 
     Returns {act, slots, confidence, source} with source "raw" or "grammar", or None when neither places it.
-    `listener_context["stranger"]` true scales the confidence by SPEECH_UNDERSTANDING's stranger_factor."""
+    `listener_context["stranger"]` true scales the confidence by SPEECH_UNDERSTANDING's stranger_factor.
+    Phase 061: when the raw payload and the grammar both fail and `parser` is given, `parser.parse` is asked
+    (it is called with the speaker, the listener from `listener_context["listener"]`, and the context). With
+    `parser` None (the default) the result is unchanged."""
     context = dict(listener_context or {})
     effects = _settings()["effects"]
     rows, rules = _compiled()
@@ -110,7 +126,10 @@ def understand(utterance, listener_context=None):
     else:
         found = G.place(str(utterance.get("text", "") or ""), rules)
         if found is None:
-            return None
+            if parser is None:
+                return None
+            return parser.parse(str(utterance.get("text", "") or ""), utterance.get("speaker"),
+                                context.get("listener"), context)
         act, slots = found["act"], found["slots"]
         source, confidence = "grammar", float(effects["grammar_confidence"])
     if context.get("stranger"):
@@ -247,7 +266,12 @@ def hear(backend, context) -> None:
         state.stats["heard"] += 1
         speaker = str(record.get("speaker", ""))
         tie = float(nearby.get(speaker, {}).get("tie_strength", 0.0))
-        placed = understand(record, {"stranger": tie <= 0.0})
+        placed = understand(record, {"stranger": tie <= 0.0, "listener": backend, "turn": turn,
+                                     "names": [str(r.get("name", rid)) for rid, r in nearby.items()],
+                                     "listener_name": str(getattr(backend.character, "name", "listener")),
+                                     "topic_words": list(dict.fromkeys(str(o.get("kind")) for o in context.affordances
+                                                                      if o.get("kind")))[:8]},
+                            parser=_PARSER)
         if placed is None:
             state.stats["unplaced"] += 1
             continue
