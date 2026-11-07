@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import re
 
-from domains import map_memory, perceiver
+from domains import map_memory, perceiver, reading
 from domains.affordance_handles import handle_pairs
 from domains.data_view import entities
 from domains.lexicon import describe, quantities
@@ -355,7 +355,12 @@ def _around(game, actor, pack, known, rec=None, log=None):
         who = words["you"] if who == actor else (who if who in known else words["someone"])
         seen.append(_check_keys("seen", {"who": who, "did": words["moved"]}, pack))
     things = _things(world, actor, pack, rec, log)
-    return _check_keys("around", {"people": people, "heard": heard, "seen": seen, "things": things}, pack)
+    around = {"people": people, "heard": heard, "seen": seen, "things": things}
+    # Phase 064: written marks in sight, read at the resident's literacy (off unless READING.enabled).
+    writing = reading.writing_rows(game, actor, rec, pack, log) if rec is not None else None
+    if writing:
+        around["writing"] = writing
+    return _check_keys("around", around, pack)
 
 
 def _things(world, actor, pack, rec=None, log=None):

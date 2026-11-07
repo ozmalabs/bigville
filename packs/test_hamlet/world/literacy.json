@@ -1,0 +1,173 @@
+{
+  "_doc": "READING AND NUMERACY (Phase 064): what a resident makes of written marks and of counts and prices, at the agent view. A written mark is a physical object in the world whose id is a key of WRITTEN_MARKS; its text is authored here (the world holds no text on signs). The reader's literacy tier (LITERACY_TIERS, named by domains/shared_frames.py literacy_tier) chooses how much of the text reaches the resident. Its numeracy tier (NUMERACY_TIERS) chooses how a count or a price is put into words.\n\nSWITCH. READING.enabled defaults to false. Off, the agent view has no `writing` rows and nothing is learned. The reading percept needs the perceiver record of Phase 062, so PERCEPTION.enabled must be on as well.\n\nREADING. squiggle: what an unknown word looks like. dark_lights: the light keys in which no mark can be read (or learned). common_numerals: the number words every resident knows. learned_max: the most words a resident can learn from use (a bound on held state; APPROX, a display and memory cap, not a measured figure). learned_kind: the memory kind a learned word is held under.\n\nLITERACY_TIERS. One row per literacy tier, in order. reads: 'words' (the resident sees the words it knows amid squiggles; a mark with no known word reads as unreadable), 'short' (the short text of the mark), or 'full' (the whole text).\n\nRECOGNITION. A resident recognises a word it has from its trade (RECOGNISED_SEED, by trade name), its own name, the common numerals, and the words it has learned from use. Recognition does not need literacy: a labourer who knows ALE sees ALE on a sign. A resident learns a word when the referent of a mark it has seen (refers_to) is carried or in view and the mark is in sight in the light. Learning is not reading: a learned word does not raise the literacy attribute of the world (APPROX, not modelled here).\n\nNUMERACY_TIERS. One row per numeracy tier, by the lowest level it takes (the level is the world's `capability` attribute, the general reckoning and comprehension of a resident; frames/constants.json). exact_max: a count up to this is said in words (spelled, no digits). few_max: a count up to this (and above exact_max) is 'a few'; above it is 'many'. prices: 'units' (a price is said in the unit the mark gives, a loaf, when the resident trades in it) or 'figure' (the price in coins). The threshold levels are APPROX (authored, not measured).\n\nNUMERACY_UNITS. A unit of trade, its value in coins, and its words. The coin value of a loaf is 2.0, the shop price default of the world (prices.json shop_price, a model default, APPROX).\n\nNUMERAL_WORDS. The spelled numbers: words for 0 to 20, the tens words for 20 to 90, and the words for a hundred and 'and'. Counts above 999 are said as 'many'. No view string carries a digit (agent_view.py rule).\n\nWRITTEN_KINDS. Each written kind (sign, price, notice) has a label and one template per reading mode: `words` (the words amid squiggles, {shown}), `short` ({short}), `full` ({text}), and `unreadable` for a mark with no known word. Which mode a literacy tier gets is LITERACY_TIERS.reads, so a tier can be changed in data. The self-test finds a kind with no template for a mode in use.\n\nWRITTEN_MARKS. Keyed by physical object id. kind names a WRITTEN_KINDS entry; refers_to is the item the mark names (lowercase; it must appear in text). text is the whole text and short the plain short text; {price} in either is replaced by the price in the reader's numeracy words. A price mark also gives price (coins) and unit (a NUMERACY_UNITS key). The prices are authored on the sign, not read from a shop, so they do not move with the market (a limit of Phase 064).\n\nRECOGNISED_SEED. The words a resident of each trade recognises from its trade (keys are TRADES keys). Authored, APPROX.",
+  "_types": {},
+  "tables": {
+    "READING": {
+      "enabled": false,
+      "squiggle": "~~~",
+      "dark_lights": [
+        "dark"
+      ],
+      "learned_max": 40,
+      "common_numerals": [
+        "one",
+        "two",
+        "three"
+      ],
+      "learned_kind": "learned_word"
+    },
+    "LITERACY_TIERS": [
+      {
+        "tier": "labouring",
+        "reads": "words"
+      },
+      {
+        "tier": "functional",
+        "reads": "short"
+      },
+      {
+        "tier": "educated",
+        "reads": "full"
+      }
+    ],
+    "NUMERACY_TIERS": [
+      {
+        "tier": "tally",
+        "min_level": 0.0,
+        "exact_max": 3,
+        "few_max": 6,
+        "prices": "units"
+      },
+      {
+        "tier": "small",
+        "min_level": 0.6,
+        "exact_max": 20,
+        "few_max": 20,
+        "prices": "units"
+      },
+      {
+        "tier": "commercial",
+        "min_level": 0.8,
+        "exact_max": 999,
+        "few_max": 999,
+        "prices": "figure"
+      },
+      {
+        "tier": "advanced",
+        "min_level": 0.95,
+        "exact_max": 999,
+        "few_max": 999,
+        "prices": "figure"
+      }
+    ],
+    "NUMERACY_UNITS": {
+      "loaf": {
+        "coin": 2.0,
+        "singular": "loaf",
+        "plural": "loaves"
+      },
+      "coin": {
+        "coin": 1.0,
+        "singular": "coin",
+        "plural": "coins"
+      }
+    },
+    "NUMERAL_WORDS": {
+      "words": [
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "twenty"
+      ],
+      "tens": [
+        "",
+        "",
+        "twenty",
+        "thirty",
+        "forty",
+        "fifty",
+        "sixty",
+        "seventy",
+        "eighty",
+        "ninety"
+      ],
+      "hundred": "hundred",
+      "and": "and"
+    },
+    "WRITTEN_KINDS": {
+      "sign": {
+        "label": "a sign",
+        "tiers": {
+          "unreadable": "{label}: marks you cannot read",
+          "words": "{label}: {shown}",
+          "short": "{label}: {short}",
+          "full": "{label}: {text}"
+        }
+      },
+      "price": {
+        "label": "a price sign",
+        "tiers": {
+          "unreadable": "{label}: marks you cannot read",
+          "words": "{label}: {shown}",
+          "short": "{label}: {short}",
+          "full": "{label}: {text}"
+        }
+      },
+      "notice": {
+        "label": "a notice",
+        "tiers": {
+          "unreadable": "{label}: marks you cannot read",
+          "words": "{label}: {shown}",
+          "short": "{label}: {short}",
+          "full": "{label}: {text}"
+        }
+      }
+    },
+    "WRITTEN_MARKS": {
+      "ale_sign": {
+        "kind": "sign",
+        "refers_to": "ale",
+        "text": "ALE sold here",
+        "short": "ALE, sold here"
+      },
+      "ale_price": {
+        "kind": "price",
+        "refers_to": "ale",
+        "text": "ALE {price} a pint",
+        "short": "ALE {price}",
+        "price": 2.0,
+        "unit": "loaf"
+      },
+      "mill_notice": {
+        "kind": "notice",
+        "refers_to": "mill",
+        "text": "MILL closed Monday for the stones",
+        "short": "MILL closed Monday"
+      }
+    },
+    "RECOGNISED_SEED": {
+      "baker": [
+        "bread",
+        "loaf",
+        "flour"
+      ]
+    }
+  }
+}

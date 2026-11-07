@@ -1036,6 +1036,38 @@
     {
       "name": "PERCEIVER_TIERS",
       "file": "world/perception.json"
+    },
+    {
+      "name": "READING",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "LITERACY_TIERS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "NUMERACY_TIERS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "NUMERACY_UNITS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "NUMERAL_WORDS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "WRITTEN_KINDS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "WRITTEN_MARKS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "RECOGNISED_SEED",
+      "file": "world/literacy.json"
     }
   ]
 }

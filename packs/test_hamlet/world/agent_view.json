@@ -75,11 +75,15 @@
         "people",
         "heard",
         "seen",
-        "things"
+        "things",
+        "writing"
       ],
       "thing": [
         "handle",
         "what"
+      ],
+      "writing": [
+        "percept"
       ],
       "person": [
         "name",
