@@ -21,7 +21,11 @@
       },
       "strike": {
         "kind": "violence",
-        "description": "Strike a person standing on your cell with your bare hands. Name the target and an intensity (1.0 is a normal blow; less is a pull, more forces it). The blow's harm and its cost come from your strength, size, skill and stamina, against what the target does: it may resist, brace, step away, or take the blow. A blow with little stamina left lands weakly. The world records the blow as a physical event for those who can see you; it does not judge whether the blow was justified."
+        "description": "Strike a person standing on your cell with your bare hands, or with an object you hold in your hand (name it as with). Name the target and an intensity (1.0 is a normal blow; less is a pull, more forces it). The blow's harm and its cost come from your strength, size, skill and stamina, against what the target does: it may resist, brace, step away, or take the blow. A heavy object you cannot manage costs more and swings clumsily. A blow with little stamina left lands weakly. The world records the blow as a physical event for those who can see you; it does not judge whether the blow was justified."
+      },
+      "throw": {
+        "kind": "violence",
+        "description": "Throw an object you hold in your hand at a person or a cell you can see along a clear line. Name the object (with), the target and an intensity (1.0 is a normal throw; more goes further and harder, and aims worse). The range comes from your strength and the object's weight, and an obstacle on the line stops it. A throw short of the target or stopped by a wall is not refused: the object lands where it stops. A person in reach may step aside. A hit does the object's harm, and a breakable object (a wooden mug at a wall) breaks. The world records the throw as a physical event for those who can see you; it does not judge whether it was meant."
       },
       "restrain": {
         "kind": "contest",

@@ -167,6 +167,8 @@ MATERIALS = _PACK["MATERIALS"]
 RESOLUTION = _PACK["RESOLUTION"]
 # Phase 048: TOOL_FIT, the tool-facing part of the resolution (closeness, hardness, edge, weight, authored rows).
 TOOL_FIT = _PACK["TOOL_FIT"]
+# Phase 040: OBJECT_FORCE, what an object held in hand does when swung or thrown (harm curve, range, breakage).
+OBJECT_FORCE = _PACK["OBJECT_FORCE"]
 # Phase 047: JOINT_TASKS, people acting together (carry and crew). Numbers and sources are in the table's _doc.
 JOINT_TASKS = _PACK["JOINT_TASKS"]
 REST_RECOVERY_PER_UNIT = EXHAUSTION["rest_recovery_per_unit"]

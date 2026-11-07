@@ -1,0 +1,26 @@
+{
+  "_doc": "OBJECT_FORCE (Phase 040): objects as arms. Swinging (strike with) and throwing (throw) an object held in a hand. Every number is APPROX, a model choice with no source consulted. The same table as the bigville pack, where the full description and the keys are given; this pack uses it only for its own self-test. Switch: physical_subsystems.object_force (default off).",
+  "_types": {},
+  "tables": {
+    "OBJECT_FORCE": {
+      "harm_scale": 2.0,
+      "weight_reference": 1.0,
+      "weight_exponent": 0.5,
+      "weight_term_min": 0.1,
+      "weight_term_max": 3.0,
+      "hardness_reference": 0.6,
+      "unknown_hardness": 0.02,
+      "edge_bonus": 0.5,
+      "throw_harm": 0.12,
+      "throw_demand_unit": 3.0,
+      "range_base": 6.0,
+      "range_max": 12,
+      "distance_reference": 3.0,
+      "accuracy_intensity_loss": 0.5,
+      "passive_defence": 0.5,
+      "unwieldy_above": 1.0,
+      "container_fragility": 0.5,
+      "any_fragility": 0.97
+    }
+  }
+}

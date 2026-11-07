@@ -985,8 +985,9 @@ class BigvilleGame:
 
     @staticmethod
     def _is_contest(response: ActorResponse) -> bool:
-        """Phase 038: a take or a strike, each a contest that can wait for the target's reaction (Phase 033: or a restraint)."""
-        return response.major_action is not None and response.major_action.action in ("take", "strike", "restrain")
+        """Phase 038: a take or a strike, each a contest that can wait for the target's reaction (Phase 033: or a restraint;
+        Phase 040: or a throw at a person, whose only reaction is stepping aside)."""
+        return response.major_action is not None and response.major_action.action in ("take", "strike", "restrain", "throw")
 
     @staticmethod
     def _is_joint(response: ActorResponse) -> bool:

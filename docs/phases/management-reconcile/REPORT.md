@@ -10,3 +10,5 @@ Validation:
 - `git diff --cached --check`: clean.
 
 The earlier management integration full suite passed 1876 tests with 2 skipped before the additional main commits. A full repository suite was not rerun for this reconciliation.
+
+A subsequent reconciliation also incorporated main commits `cc79ae5` and `77543be` before updating main. It merged automatically. `python3 -m pytest -q tests/management tests/test_phase040_objects_as_arms.py tests/test_fix_llm_checkpoint.py tests/test_bigville_game_persistence.py` passed: 205 passed, 1 skipped. The entity self-test reported 0 errors and 0 warnings. The suspended tracked working diff was probed against this merge in a separate worktree and applied without conflicts.

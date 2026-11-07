@@ -72,8 +72,9 @@
         "primitive": "displace",
         "skill": "fighting",
         "work": "throw",
-        "description": "Throw a thing through the air. Displace primitive, not implemented yet (blows and throws belong to Phase 038), so refused as unsupported.",
-        "implemented": false
+        "route": "throw",
+        "description": "Throw a thing through the air. Displace primitive, routed to the throw action (Phase 040): the object's weight, material and your strength set its range and harm, and it lands, hits, or breaks. Needs physical_subsystems.object_force.",
+        "implemented": true
       },
       "open": {
         "primitive": "open",
