@@ -432,7 +432,11 @@ class LLMBackend:
                 return ("fallback", "provider_error", exc, record, prompt_hash)
             self._record_cost(day, started)
             last_text = message_text(raw)
-            wire, as_sent, errors = self._check(raw, fields, context.affordances)
+            # LA05: a lazy context's capability rows carry no bindable handle. The autopilot may have filled
+            # context.affordances with its own candidate list before this consult; the model's direct params
+            # must not be bound to those rows, so the lazy path passes the explicit empty menu.
+            affordances = [] if isinstance(context.observations.get("entities"), dict) else context.affordances
+            wire, as_sent, errors = self._check(raw, fields, affordances)
             if wire is not None:
                 outcome = "repaired" if attempt else "accepted"
                 self._log_attempt(context, consult_reason, thread, mode, compacted, attempt, messages, raw,

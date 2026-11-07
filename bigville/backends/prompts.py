@@ -272,6 +272,8 @@ class PromptBuilder:
         self.pack_hash = pack_hash(self.pack)
         self.system = build_system_text(self.pack)
         self.packet_system: str | None = None
+        # LA05: the lazy packet's system text keeps the pack rules and adds the direct-params contract.
+        self.packet_system_lazy: str | None = None
         selection = dict(self.pack["PROMPT_SELECTION"])
         selection["gist"] = dict(self.pack["MEMORY_GIST"])
         self.selection = selection
@@ -312,12 +314,23 @@ class PromptBuilder:
                             pack=self.pack.name, pack_hash=self.pack_hash)
 
     def _packet(self, context: ActorContext, consult_reason: str | None, choices) -> PromptRecord:
-        """The Phase 054 packet. The system text is the packet's own, built from the pack."""
-        if self.packet_system is None:
-            self.packet_system = packet_system(self.pack.name)
+        """The Phase 054 packet. The system text is the packet's own, built from the pack. LA05: a lazy context
+        (it carries `observations.entities` and no menu) gets the lazy contract; menu mode is unchanged."""
+        # The lazy marker is the observation itself. The LLM backend's autopilot may have filled
+        # context.affordances with its own candidate rows before the consult; that must not turn the packet
+        # back into the menu interface.
+        lazy = isinstance((context.observations or {}).get("entities"), dict)
+        if lazy:
+            if self.packet_system_lazy is None:
+                self.packet_system_lazy = packet_system(self.pack.name, lazy=True)
+            system = self.packet_system_lazy
+        else:
+            if self.packet_system is None:
+                self.packet_system = packet_system(self.pack.name)
+            system = self.packet_system
         ctx, meta = build_packet(context, pack=self.pack.name, consult_reason=consult_reason, choices=choices)
-        ctx["sizes"]["system"] = len(self.packet_system)
-        return PromptRecord(PACKET_SCHEMA, self.packet_system, ctx, pack=self.pack.name,
+        ctx["sizes"]["system"] = len(system)
+        return PromptRecord(PACKET_SCHEMA, system, ctx, pack=self.pack.name,
                             pack_hash=self.pack_hash, meta=meta)
 
     def _outcome_entry(self, outcome) -> dict[str, Any]:

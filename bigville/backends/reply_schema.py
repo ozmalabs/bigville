@@ -17,11 +17,15 @@ Nothing here decides anything. It only reads words into the world's own vocabula
 """
 from __future__ import annotations
 
+import re
+
 from domains.affordance_handles import handle_pairs
 from domains.lexicon import amount_value, intensity_value, resolve_verb
 from domains.pack import load_pack
 
 ERRORS_PER_RESPONSE = 5
+# LA05: a lazy view's place handle is a stable cell ("cell:x,y"). It is a direct param, not a menu row.
+_CELL_HANDLE = re.compile(r"^(?:cell:)?(-?\d+),(-?\d+)$")
 
 
 def schema(pack: str) -> dict:
@@ -130,10 +134,29 @@ def bind_row(name: str, handle: str, affordances, pack: str) -> dict | None:
     return rows[0] if len(rows) == 1 else None
 
 
+def _cell_handle(value) -> tuple[int, int] | None:
+    """A stable place handle from the lazy view, read as a cell, or None."""
+    if not _is_text(value):
+        return None
+    match = _CELL_HANDLE.match(value.strip())
+    return (int(match.group(1)), int(match.group(2))) if match else None
+
+
+def _lazy_action_name(name: str, pack: str) -> str:
+    """The world's action name for a capability's view word (walk -> move), in the lazy interface only."""
+    for action, word in load_pack(pack)["ACTION_WORDS"].items():
+        if name == word:
+            return action
+    return name
+
+
 def _fold_action(action, pack, affordances=None) -> dict:
     name = str(action["action"])
     handle = action.get("target") if isinstance(action.get("target"), str) else ""
     params = dict(action.get("params") or {})
+    # An empty list is the lazy context's explicit "no menu": its capability rows carry no bindable handle, and
+    # the reply's direct params are what the world validates. None keeps the old menu-mode pass-through.
+    lazy = affordances is not None and not affordances
     if name == "attempt" and _is_text(params.get("verb")):
         params["verb"] = resolve_verb(params["verb"], pack) or params["verb"]
     row = bind_row(name, handle, affordances, pack)
@@ -143,6 +166,24 @@ def _fold_action(action, pack, affordances=None) -> dict:
         name = str(row["action"])
         params = {**{key: value for key, value in row.items() if key not in _NOT_PARAMS},
                   **{key: value for key, value in params.items() if key != "target"}}
+    elif lazy:
+        # No row to bind. Keep a thing id the model wrote as a direct param (never invent a row), and read a
+        # place's stable cell handle as the move's destination. Capability rows use the view's action words.
+        name = _lazy_action_name(name, pack)
+        if handle:
+            cell = _cell_handle(handle) if name == "move" else None
+            if cell is not None:
+                params["destination"] = cell
+            else:
+                params["target"] = handle
+        if name == "move":
+            destination = params.get("destination")
+            if isinstance(destination, (list, tuple)) and len(destination) == 2:
+                params["destination"] = (int(destination[0]), int(destination[1]))
+            elif _is_text(destination):
+                cell = _cell_handle(destination)
+                if cell is not None:
+                    params["destination"] = cell
     elif handle:
         params["target"] = handle
     held = action.get("with")

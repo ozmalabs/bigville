@@ -647,7 +647,13 @@ class BigvilleGame:
         """
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
-        if self.affordance_mode == "lazy":
+        backend = self.backends.get(actor)
+        # LA05 boundary: Ocelot's replace_options path consumes the full menu, so an Ocelot actor stays on the
+        # menu context even in a lazy game. That is an explicit per-actor exception, not a silent fallback: the
+        # alternative is an empty option list and a broken adapter contract.
+        wants_menu = (getattr(backend, "wants_affordance_menu", False)
+                      or getattr(backend, "kind", "") == "ocelot")
+        if self.affordance_mode == "lazy" and not wants_menu:
             return self._lazy_context(actor, character,
                                       practice_window=practice_window,
                                       snapshot=snapshot)
@@ -833,13 +839,31 @@ class BigvilleGame:
                     "context built from a stale decision snapshot")
             _, start, end = practice_window
         observations["practice"] = [dict(record) for record in practice[start:end]]
+        entities = observations["entities"]
+        # LA05: the root aliases the prompt/model path already reads (calendar for the usual-now line and the
+        # call budget's day, plus the body state used by generic readers). They are copies, not a second view.
+        for key in ("calendar", "position", "health", "hunger", "energy", "intoxication_band",
+                    "inventory", "held_items", "worn", "job", "known_recipes", "nearby_actors",
+                    "last_outcome", "heard"):
+            if key in entities:
+                observations.setdefault(key, entities[key])
         if "last_outcome" not in observations:
             observations["last_outcome"] = self.world.last_outcome(actor)
         active = self._continuations.get(actor)
         if active is not None:
             observations["continuation"] = active.request.to_dict()
+        # LA05: a backend that reads words gets the lazy view: entities and capabilities, built from the
+        # observation above and never from the menu. A failure is left out, as the menu path does; the LLM
+        # backend then counts an internal_error instead of raising into the world.
+        view = None
+        if getattr(self.backends.get(actor), "wants_agent_view", False):
+            try:
+                from domains.agent_view import build_lazy_agent_view
+                view = build_lazy_agent_view(self, actor)
+            except Exception:
+                view = None
         return ActorContext(character, int(self.world._turn), observations, [],
-                            recipient_interfaces={}, agent_view=None)
+                            recipient_interfaces={}, agent_view=view)
 
     def _visible_object_snapshot(self, actor):
         return {item["id"]: str(item.get("location", "world"))

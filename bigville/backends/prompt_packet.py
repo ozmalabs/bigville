@@ -51,13 +51,20 @@ def _interface_lines(pk: dict) -> list[str]:
     return lines
 
 
-def packet_system(pack: str) -> str:
-    """The system text of the packet: the premise, the actions, the rules and the reply interface, from the pack."""
+def packet_system(pack: str, *, lazy: bool = False) -> str:
+    """The system text of the packet: the premise, the actions, the rules and the reply interface, from the pack.
+
+    ``lazy`` (LA05) keeps every pack rule unchanged and adds the proposal contract of the lazy path: public.can
+    lists capabilities, not the legal menu, and the resident names the direct params the world will validate.
+    Menu mode gets exactly the text it had before."""
     pk = load_pack(pack)
     tbl = pk["PROMPT_PACKET"]
     premise = pk["WORLD_PREMISE"]
-    lines = [f"You are one resident of {premise['name']}. {premise['premise']}", "",
-             "Major actions: choose at most one. The actions you can take are listed in public.can."]
+    intro = ("Major actions: choose at most one. public.can lists the capabilities you may use; they are not "
+             "an exhaustive list of legal actions, and the world may refuse a proposal."
+             if lazy else
+             "Major actions: choose at most one. The actions you can take are listed in public.can.")
+    lines = [f"You are one resident of {premise['name']}. {premise['premise']}", "", intro]
     for name, spec in pk["MAJOR_ACTIONS"].items():
         description = str(spec.get("description", spec.get("kind", "")))
         if description.startswith("Retired"):
@@ -68,6 +75,17 @@ def packet_system(pack: str) -> str:
     lines += ["", "Speech is free: it uses no major action."]
     lines += ["", "Rules:"] + [f"- {rule}" for rule in tbl["system_rules"]]
     lines += ["", "Reply interface:"] + [f"- {line}" for line in _interface_lines(pk)]
+    if lazy:
+        lines += ["", "Proposing in this mode:",
+                  "- A public.can row names a capability. Its handle may be empty; do not copy a handle from it.",
+                  "- Put the direct details in major_action.params: kind, recipe, object_id, destination, "
+                  "recipient, container, source, animal, crop_node, land, project, patient, name.",
+                  "- For walk, copy a place handle from public.around.things into major_action.target, or give "
+                  "params.destination as a pair of cell numbers.",
+                  "- Name a recipe from public.self.knows, a carried kind from public.self.carrying, and a "
+                  "person or thing by the stable name or id in public.around.",
+                  "- The world checks the proposal against what exists. A refusal is ordinary: it is shown in "
+                  "public.last on the next turn."]
     return "\n".join(lines)
 
 

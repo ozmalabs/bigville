@@ -513,6 +513,346 @@ def _reaction(game, actor, pack, known):
     }), pack)
 
 
+# ---------------------------------------------------------------- lazy view (LA05)
+# The lazy view publishes entities and capabilities, never the world's exhaustive legal menu. It is built
+# from `world.observe(actor)` and the helpers above that do not call `actor_affordances()`. The explicit menu
+# remains the agent view (`build_agent_view`) for the UI, debugging and Ocelot; the LLM context in lazy mode
+# uses this view instead.
+
+LAZY_THINGS_CAP = 12
+LAZY_PLACES_CAP = 8
+LAZY_PEOPLE_CAP = 8
+LAZY_SEEN_CAP = 20
+LAZY_CAN_CAP = 28
+LAZY_KNOWS_CAP = 24
+
+
+def _capability(pack, action, what):
+    """One bounded capability row in the existing `can` shape. The handle is empty: the resident acts by
+    naming direct params, not by copying a per-option handle. `action` is the view word where the pack has one."""
+    verb = load_pack(pack)["ACTION_WORDS"].get(action) or _words(action)
+    return _check_keys("can", {"handle": "", "action": verb, "what": what}, pack)
+
+
+def _open_container(container):
+    return bool(container.get("open")) and not bool(container.get("locked"))
+
+
+def _lazy_destinations(obs):
+    """A bounded set of stable place handles: named places, nearby building/site/farm cells and the adjacent
+    ground. The handle is a cell (`cell:x,y`), not an ephemeral target key; `_fold_action` in reply_schema turns
+    a move's cell handle into `params.destination`."""
+    position = _cell(obs.get("position"))
+    places = obs.get("places") or {}
+    cell = obs.get("cell") or {}
+    candidates = []
+
+    def add(cell_value, label, priority):
+        destination = _cell(cell_value)
+        if destination is None or (position is not None and destination == position):
+            return
+        distance = _chebyshev(position, destination) if position is not None else 0
+        candidates.append((priority, distance, _words(label), destination))
+
+    add(places.get("home"), "home", 0)
+    add(places.get("work"), "work", 0)
+    add(places.get("market"), "the market", 0)
+    for building in places.get("buildings") or []:
+        add(building.get("cell"), building.get("name") or building.get("kind") or "a building", 1)
+    for site in places.get("gathering_sites") or []:
+        add(site.get("cell"), site.get("kind") or "a gathering site", 1)
+    for farm in places.get("farms") or []:
+        add(farm.get("cell"), farm.get("use") or "a field", 2)
+    if position is not None:
+        for exit_cell in cell.get("exits") or []:
+            destination = _cell(exit_cell)
+            if destination is None:
+                continue
+            dx, dy = destination[0] - position[0], destination[1] - position[1]
+            direction = ("north" if dy < 0 else "south") if dx == 0 else ("west" if dx < 0 else "east")
+            add(destination, "the ground to the " + direction, 3)
+    candidates.sort(key=lambda row: (row[0], row[1], row[2]))
+    rows, used = [], set()
+    for _, _, label, destination in candidates:
+        handle = f"cell:{destination[0]},{destination[1]}"
+        if handle in used:
+            continue
+        used.add(handle)
+        rows.append((handle, label))
+        if len(rows) >= LAZY_PLACES_CAP:
+            break
+    return rows
+
+
+def _lazy_things(obs, pack):
+    """Visible objects, reachable containers and a bounded set of place handles, with stable ids."""
+    rows, used = [], set()
+    for item in list(obs.get("visible_objects") or []) + list(obs.get("containers_in_reach") or []):
+        handle = str(item.get("id") or "")
+        if not handle or handle in used:
+            continue
+        used.add(handle)
+        what = _words(item.get("kind") or item.get("name") or handle)
+        if item.get("container"):
+            what += " (open)" if item.get("open") and not item.get("locked") else " (closed)"
+        rows.append(_check_keys("thing", {"handle": handle, "what": what}, pack))
+        if len(rows) >= LAZY_THINGS_CAP:
+            break
+    for handle, label in _lazy_destinations(obs):
+        if handle in used or len(rows) >= LAZY_THINGS_CAP + LAZY_PLACES_CAP:
+            continue
+        used.add(handle)
+        rows.append(_check_keys("thing", {"handle": handle, "what": label}, pack))
+    return rows
+
+
+def _lazy_people(game, actor, obs, pack):
+    """Nearby residents from the observation: stable names, distance words, role and cheap looks. A stranger
+    keeps the view's stranger wording; a resident the actor knows is named."""
+    world = game.world
+    words = load_pack(pack)["VIEW_WORDS"]
+    known = _known_names(game, actor)
+    rows = []
+    nearby = sorted((obs.get("nearby_actors") or []),
+                    key=lambda row: (row.get("distance", 1_000), str(row.get("id") or "")))
+    for row in nearby[:LAZY_PEOPLE_CAP]:
+        other = str(row.get("id") or "")
+        if not other or other not in world._actors:
+            continue
+        role = _words(row.get("role"))
+        entry = {"distance": _phrase("distance", float(row.get("distance") or 0), "self", pack),
+                 "looks": _looks(game, other, pack)}
+        if other in known:
+            entry["name"] = other
+            entry["job"] = role
+        else:
+            entry["description"] = words["stranger"].format(job=role or words["someone"])
+        rows.append(_check_keys("person", _clean(entry), pack))
+    return rows
+
+
+def _lazy_seen(game, actor, obs, pack, known=None):
+    """What is here and what places the resident knows: cell features, named places and witnessed moves. The
+    `seen` whitelist has only `who` and `did`, so a feature reads as its name and the short phrase that says
+    how it stands to the resident ("is here", "you know where it is")."""
+    words = load_pack(pack)["VIEW_WORDS"]
+    precision = load_pack(pack)["PRECISION_WORDS"]
+    known = _known_names(game, actor) if known is None else known
+    cell = obs.get("cell") or {}
+    places = obs.get("places") or {}
+    rows = []
+
+    def add(who, did):
+        name = _words(who)
+        if name:
+            rows.append(_check_keys("seen", {"who": name, "did": did}, pack))
+
+    for building in cell.get("buildings") or []:
+        add(building.get("name") or building.get("kind"), "is here")
+    for land in cell.get("land") or []:
+        add(land.get("use") or land.get("kind") or "a field", "is here")
+    for site in cell.get("gathering_sites") or []:
+        add(site.get("kind") or "a gathering site", "is here")
+    for fixture in cell.get("fixtures") or []:
+        add(fixture.get("kind") or fixture.get("name") or "a fixture", "is here")
+    for shop in cell.get("shops") or []:
+        add(shop.get("trade") or "a shop", "trades here")
+    for project in cell.get("building_projects") or []:
+        add(project.get("name") or project.get("project") or "a building project", "is being built here")
+    for work in cell.get("infrastructure") or []:
+        add(work.get("kind") or "the town works", "stands here")
+    for animal in cell.get("animals") or []:
+        if animal.get("alive", True):
+            add(animal.get("species") or animal.get("name") or "an animal", "is here")
+    for crop in cell.get("crops") or []:
+        add(crop.get("kind") or "a crop", "grows here")
+    for building in places.get("buildings") or []:
+        add(building.get("name") or building.get("kind"), precision.get("exact"))
+    for site in places.get("gathering_sites") or []:
+        add(site.get("kind"), precision.get("exact"))
+    for place, label in (("home", "home"), ("work", "work"), ("market", "the market")):
+        if places.get(place):
+            add(label, precision.get("exact"))
+    for farm in places.get("farms") or []:
+        add(farm.get("use") or "a field", precision.get("exact"))
+    # Physical moves the resident witnessed, as before Phase 052.
+    for event in game._physical_events.get(actor, []):
+        if event.get("action") != "moved_object":
+            continue
+        who = str(event.get("actor", ""))
+        who = words["you"] if who == actor else (who if who in known else words["someone"])
+        rows.append(_check_keys("seen", {"who": who, "did": words["moved"]}, pack))
+    return rows[:LAZY_SEEN_CAP]
+
+
+def _lazy_self(game, actor, pack, gist_table, obs):
+    """The persona/self card plus the bounded recipe knowledge the observation publishes. Recipes go in
+    `self.knows` in the existing (name, understood, gist) shape, so the model can name a recipe in params."""
+    out = dict(_self(game, actor, pack, gist_table))
+    words = load_pack(pack)["VIEW_WORDS"]
+    rows = list(out.get("knows") or [])
+    names = {str(row.get("name", "")) for row in rows}
+    job_recipe = str((obs.get("job") or {}).get("recipe") or "")
+    recipes = [job_recipe] if job_recipe else []
+    recipes += [str(name) for name in (obs.get("known_recipes") or []) if str(name) != job_recipe]
+    added = 0
+    for recipe in recipes:
+        label = _words(recipe)
+        if not label or label in names:
+            continue
+        rows.append(_check_keys("knows", {"name": label, "understood": words["understood"],
+                                          "gist": "a recipe you can attempt"}, pack))
+        names.add(label)
+        added += 1
+        if added >= LAZY_KNOWS_CAP:
+            break
+    out["knows"] = rows
+    return _check_keys("self", out, pack)
+
+
+def _lazy_can(game, actor, obs, pack):
+    """A bounded capability list derived from the observation. It says what the resident is able to do now,
+    not every legal target: the entities those capabilities act on are in `around.things` and the resident's
+    own carrying. The world still validates every proposal."""
+    cell = obs.get("cell") or {}
+    inventory = list(obs.get("inventory_details") or [])
+    nearby = list(obs.get("nearby_actors") or [])
+    visible = list(obs.get("visible_objects") or [])
+    containers = list(obs.get("containers_in_reach") or [])
+    open_containers = [item for item in containers if _open_container(item)]
+    has_food = any(item.get("edible") for item in inventory) or \
+        any(item.get("edible") and item.get("reachable") for item in visible)
+    co_located = [row for row in nearby if float(row.get("distance") or 0) == 0]
+    patients = [row for row in nearby
+                if str(row.get("health") or "") not in {"", "healthy"} or float(row.get("injury") or 0) > 0]
+    rows = []
+
+    def add(action, what):
+        rows.append(_capability(pack, action, what))
+
+    if has_food:
+        add("eat", "food you can reach")
+    add("rest", "rest a while")
+    add("sleep", "lie down and sleep")
+    add("move", "walk to a place you know" if _lazy_destinations(obs) else "walk to the ground nearby")
+    if obs.get("known_recipes") or obs.get("job"):
+        add("work", "work at a recipe you know")
+    if inventory and co_located:
+        add("give", "hand something you carry to someone here")
+    if any(_open_container(item) and item.get("contents") for item in containers):
+        add("fetch", "fetch goods from a container in reach")
+    if inventory and open_containers:
+        add("put", "put something you carry into a container in reach")
+    if any(item.get("grabbable") for item in visible):
+        add("move_object", "move something you can see")
+    if visible:
+        add("attempt", "try a physical verb on something in reach")
+    if any(animal.get("alive", True) for animal in cell.get("animals") or []):
+        add("tend_animals", "tend an animal here")
+    if any(crop.get("thirst") for crop in cell.get("crops") or []):
+        add("water", "water a crop here")
+    if any(crop.get("mature") for crop in cell.get("crops") or []):
+        add("harvest", "harvest a crop here")
+    if cell.get("land"):
+        add("sow", "sow a crop on the land here")
+        add("fertilise", "fertilise the land here")
+    if cell.get("building_projects"):
+        add("build", "work on a building project here")
+    if cell.get("infrastructure"):
+        add("maintain", "maintain the town works here")
+    if patients:
+        add("care", "care for someone ill or hurt here")
+    if obs.get("held"):
+        add("struggle", "struggle free")
+    if obs.get("holding"):
+        add("release", "let go of the person you hold")
+    if any(item.get("container") and item.get("locked") for item in visible + containers):
+        add("unlock", "unlock a container in reach")
+    if any(item.get("container") and not item.get("locked") for item in visible + containers):
+        add("lock", "lock a container in reach")
+    if co_located:
+        add("take", "take something from someone here")
+        add("strike", "strike someone here")
+        add("restrain", "take hold of someone here")
+    if visible or any(item.get("edible") for item in inventory):
+        add("throw", "throw something you hold")
+    # A stable order, deduplicated by action and what; needs and local features come first.
+    seen, out = set(), []
+    for row in rows:
+        key = (row["action"], row["what"])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    return out[:LAZY_CAN_CAP]
+
+
+def _lazy_referee(game, actor, obs):
+    """The referee block for the lazy view: numbers and true state, but no `affordances` field. Asking for the
+    menu here would put the exhaustive list back on the lazy path; callers that need it use `build_agent_view`."""
+    world = game.world
+    nearby = []
+    position = world.actor_position(actor)
+    for other in world._actors:
+        if other == actor or position is None or world.actor_position(other) is None:
+            continue
+        attrs = world.eng.node(world._actors[other])["attrs"]
+        nearby.append({"name": other, "position": list(world.actor_position(other)),
+                       "distance": _chebyshev(position, world.actor_position(other)),
+                       "klass": attrs.get("klass", ""), "group": attrs.get("group", "")})
+    return {"body": world.body_state(actor), "calendar": world.calendar(),
+            "carry": world.carry_state(actor), "skills": world.skill_levels(actor),
+            "nearby": sorted(nearby, key=lambda row: (row["distance"], row["name"]))}
+
+
+def build_lazy_agent_view(game, actor, mode="agent"):
+    """The lazy agent view: entities and bounded capabilities from `world.observe(actor)`.
+
+    It NEVER calls `actor_affordances()` / `_actor_options()`. `can` rows are capabilities in the existing
+    (handle, action, what) shape with an empty handle; the model proposes direct params, and the world validates
+    them. `mode="referee"` adds the raw numbers but deliberately leaves out the menu's `affordances` field."""
+    if mode not in MODES:
+        raise ValueError(f"mode must be one of {MODES}, not {mode!r}")
+    if actor not in game.characters:
+        raise KeyError(f"no resident named {actor!r}")
+    world = game.world
+    pack = world.data_pack
+    gist = entities(pack).MEMORY_GIST
+    obs = world.observe(actor)
+    cell = obs.get("cell") or {}
+    heard = []
+    known = _known_names(game, actor)
+    words = load_pack(pack)["VIEW_WORDS"]
+    for record in (obs.get("heard") or [])[-10:]:
+        speaker = str(record.get("speaker", ""))
+        heard.append(_check_keys("heard", {"from": speaker if speaker in known else words["someone"],
+                                           "text": str(record.get("text", ""))}, pack))
+    around = _check_keys("around", {
+        "people": _lazy_people(game, actor, obs, pack),
+        "heard": heard,
+        "seen": _lazy_seen(game, actor, obs, pack, known),
+        "things": _lazy_things(obs, pack),
+    }, pack)
+    fogged = map_memory.is_fogged(game, actor)
+    view = {
+        "mode": mode,
+        "actor": actor,
+        "self": _lazy_self(game, actor, pack, gist, obs),
+        "now": _now(world, pack, actor),
+        "around": around,
+        # Phase 053: a fogged resident's map is its own; a simple resident keeps the patch.
+        "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
+        "can": _lazy_can(game, actor, obs, pack),
+        "last": _last(world, actor, pack),
+        "reaction": _reaction(game, actor, pack, known),
+    }
+    if mode == "referee":
+        view["referee"] = _lazy_referee(game, actor, obs)
+        if fogged:
+            view["referee"]["true_map"] = map_memory.true_patch(game, actor)
+    return _check_keys("top", _clean(view), pack)
+
+
 def build_agent_view(game, actor, mode="agent"):
     """The agent view of one resident. `mode` is "agent" (words only) or "referee" (adds the numbers)."""
     if mode not in MODES:
