@@ -96,6 +96,9 @@
       "store_locked": {
         "description": "The town store is locked. You do not hold a key that opens it alone, so you cannot take from it, put into it, or use its stock."
       },
+      "door_locked": {
+        "description": "The door is locked. You cannot walk through it until someone unlocks it with a key that fits."
+      },
       "restrained": {
         "description": "Someone is holding you, so you cannot walk away. The holder must let go, or you must win a struggle."
       },

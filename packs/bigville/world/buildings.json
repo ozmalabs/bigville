@@ -1,5 +1,5 @@
 {
-  "_doc": "---------------------------------------------------------------- BUILDINGS\nplaces, their staff/role, whether they shelter, and their rooms/affordances.\nCatalogue buildings that are NOT standing when the town is founded (`founding: False`). They\nare valid places -- a trade can name them and a BUILDING_PROJECT can raise them -- but the\nfounding town does not contain them (see founding_buildings()).",
+  "_doc": "---------------------------------------------------------------- BUILDINGS\nplaces, their staff/role, whether they shelter, and their rooms/affordances.\nCatalogue buildings that are NOT standing when the town is founded (`founding: False`). They\nare valid places -- a trade can name them and a BUILDING_PROJECT can raise them -- but the\nfounding town does not contain them (see founding_buildings()).\nA building may carry one `door` (Phase 039): a lock (lock_id, locked, keys_required, lock_strength, as Phase 030 and 050 use for containers) and an `entrance` cell, an offset [dx, dy] inside the footprint on its perimeter. A step across the footprint boundary is refused while the door is locked; while it is unlocked, a crossing is allowed only at the entrance cell. Founding buildings have no door. The jail's lock_strength 3.0 and lock_id 41 are APPROX (design choices; no source consulted). The jail is locked when it is built or when a scenario adds it. The world attaches no law or sentence to it.",
   "_types": {
     "BUILDINGS": {
       "/townhall/footprint": "tuple",
@@ -613,6 +613,36 @@
         "knowledge": {
           "topics": [
             "health"
+          ],
+          "public": 0.5,
+          "after_years": 0,
+          "understanding_requires": []
+        }
+      },
+      "jail": {
+        "staff_role": "",
+        "sheltered": true,
+        "founding": false,
+        "footprint": [
+          3,
+          3
+        ],
+        "rooms": [
+          "cell_block"
+        ],
+        "door": {
+          "lock_id": 41,
+          "locked": true,
+          "keys_required": 1,
+          "lock_strength": 3.0,
+          "entrance": [
+            1,
+            2
+          ]
+        },
+        "knowledge": {
+          "topics": [
+            "policing"
           ],
           "public": 0.5,
           "after_years": 0,

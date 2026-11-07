@@ -1,5 +1,5 @@
 {
-  "_doc": "Construction is separate from the catalogue of places already present when the town is\nfounded.  A project creates another instance of a catalogue building (a second granary, a new\nhouse, a barn); the building's staff, shelter, and rooms come from BUILDINGS, and the project\nadds only what raising it costs.",
+  "_doc": "Construction is separate from the catalogue of places already present when the town is\nfounded.  A project creates another instance of a catalogue building (a second granary, a new\nhouse, a barn); the building's staff, shelter, and rooms come from BUILDINGS, and the project\nadds only what raising it costs. The jail project (Phase 039) is APPROX: its inputs and labour are design choices, not sourced figures.",
   "_types": {},
   "tables": {
     "BUILDING_PROJECTS": {
@@ -74,6 +74,15 @@
         },
         "labour": 8.0,
         "affordance": "make_ink"
+      },
+      "jail": {
+        "building": "jail",
+        "inputs": {
+          "stone": 10,
+          "timber": 8
+        },
+        "labour": 12.0,
+        "affordance": "locked_room"
       }
     }
   }

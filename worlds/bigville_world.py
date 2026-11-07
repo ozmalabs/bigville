@@ -588,6 +588,8 @@ class BigvilleWorld:
         # Building anchors are physical sites, not just labels. Keep each
         # authored footprint clear so adjacent facades cannot overlap.
         self._building_sites = {}
+        # Phase 039: the buildings with a door, by place key (one Lock node per door, see _install_door).
+        self._door_places = {}
         scenario_buildings = self._scenario_data.get("buildings")
         if scenario_buildings is None:
             scenario_buildings = [{"kind": kind, "spec": spec}
@@ -1921,8 +1923,14 @@ class BigvilleWorld:
             return None
         candidates = [(current[0] + 1, current[1]), (current[0] - 1, current[1]),
                       (current[0], current[1] + 1), (current[0], current[1] - 1)]
-        travel = {point: self.travel_time(point, destination)
-                  for point in candidates if point in self._map_cells}
+        if self._door_places:
+            # Phase 039: with doors in the town, the route uses only the steps the doors allow.
+            field = self._door_travel_field(destination)
+            travel = {point: field.get(point) for point in candidates
+                      if point in self._map_cells and self._door_allows(current, point)}
+        else:
+            travel = {point: self.travel_time(point, destination)
+                      for point in candidates if point in self._map_cells}
         viable = [point for point, value in travel.items() if value is not None]
         return min(viable, key=lambda point: (travel[point], self.distance(point, destination))) \
             if viable else None
@@ -4770,6 +4778,8 @@ class BigvilleWorld:
         site = self._allocate_building_site(place_key, spec, requested)
         self._building_sites[place_key] = site
         self._attach_at_cell(p, site[:2])
+        if spec.get("door"):
+            self._install_door(place_key, p, site, spec["door"])   # Phase 039
         return p
 
     def building(self, kind): return self._places.get(kind)
@@ -5671,6 +5681,93 @@ class BigvilleWorld:
                 return x <= pos[0] < x + w and y <= pos[1] < y + h
         return pos == self.map_position_node(place)
 
+    # ---------------------------------------------------- doors (Phase 039)
+    def _install_door(self, place_key, place, site, door):
+        """A building's one door (BUILDINGS[...].door). The door is a Lock node on the Place, with the lock fields a
+        container has (Phase 030) and the strength Phase 050 reads. The entrance, when named, is an offset inside the
+        footprint on its perimeter, and the Place has a `has_entrance` edge to that map cell."""
+        lock = self.eng.add_node("Lock", {
+            "lock_id": float(door["lock_id"]), "locked": 1.0 if door.get("locked") else 0.0,
+            "keys_required": float(door.get("keys_required", 1)),
+            "lock_strength": float(door["lock_strength"]), "lock_condition": 1.0, "lock_progress": 0.0})
+        self.eng.add_edge_unchecked(place, "has_door", lock)
+        if door.get("entrance") is not None:
+            dx, dy = (int(v) for v in door["entrance"])
+            cell = (int(site[0]) + dx, int(site[1]) + dy)
+            if cell not in self._map_cells:
+                raise ValueError(f"the entrance of {place_key!r} is not a walkable cell: {cell}")
+            self.eng.add_edge_unchecked(place, "has_entrance", self._map_cells[cell])
+        self._door_places[place_key] = place
+
+    def _door_lock(self, place):
+        return next(iter(self.eng.neighbours(place, "has_door")))
+
+    def _entrance_cell(self, place):
+        cells = list(self.eng.neighbours(place, "has_entrance"))
+        return self.map_position_node(cells[0]) if cells else None
+
+    def _inside_footprint(self, place_key, cell):
+        x, y, w, h = self._building_sites[place_key]
+        return x <= cell[0] < x + w and y <= cell[1] < y + h
+
+    def _door_allows(self, here, there):
+        """Whether a step between two adjacent cells is open as far as doors go (Phase 039). A step that crosses a
+        building's footprint boundary is refused while that building's door is locked. While it is unlocked, a
+        crossing is allowed only at the entrance cell, when one is named. Steps that cross no door, and every step in
+        a town with no door, are allowed."""
+        if not self._door_places or here is None or there is None:
+            return True
+        for key, place in self._door_places.items():
+            inside_here = self._inside_footprint(key, here)
+            if inside_here == self._inside_footprint(key, there):
+                continue
+            if float(self.eng.node(self._door_lock(place))["attrs"].get("locked", 0.0)) == 1.0:
+                return False
+            entrance = self._entrance_cell(place)
+            if entrance is not None and (here if inside_here else there) != entrance:
+                return False
+        return True
+
+    def _door_travel_field(self, destination):
+        """Travel cost from each cell to `destination` over the steps the doors allow. The cost of a cell is the one
+        travel_time uses. Computed only while a door exists, because a door's state changes between calls."""
+        field = {destination: 0.0}
+        frontier = [(0.0, destination)]
+        while frontier:
+            cost, point = heapq.heappop(frontier)
+            if cost > field.get(point, float("inf")):
+                continue
+            for nx, ny in ((point[0] + 1, point[1]), (point[0] - 1, point[1]),
+                           (point[0], point[1] + 1), (point[0], point[1] - 1)):
+                neighbour = (nx, ny)
+                if neighbour not in self._map_cells or not self._door_allows(point, neighbour):
+                    continue
+                candidate = cost + self._terrain_move_time(neighbour)
+                if candidate < field.get(neighbour, float("inf")):
+                    field[neighbour] = candidate
+                    heapq.heappush(frontier, (candidate, neighbour))
+        return field
+
+    def _door_stops_walk(self, current, destination):
+        """Phase 039: a walk has no admissible step because a locked door shuts the way. The destination is reachable
+        if the doors were not there, but not through them."""
+        return bool(self._door_places) and self._movement_step(current, destination) is None \
+            and self.travel_time(current, destination) is not None
+
+    def _door_reach(self, place, place_key):
+        """The cells from which a door can be locked, unlocked or forced: its entrance and the cells one step from it.
+        With no entrance named, the footprint and the cells one step from it."""
+        entrance = self._entrance_cell(place)
+        if entrance is not None:
+            anchors = [entrance]
+        else:
+            x, y, w, h = self._building_sites[place_key]
+            anchors = [(x + i, y + j) for i in range(w) for j in range(h)]
+        reach = set()
+        for ax, ay in anchors:
+            reach.update({(ax, ay), (ax + 1, ay), (ax - 1, ay), (ax, ay + 1), (ax, ay - 1)})
+        return frozenset(reach)
+
     def _at_workplace(self, actor):
         """The actor's workplace building if they can use its tools now. Before the clock runs
         (setup calls) location is not checked. Once it runs, a worker who has a map position must
@@ -6282,15 +6379,23 @@ class BigvilleWorld:
         return next(iter(self.eng.neighbours(self._store, "has_lock")))
 
     def _lockable(self, name):
-        """(lock node, cell node) of a lockable thing: a container by name (its own node holds the lock and sits on
-        the cell), or the town store (name "store"), whose Lock node holds the lock and whose store node sits on
-        the cell. None for a name that is neither."""
+        """(lock node, reach) of a lockable thing, or None for a name that is none of these. The reach is the set of
+        cells a resident must stand on to lock or unlock it, or None when the thing has no cell. The lock of a container
+        is its own node (reach: its cell). The town store ("store") has a Lock node (reach: the store's cell). A
+        building's door (Phase 039) is named by the building (reach: its entrance and the cells one step from it)."""
         if name == "store":
-            return self._store_lock_node(), self._store
+            return self._store_lock_node(), self._reach_of(self._store)
         if name in self._containers:
             node = self._containers[name][0]
-            return node, node
+            return node, self._reach_of(node)
+        if name in self._door_places:
+            place = self._door_places[name]
+            return self._door_lock(place), self._door_reach(place, name)
         return None
+
+    def _reach_of(self, place):
+        cell = self.map_position_node(place)
+        return None if cell is None else frozenset([cell])
 
     def _clear_authorisations(self, node):
         for keyholder in list(self.eng.neighbours(node, "authorised_by")):
@@ -6303,13 +6408,12 @@ class BigvilleWorld:
         found = self._lockable(container)
         if found is None:
             return self._refuse("unknown_target")
-        node, place = found
+        node, reach = found
         attrs = self.eng.node(node)["attrs"]
         lock_id = float(attrs.get("lock_id", 0.0))
         if lock_id <= 0.0:
             return self._refuse("no_lock")
-        cell = self.map_position_node(place)
-        if cell is not None and self.actor_position(actor) != cell:
+        if reach is not None and self.actor_position(actor) not in reach:
             return self._refuse("not_in_reach")
         if not self._holds_key(actor, lock_id):
             return self._refuse("no_key")
@@ -6328,13 +6432,12 @@ class BigvilleWorld:
         found = self._lockable(container)
         if found is None:
             return self._refuse("unknown_target")
-        node, place = found
+        node, reach = found
         attrs = self.eng.node(node)["attrs"]
         lock_id = float(attrs.get("lock_id", 0.0))
         if lock_id <= 0.0:
             return self._refuse("no_lock")
-        cell = self.map_position_node(place)
-        if cell is not None and self.actor_position(actor) != cell:
+        if reach is not None and self.actor_position(actor) not in reach:
             return self._refuse("not_in_reach")
         if not self._holds_key(actor, lock_id):
             return self._refuse("no_key")
@@ -7798,13 +7901,12 @@ class BigvilleWorld:
         # Phase 030: lock and unlock are published only where they are physically possible: a key this resident
         # holds that fits the lock, with the resident at the lock's cell (or the lock has no cell). An unlock is
         # not offered again to a keyholder who has already turned a key in a lock that needs several.
-        for name in ["store"] + list(self._containers):
-            node, place = self._lockable(name)
+        for name in ["store"] + list(self._containers) + list(self._door_places):
+            node, reach = self._lockable(name)
             lock_attrs = self.eng.node(node)["attrs"]
             if float(lock_attrs.get("lock_id", 0.0)) <= 0.0 or not self._holds_key(actor, float(lock_attrs["lock_id"])):
                 continue
-            cell = self.map_position_node(place)
-            if cell is not None and self.actor_position(actor) != cell:
+            if reach is not None and self.actor_position(actor) not in reach:
                 continue
             locked = float(lock_attrs.get("locked", 0.0)) == 1.0
             if locked and self._actor(actor) in self.eng.neighbours(node, "authorised_by"):
@@ -8821,6 +8923,9 @@ class BigvilleWorld:
                 return self._refuse("invalid_destination")
             if self.distance(current, destination) is None:
                 return self._refuse("invalid_destination")
+            # Phase 039: a locked door on the way shuts the walk.
+            if self._door_stops_walk(current, destination):
+                return self._refuse("door_locked")
             # Phase 049: below e_low a resident walks at the slowest rate (not refused as too tired); the collapse at
             # e_collapse stops them (see _exhaustion_band).
             return self._claimed_attempt(actor, "move", lambda: self._walked_toward(actor, destination))
@@ -9063,7 +9168,7 @@ class BigvilleWorld:
             name = self._as_key(kwargs.get("container", kwargs.get("target", args[0] if args else None)))
             if name is None:
                 return self._refuse("malformed")
-            if name != "store" and name not in self._containers:
+            if name != "store" and name not in self._containers and name not in self._door_places:
                 return self._refuse("unknown_target")
             operation = self.lock if action == "lock" else self.unlock
             return self._claimed_attempt(actor, action, lambda: operation(actor, name))
@@ -9996,6 +10101,9 @@ class BigvilleWorld:
         if spec["primitive"] == "displace":
             return self._displace_verb(actor, verb, spec, name, with_kind, intensity)
         if name not in self._containers:
+            # Phase 039: a building's door is a target of an open, pry or force attempt on its lock.
+            if name in self._door_places and spec["primitive"] == "open":
+                return self._attempt_door(actor, verb, spec, name, with_kind, intensity)
             return self._refuse("unknown_target")
         node = self._containers[name][0]
         attrs = self.eng.node(node)["attrs"]
@@ -10019,6 +10127,30 @@ class BigvilleWorld:
         if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
             return self._refuse("malformed")
         return self._enact_attempt(actor, self._container_plan(actor, verb, spec, name, tool, float(intensity)))
+
+    def _attempt_door(self, actor, verb, spec, name, with_kind, intensity):
+        """An open, pry or force attempt on a building's door (Phase 039). The door's lock is the target, with the
+        door's lock_strength as the demand (Phase 050's open primitive). The actor must stand in the door's reach
+        (see _door_reach). The same refusals as a container's lock apply."""
+        place = self._door_places[name]
+        node = self._door_lock(place)
+        attrs = self.eng.node(node)["attrs"]
+        if self.actor_position(actor) not in self._door_reach(place, name):
+            return self._refuse("not_in_reach")
+        if float(attrs.get("lock_id", 0.0)) <= 0.0:
+            return self._refuse("no_lock")
+        if float(attrs.get("locked", 0.0)) != 1.0:
+            return self._refuse("already_unlocked")
+        tool = None
+        if with_kind is not None:
+            kind = self._as_key(with_kind)
+            if kind is None:
+                return self._refuse("malformed")
+            tool = self._held_tool(actor, kind)
+        if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
+            return self._refuse("malformed")
+        plan = self._container_plan(actor, verb, spec, name, tool, float(intensity), node=node)
+        return self._enact_attempt(actor, plan)
 
     def _enact_attempt(self, actor, plan):
         """Enact a planned attempt, applying the slot rule of Phase 029 (item 5).
@@ -10068,10 +10200,12 @@ class BigvilleWorld:
         share = float(step["cost_share"]) * float(terms["applied"]) ** float(rs["k"])
         return step, share
 
-    def _container_plan(self, actor, verb, spec, name, tool, requested):
-        """The plan of a damage or open attempt on a container: capability, demand, and what the target is made of."""
+    def _container_plan(self, actor, verb, spec, name, tool, requested, node=None):
+        """The plan of a damage or open attempt on a container: capability, demand, and what the target is made of.
+        `node` overrides the target node (a building's door lock, Phase 039)."""
         rs = self.E.RESOLUTION
-        node = self._containers[name][0]
+        if node is None:
+            node = self._containers[name][0]
         attrs = self.eng.node(node)["attrs"]
         if spec["primitive"] == "damage":
             target_material = (self._item_specs.get(str(attrs.get("kind", "")), {}).get("material")
@@ -10250,7 +10384,7 @@ class BigvilleWorld:
         pos, moved = plan["cell"], 0
         for _ in range(wanted):
             nxt = (pos[0] + dx, pos[1] + dy)
-            if nxt not in self._map_cells or nxt == plan["here"]:
+            if nxt not in self._map_cells or nxt == plan["here"] or not self._door_allows(pos, nxt):
                 break
             if float(self.terrain_state(nxt)["speed"]) <= 0.0:
                 break
@@ -10600,14 +10734,18 @@ class BigvilleWorld:
         pos, moved = cell, 0
         for _ in range(pace):
             nxt = (pos[0] + int(steps[0]), pos[1] + int(steps[1]))
-            if nxt not in self._map_cells or nxt in cells_of_group or self.terrain_state(nxt)["speed"] <= 0.0:
+            if nxt not in self._map_cells or nxt in cells_of_group or self.terrain_state(nxt)["speed"] <= 0.0 \
+                    or not self._door_allows(pos, nxt):
                 break
             pos, moved = nxt, moved + 1
+        # Phase 039: the carriers walk to the cell behind the load; a locked door on that step holds the load too.
+        behind = (pos[0] - int(steps[0]), pos[1] - int(steps[1]))
+        if moved and not all(self._door_allows(self.actor_position(name), behind) for name in group):
+            pos, moved = cell, 0
         if moved:
             self.eng.set_attr(node, "cell", [int(pos[0]), int(pos[1])])
             self.eng.set_attr(node, "carriers", list(group))
             # The carriers walk with the load: each stands on the cell the load left, one step behind it.
-            behind = (pos[0] - int(steps[0]), pos[1] - int(steps[1]))
             for name in group:
                 self._move_actor_to(name, behind)
         outcome = "moved" if moved else "stuck"
@@ -10843,7 +10981,8 @@ class BigvilleWorld:
         if here is None:
             return None
         options = [(here[0] + dx, here[1] + dy) for dx, dy in ((-1, 0), (0, -1), (0, 1), (1, 0))]
-        open_cells = [cell for cell in sorted(options) if cell in self._map_cells]
+        open_cells = [cell for cell in sorted(options)
+                      if cell in self._map_cells and self._door_allows(here, cell)]
         return open_cells[0] if open_cells else None
 
     def _contest_offer(self, attacker, target, attacker_side, target_side):

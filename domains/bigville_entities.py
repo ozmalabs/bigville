@@ -542,6 +542,58 @@ def _check_locks(errors, warnings, info):
             errors.append(f"MAJOR_ACTIONS: needs {action!r} with a description (Phase 030)")
 
 
+def _check_doors(errors, warnings, info):
+    """Phase 039: a building's door (BUILDINGS[...].door, one per building). The lock is a whole-number lock_id of at
+    least 1 that no other door shares and that differs from the store's, so one key opens one lock; `locked` is a
+    flag; keys_required is a whole number of at least 1; lock_strength is positive (Phase 050). An entrance, when
+    named, is an offset [dx, dy] inside the footprint on its perimeter, so a crossing can be made there. The
+    refusal code door_locked exists with a description (both packs)."""
+    seen = {}
+    allowed = {"lock_id", "locked", "keys_required", "lock_strength", "entrance"}
+    for name, spec in BUILDINGS.items():
+        door = spec.get("door")
+        if door is None:
+            continue
+        where = f"BUILDINGS[{name}].door"
+        if not isinstance(door, dict) or set(door) - allowed:
+            errors.append(f"{where}: must be an object with only {sorted(allowed)}")
+            continue
+        lock_id = door.get("lock_id")
+        if isinstance(lock_id, bool) or not isinstance(lock_id, int) or lock_id < 1:
+            errors.append(f"{where}: lock_id must be a whole number of at least 1, not {lock_id!r}")
+        elif lock_id == STORE_LOCK["lock_id"] or lock_id in seen:
+            errors.append(f"{where}: lock_id {lock_id} is shared with {seen.get(lock_id, 'the town store')}; "
+                          "one key must open one lock")
+        else:
+            seen[lock_id] = name
+        if not isinstance(door.get("locked"), bool):
+            errors.append(f"{where}: locked must be true or false, not {door.get('locked')!r}")
+        keys = door.get("keys_required", 1)
+        if isinstance(keys, bool) or not isinstance(keys, int) or keys < 1:
+            errors.append(f"{where}: keys_required must be a whole number of at least 1, not {keys!r}")
+        strength = door.get("lock_strength")
+        if isinstance(strength, bool) or not isinstance(strength, (int, float)) or strength <= 0:
+            errors.append(f"{where}: lock_strength must be a positive number, not {strength!r}")
+        if "entrance" in door:
+            footprint = spec.get("footprint", spec.get("size", (3, 3)))
+            if isinstance(footprint, (int, float)):
+                footprint = (int(footprint), int(footprint))
+            width, height = int(footprint[0]), int(footprint[1])
+            entrance = door["entrance"]
+            if (not isinstance(entrance, (list, tuple)) or len(entrance) != 2
+                    or any(isinstance(v, bool) or not isinstance(v, int) for v in entrance)):
+                errors.append(f"{where}: entrance must be an [dx, dy] offset, not {entrance!r}")
+            else:
+                dx, dy = entrance
+                inside = 0 <= dx < width and 0 <= dy < height
+                if not inside or not (dx in (0, width - 1) or dy in (0, height - 1)):
+                    errors.append(f"{where}: entrance {entrance} is not on the perimeter of the "
+                                  f"{width}x{height} footprint")
+    if "door_locked" not in REFUSAL_REASONS or not str(REFUSAL_REASONS["door_locked"].get("description", "")).strip():
+        errors.append("REFUSAL_REASONS: needs the door code 'door_locked' with a description (Phase 039)")
+    info.append(f"DOORS: {len(seen)} building door(s)")
+
+
 def _check_hearing(errors, warnings, info):
     """Phase 028: the speech and sight figures (packs/*/world/hearing.json). Radii are cells and at least 0;
     the normal loudness is the floor of a chosen loudness and sits within the clamp; the sight range is a
@@ -2096,6 +2148,7 @@ def check_consistency():
     _check_joint_tasks(errors, warnings, info)
     _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)
+    _check_doors(errors, warnings, info)   # Phase 039: building doors (BUILDINGS[...].door)
     _check_food_grading(errors, warnings, info)
     _check_nutrition(errors, warnings, info)
     _check_generated_seeds(errors)
