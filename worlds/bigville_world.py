@@ -9457,8 +9457,15 @@ class BigvilleWorld:
                 for target, choice in self._actor_minds[actor].speech_choices.items()}
 
     # ---------------------------------------------------- canonical state export
-    def export_state(self, *, event_tail=None):
-        """Return a JSON-safe snapshot of the canonical world graph."""
+    def export_state(self, *, event_tail=None, include_report=True):
+        """Return a JSON-safe snapshot of the canonical world graph.
+
+        ``include_report=False`` omits the ``report`` and ``report_history``
+        keys: they are derived summaries rather than canonical world state and
+        are the expensive part of an export.  The no-argument call is unchanged
+        and still includes both.  Ask ``report()``/``report_history()``
+        explicitly when only the summary is wanted.
+        """
         town = self.eng.node(self._town)["attrs"]
         actors = []
         for name, node in self._actors.items():
@@ -9514,7 +9521,7 @@ class BigvilleWorld:
         map_width = len(self._map_grid[0]) if self._map_grid else 0
         map_height = len(self._map_grid or [])
         map_seed = self.eng.node(self._map_node)["attrs"].get("seed", 0.0) if self._map_node else 0.0
-        return {"schema": "townview/1", "scenario": {
+        state = {"schema": "townview/1", "scenario": {
                     "id": self._scenario_data.get("id", "bigville"),
                     "name": self._scenario_data.get("name", "Bigville"),
                     "metadata": dict(self._scenario_data.get("metadata", {})),
@@ -9552,8 +9559,13 @@ class BigvilleWorld:
                 "proposals": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._proposals.items()],
                 "cases": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._cases.items()],
                 "births": list(self._births), "deaths": list(self._deaths),
-                "sanity": self.sanity_report(),
-                "report": self.report(), "report_history": self.report_history()}
+                "sanity": self.sanity_report()}
+        if include_report:
+            # Derived summaries, historically part of the export.  They are the
+            # expensive half of the state read and are omitted on demand.
+            state["report"] = self.report()
+            state["report_history"] = self.report_history()
+        return state
 
     # ---------------------------------------------------- turns and action budgets
     def _claim_major_action(self, actor, kind):

@@ -45,6 +45,12 @@ _TURN_SEMANTICS = frozenset({"sequential", "simultaneous"})
 _AFFORDANCE_MODES = frozenset({"menu", "lazy", "auto"})
 # LA08: backend kinds that may run autonomously on the lazy path.
 _AUTO_LAZY_BACKEND_KINDS = frozenset({"cheap", "simple"})
+# EN02: when a turn result carries the full UI snapshot.  "every_turn" is the
+# historical behaviour and the default; "on_demand" leaves it out so a headless
+# caller can ask ``game.snapshot()`` when it actually needs one.  "auto" reuses
+# the LA08 simple-session rule and resolves to on_demand for an autonomous
+# simple/cheap session, every_turn otherwise.
+_SNAPSHOT_MODES = frozenset({"every_turn", "on_demand", "auto"})
 
 
 def _default_simultaneous_priority(game, actor, index):
@@ -127,6 +133,8 @@ class BigvilleGame:
     # caller's value.  The direct constructor still defaults to "menu";
     # ``create_game`` opts into "auto".
     _affordance_mode = "menu"
+    # EN02: resolved snapshot mode; "every_turn" is the historical default.
+    _snapshot_mode = "every_turn"
 
     @property
     def affordance_mode(self) -> str:
@@ -180,6 +188,43 @@ class BigvilleGame:
         return True
 
     @property
+    def snapshot_mode(self) -> str:
+        """The resolved snapshot mode: ``"every_turn"`` or ``"on_demand"``."""
+        return self._snapshot_mode
+
+    @snapshot_mode.setter
+    def snapshot_mode(self, value: str) -> None:
+        if value not in _SNAPSHOT_MODES:
+            raise ValueError(
+                f"snapshot_mode must be one of {sorted(_SNAPSHOT_MODES)}, "
+                f"got {value!r}")
+        self.snapshot_mode_requested = value
+        self.resolve_snapshot_mode()
+
+    def resolve_snapshot_mode(self) -> str:
+        """Resolve the requested snapshot mode against the current session.
+
+        Explicit ``"every_turn"`` and ``"on_demand"`` always win.  ``"auto"``
+        reuses the LA08 auto rule: it selects on_demand only for an autonomous
+        session whose resident backends are all built-in cheap/simple, and
+        every_turn for a player, an LLM, Ocelot or any other backend.  The
+        default remains ``"every_turn"`` in this phase.
+        """
+        requested = getattr(self, "snapshot_mode_requested", "every_turn")
+        if requested == "auto":
+            self._snapshot_mode = ("on_demand" if self._auto_resolves_lazy()
+                                   else "every_turn")
+        else:
+            self._snapshot_mode = requested
+        return self._snapshot_mode
+
+    def _snapshot_required(self, include_snapshot: bool | None = None) -> bool:
+        """Whether one step must build its snapshot, honouring a per-call override."""
+        if include_snapshot is not None:
+            return bool(include_snapshot)
+        return self.snapshot_mode != "on_demand"
+
+    @property
     def turn_semantics(self) -> str:
         return self._turn_semantics
 
@@ -228,7 +273,8 @@ class BigvilleGame:
                  tick_graph_enabled: bool | None = None,
                  executor: str = "serial", executor_workers: int = 4,
                  turn_semantics: str = "sequential", simultaneous_priority=None,
-                 affordance_mode: str = "menu"):
+                 affordance_mode: str = "menu",
+                 snapshot_mode: str = "every_turn"):
         if ticks_per_period == "world":
             # Read the period length from the world's data pack (TIME); worlds
             # without a pack keep the historical 96-tick day.
@@ -290,6 +336,8 @@ class BigvilleGame:
         # LA08: resolve after the player and every backend are known, so "auto"
         # sees the real session rather than the partially built one.
         self.affordance_mode = affordance_mode
+        # EN02: likewise, snapshot "auto" resolves against the finished session.
+        self.snapshot_mode = snapshot_mode
 
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
@@ -463,6 +511,9 @@ class BigvilleGame:
         # the auto rule must then stop selecting lazy.
         if getattr(self, "affordance_mode_requested", "menu") == "auto":
             self.resolve_affordance_mode()
+        # EN02: "auto" snapshot mode follows the same backend set.
+        if getattr(self, "snapshot_mode_requested", "every_turn") == "auto":
+            self.resolve_snapshot_mode()
 
     def _derived_knowledge_memories(self, name, attrs, memories, *, explicit_recipes=False):
         """The derived knowledge priors of one resident as private memory records (Phase 019).
@@ -1234,16 +1285,22 @@ class BigvilleGame:
             else:
                 self._published_practice[name] = old
 
-    def step(self) -> dict:
-        """Advance one shared turn, or return waiting for human input."""
-        if self._defer_decisions:
-            return self._step_deferred()
-        return self._step_inline()
+    def step(self, include_snapshot: bool | None = None) -> dict:
+        """Advance one shared turn, or return waiting for human input.
 
-    def _step_inline(self) -> dict:
+        ``include_snapshot`` overrides the session's ``snapshot_mode`` for this
+        call: ``True`` always returns the snapshot, ``False`` never does, and
+        ``None`` (the default) follows the resolved mode.
+        """
+        snapshot = self._snapshot_required(include_snapshot)
+        if self._defer_decisions:
+            return self._step_deferred(include_snapshot=snapshot)
+        return self._step_inline(include_snapshot=snapshot)
+
+    def _step_inline(self, *, include_snapshot: bool = True) -> dict:
         """The pre-TG03 build-then-decide loop, kept as the equivalence oracle."""
         if self._suspended is not None:
-            return self._resume_suspended()
+            return self._resume_suspended(include_snapshot=include_snapshot)
         # Period changes happen only after a successful turn, below. Publish
         # them on the next decision rather than changing the world while a
         # human is still deciding.
@@ -1303,12 +1360,13 @@ class BigvilleGame:
         self.last_tick_graph = (build_tick_graph(order, responses, self.world)
                                 if self.tick_graph_enabled else None)
         self._resolve_joint_groups(order, responses)
-        return self._apply_turn(order, responses, 0)
+        return self._apply_turn(order, responses, 0,
+                                include_snapshot=include_snapshot)
 
-    def _step_deferred(self) -> dict:
+    def _step_deferred(self, *, include_snapshot: bool = True) -> dict:
         """Build every decision context from one snapshot, then ask backends (TG03)."""
         if self._suspended is not None:
-            return self._resume_suspended()
+            return self._resume_suspended(include_snapshot=include_snapshot)
         responses = {}
         deferred = {}
         deciding = [(actor, backend) for actor, backend in self.backends.items()
@@ -1391,7 +1449,8 @@ class BigvilleGame:
         self.last_tick_graph = (build_tick_graph(order, responses, self.world)
                                 if self.tick_graph_enabled else None)
         self._resolve_joint_groups(order, responses)
-        return self._apply_turn(order, responses, 0)
+        return self._apply_turn(order, responses, 0,
+                                include_snapshot=include_snapshot)
 
     # ---------------------------------------------------- TG06 simultaneous claims
     def _turn_claim_graph(self, order, responses):
@@ -1471,7 +1530,7 @@ class BigvilleGame:
         self._apply_response_contained(actor, replacement)
         self.last_results[actor] = False
 
-    def _apply_turn(self, order, responses, start):
+    def _apply_turn(self, order, responses, start, *, include_snapshot: bool = True):
         """Apply each actor's response in ``order`` from position ``start``, then finish the turn.
 
         Returns waiting when a human target must react to a contested take. The turn then resumes on the
@@ -1497,9 +1556,11 @@ class BigvilleGame:
         if self.turn_semantics == "simultaneous":
             suppressed = self._simultaneous_suppressed(order, responses)
         if self._partitioned_eligible(order, responses, start):
-            return self._apply_turn_partitioned(order, responses, suppressed)
+            return self._apply_turn_partitioned(
+                order, responses, suppressed, include_snapshot=include_snapshot)
         if self._threaded_eligible(order, responses, start):
-            return self._apply_turn_threaded(order, responses, suppressed)
+            return self._apply_turn_threaded(
+                order, responses, suppressed, include_snapshot=include_snapshot)
         for index in range(start, len(order)):
             actor = order[index]
             response = responses[actor]
@@ -1545,7 +1606,7 @@ class BigvilleGame:
             if result and before:
                 after = {name: self._visible_object_snapshot(name) for name in before}
                 self._record_physical_changes(actor, before, after, int(self.world._turn))
-        return self._finish_turn(responses)
+        return self._finish_turn(responses, include_snapshot=include_snapshot)
 
     # ---------------------------------------------------- TG05 threaded commit
     def _threaded_eligible(self, order, responses, start) -> bool:
@@ -1710,7 +1771,8 @@ class BigvilleGame:
         except Exception as exc:  # one resident's failed unit must not stop the turn
             return actor, False, f"{type(exc).__name__}: {exc}"
 
-    def _apply_turn_threaded(self, order, responses, suppressed=None):
+    def _apply_turn_threaded(self, order, responses, suppressed=None,
+                             *, include_snapshot: bool = True):
         """Commit declared-independent units concurrently, then finish once.
 
         Results and errors are written on the main thread in ``order`` so the
@@ -1755,9 +1817,10 @@ class BigvilleGame:
             self.last_results[actor] = bool(result)
             if error is not None:
                 self.last_errors[actor] = error
-        return self._finish_turn(responses)
+        return self._finish_turn(responses, include_snapshot=include_snapshot)
 
-    def _apply_turn_partitioned(self, order, responses, suppressed=None):
+    def _apply_turn_partitioned(self, order, responses, suppressed=None,
+                                *, include_snapshot: bool = True):
         """Commit one turn through in-process spatial shards (TG07).
 
         The result/error bookkeeping is identical to ``_apply_turn_threaded``:
@@ -1793,7 +1856,7 @@ class BigvilleGame:
             self.last_results[actor] = bool(result)
             if error is not None:
                 self.last_errors[actor] = error
-        return self._finish_turn(responses)
+        return self._finish_turn(responses, include_snapshot=include_snapshot)
 
     def _run_component(self, order, responses, component, suppressed=None):
         suppressed = suppressed or {}
@@ -1801,7 +1864,7 @@ class BigvilleGame:
                                  suppressed.get(order[index]))
                 for index in component]
 
-    def _resume_suspended(self) -> dict:
+    def _resume_suspended(self, *, include_snapshot: bool = True) -> dict:
         """Continue a turn that waited for a human holder's reaction, or wait again."""
         suspended = self._suspended
         actor = suspended["actor"]
@@ -1818,10 +1881,15 @@ class BigvilleGame:
             result = self._settle_take(actor, suspended["response"], pending, None, choice, note)
         self.last_results[actor] = result
         self._record_speech_witnesses(actor, suspended["utterances_before"])
-        return self._apply_turn(suspended["order"], suspended["responses"], suspended["index"] + 1)
+        return self._apply_turn(suspended["order"], suspended["responses"], suspended["index"] + 1,
+                                include_snapshot=include_snapshot)
 
-    def _finish_turn(self, responses) -> dict:
-        """The end of a turn: world turn bookkeeping, event expiry, periods and continuations."""
+    def _finish_turn(self, responses, *, include_snapshot: bool = True) -> dict:
+        """The end of a turn: world turn bookkeeping, event expiry, periods and continuations.
+
+        ``include_snapshot=False`` (an on-demand step) skips the expensive
+        ``snapshot()`` build; every other bookkeeping step is unchanged.
+        """
         self.world.resolve_actor_turn()
         # Phase 053: each fogged resident (the LLM and human backends) learns the ground in sight this turn.
         from domains.map_memory import learn_all
@@ -1843,8 +1911,11 @@ class BigvilleGame:
                                             action_ok=self.last_results.get(actor, True))
             else:
                 self._continuations.pop(actor, None)
-        return {"status": "advanced", "turn": int(self.world._turn),
-                "results": dict(self.last_results), "snapshot": self.snapshot()}
+        result = {"status": "advanced", "turn": int(self.world._turn),
+                  "results": dict(self.last_results)}
+        if include_snapshot:
+            result["snapshot"] = self.snapshot()
+        return result
 
     # ---------------------------------------------------- contested take (Phase 029)
     @staticmethod
@@ -1983,11 +2054,20 @@ class BigvilleGame:
     def dump_all_held_state(self) -> dict[str, dict]:
         return {actor: self.dump_held_state(actor) for actor in self.backends}
 
-    def snapshot(self) -> dict:
+    def snapshot(self, include_report: bool = True) -> dict:
+        """Return the full session snapshot.
+
+        ``include_report=False`` omits the world's expensive ``report`` and
+        ``report_history`` blocks (the rest of the world, characters, held
+        state and continuations is unchanged).  The default output is the
+        historical full snapshot.  Callers that need the report can always call
+        ``world.report()``/``world.report_history()`` directly.
+        """
         return {
             "schema": "bigville/game/1",
             "player": self.player,
-            "world": self.world.export_state(event_tail=100),
+            "world": self.world.export_state(event_tail=100,
+                                             include_report=include_report),
             "characters": {name: c.to_dict() for name, c in self.characters.items()},
             "held_state": self.dump_all_held_state(),
             "continuations": {

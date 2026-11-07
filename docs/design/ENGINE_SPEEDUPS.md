@@ -190,7 +190,7 @@ pass.
 | Phase | Status | Commit |
 |---|---|---|
 | EN01 | ready | — |
-| EN02 | blocked on EN01 | — |
+| EN02 | ready | — |
 | EN03 | blocked on EN02 | — |
 | EN04 | blocked on EN03 | — |
 | EN05 | blocked on EN04 | — |

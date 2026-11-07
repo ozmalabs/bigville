@@ -47,7 +47,7 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                 llm_provider=None, llm_log=True, llm_log_dir=None,
                 physical_subsystems=None, turn_semantics="sequential",
                 simultaneous_priority=None, executor="serial", executor_workers=4,
-                affordance_mode="auto"):
+                affordance_mode="auto", snapshot_mode="every_turn"):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
@@ -61,7 +61,17 @@ def create_game(*, scenario="town100", seed=305000, player=None,
     backend.  ``"menu"`` and ``"lazy"`` may be passed explicitly and always
     win; ``game.affordance_mode_requested`` keeps the requested value while
     ``game.affordance_mode`` reports the resolved mode.  See
-    ``docs/phases/lazy-affordances/LA08_REPORT.md``."""
+    ``docs/phases/lazy-affordances/LA08_REPORT.md``.
+
+    ``snapshot_mode`` controls whether ``game.step()`` includes the full UI
+    snapshot.  It defaults to ``"every_turn"`` (historical behaviour).
+    ``"on_demand"`` omits the ``"snapshot"`` key so a headless turn does not
+    build the world report; call ``game.snapshot()`` when it is needed.
+    ``"auto"`` resolves to ``"on_demand"`` for the same autonomous simple/cheap
+    sessions the affordance auto rule selects, and to ``"every_turn"`` for a
+    player, LLM, Ocelot or other backend.  Explicit values always win;
+    ``game.snapshot_mode_requested`` keeps the requested value while
+    ``game.snapshot_mode`` reports the resolved mode."""
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:
@@ -89,7 +99,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                         turn_semantics=turn_semantics,
                         simultaneous_priority=simultaneous_priority,
                         executor=executor, executor_workers=executor_workers,
-                        affordance_mode=affordance_mode)
+                        affordance_mode=affordance_mode,
+                        snapshot_mode=snapshot_mode)
     scenario_backends = getattr(world, "_scenario_actor_backends", {})
     for name, character in game.characters.items():
         kind = "human" if name == game.player else scenario_backends.get(name, default_backend)
@@ -106,6 +117,7 @@ def create_game(*, scenario="town100", seed=305000, player=None,
             raise ValueError(f"Unknown backend: {kind}")
     # LA08: backends are assigned after construction, so resolve "auto" now.
     game.resolve_affordance_mode()
+    game.resolve_snapshot_mode()
     game.llm_log = attach_default_llm_log(game.backends, enabled=llm_log, log_dir=llm_log_dir)
     return game
 
