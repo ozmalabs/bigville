@@ -435,8 +435,6 @@ class DeterministicBackend:
     # refused proposal.  Scores, labels and trace fields are not part of the
     # physical proposal.
     _LAZY_MAX_CANDIDATES = 64
-    _LAZY_MAX_RECIPES = 12
-    _LAZY_MAX_COMMON_RECIPES = 8
     _LAZY_PRIORITY_ACTIONS = {"eat", "rest", "sleep", "struggle", "release"}
     _PROPOSAL_PARAM_KEYS = (
         "kind", "recipe", "target", "destination", "recipient", "container",
@@ -550,47 +548,18 @@ class DeterministicBackend:
                 continue
             add_move(actor.get("position"), f"actor:{actor.get('id', '')}")
 
-        # --- work: the current job, local buildings, then common recipes ----
-        known = {
-            str(memory.content.get("recipe"))
-            for memory in self.character.memories
-            if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
-            and memory.content.get("recipe")
-        }
-        known.update(str(name) for name in entities.get("known_recipes", []))
-        try:
-            from domains import bigville_entities as entities_pack
-            recipe_specs = {str(recipe.get("name")): recipe
-                            for recipe in entities_pack.RECIPES}
-        except Exception:
-            recipe_specs = {}
-        job_recipe = str((entities.get("job") or {}).get("recipe") or "")
-        local_buildings = {
-            str(value) for value in
-            [*(building.get("id") for building in cell.get("buildings") or []),
-             *(building.get("kind") for building in cell.get("buildings") or [])]
-            if value
-        }
-        ordered_recipes = []
-        if job_recipe and job_recipe in known:
-            ordered_recipes.append(job_recipe)
-        for name in sorted(known):
-            spec = recipe_specs.get(name, {})
-            if spec.get("at_building") in local_buildings and name not in ordered_recipes:
-                ordered_recipes.append(name)
-        common = 0
-        for name in sorted(known):
-            if name in ordered_recipes:
-                continue
-            if common >= self._LAZY_MAX_COMMON_RECIPES:
-                break
-            ordered_recipes.append(name)
-            common += 1
-        for name in ordered_recipes[:self._LAZY_MAX_RECIPES]:
-            outputs = recipe_specs.get(name, {}).get("out") or []
-            output = str(outputs[0]) if outputs and outputs[0] else ""
-            add("work", recipe=name, kind=output, intensity=1.0,
-                target=f"recipe:{name}")
+        # --- work: the world's read-only prefilter (LA07) --------------------
+        # The observation publishes only recipes whose site/tool/ingredient
+        # preview is ok.  This replaces the old guess at local buildings and
+        # common recipes; the world still validates the proposal.
+        if not entities.get("busy"):
+            for entry in entities.get("work_candidates") or []:
+                name = str(entry.get("recipe") or "")
+                if not name:
+                    continue
+                output = str(entry.get("out") or "")
+                add("work", recipe=name, kind=output, intensity=1.0,
+                    target=f"recipe:{name}")
 
         # --- containers: fetch contents and put carried kinds ---------------
         containers = sorted(

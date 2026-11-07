@@ -8838,6 +8838,91 @@ class BigvilleWorld:
             })
         return details
 
+    # LA07: a bounded, deterministic work prefilter.  It is a publish cap, not a
+    # rule: the menu publishes every recipe that passes the same physical gate.
+    _OBSERVE_WORK_LIMIT = 16
+
+    def _observe_work_candidates(self, actor, cell=None):
+        """Recipes this actor could start right now, bounded and sorted (LA07).
+
+        The list is the lazy backend's work prefilter: it applies the same
+        cheap site/tool/ingredient conditions the menu's work loop publishes,
+        via ``recipe_preview``.  A busy resident gets an empty list because the
+        menu suppresses new work while a job is open.  This does not enumerate
+        items x destinations and never touches ``_actor_options``.
+
+        Scanning all ~160 recipes with the full preview would cost about as
+        much as the menu's own work loop, so one safe over-approximation runs
+        first: a recipe is skipped only when a bulk input's total available
+        quantity (own inventory, reachable containers, open town store) is
+        already below the need.  Item/type inputs are left to the full preview.
+        """
+        if self.busy(actor):
+            return []
+        if cell is None:
+            cell = self._observe_cell(self.actor_position(actor))
+        local_buildings = set()
+        for building in cell.get("buildings") or []:
+            for key in ("id", "kind"):
+                value = building.get(key)
+                if value:
+                    local_buildings.add(str(value))
+        names = set(self._known_recipe_names(actor))
+        job = self._job_of(actor)
+        if job is not None:
+            runs = self.eng.neighbours(job, "runs")
+            if runs:
+                name = str(self.eng.node(runs[0])["attrs"].get("name", ""))
+                if name:
+                    names.add(name)
+        bulk_available = self._observe_bulk_available(actor)
+        candidates = []
+        for name in sorted(names):
+            spec = self._recipe_specs.get(name)
+            if spec is None:
+                continue
+            at_building = spec.get("at_building")
+            if at_building and str(at_building) not in local_buildings:
+                continue
+            if not self._recipe_maybe_available(spec, bulk_available):
+                continue
+            if not self.recipe_preview(actor, name)["ok"]:
+                continue
+            outputs = spec.get("out") or []
+            out_kind = str(outputs[0]) if outputs and outputs[0] else ""
+            minutes = 0.0
+            action = self._actions.get(name)
+            if action is not None:
+                minutes = float(self.eng.node(action)["attrs"].get("time_minutes", 0.0))
+            candidates.append({"recipe": name, "out": out_kind,
+                               "time_minutes": round(minutes, 4)})
+            if len(candidates) >= self._OBSERVE_WORK_LIMIT:
+                break
+        return candidates
+
+    def _observe_bulk_available(self, actor):
+        """Bulk units the actor can draw on now, keyed by kind (LA07).
+
+        This is the same source order ``_plan_input`` draws from, without the
+        per-recipe claim bookkeeping.  It is a read-only prefilter only.
+        """
+        kinds = set()
+        for spec in self._recipe_specs.values():
+            for kind, qty in spec.get("in", []):
+                need = self._input_need(kind, qty)
+                if need[2] or need[3]:
+                    continue
+                kinds.add(kind)
+        return {kind: self._bulk_available(actor, kind) for kind in kinds}
+
+    @staticmethod
+    def _recipe_maybe_available(spec, bulk_available):
+        """False only when a bulk input cannot possibly be met (safe prefilter)."""
+        for kind, qty in spec.get("in", []):
+            if kind in bulk_available and bulk_available[kind] + 1e-9 < float(qty):
+                return False
+        return True
+
     def observe(self, actor):
         """Publish a cheap, JSON-safe, deterministic observation of ``actor`` (LA03).
 
@@ -8917,6 +9002,8 @@ class BigvilleWorld:
                 by_id[item["id"]] = item
         containers_in_reach = [by_id[key] for key in sorted(by_id)]
         holder = self.holder_of(actor)
+        cell = self._observe_cell(position)
+        busy = bool(self.busy(actor))
         observation = {
             "turn": int(self._turn),
             "actor": actor,
@@ -8941,13 +9028,15 @@ class BigvilleWorld:
             "holding": self.holding_of(actor),
             "turn_state": self.actor_turn_state(actor),
             "job": self._observe_job(actor),
+            "busy": busy,
             "skills": self.skill_levels(actor),
             "known_recipes": self._known_recipe_names(actor),
+            "work_candidates": self._observe_work_candidates(actor, cell),
             "last_outcome": self.last_outcome(actor),
             "nearby_actors": self._observe_nearby_actors(actor, position),
             "visible_objects": visible_objects,
             "containers_in_reach": containers_in_reach,
-            "cell": self._observe_cell(position),
+            "cell": cell,
             "places": self._observe_places(actor, attrs),
             "heard": self.heard_utterances(actor, limit=20),
         }
@@ -9554,20 +9643,22 @@ class BigvilleWorld:
         self._refusal_code = code
         return False
 
-    def _recipe_refusal(self, actor, action_name):
-        """The first physical check this actor fails to start a recipe now, or None when none fails.
+    def _recipe_start_block(self, actor, action_name):
+        """The shared structural checks for starting a recipe now, or None.
 
-        The checks run in the order ``_capable``, ``_can_attempt`` and ``_recipe_tools_usable`` make them."""
+        These are the checks ``_recipe_refusal`` applies on the enactment path: the
+        recipe exists, the resident is awake, and they stand at the gathering
+        site/building (and, for a burial, the grave has work ready).  Skill,
+        season and strength are deliberately not here: Phase 049 treats them as
+        consequences of working, not refusals to start.  ``recipe_preview`` adds
+        them as a read-only menu-equivalent filter (LA07).
+        """
         if action_name not in self._actions:
             return "not_known"
         # Phase 024: a resident who is asleep or collapsed cannot start work.
         sleep_code = self._sleep_code(actor)
         if sleep_code is not None:
             return sleep_code
-        # Phase 049: skill, season, strength and a second open job are consequences, not refusals. A batch below the
-        # skill floor is poorer or spoiled (the completion of a job), an out-of-season batch yields little, a weak
-        # worker works slower and strains (_job_strength_rate), and a worker with several jobs shares their progress
-        # (_jobs_sharing).
         # Phase 048: a recipe does not refuse for want of its tool. The job uses the tool its worker has, or bare
         # hands at the fitness they give (see _job_tool_item). What the world offers a backend is a separate matter.
         if not self._at_gathering_site(actor, action_name):
@@ -9577,6 +9668,59 @@ class BigvilleWorld:
         if not self._burial_ready(action_name):
             return "not_ready"
         return None
+
+    def _recipe_refusal(self, actor, action_name):
+        """The first physical check this actor fails to start a recipe now, or None when none fails.
+
+        The checks run in the order ``_capable``, ``_can_attempt`` and ``_recipe_tools_usable`` make them."""
+        # Phase 049: skill, season, strength and a second open job are consequences, not refusals. A batch below the
+        # skill floor is poorer or spoiled (the completion of a job), an out-of-season batch yields little, a weak
+        # worker works slower and strains (_job_strength_rate), and a worker with several jobs shares their progress
+        # (_jobs_sharing).
+        return self._recipe_start_block(actor, action_name)
+
+    def recipe_preview(self, actor, recipe):
+        """Read-only preview of whether ``actor`` could start ``recipe`` now (LA07).
+
+        Returns ``{"ok": bool, "reason": str}`` with an existing refusal code
+        where one applies.  This mirrors the menu's work publish filter
+        (``not busy``, ``_can_attempt``, ``_recipe_inputs_available``) without
+        opening a job, consuming stock or claiming the action slot.  It is the
+        cheap backend's prefilter, not a replacement for enactment's own
+        checks; a proposal that passes here may still be refused.
+        """
+        self._actor(actor)
+        name = self._as_key(recipe)
+        if name is None or name not in self._actions:
+            return {"ok": False, "reason": "not_known"}
+        spec = self._recipe_specs.get(name)
+        if spec is None:
+            return {"ok": False, "reason": "not_known"}
+        if self.busy(actor):
+            # The menu suppresses new work while a job is open.  `not_possible`
+            # is the existing code for "the actor cannot act like this now".
+            return {"ok": False, "reason": "not_possible"}
+        sleep_code = self._sleep_code(actor)
+        if sleep_code is not None:
+            return {"ok": False, "reason": sleep_code}
+        # `_capable`: skill, season, strength and an open recipe's own held
+        # tools.  Skill/season/strength share the `unskilled` code the rest of
+        # the world uses for a resident who cannot do the work.
+        if not self._skilled_enough(actor, name) or not self._recipe_in_season(name):
+            return {"ok": False, "reason": "unskilled"}
+        strength_needed, _stamina = self.E.recipe_exertion(name)
+        if self.strength(actor) + 1e-9 < strength_needed:
+            return {"ok": False, "reason": "unskilled"}
+        if spec.get("open") and any(self._held_tool(actor, tool) is None
+                                    for tool in spec.get("tools", [])):
+            # A missing physical tool is a stock shortage, not a skill gap.
+            return {"ok": False, "reason": "out_of_stock"}
+        code = self._recipe_start_block(actor, name)
+        if code is not None:
+            return {"ok": False, "reason": code}
+        if not self._recipe_inputs_available(name, actor):
+            return {"ok": False, "reason": "out_of_stock"}
+        return {"ok": True, "reason": ""}
 
     def _attempt(self, actor, action, run):
         """Run one major-action attempt and publish its outcome to the actor's own record.
