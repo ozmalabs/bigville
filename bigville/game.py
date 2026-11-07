@@ -1,9 +1,11 @@
 """Turn-driven game orchestration over the canonical Bigville world."""
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ from domains.data_view import world_entities
 
 
 _WAITING = object()   # a reaction that a human holder has not yet given
+_MISSING = object()   # an absent per-actor entry, e.g. no published practice window
 
 
 @dataclass
@@ -36,8 +39,35 @@ class _ActiveContinuation:
     destination_complete: bool = False
 
 
+@dataclass
+class _DecisionSnapshot:
+    """The frozen, read-only inputs of one decision phase (TG03).
+
+    Deliberately lightweight: the canonical world graph is not copied. The
+    snapshot records the turn and a plain-dict copy of the actor positions at
+    the moment the decision phase began, plus the practice window prepared for
+    every actor that needs a context this turn. Its purpose is to prove that
+    context construction is read-only and to give later tick-graph phases a
+    seam; it is not a general-purpose world copy.
+    """
+
+    turn: int
+    positions: dict[str, Any]
+    practice_windows: dict[str, tuple[int, int, int]]
+
+
 class BigvilleGame:
     """A playable session where human and autonomous actors share one API."""
+
+    # TG03: threads used to build one turn's decision contexts. 1 is serial.
+    context_workers = 1
+    # TG03 debug switch: True builds every context before deciding (the default
+    # path); False keeps the old inline build-then-decide loop as an oracle.
+    _defer_decisions = True
+    # TG03 debug switch: hash the canonical world checkpoint before and after
+    # context construction. Off by default; tests may enable it or call
+    # _assert_decision_snapshot_unchanged directly.
+    _verify_context_purity = False
 
     def __init__(self, world, *, player: str | None = None,
                  characters: dict[str, CharacterDefinition] | None = None,
@@ -482,7 +512,8 @@ class BigvilleGame:
         from domains.agent_view import build_agent_view
         return build_agent_view(self, actor, mode=mode)
 
-    def _context(self, actor: str) -> ActorContext:
+    def _context(self, actor: str, *, practice_window=None,
+                 snapshot: _DecisionSnapshot | None = None) -> ActorContext:
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
         affordances = self.world.actor_affordances(actor)
@@ -563,11 +594,23 @@ class BigvilleGame:
         # into skill, each carried by the contexts of one turn so the backend decides what was
         # learned. Every _context call within a turn returns the same records.
         practice = self.world.actor_observations(actor, "practice")
-        turn = int(self.world._turn)
-        last_turn, start, end = self._published_practice.get(actor, (None, 0, 0))
-        if last_turn != turn:
-            start, end = end, len(practice)
-            self._published_practice[actor] = (turn, start, end)
+        if practice_window is None and snapshot is not None:
+            practice_window = snapshot.practice_windows.get(actor)
+        if practice_window is None:
+            # External/legacy callers keep the original side effect: the first
+            # context of a turn advances this actor's published window.
+            turn = int(self.world._turn)
+            last_turn, start, end = self._published_practice.get(actor, (None, 0, 0))
+            if last_turn != turn:
+                start, end = end, len(practice)
+                self._published_practice[actor] = (turn, start, end)
+        else:
+            # TG03: the decision pre-pass owns the window, so a pooled build
+            # neither reads nor writes shared game state.
+            if snapshot is not None:
+                assert snapshot.turn == int(self.world._turn), (
+                    "context built from a stale decision snapshot")
+            _, start, end = practice_window
         observations["practice"] = [dict(record) for record in practice[start:end]]
         # Phase 021: the actor's own last major-action outcome (applied, reason). Only this resident
         # sees it; the world does not publish another resident's attempt.
@@ -810,11 +853,100 @@ class BigvilleGame:
         random.Random(f"{seed}:{int(turn)}").shuffle(order)
         return order
 
-    def step(self) -> dict:
-        """Advance one shared turn, or return waiting for human input.
+    def _prepare_practice(self, actors) -> dict[str, tuple[int, int, int]]:
+        """Advance the practice window of every actor that will build a context (TG03).
 
-        A contested take (Phase 029) can wait for the holder's reaction. The step then returns waiting, and
-        the next call resumes that turn where it stopped, without deciding again."""
+        This mirrors the old side effect inside ``_context`` exactly: the first
+        context of a turn publishes ``(turn, previous_end, len(practice))``. An
+        actor that will not build a context is left untouched, so its window
+        keeps accumulating the way the inline loop left it.
+        """
+        turn = int(self.world._turn)
+        windows = {}
+        for actor in actors:
+            practice = self.world.actor_observations(actor, "practice")
+            last_turn, start, end = self._published_practice.get(actor, (None, 0, 0))
+            if last_turn != turn:
+                start, end = end, len(practice)
+                self._published_practice[actor] = (turn, start, end)
+            windows[actor] = (turn, start, end)
+        return windows
+
+    def _world_checkpoint_digest(self) -> str:
+        """A stable digest of the canonical world checkpoint, for purity checks."""
+        payload = json.dumps(self.world.eng.to_checkpoint_dict(), sort_keys=True,
+                             separators=(",", ":"), default=repr)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def _assert_decision_snapshot_unchanged(self, snapshot: _DecisionSnapshot,
+                                            before_digest: str | None = None) -> None:
+        """Assert that context construction did not advance or mutate the world (TG03).
+
+        The turn and actor positions are cheap and always checked. Passing the
+        checkpoint digest from before ``_build_contexts`` additionally proves
+        the canonical graph is byte-for-byte unchanged.
+        """
+        assert snapshot.turn == int(self.world._turn), (
+            "context construction advanced the world turn")
+        assert snapshot.positions == dict(self.world._actor_positions), (
+            "context construction moved an actor")
+        if before_digest is not None:
+            assert before_digest == self._world_checkpoint_digest(), (
+                "context construction changed the canonical world graph")
+
+    def _build_contexts(self, actors):
+        """Build one frozen decision snapshot and every requested context (TG03).
+
+        Returns ``(snapshot, contexts)`` with contexts keyed by actor, in the
+        supplied (registration) order. A pool may build them, but the futures
+        are consumed in that same order. No backend decision is taken here.
+        """
+        turn = int(self.world._turn)
+        snapshot = _DecisionSnapshot(turn=turn,
+                                     positions=dict(self.world._actor_positions),
+                                     practice_windows={})
+        before_digest = self._world_checkpoint_digest() if self._verify_context_purity else None
+        windows = self._prepare_practice(actors)
+        snapshot.practice_windows.update(windows)
+        workers = int(self.context_workers or 1)
+        if workers > 1 and len(actors) > 1:
+            with ThreadPoolExecutor(max_workers=min(workers, len(actors)),
+                                    thread_name_prefix="bigville-context") as pool:
+                futures = [(actor, pool.submit(self._context, actor,
+                                               practice_window=windows[actor],
+                                               snapshot=snapshot))
+                           for actor in actors]
+                contexts = {actor: future.result() for actor, future in futures}
+        else:
+            contexts = {actor: self._context(actor, practice_window=windows[actor],
+                                             snapshot=snapshot)
+                        for actor in actors}
+        if int(self.world._turn) != turn:
+            raise RuntimeError("world turn changed while building decision contexts")
+        self._assert_decision_snapshot_unchanged(snapshot, before_digest)
+        return snapshot, contexts
+
+    def _restore_practice_after(self, order, actor, previous) -> None:
+        """Undo a pre-pass window for actors an inline waiting step never reached."""
+        try:
+            cutoff = order.index(actor)
+        except ValueError:
+            return
+        for name in order[cutoff + 1:]:
+            old = previous.get(name, _MISSING)
+            if old is _MISSING:
+                self._published_practice.pop(name, None)
+            else:
+                self._published_practice[name] = old
+
+    def step(self) -> dict:
+        """Advance one shared turn, or return waiting for human input."""
+        if self._defer_decisions:
+            return self._step_deferred()
+        return self._step_inline()
+
+    def _step_inline(self) -> dict:
+        """The pre-TG03 build-then-decide loop, kept as the equivalence oracle."""
         if self._suspended is not None:
             return self._resume_suspended()
         # Period changes happen only after a successful turn, below. Publish
@@ -850,6 +982,92 @@ class BigvilleGame:
             if response.waiting:
                 return {"status": "waiting", "actor": actor,
                         "context": self._context(actor).observations,
+                        "affordances": self.world.actor_affordances(actor)}
+
+        # Phase 055: the concurrent residents decide in one pool; results apply in registration order.
+        for actor, response in decide_pooled(deferred).items():
+            if "continuation_interrupted" in deferred[actor][1].backend_state:
+                response.backend_state.setdefault("continuation_interrupted",
+                                                  deferred[actor][1].backend_state["continuation_interrupted"])
+            responses[actor] = response
+            if response.waiting:
+                return {"status": "waiting", "actor": actor,
+                        "context": self._context(actor).observations,
+                        "affordances": self.world.actor_affordances(actor)}
+        # This opens the turn and advances the physical environment, but does
+        # not let the embedded Ocelot loop act behind the backends.
+        self.world.tick()
+        self.animal_turn()
+        self.last_responses = responses
+        self.last_results = {}
+        self.last_errors = {}
+        order = self.turn_order(list(responses), int(self.world._turn))
+        self.last_order = order
+        # Phase 029: the cells at the start of the turn, for whether a target could see a taker coming.
+        self.world.mark_turn_start()
+        self._resolve_joint_groups(order, responses)
+        return self._apply_turn(order, responses, 0)
+
+    def _step_deferred(self) -> dict:
+        """Build every decision context from one snapshot, then ask backends (TG03)."""
+        if self._suspended is not None:
+            return self._resume_suspended()
+        responses = {}
+        deferred = {}
+        deciding = [(actor, backend) for actor, backend in self.backends.items()
+                    if self.world.is_alive(actor)]
+        # The interrupt gate is read-only, so it can be evaluated for the whole
+        # turn before any context is built. Old code evaluated it lazily.
+        reasons = {}
+        for actor, _backend in deciding:
+            active = self._continuations.get(actor) if self.continuations_enabled else None
+            if active is not None:
+                reasons[actor] = self._continuation_interrupt(actor, active)
+        # The inline loop only builds a context for an uninterrupted
+        # continuation when its backend has a note_turn hook.
+        context_actors = []
+        for actor, backend in deciding:
+            active = self._continuations.get(actor) if self.continuations_enabled else None
+            reason = reasons.get(actor)
+            if active is not None and reason is None:
+                if callable(getattr(backend, "note_turn", None)):
+                    context_actors.append(actor)
+            else:
+                context_actors.append(actor)
+        previous_practice = {
+            actor: self._published_practice[actor]
+            if actor in self._published_practice else _MISSING
+            for actor in context_actors
+        }
+        _snapshot, contexts = self._build_contexts(context_actors)
+        for actor, backend in deciding:
+            active = self._continuations.get(actor) if self.continuations_enabled else None
+            reason = reasons.get(actor)
+            if active is not None and reason is None:
+                note_turn = getattr(backend, "note_turn", None)
+                if callable(note_turn):
+                    note_turn(contexts[actor])
+                response = self._continuation_response(active)
+            else:
+                context = contexts[actor]
+                if reason is not None:
+                    context.backend_state["continuation_interrupted"] = reason
+                if getattr(backend, "concurrent", False):
+                    deferred[actor] = (backend, context)
+                    continue
+                response = backend.decide(context)
+                if reason is not None:
+                    response.backend_state.setdefault("continuation_interrupted", reason)
+            responses[actor] = response
+            if response.waiting:
+                # The inline loop would never have built the contexts after this
+                # actor, so put their practice windows back as it left them.
+                self._restore_practice_after(context_actors, actor, previous_practice)
+                context = contexts.get(actor)
+                if context is None:
+                    context = self._context(actor)
+                return {"status": "waiting", "actor": actor,
+                        "context": context.observations,
                         "affordances": self.world.actor_affordances(actor)}
 
         # Phase 055: the concurrent residents decide in one pool; results apply in registration order.

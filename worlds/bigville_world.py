@@ -14,6 +14,7 @@ import json
 import math
 import random
 import heapq
+import threading
 import weakref
 from collections import deque
 from pathlib import Path
@@ -33,6 +34,11 @@ _DEFAULT_TOOL = object()
 # TG02 debug switch: worlds added here use the brute-force proximity scan instead
 # of the occupancy index. Kept off the instance so it is never checkpointed.
 _FORCE_LINEAR_PROXIMITY_WORLDS = weakref.WeakSet()
+
+# TG03: the lazy shortest-path fields are shared derived state. Context building
+# may run in a pool, so the cache (and the BFS that fills it) is guarded. The
+# lock is module-level and never checkpointed; the field contents stay the same.
+_DISTANCE_FIELDS_LOCK = threading.RLock()
 
 DEFAULT_DATA_PACK = "bigville"
 
@@ -1890,21 +1896,22 @@ class BigvilleWorld:
         """Shortest walkable-cell distance; map distance is a world fact, not a preference."""
         if a not in self._map_cells or b not in self._map_cells:
             return None
-        field = self._distance_fields.get(b)
-        if field is None:
-            field = {b: 0}
-            frontier = deque([b])
-            while frontier:
-                pt = frontier.popleft()
-                d = field[pt] + 1
-                for nx, ny in ((pt[0] + 1, pt[1]), (pt[0] - 1, pt[1]),
-                               (pt[0], pt[1] + 1), (pt[0], pt[1] - 1)):
-                    neighbour = (nx, ny)
-                    if neighbour in self._map_cells and neighbour not in field:
-                        field[neighbour] = d
-                        frontier.append(neighbour)
-            self._distance_fields[b] = field
-        return field.get(a)
+        with _DISTANCE_FIELDS_LOCK:
+            field = self._distance_fields.get(b)
+            if field is None:
+                field = {b: 0}
+                frontier = deque([b])
+                while frontier:
+                    pt = frontier.popleft()
+                    d = field[pt] + 1
+                    for nx, ny in ((pt[0] + 1, pt[1]), (pt[0] - 1, pt[1]),
+                                   (pt[0], pt[1] + 1), (pt[0], pt[1] - 1)):
+                        neighbour = (nx, ny)
+                        if neighbour in self._map_cells and neighbour not in field:
+                            field[neighbour] = d
+                            frontier.append(neighbour)
+                self._distance_fields[b] = field
+            return field.get(a)
 
     def terrain_movement_rules(self):
         """Return the seeded movement records used by map cells and actions."""
