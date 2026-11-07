@@ -14,6 +14,7 @@ import json
 import math
 import random
 import heapq
+import weakref
 from collections import deque
 from pathlib import Path
 
@@ -28,6 +29,10 @@ from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamp
 
 # Phase 048: the default for a job's or an attempt's tool: the right one the worker has, else bare hands.
 _DEFAULT_TOOL = object()
+
+# TG02 debug switch: worlds added here use the brute-force proximity scan instead
+# of the occupancy index. Kept off the instance so it is never checkpointed.
+_FORCE_LINEAR_PROXIMITY_WORLDS = weakref.WeakSet()
 
 DEFAULT_DATA_PACK = "bigville"
 
@@ -304,6 +309,124 @@ class _HandoverCount:
         return self._count
 
 
+class _ActorPositions(dict):
+    """Actor name -> map cell, with a derived cell -> resident-name bucket index (TG02).
+
+    The canonical ``_actor_positions`` mapping is a plain dictionary at rest and
+    checkpoints as one. This subclass keeps a bucket map in sync with every
+    mutation so nearby-resident queries do not scan every resident. The bucket
+    map is derived state: it lives on the instance, not in the mapping, so it
+    never enters a checkpoint.
+
+    All dictionary mutation entry points are overridden: assignment, deletion,
+    ``pop``, ``update``, ``clear`` and ``setdefault``. ``rebuild`` recomputes the
+    index from the current contents, and ``near`` returns the names in the
+    Chebyshev bounding square around a cell.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self._cell_buckets: dict[object, set[str]] = {}
+        if args or kwargs:
+            self.update(*args, **kwargs)
+
+    @staticmethod
+    def _cell_key(cell):
+        if isinstance(cell, (tuple, list)) and len(cell) == 2:
+            return (cell[0], cell[1])
+        try:
+            hash(cell)
+        except TypeError:
+            return None
+        return cell
+
+    def _bucket_add(self, name, cell):
+        key = self._cell_key(cell)
+        if key is None:
+            return
+        self._cell_buckets.setdefault(key, set()).add(name)
+
+    def _bucket_discard(self, name, cell):
+        key = self._cell_key(cell)
+        if key is None:
+            return
+        bucket = self._cell_buckets.get(key)
+        if bucket is None:
+            return
+        bucket.discard(name)
+        if not bucket:
+            del self._cell_buckets[key]
+
+    def __setitem__(self, name, cell):
+        if dict.__contains__(self, name):
+            self._bucket_discard(name, dict.__getitem__(self, name))
+        dict.__setitem__(self, name, cell)
+        self._bucket_add(name, cell)
+
+    def __delitem__(self, name):
+        cell = dict.__getitem__(self, name)
+        dict.__delitem__(self, name)
+        self._bucket_discard(name, cell)
+
+    def pop(self, name, *default):
+        if not dict.__contains__(self, name):
+            if default:
+                return default[0]
+            raise KeyError(name)
+        cell = dict.__getitem__(self, name)
+        value = dict.pop(self, name)
+        self._bucket_discard(name, cell)
+        return value
+
+    def popitem(self):
+        name, cell = dict.popitem(self)
+        self._bucket_discard(name, cell)
+        return name, cell
+
+    def update(self, *args, **kwargs):
+        for name, cell in dict(*args, **kwargs).items():
+            self[name] = cell
+
+    def setdefault(self, name, default=None):
+        if dict.__contains__(self, name):
+            return dict.__getitem__(self, name)
+        self[name] = default
+        return default
+
+    def clear(self):
+        dict.clear(self)
+        self._cell_buckets.clear()
+
+    def rebuild(self):
+        """Recompute the bucket index from the mapping's current contents."""
+        buckets: dict[object, set[str]] = {}
+        for name, cell in dict.items(self):
+            key = self._cell_key(cell)
+            if key is None:
+                continue
+            buckets.setdefault(key, set()).add(name)
+        self._cell_buckets = buckets
+
+    def near(self, cell, radius):
+        """Names in the Chebyshev bounding square around ``cell``, sorted.
+
+        This is a candidate superset for walkable-distance filtering, not a
+        final answer: a resident in the square may still be unreachable.
+        """
+        if not isinstance(cell, (tuple, list)) or len(cell) != 2:
+            return []
+        try:
+            x, y = int(cell[0]), int(cell[1])
+            reach = max(0, int(radius))
+        except (TypeError, ValueError):
+            return []
+        names: set[str] = set()
+        for cx in range(x - reach, x + reach + 1):
+            for cy in range(y - reach, y + reach + 1):
+                names.update(self._cell_buckets.get((cx, cy), ()))
+        return sorted(names)
+
+
 class BigvilleWorld:
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
@@ -344,6 +467,18 @@ class BigvilleWorld:
         # Phase 040: objects as arms (OBJECT_FORCE). Off, a strike ignores `with`, and a throw is refused as unsupported.
         "object_force": False,
     }
+
+    @property
+    def _force_linear_proximity(self):
+        """TG02 debug switch: use the brute-force proximity scan instead of the index."""
+        return self in _FORCE_LINEAR_PROXIMITY_WORLDS
+
+    @_force_linear_proximity.setter
+    def _force_linear_proximity(self, enabled):
+        if enabled:
+            _FORCE_LINEAR_PROXIMITY_WORLDS.add(self)
+        else:
+            _FORCE_LINEAR_PROXIMITY_WORLDS.discard(self)
 
     def _validate_physical_subsystems(self, configured):
         if not isinstance(configured, dict):
@@ -481,7 +616,7 @@ class BigvilleWorld:
         self._physical_object_aliases = {}
         self._physical_object_locations = {}
         self._actor_cells = {}
-        self._actor_positions = {}
+        self._actor_positions = _ActorPositions()
         self._actor_goals = {}
         self._land_cells = {}
         self._household_cells = {}
@@ -1927,7 +2062,53 @@ class BigvilleWorld:
         return min(viable, key=lambda point: (travel[point], self.distance(point, destination))) \
             if viable else None
 
-    def actor_position(self, actor): return self._actor_positions.get(actor)
+    def _ensure_position_index(self):
+        """Return the indexed position mapping, rewrapping a restored plain dict (TG02).
+
+        Checkpoints decode ``_actor_positions`` as a plain dict. The first
+        movement or proximity query after a restore replaces it with an
+        ``_ActorPositions`` that rebuilds the derived bucket map in one pass.
+        """
+        positions = self.__dict__.get("_actor_positions")
+        if isinstance(positions, _ActorPositions):
+            return positions
+        indexed = _ActorPositions()
+        if positions:
+            indexed.update(positions)
+        self._actor_positions = indexed
+        return indexed
+
+    def _actor_candidates(self, cell, radius):
+        """Names in the Chebyshev bounding square; brute force under the debug switch."""
+        positions = self._ensure_position_index()
+        if self._force_linear_proximity:
+            return sorted(positions)
+        return positions.near(cell, radius)
+
+    def actors_near(self, position, radius, *, alive_only=True, exclude=None):
+        """Sorted names of actors within walkable ``radius`` of ``position``.
+
+        Candidates come from the occupancy index's Chebyshev bounding square, a
+        strict superset of the walkable-distance ball, then are filtered with
+        ``distance``. The result is exactly the brute-force set and is sorted.
+        """
+        if not isinstance(position, tuple) or len(position) != 2:
+            return []
+        names = []
+        for name in self._actor_candidates(position, radius):
+            if exclude is not None and name == exclude:
+                continue
+            if name not in self._actors:
+                continue
+            if alive_only and not self.is_alive(name):
+                continue
+            other_position = self.actor_position(name)
+            distance = self.distance(position, other_position) if other_position is not None else None
+            if distance is not None and distance <= radius:
+                names.append(name)
+        return sorted(names)
+
+    def actor_position(self, actor): return self._ensure_position_index().get(actor)
 
     def _node_item_weight(self, item):
         attrs = self.eng.node(item)["attrs"]
@@ -1985,11 +2166,12 @@ class BigvilleWorld:
         return state
 
     def _move_actor_to(self, actor, cell):
-        old = self._actor_positions.get(actor)
+        positions = self._ensure_position_index()
+        old = positions.get(actor)
         if old in self._map_cells:
             self.eng.remove_edge_unchecked(self._actors[actor], "at_cell", self._map_cells[old])
         self._attach_at_cell(self._actors[actor], cell)
-        self._actor_positions[actor] = tuple(cell)
+        positions[actor] = tuple(cell)
         # Footfall is a physical effect of arriving, so it belongs to the single
         # enactment site rather than to any one caller that happens to move someone.
         self._wear_cell_by_traversal(actor, cell)
@@ -1997,7 +2179,8 @@ class BigvilleWorld:
 
     def move_actor(self, actor, destination):
         """Move one resident toward a destination, with load affecting travel."""
-        current = self._actor_positions.get(actor)
+        positions = self._ensure_position_index()
+        current = positions.get(actor)
         if current is None or destination not in self._map_cells:
             return None
         # The band is read before this walker's own effort is spent, so a step is taken at the pace the
@@ -2044,7 +2227,6 @@ class BigvilleWorld:
         if nxt is not None:
             self._move_actor_to(actor, nxt)
         return self._actor_positions.get(actor)
-
     @classmethod
     def from_town100(cls, seed=305000, *, autonomous_actors=False,
                      cognition_factory=None, data_pack=None, physical_subsystems=None):
@@ -6634,7 +6816,7 @@ class BigvilleWorld:
             home_cell = tuple(home_cell)
             self._attach_at_cell(a, home_cell)
             self.eng.add_edge_unchecked(a, "home_at", self._map_cells[home_cell])
-            self._actor_positions[name] = home_cell
+            self._ensure_position_index()[name] = home_cell
         if work_cell is not None and tuple(work_cell) in self._map_cells:
             work_cell = tuple(work_cell)
             self.eng.add_edge_unchecked(a, "works_at", self._map_cells[work_cell])
@@ -10789,6 +10971,7 @@ class BigvilleWorld:
     # resolution, so a human holder's reaction can wait for input.
     def mark_turn_start(self):
         """Record every resident's cell at the start of the turn (the observation a target can have made)."""
+        self._ensure_position_index()
         self._turn_start_positions = {name: tuple(pos) for name, pos in self._actor_positions.items()
                                       if pos is not None}
 

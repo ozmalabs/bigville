@@ -159,15 +159,7 @@ class BigvilleGame:
     def _nearby_resident_ids(self, actor: str, position) -> set[str]:
         if position is None:
             return set()
-        nearby = set()
-        for name in self.world._actors:
-            if name == actor or not self.world.is_alive(name):
-                continue
-            other_position = self.world.actor_position(name)
-            distance = self.world.distance(position, other_position) if other_position else None
-            if distance is not None and distance <= 8:
-                nearby.add(str(name))
-        return nearby
+        return set(self.world.actors_near(position, 8, exclude=actor))
 
     def _activate_continuation(self, actor: str, request: ActorContinuation,
                                *, action_ok: bool):
@@ -497,22 +489,19 @@ class BigvilleGame:
         position = self.world.actor_position(actor)
         nearby_residents = []
         if position is not None:
-            for name in self.world._actors:
-                if name == actor or not self.world.is_alive(name):
-                    continue
+            for name in self.world.actors_near(position, 8, exclude=actor):
                 other_position = self.world.actor_position(name)
-                distance = self.world.distance(position, other_position) if other_position else None
-                if distance is not None and distance <= 8:
-                    other_attrs = self.world.eng.node(self.world._actors[name])["attrs"]
-                    nearby_residents.append({
-                        "id": name, "name": name,
-                        "role": other_attrs.get("role", ""),
-                        "klass": other_attrs.get("klass", ""),
-                        "group": other_attrs.get("group", ""),
-                        "position": other_position, "distance": distance,
-                        "shared_bucket_count": self._shared_bucket_count(attrs, other_attrs),
-                        **self._relationship_signal(actor, name),
-                    })
+                distance = self.world.distance(position, other_position)
+                other_attrs = self.world.eng.node(self.world._actors[name])["attrs"]
+                nearby_residents.append({
+                    "id": name, "name": name,
+                    "role": other_attrs.get("role", ""),
+                    "klass": other_attrs.get("klass", ""),
+                    "group": other_attrs.get("group", ""),
+                    "position": other_position, "distance": distance,
+                    "shared_bucket_count": self._shared_bucket_count(attrs, other_attrs),
+                    **self._relationship_signal(actor, name),
+                })
         nearby_residents.sort(key=lambda resident: (resident["distance"], resident["id"]))
         # Semantic interpretations live in this resident's backend-owned
         # memory. The town's master tables are not universal beliefs.
@@ -919,11 +908,11 @@ class BigvilleGame:
             before = {}
             if response.major_action is not None and self.world._physical_objects:
                 actor_pos = self.world.actor_position(actor)
+                witnesses = (set(self.world.actors_near(actor_pos, 1, alive_only=False,
+                                                        exclude=actor))
+                             if actor_pos is not None else set())
                 for name in self.backends:
-                    other_pos = self.world.actor_position(name)
-                    if (name == actor or (actor_pos is not None and other_pos is not None
-                            and self.world.distance(actor_pos, other_pos) is not None
-                            and self.world.distance(actor_pos, other_pos) <= 1)):
+                    if name == actor or name in witnesses:
                         before[name] = self._visible_object_snapshot(name)
             result = self._apply_response_contained(actor, response)
             self.last_results[actor] = result
