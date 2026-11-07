@@ -19,8 +19,10 @@ from .backends.protocol import ActorContinuation, ProposedAction
 from .backends.protocol import communication_capabilities
 from .concurrency import decide_pooled
 from .character import CharacterDefinition, FrameSeed, MemoryRecord
+from .runtime import _GRAPH_LOCK
 from worlds.bigville_bond_world import BigvilleBondWorld
-from worlds.tick_graph import Resource, TickGraph, build_tick_graph
+from worlds.tick_graph import (Claim, Resource, TickGraph, build_tick_graph,
+                                resolve_claims)
 from domains.data_view import world_entities
 
 
@@ -34,6 +36,20 @@ _MISSING = object()   # an absent per-actor entry, e.g. no published practice wi
 _PHYSICAL_EVENTS_LOCK = threading.RLock()
 
 _EXECUTORS = frozenset({"serial", "threaded"})
+_TURN_SEMANTICS = frozenset({"sequential", "simultaneous"})
+
+
+def _default_simultaneous_priority(game, actor, index):
+    """Default TG06 claim priority: stronger residents win, then earlier order.
+
+    Read-only: ``effective_strength`` only reads the resident's body and health.
+    World-specific failures (a malformed test double, an absent body) fall back
+    to 0.0 so claim resolution is still defined.
+    """
+    try:
+        return float(game.world.effective_strength(actor))
+    except Exception:
+        return 0.0
 
 
 @dataclass
@@ -88,6 +104,31 @@ class BigvilleGame:
     # "threaded" commits declared-independent actor units in a bounded pool.
     _executor = "serial"
     _executor_workers = 4
+    # TG06: opt-in simultaneous claim policy.  "sequential" is the historical
+    # first-committer-wins turn and the default.
+    _turn_semantics = "sequential"
+    _simultaneous_priority = None
+
+    @property
+    def turn_semantics(self) -> str:
+        return self._turn_semantics
+
+    @turn_semantics.setter
+    def turn_semantics(self, value: str) -> None:
+        if value not in _TURN_SEMANTICS:
+            raise ValueError(
+                f"turn_semantics must be one of {sorted(_TURN_SEMANTICS)}, got {value!r}")
+        self._turn_semantics = value
+
+    @property
+    def simultaneous_priority(self):
+        return self._simultaneous_priority
+
+    @simultaneous_priority.setter
+    def simultaneous_priority(self, value) -> None:
+        if value is not None and not callable(value):
+            raise ValueError("simultaneous_priority must be callable or None")
+        self._simultaneous_priority = value
 
     @property
     def executor(self) -> str:
@@ -115,7 +156,8 @@ class BigvilleGame:
                  continuations: bool = True, autonomous: bool = False,
                  ticks_per_period: int | str | None = "world",
                  tick_graph_enabled: bool | None = None,
-                 executor: str = "serial", executor_workers: int = 4):
+                 executor: str = "serial", executor_workers: int = 4,
+                 turn_semantics: str = "sequential", simultaneous_priority=None):
         if ticks_per_period == "world":
             # Read the period length from the world's data pack (TIME); worlds
             # without a pack keep the historical 96-tick day.
@@ -131,6 +173,8 @@ class BigvilleGame:
             self.tick_graph_enabled = bool(tick_graph_enabled)
         self.executor = executor
         self.executor_workers = executor_workers
+        self.turn_semantics = turn_semantics
+        self.simultaneous_priority = simultaneous_priority
         self.world._autonomous_actors = False
         self.conversation_interface = TemplateConversationInterface()
         self.world.set_conversation_adapter(self._adapt_speech)
@@ -1158,6 +1202,84 @@ class BigvilleGame:
         self._resolve_joint_groups(order, responses)
         return self._apply_turn(order, responses, 0)
 
+    # ---------------------------------------------------- TG06 simultaneous claims
+    def _turn_claim_graph(self, order, responses):
+        """The graph used to detect exclusive claims, building a local one if needed.
+
+        When ``tick_graph_enabled=False`` the turn keeps ``last_tick_graph``
+        empty (the TG04 flag remains observable) but simultaneous mode still
+        needs conflict metadata, so a throwaway graph is built here.  Sequential
+        mode never calls this method.
+        """
+        if self.last_tick_graph is not None:
+            return self.last_tick_graph
+        return build_tick_graph(order, responses, self.world)
+
+    def _item_claims(self, order, responses):
+        """Every non-joint major action's exclusive ``Resource("item", ...)`` writes.
+
+        This is the first, deliberately narrow simultaneous policy slice.  It
+        does not claim ``stock``, ``container``, ``actor``, ``cell`` or
+        ``world`` resources: those effects keep their existing sequential
+        rules for now.
+        """
+        graph = self._turn_claim_graph(order, responses)
+        priority_fn = self.simultaneous_priority or _default_simultaneous_priority
+        claims = []
+        for index, actor in enumerate(order):
+            response = responses.get(actor)
+            if response is None or self._is_joint(response):
+                continue
+            proposal = response.major_action
+            if proposal is None:
+                continue
+            resources = set()
+            for operation in graph.operations:
+                if operation.actor != actor or operation.op_id != str(actor):
+                    continue
+                for resource in operation.writes:
+                    if resource.kind == "item" and resource.key not in ("", None):
+                        resources.add(resource)
+            if not resources:
+                continue
+            priority = priority_fn(self, actor, index)
+            for resource in sorted(resources, key=str):
+                claims.append(Claim(resource=resource, actor=str(actor),
+                                    index=index, priority=priority))
+        return claims
+
+    def _simultaneous_suppressed(self, order, responses):
+        """Map each losing claimant's actor to the action it may not enact.
+
+        Called once, before either commit path applies anything.  An actor that
+        loses any contested item claim is suppressed for the whole turn (a major
+        action cannot be split); an actor that loses nothing keeps its action.
+        """
+        claims = self._item_claims(order, responses)
+        if not claims:
+            return {}
+        _winners, losers = resolve_claims(claims)
+        suppressed = {}
+        for _resource, defeated in losers.items():
+            for claim in defeated:
+                response = responses.get(claim.actor)
+                proposal = getattr(response, "major_action", None)
+                if proposal is not None:
+                    suppressed[claim.actor] = str(proposal.action)
+        return suppressed
+
+    def _publish_suppressed_outcome(self, actor, action):
+        """Record the same honest refusal a failed major action publishes."""
+        with _GRAPH_LOCK:
+            self.world._publish_outcome(actor, action, False, "not_possible")
+
+    def _apply_suppressed_response(self, actor, response, action):
+        """Apply only a suppressed actor's speech and memory, never its major action."""
+        replacement = replace(response, major_action=None)
+        self._publish_suppressed_outcome(actor, action)
+        self._apply_response_contained(actor, replacement)
+        self.last_results[actor] = False
+
     def _apply_turn(self, order, responses, start):
         """Apply each actor's response in ``order`` from position ``start``, then finish the turn.
 
@@ -1169,14 +1291,28 @@ class BigvilleGame:
         ordering stays on the historical serial loop: a resumed turn
         (``start != 0``), a contest (which may suspend for a human reaction),
         or a turn with no tick graph.  The default remains ``executor="serial"``.
+
+        TG06: ``turn_semantics="simultaneous"`` resolves contested exclusive
+        item claims from the frozen responses before either commit path runs.
+        Losers are suppressed; winners enact normally.  The default
+        ``"sequential"`` never calls claim resolution.
         """
+        suppressed = {}
+        if self.turn_semantics == "simultaneous":
+            suppressed = self._simultaneous_suppressed(order, responses)
         if self._threaded_eligible(order, responses, start):
-            return self._apply_turn_threaded(order, responses)
+            return self._apply_turn_threaded(order, responses, suppressed)
         for index in range(start, len(order)):
             actor = order[index]
             response = responses[actor]
             if self._is_joint(response):
                 continue        # Phase 047: joint acts were resolved before the turn's own responses
+            suppressed_action = suppressed.get(actor)
+            if suppressed_action is not None:
+                utterances_before = len(self.world._utterances)
+                self._apply_suppressed_response(actor, response, suppressed_action)
+                self._record_speech_witnesses(actor, utterances_before)
+                continue
             utterances_before = len(self.world._utterances)
             if self._is_contest(response):
                 pending, reason = self.world.contest_begin(actor, response.major_action.action,
@@ -1318,18 +1454,28 @@ class BigvilleGame:
         return [tuple(sorted(indices)) for _root, indices in
                 sorted(components.items(), key=lambda item: min(item[1]))]
 
-    def _apply_unit(self, actor, response):
+    def _apply_unit(self, actor, response, suppressed_action=None):
         """Apply one actor's graph unit exactly as a serial ``_apply_turn`` block.
 
         Returns ``(actor, result, error)``.  ``_apply_response_contained`` still
         contains and records this actor's failure in ``last_errors``; the main
         thread rebuilds that dict in turn order afterwards so concurrent key
         insertion cannot leak scheduling order.
+
+        A simultaneous-mode loser carries ``suppressed_action``: its refusal is
+        published and only speech/memory are applied, exactly as in the serial
+        loop.  The returned result is always False for that unit.
         """
         if self._is_joint(response):
             return actor, None, None
         try:
             utterances_before = len(self.world._utterances)
+            if suppressed_action is not None:
+                self._apply_suppressed_response(actor, response, suppressed_action)
+                error = self.last_errors.get(actor)
+                self._record_speech_witnesses(actor, utterances_before,
+                                              only_speaker=True)
+                return actor, False, error
             before = {}
             if response.major_action is not None and self.world._physical_objects:
                 actor_pos = self.world.actor_position(actor)
@@ -1351,14 +1497,18 @@ class BigvilleGame:
         except Exception as exc:  # one resident's failed unit must not stop the turn
             return actor, False, f"{type(exc).__name__}: {exc}"
 
-    def _apply_turn_threaded(self, order, responses):
+    def _apply_turn_threaded(self, order, responses, suppressed=None):
         """Commit declared-independent units concurrently, then finish once.
 
         Results and errors are written on the main thread in ``order`` so the
         two dicts have deterministic key insertion order.  Within a connected
         component, actors still run serially in turn order.  Components are
         independent by declaration.
+
+        ``suppressed`` is the TG06 simultaneous-mode mapping computed before
+        this path was chosen; each unit receives its own loser action.
         """
+        suppressed = suppressed or {}
         components = self._commit_components(order, responses)
         # Joint resolution has already written its results and errors.  Capture
         # that insertion order, then rebuild both dicts deterministically.
@@ -1368,14 +1518,16 @@ class BigvilleGame:
             for component in components:
                 for index in component:
                     actor = order[index]
-                    completed[actor] = self._apply_unit(actor, responses[actor])
+                    completed[actor] = self._apply_unit(
+                        actor, responses[actor], suppressed.get(actor))
         else:
             workers = min(int(self.executor_workers), len(components))
             with ThreadPoolExecutor(max_workers=workers,
                                     thread_name_prefix="bigville-commit") as pool:
                 futures = []
                 for component in components:
-                    futures.append(pool.submit(self._run_component, order, responses, component))
+                    futures.append(pool.submit(self._run_component, order, responses,
+                                               component, suppressed))
                 for future in futures:
                     for actor, result, error in future.result():
                         completed[actor] = (actor, result, error)
@@ -1392,8 +1544,10 @@ class BigvilleGame:
                 self.last_errors[actor] = error
         return self._finish_turn(responses)
 
-    def _run_component(self, order, responses, component):
-        return [self._apply_unit(order[index], responses[order[index]])
+    def _run_component(self, order, responses, component, suppressed=None):
+        suppressed = suppressed or {}
+        return [self._apply_unit(order[index], responses[order[index]],
+                                 suppressed.get(order[index]))
                 for index in component]
 
     def _resume_suspended(self) -> dict:

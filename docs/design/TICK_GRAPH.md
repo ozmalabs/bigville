@@ -233,7 +233,7 @@ production distribution beyond what the tests prove.
 | TG03 | blocked on TG02 | — |
 | TG04 | blocked on TG03 | — |
 | TG05 | blocked on TG04 | — |
-| TG06 | blocked on TG05 | — |
+| TG06 | ready | — |
 | TG07 | blocked on TG06 | — |
 
 ## Integration gates

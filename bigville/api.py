@@ -45,7 +45,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                 default_backend="cheap", backend_factories=None,
                 cognition_factory=None, autonomous=False, ticks_per_period="world",
                 llm_provider=None, llm_log=True, llm_log_dir=None,
-                physical_subsystems=None):
+                physical_subsystems=None, turn_semantics="sequential",
+                simultaneous_priority=None, executor="serial", executor_workers=4):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
@@ -74,7 +75,10 @@ def create_game(*, scenario="town100", seed=305000, player=None,
     if llm_provider is not None:
         factories["llm"] = llm_backend_factory(llm_provider)
     game = BigvilleGame(world, player=player, autonomous=autonomous,
-                        ticks_per_period=ticks_per_period)
+                        ticks_per_period=ticks_per_period,
+                        turn_semantics=turn_semantics,
+                        simultaneous_priority=simultaneous_priority,
+                        executor=executor, executor_workers=executor_workers)
     scenario_backends = getattr(world, "_scenario_actor_backends", {})
     for name, character in game.characters.items():
         kind = "human" if name == game.player else scenario_backends.get(name, default_backend)

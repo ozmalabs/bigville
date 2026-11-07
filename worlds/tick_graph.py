@@ -29,6 +29,15 @@ The verb table below is deliberately conservative.  A verb not in the table
 writes ``Resource("world", "global")``, which serialises it behind every other
 unknown verb.  Over-declaring a conflict only costs parallelism; under-declaring
 one would make a future concurrent executor observable.
+
+TG06 claim resolution
+---------------------
+``Claim`` and ``resolve_claims`` are the pure, world-free half of opt-in
+simultaneous semantics.  A claim names one actor's exclusive write to a
+resource (in this phase only ``Resource("item", ...)``).  ``resolve_claims``
+picks one deterministic winner per contested resource and reports every other
+claimant as a loser.  It never reads or mutates a world; the game supplies the
+priority values and decides what suppression means for enactment.
 """
 from __future__ import annotations
 
@@ -135,6 +144,73 @@ class Operation:
             "tiebreak": _plain(self.tiebreak),
             "payload": _plain(self.payload),
         }
+
+
+# --------------------------------------------------------------------------- claims
+
+
+@dataclass(frozen=True)
+class Claim:
+    """One actor's exclusive claim on a resource in a simultaneous turn.
+
+    ``priority`` is any sortable value supplied by the caller.  Higher values
+    win.  ``index`` is the actor's position in ``turn_order`` and breaks a
+    priority tie in favour of the earlier position; the actor id is the final
+    tie-break.  The class is deliberately inert: it holds no world reference
+    and cannot mutate one.
+    """
+
+    resource: Resource
+    actor: str
+    index: int
+    priority: Any
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "index", int(self.index))
+
+    def sort_key(self) -> tuple:
+        """The documented total order: priority, earlier index, actor id."""
+        return (self.priority, -self.index, str(self.actor))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "resource": self.resource.to_dict(),
+            "actor": str(self.actor),
+            "index": int(self.index),
+            "priority": _plain(self.priority),
+        }
+
+
+def resolve_claims(claims: Iterable[Claim]) -> tuple[dict[Resource, Claim],
+                                                     dict[Resource, tuple[Claim, ...]]]:
+    """Resolve exclusive claims deterministically, without touching a world.
+
+    Returns ``(winners, losers)``:
+
+    - ``winners`` maps every claimed resource to its winning ``Claim``;
+    - ``losers`` maps only contested resources to a priority-ordered tuple of
+      the other claimants (empty absent for an uncontested resource).
+
+    The winner is the maximum by ``(priority, -index, actor)``.  Because the
+    actor id is unique within a turn, even fully tied priorities are resolved
+    without depending on input order.  Resource iteration is sorted by the
+    stable textual form for the same reason.
+    """
+    grouped: dict[Resource, list[Claim]] = {}
+    for claim in claims:
+        grouped.setdefault(claim.resource, []).append(claim)
+
+    winners: dict[Resource, Claim] = {}
+    losers: dict[Resource, tuple[Claim, ...]] = {}
+    for resource in sorted(grouped, key=str):
+        group = grouped[resource]
+        winner = max(group, key=Claim.sort_key)
+        winners[resource] = winner
+        defeated = tuple(sorted((claim for claim in group if claim is not winner),
+                                key=Claim.sort_key, reverse=True))
+        if defeated:
+            losers[resource] = defeated
+    return winners, losers
 
 
 # --------------------------------------------------------------------------- graph
