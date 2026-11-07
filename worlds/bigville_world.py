@@ -335,6 +335,11 @@ class BigvilleWorld:
         # of 4.0 in 384 turns), so the rule changes the simple village's eating and survival. With it off, satiety
         # is still tracked and still lowers the meal's pleasure and the mood; only the energy is unchanged.
         "monotony": False,
+        # Phase 036: alcohol's longer effects (INTOXICATION aftereffect keys): tolerance and its fade, dependence, craving
+        # and withdrawal, the hangover after a heavy night, poisoning above poison_above, speech clarity by the
+        # speaker's intoxication and the listener's distance, and the body fields read by the coping policy. Off,
+        # a drink still raises intoxication as Phase 034 has it, and none of these rules, read-offs or fields exist.
+        "alcohol_aftereffects": False,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -6566,7 +6571,9 @@ class BigvilleWorld:
             # Phase 034: alcohol in the body (0 sober to 1), on the Body node
             "intoxication": 0.0,
             # Phase 035: nutrition on the Body node (protein store, deficiency, last meal's pleasure and monotony)
-            "protein_store": 0.0, "deficiency": 0.0, "meal_pleasure": 0.0, "monotony": 0.0})
+            "protein_store": 0.0, "deficiency": 0.0, "meal_pleasure": 0.0, "monotony": 0.0,
+            # Phase 036: alcohol aftereffects (plain values; all 0 and unread while alcohol_aftereffects is off).
+            "tolerance": 0.0, "craving": 0.0, "dependent": 0.0, "hangover_ticks": 0.0, "episode_peak": 0.0})
         self.eng.add_edge_unchecked(a, "has_body", body)
         self._bodies[name] = body
         self._actor_minds[name] = (
@@ -6784,6 +6791,15 @@ class BigvilleWorld:
         conv = conversation
         radius = self.speech_radius(loudness)
         deliveries = self._speech_deliveries(speaker, target, radius)
+        if self._aftereffects_on():
+            # Phase 036: clarity is set by the speaker's intoxication, and each listener's copy by distance over the
+            # radius. The text is never changed; only the clarity figures are added.
+            speaker_pos = self.actor_position(speaker)
+            for name, delivery in deliveries.items():
+                pos = self.actor_position(name)
+                dist = (max(abs(pos[0] - speaker_pos[0]), abs(pos[1] - speaker_pos[1]))
+                        if pos is not None and speaker_pos is not None else 0.0)
+                delivery["clarity"] = self.speech_clarity(speaker, distance=dist, radius=radius)
         attrs = {
             "content": str(content), "loudness": float(loudness), "eff_loudness": radius,
             "speaker": speaker, "target": target or "", "turn": float(self._turn),
@@ -6792,6 +6808,8 @@ class BigvilleWorld:
             "heard": 1.0 if any(d["heard"] for d in deliveries.values()) else 0.0,
             "deliveries": deliveries,
         }
+        if self._aftereffects_on():
+            attrs["clarity"] = self.speech_clarity(speaker)
         if backend_speech:
             attrs["speech_origin"] = "backend"
             attrs["communication_mode"] = "free_text"
@@ -6828,6 +6846,16 @@ class BigvilleWorld:
         if math.isnan(chosen):
             chosen = float(table["normal_loudness"])
         return max(0.0, min(chosen, float(table["max_loudness"])))
+
+    def speech_clarity(self, speaker, distance=0.0, radius=0.0):
+        """Phase 036: how clear an utterance is, 0 to 1. The speaker's share of sobriety (1 - intoxication) is reduced
+        by clarity_distance_loss at the edge of the hearing radius (distance over radius, capped at 1). With the
+        switch off, speech is always fully clear (1.0). The world publishes this figure; it does not change the text."""
+        if not self._aftereffects_on():
+            return 1.0
+        base = max(0.0, 1.0 - self.intoxication(speaker))
+        fraction = min(1.0, float(distance) / float(radius)) if float(radius) > 0.0 else 0.0
+        return round(max(0.0, base * (1.0 - float(self.E.INTOXICATION["clarity_distance_loss"]) * fraction)), 4)
 
     def _occluder_codes(self, terrain_names):
         from worlds.bigville_sim_world import TILE_NAME
@@ -6925,6 +6953,8 @@ class BigvilleWorld:
                 "turn": attrs.get("turn", 0.0),
                 "loudness": attrs.get("loudness", 1.0),
             })
+            if "clarity" in mine:         # Phase 036: only with alcohol_aftereffects on
+                records[-1]["clarity"] = mine["clarity"]
         return records[-int(limit):]
 
     def utter(self, speaker, content, *, target=None, loudness=1.0):
@@ -9302,8 +9332,8 @@ class BigvilleWorld:
         metaskill (sharpened by aptitude), lowered by any limitations."""
         a = self.eng.node(self._actors[actor])["attrs"]
         person = {**self._person(actor), "intoxication": self.intoxication(actor)}
-        return round(self.E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill,
-                                           person), 4)
+        value = self.E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill, person)
+        return round(float(value) * self._aftereffect_skill_factor(actor), 4)
 
     def recipe_skill_level(self, actor, recipe):
         """Working level for a recipe row (its skill per E.recipe_skill); a recipe with no named skill
@@ -10623,8 +10653,9 @@ class BigvilleWorld:
         return self._effective_body_stat(actor, "str_base", "str_train")
 
     def effective_stamina(self, actor):
-        """(sta_base + sta_train) x health: the stamina capacity the reserve is clamped to and the band reads."""
-        return self._effective_body_stat(actor, "sta_base", "sta_train")
+        """(sta_base + sta_train) x health: the stamina capacity the reserve is clamped to and the band reads.
+        Phase 036: withdrawal lowers it while alcohol_aftereffects is on."""
+        return self._effective_body_stat(actor, "sta_base", "sta_train") * self._withdrawal_stamina_factor(actor)
 
     def _effective_body_stat(self, actor, base_key, train_key):
         ba = self.eng.node(self._bodies[actor])["attrs"]
@@ -11288,6 +11319,8 @@ class BigvilleWorld:
                     self._recover_strain(actor)
                     collapsed = code == "collapsed"
                     gain = float(ex["collapse_gain" if collapsed else "rest_gain"])
+                    # Phase 036: a hangover lets a sleeper regain only hangover_recovery of the stamina.
+                    gain *= self._hangover_recovery_factor(actor)
                     # Phase 037: a body holds no more stamina than its health-scaled capacity (Phase 032), so a sleeper
                     # wakes at the lower of the cap and that capacity. A healthy body (capacity >= 1) is unchanged.
                     cap = min(float(ex["collapse_cap" if collapsed else "rest_cap"]), self.effective_stamina(actor))
@@ -11323,15 +11356,30 @@ class BigvilleWorld:
         return float(ip["stagger_speed"]) if self.intoxication(actor) > float(ip["stagger_above"]) else 1.0
 
     def _drink_alcohol(self, actor, kind):
-        """A drink's alcohol enters the body (a food with no alcohol changes nothing). Metabolism off: nothing."""
+        """A drink's alcohol enters the body (a food with no alcohol changes nothing). Metabolism off: nothing.
+        Phase 036: with alcohol_aftereffects on, a tolerant body takes less of the dose, the drink adds tolerance,
+        and it relieves craving."""
         grams = self.E.alcohol(kind)
         if grams <= 0.0 or not self.physical_subsystems["metabolism"]:
             return
         body = self._bodies[actor]
         attrs = self.eng.node(body)["attrs"]
         gain = self.E.intoxication_gain(grams, float(attrs.get("size", 1.0)))
+        on = self._aftereffects_on()
+        if on:
+            ip = self.E.INTOXICATION
+            gain *= 1.0 - float(ip["tolerance_relief"]) * float(attrs.get("tolerance", 0.0))
         self.eng.set_attr(body, "intoxication", min(1.0, float(attrs.get("intoxication", 0.0)) + gain))
         self._intox_drunk_grams += grams
+        if on:
+            ip = self.E.INTOXICATION
+            tolerance = min(float(ip["tolerance_max"]),
+                            float(attrs.get("tolerance", 0.0)) + float(ip["tolerance_per_drink"]))
+            self.eng.set_attr(body, "tolerance", tolerance)
+            if tolerance >= float(ip["dependence_tolerance"]):
+                self.eng.set_attr(body, "dependent", 1.0)
+            self.eng.set_attr(body, "craving", max(0.0, float(attrs.get("craving", 0.0))
+                                                   - float(ip["craving_relief_per_drink"])))
 
     def _pass_out(self, actor):
         """Put a resident into the sleep state for drink (sleep_kind 3). Their timed job pauses, as in any sleep."""
@@ -11344,24 +11392,111 @@ class BigvilleWorld:
     def _resolve_intoxication(self):
         """Sober by sober_per_tick on each clock tick, and pass out or wake at the table's thresholds. The check runs
         on every pass, so a drink that crosses pass_out takes effect at once. Sleep does not sober a resident faster:
-        the passed-out resident simply waits for the level to fall (the sleep regains no stamina; see _resolve_sleep)."""
+        the passed-out resident simply waits for the level to fall (the sleep regains no stamina; see _resolve_sleep).
+        Phase 036 (switch on): the aftereffects of _alcohol_tick, then poisoning above poison_above on each clock tick,
+        after pass_out has been applied."""
         ip = self.E.INTOXICATION
         armed = self._job_tick_armed
+        on = self._aftereffects_on()
         for actor in self._actors:
             body = self._bodies.get(actor)
             if body is None or not self.is_alive(actor):
                 continue
-            level = float(self.eng.node(body)["attrs"].get("intoxication", 0.0))
+            before = float(self.eng.node(body)["attrs"].get("intoxication", 0.0))
+            level = before
             if level > 0.0 and armed:
                 level = max(0.0, level - self.E.sober_per_tick())
                 self.eng.set_attr(body, "intoxication", level)
+            if on:
+                self._alcohol_tick(actor, body, before, level, armed)
             code = self._sleep_code(actor)
             if code is None and level >= float(ip["pass_out"]):
                 self._pass_out(actor)
             elif code == "passed_out" and level < float(ip["wake_below"]):
                 self._wake(actor)
+            if on and armed and level >= float(ip["poison_above"]):
+                # Phase 036: poisoning is acute harm, cause intoxication, scaled from 0 at poison_above to poison_harm at 1.
+                share = (level - float(ip["poison_above"])) / max(1e-9, 1.0 - float(ip["poison_above"]))
+                self.harm(actor, float(ip["poison_harm"]) * min(1.0, share), "intoxication")
             if armed:
                 self._intox_ticks[self.E.intoxication_band(level)] += 1
+
+    # ---------------------------------------------------- alcohol aftereffects (Phase 036)
+    # Switch alcohol_aftereffects (off by default). Tolerance rises with each drink and fades while sober; a body
+    # that reaches dependence_tolerance is dependent, and while dependent craving rises while sober and falls with a
+    # drink. Withdrawal is a skill and stamina penalty while craving is high. A drinking episode that peaks at
+    # hangover_above leaves a hangover when the level falls back to the tipsy band: a skill penalty, and sleep
+    # regains less stamina, for hangover_ticks. Every figure is the INTOXICATION table's; all state is body attributes.
+    def _aftereffects_on(self):
+        return bool(self.physical_subsystems.get("alcohol_aftereffects"))
+
+    def _alcohol_tick(self, actor, body, before, level, armed):
+        """Phase 036: the per-pass part of the aftereffects. `before` is the level before this pass sobered it, so an
+        episode's peak is seen even when the same pass brings the level down; `level` is after it."""
+        ip = self.E.INTOXICATION
+        attrs = self.eng.node(body)["attrs"]
+        hangover = float(attrs.get("hangover_ticks", 0.0))
+        if armed and hangover > 0.0:
+            hangover -= 1.0
+        peak = max(float(attrs.get("episode_peak", 0.0)), before)
+        if level < float(ip["bands"]["tipsy"]):
+            if peak >= float(ip["hangover_above"]):
+                hangover = float(ip["hangover_ticks"])
+            peak = 0.0
+            if armed:
+                tolerance = max(0.0, float(attrs.get("tolerance", 0.0)) - float(ip["tolerance_fade_per_tick"]))
+                self.eng.set_attr(body, "tolerance", tolerance)
+                if float(attrs.get("dependent", 0.0)) == 1.0:
+                    craving = min(1.0, float(attrs.get("craving", 0.0)) + float(ip["craving_rise_per_tick"]))
+                    self.eng.set_attr(body, "craving", craving)
+        self.eng.set_attr(body, "episode_peak", peak)
+        self.eng.set_attr(body, "hangover_ticks", hangover)
+
+    def _withdrawing(self, actor):
+        ip = self.E.INTOXICATION
+        return float(self.eng.node(self._bodies[actor])["attrs"].get("craving", 0.0)) >= float(ip["withdrawal_above"])
+
+    def _withdrawal_share(self, actor):
+        """The craving that is in withdrawal (0 when not withdrawing, else the craving level, 0 to 1)."""
+        if not self._aftereffects_on() or not self._withdrawing(actor):
+            return 0.0
+        return float(self.eng.node(self._bodies[actor])["attrs"].get("craving", 0.0))
+
+    def _hangover_on(self, actor):
+        return self._aftereffects_on() and float(self.eng.node(self._bodies[actor])["attrs"].get("hangover_ticks", 0.0)) > 0.0
+
+    def aftereffects(self, actor):
+        """Phase 036 read-offs: tolerance (0 to tolerance_max), craving (0 to 1), dependent (0 or 1), hangover_ticks
+        left, withdrawal (0 or 1) and the mood (read by the coping policy). Empty while alcohol_aftereffects is off."""
+        if not self._aftereffects_on():
+            return {}
+        attrs = self.eng.node(self._bodies[actor])["attrs"]
+        return {"tolerance": round(float(attrs.get("tolerance", 0.0)), 4),
+                "craving": round(float(attrs.get("craving", 0.0)), 4),
+                "dependent": int(float(attrs.get("dependent", 0.0)) == 1.0),
+                "hangover_ticks": int(float(attrs.get("hangover_ticks", 0.0))),
+                "withdrawal": int(self._withdrawing(actor)),
+                "mood": round(float(attrs.get("mood", 0.5)), 4)}
+
+    def _aftereffect_skill_factor(self, actor):
+        """Working skill's multiplier from the aftereffects: a hangover, and withdrawal at craving x withdrawal_skill."""
+        if not self._aftereffects_on():
+            return 1.0
+        ip = self.E.INTOXICATION
+        factor = 1.0
+        if self._hangover_on(actor):
+            factor *= 1.0 - float(ip["hangover_skill"])
+        factor *= 1.0 - float(ip["withdrawal_skill"]) * self._withdrawal_share(actor)
+        return factor
+
+    def _withdrawal_stamina_factor(self, actor):
+        if not self._aftereffects_on():
+            return 1.0
+        return 1.0 - float(self.E.INTOXICATION["withdrawal_stamina"]) * self._withdrawal_share(actor)
+
+    def _hangover_recovery_factor(self, actor):
+        """The share of a sleep's stamina regain a hangover keeps (1 when there is no hangover)."""
+        return float(self.E.INTOXICATION["hangover_recovery"]) if self._hangover_on(actor) else 1.0
 
     def intoxication_tally(self):
         """Counts over the town (Phase 034): residents now in each band (passed_out counts residents asleep from
@@ -11438,7 +11573,9 @@ class BigvilleWorld:
                 # Phase 043 read-offs: the illness flag and the care flags (screened, treated, well_baby), 0 or 1.
                 "illness": int(bool(self.eng.node(self._actors[actor])["attrs"].get("disease"))),
                 "screened": self._care_flag_value(actor, "screened"),
-                "treated": self._care_flag_value(actor, "treated"), "well_baby": self._care_flag_value(actor, "well_baby")}
+                "treated": self._care_flag_value(actor, "treated"), "well_baby": self._care_flag_value(actor, "well_baby"),
+                # Phase 036 read-offs (tolerance, craving, dependent, hangover_ticks, withdrawal, mood); empty when off.
+                **self.aftereffects(actor)}
 
     def stamina(self, actor): return self.body_state(actor)["stamina"]
     def stamina_reserve(self, actor): return self.body_state(actor)["stamina_reserve"]

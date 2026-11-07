@@ -9,6 +9,7 @@ from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAc
 from .psi_can import CANWeightModel
 from domains.persona import simple_band   # Phase 058: the hour bands are the pack's ROUTINE_BANDS
 from domains.world_affordances import INTOXICATION as _INTOXICATION   # Phase 034: the drink policy numbers
+from domains.world_affordances import alcohol as _alcohol_grams   # Phase 036: grams of alcohol in a food (coping drink)
 from domains.world_affordances import CONTEST as _CONTEST   # Phase 038: attack_cost, the strike gate
 
 # Score added to the walk back to a paused timed job (Phase 023). A modest bias: the job
@@ -87,6 +88,12 @@ class SimplePolicy:
     # call this yet, so the default policy never improvises. Only visible properties are judged: the tool's verb and
     # its condition, never the world's fitness number.
     improvise: bool = False
+
+    # Phase 036 (off by default): a coping drink. A drink option (eat, with a food that holds alcohol) gets
+    # coping_bonus while the resident's mood is below distress_below or its craving is at withdrawal_above (the
+    # world's read-offs in the observations `aftereffects`, which exist only with alcohol_aftereffects on). The numbers
+    # are the INTOXICATION policy; the world is unchanged by the choice.
+    coping_drink: bool = False
 
     def improvised_tool(self, held_tools, verb: str):
         """The kind of the held tool to use for `verb` when the right tool is missing, or None (off, or nothing held).
@@ -372,10 +379,26 @@ class DeterministicBackend:
 
     def _hook_bonus(self, context, option):
         hook = self.policy.hook
-        bonus = self._intoxication_bonus(context, option)
+        bonus = self._intoxication_bonus(context, option) + self._coping_bonus(context, option)
         if hook is None:
             return bonus
         return float(hook.score_adjustment(self, context, dict(option))) + bonus
+
+    def _coping_bonus(self, context, option):
+        """Phase 036: the optional coping drink (SimplePolicy.coping_drink, off by default). A drink option gets
+        coping_bonus when the resident is in distress: mood below distress_below, or craving at withdrawal_above. The
+        read-offs are the observations `aftereffects` (present only with alcohol_aftereffects on), so with the switch
+        off this adds nothing. A resident already drunk (at drunk or above) does not take another drink for coping."""
+        if not self.policy.coping_drink or str(option.get("action", "")) != "eat":
+            return 0.0
+        if float(_alcohol_grams(str(option.get("kind", "")))) <= 0.0:
+            return 0.0
+        state = context.observations.get("aftereffects") or {}
+        if not state or float(context.observations.get("intoxication", 0.0) or 0.0) >= float(_INTOXICATION["bands"]["drunk"]):
+            return 0.0
+        distressed = (float(state.get("mood", 1.0)) < float(_INTOXICATION["distress_below"])
+                      or float(state.get("craving", 0.0)) >= float(_INTOXICATION["withdrawal_above"]))
+        return float(_INTOXICATION["coping_bonus"]) if distressed else 0.0
 
     def _intoxication_bonus(self, context, option):
         """Phase 034: a resident at drunk or above leans toward social options and away from effortful work. The

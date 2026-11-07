@@ -557,6 +557,10 @@ class BigvilleGame:
                 "documents": read_documents,
             },
         }
+        # Phase 036: the alcohol aftereffects (tolerance, craving, hangover, withdrawal, mood), with the switch on only.
+        aftereffects = self.world.aftereffects(actor)
+        if aftereffects:
+            observations["aftereffects"] = aftereffects
         # The actor's own practice records (Phase 012): cognitive work the world does not turn
         # into skill, each carried by the contexts of one turn so the backend decides what was
         # learned. Every _context call within a turn returns the same records.

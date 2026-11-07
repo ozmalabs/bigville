@@ -693,6 +693,42 @@ def _check_intoxication(errors, warnings, info):
                     f"0 to 1 scale, and the level falls by {sober_per_tick():g} a tick")
 
 
+def _check_aftereffects(errors, warnings, info):
+    """Phase 036: the alcohol aftereffect keys of INTOXICATION (tolerance, craving and withdrawal, hangover, poisoning,
+    speech clarity and the simple coping policy). Rates and shares lie in [0, 1]; the thresholds sit on the scale of
+    the bands; the duration is a whole number of ticks. Both packs carry the same INTOXICATION table, so every key is
+    required in each."""
+    t = INTOXICATION
+    keys = ("tolerance_per_drink", "tolerance_max", "tolerance_relief", "tolerance_fade_per_tick",
+            "dependence_tolerance", "craving_rise_per_tick", "craving_relief_per_drink", "withdrawal_above",
+            "withdrawal_skill", "withdrawal_stamina", "hangover_above", "hangover_ticks", "hangover_skill",
+            "hangover_recovery", "poison_above", "poison_harm", "clarity_distance_loss", "coping_bonus",
+            "distress_below")
+    missing = [k for k in keys if k not in t]
+    if missing:
+        errors.append(f"INTOXICATION: alcohol aftereffect keys missing: {missing}")
+        return
+    for name in ("tolerance_per_drink", "tolerance_fade_per_tick", "craving_rise_per_tick", "craving_relief_per_drink",
+                 "withdrawal_skill", "withdrawal_stamina", "hangover_skill", "hangover_recovery", "tolerance_relief",
+                 "clarity_distance_loss", "distress_below", "withdrawal_above"):
+        if not 0.0 <= float(t[name]) <= 1.0:
+            errors.append(f"INTOXICATION[{name}]: must lie in [0, 1], not {t[name]!r}")
+    if not 0.0 < float(t["tolerance_max"]) <= 1.0 or not 0.0 < float(t["dependence_tolerance"]) <= float(t["tolerance_max"]):
+        errors.append("INTOXICATION: 0 < dependence_tolerance <= tolerance_max <= 1 is required")
+    if float(t["poison_harm"]) < 0.0 or float(t["coping_bonus"]) < 0.0:
+        errors.append("INTOXICATION: poison_harm and coping_bonus must not be negative")
+    if not float(t["bands"]["tipsy"]) < float(t["hangover_above"]) <= 1.0:
+        errors.append(f"INTOXICATION[hangover_above]: must lie above the tipsy band and at most 1, not "
+                      f"{t['hangover_above']!r}")
+    if not float(t["bands"]["stupefied"]) <= float(t["poison_above"]) <= 1.0:
+        errors.append(f"INTOXICATION[poison_above]: must lie from the stupefied band to 1, not {t['poison_above']!r}")
+    hangover = t["hangover_ticks"]
+    if not isinstance(hangover, int) or isinstance(hangover, bool) or hangover < 0:
+        errors.append(f"INTOXICATION[hangover_ticks]: a whole number of ticks, 0 or more, not {hangover!r}")
+    info.append(f"INTOXICATION: a hangover lasts {hangover} ticks, about {hangover * float(TIME['minutes_per_tick']) / 60:g} "
+                f"hours; dependence forms at tolerance {float(t['dependence_tolerance']):g}")
+
+
 def _check_illness(errors, warnings, info):
     """Phase 043: the DISEASE and MEDICAL_CARE tables. Each disease is a HEALTH_CONDITIONS key that is not
     healthy, with a daily onset chance for every season and a multiplier for every life stage, and drops in
@@ -1967,6 +2003,7 @@ def check_consistency():
     _check_exhaustion(errors, warnings, info)
     _check_health(errors, warnings, info)
     _check_intoxication(errors, warnings, info)
+    _check_aftereffects(errors, warnings, info)
     _check_illness(errors, warnings, info)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)

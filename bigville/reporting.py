@@ -179,6 +179,20 @@ class SimulationReporter:
         band so far, and grams of alcohol drunk so far. Reads the world's counts only."""
         return self.world.intoxication_tally()
 
+    def aftereffects(self) -> dict[str, Any]:
+        """Phase 036: over the living residents, how many are dependent, withdrawing (craving at withdrawal_above) and
+        hungover, and the mean tolerance and craving. Empty (all zero) while alcohol_aftereffects is off. Reads the
+        world's read-offs only."""
+        people = [a for a in self.world._actors if self.world.is_alive(a)]
+        reads = [r for r in (self.world.aftereffects(a) for a in people) if r]
+        n = float(len(reads))
+        return {"residents": len(reads),
+                "dependent": sum(r["dependent"] for r in reads),
+                "withdrawing": sum(r["withdrawal"] for r in reads),
+                "hungover": sum(1 for r in reads if r["hangover_ticks"] > 0),
+                "tolerance_mean": round(sum(r["tolerance"] for r in reads) / n, 4) if reads else 0.0,
+                "craving_mean": round(sum(r["craving"] for r in reads) / n, 4) if reads else 0.0}
+
     def nutrition(self) -> dict[str, Any]:
         """Phase 035: over the living residents, how many are short of protein (deficiency above 0), the mean
         deficiency, the mean protein store in grams, and the mean mood. Reads the world's read-offs only."""

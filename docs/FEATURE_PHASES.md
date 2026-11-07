@@ -1515,13 +1515,7 @@ quality beyond Phase 027.
 
 ## Phase 036 -- Alcohol's longer effects
 
-**Status:** ready, after 034 and 037 (decision 2026-11-05: the features set aside in 034 are
-added). Seeded: dependence as a coping spiral in `seeds/bigville_affect_decide.json`
-`af_choose_action` (grief shifts the choice from work toward withdraw, then drink, then snap) and
-`bigville_affect_spiral.json` (`af_outcome_drink`: income down and wellbeing down;
-`af_hardship_grief` closes the loop). NEW DESIGN, not seeded: tolerance, withdrawal and craving,
-hangover, poisoning, and speech clarity. The unseeded parts sit behind an
-`alcohol_aftereffects` switch, default off, so they can be accepted or dropped.
+**Status:** done, behind `physical_subsystems.alcohol_aftereffects` (default off). With it on: each drink adds tolerance (`tolerance_per_drink` 0.1), which lowers later doses and fades while sober; dependence forms at tolerance 0.5 and stays; a dependent resident's craving rises while sober and a drink relieves it; withdrawal (craving 0.3 or more) lowers working skill and stamina capacity; a night that peaks at 0.6 leaves a 96-tick hangover (less skill, half the sleep regain); intoxication above 0.7 is acute harm each tick with cause `intoxication`, after the pass-out check; speech carries a `clarity` figure (1 - the speaker's intoxication, less up to half at the hearing radius's edge), with the text unchanged; `SimplePolicy.coping_drink` (off) favours a drink when mood or craving is in distress. All new figures APPROX. With the switch off, and no drink in the founding town, the village is unchanged (0 deaths in 192 turns). Open: craving never falls without a drink and dependence never clears, as built. See docs/phases/phase036/PHASE036_REPORT.md.
 
 **Goal.**
 1. **Dependence (seeded).** The choice to drink as coping is the backend's (it is a Mind rule, and
@@ -3189,4 +3183,5 @@ truth held apart. Unscheduled until the rule says it is needed.
 | 056 Learning evaluation | done | (this commit) | docs/phases/phase056/PHASE056_REPORT.md -- `bigville/learning_eval.py` (per-resident metrics from engine records, repeat-mistake rate, tries before switch, lessons offered and used, leak guard that voids a run, scripted learner and non-learner, marginal effect against a simple control) and `tools/run_learning_eval.py`; learner repeat-mistake rate 0.000 against 0.967; Ocelot arm skipped; 8 tests; no shared file edited |
 | 049 Consequences instead of gates | done | (this commit) | docs/phases/phase049/PHASE049_REPORT.md -- skill, season, strength, busy, serving, leak, capacity, harvest, tending gates become consequences; plan-path walk, rest and watering refusals kept; 1653 passed |
 | 035 Nutrition | done | (this commit) | docs/phases/phase035/PHASE035_REPORT.md -- protein, taste, satiety, pleasure, mood, spice; energy monotony behind a switch (off); 1696 passed |
+| 036 Alcohol's longer effects | done | (this commit) | docs/phases/phase036/PHASE036_REPORT.md -- tolerance, dependence, craving, withdrawal, hangover, poisoning, speech clarity, coping policy; switch off; 1716 passed |
 | 047 Joint actions | done (part) | (this commit) | docs/phases/phase047/PHASE047_REPORT.md -- joint carry and crewed recipes behind a switch; team term; group takes, gangs and group contests not built |

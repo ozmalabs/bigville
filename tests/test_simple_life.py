@@ -153,7 +153,8 @@ def test_physical_subsystems_default_on_and_reject_invalid_configuration():
     world = BigvilleWorld(autonomous_actors=False)
     assert world.physical_subsystems == {"metabolism": True, "ecology": True, "decay": True, "practice": True,
                                          "cognitive_practice": False, "loudness": True, "training": True,
-                                         "illness": False, "joint_actions": False, "monotony": False}
+                                         "illness": False, "joint_actions": False, "monotony": False,
+                                         "alcohol_aftereffects": False}
     with pytest.raises(ValueError, match="Unknown physical subsystem"):
         BigvilleWorld(autonomous_actors=False,
                       physical_subsystems={"gravity": False})
