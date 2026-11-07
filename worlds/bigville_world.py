@@ -8339,20 +8339,49 @@ class BigvilleWorld:
         plan = self._decide_actor(actor)
         return self._enact_plan(actor, plan)
 
+    _EPHEMERAL_TARGET_KEYS = (
+        "target", "recipient", "container", "source", "destination",
+        "patient", "project", "name", "animal", "land", "crop_node",
+        "sow_kind", "with", "joint",
+    )
+
+    def resolve_targets(self, actor, action, params):
+        """Install and return the target map this proposal needs.
+
+        A proposal that names stable identities (an actor, object, container,
+        project, infrastructure, crop, animal or cell) needs no menu at all:
+        this installs an empty map and ``_enact_plan`` reads the proposal's own
+        fields.  The actor's previous map is replaced rather than merged, so no
+        stale ``target:N`` entry can outlive the turn that published it.
+
+        A legacy proposal carries an ephemeral key such as ``"target:3"``,
+        copied from ``actor_affordances()``.  Only that menu knows what the key
+        stood for, so this falls back to ``_actor_options(actor)`` and returns
+        its map.  This keeps UI pickers, Ocelot's current adapter and legacy
+        backends on exactly their old semantics.  An unknown action or a
+        malformed proposal also installs an empty map; ``_enact_plan`` refuses
+        it with its existing code rather than raising here.
+        """
+        self._actor(actor)
+        values = params if isinstance(params, dict) else {}
+        legacy = any(
+            str(values.get(key)).startswith("target:")
+            for key in self._EPHEMERAL_TARGET_KEYS
+            if values.get(key) is not None
+        )
+        if legacy:
+            self._actor_options(actor)
+            return self._actor_targets.get(actor, {})
+        targets = {}
+        self._actor_targets[actor] = targets
+        return targets
+
     def enact_plan(self, actor, plan):
-        """Enact an external backend proposal after rebuilding its target map."""
+        """Enact an external backend proposal after resolving only its targets."""
         self._actor(actor)
         plan = dict(plan)
         action = plan.get("action")
-        needs_targets = not (
-            (action == "move" and plan.get("destination") is not None)
-            or action in {"rest", "eat", "work", "move_object"}
-            or (action == "transfer" and plan.get("recipient"))
-            or (action == "take") or (action == "strike") or action in ("restrain", "release", "struggle")
-            or action == "throw"
-        )
-        if needs_targets:
-            self._actor_options(actor)
+        self.resolve_targets(actor, action, plan)
         return self._attempt(actor, action, lambda: self._enact_plan(actor, plan))
 
     def _enact_plan(self, actor, plan):
@@ -8370,11 +8399,23 @@ class BigvilleWorld:
         targets = self._actor_targets.get(actor, {})
 
         def target_of(key="target"):
-            name = self._as_key(plan.get(key, ""))
-            return targets.get(name) if name is not None else None
+            value = plan.get(key, "")
+            if isinstance(value, (tuple, list)):
+                return tuple(value)
+            name = self._as_key(value)
+            if name is None:
+                return None
+            if name in targets:
+                return targets[name]
+            # A direct stable name/id is its own target.  An unresolved
+            # ephemeral key keeps the old refusal behaviour instead of
+            # becoming a literal destination.
+            if isinstance(name, str) and name.startswith("target:"):
+                return None
+            return name
 
         if action == "give":
-            target = target_of()
+            target = self._as_key(plan.get("recipient")) or target_of()
             if target in self._actors:
                 return self.major_action(actor, "give", recipient=target,
                                          kind=plan.get("kind"), amount=plan.get("amount", 1.0))
@@ -8443,15 +8484,15 @@ class BigvilleWorld:
                                      object_id=plan.get("object_id", plan.get("item")),
                                      destination=plan.get("destination", plan.get("target")))
         if action in {"lock", "unlock"}:
-            target = target_of()
+            target = self._as_key(plan.get("container")) or target_of()
             if target is not None:
                 return self.major_action(actor, action, container=target)
         if action == "put":
-            target = target_of()
+            target = self._as_key(plan.get("container")) or target_of()
             if target is not None:
                 return self.major_action(actor, "put", container=target, kind=plan.get("kind"), amount=1.0)
         if action == "fetch":
-            target = target_of()
+            target = self._as_key(plan.get("source")) or target_of()
             source = target if target in self._containers else None
             return self.major_action(actor, "fetch", kind=plan.get("kind"), amount=1.0, source=source)
         if action == "joint":
