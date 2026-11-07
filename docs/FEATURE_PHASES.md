@@ -100,6 +100,7 @@ would sweep its hunks into a phase commit, which is why rule 2 requires `git add
 |---|---|
 | A, world physics | 030, 037, 050, 043, 048, 034, 038, 049, 047, 035, 036, 032, 033, 040, 039, 041, and 063 (visible condition) |
 | B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, then 066, 056, 053, 042, 060, 061, 062, 064, 065, 067, 044, 045, 046 (068 parked) |
+| Unassigned | 069, 070, 071 (Programme F, the body as a unit; supervisor assigns them, 069 may be split between tracts) |
 | Neither | Ocelot integration and persistence (uncommitted) |
 | Superseded | 003 (done with 016b), 013 and 016 (split into 013a and 013b, 016a and 016b) |
 
@@ -3125,6 +3126,246 @@ their sources as edges, queried per consult for what is relevant and rendered in
 rule is Phase 056's measures (repeat-mistake rate, lessons later used, recall of a told fact after a
 long gap). The memory stays the resident's own, built from what it perceived and was told, with the
 truth held apart. Unscheduled until the rule says it is needed.
+
+---
+
+# Programme F: the body as a unit, and what it lets the mind feel
+
+**Decision 2026-11-07 (user).** The body becomes a self-contained system with its own detailed state. A
+mind gets only what the body's senses report, as vague, partial feelings, so an agent can feel bad and not
+know why. Phases 069 to 071. Not yet assigned to a tract (see the tract note below).
+
+**What exists today** (read 2026-11-07):
+- *The body is scattered, not a unit.* `hunger` and `disease` sit on the Agent node; `mood` and
+  `stamina_reserve` on a separate body node (`self._bodies[actor]` holds its node id); health is one scalar
+  (`health_value`, Phase 037 merged the copies); intoxication, nutrition and aftereffects are read-offs.
+  `BigvilleWorld.body_state()` assembles a bag of read-offs. Nothing is located: there is no region of the
+  body, so an injury has no place.
+- *Self-report names its cause.* `domains/agent_view.py::_body` turns each quantity into its own word
+  (`hunger` to "famished", `energy` to "worn out", the `ill` flag to the word "ill"). The resident always
+  knows what is wrong and why. Phase 054 passes these words into the prompt packet's `body` section.
+- *Perception work so far is outward.* Phases 062 (tiered percepts), 063 (visible marks) and 065
+  (distortion) degrade what a resident sees of the world and of others. Nothing degrades what it feels of
+  itself, and Phase 065 assumes the impaired resident is told its state in words.
+- *Animals* have their own nodes and `hunger` but no body object, so nothing generalises across
+  embodiments.
+
+**Design (the principles the three phases share).**
+1. **Two outputs from a body, never one.** *Capacities* go to the world's physics (effective strength,
+   speed factor, whether it lives) and stay exact. *Afferents* go to cognition and are all a mind may feel.
+   *Observables* go to other residents' eyes (Phase 063). *Referee* is the full truth, for tests.
+2. **The body owns its detail.** Initially the body object reads the world's existing nodes through the
+   existing accessors, and it never duplicates them. Authority rule: a quantity that already lives in a
+   world node stays authoritative there and the body reads it; a quantity that is new lives in the body
+   and the world reads it through `capacities()`. All new body detail from now on goes in the body.
+3. **An embodiment is data and code behind one interface.** Its anatomy (a tree of regions), its quality
+   tree (a tree of kinds of feeling), its signal sources and its capacities define it. The first is a
+   `WorldBackedBody` for humans. An animal body, or a different human model with real digestion and
+   biology, replaces it with no change outside the body.
+4. **Feelings are sounds with a rough place.** "uuugh", "gurgle", "aaargh", "brrr", "hhhh". Not a sentence
+   and not a diagnosis. The sound carries valence and a coarse kind; the place is a region of the anatomy
+   tree. Both are hierarchical and both resolve to a depth.
+5. **Resolution is physiology, not noise.** How deep each tree is resolved comes from the channel (gut and
+   other visceral signals cap shallow on place, skin and joints can resolve fully), the signal's
+   intensity, the resident's acuity, its attention and its impairment. Many causes share the shallow
+   levels, so the resident cannot tell them apart. Some causes are silent until late.
+6. **The world never names a cause.** Which sensation means which remedy is for the mind to learn.
+7. **Simple backends are later.** They keep their raw `ActorContext` numbers until a phase says otherwise.
+   Nothing here changes a simple-backend run.
+
+**Tract note.** `worlds/body.py`, the world hooks and the `harm()` locus (Phase 070) are world physics
+(Tract A's files). The pack tables, the renderer and the agent-view change are Tract B's. Whoever takes
+069 may split it: first the interface and `WorldBackedBody` with stub tables, then the content. Until the
+supervisor assigns it, these phases are in neither tract's run order.
+
+**Hand-offs to other phases** (notes, not edits to their briefs):
+- 052's leak test gains a rule (069 adds it). 054's `body` section changes shape and the prompt schema
+  version rises (069). 057's TUI renders the new `self.body` (069).
+- 062's perceiver record absorbs 069's interoceptor record (acuity, attention, impairment) when 062
+  lands; 069 does not wait for it. 063's observables and 069's `observable()` are the same data.
+- 065 adds interoceptive distortion (numbness, a sensation placed in the wrong region) as one more
+  source row once 069 and 065 both exist. 043's `checkup` publishes what a patient cannot feel (070).
+- 056 can count attribution (a resident's stated cause against the referee's true cause) from the
+  referee block (069) and the attend counts (071).
+
+## Phase 069 -- The Body unit: afferents, sounds and a background feeling
+
+**Status:** unscheduled (decision 2026-11-07: the body is a self-contained system and a mind gets only
+interoception; the background feeling is in this phase, attending is Phase 071). Depends on 052 and 051
+(both done). Does not wait for 062.
+
+**Goal.**
+1. **The `Body` interface** in a new `worlds/body.py`: `apply(event)` (world to body: intake, exertion,
+   exposure, harm with an optional locus, rest, sleep), `tick()`, `capacities()` (exact, for the physics),
+   `afferents(interoceptor)` (what the mind may feel), `observable()` (what an observer may see),
+   `referee()` (the full truth, with the cause of each signal), and `dump()`/`load()` for checkpoints.
+   A body also declares its `anatomy`, `quality_tree` and `sources`.
+2. **`WorldBackedBody`**, the first implementation, for humans. It reads hunger, health, disease, stamina
+   reserve, mood, intoxication, nutrition, chill, exhaustion and sleep through the existing world
+   accessors and moves no state. Any new state it needs (for example the previous intensity of a signal
+   for its trend) lives in the body and is checkpointed. The attribute holding the objects is not
+   `_bodies` (that name holds node ids); use `self.embodiment`.
+3. **Embodiment is chosen by data.** An `embodiment` key (default `human`) on `ACTOR_DEFAULTS` and on
+   `ANIMALS` rows, and a registry from that key to a body class. 069 builds only the human one and a stub
+   embodiment in a test (its own small anatomy and two sources), to prove an actor can be given a
+   different body with no change to the world, the view or the leak test.
+4. **Two trees, one resolver.** Pack tables `ANATOMY` (for example `body` > `torso` > `ventral torso` >
+   `upper abdomen`, and `head`, `arm`, `leg`, `skin`) and `QUALITY_TREE` (`bad` > `sharp`, `dull`,
+   `visceral`, `hot_cold`, `drained` > their children such as hunger, queasy, cramp, itch). One pure
+   function `resolve(tree, true_node, depth)` returns the ancestor of the true node at that depth. Every
+   tree has a root, so depth 0 is always available.
+5. **Signal sources as data.** `SIGNAL_SOURCES` rows say: a condition over the body's reads, the channel
+   (`visceral`, `surface`, `deep`, `general`), the quality node, the locus node, the intensity as a
+   function of the read, the deepest quality and locus depth the channel allows, and a threshold of
+   awareness below which nothing is felt. The first rows: hunger, exertion and exhaustion, chill and
+   wetness, illness, intoxication, and the harm already taken (as whole-body, no locus yet; 070 adds it).
+   Each cause maps to rows; several causes may map to the same quality and locus nodes on purpose.
+6. **The interoceptor record,** built per resident per turn: acuity (a trait, drawn once per resident from
+   the pack and kept, with a life-stage effect), attention (asleep, absorbed in a timed job, idle) and
+   impairment (intoxication band, exhaustion band, illness). Pack parameters set the depth rule
+   (intensity, acuity, attention and impairment as terms, APPROX). A fixed seeded jitter keeps it
+   deterministic as a function of (seed, resident, turn, source).
+7. **Sounds, not words.** `VOCALISATIONS` maps a quality node to a family of forms (a root "ugh", sharp
+   "aargh/ow/hiss", visceral "gurgle/blech", hot-cold "brrr", drained "hhhh") and a renderer varies them
+   by intensity (vowel length, repetition, case and punctuation) and by pattern (steady, pulsing, in
+   waves, rising, fading). Never a sentence and never a cause. The phoneme inventory is pack data, so a
+   different pack sounds different.
+8. **The background feeling.** The body also reports one diffuse state (valence and arousal) summed from
+   every source, resolved or not. It is rendered as a sound from the root of the quality tree and a
+   coarse level. A resident whose only signals fall below the awareness threshold, or resolve to the root,
+   still gets this feeling and nothing else, which is "feel bad, don't know why". Existing `mood` words
+   are unchanged and separate (an open question for the report: whether mood should become part of it).
+9. **The agent view.** A scenario switch `interoception` takes `felt` (default in agent mode) or
+   `labelled` (the Phase 052 body words, kept for comparison arms). In `felt` mode `self.body` carries
+   `feeling` (the background sound) and `signals`, a list of `{sound, where}` ordered by intensity and
+   capped, plus the plain facts a person has of their situation (`asleep`, `collapsed`). The words
+   `health`, `health_status`, `energy`, `hunger` and `ill` are not in it. `strength` and `stamina` stay as
+   they are (a capacity known by use) until a later phase decides. `referee` mode carries the old words and
+   numbers and, beside each signal, the true source, true locus, true quality and the depths chosen.
+10. **Leak test.** `domains/agent_view_check.py` fails if a `felt` view contains a cause quantity as a
+    key or phrase, a signal finer than its resolved depth, a locus that is not an anatomy node, or a sound
+    not in `VOCALISATIONS`. The prompt packet's `body` section takes the new shape under its existing cap
+    and the prompt schema version rises.
+11. **Checkpoint.** `dump()`/`load()` round-trip in a test. Wiring them into `game_persistence.py` and
+    `world_persistence.py` belongs to the Ocelot-persistence stream, so the report hands that over.
+
+**Write scope.** new `worlds/body.py`; `worlds/bigville_world.py` (build the bodies, route events, call
+`tick`: small hooks only, re-read before editing); new `domains/interoception.py` (resolver, depth rule,
+renderer); the pack (new `world/interoception.json`: `ANATOMY`, `QUALITY_TREE`, `VOCALISATIONS`,
+`SIGNAL_SOURCES`, `INTEROCEPTION`; `embodiment` on `ACTOR_DEFAULTS` and `ANIMALS`; the `body` whitelist
+in `world/agent_view.json`; the manifest); `domains/agent_view.py` and `domains/agent_view_check.py`;
+`bigville/backends/prompt_packet.py` (the `body` shape and schema version); the TUI's body rendering
+(`bigville/tui`); `domains/bigville_entities.py` (self-test); a new `tests/test_phase069_body.py`.
+
+**Acceptance.**
+- With the world's mechanics unchanged, the 60-turn and 200-turn simple-backend runs are identical to
+  HEAD, and the full suite passes. The tests that pin the old agent-mode body keys (Phases 052, 054, 057)
+  change and are listed in the report with the reason; `labelled` mode still passes the old assertions.
+- A hungry resident and a deficient resident with the same acuity get the same shallow sound and region
+  (the causes are not told apart), and the referee block shows two different true sources.
+- Raising intensity, acuity or attention gives a deeper-or-equal resolution on both trees, never
+  shallower; impairment and distraction give shallower-or-equal; a visceral signal never resolves
+  deeper on place than its channel cap while a surface signal can; a signal below the awareness
+  threshold is absent and still contributes to the background feeling.
+- A resident with only sub-threshold or root-resolved signals has a `feeling` and an empty or
+  root-only `signals`; the view names no cause.
+- The same (seed, resident, turn, state) gives the same sounds on a rerun; a different pack gives
+  different sounds; the stub embodiment works with no change outside the body.
+- The self-test finds a tree node unreachable from its root, a source whose quality or locus node is
+  missing, a quality node with no vocalisation, and a depth cap deeper than its tree.
+- `dump()`/`load()` round-trip equals the original for a body with history.
+
+**Out of scope.** Locus on harm and silent conditions (070); attending (071); an animal body or a
+digestive model (the interface allows them); simple-backend use of afferents; referred or mislocated
+sensations and numbness (065); treatment; capacities that depend on the located injury.
+
+## Phase 070 -- Locus and silent detail: where it hurts, and what does not yet
+
+**Status:** unscheduled; after 069. Reads Phases 035, 036, 037, 038 and 043 (all done).
+
+**Goal.** Give the body detail the single health scalar cannot carry, all of it inside the body.
+1. **Located harm.** `harm(actor, amount, cause, locus=None)`. The world still lowers the one
+   `health_value` exactly once; the body records where it landed in a per-locus ledger that is
+   descriptive and never a second health. A missing locus is drawn from a pack table `HARM_LOCUS` by
+   cause (a blow: head, torso, arm or leg by weight; a fall or accident by its table row; an illness by
+   its disease row; starvation and exhaustion have no place, which is itself a result: they stay
+   whole-body). The draw is a stateless seeded function. Phase 038's strike passes a locus when given
+   and otherwise leaves it to the table.
+2. **Healing by place.** Located injury recovers over time and with care at rates in the table, and
+   the ledger falls with it; the scalar is unchanged in how it recovers.
+3. **Signals from the ledger.** Located injury gives sharp and dull signals at its locus, with a trend
+   (rising after the blow, falling as it heals), at intensities by size.
+4. **Silent and slow states.** Held in the body from the world's reads: a protein deficiency (035),
+   an incubating illness (043's onset), a hangover and withdrawal (036), a chronic tiredness from a long
+   run of short sleep. Each has an awareness floor, so the early phase is felt only as the background
+   feeling or not at all, and it grows into a shallower-then-deeper signal as the condition advances.
+   The tables are `SIGNAL_SOURCES` rows; no code names a disease.
+5. **Habituation.** A steady signal's felt intensity falls with time at a pack rate and recovers when the
+   stimulus stops; a sudden change is noticed at full strength. The state is the body's and is
+   checkpointed.
+6. **Observables.** `observable()` carries the visible side of the same ledger (a limp, a bruise, a
+   pallor) for Phase 063's marks to publish; it is the sign others see of what the resident may not feel.
+7. **Screening reads the truth.** Phase 043's `checkup` reports a silent condition from the referee
+   state, not from the resident's felt signals, so a healer can find what the patient cannot feel.
+
+**Write scope.** `worlds/body.py`; `worlds/bigville_world.py` (`harm` signature and call sites,
+`checkup`: small hooks); the pack (`HARM_LOCUS`, more `SIGNAL_SOURCES` rows, healing and habituation
+rates); `bigville/reporting.py` (injuries by locus); `domains/bigville_entities.py` (self-test); a new
+`tests/test_phase070_locus.py`.
+
+**Acceptance.** Tests show: a blow to the arm lowers health once, writes the arm in the ledger, and
+gives a sharp signal resolved no deeper than the channel and the resident's depth allow; the same blow
+with a lower acuity resolves shallower or equal; a located injury recovers by its table rate while the
+scalar recovers as before; an incubating illness and a deficiency give no signal below their floors,
+only the background feeling above them, and a deeper signal as they advance; a steady signal fades and
+a change is noticed; `checkup` finds a silent condition the felt view does not show; no existing
+health, starvation or strike number changes (the existing suite passes with any change listed); the
+leak test passes; the 60-turn simple run is identical to HEAD.
+
+**Out of scope.** Effects of a located injury on capacities (a broken leg slowing walking); attending
+(071); treatment by place; referred sensation (065).
+
+## Phase 071 -- Attending: look into a feeling
+
+**Status:** unscheduled; after 069 (and 070 for the full test). Decision 2026-11-07: attending to a
+sensation is its own phase.
+
+**Goal.** Let a resident spend time and attention to resolve a feeling it has, as an action with a
+cost and a consequence, not a free query.
+1. **`attend`.** A timed action (it occupies the slot for a few ticks as a timed job does, Phase 023)
+   that names one current signal by its handle. For its duration that signal resolves deeper on the
+   quality tree and on the place tree, by pack steps, never past the channel's cap or the resident's
+   ceiling (acuity plus a bounded attend bonus). It cannot be done asleep or collapsed. It costs a
+   little stamina and, while it runs, the other signals resolve shallower (attention is finite).
+2. **`press`.** A deliberate probe of a named region of the resident's own body. The body answers with
+   a reaction sound at an intensity set by how much of the true signal lies in that region's subtree
+   ("ow" for a tender spot, silence for none). Several probes narrow a vague place by searching the
+   anatomy tree. Pressing an injured place raises its intensity for a short time (a consequence, not
+   a refusal).
+3. **Handles and view.** Each current signal gets a `can` row with a handle (`domains/affordance_handles.py`)
+   so a reply that names it runs the action as the simple backend would send it. The outcome appears in
+   `last` as a sound and a place, never a cause.
+4. **TUI.** The command parser takes `attend` and `press <region>` through the lexicon's verb aliases.
+5. **Reports.** `game_report()` counts attends and presses, the depth gained, and (from the referee
+   block) how often a resident that attended then acted on the true source, as the raw input to a
+   later attribution measure in Phase 056's evaluation.
+
+**Write scope.** `worlds/body.py` (the probe response and the attention budget); `worlds/bigville_world.py`
+(the timed action and its hooks: small); the pack (`MAJOR_ACTIONS` or the free-action table, `ATTEND`
+parameters, the verb aliases, a refusal reason in `REFUSAL_REASONS`); `domains/affordance_handles.py`;
+`domains/agent_view.py` and its whitelist; `bigville/tui`; `bigville/reporting.py`; a new
+`tests/test_phase071_attend.py`.
+
+**Acceptance.** Tests show: attending a vague gut signal resolves it no deeper than the channel's cap
+and no deeper than acuity plus the bonus; a surface signal resolves further than a visceral one; the
+other signals resolve shallower while attending; attending asleep or collapsed is refused with a recorded
+reason; three presses at the right sub-regions narrow a torso signal to its true leaf and press at a
+wrong region returns silence; pressing an injured place raises its intensity briefly; nothing in
+`last` or the view names a cause; the leak test passes; the same seed repeats; a simple-backend run
+is identical to HEAD, because no simple backend chooses `attend`.
+
+**Out of scope.** Training acuity by attending; simple-backend use of attending or pressing; another
+person palpating (a healer's examination is Phase 043's); referred and mislocated sensation (065).
 
 ---
 
