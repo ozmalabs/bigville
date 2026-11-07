@@ -960,6 +960,22 @@
     {
       "name": "NARRATION",
       "file": "world/narration.json"
+    },
+    {
+      "name": "FOG_RULES",
+      "file": "world/fog.json"
+    },
+    {
+      "name": "FOG_PUBLIC_LANDMARKS",
+      "file": "world/fog.json"
+    },
+    {
+      "name": "FOG_PLACE_WORDS",
+      "file": "world/fog.json"
+    },
+    {
+      "name": "FOG_WORDS",
+      "file": "world/fog.json"
     }
   ]
 }

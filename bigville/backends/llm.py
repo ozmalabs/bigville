@@ -218,6 +218,9 @@ class LLMBackend:
     kind = "llm"
     # Phase 054: the game gives this resident's context its agent view (words only), and nothing else.
     wants_agent_view = True
+    # Phase 053: this resident's knowledge is fogged (domains/map_memory.py): it knows the map as words, and its
+    # moves are checked against what it knows.
+    fogged = True
     # Phase 055: decided through the game's thread pool, with one thread per resident at a time. The backend keeps
     # its state per resident; the shared CallBudget and the provider are the only shared objects, and both are
     # thread-safe (the provider's per-call cost and usage are per thread).

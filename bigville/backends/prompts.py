@@ -205,6 +205,10 @@ def select_knowledge(character, context: ActorContext, selection: dict[str, Any]
                 aware.append(memory)
         elif memory.kind in _STANDING_KINDS:
             standing.append(memory)
+        elif memory.kind == "map_memory":
+            # Phase 053: the fogged map is the resident's record of the ground. The prompt gets the view's `map`
+            # section (domains/map_memory.py), never the record.
+            continue
         elif memory.kind == "recipe_knowledge" and _content_dict(memory).get("recipe"):
             if touches(memory):
                 relevant.append(memory)

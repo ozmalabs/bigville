@@ -11,8 +11,10 @@ ActorContext, so this module is read-only for them.
 Sections (keys listed in AGENT_VIEW_WHITELIST): `self` (the persona card, the body in words, skills, what
 is carried, what the resident knows and where, kin, notes), `now` (hour, season, weather), `around`
 (people the resident can see, speech heard, moves seen), `map` (a patch of the ground within the sight
-range, terrain only), `can` (the affordances the resident may use, by handle, verb and words, with
-moves only to places the resident knows) and `last` (the outcome of the last major action).
+range, terrain only, for a simple resident; for a fogged resident, its own three-level map from
+domains/map_memory.py: cells where it has seen them, labels for the places it holds, nothing for what it does
+not know), `can` (the affordances the resident may use, by handle, verb and words, with moves only to places
+the resident knows) and `last` (the outcome of the last major action).
 
 The builder reads the world through its query methods only. It does not call `game._context`, because
 that call advances the practice records a backend receives on its next context.
@@ -22,6 +24,7 @@ from __future__ import annotations
 import math
 import re
 
+from domains import map_memory
 from domains.affordance_handles import handle_pairs
 from domains.data_view import entities
 from domains.lexicon import describe, quantities
@@ -369,29 +372,65 @@ def _map(world, actor, pack):
                                "rows": rows, "legend": dict(sorted(used.items()))}, pack)
 
 
+def _fogged_map(game, actor, pack):
+    """The map section of a fogged resident (Phase 053): its three levels, from the resident's own map."""
+    section = map_memory.map_section(game, actor)
+    if section is None:
+        return None
+    labels = [_check_keys("label", label, pack) for label in section["labels"]]
+    return _check_keys("map", {**section, "labels": labels}, pack)
+
+
 def _species(world, animal):
     if not animal or animal not in world._animals:
         return ""
     return str(world.eng.node(world._animals[animal])["attrs"].get("species", ""))
 
 
-def _can(world, actor, character, pack):
+def _can(world, actor, character, pack, game=None):
     """The options the resident may use. Each row's handle comes from domains/affordance_handles.py, computed
     over the full list of the world's options, so the backend resolves the same handle to the same row (Phase
-    054 follow-up). A move is listed only to a place the resident knows."""
+    054 follow-up). A move is listed only to a place the resident knows.
+
+    A fogged resident (`game` given, Phase 053) gets only the rows whose cell it knows: a place it holds exactly
+    is named ('walk to the mill'), one it holds roughly is offered as 'walk toward the mill', and a cell it has
+    seen is 'a spot you know'. A row to ground it does not know is not listed."""
     pk = load_pack(pack)
     actions, words = pk["ACTION_WORDS"], pk["VIEW_WORDS"]
-    places = _known_positions(character, pack)
+    fogged = game is not None and map_memory.is_fogged(game, actor)
+    places = {} if fogged else _known_positions(character, pack)
     out = []
+    offered_moves = set()
     for handle, option in handle_pairs(world.actor_affordances(actor)):
         action = str(option.get("action", ""))
         verb = actions.get(action) or _words(action)
-        if action == "move":
-            destination = _cell(option.get("destination"))
-            if destination not in places:
+        destination = _cell(option.get("destination"))
+        wording = None
+        if fogged and destination is not None:
+            wording = map_memory.can_words(game, actor, destination, trade=option.get("trade"))
+            if wording is None:
                 continue
-            name = _words(option.get("trade")) or places[destination]
-            what = words["walk_to"].format(place=name)
+        if action == "move":
+            if fogged:
+                if wording is None:
+                    continue
+                kind, place = wording
+                if kind == "to":
+                    what = words["walk_to"].format(place=place)
+                elif kind == "toward":
+                    what = words["walk_toward"].format(place=place)
+                else:
+                    what = pk["FOG_WORDS"]["spot"]
+                # Several cells of one vague place (every field) are one way to walk there: the first row stands for
+                # them. An exact place keeps each of its rows, as before Phase 053.
+                if kind != "to" and what in offered_moves:
+                    continue
+                offered_moves.add(what)
+            else:
+                if destination not in places:
+                    continue
+                name = _words(option.get("trade")) or places[destination]
+                what = words["walk_to"].format(place=name)
         else:
             what = _words(option.get("recipe") or option.get("kind") or option.get("sow_kind")
                           or _species(world, option.get("animal")))
@@ -476,17 +515,21 @@ def build_agent_view(game, actor, mode="agent"):
     pack = world.data_pack
     gist = entities(pack).MEMORY_GIST
     known = _known_names(game, actor)
+    fogged = map_memory.is_fogged(game, actor)
     view = {
         "mode": mode,
         "actor": actor,
         "self": _self(game, actor, pack, gist),
         "now": _now(world, pack),
         "around": _around(game, actor, pack, known),
-        "map": _map(world, actor, pack),
-        "can": _can(world, actor, game.characters[actor], pack),
+        # Phase 053: a fogged resident's map is its own three-level map; a simple resident keeps the patch.
+        "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
+        "can": _can(world, actor, game.characters[actor], pack, game if fogged else None),
         "last": _last(world, actor, pack),
         "reaction": _reaction(game, actor, pack, known),
     }
     if mode == "referee":
         view["referee"] = _referee(game, actor)
+        if fogged:
+            view["referee"]["true_map"] = map_memory.true_patch(game, actor)
     return _check_keys("top", _clean(view), pack)

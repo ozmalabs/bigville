@@ -2026,6 +2026,8 @@ def check_consistency():
     check_agent_view(_WORLD_PACK.path, errors, warnings, info)
     from domains.narration_check import check_narration  # Phase 057: the terminal interface's sentence templates
     check_narration(_WORLD_PACK.path, errors, warnings, info)
+    from domains.fog_check import check_fog  # Phase 053: the fog of the map, in three levels
+    check_fog(_WORLD_PACK.path, errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

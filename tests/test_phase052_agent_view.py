@@ -287,9 +287,19 @@ def test_moves_are_offered_only_to_places_the_resident_knows(founder_game):
     moves = [a for a in game.world.actor_affordances(game.player) if a["action"] == "move"]
     offered = [row for row in view["can"] if row["action"] == "walk"]
     assert offered and len(offered) <= len(moves)
+    from domains import map_memory
     handles = {a["target"] for a in moves if tuple(a["destination"]) in known}
-    assert {row["handle"] for row in offered} == handles
-    assert all(row["what"].startswith("walk to the ") for row in offered)
+    # Phase 053: a fogged resident (the player is one) is also offered the places it knows only roughly, as 'walk
+    # toward the ...'. The exact places keep their 'walk to the ...' rows. A shop row is worded by its trade (the
+    # bakery is rough for this resident, so its row is 'toward'), so the exact rows are the known-exact handles
+    # that are not worded 'toward'.
+    toward = {row["handle"] for row in offered if row["what"].startswith("walk toward the ")}
+    assert {row["handle"] for row in offered if row["what"].startswith("walk to the ")} == handles - toward
+    destination = {a["target"]: tuple(a["destination"]) for a in moves}
+    content = map_memory.ensure_map(game, game.player)
+    assert all(map_memory.known_cell(game, content, destination[handle]) for handle in toward)
+    assert all(row["what"].startswith(("walk to the ", "walk toward the ", "a spot you know"))
+               for row in offered)
     assert all("destination" not in row for row in view["can"])
 
 

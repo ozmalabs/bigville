@@ -1,0 +1,81 @@
+ROLE farmer | INCOMER years 1.0
+--- farm labourer (Thaddeus Ramskin), own view: level=full caption='the ground you have seen'
+   |     ..~~~~~~~~
+   |     ..~~~~~~~~
+   |     ..~~~~~~~~
+   |     ..~~~~~~~~
+   |     .........=
+   |     .___......
+   |     _===___...
+   |     _=@====_..
+   |     ._.___====
+   label A your home, right beside you, near the wharf
+   label B the wharf, a short walk north, near your home
+   label C the river, a short walk north, near your home
+   label D the tannery, roughly a short walk south-east, near your home
+   label E the fishmonger, roughly a short walk east, near your home
+   paths []
+--- farm labourer, window on the fields (full): level=full caption='the ground you have seen'
+   |.......
+   |T......
+   |......_
+   |..._..=
+   |...====
+   |====.._
+   |=.._...
+   label A the fields, a walk south-east, near the pasture
+   label B the pasture, roughly a walk south-east, near the fields
+   label C the weavery, roughly a walk south-east, near the fields
+   label D the compost yard, a walk south-east, near the fields
+   paths []
+farmer vague pick ('wellhouse', (16, 14))
+--- farm labourer, one-cell window on wellhouse (a rough place, no cell known: vague): level=vague caption='the places you know of, roughly where they are'
+   |Landmarks you remember: A the well,
+   |roughly a short walk east.
+   label A the well, roughly a short walk east
+   paths []
+hidden centre (2, 22)
+--- farm labourer, window on unknown ground (hidden): level=hidden caption='ground you have not seen'
+   |You have not seen this ground yet.
+   paths []
+--- incomer (Thaddeus Puddifoot, 1 year), own view: level=full caption='the ground you have seen'
+   |............=..
+   |............==.
+   |.............=.
+   |.............=.
+   |............==.
+   |.___........=..
+   |_===___.....===
+   |.__====@.====..
+   |...___====.=...
+   label A your home, right beside you, near the latrine
+   label B the latrine, a short walk north-east, near your home
+   label C the cobbler, a short walk east, near your home
+   label D the tailorshop, a short walk south-east, near your home
+   label E the tannery, a short walk north-east, near your home
+   paths []
+--- incomer without the quarry on their routine, own view: level=full caption='the ground you have seen'
+   |............=..
+   |............==.
+   |.............=.
+   |.............=.
+   |............==.
+   |.___........=..
+   |_===___.....===
+   |.__====@.====..
+   |...___====.=...
+   label A your home, right beside you, near the latrine
+   label B the latrine, a short walk north-east, near your home
+   label C the cobbler, a short walk east, near your home
+   label D the tailorshop, a short walk south-east, near your home
+   label E the tannery, a short walk north-east, near your home
+   paths []
+--- incomer one-cell window on the quarry (nothing known there: hidden): level=hidden caption='ground you have not seen'
+   |You have not seen this ground yet.
+   paths []
+incomer vague pick ('wellhouse', (16, 14))
+--- incomer one-cell window on wellhouse (rough: vague): level=vague caption='the places you know of, roughly where they are'
+   |Landmarks you remember: A the well,
+   |roughly a short walk north-east.
+   label A the well, roughly a short walk north-east
+   paths []

@@ -1,0 +1,29 @@
+........................................................F............... [ 78%]
+....................                                                     [100%]
+=================================== FAILURES ===================================
+____________ test_the_packet_matches_the_snapshot_for_a_fixed_view _____________
+
+    def test_the_packet_matches_the_snapshot_for_a_fixed_view():
+        record = PromptBuilder().build(_fixed_context(), "check_in")
+        # The pack hash covers every table of the pack, so it changes whenever any other phase edits the pack. The
+        # snapshot holds the packet's own text, so the hash is left out of the comparison (and checked for shape).
+        payload = record.as_dict()
+        assert re.fullmatch(r"[0-9a-f]{64}", payload.pop("pack_hash"))
+        text = json.dumps(payload, sort_keys=True, indent=1, ensure_ascii=False)
+        with open(SNAPSHOT, encoding="utf-8") as handle:
+>           assert text == handle.read().rstrip("\n")
+E           assert '{\n "context... changes."\n}' == '{\n "context... changes."\n}'
+E             
+E             Skipping 2891 identical leading characters in diff, use -v to show
+E             - "system": 4930,
+E             ?           ^^ -
+E             + "system": 5673,
+E             ?           ^^^
+E                  "things": 44,...
+E             
+E             ...Full output truncated (10 lines hidden), use '-vv' to show
+
+tests/test_phase054_llm_prompt.py:148: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_phase054_llm_prompt.py::test_the_packet_matches_the_snapshot_for_a_fixed_view
+1 failed, 91 passed in 80.55s (0:01:20)

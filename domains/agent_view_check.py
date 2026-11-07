@@ -25,17 +25,18 @@ from domains.lexicon import bands
 from domains.pack import PackError, load_pack
 
 SECTIONS = ("top", "self", "persona", "body", "carrying", "knows", "places", "now", "around", "person",
-            "heard", "seen", "thing", "map", "can", "last", "reaction", "option", "referee")
+            "heard", "seen", "thing", "map", "label", "can", "last", "reaction", "option", "referee")
 REQUIRED = ("AGENT_VIEW_WHITELIST", "AGENT_VIEW_REFEREE_ONLY", "AGENT_VIEW_QUANTITIES", "AGENT_VIEW_KNOWS_LIMIT",
             "MAP_GLYPHS", "VIEW_WORDS", "PRECISION_WORDS", "ACTION_WORDS")
 VIEW_WORD_KEYS = ("asleep", "collapsed", "ill", "carried_line", "held_line", "kin_line", "unknown_kin",
                   "stranger", "someone", "you", "walk_to", "moved", "done", "not_done", "map_level",
                   "understood", "aware", "react_resist", "react_brace", "react_evade", "react_yield",
-                  "reaction_late")
+                  "reaction_late", "map_full", "map_vague", "map_hidden", "walk_toward")
 # Phase 057: the reaction options the world offers (Phase 029) each need words in VIEW_WORDS as react_<option>;
 # the list in VIEW_WORD_KEYS above names them.
 TEMPLATE_FIELDS = {"carried_line": {"item", "amount"}, "held_line": {"item", "condition"},
-                   "kin_line": {"term", "who"}, "stranger": {"job"}, "walk_to": {"place"}}
+                   "kin_line": {"term", "who"}, "stranger": {"job"}, "walk_to": {"place"},
+                   "walk_toward": {"place"}}
 PLAIN_NAME = re.compile(r"^[a-z][a-z_]*$")
 _DIGIT = re.compile(r"\d")
 

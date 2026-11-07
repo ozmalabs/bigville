@@ -101,7 +101,9 @@
         "level",
         "caption",
         "rows",
-        "legend"
+        "legend",
+        "labels",
+        "paths"
       ],
       "can": [
         "handle",
@@ -123,6 +125,10 @@
       "option": [
         "choice",
         "words"
+      ],
+      "label": [
+        "glyph",
+        "word"
       ],
       "referee": [
         "body",
@@ -245,6 +251,10 @@
       "done": "it happened",
       "not_done": "it did not happen",
       "map_level": "a patch of ground around you",
+      "map_full": "the ground you have seen",
+      "map_vague": "the places you know of, roughly where they are",
+      "map_hidden": "ground you have not seen",
+      "walk_toward": "walk toward the {place}",
       "understood": "you understand it",
       "aware": "you have heard of it",
       "react_resist": "hold on and resist",

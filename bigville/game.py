@@ -727,6 +727,9 @@ class BigvilleGame:
         if response.major_action is not None:
             proposal = response.major_action
             plan = {"action": proposal.action, **proposal.params}
+            # Phase 053: a fogged resident's move is checked against its own map, and `toward` becomes a destination.
+            from domains.map_memory import route_plan
+            plan = route_plan(self, actor, plan)
             ok = bool(self.world.enact_plan(actor, plan))
         for utterance in response.utterances:
             if hasattr(utterance, "to_dict"):
@@ -947,6 +950,9 @@ class BigvilleGame:
     def _finish_turn(self, responses) -> dict:
         """The end of a turn: world turn bookkeeping, event expiry, periods and continuations."""
         self.world.resolve_actor_turn()
+        # Phase 053: each fogged resident (the LLM and human backends) learns the ground in sight this turn.
+        from domains.map_memory import learn_all
+        learn_all(self)
         # Context construction is observational (trace/UI callers may ask for
         # it repeatedly). Expire records once the successful step has advanced
         # beyond their lifetime; every living actor has had its decision pass.

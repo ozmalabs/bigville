@@ -10,6 +10,8 @@ from .protocol import ActorContext, ActorResponse
 
 class HumanBackend:
     kind = "human"
+    # Phase 053: a human resident (the TUI player) is fogged like the LLM resident (domains/map_memory.py).
+    fogged = True
     communication_mode = "free_text"
     supports_free_text = True
     understands_raw_speech = True

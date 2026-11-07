@@ -2430,7 +2430,7 @@ phase); the LLM prompt (Phase 054).
 
 ## Phase 053 -- Fog of map: three levels of detail
 
-**Status:** ready, after 052 (decision 2026-11-05: three levels; hidden, vaguely structural, and
+**Status:** done (see History). Open: Ocelot residents are not fogged; sight occluders are not applied; the map cap allows five labels. ready, after 052 (decision 2026-11-05: three levels; hidden, vaguely structural, and
 full). Spec: `seeds/bigville_move_nav.json` (a persistent per-agent map belief, "unknown =
 absence") and Phase 019's place knowledge (exact, rough, none, with landmarks).
 
@@ -3428,3 +3428,4 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 | 047 Joint actions | done (part) | (this commit) | docs/phases/phase047/PHASE047_REPORT.md -- joint carry and crewed recipes behind a switch; team term; group takes, gangs and group contests not built |
 | fix LLM ops | done | (this commit) | docs/phases/fix_llm_ops/FIX_LLM_OPS_REPORT.md -- `bigville/llm_checkpoint.py` checkpoints an LLM resident (the hook in the Ocelot stream's untracked `game_persistence.py` is not committed); `create_game` and `build_llm_town` attach a gzip hash-chained `LLMLog` by default (`runs/llm_logs`, opt out with `llm_log=False`); 16 tests; 1707 passed |
 | fix simple village | done | (this commit) | docs/phases/fix_simple_village/FIX_SIMPLE_VILLAGE_REPORT.md -- founding relationship seeding on for bigville (845 directed ties; four tests now assert them; simple-backend actions unchanged over 60 and 200 turns); the simple walk names a `body_down` interrupt so a fallen resident gets no replayed proposal (200 turns: `collapsed` refusals 15 to 0, Phase 049's `exhausted` refusals unchanged); 8 tests; 1736 passed |
+| 053 Fog of map | done | (this commit) | docs/phases/phase053/PHASE053_REPORT.md -- `domains/map_memory.py` keeps a fogged resident's map as one `map_memory` record (checkpoints with the character): level 0 absent, 1 named places and roughly where in words, 2 cells and exact places; learning by sight, landmarks and told places, ageing words; the view's `map` and `can` are built from it (`walk toward`), `move` takes `toward`; LLM and human backends are `fogged`, simple locals are not (60-turn run identical); 21 tests; 1756 passed |

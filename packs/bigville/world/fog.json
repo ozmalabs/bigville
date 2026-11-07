@@ -1,0 +1,121 @@
+{
+  "_doc": "FOG (Phase 053): what a fogged resident knows of the map, in three levels. 0 hidden: nothing known, not even that it exists. 1 vague: the structure, meaning named places (landmarks, named buildings, area names) and roughly where they are, with the paths between known places. 2 full: the ground cell by cell (remembered terrain and whether people were seen there), and the exact place. The rules and words here are read by domains/map_memory.py; the world publishes physical facts only, and the resident's map is held by the resident (a MemoryRecord of kind map_memory).\n\nFOG_RULES. exact_radius: the cells around an exact place's cell that are known at level 2 at founding (a home or a workplace). landmark_sight: a named place within this many cells becomes level 1 even beyond sight_range (Phase 028's HEARING.sight_range is the level-2 radius each turn). stale_ticks: a remembered cell or place not seen for this many clock ticks is said to be remembered, not seen (TIME: 96 ticks a day, so 288 is three days). explore_steps: how far ahead a compass heading (`toward north`) aims, in cells. near_landmark_cells: a place is described as near another known place within this distance. max_labels: the most places the view lists. label_letters: the glyphs of the labels, in order. All of these are APPROX model choices, not measured figures; their order of magnitude is set by the 52 by 40 founding town.\n\nFOG_PUBLIC_LANDMARKS: places every resident knows at level 1 from the start (the market, the church, the well), whatever their history. The names are keys of the founding layout (FOUNDING_WORKPLACES, FOUNDING_BUILDING_SITES, FOUNDING_MAP's square).\n\nFOG_PLACE_WORDS: the words for a place by its name, where the founding labels (FOUNDING_PLACE_LABELS) do not give them. Other places are worded from FOUNDING_PLACE_LABELS, or from the name itself. Words are fixed phrases with no digit.\n\nFOG_WORDS. directions: the eight compass headings in order from north, clockwise, with the word for each. distances: the bands of distance in cells (Chebyshev), in order; a band with direction false gives the phrase alone. ages: the bands of time since a cell or place was last seen, in clock ticks, in order. label, label_rough, label_near, remembered, path_between, spot: the sentence templates. Every band is a rough word, never a count.\n\nSOURCES. None: every figure and phrase is an APPROX authored choice. The compass headings and the distance and age words are conventions of English, not a measurement.",
+  "_types": {},
+  "tables": {
+    "FOG_RULES": {
+      "exact_radius": 2,
+      "landmark_sight": 16,
+      "stale_ticks": 288,
+      "explore_steps": 12,
+      "near_landmark_cells": 15,
+      "max_labels": 5,
+      "label_letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    },
+    "FOG_PUBLIC_LANDMARKS": [
+      "market",
+      "church",
+      "wellhouse"
+    ],
+    "FOG_PLACE_WORDS": {
+      "market": "the market",
+      "church": "the church",
+      "wellhouse": "the well",
+      "home": "your home",
+      "field": "the fields",
+      "pasture": "the pasture",
+      "stone": "the quarry",
+      "lumber": "the woods",
+      "fish": "the river"
+    },
+    "FOG_WORDS": {
+      "directions": [
+        {
+          "code": "n",
+          "word": "north"
+        },
+        {
+          "code": "ne",
+          "word": "north-east"
+        },
+        {
+          "code": "e",
+          "word": "east"
+        },
+        {
+          "code": "se",
+          "word": "south-east"
+        },
+        {
+          "code": "s",
+          "word": "south"
+        },
+        {
+          "code": "sw",
+          "word": "south-west"
+        },
+        {
+          "code": "w",
+          "word": "west"
+        },
+        {
+          "code": "nw",
+          "word": "north-west"
+        }
+      ],
+      "distances": [
+        {
+          "max_cells": 2,
+          "phrase": "right beside you",
+          "direction": false
+        },
+        {
+          "max_cells": 15,
+          "phrase": "a short walk",
+          "direction": true
+        },
+        {
+          "max_cells": 40,
+          "phrase": "a walk",
+          "direction": true
+        },
+        {
+          "max_cells": 100000,
+          "phrase": "a long way",
+          "direction": true
+        }
+      ],
+      "ages": [
+        {
+          "max_ticks": 8,
+          "phrase": "a moment ago"
+        },
+        {
+          "max_ticks": 96,
+          "phrase": "earlier today"
+        },
+        {
+          "max_ticks": 960,
+          "phrase": "a while ago"
+        },
+        {
+          "max_ticks": 4320,
+          "phrase": "some weeks ago"
+        },
+        {
+          "max_ticks": 8640,
+          "phrase": "a season ago"
+        },
+        {
+          "max_ticks": 100000000,
+          "phrase": "a long time ago"
+        }
+      ],
+      "label": "{word}, {where}",
+      "label_rough": "{word}, roughly {where}",
+      "label_near": ", near {place}",
+      "remembered": "as you remember it, {age}",
+      "path_between": "a path between {a} and {b}",
+      "spot": "a spot you know"
+    }
+  }
+}

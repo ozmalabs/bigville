@@ -490,7 +490,9 @@ def test_lesson_offer_is_a_backend_choice_and_world_does_not_infer_learning():
     assert accepted_world.known_references("Ben") == accepted_references
     assert refused_world.known_references("Ben") == refused_references
     assert accepted.dump_held_state("Ben")["memories"][-1]["content"] == "germination"
-    assert refused.dump_held_state("Ben")["memories"] == []
+    # Phase 053: Ben is a fogged (human) resident, so the held state carries its map record. No lesson is learned.
+    held = [m for m in refused.dump_held_state("Ben")["memories"] if m["kind"] != "map_memory"]
+    assert held == []
 
 
 def test_reference_priors_are_explicit_private_character_memory():
