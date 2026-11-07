@@ -37,6 +37,11 @@ _PHYSICAL_EVENTS_LOCK = threading.RLock()
 
 _EXECUTORS = frozenset({"serial", "threaded", "partitioned"})
 _TURN_SEMANTICS = frozenset({"sequential", "simultaneous"})
+# LA01: "menu" is the historical exhaustive affordance menu; "lazy" is the
+# opt-in observation/proposal path.  In LA01 lazy is a placeholder that still
+# builds the menu, so the flag only selects the seam; the play path is
+# unchanged either way.
+_AFFORDANCE_MODES = frozenset({"menu", "lazy"})
 
 
 def _default_simultaneous_priority(game, actor, index):
@@ -111,6 +116,22 @@ class BigvilleGame:
     # first-committer-wins turn and the default.
     _turn_semantics = "sequential"
     _simultaneous_priority = None
+    # LA01: how a context obtains its legal action space.  "menu" keeps the
+    # exhaustive per-turn menu (the default); "lazy" is the opt-in seam that
+    # later phases will use for observation/proposal/validation.
+    _affordance_mode = "menu"
+
+    @property
+    def affordance_mode(self) -> str:
+        return self._affordance_mode
+
+    @affordance_mode.setter
+    def affordance_mode(self, value: str) -> None:
+        if value not in _AFFORDANCE_MODES:
+            raise ValueError(
+                f"affordance_mode must be one of {sorted(_AFFORDANCE_MODES)}, "
+                f"got {value!r}")
+        self._affordance_mode = value
 
     @property
     def turn_semantics(self) -> str:
@@ -160,7 +181,8 @@ class BigvilleGame:
                  ticks_per_period: int | str | None = "world",
                  tick_graph_enabled: bool | None = None,
                  executor: str = "serial", executor_workers: int = 4,
-                 turn_semantics: str = "sequential", simultaneous_priority=None):
+                 turn_semantics: str = "sequential", simultaneous_priority=None,
+                 affordance_mode: str = "menu"):
         if ticks_per_period == "world":
             # Read the period length from the world's data pack (TIME); worlds
             # without a pack keep the historical 96-tick day.
@@ -178,6 +200,7 @@ class BigvilleGame:
         self.executor_workers = executor_workers
         self.turn_semantics = turn_semantics
         self.simultaneous_priority = simultaneous_priority
+        self.affordance_mode = affordance_mode
         self.world._autonomous_actors = False
         self.conversation_interface = TemplateConversationInterface()
         self.world.set_conversation_adapter(self._adapt_speech)
@@ -609,10 +632,22 @@ class BigvilleGame:
         return build_agent_view(self, actor, mode=mode)
 
     def _context(self, actor: str, *, practice_window=None,
-                 snapshot: _DecisionSnapshot | None = None) -> ActorContext:
+                 snapshot: _DecisionSnapshot | None = None,
+                 skip_affordances: bool = False) -> ActorContext:
+        """Build one actor's decision context.
+
+        ``skip_affordances`` is the LA01 measurement seam, used only by the
+        benchmark and tests: it omits ``actor_affordances()`` (the exhaustive
+        menu, which also populates ``_actor_targets``) and leaves
+        ``context.affordances`` empty.  Normal calls are unchanged, and the
+        game step does not pass it yet.
+        """
         character = self.characters[actor]
         attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
-        affordances = self.world.actor_affordances(actor)
+        if skip_affordances:
+            affordances = []
+        else:
+            affordances = self.world.actor_affordances(actor)
         position = self.world.actor_position(actor)
         nearby_residents = []
         if position is not None:

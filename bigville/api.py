@@ -46,7 +46,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                 cognition_factory=None, autonomous=False, ticks_per_period="world",
                 llm_provider=None, llm_log=True, llm_log_dir=None,
                 physical_subsystems=None, turn_semantics="sequential",
-                simultaneous_priority=None, executor="serial", executor_workers=4):
+                simultaneous_priority=None, executor="serial", executor_workers=4,
+                affordance_mode="menu"):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
@@ -78,7 +79,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                         ticks_per_period=ticks_per_period,
                         turn_semantics=turn_semantics,
                         simultaneous_priority=simultaneous_priority,
-                        executor=executor, executor_workers=executor_workers)
+                        executor=executor, executor_workers=executor_workers,
+                        affordance_mode=affordance_mode)
     scenario_backends = getattr(world, "_scenario_actor_backends", {})
     for name, character in game.characters.items():
         kind = "human" if name == game.player else scenario_backends.get(name, default_backend)
