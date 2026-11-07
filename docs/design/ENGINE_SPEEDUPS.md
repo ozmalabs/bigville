@@ -193,7 +193,7 @@ pass.
 | EN02 | complete | `44f3fb1` |
 | EN03 | complete | `7f71fbf` |
 | EN04 | complete | `a724d65` |
-| EN05 | implemented, uncommitted | — |
+| EN05 | complete | `9c17ad9` |
 
 EN05 adopts the combined rollout for autonomous simple/cheap sessions:
 `create_game` defaults `snapshot_mode="auto"` (on_demand) and

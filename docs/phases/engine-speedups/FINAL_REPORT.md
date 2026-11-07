@@ -13,7 +13,7 @@ reports: [EN01](EN01_REPORT.md), [EN02](EN02_REPORT.md), [EN03](EN03_REPORT.md),
 | EN02 | `44f3fb1` | `snapshot_mode` (`every_turn`/`on_demand`/`auto`), `snapshot(include_report=...)`, report-free headless turns | snapshot cost 0 in on_demand; `finish` −47% to −84%; node reads −2% to −7% |
 | EN03 | `7f71fbf` | `rule_batching` (`action`/`turn`), one authoritative finish sweep, re-entrant world batch scope | `_run`/turn actions+3 → 3; commit excluding finish −89% to −93%; step −35% to −58% |
 | EN04 | `a724d65` | serial graph fast reads, `node_attrs`, decision-scope proximity/observation/body caches, occupancy buckets | step −32% to −40%; context −57% to −62%; node calls −55% to −60%; `actors_near` −20% |
-| EN05 | uncommitted | combined evaluation; `create_game` auto defaults for snapshot and rule batching; rule-batching auto resolution; docs and final report | new vs legacy: step −55%/−55%/−66%, wall −55%/−40%/−55% at 50/100/200 |
+| EN05 | `9c17ad9` | combined evaluation; `create_game` auto defaults for snapshot and rule batching; rule-batching auto resolution; docs and final report | new vs legacy: step −55%/−55%/−66%, wall −55%/−40%/−55% at 50/100/200 |
 
 ## Measured speedups
 
