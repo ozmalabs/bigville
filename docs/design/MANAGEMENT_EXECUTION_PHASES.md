@@ -40,9 +40,9 @@ This conservative sequence avoids simultaneous edits to the server and UI. The s
 | M09 | done; full suite passed (1620 passed, 1 skipped) | templates and versioned reuse |
 | M10 | done; full suite passed (1633 passed, 1 skipped) | backend profiles and actor assignments |
 | M11 | done; full suite passed (1676 passed, 1 skipped) | configurable cast generation and backend splits |
-| M11A | integrated; full-suite gate pending | supported physical subsystem controls |
-| M11B | integrated; full-suite gate pending | human-controlled sessions |
-| M12 | ready; M08 and M11B integrated | comparison and end-to-end release audit |
+| M11A | done; combined full suite passed (1876 passed, 2 skipped) | supported physical subsystem controls |
+| M11B | done; combined full suite passed (1876 passed, 2 skipped) | human-controlled sessions |
+| M12 | done; combined full suite passed (1876 passed, 2 skipped) | comparison and end-to-end release audit |
 
 ## M01 — Capability catalog and server skeleton
 
