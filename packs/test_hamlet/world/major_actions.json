@@ -23,6 +23,18 @@
         "kind": "violence",
         "description": "Strike a person standing on your cell with your bare hands. Name the target and an intensity (1.0 is a normal blow; less is a pull, more forces it). The blow's harm and its cost come from your strength, size, skill and stamina, against what the target does: it may resist, brace, step away, or take the blow. A blow with little stamina left lands weakly. The world records the blow as a physical event for those who can see you; it does not judge whether the blow was justified."
       },
+      "restrain": {
+        "kind": "contest",
+        "description": "Take hold of a person standing on your cell, to keep them where they are. They may resist, brace, yield, or step away; the outcome depends on strength, size, skill and stamina. While you hold them they cannot walk, and you cannot walk either until you let go. Holding costs stamina each turn for both of you. The world records the grab for those who can see it; it does not judge whether the holding is justified."
+      },
+      "release": {
+        "kind": "contest",
+        "description": "Let go of the person you are holding. Their hold ends, and both of you may walk again."
+      },
+      "struggle": {
+        "kind": "contest",
+        "description": "While someone holds you, try to pull free. The outcome depends on your strength, size, skill and stamina against theirs. Winning frees you; losing leaves you held. Both of you spend stamina on the struggle."
+      },
       "put": {
         "kind": "placement",
         "description": "Place a held good into a container or onto a surface within reach."

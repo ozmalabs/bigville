@@ -1,0 +1,5 @@
+{"turns": 192, "ticks_per_period": 96, "deaths": 0, "first_death_turn": null, "causes": {}, "sample": []}
+
+real	6m15.466s
+user	6m15.750s
+sys	0m0.351s

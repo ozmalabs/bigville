@@ -174,6 +174,13 @@ class DeterministicBackend:
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self._update_goals(context)
+        # Phase 033: a held resident's one way out is a struggle, so it struggles before anything else. The
+        # cheap policy never restrains anyone, and it does not choose release (no release policy yet).
+        if any(option.get("action") == "struggle" for option in context.affordances):
+            self.last_choice = {"action": "struggle", "goal": self.current_goal.kind if self.current_goal else "observe",
+                                "time_band": self.time_band, "reason": "held_struggle"}
+            return ActorResponse(major_action=ProposedAction("struggle", {}, "cheap_psi_can"),
+                                 utterances=self._speech(context))
         hunger = float(context.observations.get("hunger", 0.0))
         energy = float(context.observations.get("energy", 100.0))
         known_recipes = {
@@ -191,7 +198,7 @@ class DeterministicBackend:
             if option.get("action") == "eat" and option.get("kind") and _feeds(option)
         }
         options = [o for o in context.affordances
-                   if o.get("action") not in {"rest", "", "sleep", "joint"}
+                   if o.get("action") not in {"rest", "", "sleep", "joint", "release"}
                    and (self.policy.allow_transfers or o.get("action") != "transfer")
                    and (o.get("stock_source") != "town" or
                         (self.policy.allow_stock_fetches and

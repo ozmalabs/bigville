@@ -1998,6 +1998,9 @@ class BigvilleWorld:
             return None
         # The band is read before this walker's own effort is spent, so a step is taken at the pace the
         # resident had when they set off (Phase 024).
+        # Phase 033: a restrained resident cannot walk, and neither can one who is holding someone.
+        if self.holder_of(actor) is not None or self.holding_of(actor) is not None:
+            return current
         band = self._exhaustion_band(actor)
         if band["stopped"]:
             # Too exhausted to walk (Phase 024): no step, no effort. The walk is refused before this point.
@@ -7991,6 +7994,14 @@ class BigvilleWorld:
                                 "target": target_key(start), "resumes_job": True, "score": 0.0})
             for option in options:
                 option["job_paused"] = True
+        # Phase 033: a held resident may struggle free, and a holder may let go. While either holds, no travel is
+        # offered (the walk is refused, Phase 033), so the published options stay legal.
+        if self.holder_of(actor) is not None:
+            options.append({"action": "struggle", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
+        if self.holding_of(actor) is not None:
+            options.append({"action": "release", "kind": "", "trade": "", "recipe": "", "target": "", "score": 0.0})
+        if self.holder_of(actor) is not None or self.holding_of(actor) is not None:
+            options = [option for option in options if option.get("action") != "move"]
         band = self._exhaustion_band(actor)
         if band["below_e_low"]:
             # Phase 024: a resident too exhausted to walk (reserve below e_low) is offered no travel. Phase 049: the walk
@@ -8076,7 +8087,7 @@ class BigvilleWorld:
             (action == "move" and plan.get("destination") is not None)
             or action in {"rest", "eat", "work", "move_object"}
             or (action == "transfer" and plan.get("recipient"))
-            or (action == "take") or (action == "strike")
+            or (action == "take") or (action == "strike") or action in ("restrain", "release", "struggle")
         )
         if needs_targets:
             self._actor_options(actor)
@@ -8111,6 +8122,13 @@ class BigvilleWorld:
         if action == "strike":
             return self.major_action(actor, "strike", target=plan.get("target"),
                                      intensity=plan.get("intensity", 1.0))
+        if action == "restrain":
+            # Phase 033: a grab on a resident in reach (a reaction turn when the game runs it, none here).
+            return self.major_action(actor, "restrain", target=plan.get("target"))
+        if action == "release":
+            return self.major_action(actor, "release")
+        if action == "struggle":
+            return self.major_action(actor, "struggle")
         if action in {"transfer", "take"}:
             if action == "transfer":
                 recipient = plan.get("recipient") or target_of()
@@ -8763,6 +8781,11 @@ class BigvilleWorld:
         if actor not in self._actors:
             return self._refuse("unknown_target")
         if action == "move":
+            # Phase 033: a held resident and a resident holding someone cannot walk.
+            if self.holder_of(actor) is not None:
+                return self._refuse("restrained")
+            if self.holding_of(actor) is not None:
+                return self._refuse("holding")
             destination = kwargs.get("destination", args[0] if args else None)
             current = self.actor_position(actor)
             if not isinstance(destination, (int, tuple)):
@@ -8835,6 +8858,22 @@ class BigvilleWorld:
             if not applied:
                 self._refusal_code = code
             return applied
+        if action == "restrain":
+            # Phase 033: a grab without a game is a restraint the target does not answer (no reaction).
+            plan = {"target": kwargs.get("target", args[0] if args else None)}
+            pending, code = self.restrain_begin(actor, plan)
+            if pending is None:
+                return self._refuse(code)
+            applied, code = self.restrain_resolve(pending, None)
+            if not applied:
+                self._refusal_code = code
+            return applied
+        if action == "release":
+            if self.holding_of(actor) is None:
+                return self._refuse("not_holding")
+            return self._claimed_attempt(actor, "release", lambda: self._release_held(actor))
+        if action == "struggle":
+            return self.struggle(actor)
         if action == "put":
             container = self._as_key(kwargs.get("container", args[0] if args else None))
             kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
@@ -9790,6 +9829,8 @@ class BigvilleWorld:
             # Last, so every crossing this turn is counted before untrodden
             # ground grows back.
             self._terrain_recovery_tick()
+            # Phase 033: each tick of a restraint costs the holder and the held resident by the contest rule.
+            self._holds_tick()
 
     def run_turns(self, n=1):
         """Advance unified actor turns; an alias with an explicit simulation name."""
@@ -10912,6 +10953,8 @@ class BigvilleWorld:
         ``pending["result"]``. A reaction the target was not offered is treated as no reaction."""
         if pending.get("action") == "strike":
             return self.strike_resolve(pending, reaction)
+        if pending.get("action") == "restrain":
+            return self.restrain_resolve(pending, reaction)
         if self._contest is pending:
             self._contest = None
         ct = self.E.CONTEST
@@ -11023,6 +11066,8 @@ class BigvilleWorld:
         """The begin step of a contested major action: `take` (Phase 029) or `strike` (Phase 038)."""
         if action == "strike":
             return self.strike_begin(actor, plan)
+        if action == "restrain":
+            return self.restrain_begin(actor, plan)
         return self.take_begin(actor, plan)
 
     def strike_begin(self, actor, plan):
@@ -11176,6 +11221,209 @@ class BigvilleWorld:
         if redirected:
             self.harm(attacker, float(ct["redirect_harm"]) * intensity, "violence")
         return True, None
+
+    # ---------------------------------------------- restraint (Phase 033)
+    # A restraint is a grab by one resident on another standing on the same cell (reach is the cell, as for a
+    # take). It reuses the contest: the grab's power is the holder's score, the held resident's hold is its resist
+    # or brace score (a passive grip when it does not react, none when it yields), and the grab holds on a decisive
+    # margin. A held resident cannot walk, and neither can the holder. Each tick of holding costs both awake sides
+    # by the contest's effort rule, each bearing the other's passive grip. A struggle is the held resident's major
+    # action: it frees them on a decisive margin, and the holder's active hold keeps them otherwise. The hold is two
+    # attributes on the two actor nodes (`held_by`, `holding`), so the graph keeps it. Nothing here is random, and no
+    # custody, arrest or crime is recorded: the residents' institutions own those.
+    def holder_of(self, target):
+        """The resident holding `target` in a restraint, or None."""
+        if not isinstance(target, str) or target not in self._actors:
+            return None
+        return str(self.eng.node(self._actors[target])["attrs"].get("held_by", "")) or None
+
+    def holding_of(self, holder):
+        """The resident that `holder` is restraining, or None."""
+        if not isinstance(holder, str) or holder not in self._actors:
+            return None
+        return str(self.eng.node(self._actors[holder])["attrs"].get("holding", "")) or None
+
+    def _set_hold(self, holder, target):
+        self.eng.set_attr(self._actors[target], "held_by", str(holder))
+        self.eng.set_attr(self._actors[holder], "holding", str(target))
+
+    def _clear_hold(self, holder, target):
+        if holder in self._actors and self.holding_of(holder) == target:
+            self.eng.set_attr(self._actors[holder], "holding", "")
+        if target in self._actors and self.holder_of(target) == holder:
+            self.eng.set_attr(self._actors[target], "held_by", "")
+
+    def restrain_begin(self, actor, plan):
+        """Start a restraint by `actor` on `plan["target"]`, who must stand on the actor's cell.
+
+        Returns (pending, None) with the target's reaction offer, or (None, reason) when refused: an unknown
+        resident, the actor itself, a dead person, someone off the cell, someone already held, an actor who is
+        already holding someone, a sleeping actor, or a used action slot. Nothing is claimed on a refusal."""
+        self._contest = None
+        if actor not in self._actors:
+            return None, "unknown_target"
+        sleep_code = self._sleep_code(actor)
+        if sleep_code is not None:
+            return None, sleep_code
+        plan = plan if isinstance(plan, dict) else {}
+        target = self._as_key(plan.get("target"))
+        if target is None:
+            return None, "malformed"
+        if target not in self._actors or target == actor:
+            return None, "unknown_target" if target not in self._actors else "wrong_target"
+        if not self.is_alive(target):
+            return None, "wrong_target"
+        here, there = self.actor_position(actor), self.actor_position(target)
+        if here is None or here != there:
+            return None, "not_in_reach"
+        if self.holding_of(actor) is not None:
+            return None, "already_holding"
+        if self.holder_of(target) is not None:
+            return None, "already_restrained"
+        attrs = self.eng.node(self._actor(actor))["attrs"]
+        before = {"major_action_used": attrs.get("major_action_used", 0.0),
+                  "major_action_kind": attrs.get("major_action_kind", ""),
+                  "last_major_action": attrs.get("last_major_action", "")}
+        if not self._claim_major_action(actor, "restrain"):
+            return None, "slot_used"
+        attacker_side = self._contest_side(actor)
+        target_side = self._contest_side(target)
+        pending = {
+            "action": "restrain", "attacker": str(actor), "target": str(target),
+            "kind": "grip", "kind_is_item": False, "by": "hands", "amount": 1.0,
+            "turn": int(self._turn),
+            "witnesses": self._strike_witnesses(actor),
+            "slot_before": before, "slot_record": self._turn_actions[actor][-1],
+            "attacker_side": attacker_side, "target_side": target_side,
+            "offer": self._contest_offer(actor, target, attacker_side, target_side),
+            "result": None,
+        }
+        self._contest = pending
+        return pending, None
+
+    def restrain_resolve(self, pending, reaction=None):
+        """Resolve a pending restraint once the target has chosen its reaction (or None for none).
+
+        Returns (applied, reason). applied is True when the target is now held. A target that stepped out of reach
+        gives (False, "evaded"); a grab that does not win gives (False, "slipped"). The stamina is paid either way.
+        The full result is kept in ``pending["result"]``."""
+        if self._contest is pending:
+            self._contest = None
+        ct = self.E.CONTEST
+        attacker, target = pending["attacker"], pending["target"]
+        offer = pending["offer"]
+        choice = reaction if (offer["eligible"] and reaction in offer["options"]) else None
+        A, T = pending["attacker_side"], pending["target_side"]
+        base, grip, tw = float(ct["base_cost"]), float(ct["grip"]), float(ct["technique_weight"])
+        trivial, slot_above = float(ct["trivial_below"]), float(ct["slot_above"])
+        penalty = float(offer["penalty"]) if choice is not None else 1.0
+        result = {"action": "restrain", "reaction": choice or "", "outcome": "", "applied": False, "reason": "",
+                  "late": bool(offer["late"]) if choice is not None else False,
+                  "attacker_cost": 0.0, "target_cost": 0.0}
+        pending["result"] = result
+        if choice == "evade":
+            share_t = self._contest_share(A["force"], T["force"], T["skill"])
+            cost_t = base * share_t if share_t >= trivial else 0.0
+            self._contest_spend(target, cost_t)
+            self._move_actor_to(target, offer["evade_cell"])
+            result.update(outcome="evaded", reason="evaded", target_cost=cost_t)
+            self._release_contest_slot(pending)
+            self._contest_practice_after(pending, choice)
+            self._record_sight(attacker, "restrain", pending["witnesses"])
+            return False, "evaded"
+        # What the held resident's hold stops, and what it brings to bear (its load on the grab's holder).
+        if choice == "yield":
+            brought, hold = 0.0, 0.0
+        elif choice is None:
+            brought, hold = grip * T["force"], grip * T["force"]
+        elif choice == "resist":
+            brought, hold = T["force"], T["force"] * (1.0 + tw * T["skill"]) * penalty
+        else:  # brace: a technique-assisted hold; it bears the grab but brings grip x force
+            brought, hold = grip * T["force"], grip * T["force"] * (1.0 + tw * T["skill"]) * penalty
+        att = A["score"]
+        total = att + hold
+        margin = 0.0 if total <= 0.0 else (att - hold) / total
+        share_a = self._contest_share(brought, A["force"], A["skill"])
+        cost_a = base * share_a if share_a >= trivial else 0.0
+        share_t = self._contest_share(A["force"], T["force"], T["skill"])
+        cost_t = base * share_t if (choice in ("resist", "brace") and share_t >= trivial) else 0.0
+        self._contest_spend(attacker, cost_a)
+        self._contest_spend(target, cost_t)
+        if choice in ("resist", "brace") and not offer["late"] and share_t >= slot_above:
+            self._claim_major_action(target, choice)
+        self._contest_practice_after(pending, choice)
+        result.update(attacker_cost=cost_a, target_cost=cost_t)
+        self._record_sight(attacker, "restrain", pending["witnesses"])
+        if margin >= float(ct["decisive_margin"]):
+            self._set_hold(attacker, target)
+            result.update(outcome="restrained", applied=True)
+            return True, None
+        result.update(outcome="slipped", reason="slipped")
+        self._release_contest_slot(pending)
+        return False, "slipped"
+
+    def _release_held(self, holder):
+        """The holder lets go: the hold ends, and those who can see the holder see it."""
+        target = self.holding_of(holder)
+        self._clear_hold(holder, target)
+        self._record_sight(holder, "release", self._strike_witnesses(holder))
+        return True
+
+    def struggle(self, actor):
+        """The held resident's struggle, one major action (Phase 033). Returns True when it frees the resident.
+
+        The struggler's score is its full force with technique, against the holder's active hold (its full force
+        with technique). A decisive margin frees the struggler and ends the hold; otherwise the hold stands and the
+        struggle is refused as `pinned`. Both sides pay the load the other brings to bear, and the action slot is
+        spent either way."""
+        holder = self.holder_of(actor)
+        if holder is None:
+            return self._refuse("not_restrained")
+        if not self._claim_major_action(actor, "struggle"):
+            return self._refuse("slot_used")
+        ct = self.E.CONTEST
+        base, tw = float(ct["base_cost"]), float(ct["technique_weight"])
+        trivial = float(ct["trivial_below"])
+        A, H = self._contest_side(actor), self._contest_side(holder)
+        att = A["score"]
+        hold = H["force"] * (1.0 + tw * H["skill"])
+        total = att + hold
+        margin = 0.0 if total <= 0.0 else (att - hold) / total
+        share_a = self._contest_share(H["force"], A["force"], A["skill"])
+        share_h = self._contest_share(A["force"], H["force"], H["skill"])
+        self._contest_spend(actor, base * share_a if share_a >= trivial else 0.0)
+        self._contest_spend(holder, base * share_h if share_h >= trivial else 0.0)
+        for name in (actor, holder):
+            self._contest_log_practice(name, float(ct["practice_minutes"]))
+        self._record_sight(actor, "struggle", self._strike_witnesses(actor))
+        if margin >= float(ct["decisive_margin"]):
+            self._clear_hold(holder, actor)
+            return True
+        return self._refuse("pinned")
+
+    def _holds_tick(self):
+        """One tick of every restraint. The hold ends when the holder or the held resident is dead, the holder is
+        asleep or collapsed, or they no longer share a cell. Otherwise each awake side pays for the passive grip the
+        other brings to bear, by the contest's effort rule, and the hold ends if that leaves the holder collapsed."""
+        ct = self.E.CONTEST
+        base, grip, trivial = float(ct["base_cost"]), float(ct["grip"]), float(ct["trivial_below"])
+        for target in list(self._actors):
+            holder = self.holder_of(target)
+            if holder is None:
+                continue
+            if (self.holding_of(holder) != target or not self.is_alive(holder) or not self.is_alive(target)
+                    or self._sleep_code(holder) is not None or self.actor_position(holder) is None
+                    or self.actor_position(holder) != self.actor_position(target)):
+                self._clear_hold(holder, target)
+                continue
+            H, T = self._contest_side(holder), self._contest_side(target)
+            share_h = self._contest_share(grip * T["force"], H["force"], H["skill"])
+            self._contest_spend(holder, base * share_h if share_h >= trivial else 0.0)
+            if self._sleep_code(target) is None:
+                share_t = self._contest_share(grip * H["force"], T["force"], T["skill"])
+                self._contest_spend(target, base * share_t if share_t >= trivial else 0.0)
+            if self._sleep_code(holder) is not None:
+                self._clear_hold(holder, target)
 
     def _sleep_code(self, actor):
         """'collapsed' or 'asleep' while the resident is down (refusal reasons), else None."""

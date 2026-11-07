@@ -95,6 +95,30 @@
       },
       "store_locked": {
         "description": "The town store is locked. You do not hold a key that opens it alone, so you cannot take from it, put into it, or use its stock."
+      },
+      "restrained": {
+        "description": "Someone is holding you, so you cannot walk away. The holder must let go, or you must win a struggle."
+      },
+      "holding": {
+        "description": "You are holding someone in your grip, so you cannot walk. Let them go first."
+      },
+      "already_holding": {
+        "description": "You are already holding someone. Let them go before you take hold of another."
+      },
+      "already_restrained": {
+        "description": "Someone else is already holding that person."
+      },
+      "not_holding": {
+        "description": "You are not holding anyone, so there is nothing to let go."
+      },
+      "not_restrained": {
+        "description": "No one is holding you, so there is nothing to struggle against."
+      },
+      "slipped": {
+        "description": "Your grab did not hold. The other resident pulled free before you took hold of them."
+      },
+      "pinned": {
+        "description": "Your struggle failed. The one holding you kept hold."
       }
     },
     "REFUSAL_LOG_LIMIT": 20

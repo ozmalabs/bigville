@@ -1038,6 +1038,13 @@ def _check_contest(errors, warnings, info):
         errors.append("MAJOR_ACTIONS: needs 'take' with a description (Phase 029)")
     if "strike" not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS["strike"].get("description", "")).strip():
         errors.append("MAJOR_ACTIONS: needs 'strike' with a description (Phase 038)")
+    for action in ("restrain", "release", "struggle"):
+        if action not in MAJOR_ACTIONS or not str(MAJOR_ACTIONS[action].get("description", "")).strip():
+            errors.append(f"MAJOR_ACTIONS: needs {action!r} with a description (Phase 033)")
+    for code in ("restrained", "holding", "already_holding", "already_restrained", "not_holding", "not_restrained",
+                 "slipped", "pinned"):
+        if code not in REFUSAL_REASONS:
+            errors.append(f"REFUSAL_REASONS: needs the restraint code {code!r} (Phase 033)")
     if "violence" not in HEALTH["causes"]:
         errors.append("HEALTH[causes]: 'violence' is missing (Phase 038 strikes)")
     for kind in ("take", "yield"):
