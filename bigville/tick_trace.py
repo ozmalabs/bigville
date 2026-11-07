@@ -14,6 +14,27 @@ The canonical encoder keeps container and reference types explicit. It handles
 stringifies dictionary keys before sorting, so the digest does not depend on
 dictionary insertion order or Python's set iteration order. Unknown values fail
 loudly instead of silently falling back to ``repr``/``str``.
+
+TG05 semantic oracle
+--------------------
+``step_trace`` hashes the canonical graph checkpoint byte-for-byte, including
+node ids.  The threaded executor commits independent actor units concurrently,
+so node ids (and the insertion order of a few logs) may differ from a serial
+run even when every observable fact matches.  ``semantic_world_state`` and
+``step_semantic_trace`` therefore hash a normalised ``world.export_state``
+projection instead:
+
+- the volatile ``id`` is dropped from ``utterances`` entries (it is the raw
+  graph node id);
+- ``events``, ``articles``, ``editions``, ``handovers``, ``proposals``,
+  ``cases``, ``animals``, ``fences`` and ``enclosures`` are sorted by their
+  canonical JSON, so log insertion order is irrelevant;
+- every other field of the export is kept intact.
+
+This proves *semantic* equivalence: proposals, results, errors, continuations,
+actor/world observable state and counters match.  It deliberately does not
+claim byte-identical graph node ids or internal list insertion order.  The
+default ``step_trace``/``TurnTrace`` behaviour and digests are unchanged.
 """
 from __future__ import annotations
 
@@ -109,12 +130,8 @@ def _utterance(value: Any) -> Any:
     return canonical(str(value))
 
 
-def step_trace(game) -> dict[str, Any]:
-    """Record everything the equivalence oracle needs about the last turn.
-
-    Call this after a successful ``game.step()``. It reads the game and the
-    canonical world graph only; it never mutates either.
-    """
+def _trace_fields(game) -> dict[str, Any]:
+    """The turn fields common to the strict and semantic traces."""
     responses: dict[str, Any] = {}
     for actor, response in sorted(getattr(game, "last_responses", {}).items()):
         action = getattr(response, "major_action", None)
@@ -133,7 +150,6 @@ def step_trace(game) -> dict[str, Any]:
         continuations[str(actor)] = (
             None if request is None else canonical(request.to_dict()))
 
-    checkpoint = game.world.eng.to_checkpoint_dict()
     return {
         "turn": int(game.world._turn),
         "order": [str(actor) for actor in getattr(game, "last_order", [])],
@@ -143,8 +159,62 @@ def step_trace(game) -> dict[str, Any]:
         "errors": {str(actor): str(error)
                    for actor, error in sorted(getattr(game, "last_errors", {}).items())},
         "continuations": continuations,
-        "world_sha256": value_digest(checkpoint),
     }
+
+
+def step_trace(game) -> dict[str, Any]:
+    """Record everything the equivalence oracle needs about the last turn.
+
+    Call this after a successful ``game.step()``. It reads the game and the
+    canonical world graph only; it never mutates either.  This is the strict
+    oracle: its ``world_sha256`` covers the raw graph checkpoint, including
+    node ids.
+    """
+    record = _trace_fields(game)
+    record["world_sha256"] = value_digest(game.world.eng.to_checkpoint_dict())
+    return record
+
+
+# Projection lists whose internal insertion order is not part of the observable
+# world.  Each is sorted by canonical JSON in ``semantic_world_state``.
+_SORTED_EXPORT_LISTS = (
+    "events", "articles", "editions", "handovers", "proposals", "cases",
+    "animals", "fences", "enclosures",
+)
+
+
+def semantic_world_state(world) -> dict[str, Any]:
+    """A normalised, node-id-free projection of ``world.export_state``.
+
+    Node ids are an internal allocation detail: a threaded commit may mint the
+    same logical nodes in a different order.  The projection removes only the
+    utterance node id and sorts the log-like lists whose insertion order is not
+    an observable fact.  Everything else in the export is preserved.
+    """
+    state = world.export_state(event_tail=None)
+    utterances = state.get("utterances")
+    if isinstance(utterances, list):
+        state["utterances"] = [
+            {key: value for key, value in entry.items() if key != "id"}
+            if isinstance(entry, dict) else entry
+            for entry in utterances
+        ]
+    for key in _SORTED_EXPORT_LISTS:
+        entries = state.get(key)
+        if isinstance(entries, list):
+            state[key] = sorted(entries, key=canonical_json)
+    return state
+
+
+def semantic_step_trace(game) -> dict[str, Any]:
+    """Record the last turn with the semantic (node-id-free) world digest."""
+    record = _trace_fields(game)
+    record["world_sha256"] = value_digest(semantic_world_state(game.world))
+    return record
+
+
+# A clearer alias used by the TG05 executor tests.
+step_semantic_trace = semantic_step_trace
 
 
 class TurnTrace:

@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+import threading
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
@@ -19,12 +20,20 @@ from .backends.protocol import communication_capabilities
 from .concurrency import decide_pooled
 from .character import CharacterDefinition, FrameSeed, MemoryRecord
 from worlds.bigville_bond_world import BigvilleBondWorld
-from worlds.tick_graph import TickGraph, build_tick_graph
+from worlds.tick_graph import Resource, TickGraph, build_tick_graph
 from domains.data_view import world_entities
 
 
 _WAITING = object()   # a reaction that a human holder has not yet given
 _MISSING = object()   # an absent per-actor entry, e.g. no published practice window
+
+# TG05: actor units append one-turn witness records to ``_physical_events``.
+# The list per observer is shared session state, so appends are guarded.  The
+# lock is module level and never checkpointed, and it is never held while
+# calling into the world (the world may take the graph lock in the meantime).
+_PHYSICAL_EVENTS_LOCK = threading.RLock()
+
+_EXECUTORS = frozenset({"serial", "threaded"})
 
 
 @dataclass
@@ -75,13 +84,38 @@ class BigvilleGame:
     tick_graph_enabled = True
     # The graph built for the last advanced turn (None when disabled or waiting).
     last_tick_graph: TickGraph | None = None
+    # TG05: opt-in commit executor.  "serial" (default) is the historical loop;
+    # "threaded" commits declared-independent actor units in a bounded pool.
+    _executor = "serial"
+    _executor_workers = 4
+
+    @property
+    def executor(self) -> str:
+        return self._executor
+
+    @executor.setter
+    def executor(self, value: str) -> None:
+        if value not in _EXECUTORS:
+            raise ValueError(f"executor must be one of {sorted(_EXECUTORS)}, got {value!r}")
+        self._executor = value
+
+    @property
+    def executor_workers(self) -> int:
+        return self._executor_workers
+
+    @executor_workers.setter
+    def executor_workers(self, value: int) -> None:
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            raise ValueError("executor_workers must be a positive integer")
+        self._executor_workers = value
 
     def __init__(self, world, *, player: str | None = None,
                  characters: dict[str, CharacterDefinition] | None = None,
                  backends: dict[str, Any] | None = None,
                  continuations: bool = True, autonomous: bool = False,
                  ticks_per_period: int | str | None = "world",
-                 tick_graph_enabled: bool | None = None):
+                 tick_graph_enabled: bool | None = None,
+                 executor: str = "serial", executor_workers: int = 4):
         if ticks_per_period == "world":
             # Read the period length from the world's data pack (TIME); worlds
             # without a pack keep the historical 96-tick day.
@@ -95,6 +129,8 @@ class BigvilleGame:
         self.ticks_per_period = ticks_per_period
         if tick_graph_enabled is not None:
             self.tick_graph_enabled = bool(tick_graph_enabled)
+        self.executor = executor
+        self.executor_workers = executor_workers
         self.world._autonomous_actors = False
         self.conversation_interface = TemplateConversationInterface()
         self.world.set_conversation_adapter(self._adapt_speech)
@@ -681,16 +717,17 @@ class BigvilleGame:
                             or self.world.distance(actor_pos, observer_pos) is None
                             or self.world.distance(actor_pos, observer_pos) > 1):
                         continue
-                self._physical_events.setdefault(observer, []).append({
-                    "actor": actor, "action": "moved_object", "object": object_id,
-                    "from": old, "to": new,
-                    "turn": turn,
-                    # Available to the next decision pass, then dropped when
-                    # the world turn advances again.
-                    "expires_turn": turn,
-                })
+                with _PHYSICAL_EVENTS_LOCK:
+                    self._physical_events.setdefault(observer, []).append({
+                        "actor": actor, "action": "moved_object", "object": object_id,
+                        "from": old, "to": new,
+                        "turn": turn,
+                        # Available to the next decision pass, then dropped when
+                        # the world turn advances again.
+                        "expires_turn": turn,
+                    })
 
-    def _record_speech_witnesses(self, actor, first_utterance):
+    def _record_speech_witnesses(self, actor, first_utterance, *, only_speaker=False):
         """Publish one speech act to the residents who witnessed it (Phase 028).
 
         Utterances from `first_utterance` on (the position in the world's utterance log before this
@@ -699,10 +736,19 @@ class BigvilleGame:
         goes into it. A resident who heard the speech but did not see the speaker gets no event. The speaker
         gets no event either: the speaker knows what was said, and the delivery records of others are not the
         speaker's to see.
+
+        TG05: the threaded executor passes ``only_speaker=True``.  Independent
+        residents may append to the shared utterance log while this unit runs,
+        so the positional slice can contain another speaker's utterance.  The
+        serial call keeps the historical positional behaviour.
         """
         turn = int(self.world._turn)
-        for node in list(self.world._utterances.values())[first_utterance:]:
+        reader = getattr(self.world, "utterances_from", None)
+        nodes = reader(first_utterance) if callable(reader) else list(self.world._utterances.values())[first_utterance:]
+        for node in nodes:
             attrs = self.world.eng.node(node)["attrs"]
+            if only_speaker and str(attrs.get("speaker", "")) != str(actor):
+                continue
             target = str(attrs.get("target", ""))
             for observer, delivery in dict(attrs.get("deliveries") or {}).items():
                 if observer == actor or not float(delivery.get("seen", 0.0)):
@@ -710,7 +756,8 @@ class BigvilleGame:
                 event = {"actor": actor, "action": "spoke", "turn": turn, "expires_turn": turn}
                 if target and float(delivery.get("target_seen", 0.0)):
                     event["target"] = target
-                self._physical_events.setdefault(observer, []).append(event)
+                with _PHYSICAL_EVENTS_LOCK:
+                    self._physical_events.setdefault(observer, []).append(event)
 
     def _adapt_speech(self, speaker, target, content, message=None, raw_data=None,
                       backend_owned=False):
@@ -1115,7 +1162,16 @@ class BigvilleGame:
         """Apply each actor's response in ``order`` from position ``start``, then finish the turn.
 
         Returns waiting when a human target must react to a contested take. The turn then resumes on the
-        next step (``_resume_suspended``)."""
+        next step (``_resume_suspended``).
+
+        TG05: when ``executor="threaded"`` the declared-independent actor units
+        may commit concurrently.  Anything whose result depends on strict turn
+        ordering stays on the historical serial loop: a resumed turn
+        (``start != 0``), a contest (which may suspend for a human reaction),
+        or a turn with no tick graph.  The default remains ``executor="serial"``.
+        """
+        if self._threaded_eligible(order, responses, start):
+            return self._apply_turn_threaded(order, responses)
         for index in range(start, len(order)):
             actor = order[index]
             response = responses[actor]
@@ -1156,6 +1212,189 @@ class BigvilleGame:
                 after = {name: self._visible_object_snapshot(name) for name in before}
                 self._record_physical_changes(actor, before, after, int(self.world._turn))
         return self._finish_turn(responses)
+
+    # ---------------------------------------------------- TG05 threaded commit
+    def _threaded_eligible(self, order, responses, start) -> bool:
+        """Whether this turn can use the declared-independent threaded commit."""
+        if self.executor != "threaded":
+            return False
+        if start != 0:
+            return False
+        if self.last_tick_graph is None:
+            return False
+        for actor in order:
+            response = responses[actor]
+            if self._is_contest(response):
+                return False
+        return True
+
+    def _unit_resources(self, graph, actor, response=None):
+        """The union of read/write resources of every operation owned by ``actor``.
+
+        A joint member has no individual major operation: joints were resolved
+        before commit, so only that member's speech and memory operations are
+        left.  Their resources are still declared.
+        """
+        resources = set()
+        global_write = False
+        major = getattr(response, "major_action", None) is not None
+        for operation in graph.operations:
+            if operation.kind == "joint" or operation.actor != actor:
+                continue
+            resources.update(operation.reads)
+            resources.update(operation.writes)
+            if Resource("world", "global") in operation.writes:
+                global_write = True
+            # TG05: the TG04 speech operation only declares the utterance log.
+            # In the world, delivery (`_speech_deliveries`) reads every actor's
+            # position and sight, the clock's light and the target's presence,
+            # none of which the pure graph can observe.  A speech unit is
+            # therefore conservatively a global unit.
+            if operation.kind == "speak":
+                global_write = True
+        # TG05: an object-moving unit records a witness event for every resident
+        # within one cell.  Two units in different cells can still affect the
+        # same observer's event list even when their object/item resources are
+        # disjoint, so a shared observer is a conflict resource.  Without this,
+        # a threaded turn could attribute one actor's object movement to another.
+        if major and getattr(self.world, "_physical_objects", None):
+            position = self.world.actor_position(actor)
+            if position is not None:
+                observers = {actor, *self.world.actors_near(position, 1,
+                                                             alive_only=False)}
+                resources.update(Resource("witness", name) for name in observers)
+        return resources, global_write
+
+    def _commit_components(self, order, responses):
+        """Union units that share a resource, then return components in turn order."""
+        graph = self.last_tick_graph
+        units = {}
+        global_writers = []
+        for index, actor in enumerate(order):
+            response = responses[actor]
+            if self._is_joint(response):
+                continue
+            resources, global_write = self._unit_resources(graph, actor, response)
+            if not resources:
+                # No declared operation: be conservative rather than race an
+                # undeclared effect with an independent unit.
+                resources = {Resource("world", "global")}
+                global_write = True
+            units[index] = (actor, resources)
+            if global_write:
+                global_writers.append(index)
+
+        parent = {index: index for index in units}
+
+        def find(index):
+            while parent[index] != index:
+                parent[index] = parent[parent[index]]
+                index = parent[index]
+            return index
+
+        def union(left, right):
+            left, right = find(left), find(right)
+            if left != right:
+                parent[right] = left
+
+        by_resource = {}
+        for index, (_actor, resources) in units.items():
+            for resource in resources:
+                by_resource.setdefault(resource, []).append(index)
+        for indices in by_resource.values():
+            first = indices[0]
+            for other in indices[1:]:
+                union(first, other)
+        # ``Resource("world", "global")`` writes conflict with every unit, so a
+        # turn containing one is a single component (and therefore serial).
+        if global_writers:
+            first = global_writers[0]
+            for index in units:
+                union(first, index)
+
+        components = {}
+        for index in units:
+            components.setdefault(find(index), []).append(index)
+        return [tuple(sorted(indices)) for _root, indices in
+                sorted(components.items(), key=lambda item: min(item[1]))]
+
+    def _apply_unit(self, actor, response):
+        """Apply one actor's graph unit exactly as a serial ``_apply_turn`` block.
+
+        Returns ``(actor, result, error)``.  ``_apply_response_contained`` still
+        contains and records this actor's failure in ``last_errors``; the main
+        thread rebuilds that dict in turn order afterwards so concurrent key
+        insertion cannot leak scheduling order.
+        """
+        if self._is_joint(response):
+            return actor, None, None
+        try:
+            utterances_before = len(self.world._utterances)
+            before = {}
+            if response.major_action is not None and self.world._physical_objects:
+                actor_pos = self.world.actor_position(actor)
+                witnesses = (set(self.world.actors_near(actor_pos, 1, alive_only=False,
+                                                        exclude=actor))
+                             if actor_pos is not None else set())
+                for name in self.backends:
+                    if name == actor or name in witnesses:
+                        before[name] = self._visible_object_snapshot(name)
+            result = self._apply_response_contained(actor, response)
+            error = self.last_errors.get(actor)
+            # Independent units may append to the shared utterance log while
+            # this unit runs; only this speaker's new utterances are witnesses.
+            self._record_speech_witnesses(actor, utterances_before, only_speaker=True)
+            if result and before:
+                after = {name: self._visible_object_snapshot(name) for name in before}
+                self._record_physical_changes(actor, before, after, int(self.world._turn))
+            return actor, result, error
+        except Exception as exc:  # one resident's failed unit must not stop the turn
+            return actor, False, f"{type(exc).__name__}: {exc}"
+
+    def _apply_turn_threaded(self, order, responses):
+        """Commit declared-independent units concurrently, then finish once.
+
+        Results and errors are written on the main thread in ``order`` so the
+        two dicts have deterministic key insertion order.  Within a connected
+        component, actors still run serially in turn order.  Components are
+        independent by declaration.
+        """
+        components = self._commit_components(order, responses)
+        # Joint resolution has already written its results and errors.  Capture
+        # that insertion order, then rebuild both dicts deterministically.
+        preexisting_errors = dict(self.last_errors)
+        completed = {}
+        if len(components) <= 1:
+            for component in components:
+                for index in component:
+                    actor = order[index]
+                    completed[actor] = self._apply_unit(actor, responses[actor])
+        else:
+            workers = min(int(self.executor_workers), len(components))
+            with ThreadPoolExecutor(max_workers=workers,
+                                    thread_name_prefix="bigville-commit") as pool:
+                futures = []
+                for component in components:
+                    futures.append(pool.submit(self._run_component, order, responses, component))
+                for future in futures:
+                    for actor, result, error in future.result():
+                        completed[actor] = (actor, result, error)
+
+        self.last_errors.clear()
+        self.last_errors.update(preexisting_errors)
+        for actor in order:
+            entry = completed.get(actor)
+            if entry is None:
+                continue        # joint member; already resolved before commit
+            _actor, result, error = entry
+            self.last_results[actor] = bool(result)
+            if error is not None:
+                self.last_errors[actor] = error
+        return self._finish_turn(responses)
+
+    def _run_component(self, order, responses, component):
+        return [self._apply_unit(order[index], responses[order[index]])
+                for index in component]
 
     def _resume_suspended(self) -> dict:
         """Continue a turn that waited for a human holder's reaction, or wait again."""

@@ -9,7 +9,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import math
+import threading
 from typing import Any, Iterable
+
+
+# TG05: one process-wide re-entrant lock guards the canonical graph's internal
+# containers.  It is module level (not per graph) so the lock is never written
+# into a checkpoint or copied with a world; every BigvilleGraph in process
+# shares it.  RLock is required because public helpers call one another (for
+# example ``load_seed_manifest`` calls ``nodes`` and ``add_node``).
+_GRAPH_LOCK = threading.RLock()
 
 
 class NodeRef(int):
@@ -115,66 +124,77 @@ class BigvilleGraph:
         self._inner = self
 
     def add_node(self, type_name: str, attrs: dict[str, Any] | None = None) -> NodeRef:
-        node = NodeRef(self._next_id)
-        self._next_id += 1
-        self._nodes[node] = _Node(str(type_name), dict(attrs or {}))
-        return node
+        with _GRAPH_LOCK:
+            node = NodeRef(self._next_id)
+            self._next_id += 1
+            self._nodes[node] = _Node(str(type_name), dict(attrs or {}))
+            return node
 
     def has_node(self, node: NodeRef | int) -> bool:
-        return NodeRef(int(node)) in self._nodes
+        with _GRAPH_LOCK:
+            return NodeRef(int(node)) in self._nodes
 
     def node(self, node: NodeRef | int) -> dict[str, Any]:
-        ref = NodeRef(int(node))
-        record = self._nodes[ref]
-        return {"type": record.type, "attrs": record.attrs}
+        with _GRAPH_LOCK:
+            ref = NodeRef(int(node))
+            record = self._nodes[ref]
+            return {"type": record.type, "attrs": record.attrs}
 
     def nodes(self, type_name: str | None = None) -> list[NodeRef]:
-        return [ref for ref, record in self._nodes.items()
-                if type_name is None or record.type == type_name]
+        with _GRAPH_LOCK:
+            return [ref for ref, record in self._nodes.items()
+                    if type_name is None or record.type == type_name]
 
     def set_attr(self, node: NodeRef | int, key: str, value: Any) -> None:
-        self._nodes[NodeRef(int(node))].attrs[str(key)] = value
+        with _GRAPH_LOCK:
+            self._nodes[NodeRef(int(node))].attrs[str(key)] = value
 
     def add_edge_unchecked(self, source: NodeRef | int, edge: str,
                            target: NodeRef | int, attrs: dict | None = None) -> None:
-        src, dst, kind = NodeRef(int(source)), NodeRef(int(target)), str(edge)
-        if src not in self._nodes or dst not in self._nodes:
-            raise KeyError("cannot connect a missing Bigville graph node")
-        self._edges.setdefault((src, kind), set()).add(dst)
-        self._reverse.setdefault((dst, kind), set()).add(src)
+        with _GRAPH_LOCK:
+            src, dst, kind = NodeRef(int(source)), NodeRef(int(target)), str(edge)
+            if src not in self._nodes or dst not in self._nodes:
+                raise KeyError("cannot connect a missing Bigville graph node")
+            self._edges.setdefault((src, kind), set()).add(dst)
+            self._reverse.setdefault((dst, kind), set()).add(src)
 
     def add_edge(self, source, edge, target, attrs=None):
         self.add_edge_unchecked(source, edge, target, attrs)
 
     def remove_edge_unchecked(self, source, edge, target) -> None:
-        src, dst, kind = NodeRef(int(source)), NodeRef(int(target)), str(edge)
-        self._edges.get((src, kind), set()).discard(dst)
-        self._reverse.get((dst, kind), set()).discard(src)
+        with _GRAPH_LOCK:
+            src, dst, kind = NodeRef(int(source)), NodeRef(int(target)), str(edge)
+            self._edges.get((src, kind), set()).discard(dst)
+            self._reverse.get((dst, kind), set()).discard(src)
 
     def has_edge(self, source, edge, target) -> bool:
-        return NodeRef(int(target)) in self._edges.get((NodeRef(int(source)), str(edge)), set())
+        with _GRAPH_LOCK:
+            return NodeRef(int(target)) in self._edges.get((NodeRef(int(source)), str(edge)), set())
 
     def neighbours(self, source, edge) -> list[NodeRef]:
-        return sorted(self._edges.get((NodeRef(int(source)), str(edge)), set()))
+        with _GRAPH_LOCK:
+            return sorted(self._edges.get((NodeRef(int(source)), str(edge)), set()))
 
     def in_neighbours(self, target, edge) -> list[NodeRef]:
-        return sorted(self._reverse.get((NodeRef(int(target)), str(edge)), set()))
+        with _GRAPH_LOCK:
+            return sorted(self._reverse.get((NodeRef(int(target)), str(edge)), set()))
 
     def remove_node(self, node) -> None:
-        ref = NodeRef(int(node))
-        if ref not in self._nodes:
-            return
-        for (src, edge), targets in list(self._edges.items()):
-            if src == ref or ref in targets:
-                targets.discard(ref)
-                if src == ref:
-                    self._edges.pop((src, edge), None)
-        for (dst, edge), sources in list(self._reverse.items()):
-            if dst == ref or ref in sources:
-                sources.discard(ref)
-                if dst == ref:
-                    self._reverse.pop((dst, edge), None)
-        self._nodes.pop(ref, None)
+        with _GRAPH_LOCK:
+            ref = NodeRef(int(node))
+            if ref not in self._nodes:
+                return
+            for (src, edge), targets in list(self._edges.items()):
+                if src == ref or ref in targets:
+                    targets.discard(ref)
+                    if src == ref:
+                        self._edges.pop((src, edge), None)
+            for (dst, edge), sources in list(self._reverse.items()):
+                if dst == ref or ref in sources:
+                    sources.discard(ref)
+                    if dst == ref:
+                        self._reverse.pop((dst, edge), None)
+            self._nodes.pop(ref, None)
 
     def load_seed_manifest(self, manifest, agent=None) -> None:
         """Retain seeded graph data without executing an external rule engine."""

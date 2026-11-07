@@ -25,6 +25,8 @@ _EXTERNAL_FIELDS = {
     "_conversation_adapter", "_actor_minds", "_rng",
     # Derived caches are intentionally discarded and rebuilt lazily.
     "_distance_fields", "_travel_time_fields",
+    # TG05: per-attempt thread-local state; a restored world constructs a fresh one.
+    "_attempt_state",
 }
 
 

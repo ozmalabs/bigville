@@ -40,6 +40,13 @@ _FORCE_LINEAR_PROXIMITY_WORLDS = weakref.WeakSet()
 # lock is module-level and never checkpointed; the field contents stay the same.
 _DISTANCE_FIELDS_LOCK = threading.RLock()
 
+# TG05: event and utterance logs assign their next key from ``len(log) + 1``.
+# Under a concurrent commit two writers could otherwise mint the same key and
+# silently drop one record. The graph lock already makes node creation safe;
+# this lock only serialises the small log insertion. It is module level and
+# never checkpointed.
+_EVENT_LOG_LOCK = threading.RLock()
+
 DEFAULT_DATA_PACK = "bigville"
 
 
@@ -518,6 +525,36 @@ class BigvilleWorld:
         self._physical_subsystem_extensions[name] = callback
         self.physical_subsystems[name] = enabled
 
+    # ------------------------------------------------------------------ attempt state
+    # TG05: these three flags are per attempt, not per world.  A threaded commit
+    # may run independent residents' attempts at the same time, so storing them
+    # on the shared instance let one resident see another's open outcome,
+    # refusal code or major-dispatch guard.  The properties keep every existing
+    # assignment and read working while the storage is a ``threading.local``.
+    @property
+    def _outcome_open(self) -> bool:
+        return bool(getattr(self._attempt_state, "outcome_open", False))
+
+    @_outcome_open.setter
+    def _outcome_open(self, value) -> None:
+        self._attempt_state.outcome_open = bool(value)
+
+    @property
+    def _refusal_code(self):
+        return getattr(self._attempt_state, "refusal_code", None)
+
+    @_refusal_code.setter
+    def _refusal_code(self, value) -> None:
+        self._attempt_state.refusal_code = value
+
+    @property
+    def _major_dispatch(self) -> bool:
+        return bool(getattr(self._attempt_state, "major_dispatch", False))
+
+    @_major_dispatch.setter
+    def _major_dispatch(self, value) -> None:
+        self._attempt_state.major_dispatch = bool(value)
+
     def __init__(self, *, map_seed=305000, autonomous_actors=False, scenario=None,
                  cognition_factory=None, physical_subsystems=None,
                  physical_subsystem_extensions=None, data_pack=None, exhaustion_slow_on=None):
@@ -690,6 +727,10 @@ class BigvilleWorld:
         self._turn = 0
         self._resolved_period = 0.0
         self._job_tick_armed = False
+        # TG05: the per-attempt flags belong to the thread running one actor's
+        # attempt, never to the world.  They are exposed through the same
+        # private names below so existing assignments and reads are unchanged.
+        self._attempt_state = threading.local()
         self._major_dispatch = False
         # Phase 021: the reason the current major-action attempt was refused, and whether an attempt is open.
         self._refusal_code = None
@@ -3084,7 +3125,8 @@ class BigvilleWorld:
                                              "detail": str(detail), "public": 1.0 if public else 0.0,
                                              "severity": float(severity), "day": float(self.calendar()["day"])})
         self.eng.add_edge_unchecked(self._town, "has_event", event)
-        self._events[f"event:{len(self._events) + 1}"] = event
+        with _EVENT_LOG_LOCK:
+            self._events[f"event:{len(self._events) + 1}"] = event
         if observer is not None:
             self.eng.add_edge_unchecked(self._actors[observer], "observed_event", event)
         return event
@@ -3096,6 +3138,16 @@ class BigvilleWorld:
             raise KeyError("unknown world event")
         self.eng.add_edge_unchecked(self._actors[observer], "observed_event", event)
         return event
+
+    def utterances_from(self, first_utterance):
+        """A stable snapshot of the utterance log from one position (TG05).
+
+        A threaded commit may append while a unit records speech witnesses;
+        copying under the event-log lock keeps that observer from seeing a
+        transient dictionary.
+        """
+        with _EVENT_LOG_LOCK:
+            return list(self._utterances.values())[first_utterance:]
 
     def event_data(self, event):
         return dict(self.eng.node(event)["attrs"])
@@ -7039,7 +7091,8 @@ class BigvilleWorld:
         for name, delivery in deliveries.items():
             if delivery["heard"]:
                 self.eng.add_edge_unchecked(self._actor(name), "heard", utterance)
-        self._utterances[len(self._utterances) + 1] = utterance
+        with _EVENT_LOG_LOCK:
+            self._utterances[len(self._utterances) + 1] = utterance
         return utterance
 
     def speech_radius(self, loudness):
