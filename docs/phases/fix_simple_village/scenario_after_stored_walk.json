@@ -1,0 +1,32 @@
+{
+ "asleep": {
+  "action": null,
+  "continued": false,
+  "interrupted": "body_down",
+  "refusals_after": {},
+  "refusals_before": {},
+  "seconds": 4.7,
+  "steps_to_continuation": 1,
+  "walker": "Verity Peaseblossom"
+ },
+ "collapsed": {
+  "action": null,
+  "continued": false,
+  "interrupted": "body_down",
+  "refusals_after": {},
+  "refusals_before": {},
+  "seconds": 4.7,
+  "steps_to_continuation": 1,
+  "walker": "Verity Peaseblossom"
+ },
+ "passed_out": {
+  "action": null,
+  "continued": false,
+  "interrupted": "body_down",
+  "refusals_after": {},
+  "refusals_before": {},
+  "seconds": 4.7,
+  "steps_to_continuation": 1,
+  "walker": "Verity Peaseblossom"
+ }
+}

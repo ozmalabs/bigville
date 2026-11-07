@@ -1,0 +1,31 @@
+{
+ "by_kind": {
+  "blood_kin": 258,
+  "feud": 17,
+  "friend": 200,
+  "neighbour": 200,
+  "spouse": 10,
+  "workmate": 160
+ },
+ "directed_records": 845,
+ "household_flag": 206,
+ "per_resident_close": {
+  "max": 12,
+  "median": 5.0,
+  "min": 2
+ },
+ "per_resident_total": {
+  "max": 16,
+  "median": 8.0,
+  "min": 4,
+  "with_zero": 0
+ },
+ "reciprocated_records": 542,
+ "seed": 305000,
+ "switch_enabled": true,
+ "workplace_ring": {
+  "founding_bonds_overwritten": 7,
+  "minted_pairs": 62,
+  "new_directed_keys": 117
+ }
+}

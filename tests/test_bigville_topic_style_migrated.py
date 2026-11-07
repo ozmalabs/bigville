@@ -280,27 +280,34 @@ def test_townspeople_50_relationships_translate_to_real_set_relationship_calls()
     assert friend_attrs["strength"] > 0.0
 
 
-def test_a_bare_from_town100_still_seeds_zero_relationships():
-    """Regression guard: seeding must stay OPT-IN.  test_bigville_reporting.py
-    asserts an EXACT ``directed_bonds`` count against a bare ``from_town100()``
-    town; auto-wiring population relationships into ``populate_town100`` would
-    silently break that baseline.
-    """
+def test_a_bare_from_town100_holds_the_founding_ties_by_kind():
+    """Phase 058 founding ties are on record after a bare from_town100() (the bigville pack switch is on).
+    The counts are the seed-305000 counts in docs/phases/phase058/PHASE058_REPORT.md. The workplace ring
+    is not among them: it is only written when seed_workplace_relationships is called (see the next test)."""
     w = World.from_town100(autonomous_actors=False)
-    assert len(w._relationships) == 0
+    assert len(w._relationships) == 845
+    kinds = {}
+    for bond in w._relationships.values():
+        kind = w.eng.node(bond)["attrs"]["kind"]
+        kinds[kind] = kinds.get(kind, 0) + 1
+    assert kinds == {"blood_kin": 258, "spouse": 10, "friend": 200, "neighbour": 200,
+                     "workmate": 160, "feud": 17}
 
 
 def test_town100_workplace_relationships_are_sparse_not_all_pairs():
     w = World.from_town100(autonomous_actors=False)
+    before = dict(w._relationships)
     minted = w.seed_workplace_relationships()
     assert minted > 0
     # 100 residents, an all-pairs graph would be ~4950 undirected pairs; the ring
     # construction must stay far below that -- bounded by population size, not
     # by the square of the largest single-workplace group (25 labourers).
     assert minted < 150, f"expected a sparse ring (O(n)), got {minted} edges"
-    # Every resident who got a tie has only a HANDFUL of them, not a clique.
+    # Every resident who got a tie has only a HANDFUL of them, not a clique. Only the ties this
+    # call wrote are counted: the founding ties (Phase 058) were already on record before it.
+    ring = [key for key, bond in w._relationships.items() if before.get(key) is not bond]
     outgoing = {}
-    for (src, _tgt) in w._relationships:
+    for (src, _tgt) in ring:
         outgoing[src] = outgoing.get(src, 0) + 1
     assert max(outgoing.values()) <= 2, (
         "a ring gives each resident at most one outgoing tie per direction "

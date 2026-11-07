@@ -1,0 +1,2 @@
+{"alive_at_end": 100, "deaths": 0, "elapsed_seconds": 516.3, "handovers": 0, "hunger_mean_end": 1.611, "label": "fix_after200", "relationships_on_record": 845, "turns": 200, "utterances": 1222}
+{"eat": 276, "fetch": 279, "move": 8187, "none": 7763, "rest": 3204, "sleep": 276, "work": 15}

@@ -27,6 +27,7 @@ def test_report_exposes_exact_census_and_sample_estimate():
 def test_report_covers_physical_economy_and_recorded_social_activity():
     world = BigvilleWorld.from_town100(autonomous_actors=False)
     names = list(world._actors)
+    founding = len(world._relationships)     # Phase fix_simple_village: the founding ties are on record too
     world.set_relationship(names[0], names[1], kind="neighbour", strength=0.8)
     world.speak(names[0], names[1], "The market is busy today.")
 
@@ -40,7 +41,7 @@ def test_report_covers_physical_economy_and_recorded_social_activity():
     assert economy["land"]
     assert economy["living_animals"]
     assert report["ecology"]["animals"]["alive"] == 7
-    assert report["social"]["relationships"]["directed_bonds"] == 1
+    assert report["social"]["relationships"]["directed_bonds"] == founding + 1
     assert report["social"]["conversation"]["utterances"] == 1
     assert report["social"]["conversation"]["speakers"] == 1
 

@@ -369,7 +369,9 @@ class DeterministicBackend:
             # Keep walking to the physical cell without asking the cognition
             # layer to rediscover the same route on every turn.  Arrival,
             # encounters, needs thresholds, and failed movement interrupt it.
-            continuation = ActorContinuation(destination=choice["destination"])
+            # fix_simple_village: body_down ends the walk when the resident falls asleep, collapses or passes out.
+            continuation = ActorContinuation(destination=choice["destination"],
+                                             interrupt_on=ActorContinuation.interrupt_on + ("body_down",))
         return ActorResponse(
             major_action=ProposedAction(str(choice["action"]), params,
                             "cheap_psi_can"),

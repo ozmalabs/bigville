@@ -1,0 +1,3 @@
+{"alive_at_end": 100, "elapsed_seconds": 515.9, "label": "after200", "refusals_by_reason": {"exhausted": 1397}, "refusals_total": 1397, "turns": 200}
+{"continuation/exhausted": 1397}
+{"eat": 276, "fetch": 279, "move": 8187, "none": 7763, "rest": 3204, "sleep": 276, "work": 15}

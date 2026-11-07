@@ -1,0 +1,75 @@
+{
+ "head_ba55f11": {
+  "digest": "752cd821b397d82a4a0a823360ed541773b45085127f4a78d5f8818e54d3698b",
+  "kind": "simple",
+  "population_summary": {
+   "accidents": 0,
+   "alive_end": 100,
+   "body_state_refusals": 0,
+   "breakages": 0,
+   "failures": 528,
+   "refusals": 528,
+   "refusals_by_reason": {
+    "exhausted": 528
+   },
+   "repeat_failures": 375,
+   "unattributed_breakages": 0
+  },
+  "seed": 305000,
+  "turns": 60
+ },
+ "live_tree": {
+  "digest": "752cd821b397d82a4a0a823360ed541773b45085127f4a78d5f8818e54d3698b",
+  "kind": "simple",
+  "population_summary": {
+   "accidents": 0,
+   "alive_end": 100,
+   "body_state_refusals": 0,
+   "breakages": 0,
+   "failures": 528,
+   "refusals": 528,
+   "refusals_by_reason": {
+    "exhausted": 528
+   },
+   "repeat_failures": 375,
+   "unattributed_breakages": 0
+  },
+  "seed": 305000,
+  "turns": 60
+ },
+ "phase056_commit_56fb413": {
+  "digest": "752cd821b397d82a4a0a823360ed541773b45085127f4a78d5f8818e54d3698b",
+  "kind": "simple",
+  "population_summary": {
+   "accidents": 0,
+   "alive_end": 100,
+   "body_state_refusals": 0,
+   "breakages": 0,
+   "failures": 528,
+   "refusals": 528,
+   "refusals_by_reason": {
+    "too_tired": 528
+   },
+   "repeat_failures": 375,
+   "unattributed_breakages": 0
+  },
+  "seed": 305000,
+  "turns": 60
+ },
+ "phase056_recorded_in_report": {
+  "digest": "056f43efa2833fc9f8e50fa3a4c4107be1f60ffdaef07fe475275c6bfbf29e76",
+  "population_summary": {
+   "accidents": 0,
+   "alive_end": 100,
+   "body_state_refusals": 305,
+   "breakages": 0,
+   "failures": 0,
+   "refusals": 305,
+   "refusals_by_reason": {
+    "collapsed": 305
+   },
+   "repeat_failures": 0,
+   "unattributed_breakages": 0
+  }
+ }
+}

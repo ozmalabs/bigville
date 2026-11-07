@@ -154,7 +154,8 @@ def test_seed_generated_relationships_feud_strength_is_negative():
 
 
 def test_seed_generated_relationships_not_auto_wired_into_from_town100():
-    """Matches seed_workplace_relationships' own documented precedent:
-    a bare from_town100() town must be unaffected -- this stays opt-in."""
+    """A bare from_town100() town holds the founding ties (Phase 058, switch on in the bigville pack), and
+    nothing else: every bond on record is a founding tie (`seeded`), so the workplace ring stays opt-in."""
     world = BigvilleWorld.from_town100(seed=SEED, autonomous_actors=False)
-    assert world._relationships == {}
+    assert len(world._relationships) == 845
+    assert all(world.eng.node(bond)["attrs"].get("seeded") == 1.0 for bond in world._relationships.values())

@@ -189,6 +189,10 @@ class BigvilleGame:
         if request.poll_each_turn:
             return "poll_each_turn"
         interrupt_on = set(request.interrupt_on)
+        # fix_simple_village: a continuation that names body_down stops once the resident is asleep, collapsed or
+        # passed out. The backend then decides, and the world publishes no affordances to a down body.
+        if "body_down" in interrupt_on and self.world._sleep_code(actor) is not None:
+            return "body_down"
         expected = set(request.expected_events)
         if context is not None:
             observations = context.observations
