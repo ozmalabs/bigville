@@ -8517,6 +8517,8 @@ class BigvilleWorld(BodyMixin):
             return self.major_action(actor, "start", **kwargs)
         if action == "sleep":
             return self.major_action(actor, "sleep")
+        if action in ("attend", "press"):   # Phase 071: the target is the handle or region the reply names
+            return self.major_action(actor, action, target=plan.get("target"))
         if action == "move":
             target = plan.get("destination")
             if target is None:
@@ -9012,7 +9014,8 @@ class BigvilleWorld(BodyMixin):
         self._refusal_code = None
         try:
             gated = isinstance(action, str) and action in self.E.MAJOR_ACTIONS
-            sleep_code = self._sleep_code(actor) if gated else None
+            sleep_code = (self._sleep_code(actor)
+                          or self._attending_refusal(actor, action)) if gated else None   # Phase 071: attending
             if sleep_code is not None:
                 applied = False
                 self._refusal_code = sleep_code
@@ -9031,6 +9034,7 @@ class BigvilleWorld(BodyMixin):
         Only the acting resident's node carries the outcome. Nothing here tells another resident."""
         if actor not in self._actors:
             return
+        self._body_note_outcome(actor, action, applied)   # Phase 071: the referee's remedy count (no physical change)
         node = self._actor(actor)
         self.eng.set_attr(node, "last_outcome", {"turn": int(self._turn), "action": str(action),
                                                  "applied": bool(applied), "reason": code or ""})
@@ -9282,6 +9286,12 @@ class BigvilleWorld(BodyMixin):
             # Phase 024: sleep is enacted here. Whether to sleep is the backend's decision. Phase 049: a sleep at a full
             # reserve is allowed; it uses the slot and the time, and the sleeper wakes at once.
             return self._claimed_attempt(actor, "sleep", lambda: self._lie_down_as_major(actor))
+        if action == "attend":   # Phase 071: look into one felt signal (a timed attention, see worlds/body.py)
+            return self._claimed_attempt(actor, "attend", lambda: self._body_attend(
+                actor, kwargs.get("target", args[0] if args else None)))
+        if action == "press":    # Phase 071: probe a region of one's own body
+            return self._claimed_attempt(actor, "press", lambda: self._body_press(
+                actor, kwargs.get("target", args[0] if args else None)))
         if action == "fetch":
             kind = self._as_key(kwargs.get("kind", args[0] if args else None))
             amount = self._as_amount(kwargs.get("amount", args[1] if len(args) > 1 else 1.0))

@@ -205,7 +205,26 @@ def source_rows(tables, reads, located=None):
     return out
 
 
-def derive(tables, reads, record, seed, actor, turn, previous=None, located=None, habituation=None):
+def within(tree, node, region):
+    """Whether `node` lies in the subtree of `region` (a node is within itself). False for a name not in the tree."""
+    try:
+        return resolve(tree, node, depth_of(tree, region)) == region
+    except KeyError:
+        return False
+
+
+def press_sound(tables, total):
+    """Phase 071: the reaction to a press, from the summed raw intensity under the pressed region. The highest
+    press_sounds row whose min is at or below the total gives the sound; a null sound is silence (None)."""
+    rows = sorted(tables["attend"]["press_sounds"], key=lambda row: float(row["min"]))
+    chosen = None
+    for row in rows:
+        if float(row["min"]) <= float(total) + 1e-12:
+            chosen = row["sound"]
+    return None if chosen is None else str(chosen)
+
+
+def derive(tables, reads, record, seed, actor, turn, previous=None, located=None, habituation=None, focus=None):
     """Every source's truth for one resident at one turn.
 
     tables    {"anatomy", "quality_tree", "vocalisations", "channels", "sources", "patterns", "feeling", "rules"}
@@ -228,8 +247,16 @@ def derive(tables, reads, record, seed, actor, turn, previous=None, located=None
         raw_intensity = intensity_of(spec, value)
         intensity = raw_intensity * (1.0 - float(habit.get(name, 0.0)))
         jitter = 2.0 * draw(seed, "jitter", actor, turn, name) - 1.0
-        raw = raw_depth(rules, intensity, float(record["acuity"]), float(record["attention"]),
-                        float(record["impairment"]), jitter)
+        # Phase 071: while a resident attends, the attended signal gets its attend bonus on acuity and full attention,
+        # and every other signal's attention is capped at the attention budget. Nothing else changes.
+        acuity, attention = float(record["acuity"]), float(record["attention"])
+        focused = focus is not None and name == focus["source"]
+        if focused:
+            acuity += float(focus["acuity_bonus"])
+            attention = float(focus["focus_attention"])
+        elif focus is not None:
+            attention = min(attention, float(focus["other_attention"]))
+        raw = raw_depth(rules, intensity, acuity, attention, float(record["impairment"]), jitter)
         channel = channels[str(spec["channel"])]
         q_depth = chosen_depth(raw, channel["quality_cap"], depth_of(qtree, spec["quality"]))
         l_depth = chosen_depth(raw, channel["locus_cap"], depth_of(anatomy, spec["locus"]))
@@ -252,6 +279,7 @@ def derive(tables, reads, record, seed, actor, turn, previous=None, located=None
             "locus_depth": l_depth,
             "locus_shown": l_shown,
             "pattern": pattern,
+            "focused": focused,
             "sound": sound(tables, q_shown, intensity, pattern, seed),
             "where": str(anatomy[l_shown]["label"]),
         })

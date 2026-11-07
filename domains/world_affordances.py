@@ -208,6 +208,8 @@ INTEROCEPTION = _PACK["INTEROCEPTION"]
 HARM_LOCUS = _PACK["HARM_LOCUS"]
 BODY_RATES = _PACK["BODY_RATES"]
 OBSERVABLE_SIGNS = _PACK["OBSERVABLE_SIGNS"]
+# Phase 071: attending and pressing (world/interoception.json): the attention budget, the press reaction, the remedies.
+ATTEND = _PACK["ATTEND"]
 
 
 def scrap_kind(kind):

@@ -534,6 +534,17 @@ def _can(world, actor, character, pack, game=None, withheld=()):
     return out
 
 
+def _attend_can(world, actor, pack):
+    """Phase 071: one `can` row per felt signal the resident may attend to (handle signal:N, see worlds/body.py).
+    The row names the place the feeling is in, never its cause. Only a human body offers these rows."""
+    body = world.body_of(actor)
+    if body is None:
+        return []
+    verb = load_pack(pack)["ACTION_WORDS"].get("attend", "attend")
+    return [_check_keys("can", {"handle": row["target"], "action": verb, "what": str(row["where"])}, pack)
+            for row in body.attend_options()]
+
+
 def _last(world, actor, pack):
     outcome = world.last_outcome(actor)
     if not outcome:
@@ -548,6 +559,12 @@ def _last(world, actor, pack):
     out = _clean({"action": pk["ACTION_WORDS"].get(action) or _words(action),
                   "outcome": pk["VIEW_WORDS"]["done" if outcome.get("applied") else "not_done"],
                   "reason": reason})
+    # Phase 071: an attend or press that was done shows the sound and the place it gave, and nothing about a cause.
+    body = world.body_of(actor) if action in ("attend", "press") and outcome.get("applied") else None
+    probe = None if body is None else body.state.get("probe")
+    if probe and probe.get("action") == action and probe.get("turn") == outcome.get("turn"):
+        out["sound"] = probe.get("sound") or pk["VIEW_WORDS"]["silence"]
+        out["place"] = str(probe.get("where", ""))
     return _check_keys("last", out, pack)
 
 
@@ -638,7 +655,8 @@ def build_agent_view(game, actor, mode="agent", interoception=None):
         "around": around,
         # Phase 053: a fogged resident's map is its own three-level map; a simple resident keeps the patch.
         "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
-        "can": _can(world, actor, game.characters[actor], pack, game if fogged else None, withheld),
+        "can": _can(world, actor, game.characters[actor], pack, game if fogged else None, withheld)
+        + _attend_can(world, actor, pack),   # Phase 071
         "last": _last(world, actor, pack),
         "reaction": _reaction(game, actor, pack, known),
     }

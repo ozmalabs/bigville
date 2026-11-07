@@ -508,6 +508,82 @@
         "see_light": 0.3,
         "label": "pallor"
       }
+    },
+    "ATTEND": {
+      "_doc": "ATTEND (Phase 071): attending and pressing. attend (a major action) takes a felt signal by its handle signal:N (N counts the felt signals from 1, in the order the view shows them). For ticks world ticks the attended signal's resident ceiling is acuity + acuity_bonus (one depth step at acuity_weight 1, bounded by the channel cap and the true depth), its attention is focus_attention, and every other signal's attention is at most other_attention (the finite attention budget). It costs stamina_cost of reserve when it starts; it is refused asleep, collapsed or already attending. press (a major action) probes a named ANATOMY region: the reaction is the sound of the summed raw intensity of the true sources whose locus lies in that region's subtree (press_sounds: the highest min at or below the sum; a null sound is silence). A press on an injured place (a located source) raises that locus by press_boost for press_ticks ticks. remedies is the referee's own table for Phase 056-style measures: which major actions would address a source. The world never uses it to choose or to name a cause. remedy_window is how many world turns after an attend a remedy counts as acting on the true source. APPROX throughout.",
+      "ticks": 3,
+      "acuity_bonus": 1.0,
+      "focus_attention": 1.0,
+      "other_attention": 0.5,
+      "stamina_cost": 0.02,
+      "press_boost": 0.3,
+      "press_ticks": 4,
+      "remedy_window": 6,
+      "verb_aliases": {
+        "attend": "attend",
+        "focus": "attend",
+        "heed": "attend",
+        "press": "press",
+        "probe": "press",
+        "prod": "press"
+      },
+      "press_sounds": [
+        {
+          "min": 0.0,
+          "sound": null
+        },
+        {
+          "min": 0.05,
+          "sound": "ow"
+        },
+        {
+          "min": 0.4,
+          "sound": "owww"
+        }
+      ],
+      "remedies": {
+        "hunger": [
+          "eat"
+        ],
+        "exertion": [
+          "rest",
+          "sleep"
+        ],
+        "exhaustion": [
+          "rest",
+          "sleep"
+        ],
+        "chill": [
+          "fetch"
+        ],
+        "wetness": [],
+        "illness": [
+          "care"
+        ],
+        "intoxication": [],
+        "harm": [
+          "care"
+        ],
+        "injury_sharp": [
+          "care"
+        ],
+        "injury_dull": [
+          "care"
+        ],
+        "deficiency": [
+          "eat"
+        ],
+        "hangover": [
+          "rest",
+          "sleep"
+        ],
+        "withdrawal": [
+          "eat"
+        ],
+        "sleep_debt": [
+          "sleep"
+        ]
+      }
     }
   }
 }

@@ -127,7 +127,9 @@
       "last": [
         "action",
         "outcome",
-        "reason"
+        "reason",
+        "sound",
+        "place"
       ],
       "reaction": [
         "from",
@@ -276,7 +278,8 @@
       "react_brace": "brace yourself and hold on",
       "react_evade": "step out of their reach",
       "react_yield": "let it go",
-      "reaction_late": "you are slow to answer"
+      "reaction_late": "you are slow to answer",
+      "silence": "nothing"
     },
     "PRECISION_WORDS": {
       "_doc": "How well a place is known (Phase 019 location). 'none' places are not listed.",

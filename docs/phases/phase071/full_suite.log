@@ -1,0 +1,536 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [  3%]
+.......................................................................F [  6%]
+.........s.............................................................. [  9%]
+.................................................s...................... [ 12%]
+........................................F............................... [ 15%]
+............................................................s........... [ 18%]
+...................F...........F........................................ [ 21%]
+.....................................................F.................. [ 24%]
+......................................F................................. [ 27%]
+....F................................................................... [ 30%]
+........................................................................ [ 33%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+.......................................F................................ [ 42%]
+........................................................................ [ 45%]
+........................................................................ [ 48%]
+........................................................................ [ 51%]
+....F................................................................... [ 54%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+......................................................................F. [ 63%]
+........................................................................ [ 66%]
+........................................................F............... [ 69%]
+........................................................................ [ 72%]
+..FFF......................................sss.......................... [ 75%]
+..F..................................................................... [ 78%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+........................................................................ [ 91%]
+........................................................................ [ 94%]
+.....................................FF................................. [ 97%]
+..................................................................       [100%]
+==================================== ERRORS ====================================
+________________ ERROR collecting tests/test_phase044_births.py ________________
+import file mismatch:
+imported module 'test_phase044_births' has this __file__ attribute:
+  /home/matt/ozmadev/bigville/docs/phases/phase044/files/tests/test_phase044_births.py
+which is not the same as the test file we want to collect:
+  /home/matt/ozmadev/bigville/tests/test_phase044_births.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+______________ ERROR collecting tests/test_phase045_dependants.py ______________
+import file mismatch:
+imported module 'test_phase045_dependants' has this __file__ attribute:
+  /home/matt/ozmadev/bigville/docs/phases/phase045/files/tests/test_phase045_dependants.py
+which is not the same as the test file we want to collect:
+  /home/matt/ozmadev/bigville/tests/test_phase045_dependants.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+=================================== FAILURES ===================================
+_______ test_the_self_test_is_clean_for_bigville_and_for_the_hamlet_pack _______
+[gw5] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_the_self_test_is_clean_for_bigville_and_for_the_hamlet_pack():
+        from domains.data_view import entities
+        report = E.check_consistency()
+        assert report["errors"] == [] and report["warnings"] == []
+        hamlet = entities("test_hamlet").check_consistency()
+>       assert hamlet["errors"] == [] and hamlet["warnings"] == []
+E       assert (["DEPENDANTS:...REASONS code"] == []
+E         
+E         Left contains one more item: "DEPENDANTS: 'infant' is not a REFUSAL_REASONS code"
+E         Use -v to get more diff)
+
+tests/test_phase004_located_gathering.py:209: AssertionError
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+[gw1] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7a19e67c6b70>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/opt/python@3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x7a1a1b4e84a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+_____________________ test_export_rerun_is_byte_identical ______________________
+[gw1] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1001/popen-gw1/test_export_rerun_is_byte_iden0')
+
+    def test_export_rerun_is_byte_identical(tmp_path):
+        export = _export_module()
+        out = tmp_path / "bigville"
+        assert export.main(["--pack", "bigville", "--out", str(out)]) == 0
+        source = os.path.join(P.PACKS_ROOT, "bigville")
+        names = sorted(os.path.relpath(os.path.join(d, f), source)
+                       for d, _, files in os.walk(source) for f in files)
+        assert names
+        for rel in names:
+            with open(os.path.join(source, rel), "rb") as a, open(out / rel, "rb") as b:
+>               assert a.read() == b.read(), rel
+E               AssertionError: world/dependants.json
+E               assert b'{\n  "_doc"...  }\n  }\n}\n' == b'{\n  "_doc"...  }\n  }\n}\n'
+E                 
+E                 At index 2482 diff: b'"' != b'\n'
+E                 Use -v to get more diff
+
+tests/test_phase013a_packs.py:86: AssertionError
+----------------------------- Captured stdout call -----------------------------
+normalised 285 tables into /tmp/pytest-of-matt/pytest-1001/popen-gw1/test_export_rerun_is_byte_iden0/bigville
+______ test_domains_check_exits_zero_on_the_hamlet_and_prints_its_report _______
+[gw1] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_domains_check_exits_zero_on_the_hamlet_and_prints_its_report():
+        proc = subprocess.run([sys.executable, "-m", "domains.check", "--pack", HAMLET],
+                              cwd=_ROOT, capture_output=True, text=True, timeout=600)
+>       assert proc.returncode == 0, proc.stderr
+E       AssertionError: 
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13', '-m', 'domains.check', '--pack', '... one limitation\n  age 75: aptitude mean 0.999 (2nd-98th pct 0.70-1.30); 0% have at least one limitation\n", stderr='').returncode
+
+tests/test_phase013b_data_pack.py:63: AssertionError
+____________ test_the_hamlet_pack_carries_the_same_mechanics_tables ____________
+[gw1] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_the_hamlet_pack_carries_the_same_mechanics_tables():
+        hamlet = entities("test_hamlet")
+        for name in MOVED:
+            assert getattr(hamlet, name) == getattr(DEFAULT, name), name
+>       assert hamlet.check_consistency()["errors"] == []
+E       assert ["DEPENDANTS:...REASONS code"] == []
+E         
+E         Left contains one more item: "DEPENDANTS: 'infant' is not a REFUSAL_REASONS code"
+E         Use -v to get more diff
+
+tests/test_phase014_parameters.py:110: AssertionError
+______ test_reports_events_pagination_and_json_download_without_advancing ______
+[gw2] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1001/popen-gw2/test_reports_events_pagination0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x784cb7bbb0e0>
+
+    def test_reports_events_pagination_and_json_download_without_advancing(tmp_path, monkeypatch):
+        from bigville import scenarios
+    
+        root = tmp_path / "scenarios"
+        root.mkdir()
+        (root / "reports_browser.json").write_text(json.dumps({
+            "id": "reports_browser", "name": "Reports Browser",
+            "map": {"grid": [["wall", "wall", "wall", "wall"],
+                             ["wall", "floor", "floor", "wall"],
+                             ["wall", "floor", "floor", "wall"],
+                             ["wall", "wall", "wall", "wall"]],
+                    "layout": {"w": 4, "h": 4, "homes": [[1, 1]]}},
+            "actors": [{"name": "Ada", "role": "hand", "backend": "simple", "home_cell": [1, 1]}],
+        }))
+        monkeypatch.setattr(scenarios, "SCENARIO_ROOT", root)
+        server = create_server(port=0, data_dir=tmp_path / "browser-data")
+        draft = {"scenario_id": "reports_browser", "name": "Browser report", "seed": 31,
+                 "autonomous": True, "default_backend": "simple", "ticks_per_period": "world", "turn_limit": 3}
+        resolved = resolve_draft(draft)
+        record, _ = server.run_registry.create_run({"draft": draft, "idempotency_key": "reports-browser",
+            "expected_config_hash": resolved["configuration_hash"],
+            "expected_capability_revision": resolved["capability_revision"]})
+        server.run_registry.command(record["id"], "step")
+        game = server.run_registry._runtime_for(record["id"]).game
+        for index in range(53):
+            game.world.create_event("festival" if index % 3 == 0 else "harvest",
+                                    subject="Ada", detail=f"browser-event-{index}")
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://{server.server_address[0]}:{server.server_address[1]}"
+        try:
+            with playwright.sync_playwright() as p:
+                try:
+                    browser = p.chromium.launch(headless=True)
+                except Exception as exc:
+                    pytest.skip(f"Playwright Chromium is unavailable: {exc}")
+                page = browser.new_page(accept_downloads=True)
+                requests_seen = []
+                page.on("request", lambda request: requests_seen.append(request.url))
+                page.goto(base, wait_until="domcontentloaded")
+                page.get_by_role("button", name="Runs").click()
+                page.get_by_role("button", name="Open run").click()
+                page.get_by_role("button", name="Reports & events").click()
+                page.locator("#report-json").wait_for()
+>               assert "Live state · captured" in page.locator("#report-provenance").inner_text()
+E               AssertionError: assert 'Live state · captured' in ''
+E                +  where '' = inner_text()
+E                +    where inner_text = <Locator frame=<Frame name= url='http://127.0.0.1:34435/'> selector='#report-provenance'>.inner_text
+E                +      where <Locator frame=<Frame name= url='http://127.0.0.1:34435/'> selector='#report-provenance'> = locator('#report-provenance')
+E                +        where locator = <Page url='http://127.0.0.1:34435/'>.locator
+
+tests/management/test_reports_browser.py:57: AssertionError
+_______ test_the_hamlet_has_no_founding_town_and_from_town100_refuses_it _______
+[gw1] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_the_hamlet_has_no_founding_town_and_from_town100_refuses_it():
+        E = entities(HAMLET)
+        assert list(E.FOUNDING_JOBS) == [] and E.FOUNDING_MAP == {}
+        report = E.check_consistency()
+>       assert report["errors"] == []
+E       assert ["DEPENDANTS:...REASONS code"] == []
+E         
+E         Left contains one more item: "DEPENDANTS: 'infant' is not a REFUSAL_REASONS code"
+E         Use -v to get more diff
+
+tests/test_phase016a_founding_town.py:102: AssertionError
+___ test_the_test_hamlet_pack_keeps_the_kinship_tables_and_a_clean_self_test ___
+[gw2] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_the_test_hamlet_pack_keeps_the_kinship_tables_and_a_clean_self_test():
+        view = entities("test_hamlet")
+        report = view.check_consistency()
+>       assert not report["errors"] and not report["warnings"]
+E       assert (not ["DEPENDANTS: 'infant' is not a REFUSAL_REASONS code"])
+
+tests/test_phase009_kinship.py:284: AssertionError
+_____________ test_the_test_hamlet_pack_has_no_fiscal_rules_to_map _____________
+[gw2] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_the_test_hamlet_pack_has_no_fiscal_rules_to_map():
+        from domains.data_view import entities
+        hamlet = entities("test_hamlet")
+        assert hamlet.FISCAL_INSTITUTIONS == {} and hamlet.FISCAL_BACKEND_OWNED == []
+        assert hamlet.FISCAL_PURSES == {} and hamlet.FISCAL_ACTIONS == {}
+        report = hamlet.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (["DEPENDANTS:...REASONS code"] == []
+E         
+E         Left contains one more item: "DEPENDANTS: 'infant' is not a REFUSAL_REASONS code"
+E         Use -v to get more diff)
+
+tests/test_phase011_fiscal.py:68: AssertionError
+____________ test_the_packet_matches_the_snapshot_for_a_fixed_view _____________
+[gw2] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_the_packet_matches_the_snapshot_for_a_fixed_view():
+        record = PromptBuilder().build(_fixed_context(), "check_in")
+        # The pack hash covers every table of the pack, so it changes whenever any other phase edits the pack. The
+        # snapshot holds the packet's own text, so the hash is left out of the comparison (and checked for shape).
+        payload = record.as_dict()
+        assert re.fullmatch(r"[0-9a-f]{64}", payload.pop("pack_hash"))
+        text = json.dumps(payload, sort_keys=True, indent=1, ensure_ascii=False)
+        with open(SNAPSHOT, encoding="utf-8") as handle:
+>           assert text == handle.read().rstrip("\n")
+E           assert '{\n "context... changes."\n}' == '{\n "context... changes."\n}'
+E             
+E             Skipping 2892 identical leading characters in diff, use -v to show
+E             - system": 5688,
+E             ?           ^^^
+E             + system": 5954,
+E             ?           ^^^
+E                  "things": 44,...
+E             
+E             ...Full output truncated (10 lines hidden), use '-vv' to show
+
+tests/test_phase054_llm_prompt.py:148: AssertionError
+_ test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical _
+[gw2] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical():
+        turns = 2
+        sequential_provider = FakeProvider(varied_reply, delay=0.3)
+        sequential = build_llm_town(sequential_provider, llm_residents=8, concurrency=4, llm_log=False)
+        for backend in (sequential.backends[name] for name in sequential.llm_residents):
+            backend.concurrent = False
+        started = time.perf_counter()
+        sequential_digest = _run(sequential, turns)
+        sequential_seconds = time.perf_counter() - started
+    
+        concurrent_provider = FakeProvider(varied_reply, delay=0.3)
+        concurrent = build_llm_town(concurrent_provider, llm_residents=8, concurrency=4, llm_log=False)
+        started = time.perf_counter()
+        concurrent_digest = _run(concurrent, turns)
+        concurrent_seconds = time.perf_counter() - started
+    
+        assert concurrent_digest == sequential_digest
+        assert _calls(concurrent_provider) == _calls(sequential_provider)
+        # Consults are gated by the autopilot, so not every resident is asked every turn.
+        assert 0 < len(concurrent_provider.calls) <= 8 * turns
+        print(f"\nSPEEDUP sequential={sequential_seconds:.2f}s concurrent={concurrent_seconds:.2f}s "
+              f"ratio={concurrent_seconds / sequential_seconds:.2f} calls={len(concurrent_provider.calls)}")
+>       assert concurrent_seconds < 0.75 * sequential_seconds, (sequential_seconds, concurrent_seconds)
+E       AssertionError: (23.310628175968304, 18.881428334047087)
+E       assert 18.881428334047087 < (0.75 * 23.310628175968304)
+
+tests/test_phase055_concurrency.py:56: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+SPEEDUP sequential=23.31s concurrent=18.88s ratio=0.81 calls=12
+___ test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it ___
+[gw5] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it():
+        server, service = _serve_with_service()
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            row = next(r for r in session.view["can"] if r["action"] == "work")
+            before = service.game.world._turn
+            session.line("look")
+            out = session.line(str([r["handle"] for r in session.view["can"]].index(row["handle"]) + 1))
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert service.game.world._turn == before + 1
+>       assert service.game.last_responses[PLAYER].major_action.action == "work"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:642: AttributeError
+______ test_over_http_walking_to_a_known_place_sends_the_rows_destination ______
+[gw5] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_over_http_walking_to_a_known_place_sends_the_rows_destination():
+        walker = "Verity Peaseblossom"                      # a resident who knows exact places at the start
+        server, service = _serve_with_service(walker)
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", walker))
+            walk = next((r for r in session.view["can"] if r["action"] == "walk"), None)
+            assert walk is not None
+            session.line("walk to " + walk["what"].replace("walk to the ", ""))
+        finally:
+            server.shutdown()
+            server.server_close()
+        proposal = service.game.last_responses[walker].major_action
+>       assert proposal.action == "move" and proposal.params.get("destination") is not None
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:660: AttributeError
+_____________ test_over_http_a_reaction_is_delivered_to_the_holder _____________
+[gw5] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_over_http_a_reaction_is_delivered_to_the_holder():
+        server, service = _serve_with_service()
+        game = service.game
+        taker = "Kester Furlong"
+        game.world._move_actor_to(taker, game.world.actor_position(PLAYER))
+        game.world.set_coin(PLAYER, 9.0)
+    
+        class Taker(DeterministicBackend):
+            def decide(self, context):
+                return ActorResponse(major_action=ProposedAction(
+                    "take", {"source": PLAYER, "kind": "coin", "amount": 3.0}))
+    
+        game.set_backend(taker, Taker(game.characters[taker]))
+        for name in game.characters:
+            if name not in (PLAYER, taker):
+                game.set_backend(name, DeterministicBackend(game.characters[name]))
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            out = session.line("wait")
+            assert session.view.get("reaction"), out
+            answer = session.line("resist")
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert answer[0] == "You hold on and resist."
+>       assert game.contest_log and game.contest_log[-1]["reaction"] == "resist"
+E       assert (deque([]))
+E        +  where deque([]) = <bigville.game.BigvilleGame object at 0x7de6fa6097c0>.contest_log
+
+tests/test_phase057_tui.py:688: AssertionError
+___ test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for ___
+[gw5] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
+        server, service = _serve_with_service()
+        try:
+            url = f"http://127.0.0.1:{server.server_port}/api/turn"
+    
+            def post(body):
+                req = urlrequest.Request(url, data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+                try:
+                    with urlrequest.urlopen(req) as response:
+                        return response.status, json.loads(response.read())
+                except urlrequest.HTTPError as exc:
+                    return exc.code, json.loads(exc.read())
+    
+            status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
+>           assert status == 400 and "intensity must be" in body["error"]
+E           assert (200 == 400)
+
+tests/test_phase057_tui.py:706: AssertionError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+[gw4] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x763827eaee70>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1001/popen-gw4/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+[gw4] linux -- Python 3.13.5 /home/linuxbrew/.linuxbrew/opt/python@3.13/bin/python3.13
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/opt/python@3.13/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7637f8da68b0>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:55: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+=========================== short test summary info ============================
+FAILED tests/test_phase004_located_gathering.py::test_the_self_test_is_clean_for_bigville_and_for_the_hamlet_pack
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_phase013a_packs.py::test_export_rerun_is_byte_identical - A...
+FAILED tests/test_phase013b_data_pack.py::test_domains_check_exits_zero_on_the_hamlet_and_prints_its_report
+FAILED tests/test_phase014_parameters.py::test_the_hamlet_pack_carries_the_same_mechanics_tables
+FAILED tests/management/test_reports_browser.py::test_reports_events_pagination_and_json_download_without_advancing
+FAILED tests/test_phase016a_founding_town.py::test_the_hamlet_has_no_founding_town_and_from_town100_refuses_it
+FAILED tests/test_phase009_kinship.py::test_the_test_hamlet_pack_keeps_the_kinship_tables_and_a_clean_self_test
+FAILED tests/test_phase011_fiscal.py::test_the_test_hamlet_pack_has_no_fiscal_rules_to_map
+FAILED tests/test_phase054_llm_prompt.py::test_the_packet_matches_the_snapshot_for_a_fixed_view
+FAILED tests/test_phase055_concurrency.py::test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical
+FAILED tests/test_phase057_tui.py::test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it
+FAILED tests/test_phase057_tui.py::test_over_http_walking_to_a_known_place_sends_the_rows_destination
+FAILED tests/test_phase057_tui.py::test_over_http_a_reaction_is_delivered_to_the_holder
+FAILED tests/test_phase057_tui.py::test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+ERROR tests/test_phase044_births.py - import file mismatch:
+ERROR tests/test_phase045_dependants.py - import file mismatch:
+17 failed, 2347 passed, 6 skipped, 2 errors in 935.14s (0:15:35)

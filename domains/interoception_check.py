@@ -24,7 +24,7 @@ from domains import interoception as I
 from domains.pack import PackError, load_pack
 
 REQUIRED = ("ANATOMY", "QUALITY_TREE", "VOCALISATIONS", "CHANNELS", "SIGNAL_SOURCES", "PATTERNS", "FEELING",
-            "INTEROCEPTION", "HARM_LOCUS", "BODY_RATES", "OBSERVABLE_SIGNS")
+            "INTEROCEPTION", "HARM_LOCUS", "BODY_RATES", "OBSERVABLE_SIGNS", "ATTEND")
 RATE_KEYS = ("located_heal_per_tick", "care_share", "habituation_rate", "habituation_recover", "incubation_days",
              "sleep_debt_rise", "sleep_debt_fall", "sleep_debt_full")
 DEPTH_KEYS = ("base", "intensity_weight", "acuity_weight", "attention_weight", "impairment_weight", "jitter")
@@ -143,6 +143,7 @@ def check_interoception(pack_name, errors, warnings, info):
         except (KeyError, TypeError, ValueError):
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] needs numeric floor, ceiling and awareness")
     _check_phase070(pack, anatomy, anatomy_ok, errors)
+    _check_phase071(pack, sources, errors)
     for name, row in patterns.items():
         if not isinstance(row.get("repeat"), int) or isinstance(row.get("repeat"), bool) or row["repeat"] < 1:
             errors.append(f"INTEROCEPTION: PATTERNS[{name}].repeat must be a whole number of at least 1")
@@ -230,6 +231,51 @@ def _check_phase070(pack, anatomy, anatomy_ok, errors):
                 errors.append(f"INTEROCEPTION: OBSERVABLE_SIGNS[{name}].{key} must be a number")
         if not isinstance(row.get("label"), str) or not LETTERS.match(row.get("label", "")):
             errors.append(f"INTEROCEPTION: OBSERVABLE_SIGNS[{name}].label must be a word of letters")
+
+
+def _check_phase071(pack, sources, errors):
+    """Phase 071: the attend and press table. Every number is in range, the press reaction rows start at a minimum of 0
+    and rise, each sound is letters only or null (silence), and every remedy names a signal source and lists major
+    actions. The refusal reason 'attending' must exist (the world refuses an attend while attending with it)."""
+    table = pack["ATTEND"]
+    for key in ("ticks", "remedy_window", "press_ticks"):
+        value = table.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            errors.append(f"INTEROCEPTION: ATTEND.{key} must be a whole number of at least 1")
+    for key in ("acuity_bonus", "press_boost", "stamina_cost"):
+        value = table.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or value < 0:
+            errors.append(f"INTEROCEPTION: ATTEND.{key} must be a number of at least 0")
+    for key in ("focus_attention", "other_attention"):
+        value = table.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0.0 <= float(value) <= 1.0:
+            errors.append(f"INTEROCEPTION: ATTEND.{key} must be in [0, 1]")
+    if "REFUSAL_REASONS" in pack and "attending" not in pack["REFUSAL_REASONS"]:
+        errors.append("INTEROCEPTION: REFUSAL_REASONS has no 'attending' code (the world refuses an attend with it)")
+    aliases = table.get("verb_aliases")
+    if not isinstance(aliases, dict) or set(aliases.values()) - {"attend", "press"}:
+        errors.append("INTEROCEPTION: ATTEND.verb_aliases must map words to 'attend' or 'press'")
+    rows = table.get("press_sounds")
+    if not isinstance(rows, list) or not rows:
+        errors.append("INTEROCEPTION: ATTEND.press_sounds must be a non-empty list")
+    else:
+        mins = [row.get("min") for row in rows if isinstance(row, dict)]
+        if len(mins) != len(rows) or not mins or float(mins[0]) != 0.0 or any(
+                float(a) >= float(b) for a, b in zip(mins, mins[1:])):
+            errors.append("INTEROCEPTION: ATTEND.press_sounds must start at min 0 and rise in min")
+        for row in rows:
+            sound = row.get("sound") if isinstance(row, dict) else None
+            if sound is not None and (not isinstance(sound, str) or not LETTERS.match(sound)):
+                errors.append(f"INTEROCEPTION: ATTEND.press_sounds sound {sound!r} must be letters only, or null")
+    remedies = table.get("remedies")
+    if not isinstance(remedies, dict):
+        errors.append("INTEROCEPTION: ATTEND.remedies must map signal sources to lists of major actions")
+        return
+    for source, actions in remedies.items():
+        if source not in sources:
+            errors.append(f"INTEROCEPTION: ATTEND.remedies names {source!r}, not a SIGNAL_SOURCES row")
+        if not isinstance(actions, list) or not all(isinstance(a, str) for a in actions):
+            errors.append(f"INTEROCEPTION: ATTEND.remedies[{source}] must be a list of action names")
 
 
 def _root_of(anatomy):

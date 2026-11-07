@@ -53,6 +53,7 @@ def pack_tables(pack):
             "harm_locus": loaded["HARM_LOCUS"],
             "rates": loaded["BODY_RATES"],
             "signs": loaded["OBSERVABLE_SIGNS"],
+            "attend": loaded["ATTEND"],
         }
     return _TABLE_CACHE[key]
 
@@ -82,7 +83,9 @@ class Body:
         rules = pack_tables(world.data_pack)["rules"]
         return {"embodiment": cls.kind, "seed": seed,
                 "acuity": round(I.acuity_of(rules["acuity"], seed, actor, life_stage), 6),
-                "previous": None, "habituation": {}, "ledger": {}, "sleep_debt": 0.0, "findings": []}
+                "previous": None, "habituation": {}, "ledger": {}, "sleep_debt": 0.0, "findings": [],
+                "attending": None, "pressed": {}, "probe": None, "pending": None,
+                "counts": {"attends": 0, "presses": 0, "depth_gained": 0, "remedied": 0}}
 
     def clock(self):
         """(seed, turn): the seed the draws use and the turn they are keyed on."""
@@ -93,9 +96,16 @@ class Body:
         raise NotImplementedError
 
     def located(self):
-        """The located reads: {"injury": {locus: value}}, from the ledger (plain values, zero loci dropped)."""
-        return {"injury": {locus: round(float(value), 6) for locus, value in sorted(self.state["ledger"].items())
-                           if float(value) > 0.0}}
+        """The located reads: {"injury": {locus: value}}, from the ledger (plain values, zero loci dropped). A locus
+        that a press has just probed (Phase 071) reads higher by ATTEND.press_boost while the press lasts."""
+        pressed = self.state.get("pressed") or {}
+        boost = float(self.tables["attend"]["press_boost"]) if pressed else 0.0
+        out = {}
+        for locus, value in sorted(self.state["ledger"].items()):
+            if float(value) > 0.0:
+                extra = boost if int(pressed.get(locus, 0)) > 0 else 0.0
+                out[locus] = round(float(value) + extra, 6)
+        return {"injury": out}
 
     def attention(self):
         return "idle"
@@ -120,11 +130,21 @@ class Body:
         """Exact values for the physics: a dict of plain numbers. Empty for a body that has none."""
         return {}
 
-    def _derive(self):
+    def focus(self):
+        """Phase 071: while the resident attends, the focus the derivation uses (the attended source and the attention
+        budget); None otherwise. Plain values from ATTEND."""
+        attending = self.state.get("attending")
+        if not attending:
+            return None
+        rules = self.tables["attend"]
+        return {"source": str(attending["source"]), "acuity_bonus": float(rules["acuity_bonus"]),
+                "focus_attention": float(rules["focus_attention"]), "other_attention": float(rules["other_attention"])}
+
+    def _derive(self, use_focus=True):
         seed, turn = self.clock()
         return I.derive(self.tables, self.reads(), self.record(), seed, self.actor, turn,
                         previous=self.state.get("previous"), located=self.located(),
-                        habituation=self.state.get("habituation"))
+                        habituation=self.state.get("habituation"), focus=self.focus() if use_focus else None)
 
     def afferents(self):
         """What the mind may feel: {feeling?, signals}. Only sounds and places; no cause."""
@@ -141,6 +161,7 @@ class Body:
         block["habituation"] = dict(sorted((self.state.get("habituation") or {}).items()))
         block["capacities"] = self.capacities()
         block["facts"] = self.facts()
+        block["attending"] = self.focus()
         return block
 
     def screen(self):
@@ -227,12 +248,105 @@ class Body:
         the located ledger falls at its time rate. No physical state of the world changes."""
         self._habituation_step()
         self._sleep_step()
+        self._attend_tick()
         rate = float(self.tables["rates"]["located_heal_per_tick"])
         ledger = self.state["ledger"]
         for locus in list(ledger):
             ledger[locus] = round(float(ledger[locus]) - rate, 6)
             if ledger[locus] <= 0.0:
                 del ledger[locus]
+
+    # ------------------------------------------------------------------ Phase 071: attending and pressing
+    def _signal_rows(self):
+        """The felt signal rows in the order the view shows them (no focus: the list a handle names)."""
+        return self._derive(use_focus=False)["signals"]
+
+    def attend_options(self):
+        """The attend rows the agent view offers: one per felt signal, handle signal:N (N from 1). None while the
+        resident is asleep, collapsed or already attending (the world would refuse each one)."""
+        if self.attention() == "asleep" or self.state.get("attending"):
+            return []
+        return [{"action": "attend", "target": f"signal:{index}", "where": str(row["where"])}
+                for index, row in enumerate(self._signal_rows(), start=1)]
+
+    def signal_named(self, handle):
+        """The source name of the felt signal a handle names (signal:N), or None when no such signal is felt."""
+        text = str(handle)
+        if not text.startswith("signal:") or not text[len("signal:"):].isdigit():
+            return None
+        index = int(text[len("signal:"):])
+        rows = self._signal_rows()
+        return rows[index - 1]["source"] if 1 <= index <= len(rows) else None
+
+    def _depth_sum(self, derived, name):
+        row = next(row for row in derived["sources"] if row["source"] == name)
+        return int(row["quality_depth"]) + int(row["locus_depth"])
+
+    def start_attend(self, source):
+        """Phase 071: begin attending to one felt signal. Returns the probe (the sound and place it now has). The
+        attention runs ATTEND.ticks world ticks; the depth it adds is counted for the report."""
+        rules = self.tables["attend"]
+        seed, turn = self.clock()
+        plain = self._depth_sum(self._derive(use_focus=False), source)
+        self.state["attending"] = {"source": str(source), "ticks": int(rules["ticks"])}
+        focused = self._derive(use_focus=True)
+        gained = self._depth_sum(focused, source) - plain
+        row = next(row for row in focused["sources"] if row["source"] == source)
+        counts = self.state["counts"]
+        counts["attends"] = int(counts.get("attends", 0)) + 1
+        counts["depth_gained"] = int(counts.get("depth_gained", 0)) + int(gained)
+        self.state["pending"] = {"source": str(source), "until": int(turn) + int(rules["remedy_window"])}
+        probe = {"turn": int(turn), "action": "attend", "sound": row["sound"], "where": row["where"]}
+        self.state["probe"] = probe
+        return probe
+
+    def press(self, region):
+        """Phase 071: probe a region of this body. The reaction is the press_sounds row for the summed raw intensity of
+        the true sources whose locus lies under the region. A located injury under the region is pressed (it reads
+        higher for ATTEND.press_ticks ticks). Returns the probe: {turn, action, sound (None for silence), where}."""
+        anatomy = _anatomy_rows(self.tables)
+        seed, turn = self.clock()
+        block = self.referee()
+        total = sum(float(row["raw_intensity"]) for row in block["sources"]
+                    if I.within(anatomy, row["locus_true"], region))
+        rules = self.tables["attend"]
+        pressed = dict(self.state.get("pressed") or {})
+        for locus in self.state["ledger"]:
+            if I.within(anatomy, locus, region):
+                pressed[locus] = int(rules["press_ticks"])
+        self.state["pressed"] = pressed
+        counts = self.state["counts"]
+        counts["presses"] = int(counts.get("presses", 0)) + 1
+        probe = {"turn": int(turn), "action": "press", "sound": I.press_sound(self.tables, total),
+                 "where": str(anatomy[region]["label"])}
+        self.state["probe"] = probe
+        return probe
+
+    def note_action(self, action, applied):
+        """Phase 071 (referee measure): a major action that succeeds within remedy_window turns of an attend, and that
+        the ATTEND.remedies table names for the attended source, counts once as acting on the true source."""
+        pending = self.state.get("pending")
+        if not pending:
+            return
+        _seed, turn = self.clock()
+        if int(turn) > int(pending["until"]):
+            self.state["pending"] = None
+            return
+        base = str(pending["source"]).split("@", 1)[0]          # a located source 'injury_sharp@arm' is injury_sharp
+        if applied and action in self.tables["attend"]["remedies"].get(base, []):
+            self.state["counts"]["remedied"] = int(self.state["counts"].get("remedied", 0)) + 1
+            self.state["pending"] = None
+
+    def _attend_tick(self):
+        """The attention and the press timers run down one world tick. Falling asleep ends an attention."""
+        attending = self.state.get("attending")
+        if attending and self.attention() == "asleep":
+            self.state["attending"] = None
+        elif attending:
+            left = int(attending["ticks"]) - 1
+            self.state["attending"] = None if left <= 0 else {"source": attending["source"], "ticks": left}
+        pressed = {locus: int(ticks) - 1 for locus, ticks in dict(self.state.get("pressed") or {}).items()}
+        self.state["pressed"] = {locus: ticks for locus, ticks in pressed.items() if ticks > 0}
 
     def dump(self):
         return copy.deepcopy(self.state)
@@ -397,3 +511,77 @@ class BodyMixin:
             for locus, value in located.items():
                 totals[locus] = round(totals.get(locus, 0.0) + float(value), 6)
         return {"by_locus": dict(sorted(totals.items())), "residents": count}
+
+    # ------------------------------------------------------------------ Phase 071: the world's hooks for attending
+    def _attending_refusal(self, actor, action):
+        """'attending' while the resident attends and the action is not attend or press (the attention holds the
+        resident's one major action for its ticks). None otherwise. Reads the plain state only."""
+        if action in ("attend", "press"):
+            return None
+        state = getattr(self, "embodiment", {}).get(actor)
+        return "attending" if state and state.get("attending") else None
+
+    def _body_attend(self, actor, handle):
+        """Phase 071: the attend enactment (called inside the claimed slot). A refusal returns False with its reason.
+        The stamina cost is the world's own: it lowers the body node's stamina_reserve by ATTEND.stamina_cost."""
+        body = self.body_of(actor)
+        if body is None:
+            return self._refuse("wrong_target")
+        if not isinstance(handle, str):
+            return self._refuse("malformed")
+        code = self._sleep_code(actor)
+        if code is not None:
+            return self._refuse(code)
+        if body.state.get("attending"):
+            return self._refuse("attending")
+        source = body.signal_named(handle)
+        if source is None:
+            return self._refuse("unknown_target")
+        node = self._bodies[actor]
+        reserve = float(self.eng.node(node)["attrs"].get("stamina_reserve", 1.0))
+        self.eng.set_attr(node, "stamina_reserve", max(0.0, reserve - float(body.tables["attend"]["stamina_cost"])))
+        body.start_attend(source)
+        self.embodiment[actor] = body.dump()
+        return True
+
+    def _body_press(self, actor, region):
+        """Phase 071: the press enactment (called inside the claimed slot). A region that is not an ANATOMY node is
+        unknown_target; the reaction is the body's own probe."""
+        body = self.body_of(actor)
+        if body is None:
+            return self._refuse("wrong_target")
+        if not isinstance(region, str):
+            return self._refuse("malformed")
+        code = self._sleep_code(actor)
+        if code is not None:
+            return self._refuse(code)
+        if not self._body_locus_ok(region):
+            return self._refuse("unknown_target")
+        body.press(region)
+        self.embodiment[actor] = body.dump()
+        return True
+
+    def _body_note_outcome(self, actor, action, applied):
+        """Phase 071: called once per published major-action outcome. Only the referee count changes."""
+        state = getattr(self, "embodiment", {}).get(actor)
+        if state and state.get("pending"):
+            body = self.body_of(actor)
+            body.note_action(str(action), bool(applied))
+            self.embodiment[actor] = body.dump()
+
+    def attention_report(self):
+        """Phase 071 (game_report only): attends, presses, the depth gained by attending (summed over residents), the
+        attends that a remedy for the attended source followed (acted on the true source, a referee measure), and how
+        many residents are attending now. Read-only."""
+        totals = {"attends": 0, "presses": 0, "depth_gained": 0, "acted_on_true_source": 0, "attending_now": 0}
+        for actor in self._actors:
+            state = getattr(self, "embodiment", {}).get(actor)
+            if not state:
+                continue
+            counts = state.get("counts") or {}
+            totals["attends"] += int(counts.get("attends", 0))
+            totals["presses"] += int(counts.get("presses", 0))
+            totals["depth_gained"] += int(counts.get("depth_gained", 0))
+            totals["acted_on_true_source"] += int(counts.get("remedied", 0))
+            totals["attending_now"] += 1 if state.get("attending") else 0
+        return totals

@@ -118,6 +118,14 @@
       "unlock": {
         "kind": "security",
         "description": "Unlock a locked container or the town store with a key you hold, from the cell it stands on. A lock that needs several keyholders opens only after that many of them have unlocked it."
+      },
+      "attend": {
+        "kind": "perception",
+        "description": "Look into one feeling you have: give it your attention for a few moments, so it becomes clearer. It names the feeling by the number the view gives it (signal:1 for the first). You cannot do it asleep or collapsed, or while you are already attending. It costs a little stamina, and while you attend your other feelings are fainter."
+      },
+      "press": {
+        "kind": "perception",
+        "description": "Press one part of your own body (a region of the body, for example torso or arm) and feel what answers. Silence means nothing there. A sound means something lies in that part or below it. Pressing a hurt place makes it ache more for a short while."
       }
     }
   }
