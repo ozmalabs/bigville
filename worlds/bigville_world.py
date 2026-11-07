@@ -49,6 +49,68 @@ _DISTANCE_FIELDS_LOCK = threading.RLock()
 # never checkpointed.
 _EVENT_LOG_LOCK = threading.RLock()
 
+# EN04: derived read caches.  Both maps are module level and keyed weakly by
+# world, so no cache object or entry ever enters a checkpoint and a discarded
+# world is collected normally.
+#
+# ``_STATIC_READS`` holds facts derived only from pack/scenario data (the
+# common recipe set, the bulk-input kinds, the store's lock node).  They are
+# rebuilt if a recipe or item is installed after the cache was filled.
+#
+# ``_DECISION_READS`` exists only while ``BigvilleWorld.decision_reads()`` is
+# open, which the game enters for one frozen decision snapshot.  Entries are
+# pure reads of that snapshot (proximity rows, known recipes, bulk availability,
+# work candidates and previews, body read-offs).  The scope is exited before
+# any action is committed, so post-action witness and after-state reads never
+# see a cached pre-action value.
+_STATIC_READS_LOCK = threading.RLock()
+_STATIC_READS: "weakref.WeakKeyDictionary[Any, _StaticReads]" = weakref.WeakKeyDictionary()
+_DECISION_READS_LOCK = threading.RLock()
+_DECISION_READS: "weakref.WeakKeyDictionary[Any, _DecisionReads]" = weakref.WeakKeyDictionary()
+_MISSING_READ = object()
+
+
+class _StaticReads:
+    """Pack/scenario-derived values shared by every observation (EN04)."""
+
+    __slots__ = ("version", "common_recipes", "uncommon_recipes",
+                 "bulk_kinds", "store_lock")
+
+    def __init__(self, version, common_recipes, uncommon_recipes, bulk_kinds,
+                 store_lock):
+        self.version = version
+        self.common_recipes = common_recipes
+        self.uncommon_recipes = uncommon_recipes
+        self.bulk_kinds = bulk_kinds
+        self.store_lock = store_lock
+
+
+class _DecisionReads:
+    """Pure per-snapshot read caches (EN04); never durable state."""
+
+    __slots__ = ("turn", "depth", "lock", "near", "known", "bulk", "work",
+                 "preview", "body", "band", "stamina", "skill")
+
+    def __init__(self, turn):
+        self.turn = int(turn)
+        self.depth = 0
+        self.lock = threading.RLock()
+        self.near = {}
+        self.known = {}
+        self.bulk = {}
+        self.work = {}
+        self.preview = {}
+        self.body = {}
+        self.band = {}
+        self.stamina = {}
+        self.skill = {}
+
+
+def _invalidate_static_reads(world) -> None:
+    with _STATIC_READS_LOCK:
+        _STATIC_READS.pop(world, None)
+
+
 DEFAULT_DATA_PACK = "bigville"
 
 
@@ -427,6 +489,10 @@ class _ActorPositions(dict):
 
         This is a candidate superset for walkable-distance filtering, not a
         final answer: a resident in the square may still be unreachable.
+
+        EN04: for a wide radius the occupied buckets are fewer than the
+        (2r+1)^2 cells in the square, so scanning them is equivalent and
+        cheaper.  A narrow radius keeps the direct cell scan.
         """
         if not isinstance(cell, (tuple, list)) or len(cell) != 2:
             return []
@@ -435,10 +501,16 @@ class _ActorPositions(dict):
             reach = max(0, int(radius))
         except (TypeError, ValueError):
             return []
+        span = (2 * reach + 1) ** 2
         names: set[str] = set()
-        for cx in range(x - reach, x + reach + 1):
-            for cy in range(y - reach, y + reach + 1):
-                names.update(self._cell_buckets.get((cx, cy), ()))
+        if span > len(self._cell_buckets):
+            for (cx, cy), members in self._cell_buckets.items():
+                if x - reach <= cx <= x + reach and y - reach <= cy <= y + reach:
+                    names.update(members)
+        else:
+            for cx in range(x - reach, x + reach + 1):
+                for cy in range(y - reach, y + reach + 1):
+                    names.update(self._cell_buckets.get((cx, cy), ()))
         return sorted(names)
 
 
@@ -1370,7 +1442,7 @@ class BigvilleWorld:
         # may retain condition=0.  Treat the next batch as newly made rather
         # than allowing the spoil rule to discard it in the same rule sweep.
         for kind, node in self._stock.items():
-            attrs = self.eng.node(node)["attrs"]
+            attrs = self.eng.node_attrs(node)
             if float(attrs.get("qty", 0.0)) <= 0.0 and attrs.get("perishable", 0.0) == 1.0:
                 self.eng.set_attr(node, "condition", 1.0)
         # Bigville owns the executable part of the graph contract.  The graph
@@ -1386,7 +1458,7 @@ class BigvilleWorld:
         # Freshness is mixed in where stock arrives (set_stock and the transfers), so a pile that gained
         # quantity keeps its blended condition. Only the quantity bookkeeping remains here.
         for kind, node in self._stock.items():
-            attrs = self.eng.node(node)["attrs"]
+            attrs = self.eng.node_attrs(node)
             qty = float(attrs.get("qty", 0.0))
             if qty < 0.0:
                 self.eng.set_attr(node, "qty", 0.0)
@@ -2216,7 +2288,7 @@ class BigvilleWorld:
         """Return the movement read-off for a map cell, including its terrain name."""
         if not isinstance(cell, tuple) or cell not in self._map_cells:
             return {"terrain": "unknown", **dict(self.E.TERRAIN_MOVEMENT["grass"])}
-        attrs = self.eng.node(self._map_cells[cell])["attrs"]
+        attrs = self.eng.node_attrs(self._map_cells[cell])
         base = str(attrs.get("base_terrain", attrs.get("terrain", "grass")))
         wear = float(attrs.get("wear", 0.0))
         record = self.E.TERRAIN_WEAR.get(base)
@@ -2250,7 +2322,7 @@ class BigvilleWorld:
         """
         if not isinstance(cell, tuple) or cell not in self._map_cells:
             return float(self.E.TERRAIN_MOVEMENT["grass"]["move_time"])
-        attrs = self.eng.node(self._map_cells[cell])["attrs"]
+        attrs = self.eng.node_attrs(self._map_cells[cell])
         base = str(attrs.get("base_terrain", attrs.get("terrain", "grass")))
         wear = float(attrs.get("wear", 0.0))
         record = self.E.TERRAIN_WEAR.get(base)
@@ -2380,6 +2452,85 @@ class BigvilleWorld:
         self._actor_positions = indexed
         return indexed
 
+    # --------------------------------------------------- EN04 derived read caches
+    def _static_reads(self):
+        """Pack/scenario-derived values, cached per world and never checkpointed."""
+        version = (len(self._recipe_specs), len(self._item_specs))
+        with _STATIC_READS_LOCK:
+            cached = _STATIC_READS.get(self)
+            if cached is not None and cached.version == version:
+                return cached
+            common = frozenset(
+                name for name, spec in self._recipe_specs.items()
+                if spec.get("common", True))
+            uncommon = tuple(sorted(set(self._recipe_specs) - common))
+            bulk_kinds = set()
+            for spec in self._recipe_specs.values():
+                for kind, qty in spec.get("in", []):
+                    need = self._input_need(kind, qty)
+                    if need[2] or need[3]:
+                        continue
+                    bulk_kinds.add(kind)
+            try:
+                store_lock = next(iter(self.eng.neighbours(self._store, "has_lock")))
+            except StopIteration:
+                store_lock = None
+            cached = _StaticReads(version, common, uncommon,
+                                  frozenset(bulk_kinds), store_lock)
+            _STATIC_READS[self] = cached
+            return cached
+
+    @contextmanager
+    def decision_reads(self):
+        """Open the frozen-decision read-cache scope (EN04).
+
+        The game enters this around one turn's ``_build_contexts``.  While it
+        is open, ``actors_near``, ``_known_recipe_names``, bulk availability,
+        work candidates/previews and body read-offs may be memoised under the
+        assertion that the canonical world does not change.  The scope is
+        closed before actions are committed, so witness/after-state reads are
+        always computed from the live world.  Re-entrant; nested scopes share
+        the outer cache, and the cache is discarded when the outermost exits.
+        """
+        turn = int(self._turn)
+        with _DECISION_READS_LOCK:
+            cache = _DECISION_READS.get(self)
+            if cache is None or cache.turn != turn:
+                cache = _DecisionReads(turn)
+                _DECISION_READS[self] = cache
+            cache.depth += 1
+        try:
+            yield self
+        finally:
+            with _DECISION_READS_LOCK:
+                cache.depth -= 1
+                if cache.depth <= 0:
+                    _DECISION_READS.pop(self, None)
+
+    def _decision_read_cache(self):
+        """The open decision cache for this world, or None outside the scope."""
+        with _DECISION_READS_LOCK:
+            cache = _DECISION_READS.get(self)
+        if cache is not None and cache.turn == int(self._turn):
+            return cache
+        return None
+
+    def occupancy_at(self, position):
+        """Number of positioned actors on ``position`` (the LA03 cell occupancy).
+
+        This is the derived bucket size; it is exactly what
+        ``len(actors_near(position, 0, alive_only=False))`` returned, without a
+        candidate scan, distance filter or sort.
+        """
+        if not isinstance(position, (tuple, list)) or len(position) != 2:
+            return 0
+        position = (position[0], position[1])
+        if position not in self._map_cells:
+            return 0
+        positions = self._ensure_position_index()
+        return len(positions._cell_buckets.get(position, ()))
+
+
     def _actor_candidates(self, cell, radius):
         """Names in the Chebyshev bounding square; brute force under the debug switch."""
         positions = self._ensure_position_index()
@@ -2393,13 +2544,26 @@ class BigvilleWorld:
         Candidates come from the occupancy index's Chebyshev bounding square, a
         strict superset of the walkable-distance ball, then are filtered with
         ``distance``. The result is exactly the brute-force set and is sorted.
+
+        EN04: inside ``decision_reads()`` the unfiltered result is memoised by
+        ``(position, radius, alive_only)``; ``exclude`` is applied afterwards.
+        The scope guarantees the world is frozen, and it closes before the
+        action commit, so a post-action proximity read is never stale.
         """
         if not isinstance(position, tuple) or len(position) != 2:
             return []
+        cache = self._decision_read_cache()
+        key = None
+        if cache is not None:
+            key = (position, radius, bool(alive_only))
+            with cache.lock:
+                cached = cache.near.get(key, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                if exclude is None:
+                    return list(cached)
+                return [name for name in cached if name != exclude]
         names = []
         for name in self._actor_candidates(position, radius):
-            if exclude is not None and name == exclude:
-                continue
             if name not in self._actors:
                 continue
             if alive_only and not self.is_alive(name):
@@ -2408,7 +2572,13 @@ class BigvilleWorld:
             distance = self.distance(position, other_position) if other_position is not None else None
             if distance is not None and distance <= radius:
                 names.append(name)
-        return sorted(names)
+        result = sorted(names)
+        if cache is not None:
+            with cache.lock:
+                cache.near[key] = tuple(result)
+        if exclude is None:
+            return result
+        return [name for name in result if name != exclude]
 
     def actor_position(self, actor): return self._ensure_position_index().get(actor)
 
@@ -2495,7 +2665,7 @@ class BigvilleWorld:
             # Too exhausted to walk (Phase 024): no step, no effort. The walk is refused before this point.
             return current
         state = self._refresh_carry_state(actor)
-        attrs = self.eng.node(self._actor(actor))["attrs"]
+        attrs = self.eng.node_attrs(self._actor(actor))
         nxt = self._movement_step(current, destination)
         terrain = self.terrain_state(nxt or current)
         effort = state["move_energy"] * float(terrain.get("stamina_multiplier", 1.0))
@@ -3082,6 +3252,7 @@ class BigvilleWorld:
         self.eng.set_attr(n, "scarcity", self.E.scarcity(kind))   # the raw material's general scarcity (data)
         self.eng.add_edge_unchecked(self._town, "has_itemspec", n)
         self._items[kind] = n
+        _invalidate_static_reads(self)
         return n
 
     def _install_recipe(self, r):
@@ -3114,6 +3285,7 @@ class BigvilleWorld:
             self.set_stock(out_kind, self.qty(out_kind))
         self._actions[r["name"]] = asp
         self._recipe_specs[r["name"]] = r
+        _invalidate_static_reads(self)
         return asp
 
     # ---------------------------------------------------- typed input slots
@@ -6750,7 +6922,7 @@ class BigvilleWorld:
         """Whether `actor` may use a container or the store now. An unlocked one is open to everyone. A locked
         one opens to a holder of its key, but only when one key is enough (keys_required 1): a lock that needs
         several keyholders stays shut until they have unlocked it (see `unlock`)."""
-        attrs = self.eng.node(node)["attrs"]
+        attrs = self.eng.node_attrs(node)
         if float(attrs.get("locked", 0.0)) != 1.0:
             return True
         if float(attrs.get("keys_required", 1.0)) > 1.0:
@@ -6761,7 +6933,7 @@ class BigvilleWorld:
         if container not in self._containers:
             return False
         # Phase 050: a container broken by an attempt is no longer opened (its contents are not spilled; see the report).
-        if float(self.eng.node(self._containers[container][0])["attrs"].get("destroyed", 0.0)) == 1.0:
+        if float(self.eng.node_attrs(self._containers[container][0]).get("destroyed", 0.0)) == 1.0:
             return False
         return self._node_accessible(actor, self._containers[container][0])
 
@@ -6774,6 +6946,9 @@ class BigvilleWorld:
         return self._node_accessible(actor, self._store_lock_node())
 
     def _store_lock_node(self):
+        lock = self._static_reads().store_lock
+        if lock is not None:
+            return lock
         return next(iter(self.eng.neighbours(self._store, "has_lock")))
 
     def _lockable(self, name):
@@ -8628,12 +8803,29 @@ class BigvilleWorld:
         uncommon recipe is included when the actor holds a ``knows`` edge to
         its ActionSpec. This reads knowledge, not full per-recipe validation:
         ingredients, tools and location are proposal-time checks.
+
+        EN04: the common/uncommon split comes from the pack data, so only the
+        seven uncommon recipes need a per-actor edge test.  Inside a frozen
+        decision scope the sorted name list is memoised per actor.
         """
+        cache = self._decision_read_cache()
+        if cache is not None:
+            with cache.lock:
+                cached = cache.known.get(actor, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return list(cached)
+        static = self._static_reads()
         node = self._actors[actor]
-        known = {name for name, action in self._actions.items()
-                 if self.eng.has_edge(node, "knows", action)}
-        return sorted(name for name, spec in self._recipe_specs.items()
-                      if name in known or bool(spec.get("common", True)))
+        known = set(static.common_recipes)
+        for name in static.uncommon_recipes:
+            action = self._actions.get(name)
+            if action is not None and self.eng.has_edge(node, "knows", action):
+                known.add(name)
+        result = sorted(known)
+        if cache is not None:
+            with cache.lock:
+                cache.known[actor] = tuple(result)
+        return result
 
     @staticmethod
     def _observe_shared_bucket_count(actor_attrs, other_attrs):
@@ -8649,7 +8841,7 @@ class BigvilleWorld:
         relationship = self.relationship(actor, other)
         if relationship is None:
             return {"tie_strength": 0.0, "band_code": 0.0}
-        attrs = self.eng.node(relationship)["attrs"]
+        attrs = self.eng.node_attrs(relationship)
         strength = float(attrs.get("strength", 0.0))
         tie_strength = max(0.0, strength)
         resentment = max(0.0, -strength) if attrs.get("kind") == "feud" else 0.0
@@ -8660,11 +8852,11 @@ class BigvilleWorld:
     def _observe_nearby_actors(self, actor, position):
         if position is None:
             return []
-        actor_attrs = self.eng.node(self._actors[actor])["attrs"]
+        actor_attrs = self.eng.node_attrs(self._actors[actor])
         nearby = []
         for name in self.actors_near(position, 8, exclude=actor):
             other_position = self.actor_position(name)
-            other_attrs = self.eng.node(self._actors[name])["attrs"]
+            other_attrs = self.eng.node_attrs(self._actors[name])
             nearby.append({
                 "id": name, "name": name,
                 "role": other_attrs.get("role", ""),
@@ -8685,9 +8877,9 @@ class BigvilleWorld:
         job = self._job_of(actor)
         if job is None:
             return None
-        attrs = self.eng.node(job)["attrs"]
+        attrs = self.eng.node_attrs(job)
         runs = self.eng.neighbours(job, "runs")
-        recipe = (self.eng.node(runs[0])["attrs"].get("name", "") if runs else "")
+        recipe = (self.eng.node_attrs(runs[0]).get("name", "") if runs else "")
         start = attrs.get("start_cell")
         return {"recipe": str(recipe),
                 "remaining": round(float(attrs.get("remaining", 0.0)), 4),
@@ -8803,7 +8995,7 @@ class BigvilleWorld:
                 "buildings": buildings, "land": land,
                 "gathering_sites": gathering_sites, "fixtures": fixtures,
                 "exits": exits,
-                "occupancy": len(self.actors_near(position, 0, alive_only=False)),
+                "occupancy": self.occupancy_at(position),
                 "animals": animals, "crops": crops,
                 "building_projects": projects, "infrastructure": infrastructure,
                 "shops": shops}
@@ -8907,9 +9099,19 @@ class BigvilleWorld:
         first: a recipe is skipped only when a bulk input's total available
         quantity (own inventory, reachable containers, open town store) is
         already below the need.  Item/type inputs are left to the full preview.
+
+        EN04: inside a frozen decision scope the candidate list is memoised per
+        actor; the busy check stays outside so a later post-action observation
+        is still computed from live state.
         """
         if self.busy(actor):
             return []
+        cache = self._decision_read_cache()
+        if cache is not None:
+            with cache.lock:
+                cached = cache.work.get(actor, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return [dict(entry) for entry in cached]
         if cell is None:
             cell = self._observe_cell(self.actor_position(actor))
         local_buildings = set()
@@ -8923,7 +9125,7 @@ class BigvilleWorld:
         if job is not None:
             runs = self.eng.neighbours(job, "runs")
             if runs:
-                name = str(self.eng.node(runs[0])["attrs"].get("name", ""))
+                name = str(self.eng.node_attrs(runs[0]).get("name", ""))
                 if name:
                     names.add(name)
         bulk_available = self._observe_bulk_available(actor)
@@ -8944,11 +9146,14 @@ class BigvilleWorld:
             minutes = 0.0
             action = self._actions.get(name)
             if action is not None:
-                minutes = float(self.eng.node(action)["attrs"].get("time_minutes", 0.0))
+                minutes = float(self.eng.node_attrs(action).get("time_minutes", 0.0))
             candidates.append({"recipe": name, "out": out_kind,
                                "time_minutes": round(minutes, 4)})
             if len(candidates) >= self._OBSERVE_WORK_LIMIT:
                 break
+        if cache is not None:
+            with cache.lock:
+                cache.work[actor] = tuple(dict(entry) for entry in candidates)
         return candidates
 
     def _observe_bulk_available(self, actor):
@@ -8956,15 +9161,26 @@ class BigvilleWorld:
 
         This is the same source order ``_plan_input`` draws from, without the
         per-recipe claim bookkeeping.  It is a read-only prefilter only.
+
+        EN04: the bulk-kind set is pack-derived and the source list depends
+        only on the actor, so both are computed once instead of scanning every
+        container and the store lock for each of the ~81 bulk kinds.  Inside a
+        frozen decision scope the resulting map is memoised per actor.
         """
-        kinds = set()
-        for spec in self._recipe_specs.values():
-            for kind, qty in spec.get("in", []):
-                need = self._input_need(kind, qty)
-                if need[2] or need[3]:
-                    continue
-                kinds.add(kind)
-        return {kind: self._bulk_available(actor, kind) for kind in kinds}
+        cache = self._decision_read_cache()
+        if cache is not None:
+            with cache.lock:
+                cached = cache.bulk.get(actor, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return dict(cached)
+        kinds = self._static_reads().bulk_kinds
+        sources = self._bulk_sources(actor, None)
+        values = {kind: round(sum(self._source_qty(src, kind) for src in sources), 4)
+                  for kind in sorted(kinds)}
+        if cache is not None:
+            with cache.lock:
+                cache.bulk[actor] = values
+        return dict(values)
 
     @staticmethod
     def _recipe_maybe_available(spec, bulk_available):
@@ -8984,7 +9200,7 @@ class BigvilleWorld:
         or ``_actor_options``.
         """
         self._actor(actor)
-        attrs = self.eng.node(self._actors[actor])["attrs"]
+        attrs = self.eng.node_attrs(self._actors[actor])
         position = self.actor_position(actor)
         carrying = self.carry_state(actor)
         visible = self._visible_physical_object_records(actor)
@@ -9009,7 +9225,7 @@ class BigvilleWorld:
                     child = self._physical_objects.get(child_id)
                     if child is None:
                         continue
-                    child_attrs = self.eng.node(child)["attrs"]
+                    child_attrs = self.eng.node_attrs(child)
                     contents.append({"id": child_id,
                                      "kind": child_attrs.get("kind", "object"),
                                      "name": child_attrs.get("name", child_id)})
@@ -9024,7 +9240,7 @@ class BigvilleWorld:
         # actor's cell, with a bounded contents summary.
         for name in sorted(self._containers):
             node, inners = self._containers[name]
-            container_attrs = self.eng.node(node)["attrs"]
+            container_attrs = self.eng.node_attrs(node)
             if container_attrs.get("kind") == "carrier":
                 continue
             if self.container_position(name) != position:
@@ -9635,7 +9851,7 @@ class BigvilleWorld:
         return True
 
     def actor_turn_state(self, actor):
-        attrs = self.eng.node(self._actor(actor))["attrs"]
+        attrs = self.eng.node_attrs(self._actor(actor))
         return {"turn": int(round(float(attrs.get("turn", 0.0)))),
                 "major_action_used": bool(float(attrs.get("major_action_used", 0.0))),
                 "major_action_kind": attrs.get("major_action_kind", ""),
@@ -9745,15 +9961,27 @@ class BigvilleWorld:
     def recipe_preview(self, actor, recipe):
         """Read-only preview of whether ``actor`` could start ``recipe`` now (LA07).
 
-        Returns ``{"ok": bool, "reason": str}`` with an existing refusal code
-        where one applies.  This mirrors the menu's work publish filter
-        (``not busy``, ``_can_attempt``, ``_recipe_inputs_available``) without
-        opening a job, consuming stock or claiming the action slot.  It is the
-        cheap backend's prefilter, not a replacement for enactment's own
-        checks; a proposal that passes here may still be refused.
+        EN04: inside a frozen decision scope the ``(actor, recipe)`` result is
+        memoised.  The scope closes before any action commits, so a later
+        preview never sees a pre-action result.
         """
         self._actor(actor)
         name = self._as_key(recipe)
+        cache = self._decision_read_cache()
+        key = (actor, name) if cache is not None and name is not None else None
+        if key is not None:
+            with cache.lock:
+                cached = cache.preview.get(key, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return dict(cached)
+        result = self._recipe_preview_compute(actor, name)
+        if key is not None:
+            with cache.lock:
+                cache.preview[key] = dict(result)
+        return result
+
+    def _recipe_preview_compute(self, actor, name):
+        """The uncached LA07 preview body; ``name`` is already normalised."""
         if name is None or name not in self._actions:
             return {"ok": False, "reason": "not_known"}
         spec = self._recipe_specs.get(name)
@@ -10444,14 +10672,14 @@ class BigvilleWorld:
         recipe's skill (their own, lifted by a close skill and the metaskill) must reach its min_skill
         floor. Reading the recipe is not enough; the hand needs the training."""
         level = self.recipe_skill_level(actor, self._recipe_specs.get(action_name, {}))
-        floor = float(self.eng.node(self._actions[action_name])["attrs"].get("min_skill", 0.0))
+        floor = float(self.eng.node_attrs(self._actions[action_name]).get("min_skill", 0.0))
         return level + 1e-9 >= floor
 
     # ---------------------------------------------------- skill levels, clusters, metaskills
     def _levels(self, actor):
         """The actor's skill levels, with their role's main skill read from the legacy scalar `skill`
         (the scalar stays authoritative for that skill; practice writes both)."""
-        a = self.eng.node(self._actors[actor])["attrs"]
+        a = self.eng.node_attrs(self._actors[actor])
         levels = dict(a.get("skill_levels", {}))
         main = (self.E.trade_skills(a.get("role", "")) or [None])[0]
         if main is not None:
@@ -10470,7 +10698,7 @@ class BigvilleWorld:
         return self.skill_levels(actor).get(skill, 0.0)
 
     def _person(self, actor):
-        a = self.eng.node(self._actors[actor])["attrs"]
+        a = self.eng.node_attrs(self._actors[actor])
         return {"aptitude": float(a.get("aptitude", 1.0)), "aptitude_base": float(a.get("aptitude_base", 1.0)),
                 "talents": dict(a.get("talents", {})), "limitations": list(a.get("limitations", []))}
 
@@ -10521,11 +10749,25 @@ class BigvilleWorld:
 
     def effective_skill(self, actor, skill):
         """The actor's working level at a skill: own level, lifted by their closest skill through the
-        metaskill (sharpened by aptitude), lowered by any limitations."""
-        a = self.eng.node(self._actors[actor])["attrs"]
+        metaskill (sharpened by aptitude), lowered by any limitations.
+
+        EN04: pure within a frozen decision snapshot, so memoised per (actor, skill) there.
+        """
+        cache = self._decision_read_cache()
+        key = (actor, skill)
+        if cache is not None:
+            with cache.lock:
+                cached = cache.skill.get(key, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return cached
+        a = self.eng.node_attrs(self._actors[actor])
         person = {**self._person(actor), "intoxication": self.intoxication(actor)}
         value = self.E.effective_skill(self._levels(actor), a.get("metaskill_levels", {}), skill, person)
-        return round(float(value) * self._aftereffect_skill_factor(actor), 4)
+        result = round(float(value) * self._aftereffect_skill_factor(actor), 4)
+        if cache is not None:
+            with cache.lock:
+                cache.skill[key] = result
+        return result
 
     def recipe_skill_level(self, actor, recipe):
         """Working level for a recipe row (its skill per E.recipe_skill); a recipe with no named skill
@@ -11856,11 +12098,24 @@ class BigvilleWorld:
 
     def effective_stamina(self, actor):
         """(sta_base + sta_train) x health: the stamina capacity the reserve is clamped to and the band reads.
-        Phase 036: withdrawal lowers it while alcohol_aftereffects is on."""
-        return self._effective_body_stat(actor, "sta_base", "sta_train") * self._withdrawal_stamina_factor(actor)
+        Phase 036: withdrawal lowers it while alcohol_aftereffects is on.
+
+        EN04: pure within a frozen decision snapshot, so memoised per actor there.
+        """
+        cache = self._decision_read_cache()
+        if cache is not None:
+            with cache.lock:
+                cached = cache.stamina.get(actor, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return cached
+        value = self._effective_body_stat(actor, "sta_base", "sta_train") * self._withdrawal_stamina_factor(actor)
+        if cache is not None:
+            with cache.lock:
+                cache.stamina[actor] = value
+        return value
 
     def _effective_body_stat(self, actor, base_key, train_key):
-        ba = self.eng.node(self._bodies[actor])["attrs"]
+        ba = self.eng.node_attrs(self._bodies[actor])
         return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor))
 
     def _train_from_effort(self, body, event):
@@ -12936,7 +13191,7 @@ class BigvilleWorld:
             return None
         if not known:
             return None
-        attrs = self.eng.node(self._actors[actor])["attrs"]
+        attrs = self.eng.node_attrs(self._actors[actor])
         if float(attrs.get("collapsed", 0.0)) == 1.0:
             return "collapsed"
         if float(attrs.get("asleep", 0.0)) == 1.0:
@@ -12958,27 +13213,41 @@ class BigvilleWorld:
         moves per tick as a share of the full budget (1, 2/3, 1/3, 0, from moves_per_tick). `interval` is
         the multiplier on the movement interval (1, 1.5, 3). Thresholds are fractions of the body's stamina
         capacity, so a resident with a larger capacity has larger absolute thresholds. With slow_on off
-        every resident is in band 0."""
+        every resident is in band 0.
+
+        EN04: pure within a frozen decision snapshot, so memoised per actor there.
+        """
+        cache = self._decision_read_cache()
+        if cache is not None:
+            with cache.lock:
+                cached = cache.band.get(actor, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return dict(cached)
         ex = self.E.EXHAUSTION
         moves = [float(m) for m in ex["moves_per_tick"]]
         node = self._actors.get(actor)
         slow_default = 1.0 if self.exhaustion_slow_on else 0.0
-        slow_on = float(self.eng.node(node)["attrs"].get("slow_on", slow_default)) == 1.0 if node is not None else False
+        slow_on = float(self.eng.node_attrs(node).get("slow_on", slow_default)) == 1.0 if node is not None else False
         if not slow_on:
-            return {"step": 0, "speed": 1.0, "interval": 1.0, "stopped": False, "below_e_low": False}
-        body = self._bodies.get(actor)
-        ba = self.eng.node(body)["attrs"] if body is not None else {}
-        reserve = float(ba.get("stamina_reserve", 1.0))
-        capacity = self.effective_stamina(actor)
-        step = len(moves) - 1
-        for band, key in enumerate(("e_high", "e_mid", "e_low")):
-            if reserve >= float(ex[key]) * capacity:
-                step = band
-                break
-        speed = moves[step] / moves[0]
-        return {"step": step, "speed": speed,
-                "interval": moves[0] / moves[step] if moves[step] > 0.0 else math.inf,
-                "stopped": moves[step] <= 0.0, "below_e_low": step == len(moves) - 1}
+            result = {"step": 0, "speed": 1.0, "interval": 1.0, "stopped": False, "below_e_low": False}
+        else:
+            body = self._bodies.get(actor)
+            ba = self.eng.node_attrs(body) if body is not None else {}
+            reserve = float(ba.get("stamina_reserve", 1.0))
+            capacity = self.effective_stamina(actor)
+            step = len(moves) - 1
+            for band, key in enumerate(("e_high", "e_mid", "e_low")):
+                if reserve >= float(ex[key]) * capacity:
+                    step = band
+                    break
+            speed = moves[step] / moves[0]
+            result = {"step": step, "speed": speed,
+                      "interval": moves[0] / moves[step] if moves[step] > 0.0 else math.inf,
+                      "stopped": moves[step] <= 0.0, "below_e_low": step == len(moves) - 1}
+        if cache is not None:
+            with cache.lock:
+                cache.band[actor] = dict(result)
+        return result
 
     def _refresh_exhaustion(self, actor):
         """Publish the band on the actor node: `exhaustion_step` and `speed_factor` (read-offs)."""
@@ -13306,10 +13575,16 @@ class BigvilleWorld:
         self._request_rule_sweep()
         return self.stamina_reserve(actor)
     def body_state(self, actor):
+        cache = self._decision_read_cache()
+        if cache is not None:
+            with cache.lock:
+                cached = cache.body.get(actor, _MISSING_READ)
+            if cached is not _MISSING_READ:
+                return dict(cached)
         body = self._bodies[actor]
-        attrs = self.eng.node(body)["attrs"]
+        attrs = self.eng.node_attrs(body)
         band = self._exhaustion_band(actor)
-        return {"health": round(self.health(actor), 4),
+        state = {"health": round(self.health(actor), 4),
                 "mood": round(float(attrs.get("mood", 0.5)), 4),
                 "strength": round(self.effective_strength(actor), 4),
                 "stamina": round(self.effective_stamina(actor), 4),
@@ -13323,11 +13598,15 @@ class BigvilleWorld:
                 # Phase 035 read-offs: protein_store (grams), deficiency, meal_pleasure and monotony.
                 **self.nutrition(actor),
                 # Phase 043 read-offs: the illness flag and the care flags (screened, treated, well_baby), 0 or 1.
-                "illness": int(bool(self.eng.node(self._actors[actor])["attrs"].get("disease"))),
+                "illness": int(bool(self.eng.node_attrs(self._actors[actor]).get("disease"))),
                 "screened": self._care_flag_value(actor, "screened"),
                 "treated": self._care_flag_value(actor, "treated"), "well_baby": self._care_flag_value(actor, "well_baby"),
                 # Phase 036 read-offs (tolerance, craving, dependent, hangover_ticks, withdrawal, mood); empty when off.
                 **self.aftereffects(actor)}
+        if cache is not None:
+            with cache.lock:
+                cache.body[actor] = dict(state)
+        return state
 
     def stamina(self, actor): return self.body_state(actor)["stamina"]
     def stamina_reserve(self, actor): return self.body_state(actor)["stamina_reserve"]

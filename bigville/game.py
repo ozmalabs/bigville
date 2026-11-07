@@ -281,6 +281,14 @@ class BigvilleGame:
         if value not in _EXECUTORS:
             raise ValueError(f"executor must be one of {sorted(_EXECUTORS)}, got {value!r}")
         self._executor = value
+        # EN04: serial commits have a single mutating thread, so the world
+        # graph can skip the process-wide read lock.  Threaded and partitioned
+        # commits mutate from worker threads while context workers may read;
+        # keep the safe locked path there.
+        graph = getattr(getattr(self, "world", None), "eng", None)
+        set_read_locking = getattr(graph, "set_read_locking", None)
+        if callable(set_read_locking):
+            set_read_locking(value != "serial")
 
     @property
     def executor_workers(self) -> int:
@@ -376,7 +384,7 @@ class BigvilleGame:
         for name in self.world._animals:
             if name in self._animal_backends:
                 continue
-            species = self.world.eng.node(self.world._animals[name])["attrs"].get("species", "")
+            species = self.world.eng.node_attrs(self.world._animals[name]).get("species", "")
             self._animal_backends[name] = AnimalNPCBackend(
                 name, species, dict(setups.get(species, {})))
             self._animal_decisions[name] = {}
@@ -388,7 +396,7 @@ class BigvilleGame:
             if not self.world.animal_alive(name):
                 continue
             node = self.world._animals[name]
-            attrs = self.world.eng.node(node)["attrs"]
+            attrs = self.world.eng.node_attrs(node)
             enclosure = self.world.animal_enclosure(name)
             position = self.world.animal_position(name)
             context = ActorContext(
@@ -426,7 +434,7 @@ class BigvilleGame:
         # needed for this interrupt gate.
         event_index = getattr(self.world, "_events", {})
         return {
-            str(event_id): dict(self.world.eng.node(node)["attrs"])
+            str(event_id): dict(self.world.eng.node_attrs(node))
             for event_id, node in event_index.items()
             if self.world.eng.has_node(node)
         }
@@ -440,7 +448,7 @@ class BigvilleGame:
                                *, action_ok: bool):
         request = ActorContinuation.from_value(request.to_dict())
         request.destination = self._normalise_destination(request.destination)
-        attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
+        attrs = self.world.eng.node_attrs(self.world._actors[actor])
         position = self.world.actor_position(actor)
         self._continuations[actor] = _ActiveContinuation(
             request=request,
@@ -477,7 +485,7 @@ class BigvilleGame:
             hunger = float(observations.get("hunger", 0.0))
             energy = float(observations.get("energy", 100.0))
         else:
-            attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
+            attrs = self.world.eng.node_attrs(self.world._actors[actor])
             position = self.world.actor_position(actor)
             nearby = (self._nearby_resident_ids(actor, position)
                       if "encounter" in interrupt_on else set())
@@ -560,7 +568,7 @@ class BigvilleGame:
         for other, node in self.world._actors.items():
             if other == name:
                 continue
-            other_attrs = self.world.eng.node(node)["attrs"]
+            other_attrs = self.world.eng.node_attrs(node)
             job = str(other_attrs.get("role", ""))
             workplace = str(entities.FOUNDING_JOBS.get(job, {}).get("workplace", "")) if entities.FOUNDING_JOBS else ""
             neighbours.append({"name": other, "job": job, "household": str(other_attrs.get("household", "")),
@@ -611,7 +619,7 @@ class BigvilleGame:
         characters = {}
         scenario_characters = getattr(self.world, "_scenario_character_data", {})
         for name, node in self.world._actors.items():
-            attrs = dict(self.world.eng.node(node)["attrs"])
+            attrs = dict(self.world.eng.node_attrs(node))
             identity = {k: attrs.get(k) for k in ("name", "role", "klass", "group", "age", "life_stage")}
             personality = {k: attrs[k] for k in attrs
                            if k.endswith("_weight") or k.startswith("prior_")
@@ -697,7 +705,7 @@ class BigvilleGame:
         relationship = self.world.relationship(actor, other)
         if relationship is None:
             return {"tie_strength": 0.0, "band_code": 0.0}
-        attrs = self.world.eng.node(relationship)["attrs"]
+        attrs = self.world.eng.node_attrs(relationship)
         strength = float(attrs.get("strength", 0.0))
         tie_strength = max(0.0, strength)
         resentment = max(0.0, -strength) if attrs.get("kind") == "feud" else 0.0
@@ -780,7 +788,7 @@ class BigvilleGame:
         the exhaustive builder.
         """
         character = self.characters[actor]
-        attrs = self.world.eng.node(self.world._actors[actor])["attrs"]
+        attrs = self.world.eng.node_attrs(self.world._actors[actor])
         backend = self.backends.get(actor)
         # LA05 boundary: Ocelot's replace_options path consumes the full menu, so an Ocelot actor stays on the
         # menu context even in a lazy game. That is an explicit per-actor exception, not a silent fallback: the
@@ -801,7 +809,7 @@ class BigvilleGame:
             for name in self.world.actors_near(position, 8, exclude=actor):
                 other_position = self.world.actor_position(name)
                 distance = self.world.distance(position, other_position)
-                other_attrs = self.world.eng.node(self.world._actors[name])["attrs"]
+                other_attrs = self.world.eng.node_attrs(self.world._actors[name])
                 nearby_residents.append({
                     "id": name, "name": name,
                     "role": other_attrs.get("role", ""),
@@ -831,7 +839,7 @@ class BigvilleGame:
         read_documents = []
         for (kind, name), document in self.world._documents.items():
             if self.world.eng.has_edge(self.world._actors[actor], "read_document", document):
-                doc_attrs = self.world.eng.node(document)["attrs"]
+                doc_attrs = self.world.eng.node_attrs(document)
                 read_documents.append({key: doc_attrs[key] for key in
                                        ("kind", "name", "title", "scope", "version")
                                        if key in doc_attrs})
@@ -946,7 +954,7 @@ class BigvilleGame:
         read_documents = []
         for (kind, name), document in self.world._documents.items():
             if self.world.eng.has_edge(self.world._actors[actor], "read_document", document):
-                doc_attrs = self.world.eng.node(document)["attrs"]
+                doc_attrs = self.world.eng.node_attrs(document)
                 read_documents.append({key: doc_attrs[key] for key in
                                        ("kind", "name", "title", "scope", "version")
                                        if key in doc_attrs})
@@ -1062,7 +1070,7 @@ class BigvilleGame:
         reader = getattr(self.world, "utterances_from", None)
         nodes = reader(first_utterance) if callable(reader) else list(self.world._utterances.values())[first_utterance:]
         for node in nodes:
-            attrs = self.world.eng.node(node)["attrs"]
+            attrs = self.world.eng.node_attrs(node)
             if only_speaker and str(attrs.get("speaker", "")) != str(actor):
                 continue
             target = str(attrs.get("target", ""))
@@ -1224,7 +1232,7 @@ class BigvilleGame:
         order the backends were registered.
         """
         node = getattr(self.world, "_map_node", None)
-        seed = int(self.world.eng.node(node)["attrs"].get("seed", 0.0)) if node else 0
+        seed = int(self.world.eng.node_attrs(node).get("seed", 0.0)) if node else 0
         order = sorted(actors)
         random.Random(f"{seed}:{int(turn)}").shuffle(order)
         return order
@@ -1282,24 +1290,30 @@ class BigvilleGame:
                                      positions=dict(self.world._actor_positions),
                                      practice_windows={})
         before_digest = self._world_checkpoint_digest() if self._verify_context_purity else None
-        windows = self._prepare_practice(actors)
-        snapshot.practice_windows.update(windows)
-        workers = int(self.context_workers or 1)
-        if workers > 1 and len(actors) > 1:
-            with ThreadPoolExecutor(max_workers=min(workers, len(actors)),
-                                    thread_name_prefix="bigville-context") as pool:
-                futures = [(actor, pool.submit(self._context, actor,
-                                               practice_window=windows[actor],
-                                               snapshot=snapshot))
-                           for actor in actors]
-                contexts = {actor: future.result() for actor, future in futures}
-        else:
-            contexts = {actor: self._context(actor, practice_window=windows[actor],
-                                             snapshot=snapshot)
-                        for actor in actors}
-        if int(self.world._turn) != turn:
-            raise RuntimeError("world turn changed while building decision contexts")
-        self._assert_decision_snapshot_unchanged(snapshot, before_digest)
+        # EN04: all contexts of this turn read one asserted-frozen world.  The
+        # derived-read scope memoises proximity rows, known recipes, bulk
+        # availability, work candidates/previews and body read-offs.  It is
+        # closed before any action commits, so post-action reads stay live.
+        read_scope = getattr(self.world, "decision_reads", None)
+        with (read_scope() if callable(read_scope) else nullcontext()):
+            windows = self._prepare_practice(actors)
+            snapshot.practice_windows.update(windows)
+            workers = int(self.context_workers or 1)
+            if workers > 1 and len(actors) > 1:
+                with ThreadPoolExecutor(max_workers=min(workers, len(actors)),
+                                        thread_name_prefix="bigville-context") as pool:
+                    futures = [(actor, pool.submit(self._context, actor,
+                                                   practice_window=windows[actor],
+                                                   snapshot=snapshot))
+                               for actor in actors]
+                    contexts = {actor: future.result() for actor, future in futures}
+            else:
+                contexts = {actor: self._context(actor, practice_window=windows[actor],
+                                                 snapshot=snapshot)
+                            for actor in actors}
+            if int(self.world._turn) != turn:
+                raise RuntimeError("world turn changed while building decision contexts")
+            self._assert_decision_snapshot_unchanged(snapshot, before_digest)
         return snapshot, contexts
 
     def _restore_practice_after(self, order, actor, previous) -> None:

@@ -113,15 +113,37 @@ def _checkpoint_decode(value: Any, path: str) -> Any:
 
 
 class BigvilleGraph:
-    """A deterministic, JSON-friendly directed typed graph."""
+    """A deterministic, JSON-friendly directed typed graph.
 
-    def __init__(self):
+    EN04: reads use the process-wide ``_GRAPH_LOCK`` only while ``lock_reads``
+    is true.  A serial game session turns it off for its world graph because
+    the only mutating thread is the caller: context workers read a world that
+    the turn's decision snapshot asserts unchanged.  Every constructor path
+    (including checkpoint restore) defaults to the locked, safe form; a caller
+    may only disable it when it can guarantee no concurrent writer exists.
+
+    Writes always take ``_GRAPH_LOCK``.  Read fast paths intentionally keep the
+    public result shapes (``node`` still returns ``{"type", "attrs"}``).  An
+    ``int``/``NodeRef`` identifier is used directly as a dictionary key --
+    ``NodeRef`` equals its ``int`` value and hashes the same -- so no per-read
+    ``NodeRef`` allocation is needed; other identifiers keep the historical
+    ``int()`` coercion.
+    """
+
+    def __init__(self, *, lock_reads: bool = True):
         self._next_id = 1
         self._nodes: dict[NodeRef, _Node] = {}
         self._edges: dict[tuple[NodeRef, str], set[NodeRef]] = {}
         self._reverse: dict[tuple[NodeRef, str], set[NodeRef]] = {}
         self.seed_manifests: dict[str, dict[str, Any] | None] = {}
         self._inner = self
+        # EN04: explicit read-lock policy.  True is the safe default; the game
+        # disables it only for serial executors.
+        self.lock_reads = bool(lock_reads)
+
+    def set_read_locking(self, enabled: bool) -> None:
+        """Set whether reads take the global lock (see ``lock_reads``)."""
+        self.lock_reads = bool(enabled)
 
     def add_node(self, type_name: str, attrs: dict[str, Any] | None = None) -> NodeRef:
         with _GRAPH_LOCK:
@@ -131,16 +153,38 @@ class BigvilleGraph:
             return node
 
     def has_node(self, node: NodeRef | int) -> bool:
+        ref = node if isinstance(node, int) else NodeRef(int(node))
+        if not self.lock_reads:
+            return ref in self._nodes
         with _GRAPH_LOCK:
-            return NodeRef(int(node)) in self._nodes
+            return ref in self._nodes
 
     def node(self, node: NodeRef | int) -> dict[str, Any]:
+        ref = node if isinstance(node, int) else NodeRef(int(node))
+        if not self.lock_reads:
+            record = self._nodes[ref]
+            return {"type": record.type, "attrs": record.attrs}
         with _GRAPH_LOCK:
-            ref = NodeRef(int(node))
             record = self._nodes[ref]
             return {"type": record.type, "attrs": record.attrs}
 
+    def node_attrs(self, node: NodeRef | int) -> dict[str, Any]:
+        """Return a node's attribute mapping without building the public wrapper.
+
+        EN04: hot rule and observation paths only need ``["attrs"]``.  The
+        returned mapping is the canonical mutable mapping (the same object
+        ``node()["attrs"]`` exposes); callers must not replace it.
+        """
+        ref = node if isinstance(node, int) else NodeRef(int(node))
+        if not self.lock_reads:
+            return self._nodes[ref].attrs
+        with _GRAPH_LOCK:
+            return self._nodes[ref].attrs
+
     def nodes(self, type_name: str | None = None) -> list[NodeRef]:
+        if not self.lock_reads:
+            return [ref for ref, record in self._nodes.items()
+                    if type_name is None or record.type == type_name]
         with _GRAPH_LOCK:
             return [ref for ref, record in self._nodes.items()
                     if type_name is None or record.type == type_name]
@@ -168,16 +212,29 @@ class BigvilleGraph:
             self._reverse.get((dst, kind), set()).discard(src)
 
     def has_edge(self, source, edge, target) -> bool:
+        src = source if isinstance(source, int) else NodeRef(int(source))
+        dst = target if isinstance(target, int) else NodeRef(int(target))
+        key = (src, str(edge))
+        if not self.lock_reads:
+            return dst in self._edges.get(key, ())
         with _GRAPH_LOCK:
-            return NodeRef(int(target)) in self._edges.get((NodeRef(int(source)), str(edge)), set())
+            return dst in self._edges.get(key, set())
 
     def neighbours(self, source, edge) -> list[NodeRef]:
+        src = source if isinstance(source, int) else NodeRef(int(source))
+        key = (src, str(edge))
+        if not self.lock_reads:
+            return sorted(self._edges.get(key, ()))
         with _GRAPH_LOCK:
-            return sorted(self._edges.get((NodeRef(int(source)), str(edge)), set()))
+            return sorted(self._edges.get(key, set()))
 
     def in_neighbours(self, target, edge) -> list[NodeRef]:
+        dst = target if isinstance(target, int) else NodeRef(int(target))
+        key = (dst, str(edge))
+        if not self.lock_reads:
+            return sorted(self._reverse.get(key, ()))
         with _GRAPH_LOCK:
-            return sorted(self._reverse.get((NodeRef(int(target)), str(edge)), set()))
+            return sorted(self._reverse.get(key, set()))
 
     def remove_node(self, node) -> None:
         with _GRAPH_LOCK:
