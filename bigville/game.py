@@ -1758,9 +1758,25 @@ class BigvilleGame:
         # same observer's event list even when their object/item resources are
         # disjoint, so a shared observer is a conflict resource.  Without this,
         # a threaded turn could attribute one actor's object movement to another.
-        if major and getattr(self.world, "_physical_objects", None):
+        if major:
             position = self.world.actor_position(actor)
             if position is not None:
+                # Co-location is observable: sleep/collapse, wake, contests,
+                # throws and attempts can all record a witness event (or fail
+                # to, depending on who is still on the cell).  A cell witness
+                # resource therefore joins every unit that can see this cell;
+                # the shard map places it on the cell's shard, not the
+                # coordinator.
+                resources.add(Resource("witness", position))
+                proposal = getattr(response, "major_action", None)
+                if getattr(proposal, "action", None) == "move":
+                    destination = (proposal.params or {}).get("destination")
+                    if isinstance(destination, (tuple, list)) and len(destination) == 2:
+                        resources.add(Resource("witness",
+                                               (int(destination[0]), int(destination[1]))))
+            # Object movement adds observers one cell away, not only the
+            # actor's own cell.  These use actor-name witness resources.
+            if getattr(self.world, "_physical_objects", None):
                 observers = {actor, *self.world.actors_near(position, 1,
                                                              alive_only=False)}
                 resources.update(Resource("witness", name) for name in observers)

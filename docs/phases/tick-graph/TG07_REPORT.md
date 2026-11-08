@@ -273,5 +273,9 @@ matched serial and threaded but found the first partitioned divergence at turn 6
 `world_sha256` (proposals, results, order, errors and continuations still identical).
 The four-turn equivalence test did not reach it. Partitioned scheduling is therefore a
 known limitation rather than a proven-equivalent executor; the default executor remains
-serial. The next hypothesis is an under-declared same-cell/terrain movement resource (or
-the coordinator-first ordering) in the partitioned path.
+serial. **Follow-up:** the root causes were identified and fixed in
+`PARTITIONED_FIX_REPORT.md` (turn-order within shards, conflict-aware component
+merging, move step-cell resources, co-location witness resources and allocation-id
+normalisation). Serial vs partitioned semantic states now match over 32 turns on
+seeds 305000/305002 and the wider seed matrix. The raw checkpoint digest still
+differs by internal ids; semantic equivalence is the concurrent-executor contract.

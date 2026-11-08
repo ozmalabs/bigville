@@ -191,18 +191,13 @@ remains the final gate for an idle host.
 - Mode selection is per game, not per actor, except for Ocelot's explicit
   per-actor menu exception.
 - **A supervisor 8-turn replay found a partitioned-executor divergence in menu
-  mode too.**  `tools/verify_tick_equivalence.py --turns 8 --affordance-mode menu`
-  matched serial and threaded, but partitioned first diverged at turn 6 in the
-  semantic world hash (proposals/results/order still identical).  The four-turn
-  TG07 test did not reach it.  This is a tick-graph partition-scheduling
-  follow-up independent of the lazy default; the default executor is serial and
-  is unaffected.
-- **Lazy + partitioned executor is not yet equivalent to lazy + serial.**  The
-  default executor is serial and is deterministic.  On `town100` seed 305000,
-  the partitioned run first diverges from serial at turn 2 in the semantic
-  world hash, with identical proposals/results but tiny energy/hunger/exertion
-  differences for three residents moving through the same cells.  Menu mode is
-  equivalent.  `tests/test_tick_sharding.py` is pinned to menu to preserve its
-  historical oracle; this divergence is reported, not fixed, and is the next
-  executor follow-up.  See `LA08_REPORT.md`.
+  mode too.**  It was diagnosed and fixed in
+  `docs/phases/tick-graph/PARTITIONED_FIX_REPORT.md`: turn-order within shards,
+  conflict-aware component merging, move step-cell declarations, co-location
+  witness resources, and allocation-id normalisation. Serial and partitioned
+  semantic states now match over the tested seed/turn matrix; partitioned remains
+  opt-in and the default executor is serial.
+- **Lazy + partitioned executor** was the same tick-graph scheduling issue; it is
+  fixed by the follow-up above and covered by the lazy 24-turn serial-vs-partitioned
+  checks. The partitioned executor remains opt-in; serial is the default.
 - Wall-clock numbers are same-host relative measurements under contention.

@@ -380,7 +380,11 @@ class TickGraph:
 # guessing in the builder, and leave an unknown verb to the world/global write.
 _VERB_RESOURCES: dict[str, tuple[str, str]] = {
     # movement: the actor and both cells; two moves into one cell conflict
-    "move": ("actor cell dest_cell", "actor cell dest_cell"),
+    # EN04 follow-up: a walk moves one *step* toward its destination and wears
+    # that step cell.  Two walkers whose step cells coincide must conflict even
+    # when their final destinations differ.
+    "move": ("actor cell dest_cell step_cell",
+             "actor cell dest_cell step_cell"),
     # rest/sleep touch only the actor
     "rest": ("actor", "actor"),
     "sleep": ("actor", "actor"),
@@ -554,6 +558,18 @@ class _BuildContext:
             return self._cell_resource(self.actor_cell(self.actor))
         if role == "dest_cell":
             return self._cell_resource(self.destination())
+        if role == "step_cell":
+            current = self.actor_cell(self.actor)
+            destination = self.destination()
+            if current is None or destination is None:
+                return None
+            stepper = getattr(self.world, "_movement_step", None)
+            if not callable(stepper):
+                return None
+            try:
+                return self._cell_resource(stepper(current, destination))
+            except Exception:
+                return None
         if role == "source_cell":
             return self._cell_resource(self.object_cell(self.object_name()))
         if role == "target_cell":

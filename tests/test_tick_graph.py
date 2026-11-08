@@ -277,3 +277,22 @@ def test_three_turns_build_a_graph_in_turn_order_and_the_flag_is_unobservable(fa
     assert enabled_game.last_order == disabled_game.last_order
     assert enabled_game.last_results == disabled_game.last_results
     assert enabled_game.last_errors == disabled_game.last_errors
+
+
+def test_two_moves_that_share_a_step_cell_conflict():
+    """A walk wears its next step cell, not only its final destination."""
+    class _StepWorld(_FakeWorld):
+        def _movement_step(self, current, destination):
+            return (5, 5)
+
+    world = _StepWorld({"Ada": (0, 0), "Ben": (1, 1)})
+    responses = {
+        "Ada": _response("move", {"destination": (10, 10)}),
+        "Ben": _response("move", {"destination": (20, 20)}),
+    }
+
+    graph = build_tick_graph(["Ada", "Ben"], responses, world)
+
+    assert Resource("cell", (5, 5)) in graph.operation("Ada").writes
+    assert Resource("cell", (5, 5)) in graph.operation("Ben").writes
+    assert graph.conflicts("Ada") == ("Ben",)

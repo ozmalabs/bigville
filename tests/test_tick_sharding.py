@@ -119,8 +119,13 @@ def test_actor_and_resource_shard_mapping_uses_position_or_coordinator():
     assert shard_map.resource_shard(Resource("cell", (-9, 4)), world) == shard_map.cell_shard((-9, 4))
     for kind, key in (("stock", "grain"), ("container", "crate"), ("item", "coin"),
                       ("building", "mill"), ("job", "bake"), ("utterance", 3),
-                      ("memory", "Ada"), ("world", "global"), ("witness", "Ada")):
+                      ("memory", "Ada"), ("world", "global")):
         assert shard_map.resource_shard(Resource(kind, key), world) == shard_map.coordinator
+    # EN04 follow-up: co-location witnesses are spatial resources.
+    assert shard_map.resource_shard(Resource("witness", (1, 1)), world) == \
+        shard_map.cell_shard((1, 1))
+    assert shard_map.resource_shard(Resource("witness", "Ada"), world) == \
+        shard_map.actor_shard("Ada", world)
 
 
 def test_unit_shards_and_cross_shard_detection():
@@ -361,3 +366,54 @@ def test_benchmark_builder_is_importable_without_running_the_benchmark():
     assert scenario["physical_subsystems"]["metabolism"] is False
     assert DEFAULT_SEED == 305000
     assert "| size | executor |" in markdown_table({"results": []})
+
+
+def test_units_sharing_a_resource_are_merged_into_one_component():
+    """TG07 follow-up: shared resources cross shard boundaries, not just units."""
+    world = _FakeWorld({"Ada": (1, 1), "Ben": (1, 2)})
+    shared = Resource("cell", (1, 1))
+    plan = partition_units({
+        "Ada": {Resource("actor", "Ada"), shared},
+        "Ben": {Resource("actor", "Ben"), shared},
+    }, world, ShardMap(cell_size=8))
+
+    assert plan.shard_of("Ada") == plan.shard_of("Ben")
+    assert plan.coordinator_units == ()
+    assert any({"Ada", "Ben"} <= set(actors) for actors in plan.by_shard.values())
+
+
+def test_partitioned_matches_serial_after_same_cell_movement():
+    """Regression: two same-cell movers must keep the turn order in a shard.
+
+    Seed 305002 diverged at turn 8 when the shard commit sorted members
+    lexicographically instead of by ``turn_order``: Cask Kindle and Erasmus
+    Codling wore the same step cell in the opposite order.
+    """
+    seed = 305002
+    games = {}
+    for executor in ("serial", "partitioned"):
+        games[executor] = create_game(
+            scenario="town100", seed=seed, default_backend="simple",
+            autonomous=True, llm_log=False, executor=executor,
+            affordance_mode="menu")
+    for _ in range(8):
+        for executor in ("serial", "partitioned"):
+            assert games[executor].step()["status"] == "advanced"
+    assert semantic_world_state(games["serial"].world) == \
+        semantic_world_state(games["partitioned"].world)
+
+
+def test_semantic_state_ignores_event_allocation_ids():
+    """Event:1/Event:2 order is internal; the semantic state compares content."""
+    from bigville.api import create_world
+
+    def build(reverse):
+        world = create_world(scenario=SMALL_SCENARIO, seed=SEED)
+        events = [("sleep", "Ada"), ("wake", "Ben")]
+        if reverse:
+            events.reverse()
+        for kind, subject in events:
+            world.create_event(kind, subject=subject, detail=f"{subject} {kind}")
+        return semantic_world_state(world)
+
+    assert build(False) == build(True)

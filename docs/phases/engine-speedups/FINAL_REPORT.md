@@ -138,9 +138,12 @@ gate on an idle host.
 1. Run the full suite on an idle host and record the exact result.
 2. Target backend valuation/scoring (`psi_can.choose`) and the remaining
    proximity/movement routing, which are now the largest measured items.
-3. Resolve the partitioned-executor divergence (first observed in the semantic
-   world hash with identical proposals/results); it is a tick-graph scheduling
-   follow-up, not an ENGINE_SPEEDUPS default.
+3. Partitioned-executor divergence: fixed in
+   `docs/phases/tick-graph/PARTITIONED_FIX_REPORT.md` (turn-order within shards,
+   conflict-aware component merging, move step-cell resources, co-location
+   witnesses, allocation-id normalisation). Serial vs partitioned semantic states
+   now match over the tested seed/turn matrix; partitioned remains opt-in and the
+   strict node-id checkpoint digest still differs by design.
 4. If turn batching is later proposed for player/LLM sessions, audit intra-turn
    read-off consumers first (instant `do` sharing inputs, containers, tool
    wear, clothing/exposure, contest stamina).

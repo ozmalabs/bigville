@@ -181,14 +181,22 @@ _SORTED_EXPORT_LISTS = (
     "events", "articles", "editions", "handovers", "proposals", "cases",
     "animals", "fences", "enclosures",
 )
+# These lists are keyed by an allocation-order id ("event:1", "article:2", ...).
+# The id is not a semantic fact: concurrent commits may mint the same logical
+# entries in a different order.  Their content is compared and sorted; id-less
+# entries with the same content are the same observables.
+_ALLOCATION_KEYED_EXPORT_LISTS = frozenset({
+    "events", "articles", "editions", "handovers", "proposals", "cases",
+})
 
 
 def semantic_world_state(world) -> dict[str, Any]:
     """A normalised, node-id-free projection of ``world.export_state``.
 
-    Node ids are an internal allocation detail: a threaded commit may mint the
-    same logical nodes in a different order.  The projection removes only the
-    utterance node id and sorts the log-like lists whose insertion order is not
+    Node and log-entry ids are an internal allocation detail: a concurrent
+    commit may mint the same logical nodes/events in a different order.  The
+    projection removes the utterance node id and the allocation-order ``id`` of
+    event-like logs, then sorts the log-like lists whose insertion order is not
     an observable fact.  Everything else in the export is preserved.
     """
     state = world.export_state(event_tail=None)
@@ -202,6 +210,12 @@ def semantic_world_state(world) -> dict[str, Any]:
     for key in _SORTED_EXPORT_LISTS:
         entries = state.get(key)
         if isinstance(entries, list):
+            if key in _ALLOCATION_KEYED_EXPORT_LISTS:
+                entries = [
+                    {name: value for name, value in entry.items() if name != "id"}
+                    if isinstance(entry, dict) else entry
+                    for entry in entries
+                ]
             state[key] = sorted(entries, key=canonical_json)
     return state
 

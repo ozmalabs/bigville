@@ -148,6 +148,13 @@ class ShardMap:
             return self.actor_shard(getattr(resource, "key", None), world)
         if kind == "cell":
             return self.cell_shard(getattr(resource, "key", None))
+        if kind == "witness":
+            key = getattr(resource, "key", None)
+            # A cell witness belongs to the cell's shard; an observer-name
+            # witness follows that observer's actor shard.
+            if isinstance(key, (tuple, list)) and len(key) == 2:
+                return self.cell_shard(key)
+            return self.actor_shard(key, world)
         return self.coordinator
 
     def unit_shards(self, resources: Iterable[Resource], world: Any) -> frozenset[int]:
@@ -174,25 +181,69 @@ def partition_units(units: Mapping[str, Iterable[Resource]], world: Any,
     nothing (the same conservative fallback as the TG05 scheduler).
     """
     shard_map = shard_map or ShardMap()
+    actors = sorted((str(actor) for actor in units), key=str)
+    resources = {actor: tuple(units[actor]) for actor in actors}
+    shards_by_actor = {
+        actor: shard_map.unit_shards(resources[actor], world)
+        for actor in actors
+    }
+
+    # EN04 follow-up: units that share a resource must land in the same
+    # component, even when each unit's own resources fit one shard.  Without
+    # this, two actors in different shards could write the same cell/witness
+    # resource concurrently.  A component is placed at the coordinator when any
+    # member touches a coordinator resource or the component spans shards.
+    parent = {actor: actor for actor in actors}
+
+    def find(actor: str) -> str:
+        while parent[actor] != actor:
+            parent[actor] = parent[parent[actor]]
+            actor = parent[actor]
+        return actor
+
+    def union(left: str, right: str) -> None:
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    by_resource: dict[Resource, list[str]] = {}
+    for actor in actors:
+        for resource in resources[actor]:
+            by_resource.setdefault(resource, []).append(actor)
+    for claimants in by_resource.values():
+        first = claimants[0]
+        for other in claimants[1:]:
+            union(first, other)
+
+    components: dict[str, list[str]] = {}
+    for actor in actors:
+        components.setdefault(find(actor), []).append(actor)
+
     grouped: dict[int, list[str]] = {}
     cross_shard: list[str] = []
     coordinator_units: list[str] = []
-    for actor in sorted(units, key=str):
-        resources = list(units[actor])
-        shards = shard_map.unit_shards(resources, world)
-        if not shards or len(shards) > 1 or shard_map.coordinator in shards:
+    for root in sorted(components):
+        members = sorted(components[root], key=str)
+        component_resources = {
+            resource for member in members for resource in resources[member]
+        }
+        component_shards = shard_map.unit_shards(component_resources, world)
+        own_cross = any(len(shards_by_actor[member]) > 1 for member in members)
+        if (not component_shards or len(component_shards) > 1
+                or shard_map.coordinator in component_shards):
             shard = shard_map.coordinator
         else:
-            shard = next(iter(shards))
-        grouped.setdefault(shard, []).append(str(actor))
-        if len(shards) > 1:
-            cross_shard.append(str(actor))
+            shard = next(iter(component_shards))
+        grouped.setdefault(shard, []).extend(members)
+        if own_cross or len(component_shards) > 1:
+            cross_shard.extend(members)
         if shard == shard_map.coordinator:
-            coordinator_units.append(str(actor))
+            coordinator_units.extend(members)
     return ShardPlan(
-        by_shard={shard: tuple(actors) for shard, actors in grouped.items()},
-        cross_shard=tuple(cross_shard),
-        coordinator_units=tuple(coordinator_units),
+        by_shard={shard: tuple(sorted(actors_in_shard))
+                  for shard, actors_in_shard in grouped.items()},
+        cross_shard=tuple(sorted(set(cross_shard))),
+        coordinator_units=tuple(sorted(set(coordinator_units))),
     )
 
 
@@ -272,7 +323,10 @@ class PartitionedExecutor:
         shards = [shard for shard in plan.by_shard
                   if shard != self.shard_map.coordinator]
         shards.sort()
-        components = [tuple(index_of[actor] for actor in plan.by_shard[shard])
+        # EN04 follow-up: within a shard the actors must execute in the turn's
+        # deterministic order, not the plan's lexicographic actor order.  Two
+        # same-cell movers otherwise swap their terrain/exertion updates.
+        components = [tuple(sorted(index_of[actor] for actor in plan.by_shard[shard]))
                       for shard in shards]
         components = [component for component in components if component]
 
