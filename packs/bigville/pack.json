@@ -1096,6 +1096,8 @@
     {"name": "TUI_ART", "file": "world/tui_modes.json"},
     {"name": "TUI_PROSE", "file": "world/tui_modes.json"},
     {"name": "BIRTHS", "file": "world/births.json"},
-    {"name": "DEPENDANTS", "file": "world/dependants.json"}
+    {"name": "DEPENDANTS", "file": "world/dependants.json"},
+    {"name": "DETRAIN", "file": "world/detraining.json"},
+    {"name": "BODY_AGE", "file": "world/detraining.json"}
   ]
 }

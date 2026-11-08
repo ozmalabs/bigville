@@ -2375,6 +2375,8 @@ def check_consistency():
     _check_illness(errors, warnings, info)
     _check_births(errors, warnings, info)   # Phase 044: pregnancy and birth (BIRTHS)
     _check_dependants(errors, warnings, info)   # Phase 045: infants, dependants and growth (DEPENDANTS)
+    from domains.detraining_check import check_detraining  # Phase 046: DETRAIN and BODY_AGE
+    check_detraining(_WORLD_PACK.path, errors, warnings, info)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)
     _check_joint_tasks(errors, warnings, info)

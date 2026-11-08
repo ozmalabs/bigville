@@ -27,6 +27,7 @@ from domains.world_affordances import round_bp  # noqa: E402
 from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps
 from worlds.births import BirthsMixin  # noqa: E402  Phase 044: pregnancy and birth (the births switch)
 from worlds.dependants import DependantsMixin  # noqa: E402  Phase 045: infants, dependants (the dependants switch)
+from worlds.detraining import DetrainingMixin  # noqa: E402  Phase 046: detraining and ageing (the detraining switch)
 
 # Phase 048: the default for a job's or an attempt's tool: the right one the worker has, else bare hands.
 _DEFAULT_TOOL = object()
@@ -308,7 +309,7 @@ class _HandoverCount:
         return self._count
 
 
-class BigvilleWorld(BirthsMixin, DependantsMixin, BodyMixin):
+class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
         "ecology": True,
@@ -1301,6 +1302,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, BodyMixin):
                         # bd_train_strength / bd_train_stamina (Phase 032): the effort trains what it uses, once.
                         if self.physical_subsystems.get("training", True):
                             self._train_from_effort(body, event)
+                        self._detraining_note_effort(actor, body, event)   # Phase 046: the day of the effort (no-op when off)
                     else:
                         amount = float(ea.get("amount", 1.0))
                         self.eng.set_attr(body, "stamina_reserve",
@@ -7880,6 +7882,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, BodyMixin):
         # Phase 044: pregnancy, delivery and birth (a no-op with the births switch off).
         self._births_day()
         self._dependants_day()   # Phase 045: growth, care and neglect of dependants (a no-op with the switch off)
+        self._detraining_day()   # Phase 046: ageing of the base and detraining of the trained part (a no-op when off)
 
     def add_waste(self, kind="kitchen_scraps", amount=1.0):
         cycle = self.E.WASTE_CYCLES[kind]

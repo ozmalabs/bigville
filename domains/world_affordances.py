@@ -171,6 +171,9 @@ MEDICAL_CARE = _PACK["MEDICAL_CARE"]
 BIRTHS = _PACK["BIRTHS"]
 # Phase 045: infants, dependants and coming of age (DEPENDANTS: stages, neglect, growth; enabled is off). APPROX.
 DEPENDANTS = _PACK["DEPENDANTS"]
+# Phase 046: detraining of trained strength and stamina (DETRAIN) and ageing of the base (BODY_AGE). APPROX.
+DETRAIN = _PACK["DETRAIN"]
+BODY_AGE = _PACK["BODY_AGE"]
 # Phase 029: a contested take (force, cost, margins, reactions). APPROX values; see the table's _doc.
 CONTEST = _PACK["CONTEST"]
 # Phase 050: the one resolution rule. VERBS (the physics of a verb), MATERIALS (what a thing is made of) and

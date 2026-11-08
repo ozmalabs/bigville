@@ -502,6 +502,33 @@ def _spend_row(counts: dict[str, Any]) -> dict[str, Any]:
                         for day, bucket in sorted((counts.get("by_day") or {}).items())}}
 
 
+def body_by_age(world) -> dict[str, Any]:
+    """Phase 046: strength and stamina by age decade over the living residents, and the share of each band with a
+    trained part (str_train or sta_train above 0). Read-only: the effective values come from the world's accessors.
+    The top band is 70 and over. A band with no residents is left out."""
+    bands: dict[int, list[tuple[float, float, bool, bool]]] = {}
+    for name, node in sorted(world._actors.items()):
+        attrs = world.eng.node(node)["attrs"]
+        if float(attrs.get("alive", 1.0)) != 1.0 or name not in world._bodies:
+            continue
+        body = world.eng.node(world._bodies[name])["attrs"]
+        decade = min(7, int(float(attrs.get("age", 0.0)) // 10))
+        bands.setdefault(decade, []).append((float(world.effective_strength(name)), float(world.effective_stamina(name)),
+                                             float(body.get("str_train", 0.0)) > 0.0,
+                                             float(body.get("sta_train", 0.0)) > 0.0))
+    out: dict[str, Any] = {}
+    for decade in sorted(bands):
+        rows = bands[decade]
+        count = len(rows)
+        label = "70+" if decade >= 7 else f"{decade * 10}-{decade * 10 + 9}"
+        out[label] = {"residents": count,
+                      "mean_strength": _round(sum(r[0] for r in rows) / count),
+                      "mean_stamina": _round(sum(r[1] for r in rows) / count),
+                      "share_trained_strength": _round(sum(r[2] for r in rows) / count),
+                      "share_trained_stamina": _round(sum(r[3] for r in rows) / count)}
+    return out
+
+
 def game_report(game) -> dict[str, Any]:
     """The world report plus the game's LLM counts, beside the refusal counts (Phase 021).
 

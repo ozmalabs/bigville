@@ -1,0 +1,16 @@
+[13:18:28] built trees: built /tmp/p046: base HEAD = 38bc602b6eeaa44537ca79409a4f95b734c0cec9; new files 6; hunks 9
+[13:18:31] selftest p046 exit 0
+[13:18:33] domains.check bigville exit 0
+[13:18:33] domains.check test_hamlet exit 0
+[13:18:34] export diff bigville exit 0 (0 = every exported file identical)
+[13:18:34] export diff test_hamlet exit 0
+[13:18:37] focused p046 exit 0
+[13:19:38] focused common p046 exit 0
+[13:21:33] measure head60 exit 0
+[13:23:28] measure p046_60 exit 0
+[13:23:28] full suite p046 start
+[13:23:33] full p046 exit 2
+[13:23:33] ALL DONE
+[13:25:02] full suite p046 start (tests/)
+[14:19:52] full p046 exit 0
+CORRECTION: the 'full p046 exit 0' line above is wrong. It was written by a manual launch line that read $? after date ran. pytest's own summary (full_p046.log) is '1 failed, 2369 passed, 5 skipped'; the failure is the known tests/test_phase055_concurrency.py speed test. The true pytest exit status is 1.
