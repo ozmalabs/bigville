@@ -224,7 +224,8 @@ def press_sound(tables, total):
     return None if chosen is None else str(chosen)
 
 
-def derive(tables, reads, record, seed, actor, turn, previous=None, located=None, habituation=None, focus=None):
+def derive(tables, reads, record, seed, actor, turn, previous=None, located=None, habituation=None, focus=None,
+           locus_for=None):
     """Every source's truth for one resident at one turn.
 
     tables    {"anatomy", "quality_tree", "vocalisations", "channels", "sources", "patterns", "feeling", "rules"}
@@ -243,6 +244,8 @@ def derive(tables, reads, record, seed, actor, turn, previous=None, located=None
     rows = []
     habit = habituation or {}
     for name, spec, value in source_rows(tables, reads, located):
+        if locus_for and name in locus_for:              # Phase 070b: a disease with a locus feels from there
+            spec = dict(spec, locus=str(locus_for[name]))
         read = str(spec["read"])
         raw_intensity = intensity_of(spec, value)
         intensity = raw_intensity * (1.0 - float(habit.get(name, 0.0)))
@@ -253,7 +256,8 @@ def derive(tables, reads, record, seed, actor, turn, previous=None, located=None
         focused = focus is not None and name == focus["source"]
         if focused:
             acuity += float(focus["acuity_bonus"])
-            attention = float(focus["focus_attention"])
+            if not focus.get("keep_attention"):          # Phase 070b: a glance keeps the attention it has
+                attention = float(focus["focus_attention"])
         elif focus is not None:
             attention = min(attention, float(focus["other_attention"]))
         raw = raw_depth(rules, intensity, acuity, attention, float(record["impairment"]), jitter)

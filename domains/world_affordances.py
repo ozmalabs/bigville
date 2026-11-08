@@ -217,6 +217,9 @@ BODY_RATES = _PACK["BODY_RATES"]
 OBSERVABLE_SIGNS = _PACK["OBSERVABLE_SIGNS"]
 # Phase 071: attending and pressing (world/interoception.json): the attention budget, the press reaction, the remedies.
 ATTEND = _PACK["ATTEND"]
+# Phase 070b: the aimed strike (STRIKE_AIM) and how a located injury lowers a capacity (INJURY_EFFECTS).
+STRIKE_AIM = _PACK["STRIKE_AIM"]
+INJURY_EFFECTS = _PACK["INJURY_EFFECTS"]
 
 
 def scrap_kind(kind):

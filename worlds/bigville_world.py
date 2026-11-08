@@ -2062,7 +2062,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # Phase 024: a tired walker's interval is multiplied (x1, x1.5 or x3). Waiting ticks accumulate in
         # the float cooldown, so a step at interval I owes I - 1 waiting ticks. Whole intervals wait exactly
         # as they did before the factor existed.
-        interval = terrain_interval * band["interval"] / self.stagger_speed(actor) * _dn.travel_factor(self, actor)
+        interval = (terrain_interval * band["interval"] / (self.stagger_speed(actor)
+                    * self._body_capacity_factor(actor, "speed")) * _dn.travel_factor(self, actor))  # Phase 070b: a leg injury
         self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
                           cooldown + interval - 1.0 if interval > 1.0 + 1e-9 else 0.0)
         if nxt is not None:
@@ -7546,7 +7547,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             cost -= float(spec["treat_relief"])
         if stage == "infant" and not self._care_flag_value(name, "well_baby"):
             cost += float(care["infant_fragility"])
-        self.harm(name, max(0.0, cost), "illness", fragility=False)
+        self.harm(name, max(0.0, cost), "illness", fragility=False, locus=self._disease_locus(name))
         if not self.is_alive(name):
             return
         self._heal(name, float(care["treated_heal"] if treated else care["natural_care"]))
@@ -7864,7 +7865,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                     continue
             elif a.get("disease"):
                 # A disease is an ongoing illness route: its daily loss is acute harm tagged illness.
-                self.harm(name, float(care["disease_health_loss"]), "illness")
+                self.harm(name, float(care["disease_health_loss"]), "illness", locus=self._disease_locus(name))
                 if not self.is_alive(name):
                     continue
             # An unburied body in the household is a health risk: an onset is an ordinary diagnose() of
@@ -9210,7 +9211,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             # Phase 038: a strike without a game is a blow the target does not answer (no reaction).
             plan = {"target": kwargs.get("target", args[0] if args else None),
                     "intensity": kwargs.get("intensity", args[1] if len(args) > 1 else 1.0),
-                    "with": kwargs.get("with_kind")}
+                    "with": kwargs.get("with_kind"), "region": kwargs.get("region")}
             pending, code = self.strike_begin(actor, plan)
             if pending is None:
                 return self._refuse(code)
@@ -9467,6 +9468,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return self.set_job_pace(actor, kwargs.pop("intensity", args[0] if args else None))
         if action == "stop":
             return self.stop_job(actor)
+        if action == "glance":   # Phase 070b: a free look at one felt signal (no slot, no tick)
+            return self._body_glance(actor, kwargs.pop("target", args[0] if args else None))
         raise ValueError(f"unknown free action: {action}")
 
     def set_job_pace(self, actor, intensity):
@@ -11124,12 +11127,13 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     # (train_gain, effective_stat). The effort's `intensity` is its stamina cost, capped at 1.
     def effective_strength(self, actor):
         """(str_base + str_train) x health (seed bd_effective_stats). Read by the recipe gate and the contest."""
-        return self._effective_body_stat(actor, "str_base", "str_train")
+        return self._effective_body_stat(actor, "str_base", "str_train") * self._body_capacity_factor(actor, "strength")
 
     def effective_stamina(self, actor):
         """(sta_base + sta_train) x health: the stamina capacity the reserve is clamped to and the band reads.
         Phase 036: withdrawal lowers it while alcohol_aftereffects is on."""
-        return self._effective_body_stat(actor, "sta_base", "sta_train") * self._withdrawal_stamina_factor(actor)
+        return (self._effective_body_stat(actor, "sta_base", "sta_train") * self._withdrawal_stamina_factor(actor)
+                * self._body_capacity_factor(actor, "stamina"))
 
     def _effective_body_stat(self, actor, base_key, train_key):
         ba = self.eng.node(self._bodies[actor])["attrs"]
@@ -11846,6 +11850,11 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return None, "unknown_target" if target not in self._actors else "wrong_target"
         if not self.is_alive(target):
             return None, "wrong_target"
+        region = plan.get("region")
+        if region is not None and not isinstance(region, str):
+            return None, "malformed"
+        if region is not None and not self._body_locus_ok(region):
+            return None, "unknown_region"                              # Phase 070b: an aim names an ANATOMY node
         here, there = self.actor_position(actor), self.actor_position(target)
         if here is None or here != there:
             return None, "not_in_reach"
@@ -11879,7 +11888,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             "slot_before": before, "slot_record": self._turn_actions[actor][-1],
             "attacker_side": attacker_side, "target_side": target_side,
             "offer": self._contest_offer(actor, target, attacker_side, target_side),
-            "result": None, "weapon": weapon,
+            "result": None, "weapon": weapon, "region": region,
         }
         self._contest = pending
         return pending, None
@@ -11982,8 +11991,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                       redirected=redirected, outcome="redirected" if redirected else "struck", applied=True,
                       weapon=pending["weapon"]["kind"] if pending.get("weapon") is not None else "")
         self._record_sight(attacker, "strike", pending["witnesses"])
+        locus = self._strike_locus(pending, choice)                    # Phase 070b: None unless aimed and it lands
+        result["locus"] = locus or ""
         if harm > 0.0:
-            self.harm(target, harm, "violence")
+            self.harm(target, harm, "violence", locus=locus)
         if redirected:
             self.harm(attacker, float(ct["redirect_harm"]) * intensity, "violence")
         weapon = pending.get("weapon")

@@ -13,6 +13,8 @@ the world's enact_plan receives {"action", "target"}).
 
     attend            -> signal:1 (the first felt signal); "attend 2" or "attend signal 2" -> signal:2
     press <region>    -> the ANATOMY node whose key or label is the region ("press upper belly" -> upper_belly)
+    glance            -> a free action, {"free_action": {"action": "glance", "target": "signal:N"}} (Phase 070b; no
+                         major action, no tick). "glance 2" -> signal:2. The caller sends it with free_action.
 """
 from __future__ import annotations
 
@@ -50,6 +52,14 @@ def parse_line(text, pack="bigville"):
         return None
     head, _sep, rest = raw.partition(" ")
     verb = aliases(pack).get(head)
+    if verb == "glance":
+        number = rest.strip()
+        if number.startswith("signal"):
+            number = number[len("signal"):].strip(" :")
+        number = number or "1"
+        if not number.isdigit() or int(number) < 1:
+            return None
+        return {"free_action": {"action": "glance", "target": f"signal:{int(number)}"}}
     if verb == "attend":
         number = rest.strip()
         if number.startswith("signal"):

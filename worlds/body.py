@@ -54,6 +54,9 @@ def pack_tables(pack):
             "rates": loaded["BODY_RATES"],
             "signs": loaded["OBSERVABLE_SIGNS"],
             "attend": loaded["ATTEND"],
+            "strike_aim": loaded["STRIKE_AIM"],
+            "injury_effects": loaded["INJURY_EFFECTS"],
+            "tick_hours": float(loaded["TIME"]["minutes_per_tick"]) / 60.0,
         }
     return _TABLE_CACHE[key]
 
@@ -84,8 +87,8 @@ class Body:
         return {"embodiment": cls.kind, "seed": seed,
                 "acuity": round(I.acuity_of(rules["acuity"], seed, actor, life_stage), 6),
                 "previous": None, "habituation": {}, "ledger": {}, "sleep_debt": 0.0, "findings": [],
-                "attending": None, "pressed": {}, "probe": None, "pending": None,
-                "counts": {"attends": 0, "presses": 0, "depth_gained": 0, "remedied": 0}}
+                "attending": None, "pressed": {}, "probe": None, "pending": None, "glance": None,
+                "counts": {"attends": 0, "presses": 0, "depth_gained": 0, "remedied": 0, "glances": 0}}
 
     def clock(self):
         """(seed, turn): the seed the draws use and the turn they are keyed on."""
@@ -135,16 +138,28 @@ class Body:
         budget); None otherwise. Plain values from ATTEND."""
         attending = self.state.get("attending")
         if not attending:
-            return None
+            glance = self.state.get("glance")
+            if not glance:
+                return None
+            # Phase 070b: a glance adds one step of acuity to one signal for this view. It keeps the attention the
+            # resident has and caps no other signal.
+            return {"source": str(glance["source"]), "acuity_bonus": float(self.tables["attend"]["glance_bonus"]),
+                    "focus_attention": 0.0, "other_attention": 1.0, "keep_attention": True}
         rules = self.tables["attend"]
         return {"source": str(attending["source"]), "acuity_bonus": float(rules["acuity_bonus"]),
                 "focus_attention": float(rules["focus_attention"]), "other_attention": float(rules["other_attention"])}
+
+    def locus_for(self):
+        """Phase 070b: {source name: locus} for sources that take a place other than their row's (a disease with a
+        locus). Empty for a body with none."""
+        return {}
 
     def _derive(self, use_focus=True):
         seed, turn = self.clock()
         return I.derive(self.tables, self.reads(), self.record(), seed, self.actor, turn,
                         previous=self.state.get("previous"), located=self.located(),
-                        habituation=self.state.get("habituation"), focus=self.focus() if use_focus else None)
+                        habituation=self.state.get("habituation"), focus=self.focus() if use_focus else None,
+                        locus_for=self.locus_for())
 
     def afferents(self):
         """What the mind may feel: {feeling?, signals}. Only sounds and places; no cause."""
@@ -210,16 +225,37 @@ class Body:
         for locus in [name for name, value in ledger.items() if float(value) <= 0.0]:
             del ledger[locus]
 
+    def sleep_need(self):
+        """Hours of sleep a day this resident's life stage needs (BODY_RATES.sleep_need_hours). 'adult' with no world."""
+        stage = "adult"
+        if self.world is not None:
+            stage = str(self.world.eng.node(self.world._actors[self.actor])["attrs"].get("life_stage", "adult"))
+        return float(self.tables["rates"]["sleep_need_hours"].get(stage, self.tables["rates"]["sleep_need_hours"]["adult"]))
+
     def _sleep_step(self):
-        """The chronic short-sleep store: it grows on each awake tick and falls on each asleep tick (BODY_RATES).
-        Only the body's own state changes."""
-        rates = self.tables["rates"]
+        """The chronic short-sleep store, in hours of missing sleep (BODY_RATES). Each awake tick adds tick_hours x
+        need / 24 and each asleep tick takes off tick_hours x (24 - need) / 24, floored at 0. So sleeping exactly
+        `need` hours a day holds it level, and a day with no sleep adds one night's need. Only the body's state moves."""
+        need = self.sleep_need()
+        hours = float(self.tables["tick_hours"])
         debt = float(self.state.get("sleep_debt", 0.0))
         if self.attention() == "asleep":
-            debt -= float(rates["sleep_debt_fall"])
+            debt -= hours * (24.0 - need) / 24.0
         else:
-            debt += float(rates["sleep_debt_rise"])
+            debt += hours * need / 24.0
         self.state["sleep_debt"] = round(max(0.0, debt), 6)
+
+    def start_glance(self, source):
+        """Phase 070b: a glance at one felt signal. It takes no major action, no tick and no stamina (ATTEND
+        glance_stamina_cost), and lasts until the next tick. Returns the probe the resident now has."""
+        rules = self.tables["attend"]
+        seed, turn = self.clock()
+        self.state["glance"] = {"source": str(source)}
+        counts = self.state["counts"]
+        counts["glances"] = int(counts.get("glances", 0)) + 1
+        row = next(row for row in self._derive()["sources"] if row["source"] == source)
+        return {"turn": int(turn), "action": "glance", "sound": row["sound"], "where": row["where"],
+                "stamina_cost": float(rules["glance_stamina_cost"])}
 
     def _habituation_step(self):
         """Each steady signal's felt fraction falls toward 0 while its stimulus holds, and recovers when it stops.
@@ -245,7 +281,9 @@ class Body:
 
     def tick(self):
         """Once per clock tick: the trend and habituation are kept against the last tick, the sleep debt moves, and
-        the located ledger falls at its time rate. No physical state of the world changes."""
+        the located ledger falls at its time rate. No physical state of the world changes. A glance lasts until the
+        next tick (Phase 070b)."""
+        self.state["glance"] = None
         self._habituation_step()
         self._sleep_step()
         self._attend_tick()
@@ -392,7 +430,8 @@ class WorldBackedBody(Body):
                 "deficiency": min(1.0, max(0.0, float(body_attrs.get("deficiency", 0.0)))),
                 "hangover": hangover,
                 "withdrawal": float(w._withdrawal_share(a)),
-                "sleep_debt": min(1.0, float(self.state.get("sleep_debt", 0.0)) / float(rates["sleep_debt_full"]))}
+                "sleep_debt": min(1.0, float(self.state.get("sleep_debt", 0.0))
+                                  / (float(rates["sleep_debt_read_nights"]) * self.sleep_need()))}
 
     def attention(self):
         if self.world.asleep(self.actor):
@@ -407,6 +446,15 @@ class WorldBackedBody(Body):
 
     def facts(self):
         return {"asleep": bool(self.world.asleep(self.actor)), "collapsed": bool(self.world.collapsed(self.actor))}
+
+    def locus_for(self):
+        """Phase 070b: a disease with a locus (DISEASE[disease].locus) feels from that place. A disease with none, or no
+        disease, keeps the illness source's own row."""
+        w, a = self.world, self.actor
+        disease = str(w.eng.node(w._actors[a])["attrs"].get("disease", "") or "")
+        row = w.E.DISEASE.get(disease) if disease else None
+        locus = row.get("locus") if row else None
+        return {"illness": str(locus)} if locus else {}
 
     def capacities(self):
         w, a = self.world, self.actor
@@ -486,6 +534,16 @@ class BodyMixin:
     def _body_locus_ok(self, locus):
         """Whether a locus name is an ANATOMY node of this pack."""
         return str(locus) in _anatomy_rows(pack_tables(self.data_pack))
+
+    def _disease_locus(self, actor):
+        """Phase 070b: the locus a resident's disease harm lands on (DISEASE[disease].locus), or None for a whole-body
+        disease (or no disease). None sends the harm to HARM_LOCUS as before."""
+        if actor not in self._actors:
+            return None
+        disease = str(self.eng.node(self._actors[actor])["attrs"].get("disease", "") or "")
+        row = self.E.DISEASE.get(disease) if disease else None
+        locus = row.get("locus") if row else None
+        return str(locus) if locus else None
 
     def _body_screen(self, actor):
         """Phase 070: a healer's checkup records the resident's silent conditions from the referee state."""
@@ -569,11 +627,61 @@ class BodyMixin:
             body.note_action(str(action), bool(applied))
             self.embodiment[actor] = body.dump()
 
+    # ------------------------------------------------------------------ Phase 070b: glances, injury and aimed blows
+    def _body_glance(self, actor, handle):
+        """Phase 070b: the free glance at one felt signal (called from free_action). Refused (False) asleep, for a
+        handle that names no felt signal, or for a non-string handle. It uses no major action and no stamina."""
+        body = self.body_of(actor)
+        if body is None or not isinstance(handle, str) or self._sleep_code(actor) is not None:
+            return False
+        source = body.signal_named(handle)
+        if source is None:
+            return False
+        body.start_glance(source)
+        self.embodiment[actor] = body.dump()
+        return True
+
+    def _body_capacity_factor(self, actor, capacity):
+        """Phase 070b: the share of a capacity ('speed', 'strength' or 'stamina') a located injury leaves: the
+        INJURY_EFFECTS weights times the ledger at each locus, floor at INJURY_EFFECTS.floor. Exactly 1.0 with an empty
+        ledger or no weight on this capacity. Reads the plain ledger; the press boost is not counted."""
+        state = getattr(self, "embodiment", {}).get(actor)
+        if not state or not state.get("ledger"):
+            return 1.0
+        spec = pack_tables(self.data_pack)["injury_effects"]
+        total = 0.0
+        for locus, value in state["ledger"].items():
+            weight = (spec["weights"].get(locus) or {}).get(capacity)
+            if weight:
+                total += float(weight) * float(value)
+        if total <= 0.0:
+            return 1.0
+        return round(max(float(spec["floor"]), 1.0 - total), 6)
+
+    def _strike_locus(self, pending, choice):
+        """Phase 070b: where an aimed strike lands. None for an unaimed blow (the table draws, as before). For an aimed
+        one the chance is STRIKE_AIM base + skill_weight x the striker's skill, times brace_factor when the target
+        resists or braces; the draw is stateless (domains/interoception.draw), keyed on the seed, the two residents and
+        the turn. A miss gives None, so the table draws."""
+        region = pending.get("region")
+        if region is None:
+            return None
+        aim = pack_tables(self.data_pack)["strike_aim"]
+        skill = float(pending["attacker_side"]["skill"])
+        chance = max(0.0, min(1.0, float(aim["base"]) + float(aim["skill_weight"]) * skill))
+        if choice in ("resist", "brace"):
+            chance *= float(aim["brace_factor"])
+        seed, turn = int(getattr(self, "_burial_seed", 0)), int(getattr(self, "_turn", 0))
+        from domains import interoception as I
+        point = I.draw(seed, "aim", pending["attacker"], pending["target"], turn)
+        return str(region) if point < chance else None
+
     def attention_report(self):
         """Phase 071 (game_report only): attends, presses, the depth gained by attending (summed over residents), the
         attends that a remedy for the attended source followed (acted on the true source, a referee measure), and how
         many residents are attending now. Read-only."""
-        totals = {"attends": 0, "presses": 0, "depth_gained": 0, "acted_on_true_source": 0, "attending_now": 0}
+        totals = {"attends": 0, "presses": 0, "glances": 0, "depth_gained": 0, "acted_on_true_source": 0,
+                  "attending_now": 0}
         for actor in self._actors:
             state = getattr(self, "embodiment", {}).get(actor)
             if not state:
@@ -581,6 +689,7 @@ class BodyMixin:
             counts = state.get("counts") or {}
             totals["attends"] += int(counts.get("attends", 0))
             totals["presses"] += int(counts.get("presses", 0))
+            totals["glances"] += int(counts.get("glances", 0))
             totals["depth_gained"] += int(counts.get("depth_gained", 0))
             totals["acted_on_true_source"] += int(counts.get("remedied", 0))
             totals["attending_now"] += 1 if state.get("attending") else 0

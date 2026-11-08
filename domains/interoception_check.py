@@ -26,7 +26,7 @@ from domains.pack import PackError, load_pack
 REQUIRED = ("ANATOMY", "QUALITY_TREE", "VOCALISATIONS", "CHANNELS", "SIGNAL_SOURCES", "PATTERNS", "FEELING",
             "INTEROCEPTION", "HARM_LOCUS", "BODY_RATES", "OBSERVABLE_SIGNS", "ATTEND")
 RATE_KEYS = ("located_heal_per_tick", "care_share", "habituation_rate", "habituation_recover", "incubation_days",
-             "sleep_debt_rise", "sleep_debt_fall", "sleep_debt_full")
+             "sleep_debt_read_nights")
 DEPTH_KEYS = ("base", "intensity_weight", "acuity_weight", "attention_weight", "impairment_weight", "jitter")
 ATTENTION_KINDS = ("idle", "absorbed", "asleep")
 LETTERS = re.compile(r"^[a-z]+$")
@@ -144,6 +144,7 @@ def check_interoception(pack_name, errors, warnings, info):
             errors.append(f"INTEROCEPTION: SIGNAL_SOURCES[{name}] needs numeric floor, ceiling and awareness")
     _check_phase070(pack, anatomy, anatomy_ok, errors)
     _check_phase071(pack, sources, errors)
+    _check_phase070b(pack, anatomy, errors)
     for name, row in patterns.items():
         if not isinstance(row.get("repeat"), int) or isinstance(row.get("repeat"), bool) or row["repeat"] < 1:
             errors.append(f"INTEROCEPTION: PATTERNS[{name}].repeat must be a whole number of at least 1")
@@ -216,8 +217,6 @@ def _check_phase070(pack, anatomy, anatomy_ok, errors):
     for key in ("care_share", "habituation_rate", "habituation_recover"):
         if isinstance(rates.get(key), (int, float)) and not 0.0 <= float(rates[key]) <= 1.0:
             errors.append(f"INTEROCEPTION: BODY_RATES.{key} must be in [0, 1]")
-    if isinstance(rates.get("sleep_debt_full"), (int, float)) and float(rates["sleep_debt_full"]) <= 0.0:
-        errors.append("INTEROCEPTION: BODY_RATES.sleep_debt_full must be above 0")
     signs = _rows(pack["OBSERVABLE_SIGNS"])
     for name, row in signs.items():
         source = row.get("from")
@@ -253,8 +252,8 @@ def _check_phase071(pack, sources, errors):
     if "REFUSAL_REASONS" in pack and "attending" not in pack["REFUSAL_REASONS"]:
         errors.append("INTEROCEPTION: REFUSAL_REASONS has no 'attending' code (the world refuses an attend with it)")
     aliases = table.get("verb_aliases")
-    if not isinstance(aliases, dict) or set(aliases.values()) - {"attend", "press"}:
-        errors.append("INTEROCEPTION: ATTEND.verb_aliases must map words to 'attend' or 'press'")
+    if not isinstance(aliases, dict) or set(aliases.values()) - {"attend", "press", "glance"}:
+        errors.append("INTEROCEPTION: ATTEND.verb_aliases must map words to 'attend', 'press' or 'glance'")
     rows = table.get("press_sounds")
     if not isinstance(rows, list) or not rows:
         errors.append("INTEROCEPTION: ATTEND.press_sounds must be a non-empty list")
@@ -276,6 +275,69 @@ def _check_phase071(pack, sources, errors):
             errors.append(f"INTEROCEPTION: ATTEND.remedies names {source!r}, not a SIGNAL_SOURCES row")
         if not isinstance(actions, list) or not all(isinstance(a, str) for a in actions):
             errors.append(f"INTEROCEPTION: ATTEND.remedies[{source}] must be a list of action names")
+
+
+def _opt(pack, name):
+    """A table of the pack, or an empty dict when the pack does not have it."""
+    return pack[name] if name in pack else {}
+
+
+def _check_phase070b(pack, anatomy, errors):
+    """Phase 070b: the sleep needs (one hour figure per LIFE_STAGES key, each in (0, 24]); the aimed strike's numbers
+    (in [0, 1]); the injury's capacity weights (ANATOMY loci, capacities speed, strength, stamina, weights at least 0,
+    floor in [0, 1]); the glance (a free action with a description, and a refusal code for an unknown region); and each
+    DISEASE row's optional locus, which must be an ANATOMY node."""
+    rows = _rows(anatomy)
+    needs = pack["BODY_RATES"].get("sleep_need_hours")
+    stages = _rows(_opt(pack, "LIFE_STAGES"))
+    if not isinstance(needs, dict):
+        errors.append("INTEROCEPTION: BODY_RATES.sleep_need_hours must map each life stage to hours")
+    else:
+        for stage in stages:
+            hours = needs.get(stage)
+            if not isinstance(hours, (int, float)) or isinstance(hours, bool) or not 0.0 < float(hours) <= 24.0:
+                errors.append(f"INTEROCEPTION: BODY_RATES.sleep_need_hours[{stage}] must be hours in (0, 24]")
+        for stage in needs:
+            if stage not in stages:
+                errors.append(f"INTEROCEPTION: BODY_RATES.sleep_need_hours names {stage!r}, not a LIFE_STAGES key")
+    years = pack["BODY_RATES"].get("sleep_debt_read_nights")
+    if not isinstance(years, (int, float)) or isinstance(years, bool) or float(years) <= 0.0:
+        errors.append("INTEROCEPTION: BODY_RATES.sleep_debt_read_nights must be above 0")
+    aim = _opt(pack, "STRIKE_AIM")
+    for key in ("base", "skill_weight", "brace_factor"):
+        value = aim.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0.0 <= float(value) <= 1.0:
+            errors.append(f"INTEROCEPTION: STRIKE_AIM.{key} must be in [0, 1]")
+    effects = _opt(pack, "INJURY_EFFECTS")
+    floor = effects.get("floor")
+    if not isinstance(floor, (int, float)) or isinstance(floor, bool) or not 0.0 <= float(floor) <= 1.0:
+        errors.append("INTEROCEPTION: INJURY_EFFECTS.floor must be in [0, 1]")
+    for locus, capacities in (effects.get("weights") or {}).items():
+        if locus not in rows or rows[locus].get("parent") is None:
+            errors.append(f"INTEROCEPTION: INJURY_EFFECTS.weights names {locus!r}, not an ANATOMY node below the root")
+            continue
+        for capacity, weight in capacities.items():
+            if capacity not in ("speed", "strength", "stamina"):
+                errors.append(f"INTEROCEPTION: INJURY_EFFECTS.weights[{locus}] names {capacity!r}; use speed, strength or stamina")
+            if not isinstance(weight, (int, float)) or isinstance(weight, bool) or float(weight) < 0.0:
+                errors.append(f"INTEROCEPTION: INJURY_EFFECTS.weights[{locus}][{capacity}] must be a number of at least 0")
+    attend = pack["ATTEND"]
+    for key in ("glance_bonus", "glance_stamina_cost"):
+        value = attend.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or float(value) < 0.0:
+            errors.append(f"INTEROCEPTION: ATTEND.{key} must be a number of at least 0")
+    if attend.get("verb_aliases", {}).get("glance") == "glance":
+        free = _opt(pack, "FREE_ACTIONS")
+        if "glance" not in free:
+            errors.append("INTEROCEPTION: ATTEND.verb_aliases maps 'glance', but FREE_ACTIONS has no 'glance'")
+        elif not str(free["glance"].get("description", "")).strip():
+            errors.append("INTEROCEPTION: FREE_ACTIONS.glance needs a description (Phase 018)")
+    if "REFUSAL_REASONS" in pack and "unknown_region" not in pack["REFUSAL_REASONS"]:
+        errors.append("INTEROCEPTION: REFUSAL_REASONS has no 'unknown_region' code (a strike with an unknown region)")
+    for name, row in _rows(_opt(pack, "DISEASE")).items():
+        locus = row.get("locus")
+        if locus is not None and (locus not in rows or str(locus).startswith("_")):
+            errors.append(f"DISEASE[{name}][locus] names {locus!r}, not an ANATOMY node")
 
 
 def _root_of(anatomy):

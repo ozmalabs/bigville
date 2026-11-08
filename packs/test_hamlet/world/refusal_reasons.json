@@ -21,6 +21,9 @@
       "collapsed": {
         "description": "You have collapsed from exhaustion and are asleep where you fell. You cannot act until you wake, and you wake weaker than a proper sleep leaves you."
       },
+      "unknown_region": {
+        "description": "The part of the body you named for the blow is not one that a person has. Name a region such as head, chest, back, arm or leg, or leave the region out."
+      },
       "attending": {
         "description": "You are already looking into a feeling. Wait until the attention has run its course before you give it another."
       },

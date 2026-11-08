@@ -444,7 +444,7 @@
       ]
     },
     "HARM_LOCUS": {
-      "_doc": "HARM_LOCUS (Phase 070): where an acute harm lands when the caller gives no locus. Keyed by HEALTH cause; each value maps ANATOMY nodes to weights (drawn by a stateless seeded draw, domains/interoception.py draw). An empty row is whole-body harm: it changes health and leaves no located ledger entry (starvation, exhaustion, age, intoxication, illness). The weights are APPROX: a blow lands on the head, chest, back, arm or leg; a fall or accident mostly on the limbs. Loci are leaves or near-leaves (not the root).",
+      "_doc": "HARM_LOCUS (Phase 070): where an acute harm lands when the caller gives no locus. Keyed by HEALTH cause; each value maps ANATOMY nodes to weights (drawn by a stateless seeded draw, domains/interoception.py draw). An empty row is whole-body harm: it changes health and leaves no located ledger entry (starvation, exhaustion, age, intoxication, illness, childbirth, neglect). The weights are APPROX: a blow lands on the head, chest, back, arm or leg; a fall or accident mostly on the limbs. Loci are leaves or near-leaves (not the root).",
       "injury": {
         "head": 0.2,
         "chest": 0.2,
@@ -474,15 +474,20 @@
       "neglect": {}
     },
     "BODY_RATES": {
-      "_doc": "BODY_RATES (Phase 070): the rates of the body's own state, all APPROX. located_heal_per_tick: a located injury's ledger falls by this much each clock tick (96 ticks a day, TIME), at the time-healing rate; the health scalar's own recovery is unchanged. care_share: the share of each health gain (rest, care, treatment) that also lowers the located ledger. habituation_rate and habituation_recover: a steady signal's felt intensity falls by habituation_rate of the remainder each tick and recovers by habituation_recover of the missing part when the stimulus stops; a rise larger than INTEROCEPTION.trend_delta resets it (noticed at full strength), a steady stimulus habituates, and a stimulus that stops or eases recovers at habituation_recover. incubation_days: an illness's felt intensity ramps up over this many days since onset. sleep_debt_rise and sleep_debt_fall: the debt grows by rise on each awake tick and falls by fall on each asleep tick; with fall = 2 x rise a resident asleep one third of the time (about eight hours of 24, TIME: 96 ticks a day) holds steady, and a resident asleep a quarter of the time gains debt. sleep_debt_full: the debt that reads as 1. Adult sleep need of seven to nine hours is the working basis (Hirshkowitz and others, 2015, National Sleep Foundation recommendations, Sleep Health 1(1), cited from memory and not re-checked: APPROX).",
+      "_doc": "BODY_RATES (Phase 070): the rates of the body's own state, all APPROX. located_heal_per_tick: a located injury's ledger falls by this much each clock tick (96 ticks a day, TIME), at the time-healing rate; the health scalar's own recovery is unchanged. care_share: the share of each health gain (rest, care, treatment) that also lowers the located ledger. habituation_rate and habituation_recover: a steady signal's felt intensity falls by habituation_rate of the remainder each tick and recovers by habituation_recover of the missing part when the stimulus stops; a rise larger than INTEROCEPTION.trend_delta resets it (noticed at full strength), a steady stimulus habituates, and a stimulus that stops or eases recovers at habituation_recover. incubation_days: an illness's felt intensity ramps up over this many days since onset. sleep_need_hours (Phase 070b): the hours of sleep a day each life stage needs, the lower end of the National Sleep Foundation's recommended range. Sources: Hirshkowitz M, Whiton K, Albert SM, et al. National Sleep Foundation's sleep time duration recommendations: methodology and results summary. Sleep Health 2015;1(1):40-43, doi:10.1016/j.sleh.2015.01.010; and the final report, Sleep Health 2015;1(4):233-243, doi:10.1016/j.sleh.2015.10.004. Recommended ranges: newborns 14-17 h, infants 12-15 h, toddlers 11-14 h, preschoolers 10-13 h, school-aged children 9-11 h, teenagers 8-10 h, young adults and adults 7-9 h, older adults 7-8 h. Mapping to LIFE_STAGES (APPROX): infant = the infant range (12); child = school-aged (9; LIFE_STAGES does not split the preschool years, whose range is 10-13 h); youth = teenagers (8); adult = young adults and adults (7); elder = older adults (7). sleep_debt (the body's chronic short-sleep store) is in hours of missing sleep. Each awake tick adds tick_hours x need / 24 and each asleep tick takes off tick_hours x (24 - need) / 24, floored at 0, with tick_hours from TIME. So sleeping exactly need hours a day holds the debt level, and a day with no sleep adds one night's need. sleep_debt_read_nights: the read is debt / (2 x need), capped at 1, so two nights' sleep lost reads as full. The two-night scale is APPROX, after Van Dongen HPA, Maislin G, Mullington JM, Dinges DF. The cumulative cost of additional wakefulness. Sleep 2003;26(2):117-126: 6 h a night for 14 days gave cumulative cognitive deficits reaching those of up to two nights of total sleep deprivation.",
       "located_heal_per_tick": 0.0005,
       "care_share": 0.5,
       "habituation_rate": 0.05,
       "habituation_recover": 0.1,
       "incubation_days": 5.0,
-      "sleep_debt_rise": 0.001,
-      "sleep_debt_fall": 0.002,
-      "sleep_debt_full": 0.5
+      "sleep_need_hours": {
+        "infant": 12,
+        "child": 9,
+        "youth": 8,
+        "adult": 7,
+        "elder": 7
+      },
+      "sleep_debt_read_nights": 2.0
     },
     "OBSERVABLE_SIGNS": {
       "_doc": "OBSERVABLE_SIGNS (Phase 070): what an observer may see of the body's ledger and reads, as signs. from is an INTEROCEPTION read name or 'injury' (the located ledger: summed over the loci named by locus, or over all loci when locus is null). A sign shows when its level is at least min, the observer is within see_range cells and the light is at least see_light (the Phase 063 rules). Signs are the visible side of what the resident may not feel; the observer draws the conclusion. APPROX throughout.",
@@ -521,13 +526,16 @@
       "press_boost": 0.3,
       "press_ticks": 4,
       "remedy_window": 6,
+      "glance_bonus": 1.0,
+      "glance_stamina_cost": 0.0,
       "verb_aliases": {
         "attend": "attend",
         "focus": "attend",
         "heed": "attend",
         "press": "press",
         "probe": "press",
-        "prod": "press"
+        "prod": "press",
+        "glance": "glance"
       },
       "press_sounds": [
         {
@@ -585,6 +593,36 @@
         "sleep_debt": [
           "sleep"
         ]
+      }
+    },
+    "STRIKE_AIM": {
+      "_doc": "STRIKE_AIM (Phase 070b): an aimed strike (strike_begin with a region, an ANATOMY node) lands on that region with a chance p, otherwise it lands where the unaimed table draw puts it (HARM_LOCUS violence). p = clamp(base + skill_weight x the striker's effective skill, 0, 1), multiplied by brace_factor when the target resists or braces (its reaction keeps the blow off its aim). The draw is a stateless sha256 draw (domains/interoception.py draw), never the world's random stream. APPROX throughout: model choices, not measured.",
+      "base": 0.5,
+      "skill_weight": 0.3,
+      "brace_factor": 0.6
+    },
+    "INJURY_EFFECTS": {
+      "_doc": "INJURY_EFFECTS (Phase 070b): how a located injury lowers the capacities the physics uses. For each locus with a row, the body's ledger value at that locus (the harm taken there, healing at BODY_RATES.located_heal_per_tick) times the weight lowers each named capacity by that share: factor = max(floor, 1 - sum over loci of weight x ledger). speed lowers walking (the interval of each step); strength lowers effective strength (work, carrying, the contest's force and blows); stamina lowers effective stamina. A capacity with no row, and an empty ledger, give 1.0 exactly. The weights are APPROX: a leg is the walking limb, an arm the striking and carrying limb, the back and chest carry the body's load, and a head blow lowers strength and stamina a little. Scalar health is not changed by this table.",
+      "floor": 0.5,
+      "weights": {
+        "leg": {
+          "speed": 1.0
+        },
+        "arm": {
+          "strength": 0.8
+        },
+        "back": {
+          "strength": 0.5,
+          "stamina": 0.5
+        },
+        "chest": {
+          "strength": 0.3,
+          "stamina": 0.5
+        },
+        "head": {
+          "strength": 0.2,
+          "stamina": 0.2
+        }
       }
     }
   }

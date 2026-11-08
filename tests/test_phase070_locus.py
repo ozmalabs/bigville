@@ -168,27 +168,31 @@ def _row_from(block, name):
 
 
 def test_chronic_short_sleep_builds_a_debt_that_a_full_night_balances(town):
+    """Phase 070b: the debt is in hours of missing sleep against the life stage's need (BODY_RATES.sleep_need_hours).
+    Seven hours a day holds an adult level, six hours builds one hour a day, no sleep adds one night's need, and a
+    longer night pays the debt down. A day is 96 ticks; the asleep ticks come last in the day."""
     world = town.world
     name = _adult(world)
     body = world.body_of(name)
-    world.embodiment[name]["sleep_debt"] = 0.0
-    rise, fall = RATES["sleep_debt_rise"], RATES["sleep_debt_fall"]
-    # One third of the ticks asleep (eight hours of 24, 96 ticks a day) holds the debt at zero.
-    world.embodiment[name]["sleep_debt"] = 0.0
-    for tick in range(96):
-        body.attention = (lambda t=tick: "asleep" if t % 3 == 0 else "idle")
-        body._sleep_step()
-    # The store never goes below zero, so the first asleep tick (with no debt yet) is lost: the balance is within
-    # one asleep step of zero.
-    assert body.state["sleep_debt"] <= 2 * rise + 1e-9
-    # A quarter asleep (six hours): 72 awake ticks at rise and 24 asleep at fall, net about 24 x rise (the first
-    # asleep tick, at zero debt, is lost to the floor).
-    body.state["sleep_debt"] = 0.0
-    for tick in range(96):
-        body.attention = (lambda t=tick: "asleep" if t % 4 == 0 else "idle")
-        body._sleep_step()
-    assert body.state["sleep_debt"] == pytest.approx(72 * rise - 23 * fall, abs=1e-6)
-    assert body.state["sleep_debt"] > 0.0
+    assert body.sleep_need() == 7.0
+
+    def run_day(asleep_hours, start):
+        body.state["sleep_debt"] = float(start)
+        asleep_ticks = int(round(asleep_hours * 4))           # 4 ticks an hour (TIME: 15 minutes a tick)
+        for tick in range(96):
+            asleep = tick >= 96 - asleep_ticks
+            body.attention = (lambda a=asleep: "asleep" if a else "idle")
+            body._sleep_step()
+        return body.state["sleep_debt"]
+
+    assert run_day(7, 4.0) == pytest.approx(4.0, abs=1e-3)    # seven hours holds the debt level
+    assert run_day(6, 0.0) == pytest.approx(1.0, abs=1e-3)    # six hours builds one hour a day
+    assert run_day(0, 0.0) == pytest.approx(7.0, abs=1e-3)    # a day with no sleep adds one night's need
+    assert run_day(10, 7.0) == pytest.approx(4.0, abs=1e-3)   # ten hours pays three hours back
+    body.state["sleep_debt"] = 7.0
+    assert body.reads()["sleep_debt"] == pytest.approx(0.5)   # 7 / (2 x 7)
+    body.state["sleep_debt"] = 40.0
+    assert body.reads()["sleep_debt"] == 1.0                  # capped: two nights lost reads as full
 
 
 def test_hangover_and_withdrawal_are_read_from_the_aftereffects_and_are_zero_when_off(town):

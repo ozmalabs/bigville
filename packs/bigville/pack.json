@@ -17,6 +17,8 @@
     {"name": "BODY_RATES", "file": "world/interoception.json"},
     {"name": "OBSERVABLE_SIGNS", "file": "world/interoception.json"},
     {"name": "ATTEND", "file": "world/interoception.json"},
+    {"name": "STRIKE_AIM", "file": "world/interoception.json"},
+    {"name": "INJURY_EFFECTS", "file": "world/interoception.json"},
     {
       "name": "ITEMS",
       "file": "world/items.json"
