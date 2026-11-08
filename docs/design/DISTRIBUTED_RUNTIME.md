@@ -191,11 +191,11 @@ the exact timeout/load if it cannot finish.
 
 | Phase | Status | Commit |
 |---|---|---|
-| DR01 | complete (uncommitted) | — |
-| DR02 | complete (uncommitted) | — |
-| DR03 | complete (uncommitted) | — |
-| DR04 | complete (uncommitted) | — |
-| DR05 | blocked on DR04 | — |
+| DR01 | complete | `1ddf95b` |
+| DR02 | complete | `f10dd86` |
+| DR03 | complete | `bf267a8` |
+| DR04 | complete | `ef1baf9` |
+| DR05 | complete (uncommitted) | — |
 
 ## Integration gates
 

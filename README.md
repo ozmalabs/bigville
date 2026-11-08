@@ -316,23 +316,52 @@ python3 tools/verify_bundle_equivalence.py
 python3 tools/verify_bundle_equivalence.py --seeds 305000,305002 --turns 8
 python3 tools/verify_bundle_equivalence.py --seeds 305002 --affordance-mode lazy
 python3 tools/verify_bundle_equivalence.py --json
+python3 tools/verify_bundle_equivalence.py \
+  --seeds 305000,305002,305004,305006 --turns 8 \
+  --journal /tmp/dr05.jsonl --deltas --process
 ```
 
 The tool runs serial and partitioned games turn by turn, compares
-`tick_payload_sha`, audits every dispatched bundle for exactly one result and
-one committed ack, checks deterministic commit order, replays each seed through
-a second partitioned game to compare execution checksums, and re-dispatches
-every bundle through a JSON round trip with a synthetic executor that has no
-world.  It exits non-zero on any divergence.
+`tick_payload_sha` and graph revisions, audits every dispatched bundle for
+exactly one result and one committed ack, checks deterministic commit order,
+replays each seed through a second partitioned game to compare execution
+checksums, and re-dispatches every bundle through a JSON round trip with a
+synthetic executor that has no world.  It exits non-zero on any divergence.
 
-The current phase is **local only**.  There is no network/socket transport, no
-worker process lifecycle or supervision, no durable/checkpointed dispatch log,
-and no live snapshot shipping or remote restore.  A bundle executor still
-mutates the shared in-process world, so a transport failure after partial
-mutation cannot be rolled back.  Those are the next steps for real
-distribution; the protocol objects, checksums and acknowledgement rules are
-already transport-neutral.  See
-[`docs/phases/distributed-bundles/FINAL_REPORT.md`](docs/phases/distributed-bundles/FINAL_REPORT.md).
+#### Distributed runtime (DR01-DR05)
+
+The bundle protocol now has a local runtime seam built on the same objects:
+
+- **Revisions.** `BigvilleGraph.revision` / `BigvilleWorld.revision` advance on
+  every mutation and are carried as the bundle `base_version`.  A stale result
+  is rejected, never merged; committed acks are monotonic and round-trip through
+  checkpoints.
+- **Durable journal.** `create_game(..., bundle_log_path=...)` writes an
+  append-only JSONL journal of `tick_start`/`dispatch`/`result`/`ack`/`commit`/
+  `tick_end` records.  `BundleJournal.read/replay/verify` rebuild and check the
+  tick logs and checksums, including truncated-tail and corruption reporting.
+  Serial and threaded turns write nothing.
+- **Effect deltas.** Partitioned bundle results carry `GraphDelta` effects:
+  `graph.record_changes()` records nodes, edges and attr old/new values, and
+  `GraphDelta.from_effects(...).apply_to(graph)` replays them against a
+  same-base snapshot.  Effects are JSON-safe and stored in the journal.
+- **Local process transport.** `ProcessBundleTransport` dispatches serialized
+  bundles to `multiprocessing` workers with an idempotence cache, timeouts,
+  retries, crash/restart and clean shutdown.  It is a transport seam, not the
+  default; `PartitionedExecutor(transport=...)` accepts it.
+- **Integration verification.** The verification tool's `--journal`, `--deltas`
+  and `--process` scopes check journal replay equality, delta round trips and a
+  real worker round trip in one pass.
+
+This is still **local only**.  There is no network/socket transport,
+authentication, backpressure, snapshot shipping/restore, cross-host worker
+supervision, durable coordinator recovery or live-world worker executor.  A
+bundle executor still mutates the shared in-process world; the effects are the
+replayable record, not an alternative write path.  See
+[`docs/phases/distributed-runtime/FINAL_REPORT.md`](docs/phases/distributed-runtime/FINAL_REPORT.md)
+for the capability list and remaining work, and
+[`docs/phases/distributed-bundles/FINAL_REPORT.md`](docs/phases/distributed-bundles/FINAL_REPORT.md)
+for the underlying protocol.
 
 ### Real Ocelot integration
 
