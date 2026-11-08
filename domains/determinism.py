@@ -27,6 +27,8 @@ __all__ = [
     "sample",
     "world_seed",
     "actor_state",
+    "animal_state",
+    "entity_state",
     "state_uniform",
     "state_seed",
 ]
@@ -215,6 +217,9 @@ _VOLATILE_ACTOR_KEYS = frozenset({
     "last_outcome", "refusal_counts", "busy", "stats_dirty",
     "carry_move_cooldown", "fill_armed", "empty_armed", "use_armed",
     "repair_armed", "dye_armed", "wear_armed", "work_armed", "pick_armed",
+    # Animal action bookkeeping is the animal analogue of an actor's last major
+    # action: it records scheduling, not physical state.
+    "last_npc_action",
 })
 
 
@@ -267,11 +272,12 @@ def actor_state(world, name) -> dict:
     }
 
 
-def _involved_actors(world, parts, actors) -> list[str]:
+def _involved_entities(world, parts, actors) -> list[str]:
     if isinstance(actors, str):
         actors = (actors,)
     names = {str(actor) for actor in (actors or ())}
-    known = getattr(world, "_actors", None) or {}
+    known = set(getattr(world, "_actors", None) or ())
+    known.update(getattr(world, "_animals", None) or ())
     for part in parts:
         if isinstance(part, str) and part in known:
             names.add(part)
@@ -279,20 +285,64 @@ def _involved_actors(world, parts, actors) -> list[str]:
 
 
 def _state_parts(world, purpose, parts, actors):
-    names = _involved_actors(world, parts, actors)
-    states = {name: actor_state(world, name) for name in names}
+    names = _involved_entities(world, parts, actors)
+    states = {name: entity_state(world, name) for name in names}
     return ("state", str(purpose), *parts, states)
 
 
 def state_seed(world, purpose, *parts, actors=()) -> int:
-    """A 128-bit seed including the world seed, purpose, parts and actor state."""
+    """A 128-bit seed including the world seed, purpose, parts and entity state."""
     return derive_seed(world_seed(world), *_state_parts(world, purpose, parts, actors))
 
 
 def state_uniform(world, purpose, *parts, actors=()) -> float:
     """The runtime default: a state-derived draw in ``[0, 1)``.
 
-    Every name in ``parts`` that belongs to a world actor is included
-    automatically, as is every explicit name in ``actors``.
+    Every name in ``parts`` that belongs to a world actor or animal is
+    included automatically, as is every explicit name in ``actors``.
     """
     return uniform(world_seed(world), *_state_parts(world, purpose, parts, actors))
+
+
+def animal_state(world, name) -> dict:
+    """A canonical, stable snapshot of one animal entity.
+
+    Animals keep their state on an ``Animal`` graph node (``world._animals``)
+    rather than on the resident graph, so ``actor_state`` cannot read them.
+    Missing animals are reported as ``{"name": ..., "present": False}``.
+    """
+    key = str(name)
+    animals = getattr(world, "_animals", None) or {}
+    if key not in animals:
+        return {"name": key, "present": False, "entity": "animal"}
+
+    engine = getattr(world, "eng", None)
+    try:
+        attrs = dict(engine.node(animals[key])["attrs"])
+    except (KeyError, TypeError, ValueError):
+        return {"name": key, "present": False, "entity": "animal"}
+
+    return {
+        "entity": "animal",
+        "name": key,
+        "present": True,
+        "alive": float(attrs.get("alive", 0.0)) == 1.0,
+        "attrs": _stable_attrs(attrs),
+    }
+
+
+def entity_state(world, name) -> dict:
+    """The stable state of a named resident or animal.
+
+    A resident takes precedence if a name exists in both registries.  A name
+    that is neither is reported as absent, so a draw for a departed entity is
+    still stable.
+    """
+    key = str(name)
+    actors = getattr(world, "_actors", None) or {}
+    if key in actors:
+        return actor_state(world, key)
+    animals = getattr(world, "_animals", None) or {}
+    if key in animals:
+        return animal_state(world, key)
+    return {"name": key, "present": False}

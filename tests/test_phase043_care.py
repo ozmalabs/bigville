@@ -131,7 +131,8 @@ def test_onset_chance_follows_the_season_and_the_life_stage():
     assert float(spec["onset_per_day"]["winter"]) < float(spec["onset_per_day"]["summer"])
     w.add_actor("Ada", role="hand", life_stage="adult", age=30.0)
     w.add_actor("Bo", role="hand", life_stage="infant", age=0.5)
-    # The draw is a pure function of (seed, name, disease, day): repeated calls agree and the world RNG is unused.
+    # The draw is a state-derived function of (world seed, the resident's state, disease, day): repeated calls
+    # agree and the world RNG is unused.
     draws = {w._stable_draw("illness", "Ada", "fever", d) for d in range(5)}
     assert len(draws) == 5 and all(0.0 <= x < 1.0 for x in draws)
     assert w._stable_draw("illness", "Ada", "fever", 3) == w._stable_draw("illness", "Ada", "fever", 3)

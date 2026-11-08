@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import math
-import random
 import heapq
 import threading
 import weakref
@@ -901,8 +900,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self._journals = {}
         # Runtime chance outcomes derive from this seed and the involved state
         # (see domains.determinism); no shared mutable RNG is kept on the world.
-        # Animal births derive their sexes from this seed (see _give_birth), so births keep no RNG state
-        # of their own and never shift a world-wide stream.
+        # Animal births derive their sexes from the world seed and the dam's state (see _give_birth), so births
+        # keep no RNG state of their own and never shift a world-wide stream.
         self._animal_life_seed = int(map_seed)
         # Burial onset draws (see _burial_roll) are stateless, keyed on this seed, the resident, and the day.
         self._burial_seed = int(map_seed)
@@ -4789,8 +4788,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     def _record_meal(self, actor, kind, value, freshness):
         """Publish what one meal did to the eater: the hunger it relieved, its pleasantness and its illness
         risk. Pleasantness is the freshness (Phase 027); the taste-based meal pleasure is set in _nutrition_meal (Phase 035). Phase 037: the illness risk is rolled
-        once per meal (a stateless draw keyed on the seed, the eater, the period and the meal count); a meal that
-        makes its eater ill is acute harm (HEALTH.illness_harm, cause `illness`)."""
+        once per meal (a stateless state-derived draw keyed on the purpose, the eater, the period and the meal count);
+        a meal that makes its eater ill is acute harm (HEALTH.illness_harm, cause `illness`)."""
         node = self._actor(actor)
         self.eng.set_attr(node, "last_meal_value", float(value))
         self.eng.set_attr(node, "last_meal_freshness", float(freshness))
@@ -4799,7 +4798,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self.eng.set_attr(node, "illness_risk", risk)
         meals = int(float(self.eng.node(node)["attrs"].get("meal_count", 0.0))) + 1
         self.eng.set_attr(node, "meal_count", float(meals))
-        if risk > 0.0 and self._stable_draw(actor, self._town_period(), kind, meals) < risk:
+        if risk > 0.0 and self._stable_draw("meal_illness", actor, self._town_period(), kind, meals) < risk:
             self.harm(actor, float(self.E.HEALTH["illness_harm"]), "illness")
 
     def last_meal(self, actor):
@@ -5902,9 +5901,9 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     def _give_birth(self, dam):
         """Add the litter of `dam` at her place, in her household, on her land, and in her enclosure.
 
-        Each young is a new Animal with age zero. Its sex is a pure function of the map seed, the dam, her
-        litter number, and the index within the litter; the NPC setup for its species is applied when the
-        game next syncs animal backends.
+        Each young is a new Animal with age zero. Its sex derives from the world seed, the dam, her litter number,
+        the index within the litter and the dam's state; the NPC setup for its species is applied when the game
+        next syncs animal backends.
         """
         node = self._animals[dam]
         attrs = self.eng.node(node)["attrs"]
@@ -5916,11 +5915,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         land = next((name for name, lnode in self._land.items() if self.eng.has_edge(node, "grazes_on", lnode)), None)
         period = int(self._town_period())
         litter_no = int(float(attrs.get("births", 0.0)))
-        self.eng.set_attr(node, "births", float(litter_no + 1))
         for index in range(int(spec["litter"])):
-            # The sex is a pure function of the map seed, the dam, her litter number, and the index, so a
-            # restored checkpoint gives the same sexes as an uninterrupted run.
-            draw = random.Random(f"{self._animal_life_seed}:{dam}:{litter_no}:{index}").random()
+            # The sex is a pure function of the world seed, the dam, her litter number, the index and the dam's
+            # state, so a restored checkpoint gives the same sexes as an uninterrupted run.
+            draw = determinism.state_uniform(self, "animal_birth", dam, litter_no, index, actors=(dam,))
             sex = "male" if draw < float(spec["birth_male_share"]) else "female"
             young = f"{attrs['species']}_b{period}_{len(self._animals) + 1}"
             while young in self._animals:
@@ -5930,6 +5928,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             young_node = self._animals[young]
             self.eng.set_attr(young_node, "dam", dam)
             self.eng.set_attr(young_node, "sire", attrs["sire"])
+        self.eng.set_attr(node, "births", float(litter_no + 1))
 
     def animal_affordances(self, name):
         if name not in self._animals:
@@ -8140,9 +8139,11 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self.eng.set_attr(self._actor(actor), "health_value", min(cap, before + max(0.0, float(gain))))
         self._body_event(actor, {"kind": "heal", "amount": max(0.0, self.health(actor) - before)})   # Phase 070
 
-    def _stable_draw(self, *parts):
-        """A stateless draw in [0, 1) keyed on the world seed and `parts` (as _burial_roll; nothing is stored)."""
-        return random.Random(":".join([str(self._burial_seed), *(str(p) for p in parts)])).random()
+    def _stable_draw(self, purpose, *parts, actors=()):
+        """A stateless draw in [0, 1) derived from the world seed, `purpose`, `parts` and the state of every
+        involved party. Any string in `parts` that names a resident or animal is included automatically; pass
+        `actors` explicitly for a child or multi-party draw. Nothing is stored, so draw order does not matter."""
+        return determinism.state_uniform(self, purpose, *parts, actors=actors)
 
     def _exhaustion_collapse(self, actor):
         """Phase 037's exhaustion route. A collapse extends the run of collapses while the previous collapse was
@@ -8248,9 +8249,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 self._set_care_flag(actor, flag, False)
 
     def _illness_onset(self, name, stage):
-        """Phase 043: a resident who is not ill may catch an illness this dawn. The draw is stateless and seeded
-        (_stable_draw, keyed on the world seed, the resident, the disease and the day), so the world's own state
-        is not touched. The onset uses diagnose(), as the burial condition does. Returns the disease or None."""
+        """Phase 043: a resident who is not ill may catch an illness this dawn. The draw is stateless and
+        state-derived (_stable_draw, keyed on the purpose, the resident's state, the disease and the day), so the
+        world's own state is not touched. The onset uses diagnose(), as the burial condition does. Returns the
+        disease or None."""
         season = str(self.season())
         day = int(float(self.calendar()["day"]))
         for disease, spec in self.E.DISEASE.items():
@@ -8542,9 +8544,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                               detail=f"{name} was buried in the graveyard.")
 
     def _burial_roll(self, name):
-        """A stateless draw in [0, 1) for one resident on one day (no RNG state is kept on the world)."""
+        """A stateless draw in [0, 1) for one resident on one day, keyed on the resident's state (no RNG state is
+        kept on the world)."""
         day = int(self.calendar()["day"])
-        return random.Random(f"{self._burial_seed}:burial:{name}:{day}").random()
+        return self._stable_draw("burial", name, day)
 
     def burial_risk(self, household):
         """The chance per dawn that each living member of `household` catches the burial condition. It is

@@ -444,7 +444,7 @@
       ]
     },
     "HARM_LOCUS": {
-      "_doc": "HARM_LOCUS (Phase 070): where an acute harm lands when the caller gives no locus. Keyed by HEALTH cause; each value maps ANATOMY nodes to weights (drawn by a stateless seeded draw, domains/interoception.py draw). An empty row is whole-body harm: it changes health and leaves no located ledger entry (starvation, exhaustion, age, intoxication, illness, childbirth, neglect). The weights are APPROX: a blow lands on the head, chest, back, arm or leg; a fall or accident mostly on the limbs. Loci are leaves or near-leaves (not the root).",
+      "_doc": "HARM_LOCUS (Phase 070): where an acute harm lands when the caller gives no locus. Keyed by HEALTH cause; each value maps ANATOMY nodes to weights (drawn by a stateless state-derived draw in domains/determinism.py). An empty row is whole-body harm: it changes health and leaves no located ledger entry (starvation, exhaustion, age, intoxication, illness, childbirth, neglect). The weights are APPROX: a blow lands on the head, chest, back, arm or leg; a fall or accident mostly on the limbs. Loci are leaves or near-leaves (not the root).",
       "injury": {
         "head": 0.2,
         "chest": 0.2,
@@ -596,7 +596,7 @@
       }
     },
     "STRIKE_AIM": {
-      "_doc": "STRIKE_AIM (Phase 070b): an aimed strike (strike_begin with a region, an ANATOMY node) lands on that region with a chance p, otherwise it lands where the unaimed table draw puts it (HARM_LOCUS violence). p = clamp(base + skill_weight x the striker's effective skill, 0, 1), multiplied by brace_factor when the target resists or braces (its reaction keeps the blow off its aim). The draw is a stateless sha256 draw (domains/interoception.py draw), never the world's random stream. APPROX throughout: model choices, not measured.",
+      "_doc": "STRIKE_AIM (Phase 070b): an aimed strike (strike_begin with a region, an ANATOMY node) lands on that region with a chance p, otherwise it lands where the unaimed table draw puts it (HARM_LOCUS violence). p = clamp(base + skill_weight x the striker's effective skill, 0, 1), multiplied by brace_factor when the target resists or braces (its reaction keeps the blow off its aim). The draw is a stateless state-derived draw (domains/determinism.py), keyed on the attacker's and target's state, the turn and the region; never the world's random stream. APPROX throughout: model choices, not measured.",
       "base": 0.5,
       "skill_weight": 0.3,
       "brace_factor": 0.6

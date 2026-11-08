@@ -38,7 +38,14 @@ def _rows(table):
 
 def draw(seed, *parts):
     """A draw in [0, 1) that depends only on the seed and `parts`. Keyed by a hash, so it is the same in every
-    process (Python's own hash() is salted per run and is not used)."""
+    process (Python's own hash() is salted per run and is not used).
+
+    DS02 allowlist: this local draw remains for deterministic *presentation* and
+    creation-time values only -- a body's acuity (``acuity_of``), the sound form
+    of a quality (``sound``), and the per-tick feeling jitter in ``derive``.
+    Every runtime chance *outcome* (harm locus, strike aim, illness, meals,
+    births, burial) uses ``domains.determinism.state_uniform`` instead.
+    """
     text = ":".join(str(part) for part in (seed,) + parts)
     digest = hashlib.sha256(text.encode("utf-8")).digest()
     return int.from_bytes(digest[:8], "big") / float(1 << 64)

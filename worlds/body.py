@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import copy
 
+from domains import determinism
 from domains import interoception as I
 from domains.pack import load_pack
 
@@ -524,12 +525,22 @@ class BodyMixin:
             body.apply(event)
 
     def _body_harm_locus(self, actor, cause):
-        """Phase 070: where a harm with no named locus lands, from HARM_LOCUS by cause. A stateless draw keyed on the
-        burial seed, the resident, the cause and the tick (never the world's random stream). None for a whole-body
-        cause (an empty row)."""
+        """Phase 070: where a harm with no named locus lands, from HARM_LOCUS by cause. A stateless state-derived
+        draw keyed on the resident's state, the cause and the tick (never the world's random stream). None for a
+        whole-body cause (an empty row)."""
         weights = pack_tables(self.data_pack)["harm_locus"].get(str(cause)) or {}
-        return I.pick_locus(weights, int(getattr(self, "_burial_seed", 0)), actor, str(cause),
-                            int(getattr(self, "_turn", 0)))
+        items = sorted((str(node), float(weight)) for node, weight in weights.items() if float(weight) > 0.0)
+        if not items:
+            return None
+        total = sum(weight for _node, weight in items)
+        point = determinism.state_uniform(
+            self, "harm_locus", actor, str(cause), int(getattr(self, "_turn", 0))) * total
+        running = 0.0
+        for node, weight in items:
+            running += weight
+            if point < running:
+                return node
+        return items[-1][0]
 
     def _body_locus_ok(self, locus):
         """Whether a locus name is an ANATOMY node of this pack."""
@@ -661,8 +672,8 @@ class BodyMixin:
     def _strike_locus(self, pending, choice):
         """Phase 070b: where an aimed strike lands. None for an unaimed blow (the table draws, as before). For an aimed
         one the chance is STRIKE_AIM base + skill_weight x the striker's skill, times brace_factor when the target
-        resists or braces; the draw is stateless (domains/interoception.draw), keyed on the seed, the two residents and
-        the turn. A miss gives None, so the table draws."""
+        resists or braces; the draw is stateless and state-derived (the striker and target state, the turn and the
+        region). A miss gives None, so the table draws."""
         region = pending.get("region")
         if region is None:
             return None
@@ -671,9 +682,10 @@ class BodyMixin:
         chance = max(0.0, min(1.0, float(aim["base"]) + float(aim["skill_weight"]) * skill))
         if choice in ("resist", "brace"):
             chance *= float(aim["brace_factor"])
-        seed, turn = int(getattr(self, "_burial_seed", 0)), int(getattr(self, "_turn", 0))
-        from domains import interoception as I
-        point = I.draw(seed, "aim", pending["attacker"], pending["target"], turn)
+        turn = int(getattr(self, "_turn", 0))
+        point = determinism.state_uniform(
+            self, "strike_aim", pending["attacker"], pending["target"], turn, str(region),
+            actors=(pending["attacker"], pending["target"]))
         return str(region) if point < chance else None
 
     def attention_report(self):

@@ -166,6 +166,10 @@ def test_an_ordinary_sleep_restores_health_a_tick_at_a_time_and_wakes_at_the_cap
     w = _w()
     w.add_actor("Ada", role="hand")
     w.injure("Ada", severity=0.4)              # health 0.6, so the stamina capacity is 0.6, not 1.0
+    # This test isolates the health-scaled capacity from Phase 070b's located injury: an unaimed injury lands on a
+    # locus by the state-derived draw, and a back/chest/head locus also lowers stamina. Keep the ledger empty so the
+    # only stamina effect here is the health scalar.
+    w.embodiment["Ada"]["ledger"] = {}
     _set_reserve(w, "Ada", 0.5)
     before = w.health("Ada")
     assert w.major_action("Ada", "sleep")

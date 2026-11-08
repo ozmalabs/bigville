@@ -204,12 +204,17 @@ def test_a_maternal_death_is_recorded_with_cause_childbirth(monkeypatch):
 
 
 def test_a_midwife_in_reach_halves_the_maternal_risk(monkeypatch):
-    """The maternal draw is fixed by the seed. Set the risk just above it: a mother with no midwife dies, and a
-    mother with one in reach (midwife_factor 0.5) lives, because her risk is then below the same draw."""
+    """The maternal draw is state-derived. Read it in the state _deliver_birth draws it in (pregnant cleared, the
+    postpartum block set, the day at term): a mother with no midwife dies at a risk just above that draw, and a
+    mother with one in reach (midwife_factor 0.5) lives, because her risk is then below it."""
     base = _w()
-    mother = _union_women(base)[0]
+    mother = _pregnant_woman(base)
     due = 100 + TABLE["gestation_days"]
-    draw = base._stable_draw("births", "maternal", mother, due)
+    _set_day(base, due)
+    base.eng.set_attr(base._actors[mother], "pregnant", 0.0)
+    base.eng.set_attr(base._actors[mother], "birth_block_until",
+                      float(due) + float(TABLE["postpartum_block_days"]))
+    draw = base._stable_draw("births", "maternal", mother, due, actors=(mother,))
     assert draw > 0.0
     outcomes = {}
     for with_midwife in (False, True):

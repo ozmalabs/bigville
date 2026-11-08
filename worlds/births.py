@@ -15,9 +15,10 @@ and the world's behaviour is unchanged. With it on, once a day (from the dawn ti
 - an infant whose mother lives with it is nursed: its hunger rate is nursed_hunger. Otherwise an infant
   eats at its life-stage food rate, as the rest of the table does.
 
-Every draw is stateless: _stable_draw keys each draw on the world seed, a stream name, the resident and
-the day. The world's RNG stream is never consumed, and the same seed gives the same births. Which union a
-resident forms, and whether a resident wants a child, are the residents' (Phase 009 and the backends).
+Every draw is stateless: _stable_draw keys each draw on the world seed, a stream name, the involved resident's
+state and the day. The world's RNG stream is never consumed, and the same seed and state give the same births.
+Which union a resident forms, and whether a resident wants a child, are the residents' (Phase 009 and the
+backends).
 """
 from __future__ import annotations
 
@@ -103,7 +104,7 @@ class BirthsMixin:
             if partner is None:
                 continue
             chance = 1.0 - math.exp(-rate / days_per_year)
-            if self._stable_draw("births", "conceive", name, day) < chance:
+            if self._stable_draw("births", "conceive", name, day, actors=(name,)) < chance:
                 self._conceive(name, partner, day)
 
     def _conceive(self, mother, partner_node, day):
@@ -135,7 +136,7 @@ class BirthsMixin:
         surname. The name is unused in the village: a clash moves on to the next first name, then to a number."""
         firsts = list(self.E.FOUNDING_FIRST_NAMES)
         surname = str(mother).split()[-1] if " " in str(mother) else ""
-        start = int(self._stable_draw("births", "name", mother, day) * len(firsts)) % len(firsts)
+        start = int(self._stable_draw("births", "name", mother, day, actors=(mother,)) * len(firsts)) % len(firsts)
         for offset in range(len(firsts)):
             candidate = " ".join(part for part in (firsts[(start + offset) % len(firsts)], surname) if part)
             if candidate not in self._actors:
@@ -149,7 +150,8 @@ class BirthsMixin:
 
     def _deliver_birth(self, mother, day):
         """Delivery at term: the stillbirth draw, the newborn (birth() and the genealogy), and the risks.
-        Every draw is keyed on the mother and the day, so the same seed gives the same delivery."""
+        Every draw is keyed on the involved residents' state and the day, so the same seed and state give the
+        same delivery."""
         node = self._actors[mother]
         attrs = self.eng.node(node)["attrs"]
         partner_ref = int(attrs.get("partner", -1.0)) if "partner" in attrs else -1
@@ -160,22 +162,24 @@ class BirthsMixin:
         factor = float(table["midwife_factor"]) if midwife is not None else 1.0
         self.eng.set_attr(node, "pregnant", 0.0)
         self.eng.set_attr(node, "birth_block_until", float(day) + float(table["postpartum_block_days"]))
-        if self._stable_draw("births", "stillbirth", mother, day) < float(table["stillbirth"]):
+        if self._stable_draw("births", "stillbirth", mother, day, actors=(mother,)) < float(table["stillbirth"]):
             self._stillbirth_log = list(getattr(self, "_stillbirth_log", [])) + [
                 {"mother": mother, "father": father, "day": day}]
             self.create_event("stillbirth", subject=mother,
                               detail=f"{mother} bore a stillborn child.", public=False)
         else:
-            sex = "female" if self._stable_draw("births", "sex", mother, day) < 0.5 else "male"
+            sex = "female" if self._stable_draw("births", "sex", mother, day, actors=(mother,)) < 0.5 else "male"
             child = self.birth(mother, self._newborn_name(mother, day),
                                father=father or None, home_cell=self.actor_position(mother))
             if child:
                 child_node = child
                 self._record_newborn_kin(child_node, node, partner_node, sex, mother)
                 child_name = str(self.eng.node(child_node)["attrs"]["name"])
-                if self._stable_draw("births", "infant", child_name, day) < float(table["infant_first_year_death"]) * factor:
+                if self._stable_draw("births", "infant", child_name, day,
+                                     actors=(mother, child_name)) < float(table["infant_first_year_death"]) * factor:
                     self.harm(child_name, 1.0, "illness", fragility=False)
-        if self._stable_draw("births", "maternal", mother, day) < float(table["maternal_death"]) * factor:
+        if self._stable_draw("births", "maternal", mother, day,
+                             actors=(mother,)) < float(table["maternal_death"]) * factor:
             self.harm(mother, 1.0, "childbirth", fragility=False)
 
     def _record_newborn_kin(self, child_node, mother_node, partner_node, sex, mother):

@@ -197,7 +197,7 @@ status.
 | Phase | Status | Commit |
 |---|---|---|
 | DS01 | complete (uncommitted) | — |
-| DS02 | blocked on DS01 | — |
+| DS02 | complete (uncommitted) | — |
 | DS03 | blocked on DS02 | — |
 | DS04 | blocked on DS03 | — |
 
