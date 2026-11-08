@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import contextvars
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import math
 import threading
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterable, Iterator, Mapping
 
 
 # TG05: one process-wide re-entrant lock guards the canonical graph's internal
@@ -127,6 +127,480 @@ def _checkpoint_decode(value: Any, path: str) -> Any:
     raise ValueError(f"unknown typed graph value {tag!r} at {path}")
 
 
+def _copy_graph_value(value: Any, path: str) -> Any:
+    """Snapshot a supported graph value through the checkpoint encoding.
+
+    The round trip both validates that the value is replayable and detaches it
+    from a caller-owned mutable container.  ``NodeRef`` identity is preserved.
+    """
+    return _checkpoint_decode(_checkpoint_encode(value, path), path)
+
+
+def _require_plain_int(value: Any, field: str, *, minimum: int = 0) -> int:
+    if type(value) is not int or value < minimum:
+        raise ValueError(f"{field} must be an integer >= {minimum}")
+    return value
+
+
+def _require_plain_str(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field} must be a non-empty string")
+    return value
+
+
+@dataclass
+class GraphDelta:
+    """The replayable graph mutations produced by one execution scope.
+
+    DR03: a bundle executor records the mutations it makes into a
+    ``GraphDelta``.  The delta is a strict, JSON-safe value (every non-primitive
+    graph value uses the checkpoint's typed encoding) with two views:
+
+    * the categorised lists (``nodes_added``, ``nodes_removed``, ...) for
+      inspection, checksums and stable summaries;
+    * ``operations``, the exact mutation order used by :meth:`apply_to` and
+      :meth:`to_effects` so a remove/re-add of the same edge or attr replays
+      correctly.
+
+    ``operations`` is populated by :meth:`BigvilleGraph.record_changes` and is
+    also serialized by :meth:`to_dict`.  A delta constructed by hand from only
+    the categorised lists is applied in the documented canonical phase order:
+    added nodes, added edges, attr writes, removed edges, removed nodes.
+    """
+
+    base_revision: int = 0
+    end_revision: int = 0
+    nodes_added: list[tuple[int, str, dict[str, Any], str]] = field(
+        default_factory=list)
+    nodes_removed: list[int] = field(default_factory=list)
+    edges_added: list[tuple[int, str, int]] = field(default_factory=list)
+    edges_removed: list[tuple[int, str, int]] = field(default_factory=list)
+    attrs: list[tuple[int, str, Any, Any]] = field(default_factory=list)
+    operations: list[dict[str, Any]] = field(default_factory=list)
+
+    # -- recording -------------------------------------------------------
+
+    def _note_add_node(self, node: int, type_name: str,
+                       attrs: dict[str, Any], origin: str) -> None:
+        self.nodes_added.append((int(node), str(type_name), attrs, str(origin)))
+        self.operations.append({
+            "op": "add_node", "node": int(node), "type": str(type_name),
+            "attrs": attrs, "origin": str(origin),
+        })
+
+    def _note_remove_node(self, node: int) -> None:
+        self.nodes_removed.append(int(node))
+        self.operations.append({"op": "remove_node", "node": int(node)})
+
+    def _note_add_edge(self, source: int, kind: str, target: int) -> None:
+        self.edges_added.append((int(source), str(kind), int(target)))
+        self.operations.append({
+            "op": "add_edge", "source": int(source), "kind": str(kind),
+            "target": int(target),
+        })
+
+    def _note_remove_edge(self, source: int, kind: str, target: int) -> None:
+        self.edges_removed.append((int(source), str(kind), int(target)))
+        self.operations.append({
+            "op": "remove_edge", "source": int(source), "kind": str(kind),
+            "target": int(target),
+        })
+
+    def _note_set_attr(self, node: int, key: str,
+                       old_value: Any, new_value: Any) -> None:
+        self.attrs.append((int(node), str(key), old_value, new_value))
+        self.operations.append({
+            "op": "set_attr", "node": int(node), "key": str(key),
+            "old": old_value, "new": new_value,
+        })
+
+    def _ordered_operations(self) -> list[dict[str, Any]]:
+        if self.operations:
+            return list(self.operations)
+        operations: list[dict[str, Any]] = []
+        for node, type_name, attrs, origin in self.nodes_added:
+            operations.append({
+                "op": "add_node", "node": int(node), "type": str(type_name),
+                "attrs": attrs, "origin": str(origin),
+            })
+        for source, kind, target in self.edges_added:
+            operations.append({
+                "op": "add_edge", "source": int(source), "kind": str(kind),
+                "target": int(target),
+            })
+        for node, key, old_value, new_value in self.attrs:
+            operations.append({
+                "op": "set_attr", "node": int(node), "key": str(key),
+                "old": old_value, "new": new_value,
+            })
+        for source, kind, target in self.edges_removed:
+            operations.append({
+                "op": "remove_edge", "source": int(source), "kind": str(kind),
+                "target": int(target),
+            })
+        for node in self.nodes_removed:
+            operations.append({"op": "remove_node", "node": int(node)})
+        return operations
+
+    # -- serialization ---------------------------------------------------
+
+    @staticmethod
+    def _encode_operation(operation: Mapping[str, Any], path: str) -> dict[str, Any]:
+        op = operation.get("op")
+        if op == "add_node":
+            return {
+                "op": "add_node",
+                "node": int(operation["node"]),
+                "type": str(operation["type"]),
+                "attrs": _checkpoint_encode(operation["attrs"], path + ".attrs"),
+                "origin": str(operation["origin"]),
+            }
+        if op == "remove_node":
+            return {"op": "remove_node", "node": int(operation["node"])}
+        if op in ("add_edge", "remove_edge"):
+            return {
+                "op": op,
+                "source": int(operation["source"]),
+                "kind": str(operation["kind"]),
+                "target": int(operation["target"]),
+            }
+        if op == "set_attr":
+            return {
+                "op": "set_attr",
+                "node": int(operation["node"]),
+                "key": str(operation["key"]),
+                "old": _checkpoint_encode(operation["old"], path + ".old"),
+                "new": _checkpoint_encode(operation["new"], path + ".new"),
+            }
+        raise ValueError(f"unknown graph delta operation at {path}: {op!r}")
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a deterministic, JSON-safe delta (including exact order)."""
+        base = _require_plain_int(self.base_revision, "base_revision")
+        end = _require_plain_int(self.end_revision, "end_revision")
+        if end < base:
+            raise ValueError("end_revision must be >= base_revision")
+        return {
+            "schema": "bigville/graph_delta/1",
+            "base_revision": base,
+            "end_revision": end,
+            "nodes_added": [
+                [int(node), str(type_name), _checkpoint_encode(attrs, f"nodes_added[{index}].attrs"),
+                 str(origin)]
+                for index, (node, type_name, attrs, origin) in enumerate(self.nodes_added)
+            ],
+            "nodes_removed": [int(node) for node in self.nodes_removed],
+            "edges_added": [
+                [int(source), str(kind), int(target)]
+                for source, kind, target in self.edges_added
+            ],
+            "edges_removed": [
+                [int(source), str(kind), int(target)]
+                for source, kind, target in self.edges_removed
+            ],
+            "attrs": [
+                [int(node), str(key), _checkpoint_encode(old_value, f"attrs[{index}].old"),
+                 _checkpoint_encode(new_value, f"attrs[{index}].new")]
+                for index, (node, key, old_value, new_value) in enumerate(self.attrs)
+            ],
+            "operations": [
+                self._encode_operation(operation, f"operations[{index}]")
+                for index, operation in enumerate(self._ordered_operations())
+            ],
+        }
+
+    @staticmethod
+    def _parse_operation(value: Any, path: str) -> dict[str, Any]:
+        if not isinstance(value, Mapping):
+            raise ValueError(f"{path} must be a mapping")
+        op = value.get("op")
+        if op == "add_node":
+            node = _require_plain_int(value.get("node"), path + ".node", minimum=1)
+            type_name = _require_plain_str(value.get("type"), path + ".type")
+            origin = _require_plain_str(value.get("origin"), path + ".origin")
+            attrs = _checkpoint_decode(value.get("attrs"), path + ".attrs")
+            if not isinstance(attrs, dict):
+                raise ValueError(f"{path}.attrs must decode to a dict")
+            return {"op": op, "node": node, "type": type_name,
+                    "attrs": attrs, "origin": origin}
+        if op == "remove_node":
+            node = _require_plain_int(value.get("node"), path + ".node", minimum=1)
+            return {"op": op, "node": node}
+        if op in ("add_edge", "remove_edge"):
+            source = _require_plain_int(value.get("source"),
+                                        path + ".source", minimum=1)
+            target = _require_plain_int(value.get("target"),
+                                        path + ".target", minimum=1)
+            kind = _require_plain_str(value.get("kind"), path + ".kind")
+            return {"op": op, "source": source, "kind": kind, "target": target}
+        if op == "set_attr":
+            node = _require_plain_int(value.get("node"), path + ".node", minimum=1)
+            key = value.get("key")
+            if not isinstance(key, str):
+                raise ValueError(f"{path}.key must be a string")
+            old_value = _checkpoint_decode(value.get("old"), path + ".old")
+            new_value = _checkpoint_decode(value.get("new"), path + ".new")
+            return {"op": op, "node": node, "key": key,
+                    "old": old_value, "new": new_value}
+        raise ValueError(f"unknown graph delta operation at {path}: {op!r}")
+
+    def _note_parsed_operation(self, operation: Mapping[str, Any]) -> None:
+        op = operation["op"]
+        if op == "add_node":
+            self._note_add_node(operation["node"], operation["type"],
+                                operation["attrs"], operation["origin"])
+        elif op == "remove_node":
+            self._note_remove_node(operation["node"])
+        elif op == "add_edge":
+            self._note_add_edge(operation["source"], operation["kind"],
+                                operation["target"])
+        elif op == "remove_edge":
+            self._note_remove_edge(operation["source"], operation["kind"],
+                                   operation["target"])
+        elif op == "set_attr":
+            self._note_set_attr(operation["node"], operation["key"],
+                                operation["old"], operation["new"])
+        else:  # pragma: no cover - _parse_operation rejects unknown ops
+            raise ValueError(f"unknown graph delta operation: {op!r}")
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "GraphDelta":
+        """Rebuild and validate a delta from :meth:`to_dict` output."""
+        if not isinstance(value, Mapping):
+            raise ValueError("graph delta must be a mapping")
+        allowed = {"schema", "base_revision", "end_revision", "nodes_added",
+                   "nodes_removed", "edges_added", "edges_removed", "attrs",
+                   "operations"}
+        extra = sorted(str(key) for key in value if key not in allowed)
+        if extra:
+            raise ValueError(f"graph delta has unknown keys: {', '.join(extra)}")
+        if value.get("schema") != "bigville/graph_delta/1":
+            raise ValueError("unsupported graph delta schema")
+        base = _require_plain_int(value.get("base_revision"), "base_revision")
+        end = _require_plain_int(value.get("end_revision"), "end_revision")
+        if end < base:
+            raise ValueError("end_revision must be >= base_revision")
+
+        nodes_added_data = value.get("nodes_added")
+        nodes_removed_data = value.get("nodes_removed")
+        edges_added_data = value.get("edges_added")
+        edges_removed_data = value.get("edges_removed")
+        attrs_data = value.get("attrs")
+        for name, data in (("nodes_added", nodes_added_data),
+                           ("nodes_removed", nodes_removed_data),
+                           ("edges_added", edges_added_data),
+                           ("edges_removed", edges_removed_data),
+                           ("attrs", attrs_data)):
+            if not isinstance(data, list):
+                raise ValueError(f"graph delta {name} must be a list")
+
+        delta = cls(base_revision=base, end_revision=end)
+        for index, item in enumerate(nodes_added_data):
+            path = f"nodes_added[{index}]"
+            if not isinstance(item, (list, tuple)) or len(item) != 4:
+                raise ValueError(f"{path} must be [id, type, attrs, origin]")
+            node = _require_plain_int(item[0], path + ".id", minimum=1)
+            type_name = _require_plain_str(item[1], path + ".type")
+            attrs = _checkpoint_decode(item[2], path + ".attrs")
+            if not isinstance(attrs, dict):
+                raise ValueError(f"{path}.attrs must decode to a dict")
+            origin = _require_plain_str(item[3], path + ".origin")
+            delta.nodes_added.append((node, type_name, attrs, origin))
+        for index, item in enumerate(nodes_removed_data):
+            delta.nodes_removed.append(
+                _require_plain_int(item, f"nodes_removed[{index}]", minimum=1))
+        for name, data, target in (
+                ("edges_added", edges_added_data, delta.edges_added),
+                ("edges_removed", edges_removed_data, delta.edges_removed)):
+            for index, item in enumerate(data):
+                path = f"{name}[{index}]"
+                if not isinstance(item, (list, tuple)) or len(item) != 3:
+                    raise ValueError(f"{path} must be [source, kind, target]")
+                source = _require_plain_int(item[0], path + ".source", minimum=1)
+                kind = _require_plain_str(item[1], path + ".kind")
+                target_node = _require_plain_int(item[2], path + ".target",
+                                                 minimum=1)
+                target.append((source, kind, target_node))
+        for index, item in enumerate(attrs_data):
+            path = f"attrs[{index}]"
+            if not isinstance(item, (list, tuple)) or len(item) != 4:
+                raise ValueError(f"{path} must be [node, key, old, new]")
+            node = _require_plain_int(item[0], path + ".node", minimum=1)
+            key = item[1]
+            if not isinstance(key, str):
+                raise ValueError(f"{path}.key must be a string")
+            old_value = _checkpoint_decode(item[2], path + ".old")
+            new_value = _checkpoint_decode(item[3], path + ".new")
+            delta.attrs.append((node, key, old_value, new_value))
+
+        operations_data = value.get("operations")
+        if operations_data is not None:
+            if not isinstance(operations_data, list):
+                raise ValueError("graph delta operations must be a list")
+            delta.operations = [
+                cls._parse_operation(operation, f"operations[{index}]")
+                for index, operation in enumerate(operations_data)
+            ]
+        return delta
+
+    # -- effects ---------------------------------------------------------
+
+    def to_effects(self) -> tuple[dict[str, Any], ...]:
+        """Return the delta as plain JSON-safe effect mappings.
+
+        Effect order is the recorded mutation order.  Values use the same
+        typed checkpoint encoding as the delta, so ``BundleResult.effects``
+        can carry tuples, sets, dicts and ``NodeRef`` exactly.
+        """
+        return tuple(
+            self._encode_operation(operation, f"operations[{index}]")
+            for index, operation in enumerate(self._ordered_operations())
+        )
+
+    @classmethod
+    def from_effects(cls, effects: Iterable[Mapping[str, Any]], *,
+                     base_revision: int = 0,
+                     end_revision: int | None = None) -> "GraphDelta":
+        """Rebuild a delta from :meth:`to_effects` output.
+
+        Effects do not carry the revision envelope (the bundle result already
+        names its base), so callers supply ``base_revision`` and may supply the
+        authoritative ``end_revision``.  Without one, ``end_revision`` is the
+        base and only graph state, not the revision counter, is replayed.
+        """
+        base = _require_plain_int(base_revision, "base_revision")
+        end = base if end_revision is None else _require_plain_int(
+            end_revision, "end_revision")
+        if end < base:
+            raise ValueError("end_revision must be >= base_revision")
+        delta = cls(base_revision=base, end_revision=end)
+        for index, effect in enumerate(effects):
+            parsed = cls._parse_operation(effect, f"effects[{index}]")
+            delta._note_parsed_operation(parsed)
+        return delta
+
+    # -- application -----------------------------------------------------
+
+    @staticmethod
+    def _validate_node_type(node: Any, path: str) -> int:
+        return _require_plain_int(node, path, minimum=1)
+
+    def _validate_against(self, graph: "BigvilleGraph") -> list[dict[str, Any]]:
+        """Validate every operation against a shadow before any real mutation."""
+        if self.end_revision < self.base_revision:
+            raise ValueError("end_revision must be >= base_revision")
+        operations = self._ordered_operations()
+        nodes = {int(ref) for ref in graph._nodes}
+        edges = {(int(source), kind, int(target))
+                 for (source, kind), targets in graph._edges.items()
+                 for target in targets}
+        for index, operation in enumerate(operations):
+            path = f"operations[{index}]"
+            if not isinstance(operation, Mapping):
+                raise ValueError(f"{path} must be a mapping")
+            op = operation.get("op")
+            if op == "add_node":
+                node = self._validate_node_type(operation.get("node"), path + ".node")
+                type_name = operation.get("type")
+                if not isinstance(type_name, str) or not type_name:
+                    raise ValueError(f"{path}.type must be a non-empty string")
+                attrs = operation.get("attrs")
+                if not isinstance(attrs, dict):
+                    raise ValueError(f"{path}.attrs must be a dict")
+                origin = operation.get("origin")
+                if not isinstance(origin, str) or not origin:
+                    raise ValueError(f"{path}.origin must be a non-empty string")
+                if node in nodes:
+                    raise ValueError(f"{path} adds duplicate node {node}")
+                nodes.add(node)
+            elif op == "remove_node":
+                node = self._validate_node_type(operation.get("node"), path + ".node")
+                if node not in nodes:
+                    raise ValueError(f"{path} removes missing node {node}")
+                nodes.discard(node)
+                edges = {edge for edge in edges
+                         if edge[0] != node and edge[2] != node}
+            elif op in ("add_edge", "remove_edge"):
+                source = self._validate_node_type(
+                    operation.get("source"), path + ".source")
+                target = self._validate_node_type(
+                    operation.get("target"), path + ".target")
+                kind = operation.get("kind")
+                if not isinstance(kind, str) or not kind:
+                    raise ValueError(f"{path}.kind must be a non-empty string")
+                if source not in nodes or target not in nodes:
+                    raise ValueError(
+                        f"{path} references a missing node endpoint")
+                if op == "add_edge":
+                    edges.add((source, kind, target))
+                else:
+                    edges.discard((source, kind, target))
+            elif op == "set_attr":
+                node = self._validate_node_type(operation.get("node"), path + ".node")
+                key = operation.get("key")
+                if not isinstance(key, str):
+                    raise ValueError(f"{path}.key must be a string")
+                if node not in nodes:
+                    raise ValueError(f"{path} sets an attr on missing node {node}")
+            else:
+                raise ValueError(f"{path} has unknown operation {op!r}")
+        return operations
+
+    def apply_to(self, graph: "BigvilleGraph", *,
+                 validate_base: bool = True) -> "BigvilleGraph":
+        """Apply the delta to a same-base graph and return that graph.
+
+        Validation (base revision, node/edge endpoints, duplicate node adds and
+        operation shape) completes against a shadow before the first mutation,
+        so a rejected delta leaves the graph untouched.  Application itself is
+        performed under the process-wide graph lock; it is not rolled back if
+        an internal invariant fails after validation.
+        """
+        if not isinstance(graph, BigvilleGraph):
+            raise TypeError("apply_to expects a BigvilleGraph")
+        with _GRAPH_LOCK:
+            if validate_base and graph.revision != self.base_revision:
+                raise ValueError(
+                    f"graph delta base revision {self.base_revision} does not "
+                    f"match graph revision {graph.revision}")
+            operations = self._validate_against(graph)
+            # Replay is not itself a recorded execution: hide any surrounding
+            # recording scope so the applied mutations cannot pollute it.
+            token = _CURRENT_DELTA.set(None)
+            try:
+                for operation in operations:
+                    op = operation["op"]
+                    if op == "add_node":
+                        graph._install_node(operation["node"], operation["type"],
+                                            operation["attrs"], operation["origin"])
+                    elif op == "remove_node":
+                        graph.remove_node(operation["node"])
+                    elif op == "add_edge":
+                        graph.add_edge_unchecked(
+                            operation["source"], operation["kind"], operation["target"])
+                    elif op == "remove_edge":
+                        graph.remove_edge_unchecked(
+                            operation["source"], operation["kind"], operation["target"])
+                    elif op == "set_attr":
+                        graph.set_attr(operation["node"], operation["key"],
+                                       operation["new"])
+                    else:  # pragma: no cover - _validate_against rejects unknown ops
+                        raise ValueError(f"unknown graph delta operation: {op!r}")
+                graph.revision = self.end_revision
+            finally:
+                _CURRENT_DELTA.reset(token)
+        return graph
+
+
+# NB03-style isolation for DR03: a recording scope is context-local, so two
+# worker threads (or two copied async contexts) never share a delta.  Nested
+# scopes on the same graph share the outer delta; a nested scope on a different
+# graph gets its own delta and restores the outer one on exit.
+_CURRENT_DELTA: contextvars.ContextVar[
+    tuple["BigvilleGraph", GraphDelta] | None] = contextvars.ContextVar(
+        "bigville_graph_delta", default=None)
+
+
 class BigvilleGraph:
     """A deterministic, JSON-friendly directed typed graph.
 
@@ -171,6 +645,61 @@ class BigvilleGraph:
         """Set whether reads take the global lock (see ``lock_reads``)."""
         self.lock_reads = bool(enabled)
 
+    # -- DR03 change recording -------------------------------------------
+
+    def _recording_delta(self) -> GraphDelta | None:
+        """The delta currently recording this graph in this context, if any."""
+        entry = _CURRENT_DELTA.get()
+        if entry is None or entry[0] is not self:
+            return None
+        return entry[1]
+
+    @contextmanager
+    def record_changes(self, *,
+                       base_revision: int | None = None) -> Iterator[GraphDelta]:
+        """Record this graph's successful mutations into a ``GraphDelta``.
+
+        The context is ``ContextVar``-backed, matching node origins: concurrent
+        threads/contexts each get their own delta.  A nested scope on the same
+        graph shares the outer delta (it does not reset the base revision); a
+        nested scope on a different graph gets its own delta and restores the
+        outer one on exit.  Failed mutation attempts are not recorded because
+        each mutation records only after it has succeeded.
+
+        ``base_revision`` defaults to the graph revision at entry.  On exit
+        ``end_revision`` is the graph revision observed then, including any
+        successful mutation made through this graph in the scope.
+        """
+        entry = _CURRENT_DELTA.get()
+        if entry is not None and entry[0] is self:
+            yield entry[1]
+            return
+        base = self.revision if base_revision is None else int(base_revision)
+        delta = GraphDelta(base_revision=base, end_revision=base)
+        token = _CURRENT_DELTA.set((self, delta))
+        try:
+            yield delta
+        finally:
+            delta.end_revision = self.revision
+            _CURRENT_DELTA.reset(token)
+
+    def _install_node(self, node: int, type_name: str,
+                      attrs: dict[str, Any], origin: str) -> NodeRef:
+        """Install a node with an exact id, for delta replay only.
+
+        Public ``add_node`` always allocates the next id; replay must recreate
+        the ids the original execution allocated.  This is deliberately
+        private and does not run change recording.
+        """
+        with _GRAPH_LOCK:
+            ref = NodeRef(int(node))
+            if ref in self._nodes:
+                raise KeyError(f"Bigville graph node already exists: {int(ref)}")
+            self._nodes[ref] = _Node(str(type_name), dict(attrs), str(origin))
+            if int(ref) >= self._next_id:
+                self._next_id = int(ref) + 1
+            return ref
+
     @property
     def current_origin(self) -> str:
         """The namespace currently stamping newly created nodes."""
@@ -207,11 +736,18 @@ class BigvilleGraph:
 
     def add_node(self, type_name: str, attrs: dict[str, Any] | None = None) -> NodeRef:
         origin = self.current_origin
+        delta = self._recording_delta()
+        attrs_value = dict(attrs or {})
+        attrs_snapshot = (_copy_graph_value(attrs_value, "add_node.attrs")
+                          if delta is not None else None)
         with _GRAPH_LOCK:
             node = NodeRef(self._next_id)
             self._next_id += 1
-            self._nodes[node] = _Node(str(type_name), dict(attrs or {}), origin)
+            self._nodes[node] = _Node(str(type_name), attrs_value, origin)
             self.revision += 1
+            if delta is not None:
+                delta._note_add_node(int(node), str(type_name),
+                                     attrs_snapshot, origin)
             return node
 
     def has_node(self, node: NodeRef | int) -> bool:
@@ -285,9 +821,20 @@ class BigvilleGraph:
                     if type_name is None or record.type == type_name]
 
     def set_attr(self, node: NodeRef | int, key: str, value: Any) -> None:
+        delta = self._recording_delta()
+        ref = NodeRef(int(node))
+        key = str(key)
+        value_snapshot = (_copy_graph_value(value, "set_attr.value")
+                          if delta is not None else None)
         with _GRAPH_LOCK:
-            self._nodes[NodeRef(int(node))].attrs[str(key)] = value
+            record = self._nodes[ref]
+            old_value = record.attrs.get(key)
+            old_snapshot = (_copy_graph_value(old_value, "set_attr.old")
+                            if delta is not None else None)
+            record.attrs[key] = value
             self.revision += 1
+            if delta is not None:
+                delta._note_set_attr(int(ref), key, old_snapshot, value_snapshot)
 
     def add_edge_unchecked(self, source: NodeRef | int, edge: str,
                            target: NodeRef | int, attrs: dict | None = None) -> None:
@@ -298,6 +845,9 @@ class BigvilleGraph:
             self._edges.setdefault((src, kind), set()).add(dst)
             self._reverse.setdefault((dst, kind), set()).add(src)
             self.revision += 1
+            delta = self._recording_delta()
+            if delta is not None:
+                delta._note_add_edge(int(src), kind, int(dst))
 
     def add_edge(self, source, edge, target, attrs=None):
         # The unchecked form is the one real mutation; delegating keeps the
@@ -310,6 +860,9 @@ class BigvilleGraph:
             self._edges.get((src, kind), set()).discard(dst)
             self._reverse.get((dst, kind), set()).discard(src)
             self.revision += 1
+            delta = self._recording_delta()
+            if delta is not None:
+                delta._note_remove_edge(int(src), kind, int(dst))
 
     def has_edge(self, source, edge, target) -> bool:
         src = source if isinstance(source, int) else NodeRef(int(source))
@@ -337,10 +890,22 @@ class BigvilleGraph:
             return sorted(self._reverse.get(key, set()))
 
     def remove_node(self, node) -> None:
+        delta = self._recording_delta()
         with _GRAPH_LOCK:
             ref = NodeRef(int(node))
             if ref not in self._nodes:
                 return
+            incident: list[tuple[int, str, int]] = []
+            if delta is not None:
+                # One removed node is one revision increment, but replay needs
+                # the incident edges it took with it.  ``_edges`` is the
+                # authoritative forward adjacency (``_reverse`` mirrors it), so
+                # collecting there gives each incident edge exactly once.
+                for (src, edge), targets in self._edges.items():
+                    for dst in targets:
+                        if src == ref or dst == ref:
+                            incident.append((int(src), str(edge), int(dst)))
+                incident.sort()
             for (src, edge), targets in list(self._edges.items()):
                 if src == ref or ref in targets:
                     targets.discard(ref)
@@ -355,6 +920,10 @@ class BigvilleGraph:
             # Nested edge cleanup above is internal: one removed node is one
             # logical mutation, not one per incident edge.
             self.revision += 1
+            if delta is not None:
+                for source, edge, target in incident:
+                    delta._note_remove_edge(source, edge, target)
+                delta._note_remove_node(int(ref))
 
     def load_seed_manifest(self, manifest, agent=None) -> None:
         """Retain seeded graph data without executing an external rule engine."""

@@ -495,10 +495,25 @@ class PartitionedExecutor:
                 raise BundleDispatchError(
                     f"no component for bundle {bundle.bundle_id!r}")
             before = nodes_for(bundle.namespace)
+            delta = None
             status, reason = "ok", ""
             try:
                 scoped = getattr(graph, "execution_namespace", None)
-                if callable(scoped):
+                recorder = getattr(graph, "record_changes", None)
+                if callable(recorder):
+                    # DR03: the in-process world is still mutated directly;
+                    # the recorded delta is the transport/replay form carried
+                    # by the result.  Recording is context-local, so parallel
+                    # shard threads never share one delta.
+                    with recorder() as delta:
+                        if callable(scoped):
+                            with scoped(bundle.namespace):
+                                rows = game._run_component(
+                                    order, responses, indices, suppressed)
+                        else:
+                            rows = game._run_component(
+                                order, responses, indices, suppressed)
+                elif callable(scoped):
                     with scoped(bundle.namespace):
                         rows = game._run_component(
                             order, responses, indices, suppressed)
@@ -512,12 +527,13 @@ class PartitionedExecutor:
             created = sorted(nodes_for(bundle.namespace) - before)
             created_ids = tuple(
                 QualifiedId(bundle.namespace.name, int(node)) for node in created)
+            effects = () if delta is None else tuple(delta.to_effects())
             provisional = BundleResult(
                 bundle_id=bundle.bundle_id,
                 namespace=bundle.namespace,
                 base_version=bundle.base_version,
                 status=status,
-                effects=(),
+                effects=effects,
                 created_ids=created_ids,
                 result=tuple(tuple(row) for row in rows),
                 output_sha="pending",

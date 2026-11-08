@@ -193,7 +193,7 @@ the exact timeout/load if it cannot finish.
 |---|---|---|
 | DR01 | complete (uncommitted) | — |
 | DR02 | complete (uncommitted) | — |
-| DR03 | blocked on DR02 | — |
+| DR03 | complete (uncommitted) | — |
 | DR04 | blocked on DR03 | — |
 | DR05 | blocked on DR04 | — |
 
