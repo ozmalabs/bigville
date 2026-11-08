@@ -1092,6 +1092,8 @@
     {
       "name": "IMPAIRMENT_NEIGHBOURS",
       "file": "world/impairment.json"
-    }
+    },
+    {"name": "TUI_ART", "file": "world/tui_modes.json"},
+    {"name": "TUI_PROSE", "file": "world/tui_modes.json"}
   ]
 }

@@ -2259,6 +2259,8 @@ def check_consistency():
     check_agent_view(_WORLD_PACK.path, errors, warnings, info)
     from domains.narration_check import check_narration  # Phase 057: the terminal interface's sentence templates
     check_narration(_WORLD_PACK.path, errors, warnings, info)
+    from domains.tui_check import check_tui  # Phase 067: the terminal modes' map art and text sentences
+    check_tui(_WORLD_PACK.path, errors, warnings, info)
     from domains.fog_check import check_fog  # Phase 053: the fog of the map, in three levels
     check_fog(_WORLD_PACK.path, errors, warnings, info)
     from domains.speech_acts_check import check_speech_acts  # Phase 060: the speech acts and their templates

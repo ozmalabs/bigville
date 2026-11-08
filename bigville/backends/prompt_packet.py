@@ -185,6 +185,10 @@ def build_packet(context, *, pack: str, consult_reason: str | None = None,
         "last": caps.measure("last", view.get("last") or {}),
         "heard": caps.measure("heard", {"rule": rule, "quotes": quotes}),
     }
+    # Phase 064: written marks in sight go in the packet only when the view carries them (reading on). Off, the
+    # packet is byte-for-byte what it was before.
+    if around.get("writing"):
+        public["around"]["writing"] = caps.items("writing", around["writing"])
     if consult_reason is not None:
         consult = {"why_consulted": consult_reason, "rules": tbl["consult_rules"]}
         if choices:

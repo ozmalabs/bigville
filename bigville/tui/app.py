@@ -10,30 +10,40 @@ choose_front_end() picks curses only when it can be imported and stdout is a ter
 """
 from __future__ import annotations
 
+import hashlib
 import sys
 
-from bigville.tui import narrate
+from bigville.tui import art as tui_art
+from bigville.tui import narrate, prose
 from bigville.tui.client import ClientError, UnsupportedOverHttp
-from bigville.tui.commands import menu_pick, parse, parse_reaction
+from bigville.tui.commands import menu_pick, parse, parse_reaction, placed
 from bigville.tui.render import TABS, render, sheet_lines
 from bigville.backends import reply_schema
 
 KEY_WEST, KEY_SOUTH, KEY_NORTH, KEY_EAST = "west", "south", "north", "east"
 STEP_KEYS = {"h": KEY_WEST, "j": KEY_SOUTH, "k": KEY_NORTH, "l": KEY_EAST}
+WALK_ACTIONS = ("walk", "move")
 
 
 class Session:
-    """One resident's play: the view, the open menu or question, and the log of what has happened."""
+    """One resident's play: the view, the open menu or question, and the log of what has happened.
 
-    def __init__(self, client, pack=None):
+    `art` draws the map mode (Phase 067). `text` is the text adventure: the room is written from the prompt packet
+    (client.packet()), and a line the grammar cannot place is refused with the words of TUI_PROSE, not sent."""
+
+    def __init__(self, client, pack=None, *, art=False, text=False):
         self.client = client
         self.pack = pack or client.pack
+        self.art = bool(art)
+        self.text = bool(text)
         self.view = client.view()
         self.log = []
         self.menu_open = False
         self.ask = None
         self.tab = "body"
         self.done = False
+        self.refresh = False       # text mode: the room is to be written again after this line
+        self.last_reply = None     # the reply of the last proposal, in the LLM shape (for the log)
         self.log = self.arrival()
 
     # ------------------------------------------------------------------ screens
@@ -42,6 +52,22 @@ class Session:
 
     def arrival(self):
         return narrate.arrival_lines(self.view, self.pack)
+
+    def banner(self):
+        name = (self.view.get("self") or {}).get("name") or self.client.player
+        return prose.words(self.pack)["banner"].format(name=name)
+
+    def packet(self):
+        """The packet the resident would get now (text mode and the log). Embedded clients only."""
+        return self.client.packet()
+
+    def room(self, show_packet=False, record=None):
+        """The room as sentences, written from the packet. `show_packet` adds the packet itself after it."""
+        record = record if record is not None else self.packet()
+        lines = prose.room_lines(record, self.view, self.pack)
+        if show_packet:
+            lines += [prose.words(self.pack)["packet"], prose.packet_text(record)]
+        return lines
 
     def _bottom(self):
         """The bottom area's title and lines: the reaction answers, the question, the menu, or the log."""
@@ -58,12 +84,13 @@ class Session:
     def screen(self, width=80, height=24, prompt=""):
         title, bottom = self._bottom()
         return render(self.view, width, height, tab=self.tab, log=self.log, bottom=bottom,
-                      bottom_title=title, prompt=prompt, pack=self.pack)
+                      bottom_title=title, prompt=prompt, pack=self.pack, art=self.art)
 
     # ------------------------------------------------------------------ input
     def line(self, text):
         """One typed line. Returns the lines to show. Updates the view and the log. A client error (the server
         is down, or it has no route for the action) is shown as its message, and the session goes on."""
+        self.refresh, self.last_reply = False, None
         try:
             return self._line(text)
         except (ClientError, UnsupportedOverHttp) as exc:
@@ -90,6 +117,9 @@ class Session:
         if low.startswith("tab "):
             return self._tab(low[4:].strip())
         parsed = parse(text, self.view, self.pack)
+        if self.text and parsed.kind == "propose" and not placed(text, self.pack):
+            # Text mode: a verb the grammar does not know is a question to ask again, not an attempt the world refuses.
+            return [prose.words(self.pack)["unplaced"]]
         if parsed.kind == "empty":
             return []
         if parsed.kind == "ui":
@@ -115,6 +145,10 @@ class Session:
         if name == "quit":
             self.done = True
             return []
+        if self.text and name in ("look", "map"):
+            # The text mode has no map: looking is the room again, written from the packet.
+            self.refresh = True
+            return []
         if name == "look":
             self.menu_open = True
             return self.arrival() + [self.words()["label_can"]] + narrate.menu_lines(self.view, self.pack)
@@ -124,14 +158,15 @@ class Session:
             self.tab = "carrying"
             return sheet_lines(self.view, "carrying", self.pack)
         if name == "map":
-            game_map = self.view.get("map") or {}
+            view = tui_art.tiled(self.view, self.pack) if self.art else self.view
+            game_map = view.get("map") or {}
             rows = list(game_map.get("rows") or [])
             return [narrate.map_caption(self.view, self.pack)] + rows + narrate.legend_items(self.view, self.pack)
         if name == "menu":
             self.menu_open = True
             return [self.words()["label_can"]] + narrate.menu_lines(self.view, self.pack)
         if name == "help":
-            return narrate.help_lines(self.pack)
+            return list(prose.words(self.pack)["help"]) if self.text else narrate.help_lines(self.pack)
         return []
 
     def _tab(self, name):
@@ -144,6 +179,10 @@ class Session:
         errors = reply_schema.check(reply, self.pack)
         if errors:
             return errors
+        self.last_reply = reply
+        action = reply.get("major_action") or {}
+        if action.get("action") in WALK_ACTIONS:
+            self.refresh = True
         said = []
         for item in reply.get("utterances") or []:
             if item.get("text"):
@@ -190,6 +229,39 @@ def run_plain(session, inp, out, echo=True):
             out.write(session.words()["prompt"] + text + "\n")
         for line in session.line(text):
             out.write(line + "\n")
+    return session
+
+
+def run_text(session, inp, out, *, show_packet=False, log=None, echo=True):
+    """The text adventure (Phase 067). The room is written from the prompt packet the resident would get; each typed
+    line is one turn through the same Session as the map. A look or a walk writes the room again.
+
+    `show_packet` adds the packet the room came from, after the room. `log` is an object with append(dict), such as
+    bigville.llm_log.LLMLog: each turn is one record with the typed line, the packet as the resident had it (and its
+    sha256), the reply in the LLM shape, and the lines shown. Nothing is written for a line that was refused locally."""
+    for line in [session.banner()] + session.room(show_packet):
+        out.write(line + "\n")
+    index = 0
+    while not session.done:
+        raw = inp.readline()
+        if raw == "":
+            break
+        text = raw.rstrip("\r\n")
+        if echo:
+            out.write(session.words()["prompt"] + text + "\n")
+        before = session.packet() if log is not None else None
+        shown = session.line(text)
+        for line in shown:
+            out.write(line + "\n")
+        index += 1
+        if session.refresh and not session.done:
+            for line in session.room(show_packet):
+                out.write(line + "\n")
+        if log is not None:
+            packet_bytes = prose.packet_text(before).encode("utf-8")
+            log.append({"kind": "text_turn", "index": index, "typed": text,
+                        "packet_sha256": hashlib.sha256(packet_bytes).hexdigest(),
+                        "packet": before, "reply": session.last_reply, "shown": shown})
     return session
 
 

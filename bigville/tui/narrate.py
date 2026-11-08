@@ -79,6 +79,9 @@ def around_lines(view, pack=DEFAULT_PACK):
         lines.append(fill("heard", pack, **{"from": item.get("from", ""), "text": item.get("text", "")}))
     for item in around.get("seen") or []:
         lines.append(_cap(fill("seen", pack, who=item.get("who", ""), did=item.get("did", ""))))
+    # Phase 067: a written mark in sight, as the resident reads it (the view has the key only with reading on).
+    for row in around.get("writing") or []:
+        lines.append(_cap(load_pack(pack)["TUI_PROSE"]["writing"].format(text=row.get("percept", ""))))
     return lines
 
 

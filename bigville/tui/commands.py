@@ -298,6 +298,23 @@ def parse(text, view, pack="bigville"):
     return _attempt(text_rest, view, pack, head, intensity)
 
 
+def placed(text, pack="bigville"):
+    """True when the grammar can place a line: a blank line, a number, a screen word, a wait, a command verb of this
+    module, or a verb the lexicon knows. Text mode asks again for any other line (Phase 067). It does not judge
+    whether the world will allow the action; that is the world's answer, as for the map."""
+    raw = " ".join(str(text or "").lower().split())
+    if raw.startswith(":"):
+        raw = raw[1:].strip()
+    if not raw or raw.isdigit() or raw in UI or raw in PASS:
+        return True
+    head = raw.split(None, 1)[0]
+    if head in SAY_VERBS or head in TAKE_VERBS or head in GIVE_VERBS or head in WALK_VERBS:
+        return True
+    if head in WORK_VERBS or head in EAT_VERBS or head in SIMPLE_VERBS or head == "tab":
+        return True
+    return resolve_verb(head, pack) is not None
+
+
 def parse_reaction(text, view):
     """A reaction answer: a menu number, a choice name, or the words of one answer. Returns the choice
     name (the world's option name) or None when the words name no answer offered."""

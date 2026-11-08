@@ -22,7 +22,7 @@ from domains.lexicon import amount_value, intensity_value
 from domains.pack import PackError, load_pack
 
 SECTIONS = ("lead", "body", "skills", "carrying", "knows", "places", "kin", "lessons", "notes", "now",
-            "people", "seen", "things", "heard", "map", "can", "last", "consult")
+            "people", "seen", "things", "writing", "heard", "map", "can", "last", "consult")
 STRUCTURAL = ("private", "public", "lead", "lessons", "kept", "merge", "notes", "heard", "quotes", "rule",
               "quote", "from", "consult", "why_consulted", "rules", "choices", "sizes", "omitted")
 LABELS = ("who", "traits", "life", "usual_day", "ties")

@@ -1,0 +1,93 @@
+{
+  "_doc": "TERMINAL MODES (Phase 067): the words and the art of the two terminal modes of bigville/tui. TUI_ART is the map mode's art: each map glyph of the agent view (agent_view.json MAP_GLYPHS) is drawn as a two-character tile, and each person and each thing has a glyph. The colours are recorded for a front end that draws colour; the plain text screen does not draw them yet. TUI_PROSE is the text mode's sentences: the room is written from the prompt packet (Phase 054), and every sentence here names only what the packet carries. Braces name the fields a sentence fills (narration_check.py rule: no digit outside a field). Nothing here is a world fact; all of it is presentation, and every glyph and word is a model choice (APPROX).",
+  "_types": {},
+  "tables": {
+    "TUI_ART": {
+      "_doc": "tiles: a map glyph (a key of MAP_GLYPHS) to its two-character tile and colour. people: the glyph for a person the resident knows by name (known) and for a stranger (stranger). things: the glyph for a thing the resident can act on. colours: the colour names a front end may use (self-test checks each colour is one of these).",
+      "tiles": {
+        ".": {
+          "tile": ".'",
+          "colour": "green"
+        },
+        "=": {
+          "tile": "::",
+          "colour": "yellow"
+        },
+        "_": {
+          "tile": "__",
+          "colour": "white"
+        },
+        "+": {
+          "tile": "[]",
+          "colour": "white"
+        },
+        "T": {
+          "tile": "^^",
+          "colour": "green"
+        },
+        "~": {
+          "tile": "~~",
+          "colour": "blue"
+        },
+        "#": {
+          "tile": "##",
+          "colour": "white"
+        },
+        " ": {
+          "tile": "  ",
+          "colour": "default"
+        },
+        "@": {
+          "tile": "@@",
+          "colour": "cyan"
+        }
+      },
+      "people": {
+        "known": {
+          "glyph": "&",
+          "colour": "cyan"
+        },
+        "stranger": {
+          "glyph": "o",
+          "colour": "magenta"
+        }
+      },
+      "things": {
+        "glyph": "*",
+        "colour": "yellow"
+      },
+      "colours": [
+        "blue",
+        "cyan",
+        "default",
+        "green",
+        "magenta",
+        "white",
+        "yellow"
+      ]
+    },
+    "TUI_PROSE": {
+      "_doc": "The text mode's sentences. Each key names the fields it fills (domains/tui_check.py, TEXT_FIELDS). help is a list of lines. The words name no person, place or thing of the world: every name in a sentence comes from the packet.",
+      "banner": "Bigville, text mode. You are {name}.",
+      "exits": "Ways on: {ways}.",
+      "exits_none": "No way on is known to you from here.",
+      "things": "Here you can see {things}.",
+      "things_none": "There is nothing here you can act on.",
+      "nobody": "Nobody is in sight.",
+      "ground": "Around you: {ground}.",
+      "options": "You can:",
+      "options_none": "Nothing is open to you right now.",
+      "writing": "{text}.",
+      "unplaced": "That is not a command here. Type a command from the list, a number from it, or say NAME: words.",
+      "packet": "The prompt packet this mode used:",
+      "legend_known": "known",
+      "legend_stranger": "stranger",
+      "legend_thing": "thing",
+      "help": [
+        "Type a command, or a number from the list of things you can do.",
+        "Examples: go to a place you know; take a few of an item from a person; say NAME: words; smash a thing with a tool, hard; eat something; work at a recipe; wait.",
+        "look shows the room again. sheet shows your sheet. quit ends the session."
+      ]
+    }
+  }
+}

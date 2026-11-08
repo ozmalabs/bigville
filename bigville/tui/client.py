@@ -37,9 +37,22 @@ class EmbeddedClient:
         self._game = game
         self.player = player
         self.pack = game.world.data_pack
+        self._builder = None
 
     def view(self):
         return self._game.agent_view(self.player, mode="agent")
+
+    def packet(self):
+        """The prompt packet an LLM resident gets now (Phase 054): the same PromptBuilder, the same context and the
+        agent view attached, as LLMBackend._ask builds it for a consult with no reason. Text mode shows it, and
+        --show-packet prints it."""
+        from bigville.backends.prompts import PromptBuilder
+        if self._builder is None:
+            self._builder = PromptBuilder(pack=self.pack)
+        context = self._game._context(self.player)
+        if context.agent_view is None:
+            context.agent_view = self._game.agent_view(self.player, mode="agent")
+        return self._builder.build(context).as_dict()
 
     def affordances(self):
         """The world's full affordance rows, which reply_schema.to_wire binds a handle to. In process only."""
@@ -84,6 +97,11 @@ class HttpClient:
     def view(self):
         query = parse.urlencode({"actor": self.player})
         return self._open(request.Request(f"{self.base}/api/view?{query}", method="GET"))
+
+    def packet(self):
+        """Text mode needs the game in process: the packet is built from the resident's context, which the
+        server does not publish."""
+        raise UnsupportedOverHttp("text mode runs in process; the packet is built from the game, not the server")
 
     def affordances(self):
         """Over HTTP the client has no world rows. The server binds a handle to its row (send_reply)."""
