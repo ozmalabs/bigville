@@ -373,6 +373,7 @@ class BigvilleGame:
                  tick_graph_enabled: bool | None = None,
                  executor: str = "serial", executor_workers: int = 4,
                  run_id: str | None = None,
+                 bundle_log_path: str | None = None,
                  turn_semantics: str = "sequential", simultaneous_priority=None,
                  affordance_mode: str = "menu",
                  snapshot_mode: str = "every_turn",
@@ -392,6 +393,16 @@ class BigvilleGame:
         self.run_id = _normalise_run_id(
             run_id if run_id is not None else _default_run_id(world))
         self.last_bundle_log = None
+        # DR02: an explicit, opt-in durable journal.  Construction validates the
+        # path but opens no file; serial/threaded turns never call the journal.
+        # A journal write failure is a real error for this explicit opt-in
+        # path, so it propagates and fails the turn rather than being logged.
+        self.bundle_log_path = None
+        self.bundle_journal = None
+        if bundle_log_path is not None:
+            from .bundle_log import BundleJournal
+            self.bundle_journal = BundleJournal(bundle_log_path)
+            self.bundle_log_path = self.bundle_journal.path
         if tick_graph_enabled is not None:
             self.tick_graph_enabled = bool(tick_graph_enabled)
         self.executor = executor
@@ -1987,14 +1998,23 @@ class BigvilleGame:
         from .sharding import PartitionedExecutor
 
         suppressed = suppressed or {}
-        executor = PartitionedExecutor(workers=self.executor_workers)
+        executor = PartitionedExecutor(workers=self.executor_workers,
+                                       journal=self.bundle_journal)
         units = executor.units(self, order, responses)
         plan = executor.plan(units, self.world)
         self.last_shard_plan = plan
         # Joint resolution has already written its results and errors.  Capture
         # that insertion order, then rebuild both dicts deterministically.
         preexisting_errors = dict(self.last_errors)
-        completed = executor.commit(self, order, responses, suppressed, plan=plan)
+        try:
+            completed = executor.commit(self, order, responses, suppressed,
+                                        plan=plan)
+        except BaseException as exc:
+            # DR02: close a partially written tick explicitly.  The original
+            # exception is what the caller must see; a secondary journal
+            # failure while recording the abort is best-effort only.
+            self._abort_bundle_journal(exc)
+            raise
 
         self.last_errors.clear()
         self.last_errors.update(preexisting_errors)
@@ -2006,13 +2026,48 @@ class BigvilleGame:
             self.last_results[actor] = bool(result)
             if error is not None:
                 self.last_errors[actor] = error
-        result = self._finish_turn(responses, include_snapshot=include_snapshot)
+        try:
+            result = self._finish_turn(responses,
+                                       include_snapshot=include_snapshot)
+        except BaseException as exc:
+            self._abort_bundle_journal(exc)
+            raise
         # NB04: the payload scope is the semantic world after the whole turn.
         # Recording it on the tick log is cheap relative to the turn itself and
         # lets NB05 compare serial and partitioned payloads directly.
         if self.last_bundle_log is not None:
             self.last_bundle_log.set_payload(self.world)
+            if self.bundle_journal is not None:
+                # A journal failure here is fatal for the explicit opt-in path:
+                # the world has already advanced, so the operator needs to see
+                # the error rather than a silently incomplete journal.
+                self.bundle_journal.tick_end(
+                    self.last_bundle_log.tick,
+                    execution_sha=self.last_bundle_log.execution_sha,
+                    payload_sha=self.last_bundle_log.payload_sha(),
+                    revision=self.world.revision,
+                    run_id=self.run_id,
+                )
         return result
+
+    def _abort_bundle_journal(self, exc: BaseException) -> None:
+        """Best-effort ``tick_end(aborted)`` for an opt-in journal."""
+        journal = getattr(self, "bundle_journal", None)
+        if journal is None:
+            return
+        log = self.last_bundle_log
+        try:
+            execution_sha = None if log is None else str(log.execution_sha)
+            payload_sha = None if log is None else log.payload_sha()
+            journal.abort_tick(
+                f"{type(exc).__name__}: {exc}",
+                execution_sha=execution_sha,
+                payload_sha=payload_sha,
+                revision=getattr(self.world, "revision", None),
+            )
+        except Exception:
+            # Never mask the turn's real failure with a secondary journal error.
+            pass
 
     def _run_component(self, order, responses, component, suppressed=None):
         suppressed = suppressed or {}

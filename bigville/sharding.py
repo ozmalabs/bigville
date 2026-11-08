@@ -307,7 +307,8 @@ class PartitionedExecutor:
 
     def __init__(self, shard_map: ShardMap | None = None, workers: int | None = None,
                  *, transport: Any = None,
-                 bundle_executor: Callable[[Bundle], BundleResult] | None = None) -> None:
+                 bundle_executor: Callable[[Bundle], BundleResult] | None = None,
+                 journal: Any = None) -> None:
         if workers is not None and (not isinstance(workers, int)
                                     or isinstance(workers, bool) or workers < 1):
             raise ValueError("workers must be a positive integer or None")
@@ -317,12 +318,18 @@ class PartitionedExecutor:
             raise ValueError("transport must implement dispatch/acknowledge")
         if bundle_executor is not None and not callable(bundle_executor):
             raise ValueError("bundle_executor must be callable or None")
+        if journal is not None and not callable(getattr(journal, "append", None)):
+            raise ValueError("journal must implement append or be None")
         self.shard_map = shard_map or ShardMap()
         self.workers = workers
         # NB04: an injected transport (or executor) is the test/transport seam.
         # With neither, ``commit`` creates a fresh ``LocalBundleTransport``.
         self.transport = transport
         self.bundle_executor = bundle_executor
+        # DR02: an optional durable journal.  A duck-typed object with the
+        # BundleJournal high-level methods is enough; serial/threaded turns
+        # never construct or call one.
+        self.journal = journal
         self.last_transport = None
         self.last_log: TickBundleLog | None = None
 
@@ -610,7 +617,8 @@ class PartitionedExecutor:
                plan: ShardPlan | None = None, *,
                base_version: int | None = None,
                transport: Any = None,
-               bundle_executor: Callable[[Bundle], BundleResult] | None = None
+               bundle_executor: Callable[[Bundle], BundleResult] | None = None,
+               journal: Any = None
                ) -> dict[str, tuple[str, Any, Any]]:
         """Apply one turn's units as acknowledged bundles.
 
@@ -620,6 +628,11 @@ class PartitionedExecutor:
         order.  The returned dictionary is rebuilt in turn order and carries
         only ``(actor, result, error)`` triples.  Result/error dictionaries on
         the game are written by the caller, never here.
+
+        DR02: passing a ``journal`` writes ``tick_start``, dispatch, result,
+        ack, commit and (by the caller after the turn finishes) ``tick_end``
+        records through the same seam.  The journal is never touched unless it
+        is supplied, so serial and threaded paths stay write-free.
         """
         order = list(order)
         suppressed = suppressed or {}
@@ -635,8 +648,19 @@ class PartitionedExecutor:
         if hasattr(game, "last_bundle_log"):
             game.last_bundle_log = log
 
+        # DR02: the journal is opt-in.  ``tick_start`` precedes the early return
+        # for an empty tick so the caller can always close it with ``tick_end``.
+        chosen_journal = journal if journal is not None else self.journal
+        if chosen_journal is not None:
+            chosen_journal.tick_start(
+                game.run_id, version, base_version=version,
+                revision=_graph_revision(game.world))
+
         for bundle, _indices in entries:
             log.dispatch(bundle)
+        if chosen_journal is not None:
+            for bundle, _indices in entries:
+                chosen_journal.dispatch(bundle)
         if not entries:
             return {}
 
@@ -694,8 +718,12 @@ class PartitionedExecutor:
                         log.acknowledge(ack)
                     except Exception:
                         pass
+                    if chosen_journal is not None:
+                        chosen_journal.ack(ack)
                 raise
             log.result(result)
+            if chosen_journal is not None:
+                chosen_journal.result(result)
             observed = _graph_revision(game.world)
             committed_version = bundle.base_version
             for candidate in (observed, last_committed):
@@ -707,11 +735,15 @@ class PartitionedExecutor:
                 last_committed = ack.committed_version
             chosen_transport.acknowledge(ack)
             log.acknowledge(ack)
+            if chosen_journal is not None:
+                chosen_journal.ack(ack)
             if ack.outcome != "committed":
                 raise BundleResultError(
                     f"bundle {bundle.bundle_id!r} was not committed: "
                     f"{ack.outcome} ({result.status}: {result.reason or 'no reason'})")
             log.commit(bundle.bundle_id)
+            if chosen_journal is not None:
+                chosen_journal.commit(bundle.bundle_id, ack.committed_version)
             for row in result.result:
                 actor, applied, error = row
                 if actor is None:

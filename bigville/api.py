@@ -48,7 +48,7 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                 physical_subsystems=None, turn_semantics="sequential",
                 simultaneous_priority=None, executor="serial", executor_workers=4,
                 affordance_mode="auto", snapshot_mode="auto",
-                rule_batching="auto"):
+                rule_batching="auto", bundle_log_path=None):
     """Build a game session. ``"llm"`` residents need a provider, given either as
     ``llm_provider=`` (the same provider for every LLM resident) or as
     ``backend_factories={"llm": ...}`` (for example ``llm_backend_factory(p)``), not both.
@@ -82,7 +82,11 @@ def create_game(*, scenario="town100", seed=305000, player=None,
     authoritative sweep at the turn's finish boundary.  A direct
     ``BigvilleGame`` constructor still defaults to ``"action"``.  See
     ``docs/phases/engine-speedups/EN03_REPORT.md`` and
-    ``docs/phases/engine-speedups/EN05_REPORT.md``."""
+    ``docs/phases/engine-speedups/EN05_REPORT.md``.
+
+    ``bundle_log_path`` is an explicit opt-in DR02 durable journal for the
+    partitioned executor.  It is unset by default; serial and threaded turns
+    never write a journal even when a path is configured."""
     if _requires_ocelot(scenario, default_backend, player) and cognition_factory is None:
         cognition_factory = ocelot_resident_class()
     if (backend_factories or {}).get("ocelot") is not None:
@@ -112,7 +116,8 @@ def create_game(*, scenario="town100", seed=305000, player=None,
                         executor=executor, executor_workers=executor_workers,
                         affordance_mode=affordance_mode,
                         snapshot_mode=snapshot_mode,
-                        rule_batching=rule_batching)
+                        rule_batching=rule_batching,
+                        bundle_log_path=bundle_log_path)
     scenario_backends = getattr(world, "_scenario_actor_backends", {})
     for name, character in game.characters.items():
         kind = "human" if name == game.player else scenario_backends.get(name, default_backend)
