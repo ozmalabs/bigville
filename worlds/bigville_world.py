@@ -9914,6 +9914,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 return self._enact_plan(actor, {**plan, "action": route})
             return self.major_action(actor, "attempt", verb=verb, target=self._as_key(plan.get("target")),
                                      with_kind=plan.get("with"), intensity=plan.get("intensity", 1.0))
+        if action in _dn.ACTIONS:   # Phase 042b: light and douse take no target; the world finds the lamp in pole reach
+            return self.major_action(actor, action)
         # The plan names no action this resident can take, or no target for it.
         return self._refuse("malformed")
 

@@ -224,7 +224,8 @@ def test_a_light_is_offered_only_at_a_lamp_and_only_to_a_lamplighter():
     lights = [o for o in offers if o["action"] == "light"]
     assert len(lights) == 1 and lights[0]["lamplighter"] is True
     walks = [o["destination"] for o in offers if o["action"] == "move"]
-    assert lamp_cell not in walks and len(walks) == len(w._dn_lamps) - 1   # the other unlit lamps, by walking
+    # Phase 042b: a lamp is lit with the pole from the station, so the only walk offered is back to the station.
+    assert walks == [dn.station_cell(w)]
 
 
 def test_the_lamplighter_is_appointed_and_only_the_appointed_resident_may_round():
@@ -242,10 +243,12 @@ def test_the_backend_chooses_the_lamp_round_and_the_world_does_not():
     assert lamplighter_choice(ctx([{"action": "move", "destination": (1, 1)}])) is None
     light = {"action": "light", "lamplighter": True}
     assert lamplighter_choice(ctx([light])) == ("light", {}, None)
-    walk = {"action": "move", "destination": (18, 15), "lamplighter": True}
+    walk = {"action": "move", "destination": (22, 14), "lamplighter": True, "purpose": "station"}
     action, params, continuation = lamplighter_choice(ctx([walk]))
-    assert action == "move" and params == {"destination": (18, 15)} and continuation.destination == (18, 15)
-    assert lamplighter_choice(ctx([light], hunger=2.0)) is None      # food first
+    assert action == "move" and params == {"destination": (22, 14)} and continuation.destination == (22, 14)
+    # Phase 042b: food first when a meal is held. With no meal, lamp work comes before food (see test_phase042b_lamplighter).
+    assert lamplighter_choice(ctx([light, {"action": "eat"}], hunger=2.0)) is None
+    assert lamplighter_choice(ctx([light], hunger=2.0)) == ("light", {}, None)
 
 
 def test_a_lamp_round_is_not_offered_to_a_resident_who_is_too_exhausted_to_walk():

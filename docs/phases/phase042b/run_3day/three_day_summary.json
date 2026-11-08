@@ -1,0 +1,60 @@
+{
+ "days": 3,
+ "days_detail": [
+  {
+   "dawn_all_dark_hours_after_sunrise": null,
+   "day": 0,
+   "dusk_all_lit_hours_after_sunset": 5.45,
+   "lamp_douses_applied": 2,
+   "lamp_lights_applied": 6,
+   "lamplighter_alive_at_day_end": true,
+   "lamplighter_max_hunger": 0.369,
+   "lamplighter_min_energy": 5.71,
+   "sunrise_hour": 7.45,
+   "sunset_hour": 16.55
+  },
+  {
+   "dawn_all_dark_hours_after_sunrise": 2.08,
+   "day": 1,
+   "dusk_all_lit_hours_after_sunset": 1.42,
+   "lamp_douses_applied": 2,
+   "lamp_lights_applied": 4,
+   "lamplighter_alive_at_day_end": true,
+   "lamplighter_max_hunger": 1.191,
+   "lamplighter_min_energy": 9.09,
+   "sunrise_hour": 7.42,
+   "sunset_hour": 16.58
+  },
+  {
+   "dawn_all_dark_hours_after_sunrise": 6.86,
+   "day": 2,
+   "dusk_all_lit_hours_after_sunset": 1.14,
+   "lamp_douses_applied": 2,
+   "lamp_lights_applied": 4,
+   "lamplighter_alive_at_day_end": true,
+   "lamplighter_max_hunger": 1.364,
+   "lamplighter_min_energy": 8.87,
+   "sunrise_hour": 7.39,
+   "sunset_hour": 16.61
+  }
+ ],
+ "lamplighter": "Verity Peaseblossom",
+ "lamplighter_actions": {
+  "douse": 6,
+  "eat": 7,
+  "fetch": 8,
+  "light": 14,
+  "move": 70,
+  "rest": 19,
+  "sleep": 5
+ },
+ "lamplighter_alive_end": true,
+ "lamplighter_hunger_end": 1.177,
+ "lamps_lit_end": 4,
+ "oil_end": 16.2,
+ "residents": 100,
+ "residents_alive_end": 100,
+ "root": "/tmp/p42b/clean_final",
+ "seed": 305000,
+ "ticks": 288
+}

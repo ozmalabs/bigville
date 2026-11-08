@@ -57,6 +57,17 @@ def switch_on(w):
     oil = dn["oil_item"]
     w.set_stock(oil, w.qty(oil) + float(dn["starting_oil"]))
     appoint_lamplighters(w)
+    post_lamplighters(w)
+
+
+def post_lamplighters(w):
+    """Post each lamplighter at his station (the store's cell), so the first dusk finds him able to light the lamps."""
+    cell = station_cell(w)
+    if cell is None or cell not in w._map_cells:
+        return
+    for actor in lamplighters(w):
+        if w.actor_position(actor) != cell:
+            w._move_actor_to(actor, cell)
 
 
 def _jobs(w, actor):
@@ -264,12 +275,36 @@ def act(w, actor, action, kwargs, args):
             return w._refuse("unsupported")
         return _carried(w, actor, kind, action)
     cell = w.actor_position(actor)
-    node = w._dn_lamps.get(cell)
-    if node is None:
+    if cell is None:
         return w._refuse("not_at_site")
+    reach = int(w.E.DAYNIGHT["lamp_pole_reach"])
+    lit_wanted = action == "douse"   # douse acts on a lit lamp, light on an unlit one
+    node = _nearest_lamp(w, cell, reach, want_lit=lit_wanted)
+    if node is None:   # no lamp in pole reach needs this change (none in reach at all: nothing to reach)
+        return w._refuse("not_possible" if _lamps_in_reach(w, cell, reach) else "not_at_site")
     if action == "light":
         return _light_lamp(w, actor, node)
     return _douse(w, node)
+
+
+def _lamps_in_reach(w, cell, reach):
+    return [n for c, n in w._dn_lamps.items() if max(abs(c[0] - cell[0]), abs(c[1] - cell[1])) <= reach]
+
+
+def _nearest_lamp(w, cell, reach, want_lit):
+    """The nearest lamp within `reach` cells (Chebyshev) of the cell whose lit state is `want_lit` (ties by name)."""
+    best = None
+    for lamp_cell, node in w._dn_lamps.items():
+        dist = max(abs(lamp_cell[0] - cell[0]), abs(lamp_cell[1] - cell[1]))
+        if dist > reach:
+            continue
+        lit = float(w.eng.node(node)["attrs"].get("lit", 0.0)) == 1.0
+        if lit != want_lit:
+            continue
+        key = (dist, str(w.eng.node(node)["attrs"].get("name", "")))
+        if best is None or key < best[0]:
+            best = (key, node)
+    return None if best is None else best[1]
 
 
 def _light_lamp(w, actor, node):
@@ -333,28 +368,56 @@ def _restrained(w, actor):
 
 
 def lamp_options(w, actor):
-    """Options a lamplighter is offered for the lamps: light or douse where they stand, and a move to a lamp that needs it.
+    """Options a lamplighter is offered: light or douse the nearest lamp in pole reach that needs it, and a walk to
+    the station (the store's cell, the market: the lamp oil is drawn there) when he is away from it.
 
-    Non-lamplighters are offered nothing here, so the simple policy's choices are unchanged for them. The option
-    names what is physically true (the lamp's cell, lit or not, and whether it is night); it chooses nothing."""
+    A light is offered only when the store is open to him, since the oil is drawn from the store. A station walk is
+    marked `due` when a lamp needs changing somewhere, so a hungry lamplighter walks there for lamp work and not
+    otherwise. Non-lamplighters are offered nothing here. The options say what is physically true; they choose nothing."""
     if not on(w) or actor not in w._actors or w.E.DAYNIGHT["lamplighter_job"] not in _jobs(w, actor):
         return []
-    if _restrained(w, actor):   # a restrained resident walks nowhere
+    if _restrained(w, actor):   # a restrained resident walks nowhere, and reaches no lamp from where held
+        return []
+    if w.asleep(actor) or w.collapsed(actor):   # no lamp is lit or doused by a sleeper (Phase 024)
         return []
     night = is_night(w)
     here = w.actor_position(actor)
-    # A backend's walk below e_low is refused (Phase 049), so the round offers no walk to a resident that exhausted.
+    if here is None:
+        return []
+    reach = int(w.E.DAYNIGHT["lamp_pole_reach"])
     walk_ok = not w._exhaustion_band(actor)["below_e_low"]
     out = []
-    for cell, node in w._dn_lamps.items():
-        lit = float(w.eng.node(node)["attrs"].get("lit", 0.0)) == 1.0
-        needs = (night and not lit) or (not night and lit)
-        if cell == here:
-            if needs:
-                out.append({"action": "light" if not lit else "douse",
-                            "lamp": w.eng.node(node)["attrs"]["name"],
-                            "lamplighter": True, "night": night, "lit": lit})
-        elif needs and walk_ok:
-            out.append({"action": "move", "destination": cell, "lamplighter": True, "night": night,
-                        "purpose": "light" if not lit else "douse"})
+    for action, want_lit in (("light", False), ("douse", True)):
+        node = _nearest_lamp(w, here, reach, want_lit=want_lit)
+        needed = (night and not want_lit) or (not night and want_lit)
+        if node is None or not needed:
+            continue
+        if action == "light" and not w._store_open(actor):
+            continue
+        out.append({"action": action, "lamp": w.eng.node(node)["attrs"]["name"],
+                    "lamplighter": True, "night": night, "lit": want_lit})
+    due = any((night and float(w.eng.node(n)["attrs"].get("lit", 0.0)) != 1.0)
+              or (not night and float(w.eng.node(n)["attrs"].get("lit", 0.0)) == 1.0)
+              for n in w._dn_lamps.values())
+    station = station_cell(w)
+    stay = int(w.E.DAYNIGHT["lamplighter_station_reach"])
+    hours = float(sky(w)["sunset"]) - float(sky(w)["hour"])
+    near_dusk = (not night) and 0.0 < hours <= float(w.E.DAYNIGHT["lamplighter_dusk_lead_hours"])
+    if station is not None and walk_ok and here != station and (
+            due or near_dusk or max(abs(station[0] - here[0]), abs(station[1] - here[1])) > stay):
+        out.append({"action": "move", "destination": station, "lamplighter": True, "night": night,
+                    "purpose": "station", "due": bool(due or near_dusk)})
+    elif station is not None and here == station and not night:
+        out.append({"action": "rest", "lamplighter": True, "purpose": "dusk_ready" if near_dusk else "post",
+                    "night": False, "hours_to_dusk": round(hours, 4)})   # rest at the station by day: the round needs energy
     return out
+
+
+def station_cell(w):
+    """The lamplighter's station: the cell of the town store (where the lamp oil is drawn), else the square's centre."""
+    cell = w.map_position_node(w._store) if getattr(w, "_store", None) is not None else None
+    if cell is not None:
+        return (int(cell[0]), int(cell[1]))
+    square = (w._map_layout or {}).get("square", {}) if w._map_layout else {}
+    center = tuple(square.get("center", ()))
+    return (int(center[0]), int(center[1])) if len(center) == 2 else None

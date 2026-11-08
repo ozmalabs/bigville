@@ -1,0 +1,36 @@
+........................................................................ [ 69%]
+...............................F                                         [100%]
+=================================== FAILURES ===================================
+____ test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns _____
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1126/test_the_simple_backend_takes_0')
+
+    def test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns(tmp_path):
+        """The before-change run (behaviour_before.json) and this run both use seed 305000, the simple backend
+        for all residents, and no founding ties (seeding off). Five residents' action sequences and the mean
+        hunger for the first 50 turns must match exactly."""
+        # fix024 re-pinned this: the simple backend's hunger and food choices changed (HUNGER_PER_STAMINA, food-first
+        # sleep). The Phase 058 recording (behaviour_before.json) is kept as history; this reference is the same run after fix024.
+        before = json.load(open(os.path.join(_ROOT, "docs", "phases", "fix024_starvation", "behaviour_after_fix024.json"),
+                                encoding="utf-8"))
+        out = tmp_path / "behaviour_check.json"
+        env = dict(os.environ, PYTHONHASHSEED="0")
+        script = os.path.join(PHASE_DIR, "measure_behaviour.py")
+        subprocess.run([sys.executable, script, "--label", "check", "--turns", "50", "--seeding", "off",
+                        "--out", str(out)], check=True, env=env, cwd=_ROOT, timeout=900)
+        after = json.loads(out.read_text(encoding="utf-8"))
+        for name, sequence in before["sample_sequences"].items():
+            assert after["sample_sequences"][name] == sequence[:50], name
+>       assert after["hunger_mean_by_turn"] == before["hunger_mean_by_turn"][:50]
+E       assert [0.0131, 0.02...4, 0.086, ...] == [0.0131, 0.02...4, 0.086, ...]
+E         
+E         At index 7 diff: 0.116 != 0.1159
+E         Use -v to get more diff
+
+tests/test_phase058_persona.py:524: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"alive_at_end": 100, "deaths": 0, "elapsed_seconds": 18.4, "handovers": 0, "hunger_mean_end": 0.3895, "label": "check", "relationships_on_record": 0, "turns": 50, "utterances": 223}
+{"eat": 4, "move": 3117, "none": 665, "rest": 1156, "sleep": 43, "work": 15}
+=========================== short test summary info ============================
+FAILED tests/test_phase058_persona.py::test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns
+1 failed, 103 passed in 30.92s

@@ -1,0 +1,9 @@
+HEAD a50406c77becc0a32ba97d9ce505ed95283ec7b1 archived into /tmp/p42b/clean_final
+copy   bigville/backends/lamplighter.py             replace  +58 -13 vs HEAD
+copy   worlds/daynight.py                           replace  +82 -19 vs HEAD
+copy   domains/daynight_check.py                    replace  +15 -0 vs HEAD
+copy   packs/bigville/world/daynight.json           replace  +6 -3 vs HEAD
+copy   packs/test_hamlet/world/daynight.json        replace  +5 -2 vs HEAD
+copy   tests/test_phase042_daynight.py              replace  +7 -4 vs HEAD
+copy   tests/test_phase042b_lamplighter.py          new      +179 -0 vs HEAD
+hunk   worlds/bigville_world.py                     anchored +2 -0: _enact_plan: the fall-through refusal at its end (the text just before 'The plan names no action this resident can take')

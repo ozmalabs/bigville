@@ -17,13 +17,16 @@
       "lamp_reach": 1,
       "lamp_fuel_capacity": 4.0,
       "lamp_burn_per_tick": 0.05,
-      "starting_oil": 40.0,
+      "starting_oil": 60.0,
       "oil_item": "",
       "carried_lights": [],
       "candle_fuel": 1.0,
       "candle_burn_per_tick": 0.05,
       "lamplighters": 0,
-      "lamplighter_job": ""
+      "lamplighter_job": "",
+      "lamplighter_station_reach": 3,
+      "lamplighter_dusk_lead_hours": 6.0,
+      "lamp_pole_reach": 7
     },
     "DAYNIGHT_LAMPS": [],
     "DAYNIGHT_MAJOR_ACTIONS": {

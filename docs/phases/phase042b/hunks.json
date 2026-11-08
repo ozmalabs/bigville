@@ -1,0 +1,49 @@
+{
+  "_doc": "Phase 042b: the single source of truth for what the clean tree receives. build_clean_tree.py reads this file. Each 'copy' entry copies a file from its working-tree path (repo-relative, 'from' = 'path') over the HEAD archive; 'status' is 'replace' (the HEAD file exists) or 'new'. Each 'anchored' entry replaces one exact text block ('old', asserted to occur once in the HEAD file) with 'new'. Shared files that other sessions edit are changed only by 'anchored' entries, and their working-tree copy is not written by this phase.",
+  "copy": [
+    {
+      "path": "bigville/backends/lamplighter.py",
+      "status": "replace",
+      "why": "the round: order, rest before walks, station walk, dusk-ready rest"
+    },
+    {
+      "path": "worlds/daynight.py",
+      "status": "replace",
+      "why": "pole-reach light and douse, store-open gate, station offers, asleep gate, station_cell"
+    },
+    {
+      "path": "domains/daynight_check.py",
+      "status": "replace",
+      "why": "self-test checks for lamp_pole_reach, station reach, dusk lead; warning when the pole misses a lamp"
+    },
+    {
+      "path": "packs/bigville/world/daynight.json",
+      "status": "replace",
+      "why": "new keys lamp_pole_reach, lamplighter_station_reach, lamplighter_dusk_lead_hours; starting_oil 40 to 60"
+    },
+    {
+      "path": "packs/test_hamlet/world/daynight.json",
+      "status": "replace",
+      "why": "the same new keys (switch off), starting_oil 60"
+    },
+    {
+      "path": "tests/test_phase042_daynight.py",
+      "status": "replace",
+      "why": "two tests change their expectations (see the report)"
+    },
+    {
+      "path": "tests/test_phase042b_lamplighter.py",
+      "status": "new",
+      "why": "the Phase 042b tests (16)"
+    }
+  ],
+  "anchored": [
+    {
+      "path": "worlds/bigville_world.py",
+      "anchor": "_enact_plan: the fall-through refusal at its end (the text just before 'The plan names no action this resident can take')",
+      "old": "        # The plan names no action this resident can take, or no target for it.\n        return self._refuse(\"malformed\")\n",
+      "new": "        if action in _dn.ACTIONS:   # Phase 042b: light and douse take no target; the world finds the lamp in pole reach\n            return self.major_action(actor, action)\n        # The plan names no action this resident can take, or no target for it.\n        return self._refuse(\"malformed\")\n",
+      "why": "Phase 042's plan path had no branch for light and douse, so every backend lamp proposal was refused malformed."
+    }
+  ]
+}

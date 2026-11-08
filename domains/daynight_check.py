@@ -46,6 +46,14 @@ def check(errors, warnings, info, *, daynight, lamps, weather, jobs, labour_task
         errors.append(f"{where}.starting_oil: must be 0 or more")
     if int(dn["lamplighters"]) < 0:
         errors.append(f"{where}.lamplighters: must be 0 or more")
+    # The lamplighter's round (Phase 042b): pole reach, station and dusk lead.
+    if int(dn["lamp_pole_reach"]) < 1:
+        errors.append(f"{where}.lamp_pole_reach: must be at least 1 cell")
+    if int(dn["lamplighter_station_reach"]) < 0:
+        errors.append(f"{where}.lamplighter_station_reach: must be 0 or more cells")
+    lead = float(dn["lamplighter_dusk_lead_hours"])
+    if not 0.0 < lead < float(time["hours_per_day"]) / 2.0:
+        errors.append(f"{where}.lamplighter_dusk_lead_hours: must be positive and under half a day")
     # A pack with day and night switched off may leave the cross-references empty (a minimal test pack has no
     # oil, candle or lamplighter). Switched on, every reference must resolve.
     enabled = bool(dn.get("enabled"))
@@ -84,6 +92,13 @@ def check(errors, warnings, info, *, daynight, lamps, weather, jobs, labour_task
             half_w, half_h = int(square["w"]) // 2, int(square["h"]) // 2
             if abs(ox) > half_w or abs(oy) > half_h:
                 errors.append(f"DAYNIGHT_LAMPS[{lamp['name']}]: offset {[ox, oy]} lies outside the square")
+    # Pole reach (Phase 042b): from the square's centre every lamp is in reach. The station is the market store's
+    # cell, which FOUNDING_MAP does not carry, so the self-test cannot check the station against the lamps.
+    if square and lamps and enabled:
+        far = max(max(abs(int(lamp["offset"][0])), abs(int(lamp["offset"][1]))) for lamp in lamps)
+        if far > int(dn["lamp_pole_reach"]):
+            warnings.append(f"{where}.lamp_pole_reach: {dn['lamp_pole_reach']} cells does not reach every lamp "
+                            f"from the square's centre (furthest is {far})")
     # Weather: every type has a cloud in [0, 1].
     for name, spec in weather.items():
         cloud = spec.get("cloud")
