@@ -191,7 +191,7 @@ the exact timeout/load if it cannot finish.
 
 | Phase | Status | Commit |
 |---|---|---|
-| DR01 | ready | — |
+| DR01 | complete (uncommitted) | — |
 | DR02 | blocked on DR01 | — |
 | DR03 | blocked on DR02 | — |
 | DR04 | blocked on DR03 | — |

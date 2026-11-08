@@ -56,14 +56,31 @@ class BundleResultError(BundleDispatchError):
     """A dispatched bundle returned a stale, mismatched or failed result."""
 
 
+def _graph_revision(world: Any) -> int | None:
+    """Return ``world.revision`` (or its graph's) as a non-negative int."""
+    revision = getattr(world, "revision", None)
+    if revision is None:
+        graph = getattr(world, "eng", None)
+        revision = getattr(graph, "revision", None)
+    if revision is None or isinstance(revision, bool):
+        return None
+    try:
+        return max(0, int(revision))
+    except (TypeError, ValueError):
+        return None
+
+
 def _base_version(world: Any) -> int:
     """The monotonic plan version for a turn.
 
-    The world has no general revision counter in this phase, so the contract is
-    the world turn number (``world._turn``), which ``BigvilleGame`` advances
-    before it builds the tick graph.  It is deterministic and never depends on
-    wall time.  A world without ``_turn`` uses version 0.
+    DR01: the canonical contract is the world's graph revision, which advances
+    once per logical graph mutation and is independent of wall time.  A world
+    test double without a revision keeps the historical turn fallback
+    (``world._turn``); a double with neither uses version 0.
     """
+    revision = _graph_revision(world)
+    if revision is not None:
+        return revision
     turn = getattr(world, "_turn", None)
     if turn is None:
         return 0
@@ -510,8 +527,15 @@ class PartitionedExecutor:
     # -- dispatch and acknowledgement ------------------------------------
 
     @staticmethod
-    def validate_result(bundle: Bundle, result: BundleResult) -> None:
-        """Reject a result that does not belong to this exact dispatch."""
+    def validate_result(bundle: Bundle, result: BundleResult, *,
+                        committed_version: int | None = None) -> None:
+        """Reject a result that does not belong to this exact dispatch.
+
+        A result must name exactly the bundle's base revision: a stale result
+        (or a fictitious future one) is never merged.  When the caller also
+        knows the version it is about to commit, ``committed_version`` may be
+        supplied so a value older than the base is rejected here too.
+        """
         if not isinstance(result, BundleResult):
             raise BundleResultError(
                 f"bundle {bundle.bundle_id!r} returned "
@@ -528,22 +552,40 @@ class PartitionedExecutor:
             raise BundleResultError(
                 f"stale result for {bundle.bundle_id!r}: base_version "
                 f"{result.base_version} != {bundle.base_version}")
+        if committed_version is not None:
+            if (isinstance(committed_version, bool)
+                    or not isinstance(committed_version, int)
+                    or committed_version < bundle.base_version):
+                raise BundleResultError(
+                    f"invalid committed version for {bundle.bundle_id!r}: "
+                    f"{committed_version!r} is not an integer >= base_version "
+                    f"{bundle.base_version}")
 
     @staticmethod
-    def ack_for(bundle: Bundle, result: BundleResult) -> BundleAck:
+    def ack_for(bundle: Bundle, result: BundleResult, *,
+                committed_version: int | None = None) -> BundleAck:
         """The coordinator's ack for one validated result.
 
         ``ok`` and ``refused`` commit; per-actor row errors are contained and do
         not change that (they are the existing serial outcome).  ``retry`` and
-        ``error`` are non-committed.  No separate revision is written per
-        bundle, so ``committed_version`` is the turn's plan base version.
+        ``error`` are non-committed.  ``committed_version`` is the world graph
+        revision observed after the result was applied, clamped to be never
+        older than the bundle's base.  Calling without it keeps the historical
+        base-version value for pure/test callers.
         """
         if result.status in ("ok", "refused"):
+            committed = bundle.base_version
+            if committed_version is not None:
+                try:
+                    committed = max(bundle.base_version,
+                                    int(committed_version))
+                except (TypeError, ValueError):
+                    committed = bundle.base_version
             return BundleAck(
                 bundle_id=bundle.bundle_id,
                 base_version=bundle.base_version,
                 outcome="committed",
-                committed_version=bundle.base_version,
+                committed_version=committed,
                 execution_sha=result.execution_sha,
                 reason=result.reason,
             )
@@ -621,6 +663,14 @@ class PartitionedExecutor:
                 [bundle for bundle, _indices in entries], chosen_transport))
 
         completed: dict[str, tuple[str, Any, Any]] = {}
+        # DR01: results are committed in plan order after the transport has
+        # returned them.  The in-process transport has already applied each
+        # shard's effects by this point, so the observed world revision is the
+        # post-apply revision (it may already include other shards' effects).
+        # The returned value is clamped to the walking maximum, which gives a
+        # documented monotonic coordinator rule and never reports a version
+        # older than the bundle's base.
+        last_committed = version
         for (bundle, _indices), result in zip(entries, results):
             try:
                 self.validate_result(bundle, result)
@@ -646,7 +696,15 @@ class PartitionedExecutor:
                         pass
                 raise
             log.result(result)
-            ack = self.ack_for(bundle, result)
+            observed = _graph_revision(game.world)
+            committed_version = bundle.base_version
+            for candidate in (observed, last_committed):
+                if candidate is not None:
+                    committed_version = max(committed_version, candidate)
+            ack = self.ack_for(bundle, result,
+                               committed_version=committed_version)
+            if ack.committed_version is not None:
+                last_committed = ack.committed_version
             chosen_transport.acknowledge(ack)
             log.acknowledge(ack)
             if ack.outcome != "committed":

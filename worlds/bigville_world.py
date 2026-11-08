@@ -666,6 +666,17 @@ class BigvilleWorld:
         else:
             _FORCE_LINEAR_PROXIMITY_WORLDS.discard(self)
 
+    @property
+    def revision(self) -> int:
+        """The canonical graph's monotonic mutation revision (DR01).
+
+        Bundles name this value as their ``base_version``.  It is derived
+        from ``eng`` rather than stored on the world, so world checkpoints
+        preserve it through the graph checkpoint and legacy world checkpoints
+        without a graph revision load as 0.
+        """
+        return int(getattr(self.eng, "revision", 0))
+
     def _validate_physical_subsystems(self, configured):
         if not isinstance(configured, dict):
             raise TypeError("physical_subsystems must be a mapping of names to booleans")

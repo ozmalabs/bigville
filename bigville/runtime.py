@@ -151,6 +151,12 @@ class BigvilleGraph:
         self._edges: dict[tuple[NodeRef, str], set[NodeRef]] = {}
         self._reverse: dict[tuple[NodeRef, str], set[NodeRef]] = {}
         self.seed_manifests: dict[str, dict[str, Any] | None] = {}
+        # DR01: monotonic count of successful graph mutations.  It is the
+        # bundle base version: a read never changes it, and one public mutation
+        # call increments it exactly once even when it touches several edges
+        # (for example ``remove_node``).  ``load_seed_manifest`` increments
+        # through the ``add_node``/``add_edge_unchecked`` calls it makes.
+        self.revision = 0
         self._inner = self
         # EN04: explicit read-lock policy.  True is the safe default; the game
         # disables it only for serial executors.
@@ -205,6 +211,7 @@ class BigvilleGraph:
             node = NodeRef(self._next_id)
             self._next_id += 1
             self._nodes[node] = _Node(str(type_name), dict(attrs or {}), origin)
+            self.revision += 1
             return node
 
     def has_node(self, node: NodeRef | int) -> bool:
@@ -280,6 +287,7 @@ class BigvilleGraph:
     def set_attr(self, node: NodeRef | int, key: str, value: Any) -> None:
         with _GRAPH_LOCK:
             self._nodes[NodeRef(int(node))].attrs[str(key)] = value
+            self.revision += 1
 
     def add_edge_unchecked(self, source: NodeRef | int, edge: str,
                            target: NodeRef | int, attrs: dict | None = None) -> None:
@@ -289,8 +297,11 @@ class BigvilleGraph:
                 raise KeyError("cannot connect a missing Bigville graph node")
             self._edges.setdefault((src, kind), set()).add(dst)
             self._reverse.setdefault((dst, kind), set()).add(src)
+            self.revision += 1
 
     def add_edge(self, source, edge, target, attrs=None):
+        # The unchecked form is the one real mutation; delegating keeps the
+        # revision increment to exactly one per logical ``add_edge`` call.
         self.add_edge_unchecked(source, edge, target, attrs)
 
     def remove_edge_unchecked(self, source, edge, target) -> None:
@@ -298,6 +309,7 @@ class BigvilleGraph:
             src, dst, kind = NodeRef(int(source)), NodeRef(int(target)), str(edge)
             self._edges.get((src, kind), set()).discard(dst)
             self._reverse.get((dst, kind), set()).discard(src)
+            self.revision += 1
 
     def has_edge(self, source, edge, target) -> bool:
         src = source if isinstance(source, int) else NodeRef(int(source))
@@ -340,6 +352,9 @@ class BigvilleGraph:
                     if dst == ref:
                         self._reverse.pop((dst, edge), None)
             self._nodes.pop(ref, None)
+            # Nested edge cleanup above is internal: one removed node is one
+            # logical mutation, not one per incident edge.
+            self.revision += 1
 
     def load_seed_manifest(self, manifest, agent=None) -> None:
         """Retain seeded graph data without executing an external rule engine."""
@@ -384,6 +399,7 @@ class BigvilleGraph:
         return {
             "schema": "bigville/graph/1",
             "next_id": self._next_id,
+            "revision": self.revision,
             "nodes": [
                 {"id": int(ref), "type": record.type,
                  "attrs": _checkpoint_encode(record.attrs, f"nodes[{int(ref)}].attrs")}
@@ -412,6 +428,12 @@ class BigvilleGraph:
         next_id = data.get("next_id")
         if type(next_id) is not int or next_id < 1:
             raise ValueError("Bigville graph checkpoint has invalid next_id")
+        # DR01: ``revision`` is optional for legacy checkpoints.  A checkpoint
+        # written before revisions existed loads as revision 0.  If present it
+        # must be a non-negative int (an explicit null is malformed, not legacy).
+        revision = data.get("revision", 0)
+        if type(revision) is not int or revision < 0:
+            raise ValueError("Bigville graph checkpoint has invalid revision")
         nodes_data = data.get("nodes")
         edges_data = data.get("edges")
         manifests_data = data.get("seed_manifests")
@@ -501,6 +523,9 @@ class BigvilleGraph:
             if payload is not None and not isinstance(payload, dict):
                 raise ValueError(f"seed manifest {seed_id!r} payload must be a dict or None")
             graph.seed_manifests[seed_id] = payload
+        # Restoring edges uses ``add_edge_unchecked``, which advances the
+        # revision; the checkpoint's saved count is authoritative after load.
+        graph.revision = revision
         return graph
 
 

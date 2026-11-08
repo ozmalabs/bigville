@@ -133,16 +133,19 @@ def test_partitioned_turn_builds_one_bundle_per_non_joint_actor_group():
     assert set(seen) == expected
     assert all(len(ids) == 1 for ids in seen.values())
 
-    # Ids and namespaces are unique, and every bundle shares the turn version.
+    # Ids and namespaces are unique, and every bundle shares one captured graph
+    # revision as its base (DR01: the base is the revision when the plan was
+    # built, so it can be older than the world's revision after the turn).
     assert len({bundle.bundle_id for bundle in bundles}) == len(bundles)
     namespaces = [bundle.namespace.name for bundle in bundles]
     assert len(set(namespaces)) == len(namespaces)
-    version = int(game.world._turn)
-    assert {bundle.base_version for bundle in bundles} == {version}
-    assert {bundle.namespace.tick for bundle in bundles} == {version}
+    base = bundles[0].base_version
+    assert {bundle.base_version for bundle in bundles} == {base}
+    assert {bundle.namespace.tick for bundle in bundles} == {base}
     assert {bundle.namespace.executor for bundle in bundles} == {"partitioned"}
     assert {bundle.namespace.run_id for bundle in bundles} == {game.run_id}
-    assert log.tick == version
+    assert log.tick == base
+    assert base <= game.world.revision
     # The plan's shard and bundle sequence are part of the namespace.
     assert [(bundle.shard, bundle.namespace.bundle_seq) for bundle in bundles] == [
         (bundle.shard, seq) for seq, bundle in enumerate(bundles)]
@@ -186,13 +189,19 @@ def test_dispatch_result_ack_and_commit_order_are_complete_and_deterministic():
         assert log.committed_order == ids
         assert len(set(log.committed_order)) == len(log.committed_order)
         assert log.payload_sha() == tick_payload_sha(game.world)
+        committed_versions = []
         for bundle_id in ids:
             ack = log.acks[bundle_id]
             result = log.results[bundle_id]
+            base = log.dispatched[bundle_id].base_version
             assert ack.outcome == "committed"
-            assert ack.base_version == log.dispatched[bundle_id].base_version
-            assert ack.committed_version == log.dispatched[bundle_id].base_version
+            assert ack.base_version == base
+            assert ack.committed_version is not None
+            assert ack.committed_version >= base
             assert ack.execution_sha == result.execution_sha
+            committed_versions.append(ack.committed_version)
+        # DR01: committed versions are non-decreasing in commit order.
+        assert committed_versions == sorted(committed_versions)
         orders.append(log.committed_order)
 
     # Two identical runs commit the same plan order, not a worker order.
