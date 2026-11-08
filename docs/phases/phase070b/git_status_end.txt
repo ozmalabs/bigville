@@ -1,0 +1,44 @@
+ M README.md
+ M bigville/backends/ocelot.py
+ M bigville/game.py
+ M bigville/game/game.js
+ M bigville/seeds/bigville_actor_decision.json
+ M bigville/server.py
+ M docs/AGENT_BACKENDS_PLAN.md
+ M docs/phases/phase045/rebase/run_all.sh
+ M domains/attend_commands.py
+ M domains/bigville_entities.py
+ M domains/interoception.py
+ M domains/interoception_check.py
+ M domains/world_affordances.py
+ M packs/bigville/pack.json
+ M packs/bigville/world/free_actions.json
+ M packs/bigville/world/interoception.json
+ M packs/bigville/world/major_actions.json
+ M packs/bigville/world/refusal_reasons.json
+ M packs/test_hamlet/pack.json
+ M packs/test_hamlet/world/free_actions.json
+ M packs/test_hamlet/world/interoception.json
+ M packs/test_hamlet/world/major_actions.json
+ M packs/test_hamlet/world/refusal_reasons.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M tests/test_bigville_server.py
+ M tests/test_phase050_resolution.py
+ M tests/test_phase070_locus.py
+ M worlds/bigville_world.py
+ M worlds/body.py
+?? .opencode/
+?? bigville/mixed_ocelot_scenario.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase046/
+?? docs/phases/phase052/full_suite_live_tree_midedit.log
+?? docs/phases/phase070b/
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase070b_body.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

@@ -459,6 +459,21 @@ class BigvilleGame:
         # direct constructor still requests "action" unless the caller asks.
         self.rule_batching = rule_batching
 
+    def add_resident(self, name: str) -> bool:
+        """Phase 044: give a resident the world has added (a newborn) a character and a dependent backend."""
+        from bigville.resident_births import attach_resident
+        return attach_resident(self, name)
+
+    def _attach_newborns(self) -> None:
+        """Phase 044: attach a character and a dependent backend to any world resident the game lacks."""
+        from bigville.resident_births import attach_newborns
+        attach_newborns(self)
+
+    def _promote_grown_dependants(self) -> list[str]:
+        """Phase 045: a child past infancy gets the simple backend in place of its dependent backend."""
+        from bigville.resident_dependants import promote_grown_dependants
+        return promote_grown_dependants(self)
+
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
         entities = world_entities(self.world)
@@ -852,11 +867,12 @@ class BigvilleGame:
         from domains.persona import persona as persona_card
         return persona_card(self.characters[actor], self)
 
-    def agent_view(self, actor: str, mode: str = "agent") -> dict:
+    def agent_view(self, actor: str, mode: str = "agent", interoception: str | None = None) -> dict:
         """The one limited interface (Phase 052): what the resident may know, in words. Mode "agent" is words
-        only; "referee" adds a `referee` block with the numbers. Built by domains/agent_view.py."""
+        only; "referee" adds a `referee` block with the numbers. Built by domains/agent_view.py. `interoception`
+        (Phase 069) is "felt" (default in agent mode) or "labelled" (the Phase 052 body words)."""
         from domains.agent_view import build_agent_view
-        return build_agent_view(self, actor, mode=mode)
+        return build_agent_view(self, actor, mode=mode, interoception=interoception)
 
     def _context(self, actor: str, *, practice_window=None,
                  snapshot: _DecisionSnapshot | None = None,
@@ -1237,6 +1253,9 @@ class BigvilleGame:
             from domains.map_memory import route_plan
             plan = route_plan(self, actor, plan)
             ok = bool(self.world.enact_plan(actor, plan))
+            # Phase 065: counts a major action taken on a percept the impaired resident was shown wrongly (off by default).
+            from domains import impairment
+            impairment.note_action(self, actor, proposal.params, ok, self.world.data_pack)
         for utterance in response.utterances:
             if hasattr(utterance, "to_dict"):
                 utterance = utterance.to_dict()
@@ -1417,10 +1436,15 @@ class BigvilleGame:
     def step(self, include_snapshot: bool | None = None) -> dict:
         """Advance one shared turn, or return waiting for human input.
 
+        A contested take (Phase 029) can wait for the holder's reaction. The step then returns waiting, and
+        the next call resumes that turn where it stopped, without deciding again.
+
         ``include_snapshot`` overrides the session's ``snapshot_mode`` for this
         call: ``True`` always returns the snapshot, ``False`` never does, and
         ``None`` (the default) follows the resolved mode.
         """
+        self._attach_newborns()   # Phase 044: a newborn gets a character and a dependent backend
+        self._promote_grown_dependants()   # Phase 045: a child past infancy acts (its backend is the simple one)
         snapshot = self._snapshot_required(include_snapshot)
         if self._defer_decisions:
             return self._step_deferred(include_snapshot=snapshot)

@@ -124,7 +124,7 @@ def test_callable_provider_is_accepted():
 
     backend = LLMBackend(_character(), provider)
     assert backend.decide(_context()).major_action.action == "rest"
-    assert seen == ["bigville/prompt/3"]
+    assert seen == ["bigville/prompt/4"]   # Phase 069: the felt body raised the prompt schema
 
 
 # -- good output, first call -------------------------------------------------

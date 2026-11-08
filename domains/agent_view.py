@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import re
 
-from domains import map_memory
+from domains import impairment, map_memory, perceiver, reading
 from domains.affordance_handles import handle_pairs
 from domains.data_view import entities
 from domains.lexicon import describe, quantities
@@ -32,6 +32,10 @@ from domains.pack import load_pack
 from domains.persona import CARD_KEYS, traits as persona_traits
 
 MODES = ("agent", "referee")
+# Phase 069: how the body is shown. "felt" (the default in agent mode): the background feeling and the felt signals,
+# sounds and places only. "labelled": the Phase 052 body words, kept for comparison. Referee mode shows "labelled"
+# in `self.body` and carries the felt view and the truth in `referee.interoception`.
+INTEROCEPTION_MODES = ("felt", "labelled")
 # Phase 057: the detail levels a map can carry (Phase 053 supplies hidden and vague; the patch is full).
 MAP_LEVEL_HIDDEN, MAP_LEVEL_VAGUE, MAP_LEVEL_FULL = "hidden", "vague", "full"
 MAP_LEVELS = (MAP_LEVEL_HIDDEN, MAP_LEVEL_VAGUE, MAP_LEVEL_FULL)
@@ -127,6 +131,31 @@ def _body(world, actor, pack):
         "ill": words["ill"] if state["illness"] else None,
     })
     return _check_keys("body", out, pack)
+
+
+def _felt_body(world, actor, pack):
+    """The body as the resident feels it (Phase 069): the background feeling and the felt signals, from the body
+    object (worlds/body.py), plus the plain capacities and facts the body reports. No cause, no number."""
+    body = world.body_of(actor)
+    if body is None:
+        return _check_keys("body", {"signals": []}, pack)
+    felt = body.afferents()
+    words = load_pack(pack)["VIEW_WORDS"]
+    capacities = body.capacities()
+    facts = body.facts()
+    out = {}
+    if "feeling" in felt:
+        out["feeling"] = _check_keys("feeling", dict(felt["feeling"]), pack)
+    out["signals"] = [_check_keys("signal", dict(row), pack) for row in felt["signals"]]
+    if "strength" in capacities:
+        out["strength"] = _phrase("strength", capacities["strength"], "self", pack)
+    if "stamina" in capacities:
+        out["stamina"] = _phrase("stamina", capacities["stamina"], "self", pack)
+    if facts.get("asleep"):
+        out["asleep"] = words["asleep"]
+    if facts.get("collapsed"):
+        out["collapsed"] = words["collapsed"]
+    return _check_keys("body", _clean(out), pack)
 
 
 def _skills(world, actor, pack):
@@ -230,7 +259,7 @@ def _lessons(character):
     return _texts(character, (LESSON_KIND,))
 
 
-def _self(game, actor, pack, gist_table):
+def _self(game, actor, pack, gist_table, interoception="labelled"):
     world = game.world
     character = game.characters[actor]
     attrs = world.eng.node(world._actors[actor])["attrs"]
@@ -243,7 +272,7 @@ def _self(game, actor, pack, gist_table):
         "age": _phrase("age", age, "self", pack),
         "persona": _check_keys("persona", {key: value for key, value in game.persona(actor).items()
                                            if key in CARD_KEYS}, pack),
-        "body": _body(world, actor, pack),
+        "body": _body(world, actor, pack) if interoception == "labelled" else _felt_body(world, actor, pack),
         "skills": _skills(world, actor, pack),
         "carrying": _carrying(world, actor, pack),
         "knows": _knows(character, pack, gist_table),
@@ -291,10 +320,13 @@ def _looks(game, other, pack):
     return looks
 
 
-def _around(game, actor, pack, known):
+def _around(game, actor, pack, known, rec=None, log=None):
+    """The people, speech, moves and things around the resident. `rec` is the perceiver record (Phase 062); given,
+    people and things are described by their percept, and each percept is appended to `log` (the referee block)."""
     world = game.world
     words = load_pack(pack)["VIEW_WORDS"]
-    sight = int(load_pack(pack)["HEARING"]["sight_range"])
+    log = [] if log is None else log
+    sight = int(load_pack(pack)["HEARING"]["sight_range"]) if rec is None else int(rec["sight"])
     position = world.actor_position(actor)
     ties = {str(target): world.eng.node(bond)["attrs"].get("kind")
             for (holder, target), bond in world._relationships.items() if holder == actor}
@@ -312,6 +344,29 @@ def _around(game, actor, pack, known):
     people = []
     for distance, other in sorted(nearby):
         role = _words(world.eng.node(world._actors[other])["attrs"].get("role"))
+        if rec is not None:
+            # Phase 062: the percept decides what is seen. Looks need a tier of 1 or more (some light to see by), and a
+            # resident is known by name only at that tier too; otherwise it is described by the percept's words.
+            subject = perceiver.person_subject(game, other, pack)
+            seen = perceiver.percept("person", subject, distance, rec, pack)
+            # Phase 065: an impaired resident may be given a wrong percept; the truth stays in the referee row.
+            seen = impairment.distort(game, actor, "person", other, subject, seen, rec, pack,
+                                      others=[name for _d, name in nearby if name != other], known=known)
+            log.append({**perceiver.referee_row(other, "person", distance, seen), **impairment.referee_extra(seen)})
+            identity = seen.get("as", other)
+            recognised = identity in known and seen["tier"] >= 1
+            entry = {"distance": _phrase("distance", distance, "self", pack)}
+            if seen["tier"] >= 1:
+                entry["looks"] = _looks(game, other, pack)
+            if recognised:
+                entry["name"] = identity
+                entry["job"] = seen.get("as_job", role)
+            else:
+                entry["description"] = seen["words"]
+            if recognised and ties.get(other) and "as" not in seen:
+                entry["tie"] = _phrase("relationship_kind", str(ties[other]), "self", pack)
+            people.append(_check_keys("person", _clean(entry), pack))
+            continue
         entry = {"distance": _phrase("distance", distance, "self", pack), "looks": _looks(game, other, pack)}
         if other in known:
             entry["name"] = other
@@ -333,14 +388,22 @@ def _around(game, actor, pack, known):
         who = str(event.get("actor", ""))
         who = words["you"] if who == actor else (who if who in known else words["someone"])
         seen.append(_check_keys("seen", {"who": who, "did": words["moved"]}, pack))
-    things = _things(world, actor, pack)
-    return _check_keys("around", {"people": people, "heard": heard, "seen": seen, "things": things}, pack)
+    things = _things(world, actor, pack, rec, log, game)
+    around = {"people": people, "heard": heard, "seen": seen, "things": things}
+    # Phase 064: written marks in sight, read at the resident's literacy (off unless READING.enabled).
+    writing = reading.writing_rows(game, actor, rec, pack, log) if rec is not None else None
+    if writing:
+        around["writing"] = writing
+    return _check_keys("around", around, pack)
 
 
-def _things(world, actor, pack):
+def _things(world, actor, pack, rec=None, log=None, game=None):
     """What the resident can act on: containers on the resident's own cell (an attempt needs the resident
     there), and the physical objects the resident can see. A handle is the name the world uses for the thing,
-    copied into a reply; `what` is its kind in words (Phase 054)."""
+    copied into a reply; `what` is its kind in words (Phase 054).
+
+    With a perceiver record (Phase 062) a thing is described by its percept. A thing seen at tier 0 is 'something'
+    with no handle, so the resident cannot name it in a reply."""
     position = world.actor_position(actor)
     rows = []
     if position is not None:
@@ -350,10 +413,31 @@ def _things(world, actor, pack):
                 continue
             if float(world.eng.node(node)["attrs"].get("destroyed", 0.0)) == 1.0:
                 continue
-            rows.append((str(name), _words(world.eng.node(node)["attrs"].get("kind") or name)))
+            rows.append((str(name), _words(world.eng.node(node)["attrs"].get("kind") or name), 0))
     for item in world.physical_object_observations(actor):
-        rows.append((str(item.get("id", "")), _words(item.get("kind") or item.get("id"))))
-    return [_check_keys("thing", {"handle": handle, "what": what}, pack) for handle, what in rows if handle]
+        distance = 0
+        if rec is not None and position is not None:
+            cell = world._physical_location_cell(item.get("id"))
+            distance = _chebyshev(position, cell) if cell is not None else 0
+        rows.append((str(item.get("id", "")), _words(item.get("kind") or item.get("id")), distance))
+    if rec is None:
+        return [_check_keys("thing", {"handle": handle, "what": what}, pack)
+                for handle, what, _distance in rows if handle]
+    out = []
+    for handle, what, distance in rows:
+        if not handle:
+            continue
+        subject = perceiver.thing_subject(what)
+        seen = perceiver.percept("thing", subject, distance, rec, pack)
+        # Phase 065: an impaired resident may be given a wrong percept; the truth stays in the referee row.
+        seen = impairment.distort(game, actor, "thing", handle, subject, seen, rec, pack,
+                                  others=[(h, w) for h, w, _d in rows if h and h != handle])
+        log.append({**perceiver.referee_row(handle, "thing", distance, seen), **impairment.referee_extra(seen)})
+        if seen["tier"] == 0:
+            out.append(_check_keys("thing", {"what": seen["words"]}, pack))
+        else:
+            out.append(_check_keys("thing", {"handle": handle, "what": seen["words"]}, pack))
+    return out
 
 
 def _map(world, actor, pack):
@@ -395,14 +479,16 @@ def _species(world, animal):
     return str(world.eng.node(world._animals[animal])["attrs"].get("species", ""))
 
 
-def _can(world, actor, character, pack, game=None):
+def _can(world, actor, character, pack, game=None, withheld=()):
     """The options the resident may use. Each row's handle comes from domains/affordance_handles.py, computed
     over the full list of the world's options, so the backend resolves the same handle to the same row (Phase
     054 follow-up). A move is listed only to a place the resident knows.
 
     A fogged resident (`game` given, Phase 053) gets only the rows whose cell it knows: a place it holds exactly
     is named ('walk to the mill'), one it holds roughly is offered as 'walk toward the mill', and a cell it has
-    seen is 'a spot you know'. A row to ground it does not know is not listed."""
+    seen is 'a spot you know'. A row to ground it does not know is not listed.
+
+    `withheld` (Phase 062) names the things the resident cannot see at all; a row that acts on one of them is left out."""
     pk = load_pack(pack)
     actions, words = pk["ACTION_WORDS"], pk["VIEW_WORDS"]
     fogged = game is not None and map_memory.is_fogged(game, actor)
@@ -411,6 +497,8 @@ def _can(world, actor, character, pack, game=None):
     offered_moves = set()
     for handle, option in handle_pairs(world.actor_affordances(actor)):
         action = str(option.get("action", ""))
+        if withheld and str(option.get("target", "")) in withheld:
+            continue
         verb = actions.get(action) or _words(action)
         destination = _cell(option.get("destination"))
         wording = None
@@ -446,6 +534,17 @@ def _can(world, actor, character, pack, game=None):
     return out
 
 
+def _attend_can(world, actor, pack):
+    """Phase 071: one `can` row per felt signal the resident may attend to (handle signal:N, see worlds/body.py).
+    The row names the place the feeling is in, never its cause. Only a human body offers these rows."""
+    body = world.body_of(actor)
+    if body is None:
+        return []
+    verb = load_pack(pack)["ACTION_WORDS"].get("attend", "attend")
+    return [_check_keys("can", {"handle": row["target"], "action": verb, "what": str(row["where"])}, pack)
+            for row in body.attend_options()]
+
+
 def _last(world, actor, pack):
     outcome = world.last_outcome(actor)
     if not outcome:
@@ -460,12 +559,19 @@ def _last(world, actor, pack):
     out = _clean({"action": pk["ACTION_WORDS"].get(action) or _words(action),
                   "outcome": pk["VIEW_WORDS"]["done" if outcome.get("applied") else "not_done"],
                   "reason": reason})
+    # Phase 071: an attend or press that was done shows the sound and the place it gave, and nothing about a cause.
+    body = world.body_of(actor) if action in ("attend", "press") and outcome.get("applied") else None
+    probe = None if body is None else body.state.get("probe")
+    if probe and probe.get("action") == action and probe.get("turn") == outcome.get("turn"):
+        out["sound"] = probe.get("sound") or pk["VIEW_WORDS"]["silence"]
+        out["place"] = str(probe.get("where", ""))
     return _check_keys("last", out, pack)
 
 
 def _referee(game, actor):
     """The raw numbers and the true state. Only the referee mode carries this block."""
     world = game.world
+    body = world.body_of(actor)
     nearby = []
     position = world.actor_position(actor)
     for other in world._actors:
@@ -479,7 +585,9 @@ def _referee(game, actor):
     return {"body": world.body_state(actor), "calendar": world.calendar(),
             "carry": world.carry_state(actor), "skills": skills,
             "affordances": [dict(option) for option in world.actor_affordances(actor)],
-            "nearby": sorted(nearby, key=lambda row: (row["distance"], row["name"]))}
+            "nearby": sorted(nearby, key=lambda row: (row["distance"], row["name"])),
+            # Phase 069: the body's truth beside the felt view (each signal's true source, locus and depths).
+            "interoception": None if body is None else body.referee()}
 
 
 def _reaction(game, actor, pack, known):
@@ -853,10 +961,15 @@ def build_lazy_agent_view(game, actor, mode="agent"):
     return _check_keys("top", _clean(view), pack)
 
 
-def build_agent_view(game, actor, mode="agent"):
-    """The agent view of one resident. `mode` is "agent" (words only) or "referee" (adds the numbers)."""
+def build_agent_view(game, actor, mode="agent", interoception=None):
+    """The agent view of one resident. `mode` is "agent" (words only) or "referee" (adds the numbers).
+    `interoception` is "felt" or "labelled" (Phase 069); None means felt in agent mode and labelled in referee mode."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, not {mode!r}")
+    if interoception is None:
+        interoception = "felt" if mode == "agent" else "labelled"
+    if interoception not in INTEROCEPTION_MODES:
+        raise ValueError(f"interoception must be one of {INTEROCEPTION_MODES}, not {interoception!r}")
     if actor not in game.characters:
         raise KeyError(f"no resident named {actor!r}")
     world = game.world
@@ -864,15 +977,26 @@ def build_agent_view(game, actor, mode="agent"):
     gist = entities(pack).MEMORY_GIST
     known = _known_names(game, actor)
     fogged = map_memory.is_fogged(game, actor)
+    # Phase 062: the perceiver record, when PERCEPTION.enabled is on. Off, nothing below changes.
+    rec = None
+    if perceiver.enabled(pack):
+        rec = perceiver.record(game, actor, perceiver.declared(getattr(game, "backends", {}).get(actor), pack), pack)
+    log = []
+    around = _around(game, actor, pack, known, rec, log)
+    # Phase 065: remember the subjects shown wrongly this turn (the ledger of actions on a wrong percept).
+    impairment.note_view(game, actor, rec, log, pack)
+    # Phase 062: a thing the resident cannot see at all (tier 0) is not offered as an option either.
+    withheld = {row["subject"] for row in log if row["kind"] == "thing" and row["tier"] == 0}
     view = {
         "mode": mode,
         "actor": actor,
-        "self": _self(game, actor, pack, gist),
+        "self": _self(game, actor, pack, gist, interoception),
         "now": _now(world, pack, actor),
-        "around": _around(game, actor, pack, known),
+        "around": around,
         # Phase 053: a fogged resident's map is its own three-level map; a simple resident keeps the patch.
         "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
-        "can": _can(world, actor, game.characters[actor], pack, game if fogged else None),
+        "can": _can(world, actor, game.characters[actor], pack, game if fogged else None, withheld)
+        + _attend_can(world, actor, pack),   # Phase 071
         "last": _last(world, actor, pack),
         "reaction": _reaction(game, actor, pack, known),
     }
@@ -880,4 +1004,7 @@ def build_agent_view(game, actor, mode="agent"):
         view["referee"] = _referee(game, actor)
         if fogged:
             view["referee"]["true_map"] = map_memory.true_patch(game, actor)
+        if rec is not None:
+            view["referee"]["perception"] = {"faculties": dict(rec["modes"]), "perceiver": perceiver.summary(rec),
+                                             "subjects": log, **impairment.referee_block(game, log, pack)}
     return _check_keys("top", _clean(view), pack)

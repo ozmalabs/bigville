@@ -8,7 +8,7 @@
     "generator": "tools/generate_seeds.py",
     "pack": "bigville",
     "record": null,
-    "sha256": "2c650907ee985f14039668662e2b547ba7c43a5af9f737f5548cb2df033a12b5",
+    "sha256": "0b9101b952c32c8c3d0bc1fc819da496429eddd1a9697605b029dbd31d2cc057",
     "tables": [
       "RECIPES"
     ]
@@ -17,17 +17,17 @@
   "nodes": [],
   "rules": [
     {
-      "body": "crew: {\"max\": 3, \"min\": 2}; difficulty: 0.8; in: [[\"lumber\", 1]]; time_minutes: 20",
+      "body": "crew: {\"max\": 3, \"min\": 2}; difficulty: 0.8; in: [[\"lumber\", 1]]; marks: {\"dirt\": 0.1, \"sweat\": 0.2}; time_minutes: 20",
       "head": "saw_planks makes timber x2 from a sawyer",
       "name": "saw_planks_know_how"
     },
     {
-      "body": "difficulty: 2.0; in: [[\"wood\", 4]]; time_minutes: 60",
+      "body": "difficulty: 2.0; in: [[\"wood\", 4]]; marks: {\"soiled_clothes\": 0.2, \"soot\": 0.5}; time_minutes: 60",
       "head": "burn_charcoal makes charcoal x1 from a collier",
       "name": "burn_charcoal_know_how"
     },
     {
-      "body": "difficulty: 3.0; in: [[\"ore\", 2], [\"charcoal\", 1]]; time_minutes: 90",
+      "body": "difficulty: 3.0; in: [[\"ore\", 2], [\"charcoal\", 1]]; marks: {\"soot\": 0.3, \"sweat\": 0.2}; time_minutes: 90",
       "head": "smelt_iron makes iron x1 from a smith",
       "name": "smelt_iron_know_how"
     },
@@ -47,7 +47,7 @@
       "name": "carve_rake_know_how"
     },
     {
-      "body": "byproducts: {\"scraps\": 10}; difficulty: 1.0; in: [[\"grain\", 30]]; time_minutes: 45",
+      "body": "byproducts: {\"scraps\": 10}; difficulty: 1.0; in: [[\"grain\", 30]]; marks: {\"flour\": 0.4}; time_minutes: 45",
       "head": "grind_flour makes flour x20 from a miller",
       "name": "grind_flour_know_how"
     },
@@ -82,7 +82,7 @@
       "name": "raise_barrel_know_how"
     },
     {
-      "body": "difficulty: 1.5; in: [[\"hide\", 2]]; time_minutes: 240",
+      "body": "difficulty: 1.5; in: [[\"hide\", 2]]; marks: {\"mud\": 0.2, \"soiled_clothes\": 0.2}; time_minutes: 240",
       "head": "tan_hide makes leather x1 from a tanner",
       "name": "tan_hide_know_how"
     },
@@ -532,7 +532,7 @@
       "name": "bind_book_know_how"
     },
     {
-      "body": "difficulty: 0.8; in: [[\"lumber\", 1]]; open: true; time_minutes: 40; tools: [\"axe\"]",
+      "body": "difficulty: 0.8; in: [[\"lumber\", 1]]; marks: {\"dirt\": 0.1, \"sweat\": 0.3}; open: true; time_minutes: 40; tools: [\"axe\"]",
       "head": "split_firewood makes wood x4 from a forester",
       "name": "split_firewood_know_how"
     },
@@ -582,7 +582,7 @@
       "name": "cut_parsley_know_how"
     },
     {
-      "body": "difficulty: 1.5; gathered_from: quarry; in: []; time_minutes: 120; tools: [\"pick\"]",
+      "body": "difficulty: 1.5; gathered_from: quarry; in: []; marks: {\"dirt\": 0.3, \"sweat\": 0.3}; time_minutes: 120; tools: [\"pick\"]",
       "head": "dig_ore makes ore x2 from a quarrier",
       "name": "dig_ore_know_how"
     },
@@ -782,7 +782,7 @@
       "name": "make_vinegar_know_how"
     },
     {
-      "body": "byproducts: {\"scraps\": 10}; difficulty: 1.0; in: [[\"rye\", 30]]; time_minutes: 45",
+      "body": "byproducts: {\"scraps\": 10}; difficulty: 1.0; in: [[\"rye\", 30]]; marks: {\"flour\": 0.4}; time_minutes: 45",
       "head": "grind_rye makes flour x20 from a miller",
       "name": "grind_rye_know_how"
     },
@@ -827,12 +827,12 @@
       "name": "make_thatch_know_how"
     },
     {
-      "body": "difficulty: 0.5; in: [[\"night_soil\", 2], [\"compostable\", 2]]; open: true; time_minutes: 60; tools: [\"spade\"]",
+      "body": "difficulty: 0.5; in: [[\"night_soil\", 2], [\"compostable\", 2]]; marks: {\"dirt\": 0.3, \"mud\": 0.1}; open: true; time_minutes: 60; tools: [\"spade\"]",
       "head": "make_compost makes compost x3 from a farmer",
       "name": "make_compost_know_how"
     },
     {
-      "body": "at_building: graveyard; burial: dig; difficulty: 0.8; in: []; open: true; time_minutes: 180; tools: [\"spade\"]",
+      "body": "at_building: graveyard; burial: dig; difficulty: 0.8; in: []; marks: {\"dirt\": 0.3, \"mud\": 0.2, \"soiled_clothes\": 0.1, \"sweat\": 0.3}; open: true; time_minutes: 180; tools: [\"spade\"]",
       "head": "dig_grave makes grave_spoil x1 from a labourer",
       "name": "dig_grave_know_how"
     },

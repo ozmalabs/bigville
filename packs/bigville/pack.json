@@ -5,6 +5,20 @@
   "description": "Bigville founding world. Base data only: domains/pack.py adds the derived entries (scrap items, fuel slots, default seed return, bundle origins, and the POLICIES, LAWS, and _SKILL_CLUSTER indexes).",
   "extends": null,
   "tables": [
+    {"name": "ANATOMY", "file": "world/interoception.json"},
+    {"name": "QUALITY_TREE", "file": "world/interoception.json"},
+    {"name": "VOCALISATIONS", "file": "world/interoception.json"},
+    {"name": "CHANNELS", "file": "world/interoception.json"},
+    {"name": "SIGNAL_SOURCES", "file": "world/interoception.json"},
+    {"name": "PATTERNS", "file": "world/interoception.json"},
+    {"name": "FEELING", "file": "world/interoception.json"},
+    {"name": "INTEROCEPTION", "file": "world/interoception.json"},
+    {"name": "HARM_LOCUS", "file": "world/interoception.json"},
+    {"name": "BODY_RATES", "file": "world/interoception.json"},
+    {"name": "OBSERVABLE_SIGNS", "file": "world/interoception.json"},
+    {"name": "ATTEND", "file": "world/interoception.json"},
+    {"name": "STRIKE_AIM", "file": "world/interoception.json"},
+    {"name": "INJURY_EFFECTS", "file": "world/interoception.json"},
     {
       "name": "ITEMS",
       "file": "world/items.json"
@@ -31,6 +45,14 @@
     },
     {
       "name": "CONTAINERS",
+      "file": "world/containers.json"
+    },
+    {
+      "name": "COIN_WEIGHT",
+      "file": "world/containers.json"
+    },
+    {
+      "name": "COIN_VOLUME",
       "file": "world/containers.json"
     },
     {
@@ -992,6 +1014,92 @@
     {
       "name": "DAYNIGHT_MAJOR_ACTIONS",
       "file": "world/daynight.json"
-    }
+    },
+    {
+      "name": "MARKS",
+      "file": "world/marks.json"
+    },
+    {
+      "name": "MARK_RULES",
+      "file": "world/marks.json"
+    },
+    {
+      "name": "MARK_HARM",
+      "file": "world/marks.json"
+    },
+    {
+      "name": "MARK_EVENTS",
+      "file": "world/marks.json"
+    },
+    {
+      "name": "SPEECH_ACTS",
+      "file": "world/speech_acts.json"
+    },
+    {
+      "name": "SPEECH_UNDERSTANDING",
+      "file": "world/speech_acts.json"
+    },
+    {
+      "name": "SPEECH_PARSER",
+      "file": "world/speech_parser.json"
+    },
+    {
+      "name": "PERCEPTION",
+      "file": "world/perception.json"
+    },
+    {
+      "name": "PERCEIVER_TIERS",
+      "file": "world/perception.json"
+    },
+    {
+      "name": "READING",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "LITERACY_TIERS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "NUMERACY_TIERS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "NUMERACY_UNITS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "NUMERAL_WORDS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "WRITTEN_KINDS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "WRITTEN_MARKS",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "RECOGNISED_SEED",
+      "file": "world/literacy.json"
+    },
+    {
+      "name": "IMPAIRMENT",
+      "file": "world/impairment.json"
+    },
+    {
+      "name": "DISTORTION",
+      "file": "world/impairment.json"
+    },
+    {
+      "name": "IMPAIRMENT_NEIGHBOURS",
+      "file": "world/impairment.json"
+    },
+    {"name": "TUI_ART", "file": "world/tui_modes.json"},
+    {"name": "TUI_PROSE", "file": "world/tui_modes.json"},
+    {"name": "BIRTHS", "file": "world/births.json"},
+    {"name": "DEPENDANTS", "file": "world/dependants.json"},
+    {"name": "DETRAIN", "file": "world/detraining.json"},
+    {"name": "BODY_AGE", "file": "world/detraining.json"}
   ]
 }

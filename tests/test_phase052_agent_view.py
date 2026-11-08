@@ -205,7 +205,8 @@ def test_the_view_after_a_run_passes_the_leak_test():
 
 
 def test_numbers_are_in_the_words_and_never_as_numbers(founder_game):
-    view = founder_game.agent_view(founder_game.player)
+    # Phase 069: the labelled body (the Phase 052 words); the felt body is tested in tests/test_phase069_body.py.
+    view = founder_game.agent_view(founder_game.player, interoception="labelled")
     body = view["self"]["body"]
     assert body["energy"] == describe("energy", founder_game.world.energy(PLAYER), "self")["phrase"]
     assert body["hunger"] == describe("hunger", 0.0, "self")["phrase"]
@@ -214,7 +215,7 @@ def test_numbers_are_in_the_words_and_never_as_numbers(founder_game):
 
 def test_the_referee_mode_adds_numbers_and_the_agent_mode_does_not(founder_game):
     referee = founder_game.agent_view(founder_game.player, mode="referee")
-    agent = founder_game.agent_view(founder_game.player, mode="agent")
+    agent = founder_game.agent_view(founder_game.player, mode="agent", interoception="labelled")
     assert referee["mode"] == "referee" and "referee" in referee
     assert isinstance(referee["referee"]["body"]["stamina_reserve"], float)
     assert "referee" not in agent
@@ -349,7 +350,7 @@ def test_the_hamlet_pack_gives_a_view_with_its_own_words():
     world = BigvilleWorld(data_pack="test_hamlet")
     world.add_actor("Bram Smith", role="baker")
     game = BigvilleGame(world, player="Bram Smith")
-    view = game.agent_view("Bram Smith")
+    view = game.agent_view("Bram Smith", interoception="labelled")
     assert view["self"]["job"] == "baker"
     assert "health" not in view["self"]["body"]           # the hamlet lexicon has no health words
     assert "energy" in view["self"]["body"]

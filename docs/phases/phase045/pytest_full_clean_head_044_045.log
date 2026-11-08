@@ -1,0 +1,69 @@
+s....................................................................... [  3%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+...s.................................................................... [ 12%]
+........................................................................ [ 15%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 25%]
+........................................................................ [ 28%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 38%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 47%]
+........................................................................ [ 50%]
+........................................................................ [ 54%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 66%]
+........................................................................ [ 69%]
+........................................................................ [ 73%]
+........................................................................ [ 76%]
+...................................................................F.... [ 79%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+.....................................................sss................ [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 95%]
+........................................................................ [ 98%]
+.................................                                        [100%]
+=================================== FAILURES ===================================
+_ test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical _
+
+    def test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical():
+        turns = 2
+        sequential_provider = FakeProvider(varied_reply, delay=0.3)
+        sequential = build_llm_town(sequential_provider, llm_residents=8, concurrency=4, llm_log=False)
+        for backend in (sequential.backends[name] for name in sequential.llm_residents):
+            backend.concurrent = False
+        started = time.perf_counter()
+        sequential_digest = _run(sequential, turns)
+        sequential_seconds = time.perf_counter() - started
+    
+        concurrent_provider = FakeProvider(varied_reply, delay=0.3)
+        concurrent = build_llm_town(concurrent_provider, llm_residents=8, concurrency=4, llm_log=False)
+        started = time.perf_counter()
+        concurrent_digest = _run(concurrent, turns)
+        concurrent_seconds = time.perf_counter() - started
+    
+        assert concurrent_digest == sequential_digest
+        assert _calls(concurrent_provider) == _calls(sequential_provider)
+        # Consults are gated by the autopilot, so not every resident is asked every turn.
+        assert 0 < len(concurrent_provider.calls) <= 8 * turns
+        print(f"\nSPEEDUP sequential={sequential_seconds:.2f}s concurrent={concurrent_seconds:.2f}s "
+              f"ratio={concurrent_seconds / sequential_seconds:.2f} calls={len(concurrent_provider.calls)}")
+>       assert concurrent_seconds < 0.75 * sequential_seconds, (sequential_seconds, concurrent_seconds)
+E       AssertionError: (14.489994722069241, 11.933661822928116)
+E       assert 11.933661822928116 < (0.75 * 14.489994722069241)
+
+tests/test_phase055_concurrency.py:56: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+SPEEDUP sequential=14.49s concurrent=11.93s ratio=0.82 calls=13
+=========================== short test summary info ============================
+FAILED tests/test_phase055_concurrency.py::test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical
+1 failed, 2259 passed, 5 skipped in 3740.42s (1:02:20)
+EXIT=1

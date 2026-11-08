@@ -29,6 +29,9 @@ from worlds.bigville_bond_world import (BigvilleBondWorld,
                                         SLOT_DEFAULTS as BOND_SLOTS)  # noqa: E402
 from domains.world_affordances import round_bp  # noqa: E402
 from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps
+from worlds.births import BirthsMixin  # noqa: E402  Phase 044: pregnancy and birth (the births switch)
+from worlds.dependants import DependantsMixin  # noqa: E402  Phase 045: infants, dependants (the dependants switch)
+from worlds.detraining import DetrainingMixin  # noqa: E402  Phase 046: detraining and ageing (the detraining switch)
 
 # Phase 048: the default for a job's or an attempt's tool: the right one the worker has, else bare hands.
 _DEFAULT_TOOL = object()
@@ -112,6 +115,8 @@ def _invalidate_static_reads(world) -> None:
 
 
 DEFAULT_DATA_PACK = "bigville"
+
+from worlds.body import BodyMixin  # noqa: E402  Phase 069: the body as a unit (worlds/body.py)
 
 
 def requested_data_pack(data_pack=None, scenario_data=None):
@@ -613,7 +618,7 @@ class _PhysicalObjectLocations(dict):
         return sorted(self._location_buckets.get(self._location_key(location), ()))
 
 
-class BigvilleWorld:
+class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
         "ecology": True,
@@ -652,6 +657,10 @@ class BigvilleWorld:
         "alcohol_aftereffects": False,
         # Phase 040: objects as arms (OBJECT_FORCE). Off, a strike ignores `with`, and a throw is refused as unsupported.
         "object_force": False,
+        # Phase 044: pregnancy and birth (BIRTHS: conception in a recorded union, gestation, delivery risks, the
+        # midwife, and nursing). Off, no one conceives, the population is fixed, and no pregnancy or nursing
+        # changes hunger or work capacity. worlds/births.py holds the rules.
+        "births": False,
     }
 
     @property
@@ -966,6 +975,8 @@ class BigvilleWorld:
         # Building anchors are physical sites, not just labels. Keep each
         # authored footprint clear so adjacent facades cannot overlap.
         self._building_sites = {}
+        # Phase 039: the buildings with a door, by place key (one Lock node per door, see _install_door).
+        self._door_places = {}
         scenario_buildings = self._scenario_data.get("buildings")
         if scenario_buildings is None:
             scenario_buildings = [{"kind": kind, "spec": spec}
@@ -1700,6 +1711,9 @@ class BigvilleWorld:
                 self._enact_burial(job_actor, burial)
             self.eng.set_attr(job, "complete", 1.0)
             self.eng.set_attr(job, "remaining", 0.0)
+            # Phase 063: the work leaves its marks on the worker (the recipe's `marks` row).
+            if actor_name in self._actors:
+                self._add_marks(actor_name, self._recipe_specs.get(action.get("name", ""), {}).get("marks", {}))
             if actor_node is not None:
                 practised = self.E.recipe_skill(recipe_row) if recipe_row else None
                 if practised:
@@ -1807,6 +1821,7 @@ class BigvilleWorld:
                         # bd_train_strength / bd_train_stamina (Phase 032): the effort trains what it uses, once.
                         if self.physical_subsystems.get("training", True):
                             self._train_from_effort(body, event)
+                        self._detraining_note_effort(actor, body, event)   # Phase 046: the day of the effort (no-op when off)
                     else:
                         amount = float(ea.get("amount", 1.0))
                         self.eng.set_attr(body, "stamina_reserve",
@@ -1873,7 +1888,7 @@ class BigvilleWorld:
                     aa = self.eng.node(node)["attrs"]
                     if float(aa.get("alive", 0.0)) != 1.0:
                         continue
-                    hunger = float(aa.get("hunger", 0.0)) + 1.0
+                    hunger = float(aa.get("hunger", 0.0)) + self._hunger_rate(actor)  # Phase 044: 1.0 unless births on
                     self.eng.set_attr(node, "hunger", hunger)
                     # Phase 035: the protein store, deficiency and satiety settle once per period (seeds nu_metabolize).
                     self._nutrition_period(actor)
@@ -1883,6 +1898,7 @@ class BigvilleWorld:
                 self._collect_night_soil()
                 self._burn_household_heat()
                 self._advance_animal_life(fed)
+            self._marks_period()                       # Phase 063: time, rain and weather on the marks
             if self.physical_subsystems["ecology"]:
                 self._advance_soil_nitrogen()
                 for crop in list(self._living_crops()):
@@ -2441,8 +2457,14 @@ class BigvilleWorld:
             return None
         candidates = [(current[0] + 1, current[1]), (current[0] - 1, current[1]),
                       (current[0], current[1] + 1), (current[0], current[1] - 1)]
-        travel = {point: self.travel_time(point, destination)
-                  for point in candidates if point in self._map_cells}
+        if self._door_places:
+            # Phase 039: with doors in the town, the route uses only the steps the doors allow.
+            field = self._door_travel_field(destination)
+            travel = {point: field.get(point) for point in candidates
+                      if point in self._map_cells and self._door_allows(current, point)}
+        else:
+            travel = {point: self.travel_time(point, destination)
+                      for point in candidates if point in self._map_cells}
         viable = [point for point, value in travel.items() if value is not None]
         return min(viable, key=lambda point: (travel[point], self.distance(point, destination))) \
             if viable else None
@@ -2612,10 +2634,12 @@ class BigvilleWorld:
         return total
 
     def carried_weight(self, actor):
-        """The physical weight currently borne by a resident."""
+        """The physical weight currently borne by a resident. A resident's own coin (their purse) counts at
+        COIN_WEIGHT each; coin stored in a container or purse does not (Phase 041)."""
         self._actor(actor)
         return round(self.contents_weight(self._actor_inventories[actor])
-                     + self._held_discrete_weight(actor), 4)
+                     + self._held_discrete_weight(actor)
+                     + self.coin(actor) * float(self.E.COIN_WEIGHT), 4)
 
     def carrying_capacity(self, actor):
         return self.max_load(self._actor_inventories[actor])
@@ -2704,7 +2728,8 @@ class BigvilleWorld:
         # Phase 024: a tired walker's interval is multiplied (x1, x1.5 or x3). Waiting ticks accumulate in
         # the float cooldown, so a step at interval I owes I - 1 waiting ticks. Whole intervals wait exactly
         # as they did before the factor existed.
-        interval = terrain_interval * band["interval"] / self.stagger_speed(actor) * _dn.travel_factor(self, actor)
+        interval = (terrain_interval * band["interval"] / (self.stagger_speed(actor)
+                    * self._body_capacity_factor(actor, "speed")) * _dn.travel_factor(self, actor))  # Phase 070b: a leg injury
         self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
                           cooldown + interval - 1.0 if interval > 1.0 + 1e-9 else 0.0)
         if nxt is not None:
@@ -3938,6 +3963,9 @@ class BigvilleWorld:
         n = self.eng.add_node("Shock", {"name": name, "kind": kind, "remaining": float(d),
                                          "active": 1.0, "effects": ",".join(spec["effects"])})
         self.eng.add_edge_unchecked(self._town, "has_shock", n)
+        # Phase 063: a shock's marks (its `marks` row) fall on every living resident at its onset.
+        for actor in self._actors:
+            self._add_marks(actor, spec.get("marks", {}))
         return n
 
     # ---------------------------------------------------- map economy: deposits, shops, and goods
@@ -4423,6 +4451,8 @@ class BigvilleWorld:
                 return self._refuse("out_of_stock")
             self.set_coin(giver, self.coin(giver) - amount)
             self.set_coin(recipient, self.coin(recipient) + amount)
+            self._refresh_carry_state(giver)
+            self._refresh_carry_state(recipient)
         else:
             received = self._move_inventory_to_inventory(giver, recipient, kind, amount)
             if received is False:
@@ -5373,7 +5403,10 @@ class BigvilleWorld:
 
     # ---------------------------------------------------- physical stock (piles), NOT floats
     def _phys(self, kind):
-        """The physical properties of a commodity, from the item data (defaults 1/1, not a fluid)."""
+        """The physical properties of a commodity, from the item data (defaults 1/1, not a fluid).
+        Coin takes the pack's COIN_WEIGHT and COIN_VOLUME (Phase 041)."""
+        if kind == "coin":
+            return (float(self.E.COIN_WEIGHT), float(self.E.COIN_VOLUME), 0.0)
         spec = self._item_specs.get(kind, {})
         return (float(spec.get("weight", 1.0)), float(spec.get("volume", 1.0)),
                 1.0 if spec.get("fluid") else 0.0)
@@ -5448,6 +5481,8 @@ class BigvilleWorld:
         site = self._allocate_building_site(place_key, spec, requested)
         self._building_sites[place_key] = site
         self._attach_at_cell(p, site[:2])
+        if spec.get("door"):
+            self._install_door(place_key, p, site, spec["door"])   # Phase 039
         return p
 
     def building(self, kind): return self._places.get(kind)
@@ -6349,6 +6384,93 @@ class BigvilleWorld:
                 return x <= pos[0] < x + w and y <= pos[1] < y + h
         return pos == self.map_position_node(place)
 
+    # ---------------------------------------------------- doors (Phase 039)
+    def _install_door(self, place_key, place, site, door):
+        """A building's one door (BUILDINGS[...].door). The door is a Lock node on the Place, with the lock fields a
+        container has (Phase 030) and the strength Phase 050 reads. The entrance, when named, is an offset inside the
+        footprint on its perimeter, and the Place has a `has_entrance` edge to that map cell."""
+        lock = self.eng.add_node("Lock", {
+            "lock_id": float(door["lock_id"]), "locked": 1.0 if door.get("locked") else 0.0,
+            "keys_required": float(door.get("keys_required", 1)),
+            "lock_strength": float(door["lock_strength"]), "lock_condition": 1.0, "lock_progress": 0.0})
+        self.eng.add_edge_unchecked(place, "has_door", lock)
+        if door.get("entrance") is not None:
+            dx, dy = (int(v) for v in door["entrance"])
+            cell = (int(site[0]) + dx, int(site[1]) + dy)
+            if cell not in self._map_cells:
+                raise ValueError(f"the entrance of {place_key!r} is not a walkable cell: {cell}")
+            self.eng.add_edge_unchecked(place, "has_entrance", self._map_cells[cell])
+        self._door_places[place_key] = place
+
+    def _door_lock(self, place):
+        return next(iter(self.eng.neighbours(place, "has_door")))
+
+    def _entrance_cell(self, place):
+        cells = list(self.eng.neighbours(place, "has_entrance"))
+        return self.map_position_node(cells[0]) if cells else None
+
+    def _inside_footprint(self, place_key, cell):
+        x, y, w, h = self._building_sites[place_key]
+        return x <= cell[0] < x + w and y <= cell[1] < y + h
+
+    def _door_allows(self, here, there):
+        """Whether a step between two adjacent cells is open as far as doors go (Phase 039). A step that crosses a
+        building's footprint boundary is refused while that building's door is locked. While it is unlocked, a
+        crossing is allowed only at the entrance cell, when one is named. Steps that cross no door, and every step in
+        a town with no door, are allowed."""
+        if not self._door_places or here is None or there is None:
+            return True
+        for key, place in self._door_places.items():
+            inside_here = self._inside_footprint(key, here)
+            if inside_here == self._inside_footprint(key, there):
+                continue
+            if float(self.eng.node(self._door_lock(place))["attrs"].get("locked", 0.0)) == 1.0:
+                return False
+            entrance = self._entrance_cell(place)
+            if entrance is not None and (here if inside_here else there) != entrance:
+                return False
+        return True
+
+    def _door_travel_field(self, destination):
+        """Travel cost from each cell to `destination` over the steps the doors allow. The cost of a cell is the one
+        travel_time uses. Computed only while a door exists, because a door's state changes between calls."""
+        field = {destination: 0.0}
+        frontier = [(0.0, destination)]
+        while frontier:
+            cost, point = heapq.heappop(frontier)
+            if cost > field.get(point, float("inf")):
+                continue
+            for nx, ny in ((point[0] + 1, point[1]), (point[0] - 1, point[1]),
+                           (point[0], point[1] + 1), (point[0], point[1] - 1)):
+                neighbour = (nx, ny)
+                if neighbour not in self._map_cells or not self._door_allows(point, neighbour):
+                    continue
+                candidate = cost + self._terrain_move_time(neighbour)
+                if candidate < field.get(neighbour, float("inf")):
+                    field[neighbour] = candidate
+                    heapq.heappush(frontier, (candidate, neighbour))
+        return field
+
+    def _door_stops_walk(self, current, destination):
+        """Phase 039: a walk has no admissible step because a locked door shuts the way. The destination is reachable
+        if the doors were not there, but not through them."""
+        return bool(self._door_places) and self._movement_step(current, destination) is None \
+            and self.travel_time(current, destination) is not None
+
+    def _door_reach(self, place, place_key):
+        """The cells from which a door can be locked, unlocked or forced: its entrance and the cells one step from it.
+        With no entrance named, the footprint and the cells one step from it."""
+        entrance = self._entrance_cell(place)
+        if entrance is not None:
+            anchors = [entrance]
+        else:
+            x, y, w, h = self._building_sites[place_key]
+            anchors = [(x + i, y + j) for i in range(w) for j in range(h)]
+        reach = set()
+        for ax, ay in anchors:
+            reach.update({(ax, ay), (ax + 1, ay), (ax - 1, ay), (ax, ay + 1), (ax, ay - 1)})
+        return frozenset(reach)
+
     def _at_workplace(self, actor):
         """The actor's workplace building if they can use its tools now. Before the clock runs
         (setup calls) location is not checked. Once it runs, a worker who has a map position must
@@ -6846,6 +6968,7 @@ class BigvilleWorld:
             if product in self.E.SLAUGHTER_PRODUCTS:
                 self.set_stock(product, self.qty(product) + float(qty)); got[product] = float(qty)
         self.eng.set_attr(an, "alive", 0.0)
+        self._add_marks(butcher, self.E.MARK_EVENTS.get("butcher", {}))   # Phase 063
         return got
 
     # ---------------------------------------------------- a merchant delivers imported goods
@@ -6963,15 +7086,23 @@ class BigvilleWorld:
         return next(iter(self.eng.neighbours(self._store, "has_lock")))
 
     def _lockable(self, name):
-        """(lock node, cell node) of a lockable thing: a container by name (its own node holds the lock and sits on
-        the cell), or the town store (name "store"), whose Lock node holds the lock and whose store node sits on
-        the cell. None for a name that is neither."""
+        """(lock node, reach) of a lockable thing, or None for a name that is none of these. The reach is the set of
+        cells a resident must stand on to lock or unlock it, or None when the thing has no cell. The lock of a container
+        is its own node (reach: its cell). The town store ("store") has a Lock node (reach: the store's cell). A
+        building's door (Phase 039) is named by the building (reach: its entrance and the cells one step from it)."""
         if name == "store":
-            return self._store_lock_node(), self._store
+            return self._store_lock_node(), self._reach_of(self._store)
         if name in self._containers:
             node = self._containers[name][0]
-            return node, node
+            return node, self._reach_of(node)
+        if name in self._door_places:
+            place = self._door_places[name]
+            return self._door_lock(place), self._door_reach(place, name)
         return None
+
+    def _reach_of(self, place):
+        cell = self.map_position_node(place)
+        return None if cell is None else frozenset([cell])
 
     def _clear_authorisations(self, node):
         for keyholder in list(self.eng.neighbours(node, "authorised_by")):
@@ -6984,13 +7115,12 @@ class BigvilleWorld:
         found = self._lockable(container)
         if found is None:
             return self._refuse("unknown_target")
-        node, place = found
+        node, reach = found
         attrs = self.eng.node(node)["attrs"]
         lock_id = float(attrs.get("lock_id", 0.0))
         if lock_id <= 0.0:
             return self._refuse("no_lock")
-        cell = self.map_position_node(place)
-        if cell is not None and self.actor_position(actor) != cell:
+        if reach is not None and self.actor_position(actor) not in reach:
             return self._refuse("not_in_reach")
         if not self._holds_key(actor, lock_id):
             return self._refuse("no_key")
@@ -7009,13 +7139,12 @@ class BigvilleWorld:
         found = self._lockable(container)
         if found is None:
             return self._refuse("unknown_target")
-        node, place = found
+        node, reach = found
         attrs = self.eng.node(node)["attrs"]
         lock_id = float(attrs.get("lock_id", 0.0))
         if lock_id <= 0.0:
             return self._refuse("no_lock")
-        cell = self.map_position_node(place)
-        if cell is not None and self.actor_position(actor) != cell:
+        if reach is not None and self.actor_position(actor) not in reach:
             return self._refuse("not_in_reach")
         if not self._holds_key(actor, lock_id):
             return self._refuse("no_key")
@@ -7046,6 +7175,10 @@ class BigvilleWorld:
         """
         self._actor(actor)
         amount = float(amount)
+        if kind == "coin":
+            return self._put_coin(actor, container, amount)
+        if container not in self._containers:
+            return self._refuse("unknown_target")
         container_cell = self.container_position(container)
         if (self._turn > 0 and container_cell is not None and self.actor_position(actor) != container_cell):
             return False
@@ -7086,6 +7219,104 @@ class BigvilleWorld:
         self._record_handover("put", kind, fit, self._actor_endpoint(actor), ("container", str(container)))
         return True
 
+    # ---------------------------------------------------- coin in containers and purses (Phase 041)
+    # A resident's own coin is their `coin` attribute (the purse they carry). A lockable container keeps stored coin
+    # in its 'coin' pile, the same pile `fill` uses for coin from the store. A fiscal purse keeps it in its own `coin`.
+    # put and fetch move coin between the two, conserved. A container opens by its lock (Phase 030), and a purse only
+    # to its holder. Stored coin is not carried: it is not in carried_weight and moves only with its container.
+    def _coin_place(self, name):
+        """('container', name) or ('purse', node) for a name that can store coin, else None."""
+        if name in self._containers:
+            return ("container", name)
+        node = self._purse_node(name) if isinstance(name, str) else None
+        return ("purse", node) if node is not None else None
+
+    def _coin_open(self, actor, place):
+        kind, ref = place
+        if kind == "purse":
+            return self._acts_for(actor, ("purse", ref))
+        return self._container_accessible(actor, ref)
+
+    def _coin_stored(self, place, name):
+        if place[0] == "purse":
+            return float(self.eng.node(place[1])["attrs"].get("coin", 0.0))
+        return self.contents(name, "coin")
+
+    def _add_stored_coin(self, name, delta):
+        node, inners = self._containers[name]
+        if "coin" not in inners:
+            inners["coin"] = self._new_inner_stock(node, self.eng.node(node)["attrs"].get("kind", ""), "coin")
+        self.eng.set_attr(inners["coin"], "qty", self.contents(name, "coin") + float(delta))
+
+    def _coin_fits(self, name, amount):
+        """Whether `amount` more coin fits a container by volume and by load (COIN_VOLUME and COIN_WEIGHT)."""
+        attrs = self.eng.node(self._containers[name][0])["attrs"]
+        fits_volume = (self.used_volume(name) + amount * float(self.E.COIN_VOLUME)
+                       <= self.capacity(name) + 1e-9)
+        fits_load = (self.contents_weight(name) + amount * float(self.E.COIN_WEIGHT)
+                     <= float(attrs.get("max_load", 1e18)) + 1e-9)
+        return fits_volume and fits_load
+
+    def _put_coin(self, actor, name, amount):
+        """Move `amount` of the resident's own coin into a container or purse. Refused with unknown_target,
+        malformed, not_in_reach (a container with a cell, during a turn, when the resident is off that cell),
+        container_locked, out_of_stock, full, or slot_used."""
+        place = self._coin_place(name)
+        if place is None:
+            return self._refuse("unknown_target")
+        if amount <= 0.0:
+            return self._refuse("malformed")
+        if place[0] == "container":
+            cell = self.container_position(name)
+            if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
+                return self._refuse("not_in_reach")
+        if not self._coin_open(actor, place):
+            return self._refuse("container_locked")
+        if self.coin(actor) < amount:
+            return self._refuse("out_of_stock")
+        if place[0] == "container" and not self._coin_fits(name, amount):
+            return self._refuse("full")
+        if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(actor, "put"):
+            return self._refuse("slot_used")
+        if place[0] == "purse":
+            self._move_fiscal_coin(("resident", self._actors[actor]), place, amount)
+        else:
+            self.set_coin(actor, self.coin(actor) - amount)
+            self._add_stored_coin(name, amount)
+        self._refresh_carry_state(actor)
+        self._record_handover("put", "coin", amount, self._actor_endpoint(actor), self._coin_endpoint(place, name))
+        return True
+
+    def _fetch_coin(self, actor, name, amount):
+        """Move `amount` of coin from a container or purse into the resident's own coin. Refused with the same
+        codes as _put_coin, except that a purse's holder is the only one who may fetch from it."""
+        place = self._coin_place(name)
+        if place is None:
+            return self._refuse("unknown_target")
+        if amount <= 0.0:
+            return self._refuse("malformed")
+        if place[0] == "container":
+            cell = self.container_position(name)
+            if self._turn > 0 and cell is not None and self.actor_position(actor) != cell:
+                return self._refuse("not_in_reach")
+        if not self._coin_open(actor, place):
+            return self._refuse("container_locked")
+        if self._coin_stored(place, name) < amount:
+            return self._refuse("out_of_stock")
+        if not self._major_dispatch and self._turn > 0 and not self._claim_major_action(actor, "fetch"):
+            return self._refuse("slot_used")
+        if place[0] == "purse":
+            self._move_fiscal_coin(place, ("resident", self._actors[actor]), amount)
+        else:
+            self._add_stored_coin(name, -amount)
+            self.set_coin(actor, self.coin(actor) + amount)
+        self._refresh_carry_state(actor)
+        self._record_handover("fetch", "coin", amount, self._coin_endpoint(place, name), self._actor_endpoint(actor))
+        return True
+
+    def _coin_endpoint(self, place, name):
+        return ("purse" if place[0] == "purse" else "container", str(name))
+
     def fill(self, actor, container, kind, amount):
         """Fill `amount` of `kind` into a container (if it fits by volume and, for a fluid, the vessel
         is watertight). Containers accept content not listed in their initial `holds`; storage
@@ -7125,6 +7356,8 @@ class BigvilleWorld:
         amount = float(amount)
         if amount <= 0.0:
             return self._refuse("malformed")
+        if kind == "coin" and source is not None:
+            return self._fetch_coin(actor, source, amount)
         if source is None:
             source_cell = self.map_position_node(self._store)
             if self._turn > 0 and self.actor_position(actor) != source_cell:
@@ -7278,6 +7511,7 @@ class BigvilleWorld:
             "tolerance": 0.0, "craving": 0.0, "dependent": 0.0, "hangover_ticks": 0.0, "episode_peak": 0.0})
         self.eng.add_edge_unchecked(a, "has_body", body)
         self._bodies[name] = body
+        self._body_init(name, defaults.get("embodiment", "human"), life_stage)   # Phase 069
         self._actor_minds[name] = (
             self._cognition_factory(name) if self._cognition_factory is not None
             else BigvilleOcelotActor(name, data_pack=self.data_pack))
@@ -7763,24 +7997,128 @@ class BigvilleWorld:
         """The one health variable (health_value): 1 is fully healthy, 0 is dead."""
         return float(self.eng.node(self._actor(actor))["attrs"].get("health_value", self.E.HEALTH["max_health"]))
 
-    def harm(self, actor, amount, cause, *, fragility=True):
+    # ---------------------------------------------------- Phase 063: visible condition (marks)
+    # A mark is a surface state of a resident (dirt, coal dust, blood, ...). Its level is stored on the
+    # actor node as `mark_<kind>` and is 0 when absent. The world publishes marks and never decides what
+    # an observer makes of them (Phase 062 reads them as evidence).
+    _WET_MARK = "wetness"      # the mark that rain raises (MARK_RULES.wet_gain)
+
+    def mark_level(self, actor, kind):
+        """One mark's level on a resident, from 0 (none) up to MARK_RULES.max_level."""
+        if kind not in self.E.MARKS:
+            raise ValueError(f"unknown mark: {kind!r}; MARKS are {list(self.E.MARKS)}")
+        return round(float(self.eng.node(self._actor(actor))["attrs"].get(f"mark_{kind}", 0.0)), 4)
+
+    def marks(self, actor):
+        """The marks a resident carries now, {kind: level}, listing only the levels above 0."""
+        return {kind: level for kind in self.E.MARKS if (level := self.mark_level(actor, kind)) > 0.0}
+
+    def observable_marks(self, actor, distance, light=1.0):
+        """The marks an observer can see of a resident: a mark is seen when the observer is within its
+        see_range cells (`distance`, or None when out of reach), in `light` (0 dark, 1 full day) of at least
+        its see_light, and its level is at least its visible_level. Each row names the mark's notice_skill
+        (the trade skill a viewer needs to notice it at this detail, or None). The world states what is
+        visible. It does not conclude what the marks mean, or who notices them."""
+        rows = []
+        for kind, spec in self.E.MARKS.items():
+            level = self.mark_level(actor, kind)
+            if distance is None or level < float(spec["visible_level"]):
+                continue
+            if float(distance) > float(spec["see_range"]) or float(light) < float(spec["see_light"]):
+                continue
+            rows.append({"kind": kind, "label": spec["label"], "level": level,
+                         "notice_skill": spec["notice_skill"]})
+        return rows
+
+    def _set_mark(self, actor, kind, level):
+        node = self._actor(actor)
+        attr = f"mark_{kind}"
+        level = min(float(self.E.MARK_RULES["max_level"]), max(0.0, float(level)))
+        if level <= 0.0 and attr not in self.eng.node(node)["attrs"]:
+            return                                  # a clean resident keeps no mark attributes
+        self.eng.set_attr(node, attr, level)
+
+    def _add_marks(self, actor, gains):
+        """Raise a living resident's marks by `gains` ({kind: amount}); the dead keep what they bore."""
+        if actor not in self._actors or not self.is_alive(actor):
+            return
+        for kind, gain in (gains or {}).items():
+            if float(gain) > 0.0:
+                self._set_mark(actor, kind, self.mark_level(actor, kind) + float(gain))
+
+    def _change_clothes_marks(self, actor):
+        """Putting on a garment drops the marks it changes (MARKS.clothes_change_drop)."""
+        for kind, spec in self.E.MARKS.items():
+            drop = float(spec["clothes_change_drop"])
+            if drop > 0.0:
+                self._set_mark(actor, kind, self.mark_level(actor, kind) - drop)
+
+    def _marks_period(self):
+        """One period of time and weather on every living resident's marks. Each mark falls by its decay. A
+        washable mark also falls by rain_wash for each unit of rain that reaches the skin (the town's wet less
+        the garments' rain cover). Rain wets the resident by MARK_RULES.wet_gain for each unit that reaches it."""
+        rules = self.E.MARK_RULES
+        wet = float(self.eng.node(self._town)["attrs"].get("wet", 0.0))
+        for actor in self._actors:
+            if not self.is_alive(actor):
+                continue
+            exposure = min(1.0, max(0.0, wet - self.rain_cover(actor)))
+            for kind, spec in self.E.MARKS.items():
+                level = self.mark_level(actor, kind)
+                if level <= 0.0:
+                    continue
+                fall = float(spec["decay"]) + (float(spec["rain_wash"]) * exposure if spec["washable"] else 0.0)
+                self._set_mark(actor, kind, level - fall)
+            if exposure > 0.0 and self._WET_MARK in self.E.MARKS:
+                self._add_marks(actor, {self._WET_MARK: float(rules["wet_gain"]) * exposure})
+
+    def wash(self, actor):
+        """Washing with the town store's water. MARK_RULES.wash_water units leave the store, and each washable
+        mark falls to (1 - wash_drop) of its level. It takes the resident's turn and needs store access, as
+        watering does. The world does not decide whether the resident should wash. False when refused."""
+        rules = self.E.MARK_RULES
+        if not self._store_open(actor):
+            return self._refuse("store_locked")
+        if self.qty("water") < float(rules["wash_water"]):
+            return self._refuse("out_of_stock")
+        if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "wash"):
+            return False
+        self.set_stock("water", self.qty("water") - float(rules["wash_water"]))
+        for kind, spec in self.E.MARKS.items():
+            if spec["washable"]:
+                self._set_mark(actor, kind, self.mark_level(actor, kind) * (1.0 - float(rules["wash_drop"])))
+        self._run()
+        return True
+
+    def harm(self, actor, amount, cause, locus=None, *, fragility=True):
         """Acute harm: lower the resident's health by `amount` times their life stage's fragility (HEALTH), and
         tag the cause. Health at or below 0 is death by `cause` (record_death). Returns False when the resident
         is dead. `cause` must be one of HEALTH.causes. Phase 043: `fragility=False` applies `amount` as given,
-        for the illness course, whose infant penalty is its own (MEDICAL_CARE.infant_fragility)."""
+        for the illness course, whose infant penalty is its own (MEDICAL_CARE.infant_fragility). Phase 070: `locus`
+        is the ANATOMY node the harm lands on; when None the body draws one from HARM_LOCUS by cause (whole-body
+        causes draw none). The health scalar is lowered once either way; the locus only feeds the body's ledger."""
         if str(cause) not in self.E.HEALTH["causes"]:
             raise ValueError(f"harm: unknown cause {cause!r}; HEALTH.causes are {list(self.E.HEALTH['causes'])}")
+        if locus is not None and not self._body_locus_ok(locus):
+            raise ValueError(f"harm: locus {locus!r} is not an ANATOMY node")
         stage = str(self.eng.node(self._actor(actor))["attrs"].get("life_stage", "adult"))
         mult = float(self.E.HEALTH["fragility"].get(stage, 1.0)) if fragility else 1.0
-        return self._drop_health(actor, float(amount) * mult, cause)
+        if locus is None:
+            locus = self._body_harm_locus(actor, cause)
+        return self._drop_health(actor, float(amount) * mult, cause, locus=locus)
 
-    def _drop_health(self, actor, drop, cause):
+    def _drop_health(self, actor, drop, cause, locus=None):
         if not self.is_alive(actor):
             return False
         node = self._actor(actor)
         health = max(0.0, self.health(actor) - max(0.0, float(drop)))
         self.eng.set_attr(node, "health_value", health)
         self.eng.set_attr(node, "last_cause", str(cause))
+        self._body_event(actor, {"kind": "harm", "amount": max(0.0, float(drop)), "cause": str(cause),
+                                 "locus": locus})   # Phase 069; Phase 070 adds the locus to the body's ledger
+        # Phase 063: the harm leaves its marks (MARK_HARM, per point of health lost).
+        self._add_marks(actor, {kind: float(gain) * max(0.0, float(drop))
+                                for kind, gain in self.E.MARK_HARM.get(str(cause), {}).items()})
         if health <= 0.0:
             self.record_death(actor, cause=str(cause))
         return True
@@ -7790,7 +8128,9 @@ class BigvilleWorld:
         if not self.is_alive(actor):
             return
         cap = float(self.E.HEALTH["max_health"])
-        self.eng.set_attr(self._actor(actor), "health_value", min(cap, self.health(actor) + max(0.0, float(gain))))
+        before = self.health(actor)
+        self.eng.set_attr(self._actor(actor), "health_value", min(cap, before + max(0.0, float(gain))))
+        self._body_event(actor, {"kind": "heal", "amount": max(0.0, self.health(actor) - before)})   # Phase 070
 
     def _stable_draw(self, *parts):
         """A stateless draw in [0, 1) keyed on the world seed and `parts` (as _burial_roll; nothing is stored)."""
@@ -7927,7 +8267,7 @@ class BigvilleWorld:
             cost -= float(spec["treat_relief"])
         if stage == "infant" and not self._care_flag_value(name, "well_baby"):
             cost += float(care["infant_fragility"])
-        self.harm(name, max(0.0, cost), "illness", fragility=False)
+        self.harm(name, max(0.0, cost), "illness", fragility=False, locus=self._disease_locus(name))
         if not self.is_alive(name):
             return
         self._heal(name, float(care["treated_heal"] if treated else care["natural_care"]))
@@ -7965,6 +8305,7 @@ class BigvilleWorld:
             return self._refuse(code)
         self._set_care_flag(patient, "screened", True, self.E.MEDICAL_CARE["screen_days"])
         self.eng.add_edge_unchecked(self._actors[doctor], "examined", self._actors[patient])
+        self._body_screen(patient)      # Phase 070: the checkup records the silent conditions (referee state)
         return True
 
     def treat_patient(self, doctor, patient):
@@ -8244,7 +8585,7 @@ class BigvilleWorld:
                     continue
             elif a.get("disease"):
                 # A disease is an ongoing illness route: its daily loss is acute harm tagged illness.
-                self.harm(name, float(care["disease_health_loss"]), "illness")
+                self.harm(name, float(care["disease_health_loss"]), "illness", locus=self._disease_locus(name))
                 if not self.is_alive(name):
                     continue
             # An unburied body in the household is a health risk: an onset is an ordinary diagnose() of
@@ -8256,10 +8597,13 @@ class BigvilleWorld:
             # diagnosis above may have just set it.
             if self._illness_on() and not self.eng.node(node)["attrs"].get("disease"):
                 self._illness_onset(name, str(a.get("life_stage", "adult")))
-            age_stage = next((stage for stage, spec in self.E.LIFE_STAGES.items()
-                              if float(spec["age_min"]) <= age <= float(spec["age_max"])), "elder")
+            age_stage = self._age_stage(age)   # Phase 045: gap ages belong to the band below when the dependants switch is on
             if age_stage != a.get("life_stage"):
                 self.eng.set_attr(node, "life_stage", age_stage)
+        # Phase 044: pregnancy, delivery and birth (a no-op with the births switch off).
+        self._births_day()
+        self._dependants_day()   # Phase 045: growth, care and neglect of dependants (a no-op with the switch off)
+        self._detraining_day()   # Phase 046: ageing of the base and detraining of the trained part (a no-op when off)
 
     def add_waste(self, kind="kitchen_scraps", amount=1.0):
         cycle = self.E.WASTE_CYCLES[kind]
@@ -8518,13 +8862,12 @@ class BigvilleWorld:
         # Phase 030: lock and unlock are published only where they are physically possible: a key this resident
         # holds that fits the lock, with the resident at the lock's cell (or the lock has no cell). An unlock is
         # not offered again to a keyholder who has already turned a key in a lock that needs several.
-        for name in ["store"] + list(self._containers):
-            node, place = self._lockable(name)
+        for name in ["store"] + list(self._containers) + list(self._door_places):
+            node, reach = self._lockable(name)
             lock_attrs = self.eng.node(node)["attrs"]
             if float(lock_attrs.get("lock_id", 0.0)) <= 0.0 or not self._holds_key(actor, float(lock_attrs["lock_id"])):
                 continue
-            cell = self.map_position_node(place)
-            if cell is not None and self.actor_position(actor) != cell:
+            if reach is not None and self.actor_position(actor) not in reach:
                 continue
             locked = float(lock_attrs.get("locked", 0.0)) == 1.0
             if locked and self._actor(actor) in self.eng.neighbours(node, "authorised_by"):
@@ -9326,7 +9669,7 @@ class BigvilleWorld:
     def actor_affordances(self, actor):
         """Return the current legal, observed choices for a backend or UI."""
         self._actor(actor)
-        return [dict(option) for option in self._actor_options(actor)] + _dn.lamp_options(self, actor)   # Phase 042
+        return [dict(option) for option in self._actor_options(actor)] + _dn.lamp_options(self, actor) + self._dependant_options(actor)   # Phase 042, 045
 
     def perform_plan(self, actor):
         """Enact the action selected by the resident's Ocelot graph."""
@@ -9463,6 +9806,8 @@ class BigvilleWorld:
             return self.major_action(actor, "start", **kwargs)
         if action == "sleep":
             return self.major_action(actor, "sleep")
+        if action in ("attend", "press"):   # Phase 071: the target is the handle or region the reply names
+            return self.major_action(actor, action, target=plan.get("target"))
         if action == "move":
             target = plan.get("destination")
             if target is None:
@@ -10037,7 +10382,8 @@ class BigvilleWorld:
         self._refusal_code = None
         try:
             gated = isinstance(action, str) and action in self.E.MAJOR_ACTIONS
-            sleep_code = self._sleep_code(actor) if gated else None
+            sleep_code = (self._sleep_code(actor)
+                          or self._attending_refusal(actor, action) or self._dependant_refusal(actor)) if gated else None   # Phase 071: attending; Phase 045: infants
             if sleep_code is not None:
                 applied = False
                 self._refusal_code = sleep_code
@@ -10056,6 +10402,7 @@ class BigvilleWorld:
         Only the acting resident's node carries the outcome. Nothing here tells another resident."""
         if actor not in self._actors:
             return
+        self._body_note_outcome(actor, action, applied)   # Phase 071: the referee's remedy count (no physical change)
         node = self._actor(actor)
         self.eng.set_attr(node, "last_outcome", {"turn": int(self._turn), "action": str(action),
                                                  "applied": bool(applied), "reason": code or ""})
@@ -10177,6 +10524,9 @@ class BigvilleWorld:
                 return self._refuse("invalid_destination")
             if self.distance(current, destination) is None:
                 return self._refuse("invalid_destination")
+            # Phase 039: a locked door on the way shuts the walk.
+            if self._door_stops_walk(current, destination):
+                return self._refuse("door_locked")
             # Phase 049: below e_low a resident walks at the slowest rate (not refused as too tired); the collapse at
             # e_collapse stops them (see _exhaustion_band).
             return self._claimed_attempt(actor, "move", lambda: self._walked_toward(actor, destination))
@@ -10217,7 +10567,7 @@ class BigvilleWorld:
             # Phase 038: a strike without a game is a blow the target does not answer (no reaction).
             plan = {"target": kwargs.get("target", args[0] if args else None),
                     "intensity": kwargs.get("intensity", args[1] if len(args) > 1 else 1.0),
-                    "with": kwargs.get("with_kind")}
+                    "with": kwargs.get("with_kind"), "region": kwargs.get("region")}
             pending, code = self.strike_begin(actor, plan)
             if pending is None:
                 return self._refuse(code)
@@ -10270,7 +10620,7 @@ class BigvilleWorld:
             container = self._as_key(kwargs.get("container", args[0] if args else None))
             kind = self._as_key(kwargs.get("kind", args[1] if len(args) > 1 else None))
             amount = self._as_amount(kwargs.get("amount", args[2] if len(args) > 2 else 1.0))
-            if container not in self._containers:
+            if container not in self._containers and not (kind == "coin" and self._coin_place(container)):
                 return self._refuse("unknown_target")
             if kind is None or amount is None:
                 return self._refuse("malformed")
@@ -10304,6 +10654,12 @@ class BigvilleWorld:
             # Phase 024: sleep is enacted here. Whether to sleep is the backend's decision. Phase 049: a sleep at a full
             # reserve is allowed; it uses the slot and the time, and the sleeper wakes at once.
             return self._claimed_attempt(actor, "sleep", lambda: self._lie_down_as_major(actor))
+        if action == "attend":   # Phase 071: look into one felt signal (a timed attention, see worlds/body.py)
+            return self._claimed_attempt(actor, "attend", lambda: self._body_attend(
+                actor, kwargs.get("target", args[0] if args else None)))
+        if action == "press":    # Phase 071: probe a region of one's own body
+            return self._claimed_attempt(actor, "press", lambda: self._body_press(
+                actor, kwargs.get("target", args[0] if args else None)))
         if action == "fetch":
             kind = self._as_key(kwargs.get("kind", args[0] if args else None))
             amount = self._as_amount(kwargs.get("amount", args[1] if len(args) > 1 else 1.0))
@@ -10311,7 +10667,8 @@ class BigvilleWorld:
             source = None if raw_source is None else self._as_key(raw_source)
             if kind is None or amount is None:
                 return self._refuse("malformed")
-            if raw_source is not None and source not in self._containers:
+            if raw_source is not None and source not in self._containers and not (
+                    kind == "coin" and self._coin_place(source)):
                 return self._refuse("unknown_target")
             return self._claimed_attempt(actor, "fetch", lambda: self.fetch(actor, kind, amount, source=source))
         if action == "build":
@@ -10338,6 +10695,8 @@ class BigvilleWorld:
                 return self._refuse("unknown_target")
             # Phase 043: a medical act (checkup, treat, well_baby) is the care action with a care_kind.
             care_kind = kwargs.get("care_kind")
+            if care_kind == "feed":   # Phase 045: a caregiver feeds a dependant from its own food
+                return self._claimed_attempt(actor, "care", lambda: self.feed_dependant(actor, patient))
             if care_kind is not None:
                 medical = {"checkup": self.checkup, "treat": self.treat_patient,
                            "well_baby": self.well_baby_visit}.get(str(care_kind))
@@ -10419,7 +10778,7 @@ class BigvilleWorld:
             name = self._as_key(kwargs.get("container", kwargs.get("target", args[0] if args else None)))
             if name is None:
                 return self._refuse("malformed")
-            if name != "store" and name not in self._containers:
+            if name != "store" and name not in self._containers and name not in self._door_places:
                 return self._refuse("unknown_target")
             operation = self.lock if action == "lock" else self.unlock
             return self._claimed_attempt(actor, action, lambda: operation(actor, name))
@@ -10465,6 +10824,8 @@ class BigvilleWorld:
             return self.set_job_pace(actor, kwargs.pop("intensity", args[0] if args else None))
         if action == "stop":
             return self.stop_job(actor)
+        if action == "glance":   # Phase 070b: a free look at one felt signal (no slot, no tick)
+            return self._body_glance(actor, kwargs.pop("target", args[0] if args else None))
         raise ValueError(f"unknown free action: {action}")
 
     def set_job_pace(self, actor, intensity):
@@ -11238,6 +11599,7 @@ class BigvilleWorld:
             self._terrain_recovery_tick()
             # Phase 033: each tick of a restraint costs the holder and the held resident by the contest rule.
             self._holds_tick()
+            self._body_tick()   # Phase 069: each body keeps its last intensities (no physical change)
 
     def run_turns(self, n=1):
         """Advance unified actor turns; an alias with an explicit simulation name."""
@@ -11306,6 +11668,7 @@ class BigvilleWorld:
         self.eng.set_attr(garment, "rain", float(spec.get("rain", 0.0)))
         self.eng.set_attr(garment, "finery", float(spec.get("finery", 0.0)))
         self.eng.add_edge_unchecked(self._actors[actor], "wears", garment)
+        self._change_clothes_marks(actor)     # Phase 063: a fresh garment drops soiled clothes
         self._request_rule_sweep()
         return True
 
@@ -11370,6 +11733,9 @@ class BigvilleWorld:
         if spec["primitive"] == "displace":
             return self._displace_verb(actor, verb, spec, name, with_kind, intensity)
         if name not in self._containers:
+            # Phase 039: a building's door is a target of an open, pry or force attempt on its lock.
+            if name in self._door_places and spec["primitive"] == "open":
+                return self._attempt_door(actor, verb, spec, name, with_kind, intensity)
             return self._refuse("unknown_target")
         node = self._containers[name][0]
         attrs = self.eng.node(node)["attrs"]
@@ -11393,6 +11759,30 @@ class BigvilleWorld:
         if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
             return self._refuse("malformed")
         return self._enact_attempt(actor, self._container_plan(actor, verb, spec, name, tool, float(intensity)))
+
+    def _attempt_door(self, actor, verb, spec, name, with_kind, intensity):
+        """An open, pry or force attempt on a building's door (Phase 039). The door's lock is the target, with the
+        door's lock_strength as the demand (Phase 050's open primitive). The actor must stand in the door's reach
+        (see _door_reach). The same refusals as a container's lock apply."""
+        place = self._door_places[name]
+        node = self._door_lock(place)
+        attrs = self.eng.node(node)["attrs"]
+        if self.actor_position(actor) not in self._door_reach(place, name):
+            return self._refuse("not_in_reach")
+        if float(attrs.get("lock_id", 0.0)) <= 0.0:
+            return self._refuse("no_lock")
+        if float(attrs.get("locked", 0.0)) != 1.0:
+            return self._refuse("already_unlocked")
+        tool = None
+        if with_kind is not None:
+            kind = self._as_key(with_kind)
+            if kind is None:
+                return self._refuse("malformed")
+            tool = self._held_tool(actor, kind)
+        if isinstance(intensity, bool) or not isinstance(intensity, (int, float)) or math.isnan(float(intensity)):
+            return self._refuse("malformed")
+        plan = self._container_plan(actor, verb, spec, name, tool, float(intensity), node=node)
+        return self._enact_attempt(actor, plan)
 
     def _enact_attempt(self, actor, plan):
         """Enact a planned attempt, applying the slot rule of Phase 029 (item 5).
@@ -11442,10 +11832,12 @@ class BigvilleWorld:
         share = float(step["cost_share"]) * float(terms["applied"]) ** float(rs["k"])
         return step, share
 
-    def _container_plan(self, actor, verb, spec, name, tool, requested):
-        """The plan of a damage or open attempt on a container: capability, demand, and what the target is made of."""
+    def _container_plan(self, actor, verb, spec, name, tool, requested, node=None):
+        """The plan of a damage or open attempt on a container: capability, demand, and what the target is made of.
+        `node` overrides the target node (a building's door lock, Phase 039)."""
         rs = self.E.RESOLUTION
-        node = self._containers[name][0]
+        if node is None:
+            node = self._containers[name][0]
         attrs = self.eng.node(node)["attrs"]
         if spec["primitive"] == "damage":
             target_material = (self._item_specs.get(str(attrs.get("kind", "")), {}).get("material")
@@ -11624,7 +12016,7 @@ class BigvilleWorld:
         pos, moved = plan["cell"], 0
         for _ in range(wanted):
             nxt = (pos[0] + dx, pos[1] + dy)
-            if nxt not in self._map_cells or nxt == plan["here"]:
+            if nxt not in self._map_cells or nxt == plan["here"] or not self._door_allows(pos, nxt):
                 break
             if float(self.terrain_state(nxt)["speed"]) <= 0.0:
                 break
@@ -11974,14 +12366,18 @@ class BigvilleWorld:
         pos, moved = cell, 0
         for _ in range(pace):
             nxt = (pos[0] + int(steps[0]), pos[1] + int(steps[1]))
-            if nxt not in self._map_cells or nxt in cells_of_group or self.terrain_state(nxt)["speed"] <= 0.0:
+            if nxt not in self._map_cells or nxt in cells_of_group or self.terrain_state(nxt)["speed"] <= 0.0 \
+                    or not self._door_allows(pos, nxt):
                 break
             pos, moved = nxt, moved + 1
+        # Phase 039: the carriers walk to the cell behind the load; a locked door on that step holds the load too.
+        behind = (pos[0] - int(steps[0]), pos[1] - int(steps[1]))
+        if moved and not all(self._door_allows(self.actor_position(name), behind) for name in group):
+            pos, moved = cell, 0
         if moved:
             self.eng.set_attr(node, "cell", [int(pos[0]), int(pos[1])])
             self.eng.set_attr(node, "carriers", list(group))
             # The carriers walk with the load: each stands on the cell the load left, one step behind it.
-            behind = (pos[0] - int(steps[0]), pos[1] - int(steps[1]))
             for name in group:
                 self._move_actor_to(name, behind)
         outcome = "moved" if moved else "stuck"
@@ -12105,7 +12501,7 @@ class BigvilleWorld:
     # (train_gain, effective_stat). The effort's `intensity` is its stamina cost, capped at 1.
     def effective_strength(self, actor):
         """(str_base + str_train) x health (seed bd_effective_stats). Read by the recipe gate and the contest."""
-        return self._effective_body_stat(actor, "str_base", "str_train")
+        return self._effective_body_stat(actor, "str_base", "str_train") * self._body_capacity_factor(actor, "strength")
 
     def effective_stamina(self, actor):
         """(sta_base + sta_train) x health: the stamina capacity the reserve is clamped to and the band reads.
@@ -12119,7 +12515,9 @@ class BigvilleWorld:
                 cached = cache.stamina.get(actor, _MISSING_READ)
             if cached is not _MISSING_READ:
                 return cached
-        value = self._effective_body_stat(actor, "sta_base", "sta_train") * self._withdrawal_stamina_factor(actor)
+        value = (self._effective_body_stat(actor, "sta_base", "sta_train")
+                 * self._withdrawal_stamina_factor(actor)
+                 * self._body_capacity_factor(actor, "stamina"))
         if cache is not None:
             with cache.lock:
                 cache.stamina[actor] = value
@@ -12127,7 +12525,10 @@ class BigvilleWorld:
 
     def _effective_body_stat(self, actor, base_key, train_key):
         ba = self.eng.node_attrs(self._bodies[actor])
-        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor))
+        return (self.E.effective_stat(float(ba.get(base_key, 1.0)),
+                                      float(ba.get(train_key, 0.0)),
+                                      self.health(actor))
+                * self._capacity_factor(actor) * self._dependant_work_factor(actor))
 
     def _train_from_effort(self, body, event):
         """Apply the training rules to one resolved Effort: each stat the effort uses gains train_gain once,
@@ -12231,7 +12632,8 @@ class BigvilleWorld:
         if here is None:
             return None
         options = [(here[0] + dx, here[1] + dy) for dx, dy in ((-1, 0), (0, -1), (0, 1), (1, 0))]
-        open_cells = [cell for cell in sorted(options) if cell in self._map_cells]
+        open_cells = [cell for cell in sorted(options)
+                      if cell in self._map_cells and self._door_allows(here, cell)]
         return open_cells[0] if open_cells else None
 
     def _contest_offer(self, attacker, target, attacker_side, target_side):
@@ -12840,6 +13242,11 @@ class BigvilleWorld:
             return None, "unknown_target" if target not in self._actors else "wrong_target"
         if not self.is_alive(target):
             return None, "wrong_target"
+        region = plan.get("region")
+        if region is not None and not isinstance(region, str):
+            return None, "malformed"
+        if region is not None and not self._body_locus_ok(region):
+            return None, "unknown_region"                              # Phase 070b: an aim names an ANATOMY node
         here, there = self.actor_position(actor), self.actor_position(target)
         if here is None or here != there:
             return None, "not_in_reach"
@@ -12873,7 +13280,7 @@ class BigvilleWorld:
             "slot_before": before, "slot_record": self._turn_actions[actor][-1],
             "attacker_side": attacker_side, "target_side": target_side,
             "offer": self._contest_offer(actor, target, attacker_side, target_side),
-            "result": None, "weapon": weapon,
+            "result": None, "weapon": weapon, "region": region,
         }
         self._contest = pending
         return pending, None
@@ -12976,8 +13383,10 @@ class BigvilleWorld:
                       redirected=redirected, outcome="redirected" if redirected else "struck", applied=True,
                       weapon=pending["weapon"]["kind"] if pending.get("weapon") is not None else "")
         self._record_sight(attacker, "strike", pending["witnesses"])
+        locus = self._strike_locus(pending, choice)                    # Phase 070b: None unless aimed and it lands
+        result["locus"] = locus or ""
         if harm > 0.0:
-            self.harm(target, harm, "violence")
+            self.harm(target, harm, "violence", locus=locus)
         if redirected:
             self.harm(attacker, float(ct["redirect_harm"]) * intensity, "violence")
         weapon = pending.get("weapon")
@@ -13613,7 +14022,11 @@ class BigvilleWorld:
                 "screened": self._care_flag_value(actor, "screened"),
                 "treated": self._care_flag_value(actor, "treated"), "well_baby": self._care_flag_value(actor, "well_baby"),
                 # Phase 036 read-offs (tolerance, craving, dependent, hangover_ticks, withdrawal, mood); empty when off.
-                **self.aftereffects(actor)}
+                **self.aftereffects(actor),
+                # Phase 044 read-offs: pregnant, term_fraction and nursed; empty when the births switch is off.
+                **self._birth_readoffs(actor),
+                # Phase 045 read-offs: dependant and care_received; empty when the dependants switch is off.
+                **self._dependant_readoffs(actor)}
         if cache is not None:
             with cache.lock:
                 cache.body[actor] = dict(state)

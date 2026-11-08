@@ -21,11 +21,13 @@ from __future__ import annotations
 import re
 import string
 
+from domains import interoception as I
 from domains.lexicon import bands
 from domains.pack import PackError, load_pack
 
-SECTIONS = ("top", "self", "persona", "body", "carrying", "knows", "places", "now", "around", "person",
-            "heard", "seen", "thing", "map", "label", "can", "last", "reaction", "option", "referee")
+SECTIONS = ("top", "self", "persona", "body", "feeling", "signal", "carrying", "knows", "places", "now", "around",
+            "person", "heard", "seen", "thing", "map", "label", "can", "last", "reaction", "option", "referee",
+            "writing")
 REQUIRED = ("AGENT_VIEW_WHITELIST", "AGENT_VIEW_REFEREE_ONLY", "AGENT_VIEW_QUANTITIES", "AGENT_VIEW_KNOWS_LIMIT",
             "MAP_GLYPHS", "VIEW_WORDS", "PRECISION_WORDS", "ACTION_WORDS")
 VIEW_WORD_KEYS = ("asleep", "collapsed", "ill", "carried_line", "held_line", "kin_line", "unknown_kin",
@@ -177,3 +179,56 @@ def _check_words(pack, errors):
             continue
         if not isinstance(text, str) or not text.strip() or _DIGIT.search(text):
             errors.append(f"AGENT VIEW: ACTION_WORDS[{key}] must be words with no digit")
+
+
+def felt_body_problems(body, pack_name, *, anatomy=None, vocalisations=None):
+    """The leak rule for a felt body (Phase 069). Returns a list of problems; empty when the body is clean.
+
+    A felt body may carry only the keys in INTEROCEPTION.felt_body_keys. Its feeling and signals are sounds (each
+    must be a sound of some VOCALISATIONS form, letters only, with punctuation and vowel length dropped) and places
+    (each must be an ANATOMY label). No string in it may contain a cause word (INTEROCEPTION.forbidden_words), and no
+    digit."""
+    pack = load_pack(pack_name)
+    rules = pack["INTEROCEPTION"]
+    anatomy = pack["ANATOMY"] if anatomy is None else anatomy              # an embodiment may bring its own tables
+    vocalisations = pack["VOCALISATIONS"] if vocalisations is None else vocalisations
+    problems = []
+    allowed = set(rules["felt_body_keys"])
+    for key in body:
+        if key not in allowed:
+            problems.append(f"felt body has key {key!r}, which is not a felt key")
+    forms = {I.normal_letters(form) for row in vocalisations.values() if isinstance(row, dict)
+             for form in row.get("forms", [])}
+    places = {str(row["label"]) for row in anatomy.values() if isinstance(row, dict) and "label" in row}
+    sounds = []
+    if "feeling" in body:
+        sounds.append(body["feeling"].get("sound", ""))
+    for signal in body.get("signals", []):
+        sounds.append(signal.get("sound", ""))
+        if signal.get("where") not in places:
+            problems.append(f"signal place {signal.get('where')!r} is not an ANATOMY label")
+    for sound in sounds:
+        for token in str(sound).split():
+            if I.normal_letters(token) not in forms:
+                problems.append(f"sound {sound!r} is not a VOCALISATIONS form")
+                break
+    words = [str(value) for value in _strings(body)]
+    for text in words:
+        if _DIGIT.search(text):
+            problems.append(f"felt text {text!r} has a digit")
+        for word in rules["forbidden_words"]:
+            if re.search(r"\b" + re.escape(word), text, re.IGNORECASE):
+                problems.append(f"felt text {text!r} names a cause word {word!r}")
+    return problems
+
+
+def _strings(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield str(key)
+            yield from _strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _strings(item)
+    elif isinstance(value, str):
+        yield value

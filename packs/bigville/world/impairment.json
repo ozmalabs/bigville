@@ -1,0 +1,121 @@
+{
+  "_doc": "IMPAIRMENT (Phase 065): an impaired resident is given a confidently wrong percept, and the truth goes only to the referee block. The percept is the Phase 062 perceiver's percept (world/perception.json); this table decides when and how it is made wrong.\n\nSWITCH. IMPAIRMENT.enabled defaults to false. Off, the agent view is what it was before Phase 065. A game may override the switch, the strength and the sources with `game.impairment_scenario` (a dict with any of enabled, strength, sources). The percept needs PERCEPTION.enabled as well: with the perceiver off there is no percept to distort.\n\nSTRENGTH AND CAP. IMPAIRMENT.strength (0 to 1) scales every rate. The chance that one percept is distorted is 1 minus the product, over the active sources that apply, of (1 - strength x rate), capped at max_rate. Each rate is a step or a level of its DISTORTION row.\n\nSOURCES. DISTORTION has one row per source. `measure` names the value the row reads (intoxication_band: the perceiver's band; fatigue: 1 minus the stamina reserve; illness: 1 when the resident is ill; light: the light the resident sees by). A row with `levels` maps a category to a rate. A row with `steps` maps a number to a rate: the last step whose threshold the measure reaches applies. `kinds` names the mechanisms the source may use, for each percept kind (person, thing). A mechanism is the way a percept goes wrong. lower_tier: the percept drops one tier (a person becomes 'a person'; a thing becomes 'something'). neighbour_stage: a person's life stage is replaced by a neighbouring stage (IMPAIRMENT_NEIGHBOURS). nearby_entity: the stage, job or kind is taken from another resident or thing in sight; a resident the observer knows by name is taken for another resident the observer also knows.\n\nWORDING. A distorted percept is made of the same tier templates as a true one, so it carries the same confidence: no hedge word is added.\n\nDETERMINISM. Each draw is a function of the world seed, the turn, the resident, the subject and a fixed label (domains/impairment.py). It uses no global random state.\n\nNOT MODELLED. Fear and rage are not sources: the world has no fear or rage state (body mood is the only emotion number). Mishearing of speech is not in this table. Shifted quantities (a price read a band too low) are not a percept kind here.\n\nAPPROX. Every rate, step threshold, and max_rate is APPROX and authored: a plausible strength for a drunk, a tired, an ill or a dimly lit resident, not measured. The intoxication bands are the world's own (INTOXICATION.bands), and the fatigue, illness and light values are read from the world, not authored.\n\nSTAGE NEIGHBOURS. IMPAIRMENT_NEIGHBOURS lists, for each life stage (the keys of PERCEPTION.stage_nouns), the stages a person is most easily taken for. Authored.",
+  "_types": {},
+  "tables": {
+    "IMPAIRMENT": {
+      "enabled": false,
+      "strength": 1.0,
+      "max_rate": 0.6,
+      "sources": [
+        "intoxication",
+        "fatigue",
+        "illness",
+        "darkness"
+      ],
+      "light_levels": {
+        "day": 0.0,
+        "lamplight": 0.0,
+        "dim": 0.5,
+        "dark": 1.0
+      }
+    },
+    "DISTORTION": [
+      {
+        "source": "intoxication",
+        "measure": "intoxication_band",
+        "levels": {
+          "tipsy": 0.1,
+          "drunk": 0.3,
+          "stupefied": 0.5
+        },
+        "kinds": {
+          "person": [
+            "nearby_entity",
+            "neighbour_stage"
+          ],
+          "thing": [
+            "nearby_entity",
+            "lower_tier"
+          ]
+        }
+      },
+      {
+        "source": "fatigue",
+        "measure": "fatigue",
+        "steps": [
+          [
+            0.6,
+            0.04
+          ],
+          [
+            0.8,
+            0.1
+          ]
+        ],
+        "kinds": {
+          "person": [
+            "neighbour_stage"
+          ],
+          "thing": [
+            "lower_tier"
+          ]
+        }
+      },
+      {
+        "source": "illness",
+        "measure": "illness",
+        "steps": [
+          [
+            1,
+            0.15
+          ]
+        ],
+        "kinds": {
+          "person": [
+            "nearby_entity",
+            "neighbour_stage"
+          ],
+          "thing": [
+            "nearby_entity"
+          ]
+        }
+      },
+      {
+        "source": "darkness",
+        "measure": "light",
+        "levels": {
+          "dim": 0.1,
+          "dark": 0.3
+        },
+        "kinds": {
+          "person": [
+            "neighbour_stage",
+            "nearby_entity"
+          ],
+          "thing": [
+            "lower_tier"
+          ]
+        }
+      }
+    ],
+    "IMPAIRMENT_NEIGHBOURS": {
+      "infant": [
+        "child"
+      ],
+      "child": [
+        "infant",
+        "youth"
+      ],
+      "youth": [
+        "child",
+        "adult"
+      ],
+      "adult": [
+        "youth"
+      ],
+      "elder": [
+        "adult"
+      ]
+    }
+  }
+}

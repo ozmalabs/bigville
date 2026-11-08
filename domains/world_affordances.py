@@ -24,6 +24,8 @@ SCRAP_SCARCITY_FACTOR = _PACK["SCRAP_SCARCITY_FACTOR"]
 SCRAP_DECAY = _PACK["SCRAP_DECAY"]
 INPUT_TYPES = _PACK["INPUT_TYPES"]
 CONTAINERS = _PACK["CONTAINERS"]
+COIN_WEIGHT = _PACK["COIN_WEIGHT"]     # Phase 041: kg of one coin, stored or carried (APPROX, 0)
+COIN_VOLUME = _PACK["COIN_VOLUME"]     # Phase 041: litres of one coin, stored (APPROX, 0)
 SERVING_UTENSILS = _PACK["SERVING_UTENSILS"]
 SERVING_EQUIPMENT = _PACK["SERVING_EQUIPMENT"]
 FOOD_SERVICE = _PACK["FOOD_SERVICE"]
@@ -89,6 +91,10 @@ MAJOR_ACTIONS = _PACK["MAJOR_ACTIONS"]
 MAJOR_ACTIONS = {**MAJOR_ACTIONS, **_PACK["DAYNIGHT_MAJOR_ACTIONS"]}   # Phase 042: light and douse
 DAYNIGHT = _PACK["DAYNIGHT"]               # Phase 042: day, night and lamps
 DAYNIGHT_LAMPS = _PACK["DAYNIGHT_LAMPS"]
+MARKS = _PACK["MARKS"]                     # Phase 063: visible condition (dirt, soot, blood, ...)
+MARK_RULES = _PACK["MARK_RULES"]
+MARK_HARM = _PACK["MARK_HARM"]             # per point of health lost, by HEALTH cause
+MARK_EVENTS = _PACK["MARK_EVENTS"]         # per occurrence, by event name
 # Phase 018: the LLM prompt's premise, rules, response fields, memory selection caps, and gist text.
 WORLD_PREMISE = _PACK["WORLD_PREMISE"]
 PROMPT_BOUNDARY_RULES = _PACK["PROMPT_BOUNDARY_RULES"]
@@ -161,6 +167,13 @@ NUTRITION = _PACK["NUTRITION"]
 # acts (MEDICAL_CARE: screening, treatment and well-baby durations, and the skills each act needs). APPROX.
 DISEASE = _PACK["DISEASE"]
 MEDICAL_CARE = _PACK["MEDICAL_CARE"]
+# Phase 044: pregnancy and birth (BIRTHS: conception by age, gestation, delivery risks, midwife, nursing). APPROX.
+BIRTHS = _PACK["BIRTHS"]
+# Phase 045: infants, dependants and coming of age (DEPENDANTS: stages, neglect, growth; enabled is off). APPROX.
+DEPENDANTS = _PACK["DEPENDANTS"]
+# Phase 046: detraining of trained strength and stamina (DETRAIN) and ageing of the base (BODY_AGE). APPROX.
+DETRAIN = _PACK["DETRAIN"]
+BODY_AGE = _PACK["BODY_AGE"]
 # Phase 029: a contested take (force, cost, margins, reactions). APPROX values; see the table's _doc.
 CONTEST = _PACK["CONTEST"]
 # Phase 050: the one resolution rule. VERBS (the physics of a verb), MATERIALS (what a thing is made of) and
@@ -188,6 +201,25 @@ DOCUMENT_LITERACY = _PACK["DOCUMENT_LITERACY"]
 ENGINE_SEEDS = _PACK["ENGINE_SEEDS"]
 RESIDENT_SEEDS = _PACK["RESIDENT_SEEDS"]
 RESIDENT_CONCEPT_SEEDS = _PACK["RESIDENT_CONCEPT_SEEDS"]
+# Phase 069: the body's feelings (world/interoception.json): the anatomy and quality trees, the sounds,
+# the channels, the signal sources, the patterns, the background feeling and the depth rule. APPROX throughout.
+ANATOMY = _PACK["ANATOMY"]
+QUALITY_TREE = _PACK["QUALITY_TREE"]
+VOCALISATIONS = _PACK["VOCALISATIONS"]
+CHANNELS = _PACK["CHANNELS"]
+SIGNAL_SOURCES = _PACK["SIGNAL_SOURCES"]
+PATTERNS = _PACK["PATTERNS"]
+FEELING = _PACK["FEELING"]
+INTEROCEPTION = _PACK["INTEROCEPTION"]
+# Phase 070: the located harm loci, the body rates and the observable signs (world/interoception.json).
+HARM_LOCUS = _PACK["HARM_LOCUS"]
+BODY_RATES = _PACK["BODY_RATES"]
+OBSERVABLE_SIGNS = _PACK["OBSERVABLE_SIGNS"]
+# Phase 071: attending and pressing (world/interoception.json): the attention budget, the press reaction, the remedies.
+ATTEND = _PACK["ATTEND"]
+# Phase 070b: the aimed strike (STRIKE_AIM) and how a located injury lowers a capacity (INJURY_EFFECTS).
+STRIKE_AIM = _PACK["STRIKE_AIM"]
+INJURY_EFFECTS = _PACK["INJURY_EFFECTS"]
 
 
 def scrap_kind(kind):

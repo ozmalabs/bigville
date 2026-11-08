@@ -1,0 +1,69 @@
+ M README.md
+ M bigville/backends/cheap.py
+ M bigville/backends/ocelot.py
+ M bigville/backends/prompt_packet.py
+ M bigville/game.py
+ M bigville/game/game.js
+ M bigville/seeds/bigville_actor_decision.json
+ M bigville/server.py
+ M bigville/tui/__main__.py
+ M bigville/tui/app.py
+ M bigville/tui/client.py
+ M bigville/tui/commands.py
+ M bigville/tui/narrate.py
+ M bigville/tui/render.py
+ M docs/AGENT_BACKENDS_PLAN.md
+ M domains/bigville_entities.py
+ M domains/prompt_packet_check.py
+ M domains/world_affordances.py
+ M packs/bigville/pack.json
+ M packs/bigville/world/health.json
+ M packs/bigville/world/interoception.json
+ M packs/bigville/world/marks.json
+ M packs/bigville/world/prompt_packet.json
+ M packs/bigville/world/refusal_reasons.json
+ M packs/test_hamlet/pack.json
+ M packs/test_hamlet/world/health.json
+ M packs/test_hamlet/world/interoception.json
+ M packs/test_hamlet/world/marks.json
+ M packs/test_hamlet/world/prompt_packet.json
+ M packs/test_hamlet/world/refusal_reasons.json
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M tests/test_bigville_server.py
+ M tests/test_scenario_runner.py
+ M tests/test_simple_life.py
+ M worlds/bigville_world.py
+?? .opencode/
+?? bigville/backends/dependants_policy.py
+?? bigville/mixed_ocelot_scenario.py
+?? bigville/resident_births.py
+?? bigville/resident_dependants.py
+?? bigville/tui/art.py
+?? bigville/tui/prose.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase044/
+?? docs/phases/phase045/
+?? docs/phases/phase052/full_suite_live_tree_midedit.log
+?? docs/phases/phase067/
+?? domains/dependants.py
+?? domains/fertility_check.py
+?? domains/tui_check.py
+?? packs/bigville/world/births.json
+?? packs/bigville/world/dependants.json
+?? packs/bigville/world/tui_modes.json
+?? packs/test_hamlet/world/births.json
+?? packs/test_hamlet/world/dependants.json
+?? packs/test_hamlet/world/tui_modes.json
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase044_births.py
+?? tests/test_phase045_dependants.py
+?? tests/test_phase067_tui_modes.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py
+?? worlds/births.py
+?? worlds/dependants.py

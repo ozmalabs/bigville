@@ -198,7 +198,7 @@
   "buildings": {
     "file": "buildings.png",
     "frame": 48,
-    "count": 41,
+    "count": 42,
     "interior_file": "building_interiors.png",
     "roof_states": {
       "on": "buildings.png",
@@ -243,10 +243,11 @@
       "barn": 34,
       "charcoal_hearth": 35,
       "inkhouse": 36,
-      "mill": 37,
-      "papermill": 38,
-      "printshop": 39,
-      "scriptorium": 40
+      "jail": 37,
+      "mill": 38,
+      "papermill": 39,
+      "printshop": 40,
+      "scriptorium": 41
     },
     "parts_file": "building_parts.png",
     "parts_frame": 16,
@@ -304,10 +305,11 @@
       "barn": 34,
       "charcoal_hearth": 35,
       "inkhouse": 36,
-      "mill": 37,
-      "papermill": 38,
-      "printshop": 39,
-      "scriptorium": 40
+      "jail": 37,
+      "mill": 38,
+      "papermill": 39,
+      "printshop": 40,
+      "scriptorium": 41
     }
   },
   "items": {

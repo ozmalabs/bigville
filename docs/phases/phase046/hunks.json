@@ -1,0 +1,56 @@
+[
+  {
+    "file": "packs/bigville/pack.json",
+    "old": "    {\"name\": \"DEPENDANTS\", \"file\": \"world/dependants.json\"}\n  ]",
+    "new": "    {\"name\": \"DEPENDANTS\", \"file\": \"world/dependants.json\"},\n    {\"name\": \"DETRAIN\", \"file\": \"world/detraining.json\"},\n    {\"name\": \"BODY_AGE\", \"file\": \"world/detraining.json\"}\n  ]",
+    "note": "manifest: DETRAIN and BODY_AGE after DEPENDANTS (last entry at 38bc602)"
+  },
+  {
+    "file": "packs/test_hamlet/pack.json",
+    "old": "    {\"name\": \"DEPENDANTS\", \"file\": \"world/dependants.json\"}\n  ]",
+    "new": "    {\"name\": \"DEPENDANTS\", \"file\": \"world/dependants.json\"},\n    {\"name\": \"DETRAIN\", \"file\": \"world/detraining.json\"},\n    {\"name\": \"BODY_AGE\", \"file\": \"world/detraining.json\"}\n  ]",
+    "note": "manifest: DETRAIN and BODY_AGE after DEPENDANTS (last entry at 38bc602)"
+  },
+  {
+    "file": "domains/world_affordances.py",
+    "old": "DEPENDANTS = _PACK[\"DEPENDANTS\"]\n",
+    "new": "DEPENDANTS = _PACK[\"DEPENDANTS\"]\n# Phase 046: detraining of trained strength and stamina (DETRAIN) and ageing of the base (BODY_AGE). APPROX.\nDETRAIN = _PACK[\"DETRAIN\"]\nBODY_AGE = _PACK[\"BODY_AGE\"]\n",
+    "note": "table imports after DEPENDANTS"
+  },
+  {
+    "file": "domains/bigville_entities.py",
+    "old": "    _check_dependants(errors, warnings, info)   # Phase 045: infants, dependants and growth (DEPENDANTS)\n",
+    "new": "    _check_dependants(errors, warnings, info)   # Phase 045: infants, dependants and growth (DEPENDANTS)\n    from domains.detraining_check import check_detraining  # Phase 046: DETRAIN and BODY_AGE\n    check_detraining(_WORLD_PACK.path, errors, warnings, info)\n",
+    "note": "self-test call after _check_dependants"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "from worlds.dependants import DependantsMixin  # noqa: E402  Phase 045: infants, dependants (the dependants switch)\n",
+    "new": "from worlds.dependants import DependantsMixin  # noqa: E402  Phase 045: infants, dependants (the dependants switch)\nfrom worlds.detraining import DetrainingMixin  # noqa: E402  Phase 046: detraining and ageing (the detraining switch)\n",
+    "note": "import of the detraining mixin"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "class BigvilleWorld(BirthsMixin, DependantsMixin, BodyMixin):",
+    "new": "class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):",
+    "note": "class base: DetrainingMixin before BodyMixin"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "                        if self.physical_subsystems.get(\"training\", True):\n                            self._train_from_effort(body, event)\n",
+    "new": "                        if self.physical_subsystems.get(\"training\", True):\n                            self._train_from_effort(body, event)\n                        self._detraining_note_effort(actor, body, event)   # Phase 046: the day of the effort (no-op when off)\n",
+    "note": "exerted branch: record the effort day after the training rule (no-op when off)"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "        self._dependants_day()   # Phase 045: growth, care and neglect of dependants (a no-op with the switch off)\n",
+    "new": "        self._dependants_day()   # Phase 045: growth, care and neglect of dependants (a no-op with the switch off)\n        self._detraining_day()   # Phase 046: ageing of the base and detraining of the trained part (a no-op when off)\n",
+    "note": "dawn tick: detraining after dependants"
+  },
+  {
+    "file": "bigville/reporting.py",
+    "old": "def game_report(game) -> dict[str, Any]:",
+    "new": "def body_by_age(world) -> dict[str, Any]:\n    \"\"\"Phase 046: strength and stamina by age decade over the living residents, and the share of each band with a\n    trained part (str_train or sta_train above 0). Read-only: the effective values come from the world's accessors.\n    The top band is 70 and over. A band with no residents is left out.\"\"\"\n    bands: dict[int, list[tuple[float, float, bool, bool]]] = {}\n    for name, node in sorted(world._actors.items()):\n        attrs = world.eng.node(node)[\"attrs\"]\n        if float(attrs.get(\"alive\", 1.0)) != 1.0 or name not in world._bodies:\n            continue\n        body = world.eng.node(world._bodies[name])[\"attrs\"]\n        decade = min(7, int(float(attrs.get(\"age\", 0.0)) // 10))\n        bands.setdefault(decade, []).append((float(world.effective_strength(name)), float(world.effective_stamina(name)),\n                                             float(body.get(\"str_train\", 0.0)) > 0.0,\n                                             float(body.get(\"sta_train\", 0.0)) > 0.0))\n    out: dict[str, Any] = {}\n    for decade in sorted(bands):\n        rows = bands[decade]\n        count = len(rows)\n        label = \"70+\" if decade >= 7 else f\"{decade * 10}-{decade * 10 + 9}\"\n        out[label] = {\"residents\": count,\n                      \"mean_strength\": _round(sum(r[0] for r in rows) / count),\n                      \"mean_stamina\": _round(sum(r[1] for r in rows) / count),\n                      \"share_trained_strength\": _round(sum(r[2] for r in rows) / count),\n                      \"share_trained_stamina\": _round(sum(r[3] for r in rows) / count)}\n    return out\n\n\ndef game_report(game) -> dict[str, Any]:",
+    "note": "reporting: body_by_age (read-only), inserted before game_report"
+  }
+]

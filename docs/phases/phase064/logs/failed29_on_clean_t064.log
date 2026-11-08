@@ -1,0 +1,4 @@
+ERROR: file or directory not found: tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+
+
+no tests ran in 0.00s

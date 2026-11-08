@@ -5,6 +5,10 @@
     "RECIPES": [
       {
         "name": "saw_planks",
+        "marks": {
+          "dirt": 0.1,
+          "sweat": 0.2
+        },
         "requires": "sawyer",
         "in": [
           [
@@ -41,6 +45,10 @@
       },
       {
         "name": "burn_charcoal",
+        "marks": {
+          "soot": 0.5,
+          "soiled_clothes": 0.2
+        },
         "requires": "collier",
         "in": [
           [
@@ -73,6 +81,10 @@
       },
       {
         "name": "smelt_iron",
+        "marks": {
+          "soot": 0.3,
+          "sweat": 0.2
+        },
         "requires": "smith",
         "in": [
           [
@@ -219,6 +231,9 @@
       },
       {
         "name": "grind_flour",
+        "marks": {
+          "flour": 0.4
+        },
         "requires": "miller",
         "in": [
           [
@@ -473,6 +488,10 @@
       },
       {
         "name": "tan_hide",
+        "marks": {
+          "mud": 0.2,
+          "soiled_clothes": 0.2
+        },
         "requires": "tanner",
         "in": [
           [
@@ -4030,6 +4049,10 @@
       },
       {
         "name": "split_firewood",
+        "marks": {
+          "dirt": 0.1,
+          "sweat": 0.3
+        },
         "requires": "forester",
         "open": true,
         "in": [
@@ -4358,6 +4381,10 @@
       },
       {
         "name": "dig_ore",
+        "marks": {
+          "dirt": 0.3,
+          "sweat": 0.3
+        },
         "requires": "quarrier",
         "in": [],
         "out": [
@@ -5838,6 +5865,9 @@
       },
       {
         "name": "grind_rye",
+        "marks": {
+          "flour": 0.4
+        },
         "requires": "miller",
         "in": [
           [
@@ -6201,6 +6231,10 @@
       },
       {
         "name": "make_compost",
+        "marks": {
+          "dirt": 0.3,
+          "mud": 0.1
+        },
         "requires": "farmer",
         "open": true,
         "in": [
@@ -6241,6 +6275,12 @@
       },
       {
         "name": "dig_grave",
+        "marks": {
+          "dirt": 0.3,
+          "mud": 0.2,
+          "sweat": 0.3,
+          "soiled_clothes": 0.1
+        },
         "requires": "labourer",
         "open": true,
         "in": [],

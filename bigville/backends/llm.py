@@ -218,6 +218,10 @@ class LLMBackend:
     kind = "llm"
     # Phase 054: the game gives this resident's context its agent view (words only), and nothing else.
     wants_agent_view = True
+    # Phase 062: the agent view is degraded by this resident's faculties (domains/perceiver.py); the LLM is not a
+    # model of them.
+    faculties = {"senses": "enforced", "skill": "enforced", "impairment": "enforced",
+                 "literacy": "enforced", "numeracy": "enforced"}
     # Phase 053: this resident's knowledge is fogged (domains/map_memory.py): it knows the map as words, and its
     # moves are checked against what it knows.
     fogged = True

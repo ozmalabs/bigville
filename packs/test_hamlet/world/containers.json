@@ -2,6 +2,8 @@
   "_doc": "Test pack 'test_hamlet' (Phase 013b): CONTAINERS. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
   "_types": {},
   "tables": {
-    "CONTAINERS": {}
+    "CONTAINERS": {},
+    "COIN_WEIGHT": 0.0,
+    "COIN_VOLUME": 0.0
   }
 }

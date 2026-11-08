@@ -1,0 +1,28 @@
+{
+  "_doc": "DETRAIN and BODY_AGE (Phase 046): detraining of the trained part of strength and stamina, and ageing of the base. Both run only when DETRAIN.enabled is true. It is off by default, and it is a pack value, as DEPENDANTS.enabled is, not a physical subsystem, so the physical_subsystems defaults are unchanged. DETRAIN: the trained part (str_train and sta_train, Phase 032) is held while the resident has had no effort of that kind for `grace_days` whole days; past the grace it falls by `rate` of itself each day, toward 0 and never below 0, so effective strength never falls below the base. An effort is of a kind when its Effort node uses that stat: uses_strength for strength; every effort uses stamina. A confined, bedridden or collapsed resident has no effort and so detrains by the same rule. BODY_AGE: the base (str_base, sta_base) holds at the resident's own peak value to `peak_until` years of age; past it the base is that peak value times max(floor, 1 - decline_per_year x years past peak_until). Growth below the adult age is Phase 045's (DEPENDANTS.growth) and is not touched here; the self-test checks that peak_until is at or past the adult age, so the two never write the base at the same age. SOURCES (cited for the shape of the curves, not for the numbers): Mujika I, Padilla S. Detraining: loss of training-induced physiological and performance adaptations. Part I, Sports Medicine 2000;30(2):79-87, and Part II, Sports Medicine 2000;30(3):145-154 (detraining reviews). Bosquet L, et al. Effect of training cessation on muscular performance: a meta-analysis. Scandinavian Journal of Medicine and Science in Sports 2013;23(2):e140-9 (strength and endurance lost at different rates after training stops). Lindle RS, et al. Age and gender comparisons of muscle strength in 654 women and men aged 20-93 yr. Journal of Applied Physiology 1997;83(5):1581-7 (strength across adult ages). Fleg JL, Lakatta EG. Role of muscle loss in the age-associated reduction in VO2max. Journal of Applied Physiology 1988;65(3):1147-51 (aerobic capacity across adult ages). Hunter SK, Pereira HM, Keenan KG. The aging neuromuscular system and motor performance. Journal of Applied Physiology 2016;121(4):982-995 (review). THE NUMBERS ARE APPROX. Every figure below is a design figure. These sources were not checked for their figures in this session (no network access), and none of the figures is read from a published table. The design takes from the detraining reviews only the ordering that strength is lost more slowly than endurance, so stamina gets the shorter grace and the larger rate. Half-lives implied by the rates, once the grace has passed: strength about 34 days (rate 0.02 a day), stamina about 11 days (rate 0.06 a day). Peak and decline: the base holds to age 30 (APPROX design choice of the peak). Strength falls 0.8 percent of its peak base a year past 30, to a floor of 0.6 (APPROX; a 65 year old is at 0.72 of peak). Stamina falls 1.0 percent a year to a floor of 0.5 (APPROX; a 65 year old is at 0.65 of peak).",
+  "_types": {},
+  "tables": {
+    "DETRAIN": {
+      "enabled": false,
+      "strength": {
+        "grace_days": 21,
+        "rate": 0.02
+      },
+      "stamina": {
+        "grace_days": 7,
+        "rate": 0.06
+      }
+    },
+    "BODY_AGE": {
+      "peak_until": 30,
+      "strength": {
+        "decline_per_year": 0.008,
+        "floor": 0.6
+      },
+      "stamina": {
+        "decline_per_year": 0.01,
+        "floor": 0.5
+      }
+    }
+  }
+}

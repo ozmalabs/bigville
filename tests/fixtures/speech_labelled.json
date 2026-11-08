@@ -1,0 +1,2274 @@
+{
+ "_doc": "Phase 061 labelled set: 200 hand-written utterances of village speech, each with the speech act it should give (label), or null when no act should place it. Written from the act meanings in packs/bigville/world/speech_acts.json, not from the grammar. speaker, listener and names are the people in the exchange and in view (the context a parser gets). error (optional) is the reply a scripted small model gives for the line in the second arm: a plausible mistake, chosen by hand. The labels are judgements about meaning, and a reader may disagree with some of them.",
+ "items": [
+  {
+   "id": "S001",
+   "text": "Morning, Tam.",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "greeting"
+  },
+  {
+   "id": "S002",
+   "text": "Good day to you, Nell",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "greeting"
+  },
+  {
+   "id": "S003",
+   "text": "Hello there!",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "greeting"
+  },
+  {
+   "id": "S004",
+   "text": "Well met, neighbour.",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "greeting",
+   "error": {
+    "act": "farewell",
+    "slots": {}
+   }
+  },
+  {
+   "id": "S005",
+   "text": "Evening, Ivo.",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "greeting"
+  },
+  {
+   "id": "S006",
+   "text": "Hallo, Hester",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "greeting",
+   "error": {
+    "act": "greeting",
+    "slots": {
+     "target": "edwin"
+    }
+   }
+  },
+  {
+   "id": "S007",
+   "text": "Afternoon all",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "greeting"
+  },
+  {
+   "id": "S008",
+   "text": "Hey Ada.",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "greeting"
+  },
+  {
+   "id": "S009",
+   "text": "Good to see you again, Oswin.",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "greeting",
+   "error": {
+    "act": "question",
+    "slots": {
+     "question": "good to see you again"
+    }
+   }
+  },
+  {
+   "id": "S010",
+   "text": "Hullo",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "greeting",
+   "error": {
+    "act": "salutation",
+    "slots": {}
+   }
+  },
+  {
+   "id": "S011",
+   "text": "Mornin'",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "greeting",
+   "error": {
+    "act": "greeting",
+    "slots": {
+     "target": "oswald"
+    }
+   }
+  },
+  {
+   "id": "S012",
+   "text": "Hello, Martha, you look well",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "greeting"
+  },
+  {
+   "id": "S013",
+   "text": "Thanks a lot for the bread",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S014",
+   "text": "Much obliged, Ivo",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S015",
+   "text": "Thank you kindly",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S016",
+   "text": "I owe you one, Martha",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S017",
+   "text": "Cheers for the loan of the cart",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "thanks",
+   "error": {
+    "act": "thanks",
+    "slots": {
+     "target": "edwin"
+    }
+   }
+  },
+  {
+   "id": "S018",
+   "text": "Thanks, that was kind of you",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S019",
+   "text": "Thank you for the eggs, Nell.",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S020",
+   "text": "Ta",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S021",
+   "text": "Bless you for that",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S022",
+   "text": "I am grateful for the help with the roof",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "thanks"
+  },
+  {
+   "id": "S023",
+   "text": "Sorry about the spilt milk",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S024",
+   "text": "I beg your pardon, Oswin",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S025",
+   "text": "My apologies, that was rude of me",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S026",
+   "text": "Forgive me, I was short with you",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S027",
+   "text": "Sorry Tam, I did not mean it",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S028",
+   "text": "I am sorry for keeping you",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S029",
+   "text": "Apologies for the noise last night",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S030",
+   "text": "Sorry",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "apology"
+  },
+  {
+   "id": "S031",
+   "text": "Goodbye for now",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S032",
+   "text": "Bye, Ada",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S033",
+   "text": "Off I go, see you later",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S034",
+   "text": "Farewell, friend",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S035",
+   "text": "Take care now",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S036",
+   "text": "I must be going, goodnight",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S037",
+   "text": "Until tomorrow then",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S038",
+   "text": "Good night, Bram",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "farewell"
+  },
+  {
+   "id": "S039",
+   "text": "I will mend your gate by Friday",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "promise",
+   "error": {
+    "act": "offer",
+    "slots": {}
+   }
+  },
+  {
+   "id": "S040",
+   "text": "You have my word I will help with the harvest",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "promise"
+  },
+  {
+   "id": "S041",
+   "text": "Leave it with me, I will sort the roof",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "promise"
+  },
+  {
+   "id": "S042",
+   "text": "I promise I will bring the seed",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "promise"
+  },
+  {
+   "id": "S043",
+   "text": "I will fetch the wood tomorrow, I swear it",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "promise"
+  },
+  {
+   "id": "S044",
+   "text": "Count on me to help with the sheep",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "promise",
+   "error": {
+    "act": "complaint",
+    "slots": {}
+   }
+  },
+  {
+   "id": "S045",
+   "text": "This bread is stale again",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "complaint"
+  },
+  {
+   "id": "S046",
+   "text": "I am worried about the well",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "complaint",
+   "error": {
+    "act": "barb",
+    "slots": {}
+   }
+  },
+  {
+   "id": "S047",
+   "text": "The mill keeps us waiting every week, it is not right",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "complaint"
+  },
+  {
+   "id": "S048",
+   "text": "I do not like the new tax one bit",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "complaint"
+  },
+  {
+   "id": "S049",
+   "text": "This is not right, the price went up again",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "complaint"
+  },
+  {
+   "id": "S050",
+   "text": "The roof leaks and nobody comes",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "complaint"
+  },
+  {
+   "id": "S051",
+   "text": "Nothing works in this village any more",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "complaint"
+  },
+  {
+   "id": "S052",
+   "text": "Somebody has been stealing my eggs",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "complaint"
+  },
+  {
+   "id": "S053",
+   "text": "Be careful on the ice, Oswin",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S054",
+   "text": "Watch yourself near the bull",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S055",
+   "text": "Mind the step by the well",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S056",
+   "text": "Watch out, the cart is coming",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S057",
+   "text": "Careful, that pot is hot",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S058",
+   "text": "Steer clear of the Hammonds' yard",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S059",
+   "text": "Keep away from the river after dark",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S060",
+   "text": "Look out for the bridge, it is slippery",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "barb"
+  },
+  {
+   "id": "S061",
+   "text": "Could you spare two loaves?",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S062",
+   "text": "Ada, bring me the salt",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "request",
+   "error": "Sure, I would bring the salt."
+  },
+  {
+   "id": "S063",
+   "text": "Please help me lift this sack",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S064",
+   "text": "Can you help me with the fence?",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S065",
+   "text": "Give me a hand with the cart, will you",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S066",
+   "text": "Pass me the bread",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S067",
+   "text": "Fetch some water from the well, Tam",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S068",
+   "text": "Would you lend me your hammer",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S069",
+   "text": "Bring the seed bag over here",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S070",
+   "text": "Hand me that rope",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S071",
+   "text": "Be a dear and fetch the milk",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S072",
+   "text": "I need some flour for the bake",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S073",
+   "text": "Could you tell me where the miller is",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S074",
+   "text": "Show me the way to the church",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S075",
+   "text": "Would you give me a loaf for my boy",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S076",
+   "text": "Spare a crust, Nell?",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S077",
+   "text": "Carry this basket to Martha's door",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S078",
+   "text": "Lend me a shilling till Friday",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S079",
+   "text": "Help me with the sheep, please",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S080",
+   "text": "Tell Oswin the forge is hot",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "request"
+  },
+  {
+   "id": "S081",
+   "text": "I can help with that",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S082",
+   "text": "Want some bread? I have plenty",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S083",
+   "text": "Take this apple, it is yours",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S084",
+   "text": "I can give you some eggs if you need them",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S085",
+   "text": "Shall I carry that for you",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S086",
+   "text": "Let me mend that for you",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S087",
+   "text": "I will lend you my cart on Monday",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S088",
+   "text": "Have some ale, on the house",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S089",
+   "text": "Fancy a cup of tea?",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "offer",
+   "error": {
+    "act": "question",
+    "slots": {
+     "question": "fancy a cup of tea"
+    }
+   }
+  },
+  {
+   "id": "S090",
+   "text": "There is cheese in the pantry if you want some",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S091",
+   "text": "I could fetch the water for you",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S092",
+   "text": "Here, take some of the barley",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "offer"
+  },
+  {
+   "id": "S093",
+   "text": "Yes please, I will take the bread",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "accept"
+  },
+  {
+   "id": "S094",
+   "text": "Aye, I will have that",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "accept"
+  },
+  {
+   "id": "S095",
+   "text": "Done, you have a deal",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "accept"
+  },
+  {
+   "id": "S096",
+   "text": "Yes, I would like the apple",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "accept"
+  },
+  {
+   "id": "S097",
+   "text": "That would be lovely, I accept",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "accept"
+  },
+  {
+   "id": "S098",
+   "text": "Sounds good, I will take it",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "accept"
+  },
+  {
+   "id": "S099",
+   "text": "No thanks, I have had enough",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "decline"
+  },
+  {
+   "id": "S100",
+   "text": "I will pass on that, thank you",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "decline"
+  },
+  {
+   "id": "S101",
+   "text": "Not today, I am full",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "decline"
+  },
+  {
+   "id": "S102",
+   "text": "I would rather not, but kind of you",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "decline"
+  },
+  {
+   "id": "S103",
+   "text": "No, I can manage",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "decline"
+  },
+  {
+   "id": "S104",
+   "text": "Keep it, I do not want it",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "decline"
+  },
+  {
+   "id": "S105",
+   "text": "Yes, I understand",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S106",
+   "text": "I understand you",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S107",
+   "text": "Right, I see",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S108",
+   "text": "I am managing, thanks",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S109",
+   "text": "I cannot spare that just now",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S110",
+   "text": "I do not know you well enough to give that",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S111",
+   "text": "No, I do not have any",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S112",
+   "text": "Yes, it is done",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "answer"
+  },
+  {
+   "id": "S113",
+   "text": "I am not sure about the rain",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "hedged"
+  },
+  {
+   "id": "S114",
+   "text": "I do not know about the harvest yet",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "hedged"
+  },
+  {
+   "id": "S115",
+   "text": "Not sure about that one",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "hedged"
+  },
+  {
+   "id": "S116",
+   "text": "I could not say about the price",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "hedged"
+  },
+  {
+   "id": "S117",
+   "text": "I would not like to guess about the mill",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "hedged"
+  },
+  {
+   "id": "S118",
+   "text": "Who knows about the weather",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "hedged"
+  },
+  {
+   "id": "S119",
+   "text": "The weather is turning, is it not",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S120",
+   "text": "Looks like rain again",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S121",
+   "text": "Cold morning, isn't it",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S122",
+   "text": "Busy at the forge today",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S123",
+   "text": "Quiet market this week",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S124",
+   "text": "Hot one, that",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S125",
+   "text": "Fine weather for the hay",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S126",
+   "text": "Terrible frost last night",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S127",
+   "text": "Lots of carts on the road this week",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S128",
+   "text": "Trade is slow at the mill",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "smalltalk"
+  },
+  {
+   "id": "S129",
+   "text": "I heard the mill burned down last night",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S130",
+   "text": "Have you heard? The bridge is closed",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S131",
+   "text": "News from the church: the bell is cracked",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S132",
+   "text": "The baker's boy got a new horse",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S133",
+   "text": "Word is the fair moves to Thursday",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S134",
+   "text": "I heard that Martha is expecting",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S135",
+   "text": "The well has gone dry, they say",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S136",
+   "text": "Someone said the ferry is running again",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S137",
+   "text": "Tell you what, the miller has a new dog",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S138",
+   "text": "Heard the lambs were born early on the hill",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S139",
+   "text": "They say the squire is coming to Eastwick on Monday",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "share"
+  },
+  {
+   "id": "S140",
+   "text": "How are things with you?",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S141",
+   "text": "Is the forge lit this morning?",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S142",
+   "text": "Where did you put the spade?",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S143",
+   "text": "Have you seen Tam today?",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S144",
+   "text": "What time is the market?",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S145",
+   "text": "Can you read this notice for me?",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S146",
+   "text": "Did the baker bake today?",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S147",
+   "text": "Who owns the grey cow?",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S148",
+   "text": "Why is the mill shut?",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S149",
+   "text": "How much is a sack of flour?",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S150",
+   "text": "Are the sheep in the top field?",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S151",
+   "text": "Will it rain tomorrow?",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S152",
+   "text": "Is your wife well?",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S153",
+   "text": "Do you know where Martha lives?",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S154",
+   "text": "Has the rain stopped yet?",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S155",
+   "text": "How was your day?",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": "question"
+  },
+  {
+   "id": "S156",
+   "text": "Two carts went past the church.",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": null,
+   "error": {
+    "act": "share",
+    "slots": {
+     "news": "two carts went past the church"
+    }
+   }
+  },
+  {
+   "id": "S157",
+   "text": "The oven in the bakery is cold.",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": null
+  },
+  {
+   "id": "S158",
+   "text": "Grey clouds over the hill.",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S159",
+   "text": "Ada was at the well at dawn.",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": null
+  },
+  {
+   "id": "S160",
+   "text": "Eight geese on the green.",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": null,
+   "error": {
+    "act": "smalltalk",
+    "slots": {
+     "topic": "geese"
+    }
+   }
+  },
+  {
+   "id": "S161",
+   "text": "The river is high after the storm.",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S162",
+   "text": "Smoke from the forge, black as ink.",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S163",
+   "text": "There is a crack in the south wall.",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S164",
+   "text": "Nobody has seen the dog since Sunday.",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S165",
+   "text": "The cart has two wheels.",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": null
+  },
+  {
+   "id": "S166",
+   "text": "Bell rang at noon.",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": null,
+   "error": {
+    "act": "share",
+    "slots": {
+     "news": "bell rang at noon"
+    }
+   }
+  },
+  {
+   "id": "S167",
+   "text": "Hammond's sheep are in the barn.",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": null
+  },
+  {
+   "id": "S168",
+   "text": "Rooks on the church roof again.",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S169",
+   "text": "Cabbages are up in the north field.",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S170",
+   "text": "Three new calves in the byre.",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S171",
+   "text": "The stream runs under the old bridge.",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S172",
+   "text": "Dust on the road to Eastwick.",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S173",
+   "text": "Flour sacks stacked by the door.",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": null
+  },
+  {
+   "id": "S174",
+   "text": "The gate is painted green.",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S175",
+   "text": "Someone left a hat on the bench.",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": null
+  },
+  {
+   "id": "S176",
+   "text": "Stones in the lane again.",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S177",
+   "text": "Milk cans by the back door.",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S178",
+   "text": "Kettle on the hob, going cold.",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S179",
+   "text": "The sun is behind the church.",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S180",
+   "text": "Fourteen hens in the yard.",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S181",
+   "text": "Pigeons on the granary.",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": null
+  },
+  {
+   "id": "S182",
+   "text": "That ladder is leaning again.",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S183",
+   "text": "Chalk marks on the door.",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": null
+  },
+  {
+   "id": "S184",
+   "text": "Nails in the barrel.",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S185",
+   "text": "Ash on the hearth this morning.",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S186",
+   "text": "Mud up to the axle on the track.",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S187",
+   "text": "The hall smells of wet wool.",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S188",
+   "text": "Haystack by the old barn.",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S189",
+   "text": "A girl in a red coat by the pump.",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": null
+  },
+  {
+   "id": "S190",
+   "text": "Marks in the wet clay of the path.",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S191",
+   "text": "Ada! Over here.",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": null
+  },
+  {
+   "id": "S192",
+   "text": "Ploughing started on the east field.",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S193",
+   "text": "Six bells at the chapel today.",
+   "speaker": "bram",
+   "listener": "nell",
+   "names": [
+    "nell",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S194",
+   "text": "Mill wheel turning slow.",
+   "speaker": "ada",
+   "listener": "ivo",
+   "names": [
+    "ivo",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S195",
+   "text": "Tallow candles, two for a penny.",
+   "speaker": "tam",
+   "listener": "oswin",
+   "names": [
+    "hester",
+    "oswin"
+   ],
+   "label": null
+  },
+  {
+   "id": "S196",
+   "text": "Sheep bleating down by the ford.",
+   "speaker": "nell",
+   "listener": "martha",
+   "names": [
+    "bram",
+    "martha"
+   ],
+   "label": null
+  },
+  {
+   "id": "S197",
+   "text": "Old boots by the step.",
+   "speaker": "ivo",
+   "listener": "hester",
+   "names": [
+    "ada",
+    "hester"
+   ],
+   "label": null
+  },
+  {
+   "id": "S198",
+   "text": "Kiln smoke over the ridge.",
+   "speaker": "oswin",
+   "listener": "bram",
+   "names": [
+    "bram",
+    "tam"
+   ],
+   "label": null
+  },
+  {
+   "id": "S199",
+   "text": "Pump handle is loose.",
+   "speaker": "martha",
+   "listener": "ada",
+   "names": [
+    "ada",
+    "nell"
+   ],
+   "label": null
+  },
+  {
+   "id": "S200",
+   "text": "Quince jam on the shelf, nobody touch it.",
+   "speaker": "hester",
+   "listener": "tam",
+   "names": [
+    "ivo",
+    "tam"
+   ],
+   "label": null
+  }
+ ]
+}

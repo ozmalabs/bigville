@@ -542,6 +542,73 @@ def _check_locks(errors, warnings, info):
             errors.append(f"MAJOR_ACTIONS: needs {action!r} with a description (Phase 030)")
 
 
+def _check_coin_storage(errors, warnings, info):
+    """Phase 041: coin stored in containers and purses. COIN_WEIGHT and COIN_VOLUME (packs/*/world/containers.json)
+    are numbers of at least 0. Coin is an item kind (ITEMS) so a container's coin pile has a kind. The codes that
+    a coin move can refuse with must exist in REFUSAL_REASONS."""
+    for name, value in (("COIN_WEIGHT", COIN_WEIGHT), ("COIN_VOLUME", COIN_VOLUME)):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            errors.append(f"{name}: must be a number of at least 0, not {value!r} (Phase 041)")
+    if "coin" not in ITEMS:
+        errors.append("ITEMS: 'coin' is needed for coin stored in containers (Phase 041)")
+    for code in ("full", "container_locked", "out_of_stock", "not_in_reach", "unknown_target", "malformed",
+                 "slot_used"):
+        if code not in REFUSAL_REASONS:
+            errors.append(f"REFUSAL_REASONS: needs the coin code {code!r} (Phase 041)")
+
+
+def _check_doors(errors, warnings, info):
+    """Phase 039: a building's door (BUILDINGS[...].door, one per building). The lock is a whole-number lock_id of at
+    least 1 that no other door shares and that differs from the store's, so one key opens one lock; `locked` is a
+    flag; keys_required is a whole number of at least 1; lock_strength is positive (Phase 050). An entrance, when
+    named, is an offset [dx, dy] inside the footprint on its perimeter, so a crossing can be made there. The
+    refusal code door_locked exists with a description (both packs)."""
+    seen = {}
+    allowed = {"lock_id", "locked", "keys_required", "lock_strength", "entrance"}
+    for name, spec in BUILDINGS.items():
+        door = spec.get("door")
+        if door is None:
+            continue
+        where = f"BUILDINGS[{name}].door"
+        if not isinstance(door, dict) or set(door) - allowed:
+            errors.append(f"{where}: must be an object with only {sorted(allowed)}")
+            continue
+        lock_id = door.get("lock_id")
+        if isinstance(lock_id, bool) or not isinstance(lock_id, int) or lock_id < 1:
+            errors.append(f"{where}: lock_id must be a whole number of at least 1, not {lock_id!r}")
+        elif lock_id == STORE_LOCK["lock_id"] or lock_id in seen:
+            errors.append(f"{where}: lock_id {lock_id} is shared with {seen.get(lock_id, 'the town store')}; "
+                          "one key must open one lock")
+        else:
+            seen[lock_id] = name
+        if not isinstance(door.get("locked"), bool):
+            errors.append(f"{where}: locked must be true or false, not {door.get('locked')!r}")
+        keys = door.get("keys_required", 1)
+        if isinstance(keys, bool) or not isinstance(keys, int) or keys < 1:
+            errors.append(f"{where}: keys_required must be a whole number of at least 1, not {keys!r}")
+        strength = door.get("lock_strength")
+        if isinstance(strength, bool) or not isinstance(strength, (int, float)) or strength <= 0:
+            errors.append(f"{where}: lock_strength must be a positive number, not {strength!r}")
+        if "entrance" in door:
+            footprint = spec.get("footprint", spec.get("size", (3, 3)))
+            if isinstance(footprint, (int, float)):
+                footprint = (int(footprint), int(footprint))
+            width, height = int(footprint[0]), int(footprint[1])
+            entrance = door["entrance"]
+            if (not isinstance(entrance, (list, tuple)) or len(entrance) != 2
+                    or any(isinstance(v, bool) or not isinstance(v, int) for v in entrance)):
+                errors.append(f"{where}: entrance must be an [dx, dy] offset, not {entrance!r}")
+            else:
+                dx, dy = entrance
+                inside = 0 <= dx < width and 0 <= dy < height
+                if not inside or not (dx in (0, width - 1) or dy in (0, height - 1)):
+                    errors.append(f"{where}: entrance {entrance} is not on the perimeter of the "
+                                  f"{width}x{height} footprint")
+    if "door_locked" not in REFUSAL_REASONS or not str(REFUSAL_REASONS["door_locked"].get("description", "")).strip():
+        errors.append("REFUSAL_REASONS: needs the door code 'door_locked' with a description (Phase 039)")
+    info.append(f"DOORS: {len(seen)} building door(s)")
+
+
 def _check_hearing(errors, warnings, info):
     """Phase 028: the speech and sight figures (packs/*/world/hearing.json). Radii are cells and at least 0;
     the normal loudness is the floor of a chosen loudness and sits within the clamp; the sight range is a
@@ -652,6 +719,81 @@ def _check_health(errors, warnings, info):
                     f"of elder age (age_rate {elder} a year, APPROX)")
     info.append(f"HEALTH: starvation kills a healthy adult {-(-float(h['max_health']) // float(h['starve_harm'])):.0f} "
                 f"period(s) past starve_limit (starve_harm {h['starve_harm']}, APPROX)")
+
+
+def _check_marks(errors, warnings, info):
+    """Phase 063: MARKS (the visible surface states) and the causes that raise them. Every route of harm
+    (HEALTH causes) has a MARK_HARM row, even an empty one, so a cause that leaves no mark is said so on
+    purpose. Each recipe, shock and event that names a mark names a kind in MARKS."""
+    rules = MARK_RULES
+    if not 0.0 < float(rules["max_level"]) <= 1.0:
+        errors.append(f"MARK_RULES[max_level]: must lie in (0, 1], not {rules['max_level']!r}")
+    for name in ("wash_water", "wet_gain"):
+        if float(rules[name]) < 0.0:
+            errors.append(f"MARK_RULES[{name}]: must not be negative, not {rules[name]!r}")
+    if not 0.0 < float(rules["wash_drop"]) <= 1.0:
+        errors.append(f"MARK_RULES[wash_drop]: must lie in (0, 1], not {rules['wash_drop']!r}")
+    top = float(rules["max_level"])
+    for kind, spec in MARKS.items():
+        where = f"MARKS[{kind}]"
+        if not str(spec.get("label", "")).strip():
+            errors.append(f"{where}: needs a label (the word a view shows)")
+        if not isinstance(spec.get("washable"), bool):
+            errors.append(f"{where}[washable]: true or false, not {spec.get('washable')!r}")
+        for name in ("decay", "rain_wash"):
+            if float(spec[name]) < 0.0:
+                errors.append(f"{where}[{name}]: must not be negative, not {spec[name]!r}")
+        if spec.get("washable") is False and float(spec["rain_wash"]) > 0.0:
+            errors.append(f"{where}: a mark that washing cannot take must not be washed by rain")
+        if not 0.0 <= float(spec["clothes_change_drop"]) <= 1.0:
+            errors.append(f"{where}[clothes_change_drop]: must lie in [0, 1], not {spec['clothes_change_drop']!r}")
+        if not 0.0 < float(spec["visible_level"]) <= top:
+            errors.append(f"{where}[visible_level]: must lie in (0, max_level], not {spec['visible_level']!r}")
+        if isinstance(spec["see_range"], bool) or not isinstance(spec["see_range"], int) or spec["see_range"] < 0:
+            errors.append(f"{where}[see_range]: a whole number of cells >= 0, not {spec['see_range']!r}")
+        if not 0.0 <= float(spec["see_light"]) <= 1.0:
+            errors.append(f"{where}[see_light]: must lie in [0, 1], not {spec['see_light']!r}")
+        skill = spec.get("notice_skill")
+        if skill is not None and skill not in SKILLS:
+            errors.append(f"{where}[notice_skill]: '{skill}' is not a SKILLS name")
+    causes = list(HEALTH["causes"])
+    for cause in causes:
+        if cause not in MARK_HARM:
+            errors.append(f"MARK_HARM: HEALTH cause '{cause}' has no row (use {{}} for a cause that leaves no mark)")
+    for cause in MARK_HARM:
+        if cause not in causes:
+            errors.append(f"MARK_HARM[{cause}]: not a HEALTH cause")
+
+    def _known_marks(row, where):
+        for kind, gain in row.items():
+            if kind not in MARKS:
+                errors.append(f"{where}: '{kind}' is not a MARKS kind")
+            if isinstance(gain, bool) or not isinstance(gain, (int, float)) or gain <= 0.0:
+                errors.append(f"{where}[{kind}]: a gain above 0, not {gain!r}")
+
+    for cause, row in MARK_HARM.items():
+        _known_marks(row, f"MARK_HARM[{cause}]")
+    for event, row in MARK_EVENTS.items():
+        _known_marks(row, f"MARK_EVENTS[{event}]")
+    causes_of = {kind: 0 for kind in MARKS}
+    for r in RECIPES:
+        if "marks" in r:
+            _known_marks(r["marks"], f"RECIPES[{r['name']}].marks")
+            for kind in r["marks"]:
+                causes_of[kind] = causes_of.get(kind, 0) + 1
+    for name, spec in SHOCKS.items():
+        if "marks" in spec:
+            _known_marks(spec["marks"], f"SHOCKS[{name}].marks")
+            for kind in spec["marks"]:
+                causes_of[kind] = causes_of.get(kind, 0) + 1
+    for row in list(MARK_HARM.values()) + list(MARK_EVENTS.values()):
+        for kind in row:
+            causes_of[kind] = causes_of.get(kind, 0) + 1
+    for kind, count in causes_of.items():
+        if count == 0 and kind != "wetness":          # wetness comes from rain (MARK_RULES.wet_gain)
+            warnings.append(f"MARKS[{kind}]: no recipe, shock, harm or event raises it")
+    info.append(f"MARKS: {len(MARKS)} kinds, {sum(1 for r in RECIPES if 'marks' in r)} recipes and "
+                f"{sum(1 for s in SHOCKS.values() if 'marks' in s)} shocks name a mark (APPROX levels)")
 
 
 def _check_intoxication(errors, warnings, info):
@@ -1048,6 +1190,143 @@ def _check_tool_fit(errors, warnings, info):
     if any(b < a - 1e-12 for a, b in zip(hard, hard[1:])):
         errors.append("TOOL_FIT: a harder tool must not fit worse (Phase 048)")
     info.append(f"TOOL_FIT: {len(tf['verbs'])} verbs, {len(tf['pairs'])} pairs, {len(tf['rows'])} authored tools (APPROX)")
+
+
+def _check_births(errors, warnings, info):
+    """Phase 044: the BIRTHS table. Conception rates cover every fertile age with a rate in [0, 1]; gestation and the
+    postpartum block are whole days; the pregnancy's work and food, the delivery risks and the midwife's factor are in
+    their ranges; the first-year death is the complement of INFANT_SURVIVAL (Phase 009's table); and 'childbirth' is a
+    HEALTH cause with a MARK_HARM row. The arithmetic (domains/fertility_check.py) reports the completed family of a
+    union woman entering at the cited age at first union, against the cited CHILDREN_PER_UNION mean (APPROX). The
+    growth of the town is not checked here: a village run is needed for that (see the Phase 044 report)."""
+    from domains import fertility_check as _fc
+    b = BIRTHS
+    required = ("fertile_age_min", "fertile_age_max", "conception_per_year", "gestation_days",
+                "postpartum_block_days", "pregnancy_food", "pregnancy_load", "stillbirth", "maternal_death",
+                "midwife_factor", "infant_first_year_death", "nursed_hunger", "midwife_reach")
+    missing = [key for key in required if key not in b]
+    for key in missing:
+        errors.append(f"BIRTHS[{key}]: missing")
+    if missing:
+        return
+    lo, hi = int(b["fertile_age_min"]), int(b["fertile_age_max"])
+    if not 0 < lo < hi:
+        errors.append(f"BIRTHS[fertile_age]: need 0 < min < max, not {lo}..{hi}")
+    bands = sorted(b["conception_per_year"], key=lambda band: float(band["age_min"]))
+    for band in bands:
+        if float(band["age_min"]) > float(band["age_max"]) or not 0.0 <= float(band["rate"]) <= 1.0:
+            errors.append(f"BIRTHS[conception_per_year]: a band needs age_min <= age_max and a rate in [0, 1], not {band!r}")
+    for prev, nxt in zip(bands, bands[1:]):
+        if float(nxt["age_min"]) <= float(prev["age_max"]):
+            errors.append(f"BIRTHS[conception_per_year]: bands overlap at {nxt['age_min']}")
+    for age in range(lo, hi + 1):
+        if not any(float(x["age_min"]) <= age <= float(x["age_max"]) for x in bands):
+            errors.append(f"BIRTHS[conception_per_year]: no band covers fertile age {age}")
+            break
+    for key in ("gestation_days", "postpartum_block_days", "midwife_reach"):
+        value = b[key]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            errors.append(f"BIRTHS[{key}]: a whole number of days (or cells) >= 0, not {value!r}")
+    if int(b["gestation_days"]) < 1:
+        errors.append("BIRTHS[gestation_days]: must be at least 1 day")
+    if float(b["pregnancy_food"]) < 0.0:
+        errors.append(f"BIRTHS[pregnancy_food]: must not be negative, not {b['pregnancy_food']!r}")
+    load = b["pregnancy_load"]
+    if not 0.0 <= float(load["from_term"]) < 1.0 or not 0.0 <= float(load["max_load"]) <= 1.0:
+        errors.append(f"BIRTHS[pregnancy_load]: from_term in [0, 1) and max_load in [0, 1], not {load!r}")
+    for key in ("stillbirth", "maternal_death", "infant_first_year_death"):
+        if not 0.0 <= float(b[key]) <= 1.0:
+            errors.append(f"BIRTHS[{key}]: a chance in [0, 1], not {b[key]!r}")
+    if abs(float(b["infant_first_year_death"]) - (1.0 - float(INFANT_SURVIVAL))) > 1e-9:
+        errors.append(f"BIRTHS[infant_first_year_death]: must be 1 - INFANT_SURVIVAL ({1.0 - float(INFANT_SURVIVAL)}), "
+                      f"not {b['infant_first_year_death']!r}")
+    if not 0.0 < float(b["midwife_factor"]) <= 1.0:
+        errors.append(f"BIRTHS[midwife_factor]: in (0, 1], not {b['midwife_factor']!r}")
+    if float(b["nursed_hunger"]) < 0.0:
+        errors.append(f"BIRTHS[nursed_hunger]: must not be negative, not {b['nursed_hunger']!r}")
+    if "midwifery" not in SKILLS:
+        info.append("BIRTHS: this pack has no midwifery skill, so no resident can attend a birth as a midwife")
+    if "childbirth" not in HEALTH["causes"]:
+        errors.append("BIRTHS: 'childbirth' is not a HEALTH cause")
+    if "childbirth" not in MARK_HARM:
+        errors.append("BIRTHS: 'childbirth' has no MARK_HARM row")
+    days = float(TIME["days_per_year"])
+    entry = float(AGE_AT_FIRST_UNION["female"]["mean"])
+    family = _fc.completed_family(bands, gestation_days=int(b["gestation_days"]),
+                                  postpartum_days=int(b["postpartum_block_days"]), entry_age=entry,
+                                  end_age=float(hi) + 1.0, days_per_year=days)
+    cited = float(CHILDREN_PER_UNION["mean"])
+    info.append(f"BIRTHS: a union woman entering at {entry:g} has {family:.2f} children by {hi + 1} "
+                f"(table) against CHILDREN_PER_UNION mean {cited:g} (APPROX, Wrigley and Schofield 1981)")
+    if abs(family - cited) > 1.0:
+        errors.append(f"BIRTHS: completed family {family:.2f} is more than 1.0 from CHILDREN_PER_UNION {cited:g}")
+    for age in (25, 30, 35):
+        per_year = _fc.births_per_union_year(bands, age=age, days_per_year=days,
+                                             gestation_days=int(b["gestation_days"]),
+                                             postpartum_days=int(b["postpartum_block_days"]))
+        info.append(f"BIRTHS: a union woman aged {age} has {per_year:.3f} births a year on average (table)")
+
+
+def _check_dependants(errors, warnings, info):
+    """Phase 045: the DEPENDANTS table. Dependant stages are life stages below the adult age and include the
+    infant (the refusal applies to it); each has a whole-day neglect span; the neglect cause is a HEALTH cause
+    with a MARK_HARM row; 'infant' is a refusal reason; the growth fractions and work factors are in range.
+    Reports the growth curve and the switch state."""
+    from domains.dependants import growth_fraction as _growth_fraction
+    d = DEPENDANTS
+    stages = list(d["stages"])
+    adult = LIFE_STAGES["adult"]
+    if not stages or len(set(stages)) != len(stages):
+        errors.append(f"DEPENDANTS[stages]: a non-empty list of unique stages, not {stages!r}")
+    for stage in stages:
+        if stage not in LIFE_STAGES:
+            errors.append(f"DEPENDANTS[stages]: {stage!r} is not a LIFE_STAGES key")
+            continue
+        if float(LIFE_STAGES[stage]["age_max"]) >= float(adult["age_min"]):
+            errors.append(f"DEPENDANTS[stages]: {stage!r} reaches the adult age ({adult['age_min']})")
+        if not 0.0 <= float(LIFE_STAGES[stage]["care"]) <= 1.0 or not 0.0 <= float(LIFE_STAGES[stage]["work_fraction"]) <= 1.0:
+            errors.append(f"DEPENDANTS[stages]: {stage!r} needs care and work_fraction in [0, 1]")
+    if "infant" not in stages:
+        errors.append("DEPENDANTS[stages]: 'infant' must be a dependant stage (the major-action refusal applies to it)")
+    if not isinstance(d["enabled"], bool):
+        errors.append(f"DEPENDANTS[enabled]: a boolean, not {d['enabled']!r}")
+    spans = d["neglect_after_days"]
+    if set(spans) != set(stages):
+        errors.append(f"DEPENDANTS[neglect_after_days]: one span per dependant stage, not {sorted(spans)}")
+    for stage, days in spans.items():
+        if isinstance(days, bool) or not isinstance(days, int) or days < 0:
+            errors.append(f"DEPENDANTS[neglect_after_days][{stage}]: a whole number of days >= 0, not {days!r}")
+    if float(d["neglect_harm"]) < 0.0:
+        errors.append(f"DEPENDANTS[neglect_harm]: must not be negative, not {d['neglect_harm']!r}")
+    reach = d["reach_cells"]
+    if isinstance(reach, bool) or not isinstance(reach, int) or reach < 0:
+        errors.append(f"DEPENDANTS[reach_cells]: a whole number of cells >= 0, not {reach!r}")
+    if float(d["caregiver_max_hunger"]) < 0.0:
+        errors.append(f"DEPENDANTS[caregiver_max_hunger]: must not be negative, not {d['caregiver_max_hunger']!r}")
+    growth = d["growth"]
+    for key in ("strength_start", "stamina_start"):
+        if not 0.0 < float(growth[key]) <= 1.0:
+            errors.append(f"DEPENDANTS[growth][{key}]: in (0, 1], not {growth[key]!r}")
+    if float(growth["exponent"]) <= 0.0:
+        errors.append(f"DEPENDANTS[growth][exponent]: must be positive, not {growth['exponent']!r}")
+    if "neglect" not in HEALTH["causes"]:
+        errors.append("DEPENDANTS: 'neglect' is not a HEALTH cause")
+    if "neglect" not in MARK_HARM:
+        errors.append("DEPENDANTS: 'neglect' has no MARK_HARM row")
+    if "infant" not in REFUSAL_REASONS:
+        errors.append("DEPENDANTS: 'infant' is not a REFUSAL_REASONS code")
+    adult_age = float(adult["age_min"])
+    bands = sorted(LIFE_STAGES.values(), key=lambda s: float(s["age_min"]))
+    gaps = [f"{float(a['age_max']):g} to {float(b['age_min']):g}" for a, b in zip(bands, bands[1:])
+            if float(b["age_min"]) > float(a["age_max"])]
+    info.append(f"DEPENDANTS: the LIFE_STAGES bands leave gaps ({', '.join(gaps) or 'none'}); an age in a gap reads as "
+                "elder with the switch off (HEAD) and as the band below it with the switch on")
+    state = "on" if d["enabled"] else "off"
+    for age in (0, 4, 12, 18):
+        strength = _growth_fraction(age, float(growth["strength_start"]), adult_age, float(growth["exponent"]))
+        stamina = _growth_fraction(age, float(growth["stamina_start"]), adult_age, float(growth["exponent"]))
+        info.append(f"DEPENDANTS: at age {age} strength is {strength:.3f} and stamina {stamina:.3f} of the adult "
+                    f"base (switch {state})")
 
 
 def _check_contest(errors, warnings, info):
@@ -2088,14 +2367,23 @@ def check_consistency():
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
     _check_health(errors, warnings, info)
+    from domains.interoception_check import check_interoception  # Phase 069: the body's feelings (anatomy, sounds, sources)
+    check_interoception(_WORLD_PACK.path, errors, warnings, info)
+    _check_marks(errors, warnings, info)   # Phase 063: visible marks and their causes
     _check_intoxication(errors, warnings, info)
     _check_aftereffects(errors, warnings, info)
     _check_illness(errors, warnings, info)
+    _check_births(errors, warnings, info)   # Phase 044: pregnancy and birth (BIRTHS)
+    _check_dependants(errors, warnings, info)   # Phase 045: infants, dependants and growth (DEPENDANTS)
+    from domains.detraining_check import check_detraining  # Phase 046: DETRAIN and BODY_AGE
+    check_detraining(_WORLD_PACK.path, errors, warnings, info)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)
     _check_joint_tasks(errors, warnings, info)
     _check_training(errors, warnings, info)
     _check_locks(errors, warnings, info)
+    _check_coin_storage(errors, warnings, info)   # Phase 041: coin stored in containers and purses
+    _check_doors(errors, warnings, info)   # Phase 039: building doors (BUILDINGS[...].door)
     _check_food_grading(errors, warnings, info)
     _check_nutrition(errors, warnings, info)
     _check_generated_seeds(errors)
@@ -2112,8 +2400,20 @@ def check_consistency():
     check_agent_view(_WORLD_PACK.path, errors, warnings, info)
     from domains.narration_check import check_narration  # Phase 057: the terminal interface's sentence templates
     check_narration(_WORLD_PACK.path, errors, warnings, info)
+    from domains.tui_check import check_tui  # Phase 067: the terminal modes' map art and text sentences
+    check_tui(_WORLD_PACK.path, errors, warnings, info)
     from domains.fog_check import check_fog  # Phase 053: the fog of the map, in three levels
     check_fog(_WORLD_PACK.path, errors, warnings, info)
+    from domains.speech_acts_check import check_speech_acts  # Phase 060: the speech acts and their templates
+    check_speech_acts(_WORLD_PACK.path, errors, warnings, info)
+    from domains.perception_check import check_perception  # Phase 062: the perceiver's tiers, gates and switch
+    check_perception(_WORLD_PACK.path, errors, warnings, info)
+    from domains.reading_check import check_reading  # Phase 064: the reading and numeracy tables
+    check_reading(_WORLD_PACK.path, errors, warnings, info)
+    from domains.impairment_check import check_impairment  # Phase 065: the impairment sources, rows and neighbours
+    check_impairment(_WORLD_PACK.path, errors, warnings, info)
+    from domains.speech_parser_check import check_speech_parser  # Phase 061: the speech parser table and its prefix
+    check_speech_parser(_WORLD_PACK.path, errors, warnings, info)
     stats = {
         "items": len(items), "recipes": len(RECIPES), "runnable_recipes": len(runnable),
         "buildings": len(BUILDINGS), "founding_buildings": len(founding_buildings()),

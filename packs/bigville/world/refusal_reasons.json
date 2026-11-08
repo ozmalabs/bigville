@@ -21,6 +21,12 @@
       "collapsed": {
         "description": "You have collapsed from exhaustion and are asleep where you fell. You cannot act until you wake, and you wake weaker than a proper sleep leaves you."
       },
+      "unknown_region": {
+        "description": "The part of the body you named for the blow is not one that a person has. Name a region such as head, chest, back, arm or leg, or leave the region out."
+      },
+      "attending": {
+        "description": "You are already looking into a feeling. Wait until the attention has run its course before you give it another."
+      },
       "exhausted": {
         "description": "You are too exhausted to set off on foot now. Rest first; you can walk again once you have recovered a little."
       },
@@ -63,11 +69,17 @@
       "container_locked": {
         "description": "The container is locked, and you do not hold its key."
       },
+      "full": {
+        "description": "The container has no room left for that much coin."
+      },
       "invalid_destination": {
         "description": "The place cannot be reached this way: it is the cell you already stand on, or it would put a container inside itself."
       },
       "not_needed": {
         "description": "It is not needed now: you are not hurt or hungry enough for this care, your stamina is high enough not to rest, or the crop does not need water."
+      },
+      "infant": {
+        "description": "You are an infant: you cannot act for yourself. Others must tend you, and you cannot walk, work, take or eat on your own."
       },
       "destroyed": {
         "description": "The thing is broken apart and cannot be opened or used any more."
@@ -95,6 +107,9 @@
       },
       "store_locked": {
         "description": "The town store is locked. You do not hold a key that opens it alone, so you cannot take from it, put into it, or use its stock."
+      },
+      "door_locked": {
+        "description": "The door is locked. You cannot walk through it until someone unlocks it with a key that fits."
       },
       "restrained": {
         "description": "Someone is holding you, so you cannot walk away. The holder must let go, or you must win a struggle."

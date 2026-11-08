@@ -42,6 +42,11 @@
         "kind": "abandon",
         "requires_target": false,
         "description": "Abandon the timed job (recipe) you are running. Its inputs are not yet taken, so only the progress is lost, and the stamina already spent stays spent. Uses no major action."
+      },
+      "glance": {
+        "kind": "attention",
+        "requires_target": true,
+        "description": "Take a quick look at one feeling you have, by its signal number (signal:1 is the first in your felt list). Uses no major action and no time: the feeling is one step clearer to you until your next turn, and only then. Use attend for a longer look."
       }
     }
   }

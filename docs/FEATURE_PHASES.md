@@ -99,7 +99,7 @@ would sweep its hunks into a phase commit, which is why rule 2 requires `git add
 | Tract | Phases |
 |---|---|
 | A, world physics | 030, 037, 050, 043, 048, 034, 038, 049, 047, 035, 036, 032, 033, 040, 039, 041, and 063 (visible condition) |
-| B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, then 066, 056, 053, 042, 060, 061, 062, 064, 065, 067, 044, 045, 046 (068 parked) |
+| B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, then 066, 056, 053, 042, 060, 061, 062, 064, 065, 067, 044, 045, 046, all done (062b followed 062); 068 parked on Phase 056 data |
 | Unassigned | 069, 070, 071 (Programme F, the body as a unit; supervisor assigns them, 069 may be split between tracts) |
 | Neither | Ocelot integration and persistence (uncommitted) |
 | Superseded | 003 (done with 016b), 013 and 016 (split into 013a and 013b, 016a and 016b) |
@@ -1621,11 +1621,7 @@ group violence.
 
 ## Phase 039 -- Doors and confinement
 
-**Status:** ready, after 030, and a survey first. Spec: `seeds/bigville_jail.json` (custody is an
-institution's roll: a charge's `jail_term`, `sentence_remaining`, served a day at a time by the
-curfew bell, released at 0, "the FULL term, no early release") and the lock and key rules of
-Phase 030. The roll, the sentence and the release are the residents' institution. What the
-world supplies is the physical fact that a locked room holds whoever is inside.
+**Status:** done (option B: a gate on the existing map, no walls). A building may carry one door, a `Lock` node with Phase 030's fields and a `lock_strength`, and one entrance cell on its footprint's perimeter. A step across the footprint boundary is refused `door_locked` while the door is locked; while unlocked, crossings happen only at the entrance, and walks route round to it. `lock`/`unlock` take the building's name from the entrance or a cell beside it (dual keys work as in Phase 030); forcing is a Phase 050 `attempt` (open, pry, force) on the door's lock. Evasion, displacement and joint carry do not step across a locked door; a restrained resident cannot walk anyway. The jail is a BUILDINGS row (`founding: false`, 3x3, locked door, lock_id 41, lock_strength 3.0, APPROX) with a building project; confinement is only the locked door. Founding buildings have no door, so the village is unchanged (0 deaths in 192 turns). Building sprites and manifests regenerated for the jail. Open: lock_id 41 is not reserved against containers. See docs/phases/phase039/PHASE039_REPORT.md.
 
 **Goal.** The executor first reports how buildings, entrances and interiors are modelled
 (footprints, entrance cells, interior cells). If each building has an entrance cell on the map
@@ -1714,12 +1710,7 @@ things"); armour; blocking with a held object; a trade in arms (residents).
 
 ## Phase 041 -- Physical coin and safes
 
-**Status:** ready, after 030 (decision 2026-11-05: added). Spec:
-`seeds/bigville_coin_safe.json` v1.1.0 (block R47): coins are physical and must be stored, in a
-safe behind keys. `cs_present`, `cs_open_threshold` (opens at `keys_required` distinct
-authorisers, a dual-key safe is separation of duties), `cs_withdraw` and `cs_deposit` (conserved,
-capped at what the safe or purse holds), `cs_denied` (a closed safe refuses). Phase 011 builds
-treasury and church purses and needs this first.
+**Status:** done. A resident's own coin (their purse) moves into a lockable container with `put(..., "coin", n)` and back with `fetch(..., "coin", n, source=...)`, conserved, on the container's cell; a closed safe refuses `container_locked`, and a dual-key safe opens only after two distinct keyholders have turned their keys (Phase 030). A Phase 011 fiscal purse keeps its coin and its ledger, and only its holder may put or fetch. `COIN_WEIGHT` and `COIN_VOLUME` (both 0.0, APPROX) set a coin's carried and stored load, so the founding town is unchanged (0 deaths in 192 turns); a full container refuses `full`. `economy.coin` in the report counts where the coin is. No backend is offered coin storage yet. Open: village_eval's conservation snapshot does not count resident or purse coin (the preregistered evaluation is left unchanged); purses have no lock, so a dual-key treasury needs a safe. See docs/phases/phase041/PHASE041_REPORT.md.
 
 **Goal.** Coin is a number on the resident (`coin`) and can only move by `give`. Make it
 storable:
@@ -1824,7 +1815,7 @@ epidemic spread between residents (a later phase).
 
 ## Phase 044 -- Pregnancy and birth
 
-**Status:** ready, after 009, 037 and 043 (decision 2026-11-05: births are added). NEW DESIGN:
+**Status:** done (switch off by default; see `docs/phases/phase044/PHASE044_REPORT.md` and `REBASE_NOTE.md`; the bigville pack stays off because the founding cast's birth flow is about twice the English rate). NEW DESIGN:
 no seed covers conception, pregnancy or birth. `birth()` exists on the world and nothing calls
 it. Seeded neighbours: `bigville_life_inheritance` (death passes the estate), `bigville_will`,
 `bigville_infant_care` (infant fragility). Behind a `births` switch so a scenario can keep a fixed population: off for fixtures and, once
@@ -1867,7 +1858,7 @@ multiple births beyond a table rate.
 
 ## Phase 045 -- Infants, dependants and coming of age
 
-**Status:** ready, after 044 (decision 2026-11-05: added). Spec: the data `LIFE_STAGES` (age
+**Status:** done (switch off by default; see `docs/phases/phase045/PHASE045_REPORT.md` and `REBASE_NOTE.md`). Spec: the data `LIFE_STAGES` (age
 bands with `work_fraction`, `care` and `food`), `seeds/bigville_infant_care.json` (fragility),
 `seeds/bigville_life_rearing.json` `bl_come_of_age` (a resident, Mind-side rule: nurture, the net
 of regulated and neglected care, shapes the adult priors and flags `adult`). The prior-shaping
@@ -1905,7 +1896,7 @@ rearing priors (the backend's); carrying infants.
 
 ## Phase 046 -- Detraining and ageing of the body
 
-**Status:** ready, after 032 and 045 (decision 2026-11-05: added). NEW DESIGN, no seed: the Body
+**Status:** done (switch off by default), see `docs/phases/phase046/PHASE046_REPORT.md`. NEW DESIGN, no seed: the Body
 seeds only train. `bd_train_strength` and `bd_train_stamina` raise the trained component toward
 base x (1 + `TRAIN_HEADROOM`) at `TRAIN_RATE` per effort, and nothing takes it away, so without
 this every resident who ever worked ratchets up for life. Behind a `detraining` switch, default
@@ -2822,7 +2813,7 @@ each brief. A's 063 can run any time after 050 and feeds 062.
 
 ## Phase 060 -- Structured speech in: the simple backend understands what it hears
 
-**Status:** ready, after 059 (decision 2026-11-06: speech interface for the simple backend).
+**Status:** done (switch off by default), see `docs/phases/phase060/PHASE060_REPORT.md`.
 
 **Goal.** A simple resident reads a heard utterance as a meaning and lets it change what it does.
 1. **The act vocabulary as data.** A pack table `SPEECH_ACTS` lists each act with its slots, a plain
@@ -2862,7 +2853,7 @@ persuasion and multi-turn dialogue beyond a reply to the last remark.
 
 ## Phase 061 -- Speech parser service: a small model, a cache, and the fixed reference
 
-**Status:** ready, after 055 and 060.
+**Status:** done (parser off unless a caller passes one), see `docs/phases/phase061/PHASE061_REPORT.md`.
 
 **Goal.** Place free text that the grammar cannot, cheaply and repeatably, for listeners that are simple
 backends. Optional, off unless a provider is configured.
@@ -2900,8 +2891,7 @@ grammar-plus-model scores on the labelled set are reported with the fake provide
 
 ## Phase 062 -- The perceiver: faculties, tiers, and the adapter
 
-**Status:** ready, after 052 and 051 (decision 2026-11-06: what an agent perceives depends on its
-faculties and skills, in tiers).
+**Status:** done (switch off by default), see `docs/phases/phase062/PHASE062_REPORT.md`.
 
 **Goal.** One module decides, for each thing a resident could perceive, which tier of description
 reaches that resident. Today the agent view shows everything in view at full wording.
@@ -2944,7 +2934,7 @@ distortion (Phase 065).
 
 ## Phase 063 -- Visible condition: what work and life leave on a person (Tract A)
 
-**Status:** ready, after 050 (decision 2026-11-06: you see a man covered in coal dust).
+**Status:** done. Each resident carries surface marks (`MARKS`: dirt, soot, flour, blood, mud, sweat, wetness, soiled_clothes, injury), each a level from 0 to `MARK_RULES.max_level`. Marks rise from the `marks` rows on 10 recipes and 3 shocks (drought, flood, fire), from `MARK_HARM` per point of health lost by HEALTH cause, and from `MARK_EVENTS` (butchery, wear). They fall with daily decay, rain (washable marks only), the `wash` world method and a change of clothes; rain also wets a resident. `observable_marks(actor, distance, light)` publishes the marks a viewer can see (see_range, see_light, visible_level, notice_skill) and never decides what the viewer concludes. The founding town is unchanged (digest identical over 192 turns, 0 deaths). Open: `wash` is a world method only, not a major action, so no resident can wash yet (adding it changes the Phase 054 packet snapshot); whether shock marks should reach residents indoors; whether torn clothes are a separate mark. See docs/phases/phase063/PHASE063_REPORT.md.
 
 **Goal.** Give the world the marks Phase 062's higher tiers describe, as physical state that arises from
 what residents do.
@@ -2971,7 +2961,7 @@ with rain; the marks are in the world's published state and reach the view only 
 
 ## Phase 064 -- Reading, writing and numbers: literacy and numeracy at the adapter
 
-**Status:** ready, after 062.
+**Status:** done (switch off by default), see `docs/phases/phase064/PHASE064_REPORT.md`.
 
 **Goal.** An illiterate labourer sees squiggles and one word he knows; a resident who cannot count past a
 few sees "some" and "many".
@@ -3005,7 +2995,7 @@ identical to HEAD; the self-test finds a written kind with no tier text.
 
 ## Phase 065 -- Impairment: confident wrong percepts
 
-**Status:** ready, after 062 and Tract A's 034 (done) and 042.
+**Status:** done (switch off by default), see `docs/phases/phase065/PHASE065_REPORT.md`.
 
 **Goal.** An impaired resident perceives something confidently wrong, when the scenario says it should.
 1. **Sources.** Intoxication (Phase 034), fatigue (energy low), illness and fever (Phase 043), darkness
@@ -3077,8 +3067,7 @@ unless a later decision says otherwise); a vector or graph store (Phase 068).
 
 ## Phase 067 -- The TUI in two modes: the map and the text adventure
 
-**Status:** ready, after 057, 062 and 066 (decision 2026-11-06: a normal mode with the character art
-map, and a text-adventure mode on the LLM adapter's machinery).
+**Status:** done, see `docs/phases/phase067/PHASE067_REPORT.md` (`--mode map|text`; no `--mode` is the screen as before).
 
 **Goal.**
 1. **Normal mode** (`--mode map`, the default): the screen of Phase 057 with a richer map: character art
@@ -3181,9 +3170,7 @@ supervisor assigns it, these phases are in neither tract's run order.
 
 ## Phase 069 -- The Body unit: afferents, sounds and a background feeling
 
-**Status:** unscheduled (decision 2026-11-07: the body is a self-contained system and a mind gets only
-interoception; the background feeling is in this phase, attending is Phase 071). Depends on 052 and 051
-(both done). Does not wait for 062.
+**Status:** done. `worlds/body.py` holds the `Body` interface (`apply`, `tick`, `capacities`, `afferents`, `observable`, `referee`, `dump`/`load`) and `WorldBackedBody`, the human embodiment, which reads the world's existing accessors and moves no state; its own state (acuity, last intensities) is a plain dict in `world.embodiment[actor]`. The `embodiment` key on ACTOR_DEFAULTS (`human`) and ANIMALS (`none`) picks the class from a registry; a test gives a resident a stub body with no change outside the body. `domains/interoception.py` resolves each signal on the ANATOMY and QUALITY_TREE trees by a monotone depth rule (intensity, acuity, attention, impairment, a seeded jitter) capped by its channel, and renders it as a sound from VOCALISATIONS with a place; the background feeling sums every source. In agent mode the view's `self.body` is `felt` by default (feeling, signals, strength, stamina, asleep, collapsed; no hunger, energy, health or ill words); `interoception="labelled"` keeps the Phase 052 words, and the referee block carries each signal's true source, locus and depths. The leak rule is `agent_view_check.felt_body_problems`. Prompt schema `bigville/prompt/4`. The simple village is unchanged (60- and 200-turn digests identical, 0 deaths). Open: whether mood joins the background feeling; the TUI (`bigville/tui/narrate.py::body_lines`) still reads the labelled keys and shows no feelings in agent mode until it calls `domains.interoception.render_felt_body` or asks for `labelled`; the game-level checkpoint is not checked for `world.embodiment`. See docs/phases/phase069/PHASE069_REPORT.md.
 
 **Goal.**
 1. **The `Body` interface** in a new `worlds/body.py`: `apply(event)` (world to body: intake, exertion,
@@ -3272,7 +3259,7 @@ sensations and numbness (065); treatment; capacities that depend on the located 
 
 ## Phase 070 -- Locus and silent detail: where it hurts, and what does not yet
 
-**Status:** unscheduled; after 069. Reads Phases 035, 036, 037, 038 and 043 (all done).
+**Status:** done (070 and 070b). `harm(actor, amount, cause, locus=None)` still lowers `health_value` once; the body keeps a per-locus ledger (`world.embodiment[actor]["ledger"]`). A harm with no locus draws one from `HARM_LOCUS` by cause with a stateless sha256 draw; whole-body causes leave no entry. The ledger falls each tick and with each health gain; located sharp and dull sources give signals at the locus. Silent and slow states (deficiency, an incubation ramp on illness, hangover, withdrawal, sleep debt) are sources with awareness floors; steady signals habituate; `observable()` adds bruise, limp and pallor; a `checkup` records silent conditions (`screening_findings`); `game_report()["injuries"]` counts injury by locus. User decisions after 071 (070b): a strike may be aimed (`params region`, an ANATOMY node; it lands there with chance `STRIKE_AIM.base + skill_weight x skill`, times `brace_factor` against a resist or brace, by a stateless draw, otherwise the table draws; an unknown region is refused `unknown_region`; unaimed strikes are unchanged). A located injury lowers capacity (`INJURY_EFFECTS`: leg slows walking, arm, back, chest and head lower strength and stamina, floor 0.5), recovering as the ledger heals. A DISEASE row may carry a `locus`; its signal and harm then come from that region (fever stays whole-body). Sleep debt is hours of missing sleep against a need by life stage, the lower end of the NSF ranges (Hirshkowitz et al. 2015, Sleep Health 1(1):40-43 and 1(4):233-243): infant 12, child 9, youth 8, adult and elder 7 h; it reads full at two nights' need (after Van Dongen et al. 2003, Sleep 26(2):117-126). The simple village is unchanged (no located harm in 60 or 200 turns; digests identical, 0 deaths). Open: the injury weights and floor are APPROX and no village run has exercised them; the exhaustion `speed_factor()` used by contests and throws does not include the leg factor; the preschool need has no LIFE_STAGES row (child uses 9 h); the aimed strike has not been run through a live LLM reply. See docs/phases/phase070/PHASE070_REPORT.md and docs/phases/phase070b/PHASE070B_REPORT.md.
 
 **Goal.** Give the body detail the single health scalar cannot carry, all of it inside the body.
 1. **Located harm.** `harm(actor, amount, cause, locus=None)`. The world still lowers the one
@@ -3318,8 +3305,7 @@ leak test passes; the 60-turn simple run is identical to HEAD.
 
 ## Phase 071 -- Attending: look into a feeling
 
-**Status:** unscheduled; after 069 (and 070 for the full test). Decision 2026-11-07: attending to a
-sensation is its own phase.
+**Status:** done (071 and 070b). `attend` names one felt signal by its handle (`signal:N`, offered as `can` rows built from the body in the agent view only; the world's `actor_affordances` is unchanged, so no simple backend sees it). User decision after 071: attending has levels, and the base level is a free action. `glance` (FREE_ACTIONS) gives one depth step on one signal until the next tick, uses no major action, no tick and no stamina, and is refused asleep. The deeper level is the timed `attend` major action: `ATTEND.ticks` ticks, the attended signal deeper by `acuity_bonus` and full attention within its channel cap, the other signals' attention capped, a stamina cost, refused asleep or collapsed, and other major actions refused with `attending` while it runs. `press <region>` answers with a reaction sound from the share of the true sources under that region (silence for none) and raises a pressed hurt place for `press_ticks`. Visceral signals (hunger, illness, drink) stay vague when attended (user-confirmed). `last` shows the sound and place, never a cause. `game_report()["attention"]` counts attends, presses, glances, depth gained and acts on the true source. `domains/attend_commands.parse_line` parses `glance`, `attend` and `press`. Open: the glance is not routable from an LLM reply (the reply schema has no free-action key and `bigville/game.py` routes only `speak`); the TUI does not call `parse_line`. See docs/phases/phase071/PHASE071_REPORT.md and docs/phases/phase070b/PHASE070B_REPORT.md.
 
 **Goal.** Let a resident spend time and attention to resolve a feeling it has, as an action with a
 cost and a consequence, not a free query.
@@ -3422,4 +3408,21 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 | 053 Fog of map | done | (this commit) | docs/phases/phase053/PHASE053_REPORT.md -- `domains/map_memory.py` keeps a fogged resident's map as one `map_memory` record (checkpoints with the character): level 0 absent, 1 named places and roughly where in words, 2 cells and exact places; learning by sight, landmarks and told places, ageing words; the view's `map` and `can` are built from it (`walk toward`), `move` takes `toward`; LLM and human backends are `fogged`, simple locals are not (60-turn run identical); 21 tests; 1756 passed |
 | 033 Restraint | done | (this commit) | docs/phases/phase033/PHASE033_REPORT.md -- restrain, release, struggle through the contest rule; hold blocks walking and costs stamina; 1795 passed |
 | 040 Objects as arms | done | (this commit) | docs/phases/phase040/PHASE040_REPORT.md -- strike with an object, throw; OBJECT_FORCE; switch off; 1800 passed |
+| 039 Doors and confinement | done | (this commit) | docs/phases/phase039/PHASE039_REPORT.md -- one door and entrance per building, door_locked crossings, lock by building name, forcing by attempt, jail row; 2098 passed |
+| 041 Physical coin and safes | done | (this commit) | docs/phases/phase041/PHASE041_REPORT.md -- coin into and out of safes and purses, locks and dual keys, COIN_WEIGHT and COIN_VOLUME, economy.coin; 2132 passed |
+| 063 Visible condition | done | (this commit) | docs/phases/phase063/PHASE063_REPORT.md -- MARKS, MARK_RULES, MARK_HARM, MARK_EVENTS pack tables; marks on 10 recipes and 3 shocks, harm, butchery and wear; decay, rain, wash and clothes change; observable_marks for Phase 062; wash not yet a major action; digest unchanged over 192 turns; 18 tests; 2176 passed, 1 timing flake |
 | 042 Day, night and lamps | done (switch off) | (this commit) | docs/phases/phase042/PHASE042_REPORT.md -- pure sky maths (`domains/daynight.py`), world facts in `worlds/daynight.py` (sees_dark, lamps with oil, light and douse actions, candles, shorter sight, slower and wasteful dark work on the fitness path, lateness from the real sunset), lamplighter job and backend round, light words in the view; off by default because the round never lights a lamp in 200 ticks; off is byte-identical to HEAD; 29 tests; 1807 passed |
+| 060 Structured speech in | done (switch off) | (this commit) | docs/phases/phase060/PHASE060_REPORT.md -- pack table `SPEECH_ACTS` (acts, slots, understood_by), `domains/speech_grammar.py` grammar, `bigville/backends/speech_in.py` places a heard utterance as an act and a `give` request changes what the listener does (fetch and tell are declined in words); `SPEECH_UNDERSTANDING.enabled` defaults off, and off is identical to HEAD (0 of 100 residents differ over 60 turns); 62 focused tests; 2076 passed, 1 timing-flaky speed test |
+| 061 Speech parser service | done (off) | (this commit) | docs/phases/phase061/PHASE061_REPORT.md -- `bigville/backends/speech_parser.py` asks a small model to place what the grammar cannot, with a fixed cached reference prefix (`SPEECH_PARSER`), a one-shot repair, and a failure counted by cause; `speech_in.using_parser` is the only way in, so with no parser the result is unchanged; on 200 labelled utterances the grammar alone places 47 (7 misplaced), grammar plus a scripted-perfect model 155, with 14 scripted mistakes 151 (14 misplaced); real-model run not done; 25 tests; 2100 passed, 2 timing flakes that pass alone |
+| 062 The perceiver | done (switch off) | (this commit) | docs/phases/phase062/PHASE062_REPORT.md -- `domains/perceiver.py` builds a perceiver record (light, sight, intoxication band, skills, literacy) and picks the highest tier whose gates pass for each person and thing; `PERCEPTION`/`PERCEIVER_TIERS` pack tables; backends declare `faculties` (simple: represented, LLM and human: enforced); the agent view describes people and things by percept and the referee block carries percept beside truth; off by default and the simple backend is identical to HEAD (0 of 100 residents differ); mark tiers wait for Tract A's Phase 063; 25 tests; 2148 passed, 1 timing flake |
+| 064 Reading, writing and numbers | done (switch off) | (this commit) | docs/phases/phase064/PHASE064_REPORT.md -- `domains/reading.py` and `domains/numeracy.py`: a written mark reads as the words the resident knows amid squiggles, the short text, or the whole text by literacy tier, a count or price is put in words by numeracy tier (a loaf or two coins), words are learned from use; tables in `world/literacy.json`, `around.writing` in the agent view, truth in the referee block; `READING.enabled` defaults off and views are byte-identical with it off; the town declares no written marks yet, and the prompt packet and TUI narrator do not show `writing` yet; 16 tests; 2174 passed, 1 timing flake |
+| 062b Perceiver reads the marks | done | (this commit) | docs/phases/phase062b/PHASE062B_REPORT.md -- the mark gate reads Phase 063's `world.observable_marks` (world visibility at the observer's distance and light, plus notice_skill) and the truth reads `world.marks`; a smith who has smelted iron twice is "covered in coal dust" at one cell in daylight, from real world actions; `PERCEPTION.light_level` and `notice_min_level` added; stage noun `elder` is now `senior` (fixes "a elder"); off is identical to HEAD; 14 tests; 2205 passed on a clean tree, 2 flakes (concurrency speed test, and a management browser test that also fails on HEAD) |
+| 069 The Body unit | done | (this commit) | docs/phases/phase069/PHASE069_REPORT.md -- worlds/body.py (Body, WorldBackedBody, embodiment registry), domains/interoception.py (trees, depth rule, sounds, background feeling), interoception.json tables; felt body in agent mode, labelled kept, referee truth; leak rule; prompt schema 4 (snapshot regenerated); digests unchanged over 60 and 200 turns; 31 tests; 2256 passed |
+| 070 Locus and silent detail | done | (this commit) | docs/phases/phase070/PHASE070_REPORT.md -- harm locus and per-locus ledger (HARM_LOCUS, stateless draw), healing by place, located sharp and dull signals, deficiency, incubation ramp, hangover, withdrawal and sleep debt as sources, habituation, bruise/limp/pallor signs, checkup screening, game_report injuries; digests unchanged over 60 and 200 turns; 22 tests; 2277 passed, 1 timing flake |
+| 071 Attending | done | (this commit) | docs/phases/phase071/PHASE071_REPORT.md -- attend (timed, deeper resolution within the channel cap, finite attention, stamina cost, refused asleep or collapsed) and press (reaction by subtree, raises a hurt place); can rows from the body in the agent view only; last shows sound and place; game_report attention counts; parse_line for the TUI (not wired); snapshot regenerated; digests unchanged over 60 and 200 turns; 21 tests; 2298 passed, 1 timing flake |
+| 065 Impairment | done (switch off) | (this commit) | docs/phases/phase065/PHASE065_REPORT.md -- `domains/impairment.py`: an impaired resident (drunk, tired, ill, in dim or dark light) is given a confidently wrong percept (drop a tier, a neighbouring life stage, or a stage, job, kind or identity taken from another subject in sight), worded like a true one; deterministic draws from seed, turn, resident and subject; truth only in the referee block; a ledger counts actions taken on a wrong percept; tables in `world/impairment.json`; `IMPAIRMENT.enabled` defaults off and the simple backend (which holds impairment itself) is identical to HEAD; speech mishearing, quantity shifts and fear are not built; 18 tests; 2210 passed, 1 timing flake |
+| 067 TUI in two modes | done | (this commit) | docs/phases/phase067/PHASE067_REPORT.md -- `--mode map` draws the character-art map from the agent view (pack table `TUI_ART`); `--mode text` is a text adventure whose sentences (`TUI_PROSE`) are built from the same agent view and prompt packet the LLM adapter uses, so a human sees only what the agent knows; `around.writing` now reaches the prompt packet (cap in `prompt_packet.json`, absent when reading is off); no `--mode` is byte-identical to before; people and things are not placed on the map (the view has no occupant cells), text mode is in-process only; 20 tests; 2243 passed, 2 flakes (concurrency speed, a management browser test) |
+| 070b Programme F follow-ups | done | (this commit) | docs/phases/phase070b/PHASE070B_REPORT.md -- user decisions after 071: aimed strikes (STRIKE_AIM, unknown_region), located injury lowers speed, strength and stamina (INJURY_EFFECTS), optional DISEASE locus, sleep debt in hours against NSF needs (checked citations), free glance (base attending level); digests unchanged; 15 tests; 2383 passed, 2 flakes (concurrency timing, a management browser test that passes alone) |
+| 044 Pregnancy and birth | done (switch off) | (this commit) | docs/phases/phase044/PHASE044_REPORT.md -- `worlds/births.py` (`BirthsMixin`): a fertile woman in a recorded union conceives on a seeded daily draw from the `BIRTHS` table (APPROX, Henry, Coale and Trussell, Wrigley and Schofield), 270-day gestation costs food and late-term work capacity, delivery gives a stillbirth or a newborn with genealogy, household and a name, maternal and first-year death through `harm()` halved by a midwife; `bigville/resident_births.py` gives a newborn a `DependentBackend`; behind `physical_subsystems.births`, off; bigville stays off since the cast's analytic birth flow is 72.5 per 1000 (about twice the English rate) and no new unions form; off is identical to HEAD; 18 tests; 2354 passed with 045; the game checkpoint needs a hook in the Ocelot-owned `game_persistence.py` before an infant can be saved |
+| 045 Infants, dependants and coming of age | done (switch off) | (this commit) | docs/phases/phase045/PHASE045_REPORT.md -- `worlds/dependants.py` (`DependantsMixin`): an infant is refused every major action (reason `infant`), dependants act at their life stage's `work_fraction`, strength and stamina grow from 0.3 and 0.4 of the adult default to full at 18 (NEW DESIGN, APPROX), an unattended dependant takes `neglect` harm after its span, a caregiver feeds a dependant or walks to an unattended one (simple backend policy), `coming_of_age` event and `adult` flag, a grown child's `DependentBackend` is replaced by the simple backend; fixes HEAD's life-stage gap (a 3.5-year-old read as elder) only with the switch on; `DEPENDANTS.enabled` defaults off and off is identical to HEAD; the Mind-side rearing priors are the backend's and not built; 17 tests; 2354 passed with 044 (full suite on the combined tree), 0 failed |
+| 046 Detraining and ageing of the body | done (switch off) | (this commit) | docs/phases/phase046/PHASE046_REPORT.md -- `worlds/detraining.py`: after a grace period without strength or stamina effort the trained component falls toward 0 at a table rate and never below the base, and the base declines with age after a peak (pack table `DETRAIN`, APPROX with sources in the _doc); growth (045) and ageing never write the same base; `DETRAIN.enabled` defaults off and off is identical to HEAD; the long-run 100-resident check is not built; 16 tests; 2369 passed, 1 timing flake |

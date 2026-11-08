@@ -49,7 +49,17 @@
         "mood",
         "asleep",
         "collapsed",
-        "ill"
+        "ill",
+        "feeling",
+        "signals"
+      ],
+      "feeling": [
+        "sound",
+        "level"
+      ],
+      "signal": [
+        "sound",
+        "where"
       ],
       "carrying": [
         "inventory",
@@ -76,11 +86,15 @@
         "people",
         "heard",
         "seen",
-        "things"
+        "things",
+        "writing"
       ],
       "thing": [
         "handle",
         "what"
+      ],
+      "writing": [
+        "percept"
       ],
       "person": [
         "name",
@@ -114,7 +128,9 @@
       "last": [
         "action",
         "outcome",
-        "reason"
+        "reason",
+        "sound",
+        "place"
       ],
       "reaction": [
         "from",
@@ -133,6 +149,7 @@
       ],
       "referee": [
         "body",
+        "interoception",
         "calendar",
         "carry",
         "skills",
@@ -263,7 +280,8 @@
       "react_brace": "brace yourself and hold on",
       "react_evade": "step out of their reach",
       "react_yield": "let it go",
-      "reaction_late": "you are slow to answer"
+      "reaction_late": "you are slow to answer",
+      "silence": "nothing"
     },
     "PRECISION_WORDS": {
       "_doc": "How well a place is known (Phase 019 location). 'none' places are not listed.",
@@ -281,7 +299,9 @@
       "give": "give",
       "transfer": "hand over",
       "move_object": "move something",
-      "attempt": "try something"
+      "attempt": "try something",
+      "attend": "attend",
+      "press": "press"
     }
   }
 }

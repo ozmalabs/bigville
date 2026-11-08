@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import textwrap
 
+from bigville.tui import art as tui_art
 from bigville.tui import narrate
 
 TABS = ("body", "skills", "knows", "carrying", "people")
@@ -161,13 +162,16 @@ def _map_rows(view, pack, height, width):
 
 
 def render(view, width=80, height=24, *, tab="body", log=(), bottom=None, bottom_title=None,
-           prompt="", pack="bigville"):
+           prompt="", pack="bigville", art=False):
     """The screen as `height` lines, each `width` characters (see the module doc for the layout).
 
     `log` is the list of lines shown in the bottom area (the newest last). `bottom` replaces the log with
-    other lines (the menu, or the reaction answers) and `bottom_title` names them."""
+    other lines (the menu, or the reaction answers) and `bottom_title` names them. `art` draws the map mode
+    (Phase 067): two-character tiles, and a glyph for each person and thing; the default is the screen of Phase 057."""
     if width < MIN_WIDTH or height < MIN_HEIGHT:
         raise ValueError(f"the screen needs at least {MIN_WIDTH} by {MIN_HEIGHT}, not {width} by {height}")
+    if art:
+        view = tui_art.tiled(view, pack)
     words = narrate.words(pack)
     body_h = height - (BOTTOM_LINES + 4)
     map_rows = (view.get("map") or {}).get("rows") or []
@@ -178,6 +182,8 @@ def render(view, width=80, height=24, *, tab="body", log=(), bottom=None, bottom
     map_block = _map_rows(view, pack, body_h, map_w)
     sheet = [_tab_header(tab, pack, right_w)]
     content = _TAB_BUILDERS[tab](view, pack)
+    if art and tab == "people":
+        content = tui_art.mark_people(view, pack, content)
     room = body_h - 1
     if len(content) > room:
         content = content[:room - 1] + ["..."]
@@ -185,7 +191,8 @@ def render(view, width=80, height=24, *, tab="body", log=(), bottom=None, bottom
     sheet += [""] * (body_h - len(sheet))
     for row in range(body_h):
         screen.append(_fit(map_block[row], left) + _fit(sheet[row], right_w))
-    legend = "   ".join(narrate.legend_items(view, pack))
+    legend_words = narrate.legend_items(view, pack) + (tui_art.legend_items(view, pack) if art else [])
+    legend = ("  " if art else "   ").join(legend_words)
     screen.append(_fit(legend, width))
     title = bottom_title if bottom_title is not None else words["label_your_move"]
     screen.append(_fit(title, width))

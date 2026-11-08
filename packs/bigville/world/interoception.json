@@ -1,0 +1,629 @@
+{
+  "_doc": "INTEROCEPTION (Phase 069): what a body lets its mind feel. A body (worlds/body.py) reads its world state and turns each read into a signal source. A source has an intensity (its read scaled between floor and ceiling), a channel (which caps how deep the feeling can be placed), a quality node (what kind of bad feeling, in QUALITY_TREE), a locus node (where, in ANATOMY) and an awareness threshold below which the source is not felt. The mind gets a sound for each felt signal and one background feeling; it never gets a cause. ANATOMY and QUALITY_TREE are trees with one root (depth 0). A feeling is resolved to a depth on each tree (domains/interoception.py resolve). VOCALISATIONS gives the sound forms of each quality node (a sound, not a word or a sentence), and the renderer varies them by intensity and by PATTERNS. CHANNELS caps the depth on each tree: a visceral signal cannot be placed deeper than its channel allows, while a surface signal can. Every number here is APPROX: a model choice of the right order, not a measured physiology. The sources in SIGNAL_SOURCES are the body's reads named in domains/interoception.py READS; a read is taken from the existing world accessors and never duplicated.",
+  "_types": {},
+  "tables": {
+    "ANATOMY": {
+      "_doc": "The regions of the body as a tree. label is the place in words (what a resident feels 'where' is). depth is the number of steps from the root, so the root 'body' is depth 0 and means all over. APPROX: a coarse anatomy of a human body for the first embodiment.",
+      "body": {
+        "parent": null,
+        "label": "all over"
+      },
+      "head": {
+        "parent": "body",
+        "label": "head"
+      },
+      "torso": {
+        "parent": "body",
+        "label": "torso"
+      },
+      "front_torso": {
+        "parent": "torso",
+        "label": "front of the torso"
+      },
+      "upper_belly": {
+        "parent": "front_torso",
+        "label": "upper belly"
+      },
+      "chest": {
+        "parent": "front_torso",
+        "label": "chest"
+      },
+      "back": {
+        "parent": "torso",
+        "label": "back"
+      },
+      "arm": {
+        "parent": "body",
+        "label": "arm"
+      },
+      "leg": {
+        "parent": "body",
+        "label": "leg"
+      },
+      "skin": {
+        "parent": "body",
+        "label": "skin"
+      }
+    },
+    "QUALITY_TREE": {
+      "_doc": "The kinds of bad feeling as a tree. The root 'bad' is the background feeling's kind (any unwell feeling). The second level is a coarse kind (sharp, dull, visceral, hot_cold, drained); the leaves are finer kinds. A source may name a node at any level. parent null marks the root.",
+      "bad": {
+        "parent": null
+      },
+      "sharp": {
+        "parent": "bad"
+      },
+      "dull": {
+        "parent": "bad"
+      },
+      "visceral": {
+        "parent": "bad"
+      },
+      "hot_cold": {
+        "parent": "bad"
+      },
+      "drained": {
+        "parent": "bad"
+      },
+      "cramp": {
+        "parent": "sharp"
+      },
+      "ache": {
+        "parent": "dull"
+      },
+      "queasy": {
+        "parent": "visceral"
+      },
+      "chill": {
+        "parent": "hot_cold"
+      },
+      "hunger": {
+        "parent": "drained"
+      },
+      "spent": {
+        "parent": "drained"
+      }
+    },
+    "VOCALISATIONS": {
+      "_doc": "The sound forms of each quality node: a list of forms, one picked by a seeded draw keyed on the seed and the node (so the same node gives the same form in one world). A form is a sound in letters, never a word and never a cause. The renderer stretches the first vowel (or the last letter when a form has no vowel) by intensity. APPROX: the forms are written sounds chosen for the kind of feeling; a different pack gives different sounds.",
+      "bad": {
+        "forms": [
+          "ugh",
+          "urgh"
+        ]
+      },
+      "sharp": {
+        "forms": [
+          "aargh",
+          "ow",
+          "hiss"
+        ]
+      },
+      "dull": {
+        "forms": [
+          "ngh",
+          "mm"
+        ]
+      },
+      "visceral": {
+        "forms": [
+          "gurgle",
+          "blech"
+        ]
+      },
+      "hot_cold": {
+        "forms": [
+          "brrr"
+        ]
+      },
+      "drained": {
+        "forms": [
+          "hhhh",
+          "hnnn"
+        ]
+      },
+      "cramp": {
+        "forms": [
+          "yaah",
+          "ow"
+        ]
+      },
+      "ache": {
+        "forms": [
+          "ooh",
+          "nnh"
+        ]
+      },
+      "queasy": {
+        "forms": [
+          "blech",
+          "ugh"
+        ]
+      },
+      "chill": {
+        "forms": [
+          "brrr",
+          "brr"
+        ]
+      },
+      "hunger": {
+        "forms": [
+          "grr",
+          "hnn"
+        ]
+      },
+      "spent": {
+        "forms": [
+          "phew",
+          "hhh"
+        ]
+      }
+    },
+    "CHANNELS": {
+      "_doc": "How deep a signal may be placed on each tree. quality_cap is the deepest quality level the channel allows (the root is 0) and locus_cap the deepest anatomy level. Gut and other visceral signals cap shallow on place; skin can resolve fully. Each cap must not be deeper than its tree (the self-test checks it). APPROX.",
+      "visceral": {
+        "quality_cap": 1,
+        "locus_cap": 1
+      },
+      "surface": {
+        "quality_cap": 2,
+        "locus_cap": 3
+      },
+      "deep": {
+        "quality_cap": 2,
+        "locus_cap": 2
+      },
+      "general": {
+        "quality_cap": 1,
+        "locus_cap": 1
+      }
+    },
+    "SIGNAL_SOURCES": {
+      "_doc": "The signal sources, one row each. read is a body read (domains/interoception.py READS); intensity is the read scaled from floor (0) to ceiling (1), clamped. channel names a CHANNELS row. quality and locus name nodes of QUALITY_TREE and ANATOMY. pattern is a PATTERNS row used when the signal is steady. awareness is the intensity below which the source is not felt (it still counts toward the background feeling). Several sources share a quality and locus on purpose: a hungry resident and an exhausted one can resolve to the same sound and place. APPROX: the floors, ceilings and awareness levels. Phase 070: a row with \"located\" names a located-injury read (the body's ledger, one row per locus with a value; its locus is null and each signal takes the locus it is on). The silent states (deficiency, hangover, withdrawal, sleep_debt) and the incubation ramp of illness are rows too: each has an awareness floor, so the early phase is felt only in the background feeling or not at all.",
+      "hunger": {
+        "read": "hunger",
+        "floor": 0.5,
+        "ceiling": 2.5,
+        "channel": "visceral",
+        "quality": "hunger",
+        "locus": "upper_belly",
+        "pattern": "waves",
+        "awareness": 0.15
+      },
+      "exertion": {
+        "read": "exertion",
+        "floor": 0.5,
+        "ceiling": 1.0,
+        "channel": "deep",
+        "quality": "spent",
+        "locus": "leg",
+        "pattern": "steady",
+        "awareness": 0.2
+      },
+      "exhaustion": {
+        "read": "exhaustion",
+        "floor": 0.0,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "drained",
+        "locus": "torso",
+        "pattern": "steady",
+        "awareness": 0.2
+      },
+      "chill": {
+        "read": "chill",
+        "floor": 0.1,
+        "ceiling": 1.0,
+        "channel": "surface",
+        "quality": "chill",
+        "locus": "skin",
+        "pattern": "pulsing",
+        "awareness": 0.2
+      },
+      "wetness": {
+        "read": "wetness",
+        "floor": 0.2,
+        "ceiling": 1.0,
+        "channel": "surface",
+        "quality": "hot_cold",
+        "locus": "skin",
+        "pattern": "steady",
+        "awareness": 0.2
+      },
+      "illness": {
+        "read": "illness",
+        "floor": 0.0,
+        "ceiling": 1.0,
+        "channel": "visceral",
+        "quality": "queasy",
+        "locus": "upper_belly",
+        "pattern": "waves",
+        "awareness": 0.3
+      },
+      "intoxication": {
+        "read": "intoxication",
+        "floor": 0.15,
+        "ceiling": 1.0,
+        "channel": "visceral",
+        "quality": "queasy",
+        "locus": "upper_belly",
+        "pattern": "fading",
+        "awareness": 0.2
+      },
+      "harm": {
+        "read": "harm",
+        "floor": 0.0,
+        "ceiling": 0.5,
+        "channel": "general",
+        "quality": "ache",
+        "locus": "body",
+        "pattern": "steady",
+        "awareness": 0.2
+      },
+      "injury_sharp": {
+        "located": "injury",
+        "read": "injury",
+        "floor": 0.02,
+        "ceiling": 0.3,
+        "channel": "surface",
+        "quality": "sharp",
+        "locus": null,
+        "pattern": "steady",
+        "awareness": 0.1
+      },
+      "injury_dull": {
+        "located": "injury",
+        "read": "injury",
+        "floor": 0.02,
+        "ceiling": 0.3,
+        "channel": "surface",
+        "quality": "ache",
+        "locus": null,
+        "pattern": "steady",
+        "awareness": 0.1
+      },
+      "deficiency": {
+        "read": "deficiency",
+        "floor": 0.1,
+        "ceiling": 1.0,
+        "channel": "deep",
+        "quality": "spent",
+        "locus": "torso",
+        "pattern": "steady",
+        "awareness": 0.3
+      },
+      "hangover": {
+        "read": "hangover",
+        "floor": 0.0,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "queasy",
+        "locus": "head",
+        "pattern": "fading",
+        "awareness": 0.2
+      },
+      "withdrawal": {
+        "read": "withdrawal",
+        "floor": 0.3,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "ache",
+        "locus": "chest",
+        "pattern": "waves",
+        "awareness": 0.25
+      },
+      "sleep_debt": {
+        "read": "sleep_debt",
+        "floor": 0.1,
+        "ceiling": 1.0,
+        "channel": "general",
+        "quality": "spent",
+        "locus": "head",
+        "pattern": "steady",
+        "awareness": 0.3
+      }
+    },
+    "PATTERNS": {
+      "_doc": "How a sound repeats and ends. repeat is how many times the form is said in a row; tail is added after the last one. A signal that is rising or fading (against its own last turn, by trend_delta) takes the rising or fading row whatever its source says. A felt sound at or above strong_at with no tail takes '!'. APPROX.",
+      "steady": {
+        "repeat": 1,
+        "tail": ""
+      },
+      "pulsing": {
+        "repeat": 2,
+        "tail": ""
+      },
+      "waves": {
+        "repeat": 2,
+        "tail": "..."
+      },
+      "rising": {
+        "repeat": 1,
+        "tail": "!"
+      },
+      "fading": {
+        "repeat": 1,
+        "tail": "..."
+      }
+    },
+    "FEELING": {
+      "_doc": "The background feeling: the sum of every source's intensity (felt or not), capped at 1. It is absent below floor. levels are the coarse words for the total, the highest min at or below the total wins. APPROX.",
+      "floor": 0.02,
+      "levels": [
+        {
+          "min": 0.0,
+          "label": "faint"
+        },
+        {
+          "min": 0.3,
+          "label": "clear"
+        },
+        {
+          "min": 0.6,
+          "label": "strong"
+        }
+      ]
+    },
+    "INTEROCEPTION": {
+      "_doc": "The depth rule and the interoceptor record (APPROX throughout). depth: raw = base + intensity_weight x intensity + acuity_weight x (acuity - 1) + attention_weight x attention - impairment_weight x impairment + a seeded jitter in [-jitter, +jitter]; the depth on each tree is floor(raw), clamped to 0 .. min(channel cap, the true node's depth). So a higher intensity, acuity or attention never resolves shallower, and a higher impairment never resolves deeper. acuity: a trait drawn once per resident from range, times the life-stage factor. attention: idle, absorbed in a timed job, or asleep. impairment is intoxication plus exhaustion step / 3 plus illness (each 0 to 1). signals_max caps the signal list. trend_delta is the change in intensity against the last turn that counts as rising or fading. stretch_max is how many extra vowel letters the strongest sound adds. strong_at is the intensity above which a sound gets '!'. felt_body_keys are the only keys of a felt body; forbidden_words are cause words that must not appear in a felt body (the leak rule, domains/agent_view_check.py). Phase 070 reads: illness is an incubation ramp (days since onset over BODY_RATES.incubation_days, capped at 1), hangover and withdrawal are the Phase 036 read-offs graded, deficiency the Phase 035 read, sleep_debt the body's own chronic short-sleep store.",
+      "depth": {
+        "base": 0.5,
+        "intensity_weight": 2.0,
+        "acuity_weight": 1.0,
+        "attention_weight": 1.0,
+        "impairment_weight": 1.5,
+        "jitter": 0.25
+      },
+      "acuity": {
+        "range": [
+          0.7,
+          1.3
+        ],
+        "life_stage": {
+          "infant": 0.6,
+          "child": 0.9,
+          "youth": 1.0,
+          "adult": 1.0,
+          "elder": 0.85
+        }
+      },
+      "attention": {
+        "idle": 1.0,
+        "absorbed": 0.5,
+        "asleep": 0.0
+      },
+      "signals_max": 4,
+      "trend_delta": 0.05,
+      "stretch_max": 3,
+      "strong_at": 0.7,
+      "felt_body_keys": [
+        "feeling",
+        "signals",
+        "strength",
+        "stamina",
+        "asleep",
+        "collapsed"
+      ],
+      "forbidden_words": [
+        "hunger",
+        "hungry",
+        "famished",
+        "peckish",
+        "energy",
+        "tired",
+        "exhausted",
+        "worn",
+        "spent",
+        "health",
+        "healthy",
+        "injured",
+        "injury",
+        "ill",
+        "illness",
+        "sick",
+        "drunk",
+        "intoxicated",
+        "wet",
+        "cold",
+        "chill",
+        "cramp",
+        "drained",
+        "withdrawal",
+        "hangover",
+        "pregnant",
+        "bruise",
+        "bruised",
+        "limp",
+        "pallor",
+        "deficiency",
+        "deficient",
+        "incubating",
+        "incubation",
+        "debt",
+        "sleepless"
+      ]
+    },
+    "HARM_LOCUS": {
+      "_doc": "HARM_LOCUS (Phase 070): where an acute harm lands when the caller gives no locus. Keyed by HEALTH cause; each value maps ANATOMY nodes to weights (drawn by a stateless seeded draw, domains/interoception.py draw). An empty row is whole-body harm: it changes health and leaves no located ledger entry (starvation, exhaustion, age, intoxication, illness, childbirth, neglect). The weights are APPROX: a blow lands on the head, chest, back, arm or leg; a fall or accident mostly on the limbs. Loci are leaves or near-leaves (not the root).",
+      "injury": {
+        "head": 0.2,
+        "chest": 0.2,
+        "back": 0.15,
+        "arm": 0.25,
+        "leg": 0.2
+      },
+      "violence": {
+        "head": 0.35,
+        "chest": 0.25,
+        "back": 0.1,
+        "arm": 0.2,
+        "leg": 0.1
+      },
+      "accident": {
+        "head": 0.2,
+        "arm": 0.3,
+        "leg": 0.3,
+        "back": 0.2
+      },
+      "age": {},
+      "illness": {},
+      "starvation": {},
+      "exhaustion": {},
+      "intoxication": {},
+      "childbirth": {},
+      "neglect": {}
+    },
+    "BODY_RATES": {
+      "_doc": "BODY_RATES (Phase 070): the rates of the body's own state, all APPROX. located_heal_per_tick: a located injury's ledger falls by this much each clock tick (96 ticks a day, TIME), at the time-healing rate; the health scalar's own recovery is unchanged. care_share: the share of each health gain (rest, care, treatment) that also lowers the located ledger. habituation_rate and habituation_recover: a steady signal's felt intensity falls by habituation_rate of the remainder each tick and recovers by habituation_recover of the missing part when the stimulus stops; a rise larger than INTEROCEPTION.trend_delta resets it (noticed at full strength), a steady stimulus habituates, and a stimulus that stops or eases recovers at habituation_recover. incubation_days: an illness's felt intensity ramps up over this many days since onset. sleep_need_hours (Phase 070b): the hours of sleep a day each life stage needs, the lower end of the National Sleep Foundation's recommended range. Sources: Hirshkowitz M, Whiton K, Albert SM, et al. National Sleep Foundation's sleep time duration recommendations: methodology and results summary. Sleep Health 2015;1(1):40-43, doi:10.1016/j.sleh.2015.01.010; and the final report, Sleep Health 2015;1(4):233-243, doi:10.1016/j.sleh.2015.10.004. Recommended ranges: newborns 14-17 h, infants 12-15 h, toddlers 11-14 h, preschoolers 10-13 h, school-aged children 9-11 h, teenagers 8-10 h, young adults and adults 7-9 h, older adults 7-8 h. Mapping to LIFE_STAGES (APPROX): infant = the infant range (12); child = school-aged (9; LIFE_STAGES does not split the preschool years, whose range is 10-13 h); youth = teenagers (8); adult = young adults and adults (7); elder = older adults (7). sleep_debt (the body's chronic short-sleep store) is in hours of missing sleep. Each awake tick adds tick_hours x need / 24 and each asleep tick takes off tick_hours x (24 - need) / 24, floored at 0, with tick_hours from TIME. So sleeping exactly need hours a day holds the debt level, and a day with no sleep adds one night's need. sleep_debt_read_nights: the read is debt / (2 x need), capped at 1, so two nights' sleep lost reads as full. The two-night scale is APPROX, after Van Dongen HPA, Maislin G, Mullington JM, Dinges DF. The cumulative cost of additional wakefulness. Sleep 2003;26(2):117-126: 6 h a night for 14 days gave cumulative cognitive deficits reaching those of up to two nights of total sleep deprivation.",
+      "located_heal_per_tick": 0.0005,
+      "care_share": 0.5,
+      "habituation_rate": 0.05,
+      "habituation_recover": 0.1,
+      "incubation_days": 5.0,
+      "sleep_need_hours": {
+        "infant": 12,
+        "child": 9,
+        "youth": 8,
+        "adult": 7,
+        "elder": 7
+      },
+      "sleep_debt_read_nights": 2.0
+    },
+    "OBSERVABLE_SIGNS": {
+      "_doc": "OBSERVABLE_SIGNS (Phase 070): what an observer may see of the body's ledger and reads, as signs. from is an INTEROCEPTION read name or 'injury' (the located ledger: summed over the loci named by locus, or over all loci when locus is null). A sign shows when its level is at least min, the observer is within see_range cells and the light is at least see_light (the Phase 063 rules). Signs are the visible side of what the resident may not feel; the observer draws the conclusion. APPROX throughout.",
+      "bruise": {
+        "from": "injury",
+        "locus": null,
+        "min": 0.2,
+        "see_range": 2,
+        "see_light": 0.3,
+        "label": "bruise"
+      },
+      "limp": {
+        "from": "injury",
+        "locus": "leg",
+        "min": 0.1,
+        "see_range": 6,
+        "see_light": 0.3,
+        "label": "limp"
+      },
+      "pallor": {
+        "from": "deficiency",
+        "locus": null,
+        "min": 0.5,
+        "see_range": 6,
+        "see_light": 0.3,
+        "label": "pallor"
+      }
+    },
+    "ATTEND": {
+      "_doc": "ATTEND (Phase 071): attending and pressing. attend (a major action) takes a felt signal by its handle signal:N (N counts the felt signals from 1, in the order the view shows them). For ticks world ticks the attended signal's resident ceiling is acuity + acuity_bonus (one depth step at acuity_weight 1, bounded by the channel cap and the true depth), its attention is focus_attention, and every other signal's attention is at most other_attention (the finite attention budget). It costs stamina_cost of reserve when it starts; it is refused asleep, collapsed or already attending. press (a major action) probes a named ANATOMY region: the reaction is the sound of the summed raw intensity of the true sources whose locus lies in that region's subtree (press_sounds: the highest min at or below the sum; a null sound is silence). A press on an injured place (a located source) raises that locus by press_boost for press_ticks ticks. remedies is the referee's own table for Phase 056-style measures: which major actions would address a source. The world never uses it to choose or to name a cause. remedy_window is how many world turns after an attend a remedy counts as acting on the true source. APPROX throughout.",
+      "ticks": 3,
+      "acuity_bonus": 1.0,
+      "focus_attention": 1.0,
+      "other_attention": 0.5,
+      "stamina_cost": 0.02,
+      "press_boost": 0.3,
+      "press_ticks": 4,
+      "remedy_window": 6,
+      "glance_bonus": 1.0,
+      "glance_stamina_cost": 0.0,
+      "verb_aliases": {
+        "attend": "attend",
+        "focus": "attend",
+        "heed": "attend",
+        "press": "press",
+        "probe": "press",
+        "prod": "press",
+        "glance": "glance"
+      },
+      "press_sounds": [
+        {
+          "min": 0.0,
+          "sound": null
+        },
+        {
+          "min": 0.05,
+          "sound": "ow"
+        },
+        {
+          "min": 0.4,
+          "sound": "owww"
+        }
+      ],
+      "remedies": {
+        "hunger": [
+          "eat"
+        ],
+        "exertion": [
+          "rest",
+          "sleep"
+        ],
+        "exhaustion": [
+          "rest",
+          "sleep"
+        ],
+        "chill": [
+          "fetch"
+        ],
+        "wetness": [],
+        "illness": [
+          "care"
+        ],
+        "intoxication": [],
+        "harm": [
+          "care"
+        ],
+        "injury_sharp": [
+          "care"
+        ],
+        "injury_dull": [
+          "care"
+        ],
+        "deficiency": [
+          "eat"
+        ],
+        "hangover": [
+          "rest",
+          "sleep"
+        ],
+        "withdrawal": [
+          "eat"
+        ],
+        "sleep_debt": [
+          "sleep"
+        ]
+      }
+    },
+    "STRIKE_AIM": {
+      "_doc": "STRIKE_AIM (Phase 070b): an aimed strike (strike_begin with a region, an ANATOMY node) lands on that region with a chance p, otherwise it lands where the unaimed table draw puts it (HARM_LOCUS violence). p = clamp(base + skill_weight x the striker's effective skill, 0, 1), multiplied by brace_factor when the target resists or braces (its reaction keeps the blow off its aim). The draw is a stateless sha256 draw (domains/interoception.py draw), never the world's random stream. APPROX throughout: model choices, not measured.",
+      "base": 0.5,
+      "skill_weight": 0.3,
+      "brace_factor": 0.6
+    },
+    "INJURY_EFFECTS": {
+      "_doc": "INJURY_EFFECTS (Phase 070b): how a located injury lowers the capacities the physics uses. For each locus with a row, the body's ledger value at that locus (the harm taken there, healing at BODY_RATES.located_heal_per_tick) times the weight lowers each named capacity by that share: factor = max(floor, 1 - sum over loci of weight x ledger). speed lowers walking (the interval of each step); strength lowers effective strength (work, carrying, the contest's force and blows); stamina lowers effective stamina. A capacity with no row, and an empty ledger, give 1.0 exactly. The weights are APPROX: a leg is the walking limb, an arm the striking and carrying limb, the back and chest carry the body's load, and a head blow lowers strength and stamina a little. Scalar health is not changed by this table.",
+      "floor": 0.5,
+      "weights": {
+        "leg": {
+          "speed": 1.0
+        },
+        "arm": {
+          "strength": 0.8
+        },
+        "back": {
+          "strength": 0.5,
+          "stamina": 0.5
+        },
+        "chest": {
+          "strength": 0.3,
+          "stamina": 0.5
+        },
+        "head": {
+          "strength": 0.2,
+          "stamina": 0.2
+        }
+      }
+    }
+  }
+}

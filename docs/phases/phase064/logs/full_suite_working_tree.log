@@ -1,0 +1,647 @@
+s....................................................................... [  3%]
+........................................................................ [  6%]
+......................................................s................. [  9%]
+......s....................F............................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+.....FF.............................................F................... [ 23%]
+....................................F........................F.......... [ 26%]
+...........F......................................F............F.F....F. [ 29%]
+..................F........F.....F............F..........F.............. [ 32%]
+...............F........................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 46%]
+.....................F...F.............................................. [ 49%]
+........................................................................ [ 52%]
+...........F....................F....................................... [ 55%]
+........................................................................ [ 59%]
+.....................................F.................................. [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 69%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+............F........................................................... [ 78%]
+...........................................F............................ [ 82%]
+............................................................FFFF........ [ 85%]
+.............................F.......................................... [ 88%]
+.............................sss........................................ [ 92%]
+........................................................................ [ 95%]
+........................................................................ [ 98%]
+...............................                                          [100%]
+=================================== FAILURES ===================================
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x792e77774360>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x792ea71d04a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x792e74a760b0>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-878/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x792e74a77310>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:55: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+_______ test_the_self_test_is_clean_for_bigville_and_for_the_hamlet_pack _______
+
+    def test_the_self_test_is_clean_for_bigville_and_for_the_hamlet_pack():
+        from domains.data_view import entities
+        report = E.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff)
+
+tests/test_phase004_located_gathering.py:207: AssertionError
+____________ test_the_self_test_is_clean_for_the_life_cycle_fields _____________
+
+    def test_the_self_test_is_clean_for_the_life_cycle_fields():
+        report = E.check_consistency()
+>       assert report["errors"] == []
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase008_animal_lifecycle.py:327: AssertionError
+_ test_the_self_test_reports_household_and_extended_family_shares_against_their_sources _
+
+    def test_the_self_test_reports_household_and_extended_family_shares_against_their_sources():
+        report = E.check_consistency()
+>       assert not report["errors"], report["errors"]
+E       AssertionError: ["generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"]
+E       assert not ["generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"]
+
+tests/test_phase009_kinship.py:268: AssertionError
+___________ test_the_self_test_is_clean_and_covers_the_burial_tables ___________
+
+    def test_the_self_test_is_clean_and_covers_the_burial_tables():
+        report = E.check_consistency()
+>       assert report["errors"] == []
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase010_burial.py:325: AssertionError
+___________ test_the_self_test_is_clean_and_names_the_fiscal_tables ____________
+
+    def test_the_self_test_is_clean_and_names_the_fiscal_tables():
+        report = E.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff)
+
+tests/test_phase011_fiscal.py:330: AssertionError
+_____________ test_exported_files_compile_back_to_the_same_tables ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-878/test_exported_files_compile_ba0')
+
+    def test_exported_files_compile_back_to_the_same_tables(tmp_path):
+        export = _export_module()
+        out = tmp_path / "copy"
+        export.main(["--pack", "bigville", "--out", str(out)])
+        copied = P.load_pack(str(out))
+        original = P.load_pack("bigville")
+>       assert set(copied.tables) == set(original.tables)
+E       AssertionError: assert {'ACTION_WORD...S_LIMIT', ...} == {'ACTION_WORD...S_LIMIT', ...}
+E         
+E         Extra items in the left set:
+E         'MARK_RULES'
+E         'MARKS'
+E         'MARK_EVENTS'
+E         'MARK_HARM'
+E         Use -v to get more diff
+
+tests/test_phase013a_packs.py:95: AssertionError
+----------------------------- Captured stdout call -----------------------------
+normalised 266 tables into /tmp/pytest-of-matt/pytest-878/test_exported_files_compile_ba0/copy
+__________ test_child_pack_extends_bigville_and_overrides_two_tables ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-878/test_child_pack_extends_bigvil0')
+
+    def test_child_pack_extends_bigville_and_overrides_two_tables(tmp_path):
+        parent = P.load_pack("bigville")
+        child_dir = tmp_path / "child_town"
+        fish_cake = {"class": "material", "bulk": True, "weight": 1.0, "volume": 1.0,
+                     "food": True, "leaves_scraps": 0.2}
+        new_law = {"name": "test_gleaning_law", "title": "Gleaning Ordinance", "kind": "law",
+                   "scope": "village", "seed_roles": ["mayor"],
+                   "concepts": [{"name": "gleaning_is_allowed", "abstraction": "principle",
+                                 "reference": {"subject": "gleaning", "predicate": "is", "object": "allowed"}}]}
+        _write(child_dir / "pack.json", {
+            "format": 1, "name": "child_town", "version": 1, "description": "test child",
+            "extends": "bigville",
+            "tables": [
+                {"name": "ITEMS", "file": "world/items.json", "merge": True},
+                {"name": "SCARCITY", "file": "world/scarcity.json", "merge": True},
+                {"name": "LOCAL_LAWS", "file": "frames/local_laws.json"},
+            ],
+        })
+        _write(child_dir / "world" / "items.json", {"_doc": "", "_types": {}, "tables": {
+            "ITEMS": {"test_fish_cake": fish_cake}}})
+        _write(child_dir / "world" / "scarcity.json", {"_doc": "", "_types": {}, "tables": {
+            "SCARCITY": {"test_fish_cake": 1.0}}})
+        laws = copy.deepcopy(parent["LOCAL_LAWS"]) + [new_law]
+        _write(child_dir / "frames" / "local_laws.json", {"_doc": "", "_types": {}, "tables": {
+            "LOCAL_LAWS": laws}})
+    
+        child = P.load_pack(str(child_dir))
+        assert child.extends == "bigville"
+        # the override is in, with the compiler's derived scrap entry
+        assert child["ITEMS"]["test_fish_cake"] == fish_cake
+        assert child["ITEMS"]["test_fish_cake_scraps"]["scraps_of"] == "test_fish_cake"
+        assert child["SCARCITY"]["test_fish_cake_scraps"] == round(1.0 * 0.15, 4)
+        assert len(child["ITEMS"]) == len(parent["ITEMS"]) + 2
+        # the new law is added, and the compiler gives it the bundle defaults
+        assert len(child["LOCAL_LAWS"]) == len(parent["LOCAL_LAWS"]) + 1
+        law = child["LOCAL_LAWS"][-1]
+        assert law["origin"] == "bigville" and law["immutable"] is False and law["enforcement"] == "bigville"
+        assert child["LAWS"][-1] is law
+        # everything else is inherited unchanged
+        assert P.canonical(child["POLICIES"]) == P.canonical(parent["POLICIES"])
+        assert P.canonical(child["GIANTVILLE_LAWS"]) == P.canonical(parent["GIANTVILLE_LAWS"])
+        assert P.canonical(child["CROPS"]) == P.canonical(parent["CROPS"])
+>       assert P.canonical(child["RECIPES"]) == P.canonical(parent["RECIPES"])
+E       assert '[{"name": "s...el": 0.0}]}}]' == '[{"name": "s...el": 0.0}]}}]'
+E         
+E         - [{"name": "saw_planks", "requires": "sawyer", "in": [["lumber", 1]], "out": ["timber", 2], "difficulty": 0.8, "time_minutes": 20, "crew": {"min": 2, "max": 3}, "knowledge": {"topics": ["carpentry_and_building"], "public": 0.0, "after_years": 0, "understanding_requires": [{"trade": "sawyer"}, {"skill": "sawing", "level": 0.0}]}}, {"name": "burn_charcoal", "requires": "collier", "in": [["wood", 4]], "out": ["charcoal", 1], "difficulty": 2.0, "time_minutes": 60, "knowledge": {"topics": ["fuel_and_light"], "public": 0.0, "after_years": 0, "understanding_requires": [{"trad...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests/test_phase013a_packs.py:157: AssertionError
+______ test_a_fresh_view_of_the_bigville_pack_equals_the_default_modules _______
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-878/test_a_fresh_view_of_the_bigvi0')
+
+    def test_a_fresh_view_of_the_bigville_pack_equals_the_default_modules(tmp_path):
+        """The view built from the pack (not the default modules) gives the same tables: a copy of
+        bigville, made as a child pack that extends it with no change."""
+        view = entities("bigville")
+        assert view is DEFAULT, "the default pack is served by the real modules"
+        child = _child_of_bigville_dir(tmp_path)
+        fresh = entities(child)
+        assert fresh is not DEFAULT
+>       assert _public_tables(fresh) == _public_tables(DEFAULT)
+E       assert {'ACTOR_DEFAU...law"]}}', ...} == {'ACTOR_DEFAU...law"]}}', ...}
+E         
+E         Omitting 218 identical items, use -vv to show
+E         Differing items:
+E         {'SHOCKS': '{"drought": {"marks": {"dirt": 0.1}, "duration": [2, 6], "effects": ["water_shortage", "crop_failure", "fi...t_shortage"]}, "epidemic": {"duration": [2, 8], "effects": ["illness", "care_shortage", "labour_loss", "mortality"]}}'} != {'SHOCKS': '{"drought": {"duration": [2, 6], "effects": ["water_shortage", "crop_failure", "fire_risk"]}, "flood": {"d...t_shortage"]}, "epidemic": {"duration": [2, 8], "effects": ["illness", "care_shortage", "labour_loss", "mortality"]}}'}
+E         {'RECIPES': '[{"name": "saw_pla...
+E         
+E         ...Full output truncated (39 lines hidden), use '-vv' to show
+
+tests/test_phase013b_data_pack.py:85: AssertionError
+_______________ test_the_winter_reserve_is_the_policy_parameters _______________
+
+    def test_the_winter_reserve_is_the_policy_parameters():
+        w = BigvilleWorld()
+        assert w._policy_parameters("winter_food_reserve") == {"minimum_grain": 4.0, "feed_periods": 4.0}
+>       assert DEFAULT.check_consistency()["errors"] == []
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase015_offices.py:99: AssertionError
+_____ test_procedure_stages_name_only_their_own_civic_actions_in_the_pack ______
+
+    def test_procedure_stages_name_only_their_own_civic_actions_in_the_pack():
+>       assert DEFAULT.check_consistency()["errors"] == []
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase015_offices.py:234: AssertionError
+_________________________ test_the_self_test_is_clean __________________________
+
+    def test_the_self_test_is_clean():
+        report = E.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff)
+
+tests/test_phase016b_founding_cast.py:78: AssertionError
+_____________ test_the_committed_seeds_are_what_the_pack_produces ______________
+
+    def test_the_committed_seeds_are_what_the_pack_produces():
+>       assert G.check_seeds(load_pack("bigville"), CANONICAL) == []
+E       assert ['gen_recipes...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase017_generated_seeds.py:65: AssertionError
+_ test_the_cli_checks_the_canonical_directory_and_requires_out_for_other_packs _
+
+capsys = <_pytest.capture.CaptureFixture object at 0x792e53cf34d0>
+
+    def test_the_cli_checks_the_canonical_directory_and_requires_out_for_other_packs(capsys):
+        spec = importlib.util.spec_from_file_location("generate_seeds", os.path.join(ROOT, "tools", "generate_seeds.py"))
+        cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cli)
+>       assert cli.main(["--check"]) == 0
+E       AssertionError: assert 1 == 0
+E        +  where 1 = <function main at 0x792e53c7f060>(['--check'])
+E        +    where <function main at 0x792e53c7f060> = <module 'generate_seeds' from '/home/matt/ozmadev/bigville/tools/generate_seeds.py'>.main
+
+tests/test_phase017_generated_seeds.py:218: AssertionError
+----------------------------- Captured stdout call -----------------------------
+stale: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)
+1 problem(s) in /home/matt/ozmadev/bigville/bigville/seeds; run python3 tools/generate_seeds.py
+_ test_every_knowledge_spec_references_only_real_topics_skills_offices_and_places _
+
+    def test_every_knowledge_spec_references_only_real_topics_skills_offices_and_places():
+        report = E.check_consistency()
+>       assert report["errors"] == [], report["errors"]
+E       AssertionError: ["generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"]
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase019_knowledge.py:230: AssertionError
+_____________ test_the_self_test_is_clean_for_the_handover_tables ______________
+
+    def test_the_self_test_is_clean_for_the_handover_tables():
+        report = E.check_consistency()
+>       assert report["errors"] == []
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase026_handovers.py:203: AssertionError
+____ test_the_grading_constants_are_fractions_and_the_self_test_stays_clean ____
+
+    def test_the_grading_constants_are_fractions_and_the_self_test_stays_clean():
+        assert 0.0 < E.FOOD_GRADING["raw_penalty"] <= 1.0
+        assert 0.0 <= E.FOOD_GRADING["rot_illness"] <= 1.0
+        assert 0.0 <= E.FOOD_GRADING["raw_illness"] <= 1.0
+        report = E.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff)
+
+tests/test_phase027_food_value.py:41: AssertionError
+______________ test_the_table_and_its_cross_references_are_clean _______________
+
+    def test_the_table_and_its_cross_references_are_clean():
+        report = E.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff)
+
+tests/test_phase034_intoxication.py:103: AssertionError
+___ test_every_food_has_a_protein_and_a_taste_and_the_self_test_stays_clean ____
+
+    def test_every_food_has_a_protein_and_a_taste_and_the_self_test_stays_clean():
+        foods = [k for k, spec in E.ITEMS.items() if spec.get("food") and not spec.get("scraps_of")]
+        assert len(foods) > 50
+        for kind in foods:
+            spec = E.ITEMS[kind]
+            assert isinstance(spec.get("protein"), (int, float)) and spec["protein"] >= 0.0, f"{kind} needs protein"
+            assert isinstance(spec.get("taste"), (int, float)) and 0.0 <= spec["taste"] <= 1.0, f"{kind} needs taste"
+        for kind in E.NUTRITION["spice_kinds"]:
+            assert kind in E.ITEMS, f"spice {kind} must be an item"
+        report = E.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff)
+
+tests/test_phase035_nutrition.py:40: AssertionError
+______ test_the_entity_self_test_is_clean_with_day_and_night_in_the_pack _______
+
+    def test_the_entity_self_test_is_clean_with_day_and_night_in_the_pack():
+        report = E.check_consistency()
+>       assert report["errors"] == []
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase042_daynight.py:445: AssertionError
+________ test_the_entity_self_test_runs_the_lexicon_checks_and_is_clean ________
+
+    def test_the_entity_self_test_runs_the_lexicon_checks_and_is_clean():
+        from domains import bigville_entities as E
+        report = E.check_consistency()
+>       assert report["errors"] == [], report["errors"]
+E       AssertionError: ["generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"]
+E       assert ['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff
+
+tests/test_phase051_lexicon.py:423: AssertionError
+_ test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical _
+
+    def test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical():
+        turns = 2
+        sequential_provider = FakeProvider(varied_reply, delay=0.3)
+        sequential = build_llm_town(sequential_provider, llm_residents=8, concurrency=4, llm_log=False)
+        for backend in (sequential.backends[name] for name in sequential.llm_residents):
+            backend.concurrent = False
+        started = time.perf_counter()
+        sequential_digest = _run(sequential, turns)
+        sequential_seconds = time.perf_counter() - started
+    
+        concurrent_provider = FakeProvider(varied_reply, delay=0.3)
+        concurrent = build_llm_town(concurrent_provider, llm_residents=8, concurrency=4, llm_log=False)
+        started = time.perf_counter()
+        concurrent_digest = _run(concurrent, turns)
+        concurrent_seconds = time.perf_counter() - started
+    
+        assert concurrent_digest == sequential_digest
+        assert _calls(concurrent_provider) == _calls(sequential_provider)
+        # Consults are gated by the autopilot, so not every resident is asked every turn.
+        assert 0 < len(concurrent_provider.calls) <= 8 * turns
+        print(f"\nSPEEDUP sequential={sequential_seconds:.2f}s concurrent={concurrent_seconds:.2f}s "
+              f"ratio={concurrent_seconds / sequential_seconds:.2f} calls={len(concurrent_provider.calls)}")
+>       assert concurrent_seconds < 0.75 * sequential_seconds, (sequential_seconds, concurrent_seconds)
+E       AssertionError: (14.953630081028678, 12.140554348938167)
+E       assert 12.140554348938167 < (0.75 * 14.953630081028678)
+
+tests/test_phase055_concurrency.py:56: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+SPEEDUP sequential=14.95s concurrent=12.14s ratio=0.81 calls=13
+___ test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it ___
+
+    def test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it():
+        server, service = _serve_with_service()
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            row = next(r for r in session.view["can"] if r["action"] == "work")
+            before = service.game.world._turn
+            session.line("look")
+            out = session.line(str([r["handle"] for r in session.view["can"]].index(row["handle"]) + 1))
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert service.game.world._turn == before + 1
+>       assert service.game.last_responses[PLAYER].major_action.action == "work"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:642: AttributeError
+______ test_over_http_walking_to_a_known_place_sends_the_rows_destination ______
+
+    def test_over_http_walking_to_a_known_place_sends_the_rows_destination():
+        walker = "Verity Peaseblossom"                      # a resident who knows exact places at the start
+        server, service = _serve_with_service(walker)
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", walker))
+            walk = next((r for r in session.view["can"] if r["action"] == "walk"), None)
+            assert walk is not None
+            session.line("walk to " + walk["what"].replace("walk to the ", ""))
+        finally:
+            server.shutdown()
+            server.server_close()
+        proposal = service.game.last_responses[walker].major_action
+>       assert proposal.action == "move" and proposal.params.get("destination") is not None
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:660: AttributeError
+_____________ test_over_http_a_reaction_is_delivered_to_the_holder _____________
+
+    def test_over_http_a_reaction_is_delivered_to_the_holder():
+        server, service = _serve_with_service()
+        game = service.game
+        taker = "Kester Furlong"
+        game.world._move_actor_to(taker, game.world.actor_position(PLAYER))
+        game.world.set_coin(PLAYER, 9.0)
+    
+        class Taker(DeterministicBackend):
+            def decide(self, context):
+                return ActorResponse(major_action=ProposedAction(
+                    "take", {"source": PLAYER, "kind": "coin", "amount": 3.0}))
+    
+        game.set_backend(taker, Taker(game.characters[taker]))
+        for name in game.characters:
+            if name not in (PLAYER, taker):
+                game.set_backend(name, DeterministicBackend(game.characters[name]))
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            out = session.line("wait")
+            assert session.view.get("reaction"), out
+            answer = session.line("resist")
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert answer[0] == "You hold on and resist."
+>       assert game.contest_log and game.contest_log[-1]["reaction"] == "resist"
+E       assert (deque([]))
+E        +  where deque([]) = <bigville.game.BigvilleGame object at 0x792e423acb50>.contest_log
+
+tests/test_phase057_tui.py:688: AssertionError
+___ test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for ___
+
+    def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
+        server, service = _serve_with_service()
+        try:
+            url = f"http://127.0.0.1:{server.server_port}/api/turn"
+    
+            def post(body):
+                req = urlrequest.Request(url, data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+                try:
+                    with urlrequest.urlopen(req) as response:
+                        return response.status, json.loads(response.read())
+                except urlrequest.HTTPError as exc:
+                    return exc.code, json.loads(exc.read())
+    
+            status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
+>           assert status == 400 and "intensity must be" in body["error"]
+E           assert (200 == 400)
+
+tests/test_phase057_tui.py:706: AssertionError
+__________ test_the_entity_self_test_is_clean_with_the_persona_checks __________
+
+    def test_the_entity_self_test_is_clean_with_the_persona_checks():
+        from domains import bigville_entities as E
+        report = E.check_consistency()
+>       assert report["errors"] == [] and report["warnings"] == []
+E       assert (['generated s...te_seeds.py)'] == []
+E         
+E         Left contains one more item: "generated seeds: gen_recipes.json: stale, the pack 'bigville' no longer produces these bytes (run tools/generate_seeds.py)"
+E         Use -v to get more diff)
+
+tests/test_phase058_persona.py:463: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+FAILED tests/test_phase004_located_gathering.py::test_the_self_test_is_clean_for_bigville_and_for_the_hamlet_pack
+FAILED tests/test_phase008_animal_lifecycle.py::test_the_self_test_is_clean_for_the_life_cycle_fields
+FAILED tests/test_phase009_kinship.py::test_the_self_test_reports_household_and_extended_family_shares_against_their_sources
+FAILED tests/test_phase010_burial.py::test_the_self_test_is_clean_and_covers_the_burial_tables
+FAILED tests/test_phase011_fiscal.py::test_the_self_test_is_clean_and_names_the_fiscal_tables
+FAILED tests/test_phase013a_packs.py::test_exported_files_compile_back_to_the_same_tables
+FAILED tests/test_phase013a_packs.py::test_child_pack_extends_bigville_and_overrides_two_tables
+FAILED tests/test_phase013b_data_pack.py::test_a_fresh_view_of_the_bigville_pack_equals_the_default_modules
+FAILED tests/test_phase015_offices.py::test_the_winter_reserve_is_the_policy_parameters
+FAILED tests/test_phase015_offices.py::test_procedure_stages_name_only_their_own_civic_actions_in_the_pack
+FAILED tests/test_phase016b_founding_cast.py::test_the_self_test_is_clean - a...
+FAILED tests/test_phase017_generated_seeds.py::test_the_committed_seeds_are_what_the_pack_produces
+FAILED tests/test_phase017_generated_seeds.py::test_the_cli_checks_the_canonical_directory_and_requires_out_for_other_packs
+FAILED tests/test_phase019_knowledge.py::test_every_knowledge_spec_references_only_real_topics_skills_offices_and_places
+FAILED tests/test_phase026_handovers.py::test_the_self_test_is_clean_for_the_handover_tables
+FAILED tests/test_phase027_food_value.py::test_the_grading_constants_are_fractions_and_the_self_test_stays_clean
+FAILED tests/test_phase034_intoxication.py::test_the_table_and_its_cross_references_are_clean
+FAILED tests/test_phase035_nutrition.py::test_every_food_has_a_protein_and_a_taste_and_the_self_test_stays_clean
+FAILED tests/test_phase042_daynight.py::test_the_entity_self_test_is_clean_with_day_and_night_in_the_pack
+FAILED tests/test_phase051_lexicon.py::test_the_entity_self_test_runs_the_lexicon_checks_and_is_clean
+FAILED tests/test_phase055_concurrency.py::test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical
+FAILED tests/test_phase057_tui.py::test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it
+FAILED tests/test_phase057_tui.py::test_over_http_walking_to_a_known_place_sends_the_rows_destination
+FAILED tests/test_phase057_tui.py::test_over_http_a_reaction_is_delivered_to_the_holder
+FAILED tests/test_phase057_tui.py::test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for
+FAILED tests/test_phase058_persona.py::test_the_entity_self_test_is_clean_with_the_persona_checks
+29 failed, 2156 passed, 6 skipped in 3050.68s (0:50:50)

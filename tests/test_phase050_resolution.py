@@ -498,7 +498,9 @@ def test_a_costly_attempt_claims_the_slot_and_a_second_is_refused():
 
 
 def test_a_broken_chest_spills_its_contents_on_its_cell():
-    w = _world(strength=3.0, tool="hammer")
+    # Phase 070b: the accident harm of the first strain leaves an arm injury, which lowers strength by its
+    # INJURY_EFFECTS weight. The strength was 3.0; 4.0 keeps the blow strong enough to break the chest.
+    w = _world(strength=4.0, tool="hammer")
     _fresh_body(w)
     w.eng.set_attr(w._containers["box"][1]["grain"], "qty", 5.0)
     cell = w.container_position("box")

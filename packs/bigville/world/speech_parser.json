@@ -1,0 +1,77 @@
+{
+  "_doc": "SPEECH PARSER (Phase 061): the stage-two model that places speech the grammar cannot (bigville/backends/speech_parser.py). SPEECH_PARSER.enabled is false, and nothing calls the parser unless a provider is configured for it. caps: max_calls_per_run (the whole run, one budget key) and max_spend (the provider's reported cost, None for no cap), timeout_s (per call, seconds), repair_attempts (calls made again with the problem named, after an invalid reply), max_utterance_chars (longer text is not sent). confidence.model: the confidence of a placed model or cache answer (APPROX, an authored choice, scaled by SPEECH_UNDERSTANDING.effects.stranger_factor for a stranger). prefix: the text of the fixed system prefix. Its act reference is built from SPEECH_ACTS (every understood act, its description and slots), so it is the same bytes for every call of a pack; the intro, the schema and the examples are the words here. The examples' replies are checked by the self-test against the act table. The numbers in caps are APPROX: they are not measured costs, and the Phase 061 report gives the calls and cost the labelled-set run used.",
+  "_types": {},
+  "tables": {
+    "SPEECH_PARSER": {
+      "enabled": false,
+      "schema_version": 1,
+      "caps": {
+        "max_calls_per_run": 1000,
+        "max_spend": null,
+        "timeout_s": 10.0,
+        "repair_attempts": 1,
+        "max_utterance_chars": 240
+      },
+      "confidence": {
+        "model": 0.6
+      },
+      "prefix": {
+        "intro": "You place one line of speech from a village game as a speech act. The acts and their slots are listed below. Reply with one JSON object and nothing else. If the line is not one of the acts, reply with act null. Never invent a name: a name slot may only be the speaker, the listener, or a name the context gives. Every other slot value is words copied from the line, in lower case.",
+        "schema": "{\"act\": \"<one act from the list, or null>\", \"slots\": {\"<slot name>\": \"<words from the line>\"}}. Use only the slots the act lists. Leave a slot out if you cannot fill it.",
+        "examples": [
+          {
+            "speaker": "bram",
+            "listener": "ada",
+            "utterance": "Ada, could you spare two loaves?",
+            "reply": {
+              "act": "request",
+              "slots": {
+                "request": "could you spare two loaves"
+              }
+            }
+          },
+          {
+            "speaker": "tam",
+            "listener": "bram",
+            "utterance": "Morning, Bram.",
+            "reply": {
+              "act": "greeting",
+              "slots": {
+                "target": "bram"
+              }
+            }
+          },
+          {
+            "speaker": "nell",
+            "listener": "ivo",
+            "utterance": "Is the forge lit this morning?",
+            "reply": {
+              "act": "question",
+              "slots": {
+                "question": "is the forge lit this morning"
+              }
+            }
+          },
+          {
+            "speaker": "oswin",
+            "listener": "ada",
+            "utterance": "Watch the ice by the well.",
+            "reply": {
+              "act": "barb",
+              "slots": {}
+            }
+          },
+          {
+            "speaker": "hester",
+            "listener": "ada",
+            "utterance": "Two carts went past the church.",
+            "reply": {
+              "act": null,
+              "slots": {}
+            }
+          }
+        ]
+      }
+    }
+  }
+}

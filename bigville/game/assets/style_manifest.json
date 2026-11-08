@@ -410,10 +410,11 @@
       "barn": 34,
       "charcoal_hearth": 35,
       "inkhouse": 36,
-      "mill": 37,
-      "papermill": 38,
-      "printshop": 39,
-      "scriptorium": 40
+      "jail": 37,
+      "mill": 38,
+      "papermill": 39,
+      "printshop": 40,
+      "scriptorium": 41
     }
   },
   "cutaways": {
@@ -457,10 +458,11 @@
       "barn": 34,
       "charcoal_hearth": 35,
       "inkhouse": 36,
-      "mill": 37,
-      "papermill": 38,
-      "printshop": 39,
-      "scriptorium": 40
+      "jail": 37,
+      "mill": 38,
+      "papermill": 39,
+      "printshop": 40,
+      "scriptorium": 41
     }
   },
   "large_buildings": {

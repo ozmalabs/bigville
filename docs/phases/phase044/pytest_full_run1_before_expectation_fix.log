@@ -1,0 +1,112 @@
+s....................................................................... [  3%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+...s.................................................................... [ 12%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 25%]
+........................................................................ [ 28%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 38%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 48%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 70%]
+........................................................................ [ 73%]
+........................................................................ [ 76%]
+..................................................F..................... [ 80%]
+........................................................................ [ 83%]
+........................................................................ [ 86%]
+....................................sss................................. [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 96%]
+..................F................................F.................... [ 99%]
+................                                                         [100%]
+=================================== FAILURES ===================================
+_ test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical _
+
+    def test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical():
+        turns = 2
+        sequential_provider = FakeProvider(varied_reply, delay=0.3)
+        sequential = build_llm_town(sequential_provider, llm_residents=8, concurrency=4, llm_log=False)
+        for backend in (sequential.backends[name] for name in sequential.llm_residents):
+            backend.concurrent = False
+        started = time.perf_counter()
+        sequential_digest = _run(sequential, turns)
+        sequential_seconds = time.perf_counter() - started
+    
+        concurrent_provider = FakeProvider(varied_reply, delay=0.3)
+        concurrent = build_llm_town(concurrent_provider, llm_residents=8, concurrency=4, llm_log=False)
+        started = time.perf_counter()
+        concurrent_digest = _run(concurrent, turns)
+        concurrent_seconds = time.perf_counter() - started
+    
+        assert concurrent_digest == sequential_digest
+        assert _calls(concurrent_provider) == _calls(sequential_provider)
+        # Consults are gated by the autopilot, so not every resident is asked every turn.
+        assert 0 < len(concurrent_provider.calls) <= 8 * turns
+        print(f"\nSPEEDUP sequential={sequential_seconds:.2f}s concurrent={concurrent_seconds:.2f}s "
+              f"ratio={concurrent_seconds / sequential_seconds:.2f} calls={len(concurrent_provider.calls)}")
+>       assert concurrent_seconds < 0.75 * sequential_seconds, (sequential_seconds, concurrent_seconds)
+E       AssertionError: (16.500802367925644, 13.290966507978737)
+E       assert 13.290966507978737 < (0.75 * 16.500802367925644)
+
+tests/test_phase055_concurrency.py:56: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+SPEEDUP sequential=16.50s concurrent=13.29s ratio=0.81 calls=13
+______ test_runner_replays_identically_and_records_seed_and_causal_trace _______
+
+    def test_runner_replays_identically_and_records_seed_and_causal_trace():
+        scenario = _simple_scenario()
+        scenario["physical_subsystems"] = {"metabolism": False, "decay": True}
+        first = run_scenario(scenario, seed=17, turns=3, ticks_per_period=2)
+        replay = run_scenario(scenario, seed=17, turns=3, ticks_per_period=2)
+        different_seed = run_scenario(scenario, seed=18, turns=1)
+    
+        assert first == replay
+        assert different_seed["seed"] == 18
+        assert first["initial_state"]["turn"] == 0
+>       assert first["physical_subsystems"] == {
+            "metabolism": False, "ecology": True, "decay": True, "practice": True, "cognitive_practice": False,
+            "loudness": True, "training": True, "illness": False, "joint_actions": False, "monotony": False,
+            "alcohol_aftereffects": False, "object_force": False}
+E       AssertionError: assert {'alcohol_aft...y': True, ...} == {'alcohol_aft...y': True, ...}
+E         
+E         Omitting 12 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'births': False}
+E         Use -v to get more diff
+
+tests/test_scenario_runner.py:25: AssertionError
+_____ test_physical_subsystems_default_on_and_reject_invalid_configuration _____
+
+    def test_physical_subsystems_default_on_and_reject_invalid_configuration():
+        import pytest
+    
+        world = BigvilleWorld(autonomous_actors=False)
+>       assert world.physical_subsystems == {"metabolism": True, "ecology": True, "decay": True, "practice": True,
+                                             "cognitive_practice": False, "loudness": True, "training": True,
+                                             "illness": False, "joint_actions": False, "monotony": False,
+                                             "alcohol_aftereffects": False, "object_force": False}
+E       AssertionError: assert {'alcohol_aft...y': True, ...} == {'alcohol_aft...y': True, ...}
+E         
+E         Omitting 12 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'births': False}
+E         Use -v to get more diff
+
+tests/test_simple_life.py:154: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_phase055_concurrency.py::test_a_slow_provider_is_faster_when_decided_concurrently_and_the_results_are_identical
+FAILED tests/test_scenario_runner.py::test_runner_replays_identically_and_records_seed_and_causal_trace
+FAILED tests/test_simple_life.py::test_physical_subsystems_default_on_and_reject_invalid_configuration
+3 failed, 2240 passed, 5 skipped in 3598.02s (0:59:58)

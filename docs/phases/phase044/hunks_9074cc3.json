@@ -1,0 +1,122 @@
+[
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps",
+    "new": "from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps\nfrom worlds.births import BirthsMixin  # noqa: E402  Phase 044: pregnancy and birth (the births switch)",
+    "note": "import of the births mixin"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "class BigvilleWorld:",
+    "new": "class BigvilleWorld(BirthsMixin):",
+    "note": "class base: the births mixin"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "        \"object_force\": False,\n    }",
+    "new": "        \"object_force\": False,\n        # Phase 044: pregnancy and birth (BIRTHS: conception in a recorded union, gestation, delivery risks, the\n        # midwife, and nursing). Off, no one conceives, the population is fixed, and no pregnancy or nursing\n        # changes hunger or work capacity. worlds/births.py holds the rules.\n        \"births\": False,\n    }",
+    "note": "PHYSICAL_SUBSYSTEM_DEFAULTS: births switch, off"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "                for actor, node in self._actors.items():\n                    aa = self.eng.node(node)[\"attrs\"]\n                    if float(aa.get(\"alive\", 0.0)) != 1.0:\n                        continue\n                    hunger = float(aa.get(\"hunger\", 0.0)) + 1.0",
+    "new": "                for actor, node in self._actors.items():\n                    aa = self.eng.node(node)[\"attrs\"]\n                    if float(aa.get(\"alive\", 0.0)) != 1.0:\n                        continue\n                    hunger = float(aa.get(\"hunger\", 0.0)) + self._hunger_rate(actor)  # Phase 044: 1.0 unless births on",
+    "note": "pass_period: hunger rate per resident (1.0 unless births on)"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor))",
+    "new": "        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor)) * self._capacity_factor(actor)",
+    "note": "_effective_body_stat: pregnancy capacity factor (1.0 unless pregnant)"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "                self.eng.set_attr(node, \"life_stage\", age_stage)\n\n    def add_waste(self, kind=\"kitchen_scraps\", amount=1.0):",
+    "new": "                self.eng.set_attr(node, \"life_stage\", age_stage)\n        # Phase 044: pregnancy, delivery and birth (a no-op with the births switch off).\n        self._births_day()\n\n    def add_waste(self, kind=\"kitchen_scraps\", amount=1.0):",
+    "note": "_daily_life_tick: one call after the resident loop"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "                **self.aftereffects(actor)}",
+    "new": "                **self.aftereffects(actor),\n                # Phase 044 read-offs: pregnant, term_fraction and nursed; empty when the births switch is off.\n                **self._birth_readoffs(actor)}",
+    "note": "body_state: births read-offs (empty when off)"
+  },
+  {
+    "file": "domains/world_affordances.py",
+    "old": "MEDICAL_CARE = _PACK[\"MEDICAL_CARE\"]\n",
+    "new": "MEDICAL_CARE = _PACK[\"MEDICAL_CARE\"]\n# Phase 044: pregnancy and birth (BIRTHS: conception by age, gestation, delivery risks, midwife, nursing). APPROX.\nBIRTHS = _PACK[\"BIRTHS\"]\n",
+    "note": "BIRTHS binding"
+  },
+  {
+    "file": "domains/bigville_entities.py",
+    "old": "def _check_contest(errors, warnings, info):",
+    "new": "def _check_births(errors, warnings, info):\n    \"\"\"Phase 044: the BIRTHS table. Conception rates cover every fertile age with a rate in [0, 1]; gestation and the\n    postpartum block are whole days; the pregnancy's work and food, the delivery risks and the midwife's factor are in\n    their ranges; the first-year death is the complement of INFANT_SURVIVAL (Phase 009's table); and 'childbirth' is a\n    HEALTH cause with a MARK_HARM row. The arithmetic (domains/fertility_check.py) reports the completed family of a\n    union woman entering at the cited age at first union, against the cited CHILDREN_PER_UNION mean (APPROX). The\n    growth of the town is not checked here: a village run is needed for that (see the Phase 044 report).\"\"\"\n    from domains import fertility_check as _fc\n    b = BIRTHS\n    required = (\"fertile_age_min\", \"fertile_age_max\", \"conception_per_year\", \"gestation_days\",\n                \"postpartum_block_days\", \"pregnancy_food\", \"pregnancy_load\", \"stillbirth\", \"maternal_death\",\n                \"midwife_factor\", \"infant_first_year_death\", \"nursed_hunger\", \"midwife_reach\")\n    missing = [key for key in required if key not in b]\n    for key in missing:\n        errors.append(f\"BIRTHS[{key}]: missing\")\n    if missing:\n        return\n    lo, hi = int(b[\"fertile_age_min\"]), int(b[\"fertile_age_max\"])\n    if not 0 < lo < hi:\n        errors.append(f\"BIRTHS[fertile_age]: need 0 < min < max, not {lo}..{hi}\")\n    bands = sorted(b[\"conception_per_year\"], key=lambda band: float(band[\"age_min\"]))\n    for band in bands:\n        if float(band[\"age_min\"]) > float(band[\"age_max\"]) or not 0.0 <= float(band[\"rate\"]) <= 1.0:\n            errors.append(f\"BIRTHS[conception_per_year]: a band needs age_min <= age_max and a rate in [0, 1], not {band!r}\")\n    for prev, nxt in zip(bands, bands[1:]):\n        if float(nxt[\"age_min\"]) <= float(prev[\"age_max\"]):\n            errors.append(f\"BIRTHS[conception_per_year]: bands overlap at {nxt['age_min']}\")\n    for age in range(lo, hi + 1):\n        if not any(float(x[\"age_min\"]) <= age <= float(x[\"age_max\"]) for x in bands):\n            errors.append(f\"BIRTHS[conception_per_year]: no band covers fertile age {age}\")\n            break\n    for key in (\"gestation_days\", \"postpartum_block_days\", \"midwife_reach\"):\n        value = b[key]\n        if not isinstance(value, int) or isinstance(value, bool) or value < 0:\n            errors.append(f\"BIRTHS[{key}]: a whole number of days (or cells) >= 0, not {value!r}\")\n    if int(b[\"gestation_days\"]) < 1:\n        errors.append(\"BIRTHS[gestation_days]: must be at least 1 day\")\n    if float(b[\"pregnancy_food\"]) < 0.0:\n        errors.append(f\"BIRTHS[pregnancy_food]: must not be negative, not {b['pregnancy_food']!r}\")\n    load = b[\"pregnancy_load\"]\n    if not 0.0 <= float(load[\"from_term\"]) < 1.0 or not 0.0 <= float(load[\"max_load\"]) <= 1.0:\n        errors.append(f\"BIRTHS[pregnancy_load]: from_term in [0, 1) and max_load in [0, 1], not {load!r}\")\n    for key in (\"stillbirth\", \"maternal_death\", \"infant_first_year_death\"):\n        if not 0.0 <= float(b[key]) <= 1.0:\n            errors.append(f\"BIRTHS[{key}]: a chance in [0, 1], not {b[key]!r}\")\n    if abs(float(b[\"infant_first_year_death\"]) - (1.0 - float(INFANT_SURVIVAL))) > 1e-9:\n        errors.append(f\"BIRTHS[infant_first_year_death]: must be 1 - INFANT_SURVIVAL ({1.0 - float(INFANT_SURVIVAL)}), \"\n                      f\"not {b['infant_first_year_death']!r}\")\n    if not 0.0 < float(b[\"midwife_factor\"]) <= 1.0:\n        errors.append(f\"BIRTHS[midwife_factor]: in (0, 1], not {b['midwife_factor']!r}\")\n    if float(b[\"nursed_hunger\"]) < 0.0:\n        errors.append(f\"BIRTHS[nursed_hunger]: must not be negative, not {b['nursed_hunger']!r}\")\n    if \"midwifery\" not in SKILLS:\n        info.append(\"BIRTHS: this pack has no midwifery skill, so no resident can attend a birth as a midwife\")\n    if \"childbirth\" not in HEALTH[\"causes\"]:\n        errors.append(\"BIRTHS: 'childbirth' is not a HEALTH cause\")\n    if \"childbirth\" not in MARK_HARM:\n        errors.append(\"BIRTHS: 'childbirth' has no MARK_HARM row\")\n    days = float(TIME[\"days_per_year\"])\n    entry = float(AGE_AT_FIRST_UNION[\"female\"][\"mean\"])\n    family = _fc.completed_family(bands, gestation_days=int(b[\"gestation_days\"]),\n                                  postpartum_days=int(b[\"postpartum_block_days\"]), entry_age=entry,\n                                  end_age=float(hi) + 1.0, days_per_year=days)\n    cited = float(CHILDREN_PER_UNION[\"mean\"])\n    info.append(f\"BIRTHS: a union woman entering at {entry:g} has {family:.2f} children by {hi + 1} \"\n                f\"(table) against CHILDREN_PER_UNION mean {cited:g} (APPROX, Wrigley and Schofield 1981)\")\n    if abs(family - cited) > 1.0:\n        errors.append(f\"BIRTHS: completed family {family:.2f} is more than 1.0 from CHILDREN_PER_UNION {cited:g}\")\n    for age in (25, 30, 35):\n        per_year = _fc.births_per_union_year(bands, age=age, days_per_year=days,\n                                             gestation_days=int(b[\"gestation_days\"]),\n                                             postpartum_days=int(b[\"postpartum_block_days\"]))\n        info.append(f\"BIRTHS: a union woman aged {age} has {per_year:.3f} births a year on average (table)\")\n\n\ndef _check_contest(errors, warnings, info):",
+    "note": "_check_births function, before _check_contest"
+  },
+  {
+    "file": "domains/bigville_entities.py",
+    "old": "    _check_illness(errors, warnings, info)\n",
+    "new": "    _check_illness(errors, warnings, info)\n    _check_births(errors, warnings, info)   # Phase 044: pregnancy and birth (BIRTHS)\n",
+    "note": "self-test call after _check_illness"
+  },
+  {
+    "file": "bigville/game.py",
+    "old": "    def _sync_animal_backends(self):",
+    "new": "    def add_resident(self, name: str) -> bool:\n        \"\"\"Phase 044: give a resident the world has added (a newborn) a character and a dependent backend.\"\"\"\n        from bigville.resident_births import attach_resident\n        return attach_resident(self, name)\n\n    def _attach_newborns(self) -> None:\n        \"\"\"Phase 044: attach a character and a dependent backend to any world resident the game lacks.\"\"\"\n        from bigville.resident_births import attach_newborns\n        attach_newborns(self)\n\n    def _sync_animal_backends(self):",
+    "note": "BigvilleGame.add_resident and _attach_newborns"
+  },
+  {
+    "file": "bigville/game.py",
+    "old": "        if self._suspended is not None:\n            return self._resume_suspended()",
+    "new": "        self._attach_newborns()   # Phase 044: a newborn gets a character and a dependent backend\n        if self._suspended is not None:\n            return self._resume_suspended()",
+    "note": "step(): attach newborns first"
+  },
+  {
+    "file": "packs/bigville/pack.json",
+    "old": "    {\n      \"name\": \"IMPAIRMENT_NEIGHBOURS\",\n      \"file\": \"world/impairment.json\"\n    }\n  ]",
+    "new": "    {\n      \"name\": \"IMPAIRMENT_NEIGHBOURS\",\n      \"file\": \"world/impairment.json\"\n    },\n    {\n      \"name\": \"BIRTHS\",\n      \"file\": \"world/births.json\"\n    }\n  ]",
+    "note": "manifest: BIRTHS entry after the last entry"
+  },
+  {
+    "file": "packs/test_hamlet/pack.json",
+    "old": "    {\n      \"name\": \"IMPAIRMENT_NEIGHBOURS\",\n      \"file\": \"world/impairment.json\"\n    }\n  ]",
+    "new": "    {\n      \"name\": \"IMPAIRMENT_NEIGHBOURS\",\n      \"file\": \"world/impairment.json\"\n    },\n    {\n      \"name\": \"BIRTHS\",\n      \"file\": \"world/births.json\"\n    }\n  ]",
+    "note": "manifest: BIRTHS entry after the last entry"
+  },
+  {
+    "file": "packs/bigville/world/health.json",
+    "old": "        \"accident\"\n      ],\n      \"age_rate\": {",
+    "new": "        \"accident\",\n        \"childbirth\"\n      ],\n      \"age_rate\": {",
+    "note": "HEALTH causes: childbirth"
+  },
+  {
+    "file": "packs/test_hamlet/world/health.json",
+    "old": "        \"accident\"\n      ],\n      \"age_rate\": {",
+    "new": "        \"accident\",\n        \"childbirth\"\n      ],\n      \"age_rate\": {",
+    "note": "HEALTH causes: childbirth"
+  },
+  {
+    "file": "packs/bigville/world/marks.json",
+    "old": "      \"accident\": {\n        \"injury\": 1.0,\n        \"dirt\": 1.0\n      }\n    },",
+    "new": "      \"accident\": {\n        \"injury\": 1.0,\n        \"dirt\": 1.0\n      },\n      \"childbirth\": {}\n    },",
+    "note": "MARK_HARM: childbirth row (empty)"
+  },
+  {
+    "file": "packs/test_hamlet/world/marks.json",
+    "old": "      \"accident\": {}\n    },",
+    "new": "      \"accident\": {},\n      \"childbirth\": {}\n    },",
+    "note": "MARK_HARM: childbirth row (empty)"
+  },
+  {
+    "file": "tests/test_simple_life.py",
+    "old": "\"illness\": False, \"joint_actions\": False, \"monotony\": False,",
+    "new": "\"illness\": False, \"births\": False, \"joint_actions\": False, \"monotony\": False,",
+    "note": "test expectation: births default in the physical-subsystem dict"
+  },
+  {
+    "file": "tests/test_scenario_runner.py",
+    "old": "\"illness\": False, \"joint_actions\": False, \"monotony\": False,",
+    "new": "\"illness\": False, \"births\": False, \"joint_actions\": False, \"monotony\": False,",
+    "note": "test expectation: births default in the physical-subsystem dict"
+  }
+]

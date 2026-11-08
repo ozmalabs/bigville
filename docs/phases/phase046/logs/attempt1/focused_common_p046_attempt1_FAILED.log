@@ -1,0 +1,50 @@
+........................................................................ [ 40%]
+........................................................................ [ 81%]
+.........F.....F...............s                                         [100%]
+=================================== FAILURES ===================================
+_____ test_physical_subsystems_default_on_and_reject_invalid_configuration _____
+
+    def test_physical_subsystems_default_on_and_reject_invalid_configuration():
+        import pytest
+    
+        world = BigvilleWorld(autonomous_actors=False)
+>       assert world.physical_subsystems == {"metabolism": True, "ecology": True, "decay": True, "practice": True,
+                                             "cognitive_practice": False, "loudness": True, "training": True,
+                                             "illness": False, "births": False, "joint_actions": False, "monotony": False,
+                                             "alcohol_aftereffects": False, "object_force": False}
+E       AssertionError: assert {'alcohol_aft...y': True, ...} == {'alcohol_aft...y': True, ...}
+E         
+E         Omitting 13 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'detraining': False}
+E         Use -v to get more diff
+
+tests/test_simple_life.py:154: AssertionError
+______ test_runner_replays_identically_and_records_seed_and_causal_trace _______
+
+    def test_runner_replays_identically_and_records_seed_and_causal_trace():
+        scenario = _simple_scenario()
+        scenario["physical_subsystems"] = {"metabolism": False, "decay": True}
+        first = run_scenario(scenario, seed=17, turns=3, ticks_per_period=2)
+        replay = run_scenario(scenario, seed=17, turns=3, ticks_per_period=2)
+        different_seed = run_scenario(scenario, seed=18, turns=1)
+    
+        assert first == replay
+        assert different_seed["seed"] == 18
+        assert first["initial_state"]["turn"] == 0
+>       assert first["physical_subsystems"] == {
+            "metabolism": False, "ecology": True, "decay": True, "practice": True, "cognitive_practice": False,
+            "loudness": True, "training": True, "illness": False, "births": False, "joint_actions": False, "monotony": False,
+            "alcohol_aftereffects": False, "object_force": False}
+E       AssertionError: assert {'alcohol_aft...y': True, ...} == {'alcohol_aft...y': True, ...}
+E         
+E         Omitting 13 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'detraining': False}
+E         Use -v to get more diff
+
+tests/test_scenario_runner.py:25: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_simple_life.py::test_physical_subsystems_default_on_and_reject_invalid_configuration
+FAILED tests/test_scenario_runner.py::test_runner_replays_identically_and_records_seed_and_causal_trace
+2 failed, 173 passed, 1 skipped in 65.06s (0:01:05)

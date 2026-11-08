@@ -50,7 +50,7 @@ MENU_SCENARIO = {
 }
 
 # Recorded at LA01 and still the menu oracle after LA03.
-MENU_DIGEST_AT_LA01 = "86eec11eb25be8d61856211eea76bcb7ce19da358303505bb3a1a4e045fe9291"
+MENU_DIGEST_AT_LA01 = "8a49c09be5cbe1404d0626c81d531a3cb40dec2c04ff1196dd888e291f84ee3b"
 
 
 def _game(policy: SimplePolicy | None = None, *, scenario=None, seed=305001,

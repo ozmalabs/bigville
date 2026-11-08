@@ -1,0 +1,26 @@
+{
+  "_doc": "VISIBLE CONDITION (Phase 063), standalone test pack. No marks are defined: the hamlet has no recipe or event that leaves one. MARK_RULES keeps the bigville values so the rules stay valid. MARK_HARM gives every HEALTH cause an empty row, which is what the self-test requires. See packs/bigville/world/marks.json for the meaning of each table.",
+  "_types": {},
+  "tables": {
+    "MARKS": {},
+    "MARK_RULES": {
+      "max_level": 1.0,
+      "wash_water": 2.0,
+      "wash_drop": 0.5,
+      "wet_gain": 0.5
+    },
+    "MARK_HARM": {
+      "age": {},
+      "illness": {},
+      "injury": {},
+      "starvation": {},
+      "exhaustion": {},
+      "violence": {},
+      "intoxication": {},
+      "accident": {},
+      "childbirth": {},
+      "neglect": {}
+    },
+    "MARK_EVENTS": {}
+  }
+}
