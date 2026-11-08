@@ -199,7 +199,7 @@ status.
 | DS01 | complete | `6a3768c` |
 | DS02 | complete | `f34a7dc` |
 | DS03 | complete | `4c82dfe` |
-| DS04 | complete (uncommitted) | pending review/commit |
+| DS04 | complete | `7b31559` |
 
 ## Integration gates
 

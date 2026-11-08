@@ -1,6 +1,6 @@
 # Deterministic chance — final report (DS01-DS04)
 
-Status: phases DS01-DS03 committed; DS04 implemented and awaiting supervisor
+Status: complete, 8 November 2026
 review/commit. Dates: 7-8 November 2026.
 
 ## The rule
@@ -30,7 +30,7 @@ The single source is `domains/determinism.py`:
 | DS01 | `6a3768c` | Helper; weather and infrastructure draws moved off `world._rng`; runtime RNG removed from persistence; legacy `_rng_state` ignored on load; audit/test support. |
 | DS02 | `f34a7dc` | Every runtime stateless draw migrated to `state_uniform`/`state_seed` with involved party state: illness, meal, burial, birth conception/name/stillbirth/sex/infant/maternal, strike aim, harm locus, animal birth sex. |
 | DS03 | `4c82dfe` | `turn_order` uses `determinism.shuffle`; reporting sample uses `determinism.sample`; cast generation uses `determinism.uniform`; autopilot habit roll centralised; creation-time numpy streams allowlisted; production source-audit matcher. |
-| DS04 | complete (uncommitted) | Interoception runtime seed made state-derived; full serial/partitioned/replay/reorder/restore verification tool; shard determinism tests; overhead and final docs. |
+| DS04 | `7b31559` | Interoception runtime seed made state-derived; full serial/partitioned/replay/reorder/restore verification tool; shard determinism tests; overhead and final docs. |
 
 ## What is deterministic now
 
