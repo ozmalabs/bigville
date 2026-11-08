@@ -377,7 +377,10 @@ def test_a_reaction_consults_the_model_over_the_offered_options():
                                                                 "amount": 1.0, "late": False, "options": options}},
                             [{"action": "react", "option": option} for option in options], agent_view=_view())
 
-    backend = LLMBackend(_char(), Fake('{"major_action": {"action": "react", "params": {"option": "brace"}}}'))
+    backend = LLMBackend(_char(), Fake("{}"))
+    # Phase 054b: the reply names the option by the token the consult shows for it, not by the world's name.
+    brace = backend.handles.mask_choices(options)[1]
+    backend.provider.script = ['{"major_action": {"action": "react", "params": {"option": "%s"}}}' % brace]
     assert backend.react(reaction_context()).backend_state["reaction"] == "brace"
     backend = LLMBackend(_char(), Fake(REST))
     response = backend.react(reaction_context())

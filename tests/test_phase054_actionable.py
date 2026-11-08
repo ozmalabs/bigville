@@ -197,8 +197,10 @@ def test_every_can_row_of_a_sample_resident_becomes_the_simple_backends_proposal
         game.set_backend(name, backend)
         context = game._context(name)
         by_handle = _rows_by_handle(context.affordances)
-        for row in context.agent_view["can"]:
-            script.text = _reply({"action": row["action"], "target": row["handle"]})
+        # Phase 054b: the model copies the token it was shown for the row (the same token the consult shows).
+        shown = backend.handles.mask_context(context).agent_view["can"]
+        for row, shown_row in zip(context.agent_view["can"], shown):
+            script.text = _reply({"action": row["action"], "target": shown_row["handle"]})
             response = backend.decide(context)
             world_row = by_handle[row["handle"]]
             assert backend.last_backend_state["outcome"] == "ok", (name, row)
@@ -221,8 +223,14 @@ def _work_resident(game):
 def test_an_llm_resident_replying_with_a_work_row_is_enacted_by_the_world_in_one_turn():
     game = _town()
     name, row = _work_resident(game)
-    script = Script(_reply({"action": "work", "target": row["handle"]}))
-    game.set_backend(name, LLMBackend(game.characters[name], script, autopilot=False))
+    script = Script()
+    backend = LLMBackend(game.characters[name], script, autopilot=False)
+    game.set_backend(name, backend)
+    # Phase 054b: the reply copies the token the view showed for this row.
+    context = game._context(name)
+    raw = [r["handle"] for r in context.agent_view["can"]]
+    token = backend.handles.mask_context(context).agent_view["can"][raw.index(row["handle"])]["handle"]
+    script.text = _reply({"action": "work", "target": token})
     world_row = _rows_by_handle(game.world.actor_affordances(name))[row["handle"]]
     game.step()
     proposal = game.last_responses[name].major_action

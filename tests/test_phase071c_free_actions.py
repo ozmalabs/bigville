@@ -103,6 +103,13 @@ def _llm(game, name, reply_text):
     return script
 
 
+def _shown_token(game, name, raw):
+    """Phase 054b: the token the LLM view shows for a world handle in its `can` list (a reply copies the token)."""
+    context = game._context(name)
+    shown = game.backends[name].handles.mask_context(context).agent_view["can"]
+    return shown[[row["handle"] for row in context.agent_view["can"]].index(raw)]["handle"]
+
+
 # ------------------------------------------------------------------ the parity table
 def test_every_major_action_key_is_reachable_from_a_reply():
     for name in MAJOR:
@@ -192,7 +199,9 @@ def test_an_llm_glance_reply_is_enacted_and_shows_the_sound_and_place_in_last(to
     name = _adult(world)
     _felt(world, name)
     turn = world._turn
-    script = _llm(town, name, _reply(free_actions=[{"action": "glance", "target": "signal:1", "params": {}}]))
+    script = _llm(town, name, "")
+    token = _shown_token(town, name, "signal:1")
+    script.text = _reply(free_actions=[{"action": "glance", "target": token, "params": {}}])
     town.step()
     assert script.calls == 1
     outcome = free_replies.last_free(town, name)

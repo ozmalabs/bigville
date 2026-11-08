@@ -1,0 +1,3 @@
+[{"handle": "hxa", "what": "knife"}, {"handle": "hxb", "what": "spade"}, {"handle": "hxc", "what": "box"}, {"handle": "hxd", "what": "the ground to the east"}, {"handle": "hxe", "what": "the ground to the north"}, {"handle": "hxf", "what": "the ground to the south"}, {"handle": "hxg", "what": "the ground to the west"}]
+[{"action": "rest", "handle": "", "what": "rest a while"}, {"action": "sleep", "handle": "", "what": "lie down and sleep"}]
+labels: {'hxa': 'knife', 'hxb': 'spade_1', 'hxc': 'box', 'hxd': 'cell:2,1', 'hxe': 'cell:1,0', 'hxf': 'cell:1,2', 'hxg': 'cell:0,1'}

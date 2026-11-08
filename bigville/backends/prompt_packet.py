@@ -28,7 +28,7 @@ from typing import Any
 from domains.autopilot import usual_words
 from domains.pack import load_pack
 
-PACKET_SCHEMA = "bigville/prompt/5"   # Phase 071c: the reply has free_actions (Phase 069: the felt body was prompt/4)
+PACKET_SCHEMA = "bigville/prompt/6"   # Phase 054b: handles are the harness's tokens; the lazy text names no id or cell (071c: prompt/5)
 LESSON_KIND = "lesson"
 
 
@@ -88,10 +88,9 @@ def packet_system(pack: str, *, lazy: bool = False) -> str:
                   "- A public.can row names a capability. Its handle may be empty; do not copy a handle from it.",
                   "- Put the direct details in major_action.params: kind, recipe, object_id, destination, "
                   "recipient, container, source, animal, crop_node, land, project, patient, name.",
-                  "- For walk, copy a place handle from public.around.things into major_action.target, or give "
-                  "params.destination as a pair of cell numbers.",
-                  "- Name a recipe from public.self.knows, a carried kind from public.self.carrying, and a "
-                  "person or thing by the stable name or id in public.around.",
+                  "- For walk, copy a place handle from public.around.things into major_action.target.",
+                  "- Name a recipe from public.self.knows, a carried kind from public.self.carrying, a person by "
+                  "name from public.around, and a thing by its handle from public.around.things.",
                   "- The world checks the proposal against what exists. A refusal is ordinary: it is shown in "
                   "public.last on the next turn."]
     return "\n".join(lines)

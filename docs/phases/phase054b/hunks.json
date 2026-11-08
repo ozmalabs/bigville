@@ -1,0 +1,288 @@
+[
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: the LLM's handles are the harness's tokens (handle_map.HandleMap); import",
+    "old": [
+      "from .prompt_packet import PACKET_SCHEMA"
+    ],
+    "new": [
+      "from .handle_map import HandleMap",
+      "from .prompt_packet import PACKET_SCHEMA"
+    ]
+  },
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: one handle map per resident, kept with the backend state",
+    "old": [
+      "        self.log = log",
+      "        self.threads: dict[str, ConsultThread] = {}"
+    ],
+    "new": [
+      "        self.log = log",
+      "        # Phase 054b: the handles the model sees (tokens), per resident; kept in to_dict and restore_state.",
+      "        self.handles = HandleMap()",
+      "        self.threads: dict[str, ConsultThread] = {}"
+    ]
+  },
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: a reply's tokens are read back to the world's handles before the checks; the reaction reads its choice too",
+    "old": [
+      "    def _check(self, raw: Any, fields, affordances=None) -> tuple[dict[str, Any] | None, dict[str, Any] | None, list[str]]:",
+      "        \"\"\"(wire reply, the reply as the provider sent it, errors). The wire reply is None when a check fails.",
+      "        ``affordances`` are the context's rows, so a handle in the reply names the full row (Phase 054 follow-up).\"\"\"",
+      "        try:",
+      "            parsed = _payload(raw)",
+      "        except (TypeError, ValueError):",
+      "            return None, None, [\"output is not a JSON object\"]",
+      "        errors = _check_reply(parsed, fields, self.prompt_builder.pack.name, self._lesson_limit())",
+      "        if errors:",
+      "            return None, None, errors",
+      "        wire = to_wire(parsed, self.prompt_builder.pack.name, affordances=affordances)",
+      "        return wire, parsed, []"
+    ],
+    "new": [
+      "    def _check(self, raw: Any, fields, affordances=None, reaction: bool = False) -> tuple[dict[str, Any] | None, dict[str, Any] | None, list[str]]:",
+      "        \"\"\"(wire reply, the reply as the provider sent it, errors). The wire reply is None when a check fails.",
+      "        ``affordances`` are the context's rows, so a handle in the reply names the full row (Phase 054 follow-up).",
+      "        Phase 054b: the reply's tokens are read back to the world's handles first (bigville/backends/handle_map.py);",
+      "        a token the view did not offer is an error, and the errors are the repair path's.\"\"\"",
+      "        try:",
+      "            sent = _payload(raw)",
+      "        except (TypeError, ValueError):",
+      "            return None, None, [\"output is not a JSON object\"]",
+      "        parsed, handle_errors = self.handles.translate(sent, reaction=reaction)",
+      "        errors = handle_errors + _check_reply(parsed, fields, self.prompt_builder.pack.name, self._lesson_limit())",
+      "        if errors:",
+      "            return None, None, errors[:ERRORS_PER_RESPONSE]",
+      "        wire = to_wire(parsed, self.prompt_builder.pack.name, affordances=affordances)",
+      "        return wire, sent, []"
+    ]
+  },
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: the packet is built from the masked context, so the prompt, the thread and the log hold tokens only",
+    "old": [
+      "        record = self.prompt_builder.build(context, consult_reason, choices)",
+      "        base = record.as_dict()"
+    ],
+    "new": [
+      "        # Phase 054b: the model sees the harness's tokens. The packet, the thread and the log are built from the masked",
+      "        # context; the world's handles stay in the map (bigville/backends/handle_map.py).",
+      "        context = self.handles.mask_context(context)",
+      "        if choices is not None:",
+      "            choices = self.handles.mask_choices(choices)",
+      "        record = self.prompt_builder.build(context, consult_reason, choices)",
+      "        base = record.as_dict()"
+    ]
+  },
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: the reply is checked with its handles read back; a reaction (choices given) also reads the choice",
+    "old": [
+      "            wire, as_sent, errors = self._check(raw, fields, affordances)"
+    ],
+    "new": [
+      "            wire, as_sent, errors = self._check(raw, fields, affordances, reaction=choices is not None)"
+    ]
+  },
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: the log keeps token -> world handle beside each call (referee side); the prompt logged is unchanged",
+    "old": [
+      "            \"thread_hash\": thread_hash(messages),"
+    ],
+    "new": [
+      "            \"thread_hash\": thread_hash(messages),",
+      "            # Phase 054b: referee side only. token -> the world's handle, for the tokens in this call.",
+      "            \"referee\": {\"handles\": self.handles.referee(json.dumps(messages, ensure_ascii=False),",
+      "                                                          json.dumps(response, ensure_ascii=False, default=str))},"
+    ]
+  },
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: the handle map is part of the backend state (checkpoint round trip)",
+    "old": [
+      "                \"gate\": gate, \"autopilot\": autopilot, \"budget\": budget,"
+    ],
+    "new": [
+      "                \"gate\": gate, \"autopilot\": autopilot, \"budget\": budget, \"handles\": self.handles.to_dict(),"
+    ]
+  },
+  {
+    "file": "bigville/backends/llm.py",
+    "why": "054b: restore the handle map (a state saved before 054b starts an empty map)",
+    "old": [
+      "        self._bucket_day = data.get(\"bucket_day\")"
+    ],
+    "new": [
+      "        self._bucket_day = data.get(\"bucket_day\")",
+      "        self.handles.restore(data.get(\"handles\"))"
+    ]
+  },
+  {
+    "file": "bigville/backends/prompt_packet.py",
+    "why": "054b: the packet's text changes (lazy contract names no id or cell); the schema is bumped",
+    "old": [
+      "PACKET_SCHEMA = \"bigville/prompt/5\"   # Phase 071c: the reply has free_actions (Phase 069: the felt body was prompt/4)"
+    ],
+    "new": [
+      "PACKET_SCHEMA = \"bigville/prompt/6\"   # Phase 054b: handles are the harness's tokens; the lazy text names no id or cell (071c: prompt/5)"
+    ]
+  },
+  {
+    "file": "bigville/backends/prompt_packet.py",
+    "why": "054b: the lazy contract names no coordinate; a place is its handle from public.around.things",
+    "old": [
+      "                  \"- For walk, copy a place handle from public.around.things into major_action.target, or give \"",
+      "                  \"params.destination as a pair of cell numbers.\","
+    ],
+    "new": [
+      "                  \"- For walk, copy a place handle from public.around.things into major_action.target.\","
+    ]
+  },
+  {
+    "file": "bigville/backends/prompt_packet.py",
+    "why": "054b: a thing is named by its handle in public.around.things (a person by name); the world id is never shown",
+    "old": [
+      "                  \"- Name a recipe from public.self.knows, a carried kind from public.self.carrying, and a \"",
+      "                  \"person or thing by the stable name or id in public.around.\","
+    ],
+    "new": [
+      "                  \"- Name a recipe from public.self.knows, a carried kind from public.self.carrying, a person by \"",
+      "                  \"name from public.around, and a thing by its handle from public.around.things.\","
+    ]
+  },
+  {
+    "file": "tests/test_phase031_llm_backend.py",
+    "why": "054b: the packet schema is prompt/6 (the handles are tokens, the lazy text changed)",
+    "old": [
+      "    assert seen == [\"bigville/prompt/5\"]   # Phase 069 felt body (4), Phase 071c free actions in a reply (5)"
+    ],
+    "new": [
+      "    assert seen == [\"bigville/prompt/6\"]   # Phase 069 felt body (4), Phase 071c free actions (5), Phase 054b tokens (6)"
+    ]
+  },
+  {
+    "file": "tests/test_bigville_backends.py",
+    "why": "054b: the packet schema is prompt/6 (two assertions)",
+    "old": [
+      "            assert prompt[\"schema\"] == \"bigville/prompt/5\""
+    ],
+    "new": [
+      "            assert prompt[\"schema\"] == \"bigville/prompt/6\""
+    ]
+  },
+  {
+    "file": "tests/test_bigville_backends.py",
+    "why": "054b: the packet schema is prompt/6 (second assertion)",
+    "old": [
+      "    assert held[\"backend_state\"][\"prompt_schema\"] == \"bigville/prompt/5\""
+    ],
+    "new": [
+      "    assert held[\"backend_state\"][\"prompt_schema\"] == \"bigville/prompt/6\""
+    ]
+  },
+  {
+    "file": "tests/test_phase054_llm_prompt.py",
+    "why": "054b: the packet schema is prompt/6",
+    "old": [
+      "    assert record.schema == PACKET_SCHEMA == \"bigville/prompt/5\"   # Phase 071c: the reply has free_actions"
+    ],
+    "new": [
+      "    assert record.schema == PACKET_SCHEMA == \"bigville/prompt/6\"   # Phase 054b: handles are tokens (071c: prompt/5)"
+    ]
+  },
+  {
+    "file": "tests/fixtures/phase054_packet_snapshot.json",
+    "why": "054b: the snapshot's schema is prompt/6 (the snapshot's text is otherwise the same packet)",
+    "old": [
+      " \"schema\": \"bigville/prompt/5\","
+    ],
+    "new": [
+      " \"schema\": \"bigville/prompt/6\","
+    ]
+  },
+  {
+    "file": "tests/test_phase054_actionable.py",
+    "why": "054b: an LLM reply copies the token it was shown for the row, not the world's handle; the world row lookup is unchanged",
+    "old": [
+      "        for row in context.agent_view[\"can\"]:",
+      "            script.text = _reply({\"action\": row[\"action\"], \"target\": row[\"handle\"]})"
+    ],
+    "new": [
+      "        # Phase 054b: the model copies the token it was shown for the row (the same token the consult shows).",
+      "        shown = backend.handles.mask_context(context).agent_view[\"can\"]",
+      "        for row, shown_row in zip(context.agent_view[\"can\"], shown):",
+      "            script.text = _reply({\"action\": row[\"action\"], \"target\": shown_row[\"handle\"]})"
+    ]
+  },
+  {
+    "file": "tests/test_phase054_actionable.py",
+    "why": "054b: the work reply names the row by the token the view showed; the world row is still found by the world's handle",
+    "old": [
+      "    name, row = _work_resident(game)",
+      "    script = Script(_reply({\"action\": \"work\", \"target\": row[\"handle\"]}))",
+      "    game.set_backend(name, LLMBackend(game.characters[name], script, autopilot=False))"
+    ],
+    "new": [
+      "    name, row = _work_resident(game)",
+      "    script = Script()",
+      "    backend = LLMBackend(game.characters[name], script, autopilot=False)",
+      "    game.set_backend(name, backend)",
+      "    # Phase 054b: the reply copies the token the view showed for this row.",
+      "    context = game._context(name)",
+      "    raw = [r[\"handle\"] for r in context.agent_view[\"can\"]]",
+      "    token = backend.handles.mask_context(context).agent_view[\"can\"][raw.index(row[\"handle\"])][\"handle\"]",
+      "    script.text = _reply({\"action\": \"work\", \"target\": token})"
+    ]
+  },
+  {
+    "file": "tests/test_phase059_autopilot.py",
+    "why": "054b: the reaction reply names the option by the token the consult shows for it (the world's name is refused)",
+    "old": [
+      "    backend = LLMBackend(_char(), Fake('{\"major_action\": {\"action\": \"react\", \"params\": {\"option\": \"brace\"}}}'))"
+    ],
+    "new": [
+      "    backend = LLMBackend(_char(), Fake(\"{}\"))",
+      "    # Phase 054b: the reply names the option by the token the consult shows for it, not by the world's name.",
+      "    brace = backend.handles.mask_choices(options)[1]",
+      "    backend.provider.script = ['{\"major_action\": {\"action\": \"react\", \"params\": {\"option\": \"%s\"}}}' % brace]"
+    ]
+  },
+  {
+    "file": "tests/test_phase071c_free_actions.py",
+    "why": "054b: the LLM view's glance row is named by its token; the world's handle the view showed is refused",
+    "old": [
+      "def _llm(game, name, reply_text):",
+      "    script = Script(reply_text)",
+      "    game.set_backend(name, LLMBackend(game.characters[name], script, autopilot=False))",
+      "    return script"
+    ],
+    "new": [
+      "def _llm(game, name, reply_text):",
+      "    script = Script(reply_text)",
+      "    game.set_backend(name, LLMBackend(game.characters[name], script, autopilot=False))",
+      "    return script",
+      "",
+      "",
+      "def _shown_token(game, name, raw):",
+      "    \"\"\"Phase 054b: the token the LLM view shows for a world handle in its `can` list (a reply copies the token).\"\"\"",
+      "    context = game._context(name)",
+      "    shown = game.backends[name].handles.mask_context(context).agent_view[\"can\"]",
+      "    return shown[[row[\"handle\"] for row in context.agent_view[\"can\"]].index(raw)][\"handle\"]"
+    ]
+  },
+  {
+    "file": "tests/test_phase071c_free_actions.py",
+    "why": "054b: the glance reply copies the token for signal:1 (the world's handle is not valid in a reply)",
+    "old": [
+      "    script = _llm(town, name, _reply(free_actions=[{\"action\": \"glance\", \"target\": \"signal:1\", \"params\": {}}]))"
+    ],
+    "new": [
+      "    script = _llm(town, name, \"\")",
+      "    token = _shown_token(town, name, \"signal:1\")",
+      "    script.text = _reply(free_actions=[{\"action\": \"glance\", \"target\": token, \"params\": {}}])"
+    ]
+  }
+]

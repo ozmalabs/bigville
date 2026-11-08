@@ -124,7 +124,7 @@ def test_callable_provider_is_accepted():
 
     backend = LLMBackend(_character(), provider)
     assert backend.decide(_context()).major_action.action == "rest"
-    assert seen == ["bigville/prompt/5"]   # Phase 069 felt body (4), Phase 071c free actions in a reply (5)
+    assert seen == ["bigville/prompt/6"]   # Phase 069 felt body (4), Phase 071c free actions (5), Phase 054b tokens (6)
 
 
 # -- good output, first call -------------------------------------------------

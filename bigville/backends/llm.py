@@ -57,6 +57,7 @@ from ..concurrency import DEFAULT_WORKERS
 from ..llm_transcript import call_provider, thread_hash
 from .autopilot import FALLBACK_CAUSES, CallBudget, ConsultGate
 from .cheap import DeterministicBackend, NPCGoal, simple_policy_for
+from .handle_map import HandleMap
 from .prompt_packet import PACKET_SCHEMA
 from .prompts import PromptBuilder
 from .protocol import ActorContext, ActorResponse, ProposedAction
@@ -272,6 +273,8 @@ class LLMBackend:
         self.thread_chars = int(thread_chars)
         self.full_every = int(full_every)
         self.log = log
+        # Phase 054b: the handles the model sees (tokens), per resident; kept in to_dict and restore_state.
+        self.handles = HandleMap()
         self.threads: dict[str, ConsultThread] = {}
         self.counts: dict[str, Any] = {key: 0 for key in _COUNT_KEYS}
         self.counts["latency_ms_total"] = 0.0
@@ -315,18 +318,21 @@ class LLMBackend:
     def _resident(self) -> str:
         return str(self.character.character_id)
 
-    def _check(self, raw: Any, fields, affordances=None) -> tuple[dict[str, Any] | None, dict[str, Any] | None, list[str]]:
+    def _check(self, raw: Any, fields, affordances=None, reaction: bool = False) -> tuple[dict[str, Any] | None, dict[str, Any] | None, list[str]]:
         """(wire reply, the reply as the provider sent it, errors). The wire reply is None when a check fails.
-        ``affordances`` are the context's rows, so a handle in the reply names the full row (Phase 054 follow-up)."""
+        ``affordances`` are the context's rows, so a handle in the reply names the full row (Phase 054 follow-up).
+        Phase 054b: the reply's tokens are read back to the world's handles first (bigville/backends/handle_map.py);
+        a token the view did not offer is an error, and the errors are the repair path's."""
         try:
-            parsed = _payload(raw)
+            sent = _payload(raw)
         except (TypeError, ValueError):
             return None, None, ["output is not a JSON object"]
-        errors = _check_reply(parsed, fields, self.prompt_builder.pack.name, self._lesson_limit())
+        parsed, handle_errors = self.handles.translate(sent, reaction=reaction)
+        errors = handle_errors + _check_reply(parsed, fields, self.prompt_builder.pack.name, self._lesson_limit())
         if errors:
-            return None, None, errors
+            return None, None, errors[:ERRORS_PER_RESPONSE]
         wire = to_wire(parsed, self.prompt_builder.pack.name, affordances=affordances)
-        return wire, parsed, []
+        return wire, sent, []
 
     def _lesson_limit(self) -> int:
         return int(self.prompt_builder.pack["PROMPT_PACKET"]["lessons_max"])
@@ -398,6 +404,11 @@ class LLMBackend:
         the prompt path is the Phase 054 packet, which is built from the view."""
         if getattr(context, "agent_view", None) is None:
             return ("fallback", "internal_error", "no agent view was built for this resident", None, None)
+        # Phase 054b: the model sees the harness's tokens. The packet, the thread and the log are built from the masked
+        # context; the world's handles stay in the map (bigville/backends/handle_map.py).
+        context = self.handles.mask_context(context)
+        if choices is not None:
+            choices = self.handles.mask_choices(choices)
         record = self.prompt_builder.build(context, consult_reason, choices)
         base = record.as_dict()
         prompt_hash = hashlib.sha256(record.as_json().encode()).hexdigest()
@@ -446,7 +457,7 @@ class LLMBackend:
             # context.affordances with its own candidate list before this consult; the model's direct params
             # must not be bound to those rows, so the lazy path passes the explicit empty menu.
             affordances = [] if isinstance(context.observations.get("entities"), dict) else context.affordances
-            wire, as_sent, errors = self._check(raw, fields, affordances)
+            wire, as_sent, errors = self._check(raw, fields, affordances, reaction=choices is not None)
             if wire is not None:
                 outcome = "repaired" if attempt else "accepted"
                 self._log_attempt(context, consult_reason, thread, mode, compacted, attempt, messages, raw,
@@ -493,6 +504,9 @@ class LLMBackend:
             "attempt": attempt,
             "messages": messages,
             "thread_hash": thread_hash(messages),
+            # Phase 054b: referee side only. token -> the world's handle, for the tokens in this call.
+            "referee": {"handles": self.handles.referee(json.dumps(messages, ensure_ascii=False),
+                                                          json.dumps(response, ensure_ascii=False, default=str))},
             "response": response,
             "retries": list(response.get("attempts") or []) if isinstance(response, dict) else [],
             "outcome": outcome,
@@ -767,7 +781,7 @@ class LLMBackend:
                 "consults_by_reason": dict(self.consults_by_reason),
                 "by_day": json.loads(canonical(self.by_day)),
                 "last_backend_state": json.loads(canonical(self.last_backend_state)),
-                "gate": gate, "autopilot": autopilot, "budget": budget,
+                "gate": gate, "autopilot": autopilot, "budget": budget, "handles": self.handles.to_dict(),
                 "bucket_day": self._bucket_day}
 
     def restore_state(self, data: dict[str, Any]) -> None:
@@ -783,6 +797,7 @@ class LLMBackend:
         self.by_day = data["by_day"]
         self.last_backend_state = data["last_backend_state"]
         self._bucket_day = data.get("bucket_day")
+        self.handles.restore(data.get("handles"))
         if data.get("gate") is not None:
             if self.gate is None:
                 raise ValueError("state has a consult gate but this backend has no autopilot")

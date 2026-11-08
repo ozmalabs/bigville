@@ -1,0 +1,44 @@
+........................................................................ [ 24%]
+........................................................................ [ 49%]
+........................................................................ [ 74%]
+..................................................F..................... [ 98%]
+...                                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_a_game_saved_and_loaded_continues_to_the_same_run_digest[0] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1176/test_a_game_saved_and_loaded_c0')
+residents = 0
+
+    @pytest.mark.parametrize("residents", [0, 2])
+    def test_a_game_saved_and_loaded_continues_to_the_same_run_digest(tmp_path, residents):
+        gp = pytest.importorskip("bigville.game_persistence")
+        turns, stop_at = 6, 3
+    
+        def run(stop: bool):
+            provider = FakeProvider(varied_reply)
+            game = _town(provider, residents=residents)
+            digest = RunDigest()
+            for turn in range(turns):
+                if stop and turn == stop_at:
+                    path = tmp_path / f"ck-{stop_at}-{residents}"
+                    gp.save_game_checkpoint(game, path)
+                    game = gp.load_game_checkpoint(path, llm_provider=provider, llm_log=False)
+                assert game.step()["status"] == "advanced"
+                digest.add(game)
+            per_actor: dict[str, list] = {}
+            for call in provider.calls:          # per resident (the global call order varies with the thread pool)
+                per_actor.setdefault(call["meta"]["actor"], []).append(call["payload"]["messages"])
+            return digest.hexdigest(), per_actor
+    
+        control = run(stop=False)
+        resumed = run(stop=True)
+>       assert resumed[0] == control[0]
+E       AssertionError: assert 'c592d87846a1...e00e82745b4d3' == '718060fe2d08...9f5c3ede6aaf1'
+E         
+E         - 718060fe2d08782d8e0eb939144c7a947c583bc806e5a34fc899f5c3ede6aaf1
+E         + c592d87846a1d5bdc59f0960bdaf0397e3d8b496b5ae69193d6e00e82745b4d3
+
+tests/test_fix_llm_checkpoint.py:197: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_fix_llm_checkpoint.py::test_a_game_saved_and_loaded_continues_to_the_same_run_digest[0]
+1 failed, 290 passed in 411.82s (0:06:51)
