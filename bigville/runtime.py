@@ -6,11 +6,13 @@ admissibility and physical effects.
 """
 from __future__ import annotations
 
+import contextvars
+from contextlib import contextmanager
 from dataclasses import dataclass
 import json
 import math
 import threading
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
 
 
 # TG05: one process-wide re-entrant lock guards the canonical graph's internal
@@ -19,6 +21,18 @@ from typing import Any, Iterable
 # shares it.  RLock is required because public helpers call one another (for
 # example ``load_seed_manifest`` calls ``nodes`` and ``add_node``).
 _GRAPH_LOCK = threading.RLock()
+
+# NB03: the execution namespace that is creating graph nodes right now.
+#
+# A ``ContextVar`` (rather than a plain module global) keeps concurrent context
+# workers, threads and nested graphs isolated: each thread/task gets its own
+# binding and ``execution_namespace`` restores the previous token on exit.  A
+# resident mind's graph shares this variable with the world graph on purpose --
+# anything a bundle creates while its namespace is active is attributed to that
+# bundle, whichever graph receives the node.
+DEFAULT_ORIGIN = "unqualified"
+_CURRENT_ORIGIN: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "bigville_graph_origin", default=None)
 
 
 class NodeRef(int):
@@ -33,6 +47,7 @@ class NodeRef(int):
 class _Node:
     type: str
     attrs: dict[str, Any]
+    origin: str = DEFAULT_ORIGIN
 
 
 def _checkpoint_encode(value: Any, path: str) -> Any:
@@ -141,15 +156,55 @@ class BigvilleGraph:
         # disables it only for serial executors.
         self.lock_reads = bool(lock_reads)
 
+    # NB03: fallback provenance for nodes created outside an execution
+    # namespace.  This is a class default rather than instance state so it is
+    # not written into a world checkpoint and old checkpoints stay valid.
+    default_origin = DEFAULT_ORIGIN
+
     def set_read_locking(self, enabled: bool) -> None:
         """Set whether reads take the global lock (see ``lock_reads``)."""
         self.lock_reads = bool(enabled)
 
+    @property
+    def current_origin(self) -> str:
+        """The namespace currently stamping newly created nodes."""
+        origin = _CURRENT_ORIGIN.get()
+        return origin if origin else self.default_origin
+
+    @contextmanager
+    def execution_namespace(self, namespace) -> Iterator["BigvilleGraph"]:
+        """Attribute nodes created in this block to ``namespace``.
+
+        ``namespace`` is an execution namespace string or an
+        ``ExecutionNamespace`` (its canonical ``.name`` is used).  The binding
+        is a ``ContextVar`` token, so the manager is re-entrant and restores the
+        previous origin on exit, including on exception.  Threads and async
+        tasks that do not explicitly copy the context start from the graph's
+        ``default_origin``.  Nested graphs (for example a resident mind's graph)
+        observe the same binding because the context var is module-wide.
+        """
+        from .bundles import ExecutionNamespace
+
+        if isinstance(namespace, ExecutionNamespace):
+            name = namespace.name
+        elif isinstance(namespace, str):
+            name = namespace
+        else:
+            raise TypeError("execution namespace must be a string or ExecutionNamespace")
+        if not name:
+            raise ValueError("execution namespace must not be empty")
+        token = _CURRENT_ORIGIN.set(name)
+        try:
+            yield self
+        finally:
+            _CURRENT_ORIGIN.reset(token)
+
     def add_node(self, type_name: str, attrs: dict[str, Any] | None = None) -> NodeRef:
+        origin = self.current_origin
         with _GRAPH_LOCK:
             node = NodeRef(self._next_id)
             self._next_id += 1
-            self._nodes[node] = _Node(str(type_name), dict(attrs or {}))
+            self._nodes[node] = _Node(str(type_name), dict(attrs or {}), origin)
             return node
 
     def has_node(self, node: NodeRef | int) -> bool:
@@ -180,6 +235,39 @@ class BigvilleGraph:
             return self._nodes[ref].attrs
         with _GRAPH_LOCK:
             return self._nodes[ref].attrs
+
+    def node_origin(self, node: NodeRef | int) -> str:
+        """Return the execution namespace that created ``node``.
+
+        Nodes restored from a legacy checkpoint without provenance report the
+        documented ``"unqualified"`` fallback.
+        """
+        ref = node if isinstance(node, int) else NodeRef(int(node))
+        if not self.lock_reads:
+            return self._nodes[ref].origin
+        with _GRAPH_LOCK:
+            return self._nodes[ref].origin
+
+    def qualified_id(self, node: NodeRef | int):
+        """Return the ``(namespace, local_id)`` provenance form of ``node``.
+
+        The graph itself keeps ``NodeRef`` as an integer; ``QualifiedId`` is
+        only the serialization/wire identity.
+        """
+        from .bundles import QualifiedId
+
+        return QualifiedId(namespace=self.node_origin(node), local_id=int(node))
+
+    def nodes_by_origin(self, origin: str) -> tuple[NodeRef, ...]:
+        """Return the nodes created by ``origin`` in ascending id order."""
+        if not isinstance(origin, str):
+            raise TypeError("origin must be a string")
+        if not self.lock_reads:
+            return tuple(ref for ref in sorted(self._nodes)
+                         if self._nodes[ref].origin == origin)
+        with _GRAPH_LOCK:
+            return tuple(ref for ref in sorted(self._nodes)
+                         if self._nodes[ref].origin == origin)
 
     def nodes(self, type_name: str | None = None) -> list[NodeRef]:
         if not self.lock_reads:
@@ -306,6 +394,10 @@ class BigvilleGraph:
                 for (src, edge), targets in self._edges.items()
                 for dst in sorted(targets)
             ],
+            "origins": [
+                [int(ref), self._nodes[ref].origin]
+                for ref in sorted(self._nodes)
+            ],
             "seed_manifests": [
                 [seed_id, _checkpoint_encode(payload, f"seed_manifests[{seed_id!r}]")]
                 for seed_id, payload in self.seed_manifests.items()
@@ -328,6 +420,30 @@ class BigvilleGraph:
         if not isinstance(manifests_data, list):
             raise ValueError("Bigville graph checkpoint seed_manifests must be a list")
 
+        # NB03: ``origins`` is optional.  A checkpoint written before provenance
+        # existed has no key at all and every node migrates to "unqualified".
+        # If the key is present it must be a list covering every node exactly
+        # once; an explicit null is malformed rather than legacy.
+        has_origins = "origins" in data
+        origins_data = data.get("origins")
+        origins: dict[int, str] = {}
+        if has_origins:
+            if not isinstance(origins_data, list):
+                raise ValueError("Bigville graph checkpoint origins must be a list")
+            for index, pair in enumerate(origins_data):
+                if not isinstance(pair, list) or len(pair) != 2:
+                    raise ValueError(f"invalid Bigville graph origin at index {index}")
+                node_id, origin = pair
+                if type(node_id) is not int or node_id < 1:
+                    raise ValueError(
+                        f"invalid Bigville graph origin node ID at index {index}")
+                if not isinstance(origin, str) or not origin:
+                    raise ValueError(
+                        f"invalid Bigville graph origin name at ID {node_id}")
+                if node_id in origins:
+                    raise ValueError(f"duplicate Bigville graph origin ID: {node_id}")
+                origins[node_id] = origin
+
         graph = cls()
         max_id = 0
         for index, item in enumerate(nodes_data):
@@ -343,8 +459,20 @@ class BigvilleGraph:
             attrs = _checkpoint_decode(item.get("attrs"), f"nodes[{node_id}].attrs")
             if not isinstance(attrs, dict):
                 raise ValueError(f"Bigville graph node attrs at ID {node_id} must be a dict")
-            graph._nodes[NodeRef(node_id)] = _Node(type_name, attrs)
+            graph._nodes[NodeRef(node_id)] = _Node(
+                type_name, attrs, origins.get(node_id, DEFAULT_ORIGIN))
             max_id = max(max_id, node_id)
+
+        if has_origins:
+            node_ids = {int(ref) for ref in graph._nodes}
+            missing = sorted(node_ids - set(origins))
+            if missing:
+                raise ValueError(
+                    f"missing Bigville graph origin for node ID: {missing[0]}")
+            unknown = sorted(set(origins) - node_ids)
+            if unknown:
+                raise ValueError(
+                    f"Bigville graph origin references a missing node ID: {unknown[0]}")
 
         if next_id <= max_id:
             raise ValueError("Bigville graph checkpoint next_id must exceed all node IDs")

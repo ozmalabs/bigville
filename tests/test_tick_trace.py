@@ -34,13 +34,14 @@ SMALL_SCENARIO = {
 
 
 def _town():
+    # TG01 oracle: pin the historical menu path (the default became lazy later).
     return create_game(scenario="town100", seed=305000, default_backend="simple",
-                       autonomous=True, llm_log=False)
+                       autonomous=True, llm_log=False, affordance_mode="menu")
 
 
 def _small():
     return create_game(scenario=SMALL_SCENARIO, seed=305000, default_backend="simple",
-                       autonomous=True, llm_log=False)
+                       autonomous=True, llm_log=False, affordance_mode="menu")
 
 
 def _run(game, turns=TURNS):
