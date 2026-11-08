@@ -1,6 +1,6 @@
 # Distributed runtime — final report
 
-Status: complete (DR01-DR04 committed; DR05 uncommitted at time of writing),
+Status: complete,
 8 November 2026.  Program plan:
 [`docs/design/DISTRIBUTED_RUNTIME.md`](../../design/DISTRIBUTED_RUNTIME.md).
 Predecessor program:
@@ -22,7 +22,7 @@ physics and checkpoint schema are unchanged.
 | DR02 | `f10dd86` | `BundleJournal`: append-only canonical JSONL with `tick_start`/`dispatch`/`result`/`ack`/`commit`/`tick_end`, fsync per record, `read`/`replay`/`verify`, truncation/corruption reporting, optional `bundle_log_path`. |
 | DR03 | `bf267a8` | `GraphDelta` recording (`record_changes`), JSON-safe `to_dict`/`from_dict`, validated `apply_to`, `to_effects`/`from_effects`, real effect population in partitioned bundle results. |
 | DR04 | `ef1baf9` | `ProcessBundleTransport`: JSON pipe to `multiprocessing` workers, synthetic `delta` executor, idempotence cache, validation, timeout/retry, crash/restart, clean shutdown. |
-| DR05 | uncommitted | `verify_bundle_equivalence.py` journal/delta/process integration, `tests/test_distributed_runtime.py`, overhead and seed matrix, this report and README/plan status. |
+| DR05 | `cb51666` | `verify_bundle_equivalence.py` journal/delta/process integration, `tests/test_distributed_runtime.py`, overhead and seed matrix, this report and README/plan status. |
 
 Each phase has a report in `docs/phases/distributed-runtime/DRxx_REPORT.md`.
 

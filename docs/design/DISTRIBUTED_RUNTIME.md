@@ -195,7 +195,7 @@ the exact timeout/load if it cannot finish.
 | DR02 | complete | `f10dd86` |
 | DR03 | complete | `bf267a8` |
 | DR04 | complete | `ef1baf9` |
-| DR05 | complete (uncommitted) | — |
+| DR05 | complete | `cb51666` |
 
 ## Integration gates
 
