@@ -28,7 +28,7 @@ from typing import Any
 from domains.autopilot import usual_words
 from domains.pack import load_pack
 
-PACKET_SCHEMA = "bigville/prompt/4"   # Phase 069: the private body is the felt body (feeling, signals)
+PACKET_SCHEMA = "bigville/prompt/5"   # Phase 071c: the reply has free_actions (Phase 069: the felt body was prompt/4)
 LESSON_KIND = "lesson"
 
 
@@ -45,9 +45,11 @@ def _interface_lines(pk: dict) -> list[str]:
     intensity = ", ".join(sorted(str(word) for word in pk["INTENSITY_WORDS"]))
     amounts = ", ".join(sorted(str(word) for word in pk["AMOUNT_WORDS"]))
     verbs = ", ".join(sorted(name for name, spec in pk["VERBS"].items() if spec.get("implemented") is not False))
+    free = ", ".join(sorted(str(name) for name in pk["FREE_ACTIONS"]))
     lines = []
     for line in pk["PROMPT_PACKET"]["interface"]:
-        lines.append(line.replace("{intensity}", intensity).replace("{verbs}", verbs).replace("{amounts}", amounts))
+        lines.append(line.replace("{intensity}", intensity).replace("{verbs}", verbs).replace("{amounts}", amounts)
+                     .replace("{free_actions}", free))
     return lines
 
 
@@ -73,6 +75,12 @@ def packet_system(pack: str, *, lazy: bool = False) -> str:
         # reply interface below says how to use it (attempt is the case).
         lines.append(f"- {name}: {description}" if description and not re.search(r"\d", description) else f"- {name}")
     lines += ["", "Speech is free: it uses no major action."]
+    # Phase 071c: the free actions a reply may carry (reply interface below). Names with a digit in the
+    # description are named only, as the major actions are.
+    lines += ["", "Free actions (they use no major action):"]
+    for name, spec in pk["FREE_ACTIONS"].items():
+        description = str(spec.get("description", spec.get("kind", "")))
+        lines.append(f"- {name}: {description}" if description and not re.search(r"\d", description) else f"- {name}")
     lines += ["", "Rules:"] + [f"- {rule}" for rule in tbl["system_rules"]]
     lines += ["", "Reply interface:"] + [f"- {line}" for line in _interface_lines(pk)]
     if lazy:

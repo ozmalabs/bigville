@@ -1586,7 +1586,7 @@ def _check_prompt_instructions(errors, warnings, info):
     fields are the ones the backend parses, the selection caps are positive, the standing types and gist
     keys name real item types, and the chatter and weather templates keep their placeholder."""
     # The response keys ActorResponse.from_dict reads (bigville/backends/protocol.py).
-    _RESPONSE_FIELDS = {"major_action", "continuation", "utterances", "memory_updates", "waiting"}
+    _RESPONSE_FIELDS = {"major_action", "free_actions", "continuation", "utterances", "memory_updates", "waiting"}
     for table in ("MAJOR_ACTIONS", "FREE_ACTIONS"):
         for name, spec in globals()[table].items():
             if not str(spec.get("description", "")).strip():
@@ -1597,6 +1597,18 @@ def _check_prompt_instructions(errors, warnings, info):
     unknown = [f for f in PROMPT_RESPONSE_FIELDS if f not in _RESPONSE_FIELDS]
     if unknown or not PROMPT_RESPONSE_FIELDS:
         errors.append(f"PROMPT_RESPONSE_FIELDS: not response fields the backend reads: {unknown}")
+    # Phase 071c: a free action in a reply names its params from the reply's text fields (bigville/free_replies.py
+    # routes each name; the tests check every name has a route). An alternative to the target must be one of them.
+    _FREE_PARAMS = {"text", "note", "item", "giver", "intensity"}
+    for name, spec in FREE_ACTIONS.items():
+        params = spec.get("params")
+        if not isinstance(params, list) or any(p not in _FREE_PARAMS for p in params):
+            errors.append(f"FREE_ACTIONS[{name}]: params must be a list of {sorted(_FREE_PARAMS)}")
+        alternative = spec.get("target_or_param")
+        if alternative is not None and alternative not in (params or []):
+            errors.append(f"FREE_ACTIONS[{name}]: target_or_param '{alternative}' is not one of its params")
+    if "free_action_keys" not in _WORLD_PACK["PROMPT_REPLY"]:
+        errors.append("PROMPT_REPLY: needs free_action_keys (Phase 071c)")
     for name in ("PROMPT_BOUNDARY_RULES", "PROMPT_CONTINUATION_RULES"):
         if not globals()[name] or not all(str(rule).strip() for rule in globals()[name]):
             errors.append(f"{name}: needs at least one non-empty rule")

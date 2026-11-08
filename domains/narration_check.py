@@ -34,6 +34,8 @@ EXPECTED_FIELDS = {
     "seen": {"who", "did"},
     "last": {"action", "outcome"},
     "reason": {"reason"},
+    "probe": {"place", "sound"},          # Phase 071c: what an attend, press or glance answered
+    "probe_silent": {"place"},
     "reaction_intro": {"from", "what"},
     "reaction_amount": {"from", "what", "amount"},
     "reaction_pick": set(),

@@ -26,7 +26,7 @@ SECTIONS = ("lead", "body", "skills", "carrying", "knows", "places", "kin", "les
 STRUCTURAL = ("private", "public", "lead", "lessons", "kept", "merge", "notes", "heard", "quotes", "rule",
               "quote", "from", "consult", "why_consulted", "rules", "choices", "sizes", "omitted")
 LABELS = ("who", "traits", "life", "usual_day", "ties")
-PLACEHOLDERS = ("intensity", "verbs", "amounts")
+PLACEHOLDERS = ("intensity", "verbs", "amounts", "free_actions")
 MEMORY_KINDS = ("note", "lesson", "place_belief", "plan")
 REPLY_KEYS = ("action", "target", "with", "intensity", "params", "reason")
 

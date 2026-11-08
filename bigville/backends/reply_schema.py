@@ -1,7 +1,9 @@
 """reply_schema.py -- the reply a model must send back, checked against the pack (Phase 054).
 
 The shape is the pack's PROMPT_REPLY table. A major action has the keys action, target, with, intensity and
-params. Utterances are {to, text}. Memory updates are {kind, text} with a kind from the pack. Two functions:
+params. Free actions (Phase 071c) are a list of {action, target, params}, checked against FREE_ACTIONS; the world
+applies them (bigville/free_replies.py). Utterances are {to, text}. Memory updates are {kind, text} with a kind from
+the pack. Two functions:
 
 * ``check(parsed, pack, lesson_limit=None)`` returns the errors in words (short fixed messages, no echo of
   the reply). Intensity and amounts take a number or a word from the lexicon. A word the lexicon does not know
@@ -67,6 +69,53 @@ def _check_major_action(action, pack, errors) -> None:
                 errors.append("params.amount must be a number or one of these words: " + _words_list(words, 6))
 
 
+def _check_free_action(item, pack, errors) -> None:
+    """Phase 071c: one free action of a reply. The name is checked by the world (an unknown name is refused as
+    unsupported and that refusal is recorded), so only the shape, the words and a required target are checked here."""
+    keys = set(schema(pack)["free_action_keys"])
+    for key in sorted(item, key=str):
+        if key not in keys:
+            errors.append(f"free_actions has no field '{str(key)[:24]}'")
+            return
+    name = item.get("action")
+    if not isinstance(name, str) or not name:
+        errors.append("free_actions need an action (text)")
+        return
+    if item.get("target") is not None and not _is_text(item.get("target")):
+        errors.append("free_actions.target must be a handle or a name (text) or null")
+    params = item.get("params")
+    if params is not None and not isinstance(params, dict):
+        errors.append("free_actions.params must be an object")
+        return
+    params = params or {}
+    for key in _FREE_TEXT_PARAMS:
+        if params.get(key) is not None and not _is_text(params.get(key)):
+            errors.append(f"free_actions.params.{key} must be text")
+            return
+    if params.get("intensity") is not None:
+        try:
+            intensity_value(params["intensity"], pack)
+        except (TypeError, ValueError):
+            words = list(load_pack(pack)["INTENSITY_WORDS"])
+            errors.append("free_actions.params.intensity must be a number or one of these words: "
+                          + _words_list(words, 6))
+    spec = load_pack(pack)["FREE_ACTIONS"].get(name)
+    if spec is None:
+        return
+    alternative = spec.get("target_or_param")
+    if spec.get("requires_target") and not item.get("target") and not (alternative and params.get(alternative)):
+        errors.append(f"free action {name} needs a target")
+
+
+def _fold_free(item, pack) -> dict:
+    """A free action as the world reads it: the intensity word folded to its value; the rest as written."""
+    params = dict(item.get("params") or {})
+    if params.get("intensity") is not None:
+        params["intensity"] = intensity_value(params["intensity"], pack)
+    target = item.get("target")
+    return {"action": str(item["action"]), "target": target if _is_text(target) else None, "params": params}
+
+
 def check(parsed: dict, pack: str, *, lesson_limit: int | None = None) -> list[str]:
     """Schema errors for a reply that has already passed the structural checks. ``lesson_limit`` (set during a
     merge) is the most lesson updates the reply may carry."""
@@ -75,6 +124,14 @@ def check(parsed: dict, pack: str, *, lesson_limit: int | None = None) -> list[s
     action = parsed.get("major_action")
     if isinstance(action, dict):
         _check_major_action(action, pack, errors)
+    free = parsed.get("free_actions")
+    if free is not None and not isinstance(free, list):
+        errors.append("free_actions must be a list")
+    for item in (free if isinstance(free, list) else []):
+        if isinstance(item, dict):
+            _check_free_action(item, pack, errors)
+        if errors:
+            break
     utterance_keys = set(spec["utterance_keys"])
     for item in parsed.get("utterances", []) or []:
         if not isinstance(item, dict):
@@ -108,6 +165,7 @@ def check(parsed: dict, pack: str, *, lesson_limit: int | None = None) -> list[s
 
 
 _NOT_PARAMS = ("action", "score", "legal", "reason")
+_FREE_TEXT_PARAMS = ("text", "note", "item", "giver")
 
 
 def _names_action(row: dict, name: str, pack: str) -> bool:
@@ -209,6 +267,8 @@ def to_wire(parsed: dict, pack: str, *, text_limit: int | None = None,
         out["major_action"] = _fold_action(action, pack, affordances)
     if parsed.get("utterances") is not None:
         out["utterances"] = [_utterance(item) for item in parsed["utterances"]]
+    if isinstance(parsed.get("free_actions"), list):
+        out["free_actions"] = [_fold_free(item, pack) for item in parsed["free_actions"] if isinstance(item, dict)]
     if parsed.get("memory_updates") is not None:
         limit = text_limit if text_limit is not None else int(schema(pack)["memory_text_chars"])
         out["memory_updates"] = [{"kind": item["kind"], "content": {"text": str(item["text"])[:limit]}}

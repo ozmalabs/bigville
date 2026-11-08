@@ -86,6 +86,7 @@
       "help": [
         "Type a command, or a number from the list of things you can do.",
         "Examples: go to a place you know; take a few of an item from a person; say NAME: words; smash a thing with a tool, hard; eat something; work at a recipe; wait.",
+        "Feelings: glance or attend looks into a feeling; press a place probes your body; strike NAME at PLACE hits someone.",
         "look shows the room again. sheet shows your sheet. quit ends the session."
       ]
     }

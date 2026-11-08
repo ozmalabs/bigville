@@ -150,7 +150,7 @@ def test_the_packet_matches_the_snapshot_for_a_fixed_view():
 
 def test_the_packet_uses_the_packet_schema_and_the_pack_hash():
     record = PromptBuilder().build(_fixed_context())
-    assert record.schema == PACKET_SCHEMA == "bigville/prompt/4"   # Phase 069: the felt body
+    assert record.schema == PACKET_SCHEMA == "bigville/prompt/5"   # Phase 071c: the reply has free_actions
     assert record.pack == "bigville" and len(record.pack_hash) == 64
 
 

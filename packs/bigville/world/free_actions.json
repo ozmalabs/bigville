@@ -6,47 +6,70 @@
       "speak": {
         "kind": "utterance",
         "requires_target": false,
-        "description": "Say something aloud to people nearby. Uses no major action. Give both the text and the raw meaning of each utterance."
+        "description": "Say something aloud to people nearby. Uses no major action. Give both the text and the raw meaning of each utterance.",
+        "params": [
+          "text"
+        ]
       },
       "write_note": {
         "kind": "written_message",
         "requires_target": false,
-        "description": "Write a note on material you hold. The note is a physical record that others may read."
+        "description": "Write a note on material you hold. The note is a physical record that others may read.",
+        "params": [
+          "text"
+        ]
       },
       "give_note": {
         "kind": "handoff",
         "requires_target": true,
-        "description": "Hand a note you hold to a person in reach."
+        "description": "Hand a note you hold to a person in reach.",
+        "params": [
+          "note"
+        ]
       },
       "accept": {
         "kind": "consent",
         "requires_target": true,
-        "description": "Agree to an offer or request made to you. Uses no major action."
+        "description": "Agree to an offer or request made to you. Uses no major action.",
+        "params": [
+          "item",
+          "giver"
+        ],
+        "target_or_param": "item"
       },
       "decline": {
         "kind": "refusal",
         "requires_target": true,
-        "description": "Refuse an offer or request made to you. Uses no major action."
+        "description": "Refuse an offer or request made to you. Uses no major action.",
+        "params": []
       },
       "reply": {
         "kind": "utterance",
         "requires_target": true,
-        "description": "Answer a person who has spoken to you. Uses no major action."
+        "description": "Answer a person who has spoken to you. Uses no major action.",
+        "params": [
+          "text"
+        ]
       },
       "set_intensity": {
         "kind": "pace",
         "requires_target": false,
-        "description": "Change the pace of a timed job you are running (a recipe) to a number, without losing its progress. 1.0 is the normal pace. Above 1 the job finishes sooner, at a cost in quality and stamina; below 1 it is slower and more careful. Uses no major action."
+        "description": "Change the pace of a timed job you are running (a recipe) to a number, without losing its progress. The normal pace is one. Above it the job finishes sooner, at a cost in quality and stamina; below it the job is slower and more careful. Uses no major action.",
+        "params": [
+          "intensity"
+        ]
       },
       "stop": {
         "kind": "abandon",
         "requires_target": false,
-        "description": "Abandon the timed job (recipe) you are running. Its inputs are not yet taken, so only the progress is lost, and the stamina already spent stays spent. Uses no major action."
+        "description": "Abandon the timed job (recipe) you are running. Its inputs are not yet taken, so only the progress is lost, and the stamina already spent stays spent. Uses no major action.",
+        "params": []
       },
       "glance": {
         "kind": "attention",
         "requires_target": true,
-        "description": "Take a quick look at one feeling you have, by its signal number (signal:1 is the first in your felt list). Uses no major action and no time: the feeling is one step clearer to you until your next turn, and only then. Use attend for a longer look."
+        "description": "Take a quick look at one feeling you have, named by its handle signal:N from the attend rows in public.can. Uses no major action and no time: the feeling is one step clearer to you until your next turn, and only then. Use attend for a longer look.",
+        "params": []
       }
     }
   }

@@ -1246,6 +1246,10 @@ class BigvilleGame:
 
     def _apply_response(self, actor: str, response: ActorResponse) -> bool:
         ok = True
+        # Phase 071c: a reply's free actions take no slot and no tick (bigville/free_replies.py).
+        if response.free_actions:
+            from bigville import free_replies
+            free_replies.apply_all(self, actor, response.free_actions)
         if response.major_action is not None:
             proposal = response.major_action
             plan = {"action": proposal.action, **proposal.params}

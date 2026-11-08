@@ -160,6 +160,12 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
                 errors.append("major_action.params must be an object")
             if action.get("reason") is not None and not isinstance(action.get("reason"), str):
                 errors.append("major_action.reason must be a string")
+    free = parsed.get("free_actions")
+    if free is not None:
+        if not isinstance(free, list) or not all(isinstance(item, dict) for item in free):
+            errors.append("free_actions must be a list of objects")
+        elif any(not isinstance(item.get("action"), str) or not item.get("action") for item in free):
+            errors.append("free_actions.action must be a non-empty string")
     errors += _continuation_errors(parsed.get("continuation"))
     utterances = parsed.get("utterances", [])
     if not isinstance(utterances, list) or not all(isinstance(item, dict) for item in utterances):
@@ -585,20 +591,23 @@ class LLMBackend:
         would_be = auto.major_action if auto is not None else None
         if isinstance(action, dict) and action.get("action") == "wait":
             kind = "wait"
-            response = ActorResponse(utterances=model.utterances, memory_updates=model.memory_updates)
+            response = ActorResponse(utterances=model.utterances, memory_updates=model.memory_updates,
+                                     free_actions=model.free_actions)
             self.counts["waits"] += 1
             departs = would_be is not None
         elif action is None:
             kind = "carry_on"
             base = auto if auto is not None else ActorResponse()
             response = ActorResponse(major_action=base.major_action, utterances=model.utterances,
-                                     memory_updates=model.memory_updates, continuation=base.continuation)
+                                     memory_updates=model.memory_updates, continuation=base.continuation,
+                                     free_actions=model.free_actions)
             self.counts["carry_ons"] += 1
             departs = False
         else:
             kind = "act"
             response = ActorResponse(major_action=model.major_action, utterances=model.utterances,
-                                     memory_updates=model.memory_updates, continuation=model.continuation)
+                                     memory_updates=model.memory_updates, continuation=model.continuation,
+                                     free_actions=model.free_actions)
             departs = would_be is not None and _key(model.major_action) != _key(would_be)
         if departs:
             self.counts["deviations"] += 1

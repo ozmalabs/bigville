@@ -180,6 +180,10 @@ class Session:
         if errors:
             return errors
         self.last_reply = reply
+        if reply.get("free_actions") and not reply.get("major_action") and not reply.get("utterances"):
+            # Phase 071c: a free action on its own (a glance) uses no slot and no tick; the turn does not move.
+            self.view = self.client.apply_free(reply).get("view") or self.view
+            return narrate.outcome_lines(self.view, self.pack)
         action = reply.get("major_action") or {}
         if action.get("action") in WALK_ACTIONS:
             self.refresh = True

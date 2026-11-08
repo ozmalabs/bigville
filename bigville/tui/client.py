@@ -71,6 +71,14 @@ class EmbeddedClient:
         backend.submit_reaction(ActorResponse(backend_state={"reaction": choice}))
         return self._game.step()
 
+    def apply_free(self, reply):
+        """Phase 071c: a reply with free actions and no major action (a glance, a look at a feeling). The free actions
+        are applied now, with no tick and no turn: the world does not wait for this resident. Returns the view."""
+        from bigville import free_replies
+        wire = reply_schema.to_wire(reply, self.pack, affordances=self.affordances())
+        free_replies.apply_all(self._game, self.player, wire.get("free_actions") or [])
+        return {"status": "free", "view": self.view()}
+
 
 class HttpClient:
     """A server in agent mode: /api/view for the view, /api/turn for a reply."""
@@ -119,3 +127,8 @@ class HttpClient:
 
     def react(self, choice):
         return self.submit({"reaction": choice})
+
+    def apply_free(self, reply):
+        """Free actions with no major action need the in-process game: over HTTP a reply always ends the turn."""
+        raise UnsupportedOverHttp("a free action on its own (a glance) runs in process; over HTTP send it with a major "
+                                  "action, or play in process")

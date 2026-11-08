@@ -6,6 +6,7 @@ the renderer, the plain-mode transcript and the tests share one wording.
 """
 from __future__ import annotations
 
+from domains.interoception import render_felt_body
 from domains.pack import load_pack
 
 DEFAULT_PACK = "bigville"
@@ -38,9 +39,11 @@ def status_line(view, pack=DEFAULT_PACK):
 
 
 def body_lines(view, pack=DEFAULT_PACK):
-    """One line each for the feelings the view carries (energy, hunger, health, mood), and the states."""
+    """The body as the view carries it. The felt body (Phase 069: a background feeling and the signals, each a sound
+    and a place) is rendered by domains/interoception; the labelled body (the Phase 052 words) keeps its one line each
+    for energy, hunger, health and mood. Both give the states (asleep, collapsed, ill)."""
     body = (view.get("self") or {}).get("body") or {}
-    lines = []
+    lines = render_felt_body(body) if ("feeling" in body or "signals" in body) else []
     for key, template in (("energy", "energy"), ("hunger", "hunger"), ("health", "health"), ("mood", "mood")):
         if body.get(key):
             lines.append(fill(template, pack, **{key: body[key]}))
@@ -93,6 +96,11 @@ def outcome_lines(view, pack=DEFAULT_PACK):
     lines = [fill("last", pack, action=last.get("action", ""), outcome=_cap(last.get("outcome", "")))]
     if last.get("reason"):
         lines.append(fill("reason", pack, reason=last["reason"]))
+    # Phase 071c: an attend, press or glance answers with a sound and a place (never a cause).
+    if last.get("place"):
+        silent = last.get("sound") in (None, "", load_pack(pack)["VIEW_WORDS"]["silence"])
+        lines.append(fill("probe_silent" if silent else "probe", pack, place=last["place"],
+                          sound=last.get("sound", "")))
     return lines
 
 

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from domains.attend_commands import parse_line as attend_line, region_of
 from domains.lexicon import resolve_verb
 from domains.pack import load_pack
 
@@ -132,6 +133,43 @@ def _thing_tokens(row):
 
 def _ask(choices):
     return Parsed("ask", choices=choices)
+
+
+def _attend_reply(found):
+    """Phase 071c: attend.parse_line's reply as the reply shape the terminal sends. A glance is a free action (it
+    takes no slot), so it goes in free_actions; attend and press are major actions."""
+    if "free_action" in found:
+        return {"free_actions": [found["free_action"]]}
+    return found
+
+
+def _parse_strike(text, view, pack, intensity):
+    """`strike NAME [at REGION]`: the major action strike on a person the view names, aimed at a region of the body
+    when a region is named (params region; an unknown region is refused by the world). None when no person matches,
+    so the line goes on to the physical verbs."""
+    body = text.split(None, 1)[1] if len(text.split(None, 1)) > 1 else ""
+    who_text, _, where_text = body.partition(" at ")
+    if not who_text.strip():
+        return None
+    found = _match_names(who_text, _names(view))
+    if not found:
+        return None
+    where = where_text.strip()
+    params = {}
+    if where:
+        params["region"] = region_of(where, pack) or "_".join(_tokens(where))
+
+    def build(name):
+        action = {"action": "strike", "target": name}
+        if params:
+            action["params"] = dict(params)
+        if intensity:
+            action["intensity"] = intensity
+        return {"major_action": action}
+
+    if len(found) > 1:
+        return _ask([(name, "", build(name)) for name in found])
+    return Parsed("propose", reply=build(found[0]))
 
 
 def _parse_say(text, view):
@@ -262,6 +300,9 @@ def parse(text, view, pack="bigville"):
         return Parsed("pass")
     if not any(ch.isalpha() for ch in raw):
         return Parsed("unparsed")
+    attended = attend_line(raw, pack)   # Phase 071c: attend, press <region> and glance, before the physical verbs
+    if attended is not None:
+        return Parsed("propose", reply=_attend_reply(attended))
     head = low.split(None, 1)[0]
     if head in SAY_VERBS:
         return _parse_say(raw, view)
@@ -273,6 +314,10 @@ def parse(text, view, pack="bigville"):
         return _parse_give(text_rest, view, pack)
     if head in WALK_VERBS:
         return _parse_walk(text_rest, view)
+    if resolve_verb(head, pack) == "hit":
+        struck = _parse_strike(text_rest, view, pack, intensity)
+        if struck is not None:
+            return struck
     phrase = _tokens(text_rest)
     rows = [row for row in _can_rows(view) if _subset(_tokens(row["what"]), phrase)]
     if len(rows) > 1:
@@ -306,6 +351,8 @@ def placed(text, pack="bigville"):
     if raw.startswith(":"):
         raw = raw[1:].strip()
     if not raw or raw.isdigit() or raw in UI or raw in PASS:
+        return True
+    if attend_line(raw, pack) is not None:   # Phase 071c
         return True
     head = raw.split(None, 1)[0]
     if head in SAY_VERBS or head in TAKE_VERBS or head in GIVE_VERBS or head in WALK_VERBS:

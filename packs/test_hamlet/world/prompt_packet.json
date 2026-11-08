@@ -68,8 +68,9 @@
         "Never make up a handle. Copy handles exactly from public.can and public.things."
       ],
       "interface": [
-        "Reply with one JSON object and no other text. Its fields are major_action, utterances, memory_updates and continuation.",
+        "Reply with one JSON object and no other text. Its fields are major_action, free_actions, utterances, memory_updates and continuation.",
         "major_action is null to carry on as usual. Otherwise it is an object with action, target, with, intensity and params.",
+        "free_actions is a list of {action, target, params} for the free actions listed under Free actions above, which use no major action: {free_actions}. target names what the action is about (a person, a request, or a feeling's handle signal:N from public.can for glance). params holds the rest: text for speak, reply and write_note; note for give_note; item and giver for accept; intensity for set_intensity. speak may also be written as utterances.",
         "action is the action of a row in public.can (for example work, eat or move), or attempt to try a physical verb on a thing.",
         "target is the handle of that same public.can row, copied exactly, or the handle of a thing from public.things for attempt, or null. with is the handle of a thing you hold, or null.",
         "intensity is a number, or one of these words: {intensity}. Leave it out for a normal effort.",
@@ -98,6 +99,11 @@
         "intensity",
         "params",
         "reason"
+      ],
+      "free_action_keys": [
+        "action",
+        "target",
+        "params"
       ],
       "utterance_keys": [
         "to",

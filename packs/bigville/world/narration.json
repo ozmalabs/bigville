@@ -73,11 +73,15 @@
       "help": [
         "Commands: walk toward the mill; work burn charcoal; take bread from Bram;",
         "  say Bram: good morning; smash the lock with the hammer hard; wait; look; sheet.",
+        "Feelings: glance or attend looks into a feeling you have; press upper belly probes that part of you.",
+        "strike Bram at head hits a person, at a part of the body if you name one; hard or gently set how hard.",
         "Words: gently, carefully, normally, hard and with all your strength set how hard.",
         "Any other verb is passed to the world, which decides what happens.",
         "Type a number to pick a line from the menu. Keys: hjkl or the arrows, . waits,",
         "Tab turns the sheet, : starts a command, ? shows this, q quits."
-      ]
+      ],
+      "probe": "From your {place}: {sound}.",
+      "probe_silent": "Nothing answers from your {place}."
     }
   }
 }

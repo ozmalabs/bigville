@@ -25,6 +25,7 @@ import textwrap
 
 from bigville.tui import art as tui_art
 from bigville.tui import narrate
+from domains.interoception import render_felt_body
 
 TABS = ("body", "skills", "knows", "carrying", "people")
 TAB_KEYS = {"body": "tab_body", "skills": "tab_skills", "knows": "tab_knows", "carrying": "tab_carrying",
@@ -60,6 +61,8 @@ def _body_tab(view, pack):
     life = ", ".join(str(part) for part in (me.get("life_stage"), me.get("age")) if part)
     if life:
         lines.append(_labelled(words["label_life"], life))
+    if "feeling" in body or "signals" in body:   # Phase 071c: the felt body (Phase 069)
+        lines += render_felt_body(body)
     for key in ("health", "energy", "hunger", "strength", "stamina", "mood"):
         if body.get(key):
             lines.append(_labelled(words[f"label_{key}"], body[key]))

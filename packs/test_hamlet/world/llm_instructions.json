@@ -21,6 +21,7 @@
     ],
     "PROMPT_RESPONSE_FIELDS": [
       "major_action",
+      "free_actions",
       "continuation",
       "utterances",
       "memory_updates",

@@ -129,6 +129,9 @@ class ActorResponse:
     backend_state: dict[str, Any] = field(default_factory=dict)
     waiting: bool = False
     continuation: ActorContinuation | None = None
+    # Phase 071c: free actions (FREE_ACTIONS: glance, write_note, ...), each {action, target, params}. They use no
+    # major action and the world applies them with the reply (bigville/free_replies.py).
+    free_actions: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> "ActorResponse":
@@ -143,7 +146,8 @@ class ActorResponse:
                    memory_updates=list(value.get("memory_updates", [])),
                    backend_state=dict(value.get("backend_state", {})),
                    waiting=bool(value.get("waiting", False)),
-                   continuation=ActorContinuation.from_value(value.get("continuation")))
+                   continuation=ActorContinuation.from_value(value.get("continuation")),
+                   free_actions=[dict(item) for item in value.get("free_actions") or [] if isinstance(item, dict)])
 
 
 @dataclass

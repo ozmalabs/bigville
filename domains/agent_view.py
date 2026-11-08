@@ -552,8 +552,38 @@ def _attend_can(world, actor, pack):
             for row in body.attend_options()]
 
 
-def _last(world, actor, pack):
+def _free_last(game, actor):
+    """Phase 071c: the actor's most recent free-action outcome (bigville/free_replies.py), or None."""
+    from bigville.free_replies import last_free
+    return last_free(game, actor)
+
+
+def _last_free(free, pack):
+    """Phase 071c: the `last` of a free action. A refusal names its reason; an applied glance gives the sound and the
+    place it answered with (the body's own rows), never a cause."""
+    pk = load_pack(pack)
+    action = str(free.get("action", ""))
+    applied = bool(free.get("applied"))
+    reason = ""
+    if not applied:
+        described = pk["REFUSAL_REASONS"].get(str(free.get("reason", "")))
+        reason = described["description"] if described else _words(str(free.get("reason", "")))
+    out = _clean({"action": pk["ACTION_WORDS"].get(action) or _words(action),
+                  "outcome": pk["VIEW_WORDS"]["done" if applied else "not_done"],
+                  "reason": reason})
+    if applied and action == "glance":
+        out["sound"] = free.get("sound") or pk["VIEW_WORDS"]["silence"]
+        out["place"] = str(free.get("place", ""))
+    return _check_keys("last", out, pack)
+
+
+def _last(world, actor, pack, free=None):
     outcome = world.last_outcome(actor)
+    # Phase 071c: a free outcome is the `last` when no major outcome has been published since it ran (free.seen_major
+    # is the major outcome it ran after). A free action in a reply runs before the reply's major action, so that
+    # major outcome is the newer one.
+    if free is not None and free.get("seen_major") == outcome:
+        return _last_free(free, pack)
     if not outcome:
         return {}
     pk = load_pack(pack)
@@ -964,7 +994,7 @@ def build_lazy_agent_view(game, actor, mode="agent"):
         # Phase 053: a fogged resident's map is its own; a simple resident keeps the patch.
         "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
         "can": _lazy_can(game, actor, obs, pack),
-        "last": _last(world, actor, pack),
+        "last": _last(world, actor, pack, _free_last(game, actor)),
         "reaction": _reaction(game, actor, pack, known),
     }
     if mode == "referee":
@@ -1012,7 +1042,7 @@ def build_agent_view(game, actor, mode="agent", interoception=None):
         "map": _fogged_map(game, actor, pack) if fogged else _map(world, actor, pack),
         "can": _can(world, actor, game.characters[actor], pack, game if fogged else None, withheld)
         + _attend_can(world, actor, pack),   # Phase 071
-        "last": _last(world, actor, pack),
+        "last": _last(world, actor, pack, _free_last(game, actor)),
         "reaction": _reaction(game, actor, pack, known),
     }
     if mode == "referee":
