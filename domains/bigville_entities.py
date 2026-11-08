@@ -1291,8 +1291,10 @@ def _check_dependants(errors, warnings, info):
     if not isinstance(d["enabled"], bool):
         errors.append(f"DEPENDANTS[enabled]: a boolean, not {d['enabled']!r}")
     spans = d["neglect_after_days"]
-    if set(spans) != set(stages):
-        errors.append(f"DEPENDANTS[neglect_after_days]: one span per dependant stage, not {sorted(spans)}")
+    # Phase 070c: a stage that inherits from a dependant stage is a dependant too (it takes the parent's span).
+    dependants = {stage for stage in LIFE_STAGES if set(LIFE_STAGE_CHAIN.get(stage, [stage])) & set(stages)}
+    if set(spans) != dependants:
+        errors.append(f"DEPENDANTS[neglect_after_days]: one span per dependant stage {sorted(dependants)}, not {sorted(spans)}")
     for stage, days in spans.items():
         if isinstance(days, bool) or not isinstance(days, int) or days < 0:
             errors.append(f"DEPENDANTS[neglect_after_days][{stage}]: a whole number of days >= 0, not {days!r}")
@@ -1327,6 +1329,8 @@ def _check_dependants(errors, warnings, info):
         stamina = _growth_fraction(age, float(growth["stamina_start"]), adult_age, float(growth["exponent"]))
         info.append(f"DEPENDANTS: at age {age} strength is {strength:.3f} and stamina {stamina:.3f} of the adult "
                     f"base (switch {state})")
+    from domains.life_stage_check import check_life_stages   # Phase 070c: inheritance, contiguous bands, lexicon
+    check_life_stages(_WORLD_PACK.path, errors, warnings, info)
 
 
 def _check_contest(errors, warnings, info):

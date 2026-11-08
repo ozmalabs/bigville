@@ -145,6 +145,7 @@ def check_interoception(pack_name, errors, warnings, info):
     _check_phase070(pack, anatomy, anatomy_ok, errors)
     _check_phase071(pack, sources, errors)
     _check_phase070b(pack, anatomy, errors)
+    _check_phase070c(pack, anatomy, errors)
     for name, row in patterns.items():
         if not isinstance(row.get("repeat"), int) or isinstance(row.get("repeat"), bool) or row["repeat"] < 1:
             errors.append(f"INTEROCEPTION: PATTERNS[{name}].repeat must be a whole number of at least 1")
@@ -338,6 +339,42 @@ def _check_phase070b(pack, anatomy, errors):
         locus = row.get("locus")
         if locus is not None and (locus not in rows or str(locus).startswith("_")):
             errors.append(f"DISEASE[{name}][locus] names {locus!r}, not an ANATOMY node")
+
+
+def _check_phase070c(pack, anatomy, errors):
+    """Phase 070c: ACTION_BODY_USE rows name ANATOMY regions below the root and capacities speed, strength or stamina.
+    A region and capacity that an action names must have an INJURY_EFFECTS weight, or the injury would not lower it.
+    The 'default' row exists, and every RECIPE_BODY_USE value is an ACTION_BODY_USE key. The preschooler's sleep need is
+    its own value (the one overlay the stage gives)."""
+    rows = _rows(anatomy)
+    table = _rows(_opt(pack, "ACTION_BODY_USE"))
+    weights = _opt(pack, "INJURY_EFFECTS").get("weights") or {}
+    if "default" not in table:
+        errors.append("INTEROCEPTION: ACTION_BODY_USE has no 'default' row")
+    for action, row in table.items():
+        if not isinstance(row, dict):
+            errors.append(f"INTEROCEPTION: ACTION_BODY_USE[{action}] must map ANATOMY regions to capacity lists")
+            continue
+        for region, capacities in row.items():
+            if region not in rows or rows[region].get("parent") is None:
+                errors.append(f"INTEROCEPTION: ACTION_BODY_USE[{action}] names {region!r}, not an ANATOMY node below the root")
+                continue
+            if not isinstance(capacities, list):
+                errors.append(f"INTEROCEPTION: ACTION_BODY_USE[{action}][{region}] must be a list of capacities")
+                continue
+            for capacity in capacities:
+                if capacity not in ("speed", "strength", "stamina"):
+                    errors.append(f"INTEROCEPTION: ACTION_BODY_USE[{action}][{region}] names {capacity!r}; use speed, strength or stamina")
+                elif capacity not in (weights.get(region) or {}):
+                    errors.append(f"INTEROCEPTION: ACTION_BODY_USE[{action}][{region}] uses {capacity}, but INJURY_EFFECTS has "
+                                  f"no {capacity} weight for {region}, so an injury there would not lower it")
+    for recipe, action in _rows(_opt(pack, "RECIPE_BODY_USE")).items():
+        if action not in table:
+            errors.append(f"INTEROCEPTION: RECIPE_BODY_USE[{recipe}] names {action!r}, not an ACTION_BODY_USE key")
+    stages = _rows(_opt(pack, "LIFE_STAGES"))
+    needs = pack["BODY_RATES"].get("sleep_need_hours") or {}
+    if "preschooler" in stages and "preschooler" not in needs:
+        errors.append("INTEROCEPTION: BODY_RATES.sleep_need_hours has no own value for 'preschooler' (its one overlay)")
 
 
 def _root_of(anatomy):

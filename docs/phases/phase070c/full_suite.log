@@ -1,0 +1,620 @@
+s....................................................................... [  2%]
+........................................................................ [  4%]
+......................................................s................. [  7%]
+......s....................F............................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+..........F...........................................................
+LA04 town100 lazy refusals after 4 turns: 0 {}
+.. [ 23%]
+...s.................................................................... [ 26%]
+....................
+LA07 town100 lazy: actions={'work': 100, 'move': 700} tally={'improvised_jobs': 1, 'accidents': 0, 'broken_tools': 0} health_mean=1.000000 health_min=1.000000 improvised=[{'turn': 1, 'actor': 'Keturah Marsh', 'recipe': 'press_linseed_oil', 'open_recipe': False, 'at_workplace': False}]
+...FF.........................F..................... [ 28%]
+........................................................................ [ 31%]
+........................................................................ [ 33%]
+............................F........................................... [ 35%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+...................................................................F.... [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+...................FF................................................... [ 59%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+........................F............................................... [ 74%]
+........................................................................ [ 76%]
+.....FFFF.........................................F..................... [ 78%]
+..............................................sss....................... [ 81%]
+.....F.................................................................. [ 83%]
+.............................................................F.FFF.F.... [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 95%]
+........................................................................ [ 98%]
+........................................................                 [100%]
+=================================== FAILURES ===================================
+______ test_real_ocelot_advertises_only_wired_communication_capabilities _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d954f314750>
+
+    @pytest.mark.skipif(not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file(),
+                        reason="Ocelot source checkout is not present")
+    def test_real_ocelot_advertises_only_wired_communication_capabilities(monkeypatch):
+        if not (_BIGVILLE_ROOT / "bigville" / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+    
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+>       resident_class = importlib.import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bigville_ocelot_communication.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter'
+import_ = <function _gcd_import at 0x7d957cee84a0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+<frozen importlib._bootstrap>:1324: ModuleNotFoundError
+_______ test_a_game_saved_and_loaded_continues_to_the_same_run_digest[0] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1145/test_a_game_saved_and_loaded_c0')
+residents = 0
+
+    @pytest.mark.parametrize("residents", [0, 2])
+    def test_a_game_saved_and_loaded_continues_to_the_same_run_digest(tmp_path, residents):
+        gp = pytest.importorskip("bigville.game_persistence")
+        turns, stop_at = 6, 3
+    
+        def run(stop: bool):
+            provider = FakeProvider(varied_reply)
+            game = _town(provider, residents=residents)
+            digest = RunDigest()
+            for turn in range(turns):
+                if stop and turn == stop_at:
+                    path = tmp_path / f"ck-{stop_at}-{residents}"
+                    gp.save_game_checkpoint(game, path)
+                    game = gp.load_game_checkpoint(path, llm_provider=provider, llm_log=False)
+                assert game.step()["status"] == "advanced"
+                digest.add(game)
+            per_actor: dict[str, list] = {}
+            for call in provider.calls:          # per resident (the global call order varies with the thread pool)
+                per_actor.setdefault(call["meta"]["actor"], []).append(call["payload"]["messages"])
+            return digest.hexdigest(), per_actor
+    
+        control = run(stop=False)
+        resumed = run(stop=True)
+>       assert resumed[0] == control[0]
+E       AssertionError: assert 'c592d87846a1...e00e82745b4d3' == '718060fe2d08...9f5c3ede6aaf1'
+E         
+E         - 718060fe2d08782d8e0eb939144c7a947c583bc806e5a34fc899f5c3ede6aaf1
+E         + c592d87846a1d5bdc59f0960bdaf0397e3d8b496b5ae69193d6e00e82745b4d3
+
+tests/test_fix_llm_checkpoint.py:197: AssertionError
+_ test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d95339e3ee0>
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1145/test_phase6_mixed_village_midp0')
+
+    def test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control(
+            monkeypatch, tmp_path):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.api import create_game
+        from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint
+        from bigville.scenarios import load_scenario
+>       from worlds.bigville_ocelot_adapter import BigvilleOcelotResident
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_checkpoint_parity.py:93: ModuleNotFoundError
+_ test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action _
+
+    def ocelot_resident_class():
+        try:
+>           adapter = import_module("worlds.bigville_ocelot_adapter")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'worlds.bigville_ocelot_adapter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                raise TypeError("the 'package' argument is required to perform a "
+                                f"relative import for {name!r}")
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter'
+
+/home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/importlib/__init__.py:88: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d95190895c0>
+
+    def test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action(
+            monkeypatch):
+        if not (_OCELOT_ROOT / "worlds" / "bigville_ocelot_adapter.py").is_file():
+            pytest.skip("Ocelot source checkout is not present")
+        if not (_BIGVILLE_ROOT / "seeds" / "bigville_actor_decision.json").is_file():
+            pytest.skip("standalone Bigville seed checkout is not present")
+        for entry in (_OCELOT_ROOT, _OCELOT_ROOT / "runners" / "dsl" / "python"):
+            if str(entry) not in sys.path:
+                sys.path.insert(0, str(entry))
+        pytest.importorskip("substrate_rs")
+        monkeypatch.setenv("BIGVILLE_ROOT", str(_BIGVILLE_ROOT))
+        monkeypatch.chdir(_OCELOT_ROOT)
+    
+        from bigville.mixed_ocelot_scenario import run_mixed_ocelot_village
+    
+>       trace = run_mixed_ocelot_village(turns=8)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/matt/ozmadev/bigville/tests/test_mixed_ocelot_village.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/matt/ozmadev/bigville/bigville/mixed_ocelot_scenario.py:86: in run_mixed_ocelot_village
+    game = create_game(scenario=scenario, seed=seed, autonomous=True,
+/home/matt/ozmadev/bigville/bigville/api.py:91: in create_game
+    cognition_factory = ocelot_resident_class()
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ocelot_resident_class():
+        try:
+            adapter = import_module("worlds.bigville_ocelot_adapter")
+            resident_type = adapter.BigvilleOcelotResident
+            if not callable(resident_type):
+                raise TypeError("BigvilleOcelotResident is not callable")
+            return resident_type
+        except Exception as exc:
+            detail = f" ({type(exc).__name__}: {exc})"
+>           raise OcelotUnavailableError(
+                "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
+                "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+                f" Adapter import failed{detail}"
+            ) from exc
+E           bigville.backends.ocelot.OcelotUnavailableError: Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter and its dependencies on PYTHONPATH; select 'simple' for local NPCs. Adapter import failed (ModuleNotFoundError: No module named 'worlds.bigville_ocelot_adapter')
+
+/home/matt/ozmadev/bigville/bigville/backends/ocelot.py:22: OcelotUnavailableError
+______ test_policy_pair_has_same_setup_and_predeclared_shock_across_seeds ______
+
+    def test_policy_pair_has_same_setup_and_predeclared_shock_across_seeds():
+        for seed in SEEDS:
+            sharing = run_stress_experiment(seed, "sharing")
+            self_priority = run_stress_experiment(seed, "self_priority")
+    
+            assert sharing["initial_state"] == self_priority["initial_state"]
+            assert sharing["survivors"] == self_priority["survivors"] == 4
+            assert sharing["resource_balance"]["shock_loss"] == 4.0
+            assert self_priority["resource_balance"]["shock_loss"] == 4.0
+            assert sharing["resource_balance"]["accounted_after_shock_and_eating"]
+            assert self_priority["resource_balance"]["accounted_after_shock_and_eating"]
+            assert sharing["failed_actions"] == self_priority["failed_actions"] == 0
+>           assert sharing["transfers"] == 1
+E           assert 0 == 1
+
+tests/test_package15_resource_social_stress.py:17: AssertionError
+_____________ test_exported_files_compile_back_to_the_same_tables ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1145/test_exported_files_compile_ba0')
+
+    def test_exported_files_compile_back_to_the_same_tables(tmp_path):
+        export = _export_module()
+        out = tmp_path / "copy"
+        export.main(["--pack", "bigville", "--out", str(out)])
+        copied = P.load_pack(str(out))
+        original = P.load_pack("bigville")
+        assert set(copied.tables) == set(original.tables)
+        for name in original.tables:
+>           assert P.canonical(copied[name]) == P.canonical(original[name]), name
+E           AssertionError: SPEECH_PARSER
+E           assert '{"enabled": ...ots": {}}}]}}' == '{"enabled": ...ots": {}}}]}}'
+E             
+E             Skipping 417 identical leading characters in diff, use -v to show
+E             - act null. Never invent a name: a name slot may only be the speaker, the listener, or a name the context gives. Every other slot value is words copied from the line, in lower case.", "schema": "{\"act\": \"<one act from the list, or null>\", \"slots\": {\"<slot name>\": \"<words from the line>\"}}. Use only the slots the act lists. Leave a slot out if you cannot fill it.", "examples": [{"speaker": "bram", "listener": "ada", "utterance": "Ada, could you spare two loaves?", "reply": {"act": "request", "slot...
+E             
+E             ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests/test_phase013a_packs.py:97: AssertionError
+----------------------------- Captured stdout call -----------------------------
+normalised 290 tables into /tmp/pytest-of-matt/pytest-1145/test_exported_files_compile_ba0/copy
+______________________ test_callable_provider_is_accepted ______________________
+
+    def test_callable_provider_is_accepted():
+        seen = []
+    
+        def provider(prompt):
+            seen.append(prompt["schema"])
+            return VALID
+    
+        backend = LLMBackend(_character(), provider)
+        assert backend.decide(_context()).major_action.action == "rest"
+>       assert seen == ["bigville/prompt/4"]   # Phase 069: the felt body raised the prompt schema
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert ['bigville/prompt/5'] == ['bigville/prompt/4']
+E         
+E         At index 0 diff: 'bigville/prompt/5' != 'bigville/prompt/4'
+E         Use -v to get more diff
+
+tests/test_phase031_llm_backend.py:127: AssertionError
+__________ test_a_plan_to_light_reaches_the_lamp_code_at_the_station ___________
+
+    def test_a_plan_to_light_reaches_the_lamp_code_at_the_station():
+        w = _on()
+        lamplighter = dn.lamplighters(w)[0]
+        _set_clock(w, _clock_at(0, 22.0))
+        w._move_actor_to(lamplighter, dn.station_cell(w))
+>       assert w.enact_plan(lamplighter, {"action": "light"}) is True
+E       AssertionError: assert False is True
+E        +  where False = enact_plan('Bob', {'action': 'light'})
+E        +    where enact_plan = <worlds.bigville_world.BigvilleWorld object at 0x7d951b947110>.enact_plan
+
+tests/test_phase042b_lamplighter.py:165: AssertionError
+_____ test_a_plan_to_light_far_from_every_lamp_is_refused_not_as_malformed _____
+
+    def test_a_plan_to_light_far_from_every_lamp_is_refused_not_as_malformed():
+        w = _on()
+        lamplighter = dn.lamplighters(w)[0]
+        _set_clock(w, _clock_at(0, 22.0))
+        reach = int(DN["lamp_pole_reach"])
+        far = next(c for c in sorted(w._map_cells)
+                   if all(max(abs(c[0] - l[0]), abs(c[1] - l[1])) > reach for l in w._dn_lamps))
+        w._move_actor_to(lamplighter, far)
+        assert w.enact_plan(lamplighter, {"action": "light"}) is False
+        outcome = w.eng.node(w._actor(lamplighter))["attrs"]["last_outcome"]
+>       assert outcome["reason"] == "not_at_site"
+E       AssertionError: assert 'malformed' == 'not_at_site'
+E         
+E         - not_at_site
+E         + malformed
+
+tests/test_phase042b_lamplighter.py:179: AssertionError
+____________ test_the_packet_matches_the_snapshot_for_a_fixed_view _____________
+
+    def test_the_packet_matches_the_snapshot_for_a_fixed_view():
+        record = PromptBuilder().build(_fixed_context(), "check_in")
+        # The pack hash covers every table of the pack, so it changes whenever any other phase edits the pack. The
+        # snapshot holds the packet's own text, so the hash is left out of the comparison (and checked for shape).
+        payload = record.as_dict()
+        assert re.fullmatch(r"[0-9a-f]{64}", payload.pop("pack_hash"))
+        text = json.dumps(payload, sort_keys=True, indent=1, ensure_ascii=False)
+        with open(SNAPSHOT, encoding="utf-8") as handle:
+>           assert text == handle.read().rstrip("\n")
+E           assert '{\n "context... changes."\n}' == '{\n "context... changes."\n}'
+E             
+E             Skipping 2891 identical leading characters in diff, use -v to show
+E             - "system": 5954,
+E             ?           ^^^
+E             + "system": 7741,
+E             ?           ^^ +
+E                  "things": 44,...
+E             
+E             ...Full output truncated (11 lines hidden), use '-vv' to show
+
+tests/test_phase054_llm_prompt.py:148: AssertionError
+___ test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it ___
+
+    def test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it():
+        server, service = _serve_with_service()
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            row = next(r for r in session.view["can"] if r["action"] == "work")
+            before = service.game.world._turn
+            session.line("look")
+            out = session.line(str([r["handle"] for r in session.view["can"]].index(row["handle"]) + 1))
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert service.game.world._turn == before + 1
+>       assert service.game.last_responses[PLAYER].major_action.action == "work"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:642: AttributeError
+______ test_over_http_walking_to_a_known_place_sends_the_rows_destination ______
+
+    def test_over_http_walking_to_a_known_place_sends_the_rows_destination():
+        walker = "Verity Peaseblossom"                      # a resident who knows exact places at the start
+        server, service = _serve_with_service(walker)
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", walker))
+            walk = next((r for r in session.view["can"] if r["action"] == "walk"), None)
+            assert walk is not None
+            session.line("walk to " + walk["what"].replace("walk to the ", ""))
+        finally:
+            server.shutdown()
+            server.server_close()
+        proposal = service.game.last_responses[walker].major_action
+>       assert proposal.action == "move" and proposal.params.get("destination") is not None
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'action'
+
+tests/test_phase057_tui.py:660: AttributeError
+_____________ test_over_http_a_reaction_is_delivered_to_the_holder _____________
+
+    def test_over_http_a_reaction_is_delivered_to_the_holder():
+        server, service = _serve_with_service()
+        game = service.game
+        taker = "Kester Furlong"
+        game.world._move_actor_to(taker, game.world.actor_position(PLAYER))
+        game.world.set_coin(PLAYER, 9.0)
+    
+        class Taker(DeterministicBackend):
+            def decide(self, context):
+                return ActorResponse(major_action=ProposedAction(
+                    "take", {"source": PLAYER, "kind": "coin", "amount": 3.0}))
+    
+        game.set_backend(taker, Taker(game.characters[taker]))
+        for name in game.characters:
+            if name not in (PLAYER, taker):
+                game.set_backend(name, DeterministicBackend(game.characters[name]))
+        try:
+            session = Session(HttpClient(f"http://127.0.0.1:{server.server_port}", PLAYER))
+            out = session.line("wait")
+            assert session.view.get("reaction"), out
+            answer = session.line("resist")
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert answer[0] == "You hold on and resist."
+>       assert game.contest_log and game.contest_log[-1]["reaction"] == "resist"
+E       assert (deque([]))
+E        +  where deque([]) = <bigville.game.BigvilleGame object at 0x7d951b945e50>.contest_log
+
+tests/test_phase057_tui.py:688: AssertionError
+___ test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for ___
+
+    def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
+        server, service = _serve_with_service()
+        try:
+            url = f"http://127.0.0.1:{server.server_port}/api/turn"
+    
+            def post(body):
+                req = urlrequest.Request(url, data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+                try:
+                    with urlrequest.urlopen(req) as response:
+                        return response.status, json.loads(response.read())
+                except urlrequest.HTTPError as exc:
+                    return exc.code, json.loads(exc.read())
+    
+            status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
+>           assert status == 400 and "intensity must be" in body["error"]
+E           assert (200 == 400)
+
+tests/test_phase057_tui.py:706: AssertionError
+____ test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns _____
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1145/test_the_simple_backend_takes_0')
+
+    def test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns(tmp_path):
+        """The before-change run (behaviour_before.json) and this run both use seed 305000, the simple backend
+        for all residents, and no founding ties (seeding off). Five residents' action sequences and the mean
+        hunger for the first 50 turns must match exactly."""
+        # fix024 re-pinned this: the simple backend's hunger and food choices changed (HUNGER_PER_STAMINA, food-first
+        # sleep). The Phase 058 recording (behaviour_before.json) is kept as history; this reference is the same run after fix024.
+        before = json.load(open(os.path.join(_ROOT, "docs", "phases", "fix024_starvation", "behaviour_after_fix024.json"),
+                                encoding="utf-8"))
+        out = tmp_path / "behaviour_check.json"
+        env = dict(os.environ, PYTHONHASHSEED="0")
+        script = os.path.join(PHASE_DIR, "measure_behaviour.py")
+        subprocess.run([sys.executable, script, "--label", "check", "--turns", "50", "--seeding", "off",
+                        "--out", str(out)], check=True, env=env, cwd=_ROOT, timeout=900)
+        after = json.loads(out.read_text(encoding="utf-8"))
+        for name, sequence in before["sample_sequences"].items():
+            assert after["sample_sequences"][name] == sequence[:50], name
+>       assert after["hunger_mean_by_turn"] == before["hunger_mean_by_turn"][:50]
+E       assert [0.0131, 0.02...4, 0.086, ...] == [0.0131, 0.02...4, 0.086, ...]
+E         
+E         At index 7 diff: 0.116 != 0.1159
+E         Use -v to get more diff
+
+tests/test_phase058_persona.py:524: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"alive_at_end": 100, "deaths": 0, "elapsed_seconds": 18.3, "handovers": 0, "hunger_mean_end": 0.3895, "label": "check", "relationships_on_record": 0, "turns": 50, "utterances": 223}
+{"eat": 4, "move": 3117, "none": 665, "rest": 1156, "sleep": 43, "work": 15}
+_ test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears __
+
+    def test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears():
+        from bigville.api import create_game
+        with speech_in.switched(True):
+            game = create_game(scenario="town100", seed=305000, default_backend="simple", autonomous=True,
+                               ticks_per_period="world")
+            for _ in range(12):
+                game.step()
+            totals = {}
+            for backend in game.backends.values():
+                for key, value in speech_in.stats(backend).items():
+                    totals[key] = totals.get(key, 0) + value
+>       assert totals.get("heard", 0) > 0
+E       AssertionError: assert 0 > 0
+E        +  where 0 = <built-in method get of dict object at 0x7d95314a26c0>('heard', 0)
+E        +    where <built-in method get of dict object at 0x7d95314a26c0> = {}.get
+
+tests/test_phase060_speech_in.py:377: AssertionError
+__________ test_the_price_words_shift_one_loaf_up_for_a_tally_reader ___________
+
+    def test_the_price_words_shift_one_loaf_up_for_a_tally_reader():
+        mark = PACK["WRITTEN_MARKS"]["ale_price"]
+        tally = numeracy.tier_row(0.3, "bigville")
+        known = set()
+        assert reading.percept(mark, "educated", known, tally, "bigville")["words"] == "a price sign: ALE one loaf a pint"
+>       assert reading.percept(mark, "educated", known, tally, "bigville", shift=1)["words"] == \
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            "a price sign: ALE two loaves a pint"
+E       TypeError: percept() got an unexpected keyword argument 'shift'
+
+tests/test_phase065b_impairment.py:228: TypeError
+_ test_a_reader_who_is_drunk_sees_a_price_one_loaf_off_and_the_referee_row_has_the_truth _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d954b0c1ef0>
+
+    def test_a_reader_who_is_drunk_sees_a_price_one_loaf_off_and_the_referee_row_has_the_truth(monkeypatch):
+        monkeypatch.setitem(PACK["READING"], "enabled", True)
+        game = _fake_game("Ada", 1)
+        rec = _record("drunk")
+        shown, truths = [], []
+        for turn in range(1, 300):
+            game.world._turn = turn
+            log = []
+            rows = reading.writing_rows(game, "Ada", rec, "bigville", log)
+            if log and log[0].get("distorted"):
+                shown.append(rows[0]["percept"])
+                truths.append(log[0]["truth"])
+                assert log[0]["distortion_kind"] == "quantity" and log[0]["mechanism"] == "shift_quantity"
+                assert log[0]["shift"] == 1
+>       assert shown and set(shown) == {"a price sign: ALE two loaves a pint"}
+E       assert ([])
+
+tests/test_phase065b_impairment.py:264: AssertionError
+_ test_the_ledger_counts_a_wrong_price_by_its_kind_and_a_wrong_heard_sentence_too _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d954c6b2e40>
+
+    def test_the_ledger_counts_a_wrong_price_by_its_kind_and_a_wrong_heard_sentence_too(monkeypatch):
+        monkeypatch.setitem(PACK["READING"], "enabled", True)
+        game = _fake_game("Ada", 1)
+        rec = _record("drunk")
+        for turn in range(1, 200):
+            game.world._turn = turn
+            log = []
+            reading.writing_rows(game, "Ada", rec, "bigville", log)
+            I.note_view(game, "Ada", rec, log, "bigville")
+        game.world._turn = 1000
+        I.note_view(game, "Ada", rec, [{"subject": "speech:Tom:1.0", "kind": "utterance", "distorted": True,
+                                        "sources": ["intoxication"]}], "bigville")
+        block = I.report_block(game, "bigville")["impairment"]
+>       assert set(block["by_kind"]) == {"quantity", "utterance"}
+E       AssertionError: assert {'utterance'} == {'quantity', 'utterance'}
+E         
+E         Extra items in the right set:
+E         'quantity'
+E         Use -v to get more diff
+
+tests/test_phase065b_impairment.py:282: AssertionError
+_ test_the_agent_view_gives_a_drunk_enforced_listener_a_wrong_heard_sentence_with_the_truth_in_the_referee _
+
+drunk_town = (<bigville.game.BigvilleGame object at 0x7d9518c696d0>, 'Adelina Gorse')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d954c52a7b0>
+
+    def test_the_agent_view_gives_a_drunk_enforced_listener_a_wrong_heard_sentence_with_the_truth_in_the_referee(
+            drunk_town, monkeypatch):
+        drunk_game, actor = drunk_town
+        world = drunk_game.world
+        speaker = _neighbour(drunk_game, actor)
+        record = _utterance("I have ale and two loaves", speaker=speaker, turn=1.0)
+        monkeypatch.setattr(world, "heard_utterances", lambda who, **kw: [record] if who == actor else [])
+        old_turn = world._turn
+        wrong, truths = 0, []
+        try:
+            for turn in range(1, 80):
+                world._turn = turn
+                view = agent_view.build_agent_view(drunk_game, actor, mode="referee")
+                heard = view["around"]["heard"][0]["text"]
+                rows = [row for row in view["referee"]["perception"]["subjects"] if row["kind"] == "utterance"]
+>               assert len(rows) == 1 and rows[0]["truth"] == record["text"]
+E               assert (0 == 1)
+E                +  where 0 = len([])
+
+tests/test_phase065b_impairment.py:305: AssertionError
+_ test_the_simple_listener_mishears_only_when_its_switch_is_on_and_it_is_drunk _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d954b0c1b00>
+
+    def test_the_simple_listener_mishears_only_when_its_switch_is_on_and_it_is_drunk(monkeypatch):
+        backend = _simple_backend()
+        with speech_in.switched(True):
+            ctx = SimpleNamespace(observations=_observations([_utterance("I have bread", turn=0.5)], "drunk"), turn=1,
+                                  affordances=[])
+            speech_in.hear(backend, ctx)
+            assert speech_in.stats(backend).get("mishear_checked", 0) == 0    # the impairment switch is off
+            monkeypatch.setitem(PACK["IMPAIRMENT"], "enabled", True)
+            backend = _simple_backend()
+            for turn in range(1, 61):
+                records = [_utterance("I have bread and two loaves", turn=float(turn))]
+                speech_in.hear(backend, SimpleNamespace(observations=_observations(records, "drunk"), turn=turn,
+                                                        affordances=[]))
+            stats = speech_in.stats(backend)
+>           assert stats["mishear_checked"] == 60
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'mishear_checked'
+
+tests/test_phase065b_impairment.py:350: KeyError
+=============================== warnings summary ===============================
+tests/test_distributed_runtime.py: 2 warnings
+tests/test_process_transport.py: 25 warnings
+  /home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/multiprocessing/popen_fork.py:67: DeprecationWarning: This process (pid=1218122) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_bigville_ocelot_communication.py::test_real_ocelot_advertises_only_wired_communication_capabilities
+FAILED tests/test_fix_llm_checkpoint.py::test_a_game_saved_and_loaded_continues_to_the_same_run_digest[0]
+FAILED tests/test_mixed_ocelot_checkpoint_parity.py::test_phase6_mixed_village_midpoint_checkpoint_matches_uninterrupted_control
+FAILED tests/test_mixed_ocelot_village.py::test_mixed_real_ocelot_village_runs_multiple_turns_and_rejects_invalid_action
+FAILED tests/test_package15_resource_social_stress.py::test_policy_pair_has_same_setup_and_predeclared_shock_across_seeds
+FAILED tests/test_phase013a_packs.py::test_exported_files_compile_back_to_the_same_tables
+FAILED tests/test_phase031_llm_backend.py::test_callable_provider_is_accepted
+FAILED tests/test_phase042b_lamplighter.py::test_a_plan_to_light_reaches_the_lamp_code_at_the_station
+FAILED tests/test_phase042b_lamplighter.py::test_a_plan_to_light_far_from_every_lamp_is_refused_not_as_malformed
+FAILED tests/test_phase054_llm_prompt.py::test_the_packet_matches_the_snapshot_for_a_fixed_view
+FAILED tests/test_phase057_tui.py::test_over_http_a_menu_row_is_bound_by_the_server_and_the_world_enacts_it
+FAILED tests/test_phase057_tui.py::test_over_http_walking_to_a_known_place_sends_the_rows_destination
+FAILED tests/test_phase057_tui.py::test_over_http_a_reaction_is_delivered_to_the_holder
+FAILED tests/test_phase057_tui.py::test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for
+FAILED tests/test_phase058_persona.py::test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns
+FAILED tests/test_phase060_speech_in.py::test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears
+FAILED tests/test_phase065b_impairment.py::test_the_price_words_shift_one_loaf_up_for_a_tally_reader
+FAILED tests/test_phase065b_impairment.py::test_a_reader_who_is_drunk_sees_a_price_one_loaf_off_and_the_referee_row_has_the_truth
+FAILED tests/test_phase065b_impairment.py::test_the_ledger_counts_a_wrong_price_by_its_kind_and_a_wrong_heard_sentence_too
+FAILED tests/test_phase065b_impairment.py::test_the_agent_view_gives_a_drunk_enforced_listener_a_wrong_heard_sentence_with_the_truth_in_the_referee
+FAILED tests/test_phase065b_impairment.py::test_the_simple_listener_mishears_only_when_its_switch_is_on_and_it_is_drunk
+21 failed, 2980 passed, 7 skipped, 27 warnings in 2017.34s (0:33:37)

@@ -1814,6 +1814,9 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                         hunger = float(attrs.get("hunger", 0.0))
                         if starve > 0.0:
                             cost *= 1.0 + hunger / starve
+                        # Phase 070c: a located injury makes the action's effort cost more (divided by the stamina
+                        # factor of the regions the action uses; 1.0 with no injury, and for an effort with no body_use).
+                        cost /= self._body_capacity_factor(actor, "stamina", str(ea.get("body_use", "")) or None)
                         reserve = float(ba.get("stamina_reserve", 1.0))
                         spent = min(reserve, max(0.0, cost))
                         self.eng.set_attr(body, "stamina_reserve", max(0.0, reserve - spent))
@@ -2717,7 +2720,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 "uses_strength": 0.0, "uses_stamina": 1.0,
                 "intensity": min(1.0, effort * 0.1), "stamina_cost": effort * 0.1,
                 "terrain": terrain["terrain"], "terrain_speed": float(terrain["speed"]),
-                "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+                "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0, "body_use": "walk"})
             self.eng.add_edge_unchecked(self._actor(actor), "exerted", exertion)
             if not self._actor_tick_in_progress:
                 self._request_rule_sweep()
@@ -2730,7 +2733,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # the float cooldown, so a step at interval I owes I - 1 waiting ticks. Whole intervals wait exactly
         # as they did before the factor existed.
         interval = (terrain_interval * band["interval"] / (self.stagger_speed(actor)
-                    * self._body_capacity_factor(actor, "speed")) * _dn.travel_factor(self, actor))  # Phase 070b: a leg injury
+                    * self._body_capacity_factor(actor, "speed", "walk")) * _dn.travel_factor(self, actor))  # Phase 070b: a leg injury (070c: walk)
         self.eng.set_attr(self._actor(actor), "carry_move_cooldown",
                           cooldown + interval - 1.0 if interval > 1.0 + 1e-9 else 0.0)
         if nxt is not None:
@@ -8275,7 +8278,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         cost = float(spec["severity"]) + (0.0 if self._care_flag_value(name, "screened") else float(spec["progression"]))
         if treated:
             cost -= float(spec["treat_relief"])
-        if stage == "infant" and not self._care_flag_value(name, "well_baby"):
+        if self._life_stage_is(stage, "infant") and not self._care_flag_value(name, "well_baby"):
             cost += float(care["infant_fragility"])
         self.harm(name, max(0.0, cost), "illness", fragility=False, locus=self._disease_locus(name))
         if not self.is_alive(name):
@@ -8341,7 +8344,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         """A well-baby visit by a resident with the medical skill or midwifery, co-located with an infant. The
         infant is seen for MEDICAL_CARE.well_baby_days: it pays no infant_fragility while the visit holds."""
         code = self._care_act_refusal(doctor, infant, "well_baby")
-        if code is None and self.eng.node(self._actors[infant])["attrs"].get("life_stage") != "infant":
+        if code is None and not self._life_stage_is(self.eng.node(self._actors[infant])["attrs"].get("life_stage"), "infant"):
             code = "not_needed"
         if code is None and self._care_flag_value(infant, "well_baby"):
             code = "not_needed"
@@ -9033,7 +9036,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 if (self._holds_care_skill(actor, "treat") and pa.get("disease") and self._store_open(actor)
                         and self.qty("medicine") >= float(self.E.MEDICAL_CARE["medicine_per_treatment"])):
                     kinds.append("treat")
-                if (str(pa.get("life_stage", "")) == "infant" and not self._care_flag_value(patient, "well_baby")
+                if (self._life_stage_is(str(pa.get("life_stage", "")), "infant") and not self._care_flag_value(patient, "well_baby")
                         and self._holds_care_skill(actor, "well_baby")):
                     kinds.append("well_baby")
                 for kind in kinds:
@@ -10369,7 +10372,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if not self._skilled_enough(actor, name) or not self._recipe_in_season(name):
             return {"ok": False, "reason": "unskilled"}
         strength_needed, _stamina = self.E.recipe_exertion(name)
-        if self.strength(actor) + 1e-9 < strength_needed:
+        if self.strength(actor, self._recipe_body_use(name)) + 1e-9 < strength_needed:
             return {"ok": False, "reason": "unskilled"}
         if spec.get("open") and any(self._held_tool(actor, tool) is None
                                     for tool in spec.get("tools", [])):
@@ -11037,7 +11040,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # with D the recipe's strength demand and C the worker's strength now. At the strength gate the ratio is 1,
         # so the declared cost is paid as before; a worker whose strength has fallen mid-job pays more.
         from worlds import resolution as R
-        ratio = R.cost_ratio(float(ja.get("strength_needed", 0.0)), self.strength(actor), 1.0,
+        body_use = self._recipe_body_use(self._job_recipe_name(job))
+        ratio = R.cost_ratio(float(ja.get("strength_needed", 0.0)), self.strength(actor, body_use), 1.0,
                              float(self.E.RESOLUTION["effort_cap"]))
         amount *= ratio
         # Phase 050b: pace (intensity on a recipe) scales the effort by pace^k, as an attempt's intensity does.
@@ -11045,7 +11049,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         effort = self.eng.add_node("Effort", {"uses_strength": float(ja.get("uses_strength", 0.0)), "uses_stamina": 1.0,
                                               "intensity": min(1.0, amount), "stamina_cost": amount,
                                               "terrain": "", "terrain_speed": 1.0,
-                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0, "body_use": body_use})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
 
     def _knows_or_none(self, actor, action_name):
@@ -11251,7 +11255,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return False
         recipe = self._recipe_specs.get(action_name, {})
         strength_needed, _stamina = self.E.recipe_exertion(action_name)
-        if self.strength(actor) + 1e-9 < strength_needed:
+        if self.strength(actor, self._recipe_body_use(action_name)) + 1e-9 < strength_needed:
             return False
         if recipe.get("open"):
             if any(self._held_tool(actor, tool) is None for tool in recipe.get("tools", [])):
@@ -11435,14 +11439,18 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         needed = float(ja.get("strength_needed", 0.0))
         if actor not in self._actors or needed <= 0.0:
             return 1.0
-        rho_strength = self.strength(actor) / needed
-        asp = next(iter(self.eng.neighbours(job, "runs")), None)
-        name = str(self.eng.node(asp)["attrs"].get("name", "")) if asp is not None else ""
+        rho_strength = self.strength(actor, self._recipe_body_use(self._job_recipe_name(job))) / needed
+        name = self._job_recipe_name(job)
         rho = min(rho_strength, self._skill_share_of_floor(actor, name)) if name else rho_strength
         ticks = float(ja.get("stamina_ticks", 0.0))
         if share > 0.0 and ticks > 0.0 and rho < 1.0:
             self._accrue_strain(actor, R.strain(share / ticks, rho))
         return R.progress_rate(rho_strength, 1.0, 1.0)
+
+    def _job_recipe_name(self, job):
+        """Phase 070c: the recipe a job runs (its 'runs' activity's name), or ''."""
+        asp = next(iter(self.eng.neighbours(job, "runs")), None)
+        return str(self.eng.node(asp)["attrs"].get("name", "")) if asp is not None else ""
 
     def _jobs_sharing(self, job):
         """How many of the worker's jobs advance at once (Phase 049): the unfinished, unpaused jobs they hold. A
@@ -11807,18 +11815,21 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return self._run_attempt(actor, plan)
         return self._claimed_attempt(actor, "attempt", lambda: self._run_attempt(actor, plan))
 
-    def _capability_terms(self, actor, spec, tool, requested, target_material):
+    def _capability_terms(self, actor, spec, tool, requested, target_material, action=None):
         """The capability terms every attempt shares (Phase 050): the intensity applied (clamped to the ceiling,
         which the speed factor and health lower), force, technique, fit, and the tool's kind. The fit is the tool's
-        fitness for the verb's work on the target's material (Phase 048); bare hands fit at hands_fit."""
+        fitness for the verb's work on the target's material (Phase 048); bare hands fit at hands_fit.
+
+        Phase 070c: `action` (the verb) names the body regions the attempt uses (ACTION_BODY_USE): its speed, force and
+        stamina read the injury on those regions only. The stamina factor travels in the terms as body_use."""
         rs = self.E.RESOLUTION
         body = self.eng.node(self._bodies[actor])["attrs"]
-        speed = self.speed_factor(actor)
+        speed = self.speed_factor(actor, action)
         ceiling = float(rs["max_intensity"]) * speed * self.health(actor)
         from worlds import resolution as R
         applied, clamped = R.intensity_applied(requested, rs["max_intensity"], ceiling)
         stage = str(self.eng.node(self._actors[actor])["attrs"].get("life_stage", "adult"))
-        force = (self.effective_strength(actor) * float(body.get("size", 1.0))
+        force = (self.effective_strength(actor, action) * float(body.get("size", 1.0))
                  * float(self.E.CONTEST["life_stage_force"].get(stage, 1.0)) * speed)
         skill = spec.get("skill")
         technique = 1.0 if skill is None else R.technique_term(self.effective_skill(actor, skill),
@@ -11827,7 +11838,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         target_hardness = float(self.E.MATERIALS[target_material]["hardness"])
         fit, row_effort = self._tool_fit(tool, str(spec.get("work", "")), target_hardness, None)
         return {"applied": applied, "clamped": clamped, "force": force, "technique": technique, "fit": fit,
-                "effort": row_effort, "tool_kind": tool_kind}
+                "effort": row_effort, "tool_kind": tool_kind, "body_use": action}
 
     def _resolve_terms(self, terms, spec, demand):
         """One resolution step for the terms and a demand. Returns (step, share): the step's outputs, and the cost
@@ -11857,7 +11868,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                                or rs["default_material"])
         else:
             target_material = rs["lock_material"]
-        terms = self._capability_terms(actor, spec, tool, requested, target_material)
+        terms = self._capability_terms(actor, spec, tool, requested, target_material, verb)
         if spec["primitive"] == "damage":
             condition = float(attrs.get("structure", 1.0))
             demand = float(self.E.MATERIALS[target_material]["toughness"]) * condition
@@ -11931,7 +11942,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # A trivial attempt (cost share below trivial_below, Phase 029) spends no stamina. The tool's effort (Phase 048)
         # multiplies it: a row for a verb may cost more than the normal stroke.
         if plan["share"] >= float(rs["trivial_below"]):
-            self._spend_attempt_stamina(actor, float(step["stamina"]) * float(plan["terms"].get("effort", 1.0)), applied)
+            self._spend_attempt_stamina(actor, float(step["stamina"]) * float(plan["terms"].get("effort", 1.0)), applied,
+                                        plan["terms"].get("body_use"))
         # Overexertion and the rest of the strain build up; a full strain is an accident.
         self._accrue_strain(actor, float(step["strain"]))
         if plan["primitive"] != "displace":
@@ -12007,7 +12019,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         reference push, times the ground's friction, the terrain's move time), and the capability is the usual one."""
         from worlds import resolution as R
         rs = self.E.RESOLUTION
-        terms = self._capability_terms(actor, spec, tool, requested, rs["default_material"])
+        terms = self._capability_terms(actor, spec, tool, requested, rs["default_material"], verb)
         friction = float(self.terrain_state(cell)["move_time"])
         demand = R.friction_demand(mass, rs["push_mass_unit"], friction)
         step, share = self._resolve_terms(terms, spec, demand)
@@ -12040,15 +12052,16 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self._finish_attempt(actor, plan, outcome, 0.0, 0.0, moved=moved)
         return True
 
-    def _spend_attempt_stamina(self, actor, amount, applied):
+    def _spend_attempt_stamina(self, actor, amount, applied, action=None):
         """Spend an attempt's stamina through an Effort node, as rest does. The hunger scaling and reserve floor
-        of the exerted branch apply (Phase 022)."""
+        of the exerted branch apply (Phase 022). Phase 070c: the Effort carries the attempt's action (body_use)."""
         if amount <= 0.0:
             return
         effort = self.eng.add_node("Effort", {"uses_strength": 0.0, "uses_stamina": 1.0,
                                               "intensity": float(applied), "stamina_cost": float(amount),
                                               "terrain": "", "terrain_speed": 1.0,
-                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0,
+                                              "body_use": "" if action is None else str(action)})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
         self._request_rule_sweep()
 
@@ -12138,11 +12151,12 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         return None
 
     def _member_force(self, actor):
-        """A member's force in a joint act: the terms the core's force term uses (Phase 050), without intensity."""
+        """A member's force in a joint act: the terms the core's force term uses (Phase 050), without intensity.
+        Phase 070c: a joint carry reads the carry's body regions (ACTION_BODY_USE 'carry')."""
         body = self.eng.node(self._bodies[actor])["attrs"]
         stage = str(self.eng.node(self._actors[actor])["attrs"].get("life_stage", "adult"))
-        return (self.effective_strength(actor) * float(body.get("size", 1.0))
-                * float(self.E.CONTEST["life_stage_force"].get(stage, 1.0)) * self.speed_factor(actor))
+        return (self.effective_strength(actor, "carry") * float(body.get("size", 1.0))
+                * float(self.E.CONTEST["life_stage_force"].get(stage, 1.0)) * self.speed_factor(actor, "carry"))
 
     def _joint_outcomes(self, names, applied, codes, publish):
         """Each named resident's outcome: applied, or the code that refused it. Returns {resident: applied}.
@@ -12183,14 +12197,16 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 self.observe_event(other, event)
         return event
 
-    def _queue_effort(self, actor, amount, intensity, uses_strength=0.0):
-        """Queue stamina a resident spends through an Effort node. Nothing runs here, so it is safe inside a tick."""
+    def _queue_effort(self, actor, amount, intensity, uses_strength=0.0, action=None):
+        """Queue stamina a resident spends through an Effort node. Nothing runs here, so it is safe inside a tick.
+        Phase 070c: the Effort carries the action it is spent on (body_use)."""
         if float(amount) <= 0.0:
             return
         effort = self.eng.add_node("Effort", {"uses_strength": float(uses_strength), "uses_stamina": 1.0,
                                               "intensity": float(intensity), "stamina_cost": float(amount),
                                               "terrain": "", "terrain_speed": 1.0,
-                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0,
+                                              "body_use": "" if action is None else str(action)})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
 
     def _carry_cell(self, name):
@@ -12289,7 +12305,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return
         amount = total / ticks * own * float(ja.get("effort_mult", 1.0))
         for helper in helpers:
-            self._queue_effort(helper, amount, min(1.0, amount), float(ja.get("uses_strength", 0.0)))
+            self._queue_effort(helper, amount, min(1.0, amount), float(ja.get("uses_strength", 0.0)),
+                               action=self._recipe_body_use(self._job_recipe_name(job)))
 
     def _crew_options(self, actor):
         """Crew options: a timed job whose worker stands on the resident's cell, whose recipe asks for more people,
@@ -12397,7 +12414,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # Each member pays its share of the summed force: stamina, and strain (an accident at the strain limit).
         for name, force in zip(group, forces):
             share = force / total if total > 0.0 else 1.0 / len(group)
-            self._queue_effort(name, float(step["stamina"]) * share, 1.0)
+            self._queue_effort(name, float(step["stamina"]) * share, 1.0, action="carry")
             self._accrue_strain(name, float(step["strain"]) * share)
         self._request_rule_sweep()
         needed = J.members_needed(total / len(group), demand, spec["max_members"], spec["coordination_loss"], 0.0,
@@ -12512,9 +12529,11 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     # Seeds bd_train_strength and bd_train_stamina (use builds the stat) and bd_effective_stats (health scales
     # the stat; the reserve cannot exceed the effective stamina). Constants and the formulas: world_affordances
     # (train_gain, effective_stat). The effort's `intensity` is its stamina cost, capped at 1.
-    def effective_strength(self, actor):
-        """(str_base + str_train) x health (seed bd_effective_stats). Read by the recipe gate and the contest."""
-        return self._effective_body_stat(actor, "str_base", "str_train") * self._body_capacity_factor(actor, "strength")
+    def effective_strength(self, actor, action=None):
+        """(str_base + str_train) x health (seed bd_effective_stats), times the located strength factor. Read by the
+        recipe gate and the contest. Phase 070c: with no `action` this is the whole-body read (every region's injury
+        counts); with an ACTION_BODY_USE key, only the regions that action uses for strength count."""
+        return self._effective_body_stat(actor, "str_base", "str_train") * self._body_capacity_factor(actor, "strength", action)
 
     def effective_stamina(self, actor):
         """(sta_base + sta_train) x health: the stamina capacity the reserve is clamped to and the band reads.
@@ -12610,16 +12629,18 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         ratio = 1.0 if own <= 0.0 else min(1.0, float(load) / float(own))
         return ratio * self._contest_efficiency(skill)
 
-    def _contest_side(self, actor):
-        """One side's traits: force (strength, size, life stage, exhaustion step), skill and score."""
+    def _contest_side(self, actor, action="contest"):
+        """One side's traits: force (strength, size, life stage, exhaustion step), skill and score.
+        Phase 070c: `action` names the body regions the side's force and step read (ACTION_BODY_USE): a strike,
+        throw, restraint or struggle reads its own row, and a take or a defence reads 'contest'."""
         ct = self.E.CONTEST
         body = self._bodies.get(actor)
         ba = self.eng.node(body)["attrs"] if body is not None else {}
         aa = self.eng.node(self._actors[actor])["attrs"]
-        strength = self.effective_strength(actor)
+        strength = self.effective_strength(actor, action)
         size = float(ba.get("size", 1.0))
         life = float(ct["life_stage_force"].get(str(aa.get("life_stage", "adult")), 1.0))
-        step = float(self._exhaustion_band(actor)["speed"])
+        step = self._speed_of(actor, action)
         base_force = max(0.0, strength) * (size ** float(ct["size_exponent"])) * life
         force = base_force * step
         skill = float(self.effective_skill(actor, "fighting"))
@@ -12748,14 +12769,16 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self._contest = pending
         return pending, None
 
-    def _contest_spend(self, actor, cost):
-        """Spend stamina on a contest through the same Effort mechanism movement uses."""
+    def _contest_spend(self, actor, cost, action="contest"):
+        """Spend stamina on a contest through the same Effort mechanism movement uses (Phase 070c: tagged with the
+        contest's action, so the located stamina factor of that action applies)."""
         if cost <= 0.0 or self._bodies.get(actor) is None:
             return
         effort = self.eng.add_node("Effort", {"uses_strength": 0.0, "uses_stamina": 1.0,
                                               "intensity": min(1.0, cost), "stamina_cost": float(cost),
                                               "terrain": "", "terrain_speed": 1.0,
-                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0})
+                                              "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0,
+                                              "body_use": str(action)})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
         self._request_rule_sweep()
 
@@ -12982,7 +13005,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         (capped at effort_cap) times the row's effort."""
         rs, of = self.E.RESOLUTION, self.E.OBJECT_FORCE
         mult, row_effort = self._weapon_mult(kind)
-        limit = max(1e-9, float(of["unwieldy_above"]) * max(0.0, self.effective_strength(actor)))
+        limit = max(1e-9, float(of["unwieldy_above"]) * max(0.0, self.effective_strength(actor, "strike")))
         clumsy = max(1.0, float(self.item_weight(kind)) / limit)
         return {"item": int(item), "kind": kind, "mult": mult / clumsy,
                 "effort": row_effort * min(clumsy, float(rs["effort_cap"]))}
@@ -12992,7 +13015,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         weight, so a light object does not carry further than a reference one), at most range_max."""
         of = self.E.OBJECT_FORCE
         divisor = max(1.0, float(self.item_weight(kind)) / float(of["weight_reference"]))
-        cells = math.floor(float(of["range_base"]) * max(0.0, self.effective_strength(actor)) * float(applied) / divisor)
+        cells = math.floor(float(of["range_base"]) * max(0.0, self.effective_strength(actor, "throw")) * float(applied) / divisor)
         return int(max(0, min(int(of["range_max"]), cells)))
 
     def _cell_occludes(self, cell, codes):
@@ -13095,7 +13118,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return None, "malformed"
         from worlds import resolution as R
         rs = self.E.RESOLUTION
-        ceiling = float(rs["max_intensity"]) * self.speed_factor(actor) * self.health(actor)
+        ceiling = float(rs["max_intensity"]) * self.speed_factor(actor, "throw") * self.health(actor)
         applied, clamped = R.intensity_applied(float(requested), rs["max_intensity"], ceiling)
         reach = self._throw_range(actor, kind, applied)
         landing, reached, impact = self._throw_flight(here, cell, reach)
@@ -13105,7 +13128,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                   "last_major_action": attrs.get("last_major_action", "")}
         if not self._claim_major_action(actor, "throw"):
             return None, "slot_used"
-        attacker_side = self._contest_side(actor)
+        attacker_side = self._contest_side(actor, "throw")
         if target is not None and reached:
             target_side = self._contest_side(target)
             offer = self._contest_offer(actor, target, attacker_side, target_side)
@@ -13153,7 +13176,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         distance = int(pending["distance"])
         falloff = 1.0 / (1.0 + distance / float(of["distance_reference"]))
         tw = float(ct["technique_weight"])
-        actor_step = float(self._exhaustion_band(actor)["speed"])
+        actor_step = self._speed_of(actor, "throw")
         aim = ((1.0 + tw * float(A["skill"])) * actor_step * falloff
                / (1.0 + float(of["accuracy_intensity_loss"]) * max(0.0, applied - 1.0)))
         result = {"action": "throw", "reaction": choice or "", "outcome": "", "applied": True, "reason": "",
@@ -13173,7 +13196,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         else:
             T = pending["target_side"] or self._contest_side(target)
             defence = (of["passive_defence"] if choice != "evade"
-                       else (1.0 + tw * float(T["skill"])) * float(self._exhaustion_band(target)["speed"]))
+                       else (1.0 + tw * float(T["skill"])) * self._speed_of(target, "contest"))
             defence = float(defence)
             hit = aim >= defence
             if hit:
@@ -13282,7 +13305,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                   "last_major_action": attrs.get("last_major_action", "")}
         if not self._claim_major_action(actor, "strike"):
             return None, "slot_used"
-        attacker_side = self._contest_side(actor)
+        attacker_side = self._contest_side(actor, "strike")
         target_side = self._contest_side(target)
         pending = {
             "action": "strike", "attacker": str(actor), "target": str(target),
@@ -13477,8 +13500,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                   "last_major_action": attrs.get("last_major_action", "")}
         if not self._claim_major_action(actor, "restrain"):
             return None, "slot_used"
-        attacker_side = self._contest_side(actor)
-        target_side = self._contest_side(target)
+        attacker_side = self._contest_side(actor, "restrain")
+        target_side = self._contest_side(target, "struggle")
         pending = {
             "action": "restrain", "attacker": str(actor), "target": str(target),
             "kind": "grip", "kind_is_item": False, "by": "hands", "amount": 1.0,
@@ -13575,7 +13598,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         ct = self.E.CONTEST
         base, tw = float(ct["base_cost"]), float(ct["technique_weight"])
         trivial = float(ct["trivial_below"])
-        A, H = self._contest_side(actor), self._contest_side(holder)
+        A, H = self._contest_side(actor, "struggle"), self._contest_side(holder, "restrain")
         att = A["score"]
         hold = H["force"] * (1.0 + tw * H["skill"])
         total = att + hold
@@ -13607,7 +13630,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                     or self.actor_position(holder) != self.actor_position(target)):
                 self._clear_hold(holder, target)
                 continue
-            H, T = self._contest_side(holder), self._contest_side(target)
+            H, T = self._contest_side(holder, "restrain"), self._contest_side(target, "struggle")
             share_h = self._contest_share(grip * T["force"], H["force"], H["skill"])
             self._contest_spend(holder, base * share_h if share_h >= trivial else 0.0)
             if self._sleep_code(target) is None:
@@ -13695,8 +13718,12 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     def exhaustion_step(self, actor):
         return int(self._exhaustion_band(actor)["step"])
 
-    def speed_factor(self, actor):
-        return round(float(self._exhaustion_band(actor)["speed"]), 4)
+    def speed_factor(self, actor, action=None):
+        """The exhaustion speed (Phase 024). Phase 070c: with an `action`, times the located speed factor of the regions
+        that action uses (a leg injury slows walking and contests); with none, the exhaustion speed alone."""
+        if action is None:
+            return round(float(self._exhaustion_band(actor)["speed"]), 4)
+        return round(self._speed_of(actor, action), 4)
 
     def _job_speed(self, job):
         """The speed a timed job advances at: its worker's movement speed (Phase 024 extension)."""
@@ -14047,7 +14074,12 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
 
     def stamina(self, actor): return self.body_state(actor)["stamina"]
     def stamina_reserve(self, actor): return self.body_state(actor)["stamina_reserve"]
-    def strength(self, actor): return self.body_state(actor)["strength"]
+    def strength(self, actor, action=None):
+        """Strength: the whole-body read (body_state) with no action; with an ACTION_BODY_USE key, the located read for
+        that action (Phase 070c)."""
+        if action is None:
+            return self.body_state(actor)["strength"]
+        return round(float(self.effective_strength(actor, action)), 4)
     def energy(self, actor):
         """Movement energy read from body stamina reserve, not an Agent ledger."""
         return round(self.stamina_reserve(actor) * 100.0, 4)

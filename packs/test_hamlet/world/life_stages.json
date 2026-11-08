@@ -5,13 +5,18 @@
     "LIFE_STAGES": {
       "infant": {
         "age_min": 0,
-        "age_max": 3,
+        "age_max": 2,
         "work_fraction": 0.0,
         "care": 1.0,
         "food": 0.35
       },
+      "preschooler": {
+        "inherits": "child",
+        "age_min": 3,
+        "age_max": 5
+      },
       "child": {
-        "age_min": 4,
+        "age_min": 6,
         "age_max": 12,
         "work_fraction": 0.25,
         "care": 0.5,
@@ -38,6 +43,23 @@
         "care": 0.2,
         "food": 0.85
       }
+    },
+    "STAGE_KEYED": {
+      "_doc": "STAGE_KEYED (Phase 070c): the tables keyed by life stage whose per-stage entries may be inherited. Each path names a table (and a key inside it; '*' takes every row of the level above, as DISEASE.*.stage_risk). At pack load (domains/pack.py _compile_life_stages) a stage with no entry in such a dict takes the entry of its nearest ancestor in LIFE_STAGES[stage].inherits. The LIFE_STAGES fields are filled the same way, except age_min and age_max, which each stage gives. LIFE_STAGE_CHAIN (derived) is each stage with its ancestors, nearest first: a comparison by name asks whether a stage has the name in its chain (the infant refusal, dependant membership). The preschooler (3 to 5 years, NSF preschool range, Hirshkowitz et al. 2015) inherits every value from child and overlays only BODY_RATES.sleep_need_hours (10 h, the low end of 10 to 13 h). The band edges are integer years and must be contiguous (the self-test checks it); infant 0 to 2, preschooler 3 to 5, child 6 to 12 (the whole-year rule of DEPENDANTS-off, which sends a gap age to elder, is unchanged).",
+      "paths": [
+        "CONTEST.life_stage_force",
+        "DEPENDANTS.neglect_after_days",
+        "DISEASE.*.stage_risk",
+        "HEALTH.age_rate",
+        "HEALTH.fragility",
+        "IMPAIRMENT_NEIGHBOURS",
+        "INTEROCEPTION.acuity.life_stage",
+        "BODY_RATES.sleep_need_hours",
+        "LEXICON_QUANTITIES.life_stage.self",
+        "LEXICON_QUANTITIES.life_stage.other",
+        "PERCEPTION.stage_nouns",
+        "ROUTINE_STAGE"
+      ]
     }
   }
 }

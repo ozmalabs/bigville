@@ -57,9 +57,24 @@ def pack_tables(pack):
             "attend": loaded["ATTEND"],
             "strike_aim": loaded["STRIKE_AIM"],
             "injury_effects": loaded["INJURY_EFFECTS"],
+            "action_body_use": loaded["ACTION_BODY_USE"],
+            "recipe_body_use": loaded["RECIPE_BODY_USE"],
             "tick_hours": float(loaded["TIME"]["minutes_per_tick"]) / 60.0,
         }
     return _TABLE_CACHE[key]
+
+
+def action_row(tables, action):
+    """Phase 070c: the ACTION_BODY_USE row of an action ({ANATOMY node: [capacities]}). An action with no row, and the
+    default, use the 'default' row (the arm). Plain lookups; the table is never changed here."""
+    rows = tables["action_body_use"]
+    row = rows.get(str(action)) if action is not None else None
+    return rows["default"] if row is None else row
+
+
+def recipe_action(tables, recipe):
+    """Phase 070c: the ACTION_BODY_USE key a recipe's work uses (RECIPE_BODY_USE, else 'work')."""
+    return str(tables["recipe_body_use"].get(str(recipe), "work"))
 
 
 def _anatomy_rows(tables):
@@ -665,22 +680,39 @@ class BodyMixin:
         self.embodiment[actor] = body.dump()
         return True
 
-    def _body_capacity_factor(self, actor, capacity):
-        """Phase 070b: the share of a capacity ('speed', 'strength' or 'stamina') a located injury leaves: the
+    def _body_capacity_factor(self, actor, capacity, action=None):
+        """Phase 070b/070c: the share of a capacity ('speed', 'strength' or 'stamina') a located injury leaves: the
         INJURY_EFFECTS weights times the ledger at each locus, floor at INJURY_EFFECTS.floor. Exactly 1.0 with an empty
-        ledger or no weight on this capacity. Reads the plain ledger; the press boost is not counted."""
+        ledger or no weight on this capacity. Reads the plain ledger; the press boost is not counted.
+
+        Phase 070c: with an `action` (an ACTION_BODY_USE key), only the regions that action uses for this capacity
+        count. With no action, every region counts (the whole-body factor, the general read). An action with no row
+        uses the 'default' row (the arm)."""
         state = getattr(self, "embodiment", {}).get(actor)
         if not state or not state.get("ledger"):
             return 1.0
-        spec = pack_tables(self.data_pack)["injury_effects"]
+        tables = pack_tables(self.data_pack)
+        spec = tables["injury_effects"]
+        row = None if action is None else action_row(tables, action)
         total = 0.0
         for locus, value in state["ledger"].items():
+            if row is not None and capacity not in (row.get(locus) or []):
+                continue
             weight = (spec["weights"].get(locus) or {}).get(capacity)
             if weight:
                 total += float(weight) * float(value)
         if total <= 0.0:
             return 1.0
         return round(max(float(spec["floor"]), 1.0 - total), 6)
+
+    def _speed_of(self, actor, action=None):
+        """Phase 070c: the exhaustion speed (unrounded) times the located speed factor for an action (1.0 with no
+        action, which is the whole-body read; the leg factor for walking and contests)."""
+        return float(self._exhaustion_band(actor)["speed"]) * self._body_capacity_factor(actor, "speed", action)
+
+    def _recipe_body_use(self, recipe):
+        """Phase 070c: the ACTION_BODY_USE key of a recipe's work (RECIPE_BODY_USE, else 'work')."""
+        return recipe_action(pack_tables(self.data_pack), recipe)
 
     def _strike_locus(self, pending, choice):
         """Phase 070b: where an aimed strike lands. None for an unaimed blow (the table draws, as before). For an aimed

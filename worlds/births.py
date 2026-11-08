@@ -213,7 +213,7 @@ class BirthsMixin:
             return 1.0
         attrs = self.eng.node(self._actors[actor])["attrs"]
         stage = str(attrs.get("life_stage", "adult"))
-        if stage == "infant" and self._nursed(actor):
+        if self._life_stage_is(stage, "infant") and self._nursed(actor):
             return float(self.E.BIRTHS["nursed_hunger"])
         rate = float(self.E.LIFE_STAGES.get(stage, self.E.LIFE_STAGES["adult"])["food"])
         if float(attrs.get("pregnant", 0.0)) == 1.0:

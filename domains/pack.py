@@ -242,6 +242,7 @@ def compile_tables(base):
     Each step reads only base tables and the constants in the same dict, and each one is skipped
     when its output is already present, so compiling compiled data changes nothing."""
     t = base
+    _compile_life_stages(t)
     _compile_scraps(t)
     _compile_scrap_prices(t)
     _compile_heated_recipes(t)
@@ -249,6 +250,75 @@ def compile_tables(base):
     _compile_bundles(t)
     _compile_skill_clusters(t)
     return t
+
+
+def _compile_life_stages(t):
+    """Phase 070c: the life-stage chain, checked here. A LIFE_STAGES row may say "inherits": a parent stage.
+    LIFE_STAGE_CHAIN maps each stage to itself and its ancestors, nearest first (a cycle or an unknown parent is an
+    error). The entries a stage inherits (fill_life_stage_inheritance) are filled after compiling, in load_pack, and
+    not here: the stored tables must stay as an author wrote them, so the exporter (tools/export_pack.py) reproduces
+    the files byte for byte. Compiling compiled data changes nothing."""
+    stages = t.get("LIFE_STAGES")
+    if not isinstance(stages, dict):
+        return
+    chain = {}
+    for stage in stages:
+        seen = [stage]
+        parent = stages[stage].get("inherits")
+        while parent:
+            if parent not in stages:
+                raise ValueError(f"LIFE_STAGES[{stage}].inherits names {parent!r}, which is not a life stage")
+            if parent in seen:
+                raise ValueError(f"LIFE_STAGES inheritance has a cycle: {' -> '.join(seen + [parent])}")
+            seen.append(parent)
+            parent = stages[parent].get("inherits")
+        chain[stage] = seen
+    t["LIFE_STAGE_CHAIN"] = chain
+
+
+def fill_life_stage_inheritance(t):
+    """Phase 070c: fill, in place, what each inheriting stage does not give. Run once by load_pack after compile_tables.
+
+    The LIFE_STAGES fields other than age_min and age_max are copied from the nearest ancestor that has them. Each
+    per-stage entry of the tables listed in STAGE_KEYED.paths (a path with '*' takes each row of that level) is
+    copied from the nearest ancestor that has one. A stage that gives its own entry keeps it."""
+    stages = t.get("LIFE_STAGES")
+    chain = t.get("LIFE_STAGE_CHAIN")
+    if not isinstance(stages, dict) or chain is None:
+        return t
+    for stage, row in stages.items():
+        for ancestor in chain[stage][1:]:
+            for key, value in stages[ancestor].items():
+                if key not in row and key not in ("age_min", "age_max", "inherits"):
+                    row[key] = copy.deepcopy(value)
+    for path in (t.get("STAGE_KEYED") or {}).get("paths", []):
+        for table in stage_dicts(t, str(path)):
+            for stage in stages:
+                if stage in table:
+                    continue
+                for ancestor in chain[stage][1:]:
+                    if ancestor in table:
+                        table[stage] = copy.deepcopy(table[ancestor])
+                        break
+    return t
+
+
+def stage_dicts(t, path):
+    """The dicts a dotted STAGE_KEYED path names: 'TABLE.key.key', where '*' takes every dict row at that level."""
+    parts = path.split(".")
+    nodes = [t.get(parts[0])]
+    for part in parts[1:]:
+        following = []
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            if part == "*":
+                following.extend(value for name, value in node.items()
+                                 if not str(name).startswith("_") and isinstance(value, dict))
+            elif isinstance(node.get(part), dict):
+                following.append(node[part])
+        nodes = following
+    return [node for node in nodes if isinstance(node, dict)]
 
 
 def _compile_scraps(t):
@@ -330,7 +400,7 @@ def load_pack(name_or_path, packs_root=None):
         return _CACHE[pack_dir]
     manifest, _, base, _docs = read_base(name_or_path, packs_root)
     stored = set(base)
-    compiled = compile_tables(copy.deepcopy(base))
+    compiled = fill_life_stage_inheritance(compile_tables(copy.deepcopy(base)))
     derived = [n for n in compiled if n not in stored]
     pack = Pack(manifest["name"], pack_dir, manifest.get("description", ""), manifest.get("extends"),
                 compiled, derived, base)

@@ -485,6 +485,7 @@
         "self": {
           "infant": "a baby",
           "child": "a child",
+          "preschooler": "a young child",
           "youth": "a young person",
           "adult": "an adult",
           "elder": "an elder",
@@ -493,6 +494,7 @@
         "other": {
           "infant": "a baby",
           "child": "a child",
+          "preschooler": "a young child",
           "youth": "a young person",
           "adult": "an adult",
           "elder": "an elder",

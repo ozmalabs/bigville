@@ -1154,7 +1154,12 @@
             "phrase": "a baby"
           },
           {
-            "min": 4.0,
+            "min": 3.0,
+            "label": "preschooler",
+            "phrase": "a young child"
+          },
+          {
+            "min": 6.0,
             "label": "child",
             "phrase": "a child"
           },
@@ -1181,7 +1186,12 @@
             "phrase": "a baby"
           },
           {
-            "min": 4.0,
+            "min": 3.0,
+            "label": "preschooler",
+            "phrase": "a young child"
+          },
+          {
+            "min": 6.0,
             "label": "child",
             "phrase": "a child"
           },
@@ -1210,6 +1220,7 @@
         "self": {
           "infant": "a baby",
           "child": "a child",
+          "preschooler": "a young child",
           "youth": "a young person",
           "adult": "an adult",
           "elder": "an elder",
@@ -1218,6 +1229,7 @@
         "other": {
           "infant": "a baby",
           "child": "a child",
+          "preschooler": "a young child",
           "youth": "a young person",
           "adult": "an adult",
           "elder": "an elder",

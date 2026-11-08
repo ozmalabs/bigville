@@ -1,0 +1,85 @@
+ M README.md
+ M bigville/backends/llm.py
+ M bigville/backends/ocelot.py
+ M bigville/backends/prompt_packet.py
+ M bigville/backends/protocol.py
+ M bigville/backends/reply_schema.py
+ M bigville/backends/speech_in.py
+ M bigville/game.py
+ M bigville/game/game.js
+ M bigville/reporting.py
+ M bigville/resident_dependants.py
+ M bigville/seeds/bigville_actor_decision.json
+ M bigville/server.py
+ M bigville/tui/app.py
+ M bigville/tui/client.py
+ M bigville/tui/commands.py
+ M bigville/tui/narrate.py
+ M bigville/tui/render.py
+ M docs/AGENT_BACKENDS_PLAN.md
+ M docs/phases/phase045/rebase/run_all.sh
+ M docs/phases/phase046/run_all.sh
+ M domains/agent_view.py
+ M domains/bigville_entities.py
+ D domains/detraining.py
+ D domains/detraining_check.py
+ M domains/interoception_check.py
+ M domains/narration_check.py
+ M domains/pack.py
+ M domains/prompt_packet_check.py
+ M domains/reading.py
+ M domains/world_affordances.py
+ M packs/bigville/pack.json
+ D packs/bigville/world/detraining.json
+ M packs/bigville/world/free_actions.json
+ M packs/bigville/world/interoception.json
+ M packs/bigville/world/lexicon.json
+ M packs/bigville/world/life_stages.json
+ M packs/bigville/world/llm_instructions.json
+ M packs/bigville/world/narration.json
+ M packs/bigville/world/prompt_packet.json
+ M packs/bigville/world/tui_modes.json
+ M packs/test_hamlet/pack.json
+ D packs/test_hamlet/world/detraining.json
+ M packs/test_hamlet/world/free_actions.json
+ M packs/test_hamlet/world/interoception.json
+ M packs/test_hamlet/world/lexicon.json
+ M packs/test_hamlet/world/life_stages.json
+ M packs/test_hamlet/world/llm_instructions.json
+ M packs/test_hamlet/world/narration.json
+ M packs/test_hamlet/world/prompt_packet.json
+ M packs/test_hamlet/world/tui_modes.json
+ M tests/test_bigville_backends.py
+ M tests/test_bigville_game_api.py
+ M tests/test_bigville_scenarios.py
+ M tests/test_bigville_server.py
+ M tests/test_phase045_dependants.py
+ D tests/test_phase046_detraining.py
+ M tests/test_phase054_llm_prompt.py
+ M worlds/bigville_world.py
+ M worlds/births.py
+ M worlds/body.py
+ M worlds/dependants.py
+ D worlds/detraining.py
+?? .opencode/
+?? bigville/free_replies.py
+?? bigville/mixed_ocelot_scenario.py
+?? docs/MIXED_OCELOT_VILLAGE_RUN_20261105.md
+?? docs/ocelot-integration-baseline.md
+?? docs/phases/phase052/full_suite_live_tree_midedit.log
+?? docs/phases/phase065c/
+?? docs/phases/phase070c/
+?? docs/phases/phase071c/
+?? domains/lazy_perception.py
+?? domains/life_stage_check.py
+?? tests/test_bigville_ocelot_communication.py
+?? tests/test_bigville_ocelot_fresh_process.py
+?? tests/test_mixed_ocelot_checkpoint_parity.py
+?? tests/test_mixed_ocelot_village.py
+?? tests/test_phase065c_llm_perception.py
+?? tests/test_phase070c_body.py
+?? tests/test_phase070c_stages.py
+?? tests/test_phase071c_free_actions.py
+?? tests/test_phase071c_terminal.py
+?? tools/run_mixed_ocelot_scale.py
+?? tools/run_mixed_ocelot_village.py

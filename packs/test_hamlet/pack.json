@@ -19,6 +19,8 @@
     {"name": "ATTEND", "file": "world/interoception.json"},
     {"name": "STRIKE_AIM", "file": "world/interoception.json"},
     {"name": "INJURY_EFFECTS", "file": "world/interoception.json"},
+    {"name": "ACTION_BODY_USE", "file": "world/interoception.json"},
+    {"name": "RECIPE_BODY_USE", "file": "world/interoception.json"},
     {
       "name": "ITEMS",
       "file": "world/items.json"
@@ -329,6 +331,10 @@
     },
     {
       "name": "LIFE_STAGES",
+      "file": "world/life_stages.json"
+    },
+    {
+      "name": "STAGE_KEYED",
       "file": "world/life_stages.json"
     },
     {

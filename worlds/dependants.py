@@ -38,8 +38,17 @@ class DependantsMixin:
     def _life_stage(self, actor):
         return str(self.eng.node(self._actors[actor])["attrs"].get("life_stage", "adult"))
 
+    def _stage_chain(self, stage):
+        """Phase 070c: a life stage with its ancestors (LIFE_STAGE_CHAIN), nearest first. A stage that inherits from
+        another has every value and every membership of its parent, so a comparison by name reads this chain."""
+        return list(self.E.LIFE_STAGE_CHAIN.get(str(stage), [str(stage)]))
+
+    def _life_stage_is(self, stage, name):
+        """Phase 070c: whether a life stage is `name` or inherits from it (a preschooler is a child)."""
+        return str(name) in self._stage_chain(stage)
+
     def _is_dependant(self, actor):
-        return self._life_stage(actor) in self._dependant_stages()
+        return any(stage in self._dependant_stages() for stage in self._stage_chain(self._life_stage(actor)))
 
     def _age_stage(self, age):
         """The life stage an age gives. With the dependants switch off: the whole-year bands as HEAD reads them, so
@@ -60,16 +69,15 @@ class DependantsMixin:
         """The refusal reason for a major action by this resident, or None. An infant is refused them all."""
         if not self._dependants_on() or not isinstance(actor, str) or actor not in self._actors:
             return None
-        return "infant" if self._life_stage(actor) == "infant" else None
+        return "infant" if self._life_stage_is(self._life_stage(actor), "infant") else None
 
     def _dependant_work_factor(self, actor):
         """The share of an adult's force and stamina a dependant brings: its life stage's work_fraction."""
         if not self._dependants_on() or actor not in self._actors:
             return 1.0
-        stage = self._life_stage(actor)
-        if stage not in self._dependant_stages():
+        if not self._is_dependant(actor):
             return 1.0
-        return float(self.E.LIFE_STAGES[stage]["work_fraction"])
+        return float(self.E.LIFE_STAGES[self._life_stage(actor)]["work_fraction"])
 
     def _growth_base(self, age, key):
         """A body base (str_base or sta_base) at `age`: the adult default times the growth fraction."""

@@ -119,10 +119,11 @@ def test_an_infant_is_refused_every_major_action_with_the_reason_infant(monkeypa
 
 def test_an_age_in_the_gap_between_two_bands_is_the_band_below_only_with_the_switch_on(monkeypatch):
     w, home, far = _village(monkeypatch, on=False)
-    assert w._age_stage(3.5) == "elder"                    # HEAD's whole-year rule, switch off
+    assert w._age_stage(2.5) == "elder"                    # HEAD's whole-year rule, switch off (Phase 070c: 2.5 is the gap)
     monkeypatch.setitem(w.E.DEPENDANTS, "enabled", True)
-    assert w._age_stage(3.5) == "infant"
-    assert w._age_stage(3.0) == "infant"
+    assert w._age_stage(2.5) == "infant"
+    assert w._age_stage(3.5) == "preschooler"              # Phase 070c: the preschooler band starts at 3 (was infant)
+    assert w._age_stage(3.0) == "preschooler"              # Phase 070c (was infant)
     assert w._age_stage(12.5) == "child"
     assert w._age_stage(17.5) == "youth"
     assert w._age_stage(18.0) == "adult"
@@ -135,8 +136,8 @@ def test_a_child_aged_three_and_a_half_is_not_treated_as_an_elder_at_the_dawn_ti
     _dependant(w, "Baby", home, "infant", 3.5)
     w.eng.set_attr(w._town, "day", float(int(float(w.calendar()["day"])) + 1))
     w._daily_life_tick()
-    assert _attrs(w, "Baby")["life_stage"] == "infant"
-    assert w._is_dependant("Baby")
+    assert _attrs(w, "Baby")["life_stage"] == "preschooler"   # Phase 070c: 3.5 is in the preschool band (was infant)
+    assert w._is_dependant("Baby")                              # a preschooler is a dependant (it inherits child)
     assert w.health("Baby") == pytest.approx(1.0)
 
 

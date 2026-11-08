@@ -22,7 +22,7 @@ def promote_grown_dependants(game) -> list[str]:
     for name, backend in list(game.backends.items()):
         if not isinstance(backend, DependentBackend) or name not in world._actors or name not in game.characters:
             continue
-        if not world.is_alive(name) or world._life_stage(name) == "infant":
+        if not world.is_alive(name) or world._life_stage_is(world._life_stage(name), "infant"):
             continue
         profile = getattr(world, "_scenario_simple_profiles", {}).get(name, "default")
         game.set_backend(name, CheapBackend(game.characters[name], policy=simple_policy_for(profile)))

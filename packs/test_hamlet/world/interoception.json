@@ -474,7 +474,7 @@
       "neglect": {}
     },
     "BODY_RATES": {
-      "_doc": "BODY_RATES (Phase 070): the rates of the body's own state, all APPROX. located_heal_per_tick: a located injury's ledger falls by this much each clock tick (96 ticks a day, TIME), at the time-healing rate; the health scalar's own recovery is unchanged. care_share: the share of each health gain (rest, care, treatment) that also lowers the located ledger. habituation_rate and habituation_recover: a steady signal's felt intensity falls by habituation_rate of the remainder each tick and recovers by habituation_recover of the missing part when the stimulus stops; a rise larger than INTEROCEPTION.trend_delta resets it (noticed at full strength), a steady stimulus habituates, and a stimulus that stops or eases recovers at habituation_recover. incubation_days: an illness's felt intensity ramps up over this many days since onset. sleep_need_hours (Phase 070b): the hours of sleep a day each life stage needs, the lower end of the National Sleep Foundation's recommended range. Sources: Hirshkowitz M, Whiton K, Albert SM, et al. National Sleep Foundation's sleep time duration recommendations: methodology and results summary. Sleep Health 2015;1(1):40-43, doi:10.1016/j.sleh.2015.01.010; and the final report, Sleep Health 2015;1(4):233-243, doi:10.1016/j.sleh.2015.10.004. Recommended ranges: newborns 14-17 h, infants 12-15 h, toddlers 11-14 h, preschoolers 10-13 h, school-aged children 9-11 h, teenagers 8-10 h, young adults and adults 7-9 h, older adults 7-8 h. Mapping to LIFE_STAGES (APPROX): infant = the infant range (12); child = school-aged (9; LIFE_STAGES does not split the preschool years, whose range is 10-13 h); youth = teenagers (8); adult = young adults and adults (7); elder = older adults (7). sleep_debt (the body's chronic short-sleep store) is in hours of missing sleep. Each awake tick adds tick_hours x need / 24 and each asleep tick takes off tick_hours x (24 - need) / 24, floored at 0, with tick_hours from TIME. So sleeping exactly need hours a day holds the debt level, and a day with no sleep adds one night's need. sleep_debt_read_nights: the read is debt / (2 x need), capped at 1, so two nights' sleep lost reads as full. The two-night scale is APPROX, after Van Dongen HPA, Maislin G, Mullington JM, Dinges DF. The cumulative cost of additional wakefulness. Sleep 2003;26(2):117-126: 6 h a night for 14 days gave cumulative cognitive deficits reaching those of up to two nights of total sleep deprivation.",
+      "_doc": "BODY_RATES (Phase 070): the rates of the body's own state, all APPROX. located_heal_per_tick: a located injury's ledger falls by this much each clock tick (96 ticks a day, TIME), at the time-healing rate; the health scalar's own recovery is unchanged. care_share: the share of each health gain (rest, care, treatment) that also lowers the located ledger. habituation_rate and habituation_recover: a steady signal's felt intensity falls by habituation_rate of the remainder each tick and recovers by habituation_recover of the missing part when the stimulus stops; a rise larger than INTEROCEPTION.trend_delta resets it (noticed at full strength), a steady stimulus habituates, and a stimulus that stops or eases recovers at habituation_recover. incubation_days: an illness's felt intensity ramps up over this many days since onset. sleep_need_hours (Phase 070b): the hours of sleep a day each life stage needs, the lower end of the National Sleep Foundation's recommended range. Sources: Hirshkowitz M, Whiton K, Albert SM, et al. National Sleep Foundation's sleep time duration recommendations: methodology and results summary. Sleep Health 2015;1(1):40-43, doi:10.1016/j.sleh.2015.01.010; and the final report, Sleep Health 2015;1(4):233-243, doi:10.1016/j.sleh.2015.10.004. Recommended ranges: newborns 14-17 h, infants 12-15 h, toddlers 11-14 h, preschoolers 10-13 h, school-aged children 9-11 h, teenagers 8-10 h, young adults and adults 7-9 h, older adults 7-8 h. Mapping to LIFE_STAGES (APPROX): infant = the infant range (12); preschooler = the preschool range, its low end (10; Phase 070c adds the stage, which overlays only this need); child = school-aged (9); youth = teenagers (8); adult = young adults and adults (7); elder = older adults (7). sleep_debt (the body's chronic short-sleep store) is in hours of missing sleep. Each awake tick adds tick_hours x need / 24 and each asleep tick takes off tick_hours x (24 - need) / 24, floored at 0, with tick_hours from TIME. So sleeping exactly need hours a day holds the debt level, and a day with no sleep adds one night's need. sleep_debt_read_nights: the read is debt / (2 x need), capped at 1, so two nights' sleep lost reads as full. The two-night scale is APPROX, after Van Dongen HPA, Maislin G, Mullington JM, Dinges DF. The cumulative cost of additional wakefulness. Sleep 2003;26(2):117-126: 6 h a night for 14 days gave cumulative cognitive deficits reaching those of up to two nights of total sleep deprivation.",
       "located_heal_per_tick": 0.0005,
       "care_share": 0.5,
       "habituation_rate": 0.05,
@@ -482,6 +482,7 @@
       "incubation_days": 5.0,
       "sleep_need_hours": {
         "infant": 12,
+        "preschooler": 10,
         "child": 9,
         "youth": 8,
         "adult": 7,
@@ -602,11 +603,12 @@
       "brace_factor": 0.6
     },
     "INJURY_EFFECTS": {
-      "_doc": "INJURY_EFFECTS (Phase 070b): how a located injury lowers the capacities the physics uses. For each locus with a row, the body's ledger value at that locus (the harm taken there, healing at BODY_RATES.located_heal_per_tick) times the weight lowers each named capacity by that share: factor = max(floor, 1 - sum over loci of weight x ledger). speed lowers walking (the interval of each step); strength lowers effective strength (work, carrying, the contest's force and blows); stamina lowers effective stamina. A capacity with no row, and an empty ledger, give 1.0 exactly. The weights are APPROX: a leg is the walking limb, an arm the striking and carrying limb, the back and chest carry the body's load, and a head blow lowers strength and stamina a little. Scalar health is not changed by this table.",
+      "_doc": "INJURY_EFFECTS (Phase 070b): how a located injury lowers the capacities the physics uses. For each locus with a row, the body's ledger value at that locus (the harm taken there, healing at BODY_RATES.located_heal_per_tick) times the weight lowers each named capacity by that share: factor = max(floor, 1 - sum over loci of weight x ledger). speed lowers walking (the interval of each step); strength lowers effective strength (work, carrying, the contest's force and blows); stamina lowers effective stamina. A capacity with no row, and an empty ledger, give 1.0 exactly. Phase 070c: a leg also lowers strength (0.5, APPROX: pushing, pulling, carrying, lifting and restraining use the leg). The weights are APPROX: a leg is the walking limb, an arm the striking and carrying limb, the back and chest carry the body's load, and a head blow lowers strength and stamina a little. Scalar health is not changed by this table.",
       "floor": 0.5,
       "weights": {
         "leg": {
-          "speed": 1.0
+          "speed": 1.0,
+          "strength": 0.5
         },
         "arm": {
           "strength": 0.8
@@ -624,6 +626,181 @@
           "stamina": 0.2
         }
       }
+    },
+    "ACTION_BODY_USE": {
+      "_doc": "ACTION_BODY_USE (Phase 070c): which body regions an action uses, and for which capacity. Keyed by the action (a major action or an attempt verb; walk is the world's move, carry the joint carry and lift, dig the dig recipes, strike the blows, contest a grip or a take, and default any other verb). Each row maps an ANATOMY node to the capacities the action draws on there ('strength', 'stamina' or 'speed'). The factor for an action and a capacity is max(INJURY_EFFECTS.floor, 1 - the sum of INJURY_EFFECTS weight x ledger over the regions that name the capacity), so a leg injury lowers a push's strength but not a chop's, and an arm injury lowers a chop but not a walk. An empty row (speech, sleep, rest, eat, drink) uses no body region. The regions and weights are APPROX design choices (see INJURY_EFFECTS). There is no kick, climb or ploughing action in the pack, so no row exists for them. Stamina is read where an action's effort is spent (the Effort node's body_use), not for the action's start.",
+      "walk": {
+        "leg": [
+          "speed"
+        ]
+      },
+      "carry": {
+        "arm": [
+          "strength"
+        ],
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength"
+        ]
+      },
+      "lift": {
+        "arm": [
+          "strength"
+        ],
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength"
+        ]
+      },
+      "work": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "dig": {
+        "arm": [
+          "strength"
+        ],
+        "back": [
+          "strength",
+          "stamina"
+        ]
+      },
+      "throw": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "strike": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "hit": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "smash": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "cut": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "chop": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "saw": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "open": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "pry": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "force": {
+        "arm": [
+          "strength"
+        ]
+      },
+      "push": {
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength"
+        ]
+      },
+      "pull": {
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength"
+        ]
+      },
+      "drag": {
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength"
+        ]
+      },
+      "restrain": {
+        "arm": [
+          "strength"
+        ],
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength"
+        ]
+      },
+      "struggle": {
+        "arm": [
+          "strength"
+        ],
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength"
+        ]
+      },
+      "contest": {
+        "arm": [
+          "strength"
+        ],
+        "back": [
+          "strength",
+          "stamina"
+        ],
+        "leg": [
+          "strength",
+          "speed"
+        ]
+      },
+      "speak": {},
+      "sleep": {},
+      "rest": {},
+      "eat": {},
+      "drink": {},
+      "default": {
+        "arm": [
+          "strength"
+        ]
+      }
+    },
+    "RECIPE_BODY_USE": {
+      "_doc": "RECIPE_BODY_USE (Phase 070c): the ACTION_BODY_USE key a recipe's work uses. A recipe not named here uses 'work' (the arm, by default). Only the two digging recipes are named: digging uses the back as well as the arm. Ploughing is forging a plough (forge_plough), which uses the arm like other forging. APPROX design choice.",
+      "dig_ore": "dig",
+      "dig_grave": "dig"
     }
   }
 }
