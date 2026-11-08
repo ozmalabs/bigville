@@ -1267,6 +1267,68 @@ def _check_births(errors, warnings, info):
         info.append(f"BIRTHS: a union woman aged {age} has {per_year:.3f} births a year on average (table)")
 
 
+def _check_dependants(errors, warnings, info):
+    """Phase 045: the DEPENDANTS table. Dependant stages are life stages below the adult age and include the
+    infant (the refusal applies to it); each has a whole-day neglect span; the neglect cause is a HEALTH cause
+    with a MARK_HARM row; 'infant' is a refusal reason; the growth fractions and work factors are in range.
+    Reports the growth curve and the switch state."""
+    from domains.dependants import growth_fraction as _growth_fraction
+    d = DEPENDANTS
+    stages = list(d["stages"])
+    adult = LIFE_STAGES["adult"]
+    if not stages or len(set(stages)) != len(stages):
+        errors.append(f"DEPENDANTS[stages]: a non-empty list of unique stages, not {stages!r}")
+    for stage in stages:
+        if stage not in LIFE_STAGES:
+            errors.append(f"DEPENDANTS[stages]: {stage!r} is not a LIFE_STAGES key")
+            continue
+        if float(LIFE_STAGES[stage]["age_max"]) >= float(adult["age_min"]):
+            errors.append(f"DEPENDANTS[stages]: {stage!r} reaches the adult age ({adult['age_min']})")
+        if not 0.0 <= float(LIFE_STAGES[stage]["care"]) <= 1.0 or not 0.0 <= float(LIFE_STAGES[stage]["work_fraction"]) <= 1.0:
+            errors.append(f"DEPENDANTS[stages]: {stage!r} needs care and work_fraction in [0, 1]")
+    if "infant" not in stages:
+        errors.append("DEPENDANTS[stages]: 'infant' must be a dependant stage (the major-action refusal applies to it)")
+    if not isinstance(d["enabled"], bool):
+        errors.append(f"DEPENDANTS[enabled]: a boolean, not {d['enabled']!r}")
+    spans = d["neglect_after_days"]
+    if set(spans) != set(stages):
+        errors.append(f"DEPENDANTS[neglect_after_days]: one span per dependant stage, not {sorted(spans)}")
+    for stage, days in spans.items():
+        if isinstance(days, bool) or not isinstance(days, int) or days < 0:
+            errors.append(f"DEPENDANTS[neglect_after_days][{stage}]: a whole number of days >= 0, not {days!r}")
+    if float(d["neglect_harm"]) < 0.0:
+        errors.append(f"DEPENDANTS[neglect_harm]: must not be negative, not {d['neglect_harm']!r}")
+    reach = d["reach_cells"]
+    if isinstance(reach, bool) or not isinstance(reach, int) or reach < 0:
+        errors.append(f"DEPENDANTS[reach_cells]: a whole number of cells >= 0, not {reach!r}")
+    if float(d["caregiver_max_hunger"]) < 0.0:
+        errors.append(f"DEPENDANTS[caregiver_max_hunger]: must not be negative, not {d['caregiver_max_hunger']!r}")
+    growth = d["growth"]
+    for key in ("strength_start", "stamina_start"):
+        if not 0.0 < float(growth[key]) <= 1.0:
+            errors.append(f"DEPENDANTS[growth][{key}]: in (0, 1], not {growth[key]!r}")
+    if float(growth["exponent"]) <= 0.0:
+        errors.append(f"DEPENDANTS[growth][exponent]: must be positive, not {growth['exponent']!r}")
+    if "neglect" not in HEALTH["causes"]:
+        errors.append("DEPENDANTS: 'neglect' is not a HEALTH cause")
+    if "neglect" not in MARK_HARM:
+        errors.append("DEPENDANTS: 'neglect' has no MARK_HARM row")
+    if "infant" not in REFUSAL_REASONS:
+        errors.append("DEPENDANTS: 'infant' is not a REFUSAL_REASONS code")
+    adult_age = float(adult["age_min"])
+    bands = sorted(LIFE_STAGES.values(), key=lambda s: float(s["age_min"]))
+    gaps = [f"{float(a['age_max']):g} to {float(b['age_min']):g}" for a, b in zip(bands, bands[1:])
+            if float(b["age_min"]) > float(a["age_max"])]
+    info.append(f"DEPENDANTS: the LIFE_STAGES bands leave gaps ({', '.join(gaps) or 'none'}); an age in a gap reads as "
+                "elder with the switch off (HEAD) and as the band below it with the switch on")
+    state = "on" if d["enabled"] else "off"
+    for age in (0, 4, 12, 18):
+        strength = _growth_fraction(age, float(growth["strength_start"]), adult_age, float(growth["exponent"]))
+        stamina = _growth_fraction(age, float(growth["stamina_start"]), adult_age, float(growth["exponent"]))
+        info.append(f"DEPENDANTS: at age {age} strength is {strength:.3f} and stamina {stamina:.3f} of the adult "
+                    f"base (switch {state})")
+
+
 def _check_contest(errors, warnings, info):
     """Phase 029: the CONTEST table (a contested take: force, cost, margins, reactions) and the SIZE table it
     draws body size from. Fractions stay in range, the margins and reaction bands keep their order, and the
@@ -2312,6 +2374,7 @@ def check_consistency():
     _check_aftereffects(errors, warnings, info)
     _check_illness(errors, warnings, info)
     _check_births(errors, warnings, info)   # Phase 044: pregnancy and birth (BIRTHS)
+    _check_dependants(errors, warnings, info)   # Phase 045: infants, dependants and growth (DEPENDANTS)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)
     _check_joint_tasks(errors, warnings, info)

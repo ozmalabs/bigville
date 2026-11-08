@@ -13,7 +13,8 @@
         "violence",
         "intoxication",
         "accident",
-        "childbirth"
+        "childbirth",
+        "neglect"
       ],
       "age_rate": {
         "infant": 0.0,

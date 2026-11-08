@@ -26,6 +26,7 @@ from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 from domains.world_affordances import round_bp  # noqa: E402
 from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps
 from worlds.births import BirthsMixin  # noqa: E402  Phase 044: pregnancy and birth (the births switch)
+from worlds.dependants import DependantsMixin  # noqa: E402  Phase 045: infants, dependants (the dependants switch)
 
 # Phase 048: the default for a job's or an attempt's tool: the right one the worker has, else bare hands.
 _DEFAULT_TOOL = object()
@@ -307,7 +308,7 @@ class _HandoverCount:
         return self._count
 
 
-class BigvilleWorld(BirthsMixin, BodyMixin):
+class BigvilleWorld(BirthsMixin, DependantsMixin, BodyMixin):
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
         "ecology": True,
@@ -7873,12 +7874,12 @@ class BigvilleWorld(BirthsMixin, BodyMixin):
             # diagnosis above may have just set it.
             if self._illness_on() and not self.eng.node(node)["attrs"].get("disease"):
                 self._illness_onset(name, str(a.get("life_stage", "adult")))
-            age_stage = next((stage for stage, spec in self.E.LIFE_STAGES.items()
-                              if float(spec["age_min"]) <= age <= float(spec["age_max"])), "elder")
+            age_stage = self._age_stage(age)   # Phase 045: gap ages belong to the band below when the dependants switch is on
             if age_stage != a.get("life_stage"):
                 self.eng.set_attr(node, "life_stage", age_stage)
         # Phase 044: pregnancy, delivery and birth (a no-op with the births switch off).
         self._births_day()
+        self._dependants_day()   # Phase 045: growth, care and neglect of dependants (a no-op with the switch off)
 
     def add_waste(self, kind="kitchen_scraps", amount=1.0):
         cycle = self.E.WASTE_CYCLES[kind]
@@ -8428,7 +8429,7 @@ class BigvilleWorld(BirthsMixin, BodyMixin):
     def actor_affordances(self, actor):
         """Return the current legal, observed choices for a backend or UI."""
         self._actor(actor)
-        return [dict(option) for option in self._actor_options(actor)] + _dn.lamp_options(self, actor)   # Phase 042
+        return [dict(option) for option in self._actor_options(actor)] + _dn.lamp_options(self, actor) + self._dependant_options(actor)   # Phase 042, 045
 
     def perform_plan(self, actor):
         """Enact the action selected by the resident's Ocelot graph."""
@@ -9022,7 +9023,7 @@ class BigvilleWorld(BirthsMixin, BodyMixin):
         try:
             gated = isinstance(action, str) and action in self.E.MAJOR_ACTIONS
             sleep_code = (self._sleep_code(actor)
-                          or self._attending_refusal(actor, action)) if gated else None   # Phase 071: attending
+                          or self._attending_refusal(actor, action) or self._dependant_refusal(actor)) if gated else None   # Phase 071: attending; Phase 045: infants
             if sleep_code is not None:
                 applied = False
                 self._refusal_code = sleep_code
@@ -9334,6 +9335,8 @@ class BigvilleWorld(BirthsMixin, BodyMixin):
                 return self._refuse("unknown_target")
             # Phase 043: a medical act (checkup, treat, well_baby) is the care action with a care_kind.
             care_kind = kwargs.get("care_kind")
+            if care_kind == "feed":   # Phase 045: a caregiver feeds a dependant from its own food
+                return self._claimed_attempt(actor, "care", lambda: self.feed_dependant(actor, patient))
             if care_kind is not None:
                 medical = {"checkup": self.checkup, "treat": self.treat_patient,
                            "well_baby": self.well_baby_visit}.get(str(care_kind))
@@ -11127,7 +11130,7 @@ class BigvilleWorld(BirthsMixin, BodyMixin):
 
     def _effective_body_stat(self, actor, base_key, train_key):
         ba = self.eng.node(self._bodies[actor])["attrs"]
-        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor)) * self._capacity_factor(actor)
+        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor)) * self._capacity_factor(actor) * self._dependant_work_factor(actor)
 
     def _train_from_effort(self, body, event):
         """Apply the training rules to one resolved Effort: each stat the effort uses gains train_gain once,
@@ -12595,7 +12598,9 @@ class BigvilleWorld(BirthsMixin, BodyMixin):
                 # Phase 036 read-offs (tolerance, craving, dependent, hangover_ticks, withdrawal, mood); empty when off.
                 **self.aftereffects(actor),
                 # Phase 044 read-offs: pregnant, term_fraction and nursed; empty when the births switch is off.
-                **self._birth_readoffs(actor)}
+                **self._birth_readoffs(actor),
+                # Phase 045 read-offs: dependant and care_received; empty when the dependants switch is off.
+                **self._dependant_readoffs(actor)}
 
     def stamina(self, actor): return self.body_state(actor)["stamina"]
     def stamina_reserve(self, actor): return self.body_state(actor)["stamina_reserve"]

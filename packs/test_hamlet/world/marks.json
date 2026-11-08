@@ -18,7 +18,8 @@
       "violence": {},
       "intoxication": {},
       "accident": {},
-      "childbirth": {}
+      "childbirth": {},
+      "neglect": {}
     },
     "MARK_EVENTS": {}
   }

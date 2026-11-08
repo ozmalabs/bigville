@@ -131,7 +131,8 @@
         "injury": 1.0,
         "dirt": 1.0
       },
-      "childbirth": {}
+      "childbirth": {},
+      "neglect": {}
     },
     "MARK_EVENTS": {
       "butcher": {

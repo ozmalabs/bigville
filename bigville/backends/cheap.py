@@ -7,6 +7,7 @@ from typing import Callable
 from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
 from .lamplighter import lamplighter_choice  # Phase 042: the lamplighter's round
+from .dependants_policy import dependant_choice  # Phase 045: a caregiver feeds or walks to a dependant
 from .psi_can import CANWeightModel
 from . import speech_in as _speech_in   # Phase 060: what a simple resident makes of what it hears
 from domains.persona import simple_band   # Phase 058: the hour bands are the pack's ROUTINE_BANDS
@@ -180,6 +181,11 @@ class DeterministicBackend:
 
     def decide(self, context: ActorContext) -> ActorResponse:
         self._update_goals(context)
+        dependant = dependant_choice(context)   # Phase 045: a caregiver feeds or walks to a dependant (none when off)
+        if dependant is not None:
+            action, params, reason = dependant
+            self.last_choice = {"action": action, "goal": "dependant", "time_band": self.time_band, "reason": reason}
+            return ActorResponse(major_action=ProposedAction(action, params, "cheap_psi_can"))
         lamp = lamplighter_choice(context)   # Phase 042: a lamplighter's round (offered to a lamplighter only)
         if lamp is not None:
             action, params, continuation = lamp

@@ -1,0 +1,158 @@
+[
+  {
+    "file": "packs/bigville/pack.json",
+    "old": "    {\"name\": \"BIRTHS\", \"file\": \"world/births.json\"}\n  ]",
+    "new": "    {\"name\": \"BIRTHS\", \"file\": \"world/births.json\"},\n    {\"name\": \"DEPENDANTS\", \"file\": \"world/dependants.json\"}\n  ]",
+    "note": "manifest: DEPENDANTS after BIRTHS (last entry at f49a2f8 + 044)"
+  },
+  {
+    "file": "packs/test_hamlet/pack.json",
+    "old": "    {\"name\": \"BIRTHS\", \"file\": \"world/births.json\"}\n  ]",
+    "new": "    {\"name\": \"BIRTHS\", \"file\": \"world/births.json\"},\n    {\"name\": \"DEPENDANTS\", \"file\": \"world/dependants.json\"}\n  ]",
+    "note": "manifest: DEPENDANTS after BIRTHS (last entry at f49a2f8 + 044)"
+  },
+  {
+    "file": "packs/bigville/world/health.json",
+    "old": "        \"childbirth\"\n",
+    "new": "        \"childbirth\",\n        \"neglect\"\n",
+    "note": "HEALTH.causes: neglect"
+  },
+  {
+    "file": "packs/test_hamlet/world/health.json",
+    "old": "        \"childbirth\"\n",
+    "new": "        \"childbirth\",\n        \"neglect\"\n",
+    "note": "HEALTH.causes: neglect"
+  },
+  {
+    "file": "packs/bigville/world/marks.json",
+    "old": "      \"childbirth\": {}\n",
+    "new": "      \"childbirth\": {},\n      \"neglect\": {}\n",
+    "note": "MARK_HARM: neglect row"
+  },
+  {
+    "file": "packs/test_hamlet/world/marks.json",
+    "old": "      \"childbirth\": {}\n",
+    "new": "      \"childbirth\": {},\n      \"neglect\": {}\n",
+    "note": "MARK_HARM: neglect row"
+  },
+  {
+    "file": "packs/test_hamlet/world/refusal_reasons.json",
+    "old": "      \"destroyed\": {\n",
+    "new": "      \"infant\": {\n        \"description\": \"You are an infant: you cannot act for yourself. Others must tend you, and you cannot walk, work, take or eat on your own.\"\n      },\n      \"destroyed\": {\n",
+    "note": "REFUSAL_REASONS: infant (test_hamlet has its own table)"
+  },
+  {
+    "file": "packs/bigville/world/refusal_reasons.json",
+    "old": "      \"destroyed\": {\n",
+    "new": "      \"infant\": {\n        \"description\": \"You are an infant: you cannot act for yourself. Others must tend you, and you cannot walk, work, take or eat on your own.\"\n      },\n      \"destroyed\": {\n",
+    "note": "REFUSAL_REASONS: infant"
+  },
+  {
+    "file": "domains/world_affordances.py",
+    "old": "BIRTHS = _PACK[\"BIRTHS\"]\n",
+    "new": "BIRTHS = _PACK[\"BIRTHS\"]\n# Phase 045: infants, dependants and coming of age (DEPENDANTS: stages, neglect, growth; enabled is off). APPROX.\nDEPENDANTS = _PACK[\"DEPENDANTS\"]\n",
+    "note": "DEPENDANTS table import"
+  },
+  {
+    "file": "domains/bigville_entities.py",
+    "old": "def _check_contest(errors, warnings, info):\n",
+    "new": "def _check_dependants(errors, warnings, info):\n    \"\"\"Phase 045: the DEPENDANTS table. Dependant stages are life stages below the adult age and include the\n    infant (the refusal applies to it); each has a whole-day neglect span; the neglect cause is a HEALTH cause\n    with a MARK_HARM row; 'infant' is a refusal reason; the growth fractions and work factors are in range.\n    Reports the growth curve and the switch state.\"\"\"\n    from domains.dependants import growth_fraction as _growth_fraction\n    d = DEPENDANTS\n    stages = list(d[\"stages\"])\n    adult = LIFE_STAGES[\"adult\"]\n    if not stages or len(set(stages)) != len(stages):\n        errors.append(f\"DEPENDANTS[stages]: a non-empty list of unique stages, not {stages!r}\")\n    for stage in stages:\n        if stage not in LIFE_STAGES:\n            errors.append(f\"DEPENDANTS[stages]: {stage!r} is not a LIFE_STAGES key\")\n            continue\n        if float(LIFE_STAGES[stage][\"age_max\"]) >= float(adult[\"age_min\"]):\n            errors.append(f\"DEPENDANTS[stages]: {stage!r} reaches the adult age ({adult['age_min']})\")\n        if not 0.0 <= float(LIFE_STAGES[stage][\"care\"]) <= 1.0 or not 0.0 <= float(LIFE_STAGES[stage][\"work_fraction\"]) <= 1.0:\n            errors.append(f\"DEPENDANTS[stages]: {stage!r} needs care and work_fraction in [0, 1]\")\n    if \"infant\" not in stages:\n        errors.append(\"DEPENDANTS[stages]: 'infant' must be a dependant stage (the major-action refusal applies to it)\")\n    if not isinstance(d[\"enabled\"], bool):\n        errors.append(f\"DEPENDANTS[enabled]: a boolean, not {d['enabled']!r}\")\n    spans = d[\"neglect_after_days\"]\n    if set(spans) != set(stages):\n        errors.append(f\"DEPENDANTS[neglect_after_days]: one span per dependant stage, not {sorted(spans)}\")\n    for stage, days in spans.items():\n        if isinstance(days, bool) or not isinstance(days, int) or days < 0:\n            errors.append(f\"DEPENDANTS[neglect_after_days][{stage}]: a whole number of days >= 0, not {days!r}\")\n    if float(d[\"neglect_harm\"]) < 0.0:\n        errors.append(f\"DEPENDANTS[neglect_harm]: must not be negative, not {d['neglect_harm']!r}\")\n    reach = d[\"reach_cells\"]\n    if isinstance(reach, bool) or not isinstance(reach, int) or reach < 0:\n        errors.append(f\"DEPENDANTS[reach_cells]: a whole number of cells >= 0, not {reach!r}\")\n    if float(d[\"caregiver_max_hunger\"]) < 0.0:\n        errors.append(f\"DEPENDANTS[caregiver_max_hunger]: must not be negative, not {d['caregiver_max_hunger']!r}\")\n    growth = d[\"growth\"]\n    for key in (\"strength_start\", \"stamina_start\"):\n        if not 0.0 < float(growth[key]) <= 1.0:\n            errors.append(f\"DEPENDANTS[growth][{key}]: in (0, 1], not {growth[key]!r}\")\n    if float(growth[\"exponent\"]) <= 0.0:\n        errors.append(f\"DEPENDANTS[growth][exponent]: must be positive, not {growth['exponent']!r}\")\n    if \"neglect\" not in HEALTH[\"causes\"]:\n        errors.append(\"DEPENDANTS: 'neglect' is not a HEALTH cause\")\n    if \"neglect\" not in MARK_HARM:\n        errors.append(\"DEPENDANTS: 'neglect' has no MARK_HARM row\")\n    if \"infant\" not in REFUSAL_REASONS:\n        errors.append(\"DEPENDANTS: 'infant' is not a REFUSAL_REASONS code\")\n    adult_age = float(adult[\"age_min\"])\n    bands = sorted(LIFE_STAGES.values(), key=lambda s: float(s[\"age_min\"]))\n    gaps = [f\"{float(a['age_max']):g} to {float(b['age_min']):g}\" for a, b in zip(bands, bands[1:])\n            if float(b[\"age_min\"]) > float(a[\"age_max\"])]\n    info.append(f\"DEPENDANTS: the LIFE_STAGES bands leave gaps ({', '.join(gaps) or 'none'}); an age in a gap reads as \"\n                \"elder with the switch off (HEAD) and as the band below it with the switch on\")\n    state = \"on\" if d[\"enabled\"] else \"off\"\n    for age in (0, 4, 12, 18):\n        strength = _growth_fraction(age, float(growth[\"strength_start\"]), adult_age, float(growth[\"exponent\"]))\n        stamina = _growth_fraction(age, float(growth[\"stamina_start\"]), adult_age, float(growth[\"exponent\"]))\n        info.append(f\"DEPENDANTS: at age {age} strength is {strength:.3f} and stamina {stamina:.3f} of the adult \"\n                    f\"base (switch {state})\")\n\n\ndef _check_contest(errors, warnings, info):\n",
+    "note": "self-test: _check_dependants before _check_contest"
+  },
+  {
+    "file": "domains/bigville_entities.py",
+    "old": "    _check_births(errors, warnings, info)   # Phase 044: pregnancy and birth (BIRTHS)\n",
+    "new": "    _check_births(errors, warnings, info)   # Phase 044: pregnancy and birth (BIRTHS)\n    _check_dependants(errors, warnings, info)   # Phase 045: infants, dependants and growth (DEPENDANTS)\n",
+    "note": "self-test call after _check_births"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "from worlds.births import BirthsMixin  # noqa: E402  Phase 044: pregnancy and birth (the births switch)\n",
+    "new": "from worlds.births import BirthsMixin  # noqa: E402  Phase 044: pregnancy and birth (the births switch)\nfrom worlds.dependants import DependantsMixin  # noqa: E402  Phase 045: infants, dependants (the dependants switch)\n",
+    "note": "import of the dependants mixin"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "class BigvilleWorld(BirthsMixin, BodyMixin):",
+    "new": "class BigvilleWorld(BirthsMixin, DependantsMixin, BodyMixin):",
+    "note": "class base: the dependants mixin (BirthsMixin, DependantsMixin, BodyMixin)"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "        self._births_day()\n",
+    "new": "        self._births_day()\n        self._dependants_day()   # Phase 045: growth, care and neglect of dependants (a no-op with the switch off)\n",
+    "note": "daily tick: dependants after births"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "self.health(actor)) * self._capacity_factor(actor)\n",
+    "new": "self.health(actor)) * self._capacity_factor(actor) * self._dependant_work_factor(actor)\n",
+    "note": "effective stat: times the dependant work factor (1.0 with the switch off)"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "            age_stage = next((stage for stage, spec in self.E.LIFE_STAGES.items()\n                              if float(spec[\"age_min\"]) <= age <= float(spec[\"age_max\"])), \"elder\")\n",
+    "new": "            age_stage = self._age_stage(age)   # Phase 045: gap ages belong to the band below when the dependants switch is on\n",
+    "note": "life stage from age: gap ages read as the band below when on (off: HEAD's rule)"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "or self._attending_refusal(actor, action)) if gated else None   # Phase 071: attending\n",
+    "new": "or self._attending_refusal(actor, action) or self._dependant_refusal(actor)) if gated else None   # Phase 071: attending; Phase 045: infants\n",
+    "note": "major-action gate: an infant is refused with reason infant (after the attending refusal)"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "            care_kind = kwargs.get(\"care_kind\")\n",
+    "new": "            care_kind = kwargs.get(\"care_kind\")\n            if care_kind == \"feed\":   # Phase 045: a caregiver feeds a dependant from its own food\n                return self._claimed_attempt(actor, \"care\", lambda: self.feed_dependant(actor, patient))\n",
+    "note": "care dispatch: feed"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "+ _dn.lamp_options(self, actor)   # Phase 042\n",
+    "new": "+ _dn.lamp_options(self, actor) + self._dependant_options(actor)   # Phase 042, 045\n",
+    "note": "actor_affordances: dependant options"
+  },
+  {
+    "file": "worlds/bigville_world.py",
+    "old": "                **self._birth_readoffs(actor)}\n",
+    "new": "                **self._birth_readoffs(actor),\n                # Phase 045 read-offs: dependant and care_received; empty when the dependants switch is off.\n                **self._dependant_readoffs(actor)}\n",
+    "note": "body_state: dependant read-offs"
+  },
+  {
+    "file": "bigville/backends/cheap.py",
+    "old": "from .lamplighter import lamplighter_choice  # Phase 042: the lamplighter's round\n",
+    "new": "from .lamplighter import lamplighter_choice  # Phase 042: the lamplighter's round\nfrom .dependants_policy import dependant_choice  # Phase 045: a caregiver feeds or walks to a dependant\n",
+    "note": "import of the dependant policy"
+  },
+  {
+    "file": "bigville/backends/cheap.py",
+    "old": "        lamp = lamplighter_choice(context)   # Phase 042: a lamplighter's round (offered to a lamplighter only)\n",
+    "new": "        dependant = dependant_choice(context)   # Phase 045: a caregiver feeds or walks to a dependant (none when off)\n        if dependant is not None:\n            action, params, reason = dependant\n            self.last_choice = {\"action\": action, \"goal\": \"dependant\", \"time_band\": self.time_band, \"reason\": reason}\n            return ActorResponse(major_action=ProposedAction(action, params, \"cheap_psi_can\"))\n        lamp = lamplighter_choice(context)   # Phase 042: a lamplighter's round (offered to a lamplighter only)\n",
+    "note": "decide: a caregiver's dependant act first (none when off)"
+  },
+  {
+    "file": "bigville/game.py",
+    "old": "        self._attach_newborns()   # Phase 044: a newborn gets a character and a dependent backend\n",
+    "new": "        self._attach_newborns()   # Phase 044: a newborn gets a character and a dependent backend\n        self._promote_grown_dependants()   # Phase 045: a child past infancy acts (its backend is the simple one)\n",
+    "note": "step: promote grown dependants after attaching newborns"
+  },
+  {
+    "file": "bigville/game.py",
+    "old": "        attach_newborns(self)\n",
+    "new": "        attach_newborns(self)\n\n    def _promote_grown_dependants(self) -> list[str]:\n        \"\"\"Phase 045: a child past infancy gets the simple backend in place of its dependent backend.\"\"\"\n        from bigville.resident_dependants import promote_grown_dependants\n        return promote_grown_dependants(self)\n",
+    "note": "game: _promote_grown_dependants method after _attach_newborns"
+  },
+  {
+    "file": "packs/bigville/world/interoception.json",
+    "old": "      \"childbirth\": {}\n    },\n    \"BODY_RATES\": {",
+    "new": "      \"childbirth\": {},\n      \"neglect\": {}\n    },\n    \"BODY_RATES\": {",
+    "note": "HARM_LOCUS: neglect row (whole-body, empty; the Phase 070 self-test needs a row per HEALTH cause)"
+  },
+  {
+    "file": "packs/test_hamlet/world/interoception.json",
+    "old": "      \"childbirth\": {}\n    },\n    \"BODY_RATES\": {",
+    "new": "      \"childbirth\": {},\n      \"neglect\": {}\n    },\n    \"BODY_RATES\": {",
+    "note": "HARM_LOCUS: neglect row (whole-body, empty; the Phase 070 self-test needs a row per HEALTH cause)"
+  }
+]

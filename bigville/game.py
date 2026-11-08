@@ -104,6 +104,11 @@ class BigvilleGame:
         from bigville.resident_births import attach_newborns
         attach_newborns(self)
 
+    def _promote_grown_dependants(self) -> list[str]:
+        """Phase 045: a child past infancy gets the simple backend in place of its dependent backend."""
+        from bigville.resident_dependants import promote_grown_dependants
+        return promote_grown_dependants(self)
+
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
         entities = world_entities(self.world)
@@ -841,6 +846,7 @@ class BigvilleGame:
         A contested take (Phase 029) can wait for the holder's reaction. The step then returns waiting, and
         the next call resumes that turn where it stopped, without deciding again."""
         self._attach_newborns()   # Phase 044: a newborn gets a character and a dependent backend
+        self._promote_grown_dependants()   # Phase 045: a child past infancy acts (its backend is the simple one)
         if self._suspended is not None:
             return self._resume_suspended()
         # Period changes happen only after a successful turn, below. Publish

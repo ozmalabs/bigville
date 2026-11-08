@@ -1,0 +1,27 @@
+{
+  "_doc": "DEPENDANTS (Phase 045): infants, children and youths, behind the dependants switch (DEPENDANTS.enabled, off by default). The physical side only: an infant is refused major actions (refusal reason infant); a dependant acts at its life stage's work_fraction (LIFE_STAGES, the data the world already holds); its care need (LIFE_STAGES care) is met by a household member awake in reach on the same cell; an unattended dependant takes neglect harm through harm() after its span; a caregiver can feed a dependant from its own food; body strength and stamina grow from the infant value to the adult value over the years. Which caregiver feeds or walks to a dependant, and how a grown child's priors are shaped (bigville_life_rearing, bl_come_of_age), belong to the resident's backend. The seeds bigville_infant_care (infant fragility, well-baby care) and bigville_life_rearing (bl_come_of_age: nurture shapes the adult priors and flags adult) are the spec; the figures here are NEW DESIGN and every one is APPROX. Nothing here was checked against a source in this session. stages: the life stages that are dependants (LIFE_STAGES keys below the adult age). reach_cells: a caregiver must stand on the dependant's cell (0 cells, as care_for requires); a larger reach would need a distance rule. neglect_after_days: whole days a dependant may go without a caregiver before neglect harm starts, by stage (APPROX design: an infant cannot wait a day, a youth can wait a week). neglect_harm: acute harm per day of neglect, times the stage's care need, through harm() so HEALTH.fragility applies (APPROX design). caregiver_max_hunger: a caregiver with hunger above this eats before it tends a dependant (hunger scale as in CARE.care_hunger_need; APPROX). growth: body strength and stamina at birth as a fraction of the adult default (ACTOR_DEFAULTS.body), rising linearly in age to the adult age (LIFE_STAGES adult age_min). strength_start 0.3 and stamina_start 0.4 are APPROX design figures; no measured growth curve is cited. exponent 1 is a linear rise. The rise is a body fact, not a skill: training (Phase 032) builds on the base as it stands. A child's force also passes through CONTEST.life_stage_force (Phase 029) in contests, so a child's contest force carries both factors; this is a known double count (see the phase report). enabled: false, as for every new switch in this plan.",
+  "_types": {},
+  "tables": {
+    "DEPENDANTS": {
+      "enabled": false,
+      "stages": [
+        "infant",
+        "child",
+        "youth"
+      ],
+      "reach_cells": 0,
+      "neglect_after_days": {
+        "infant": 1,
+        "child": 3,
+        "youth": 7
+      },
+      "neglect_harm": 0.02,
+      "caregiver_max_hunger": 1.0,
+      "growth": {
+        "strength_start": 0.3,
+        "stamina_start": 0.4,
+        "exponent": 1.0
+      }
+    }
+  }
+}

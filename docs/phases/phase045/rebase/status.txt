@@ -1,0 +1,15 @@
+[11:35:47] focused p044 start
+focused p044 exit 0
+[11:38:12] focused p045 start
+focused p045 exit 0
+[11:40:35] focused head start
+focused head exit 0
+[11:42:40] measure head start
+measure head exit 0
+[11:44:42] measure p044 start
+measure p044 exit 0
+[11:46:44] measure p045 start
+measure p045 exit 0
+[11:48:49] full suite p045 start
+full p045 exit 0
+[12:53:12] ALL DONE
