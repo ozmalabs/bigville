@@ -379,8 +379,15 @@ def _around(game, actor, pack, known, rec=None, log=None):
     heard = []
     for record in world.heard_utterances(actor):
         speaker = str(record.get("speaker", ""))
+        text = str(record.get("text", ""))
+        # Phase 065b: a distorted listener may mishear the words; the truth stays in the referee row (off: unchanged).
+        if rec is not None:
+            heard_as = impairment.mishear(game, actor, rec, record, [name for _d, name in nearby], pack)
+            if heard_as is not None:
+                log.append(impairment.utterance_referee(record, heard_as))
+                text = heard_as["text"]
         heard.append(_check_keys("heard", {"from": speaker if speaker in known else words["someone"],
-                                           "text": str(record.get("text", ""))}, pack))
+                                           "text": text}, pack))
     seen = []
     for event in game._physical_events.get(actor, []):
         if event.get("action") != "moved_object":

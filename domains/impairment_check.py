@@ -1,21 +1,28 @@
-"""impairment_check.py -- self-test checks for the IMPAIRMENT, DISTORTION and IMPAIRMENT_NEIGHBOURS tables (Phase 065).
+"""impairment_check.py -- self-test checks for the IMPAIRMENT, DISTORTION, IMPAIRMENT_NEIGHBOURS and MISHEARING tables
+(Phase 065; the MISHEARING check and the new kinds are Phase 065b).
 
-    check_impairment(pack_path, errors, warnings, info, *, rows=None, sources=None)
+    check_impairment(pack_path, errors, warnings, info, *, rows=None, sources=None, mishearing=None)
 
-Called from bigville_entities.check_consistency with the pack path. `rows` replaces the DISTORTION rows and `sources`
-replaces IMPAIRMENT.sources, so a test can plant a source with no row and see the error. It checks:
+Called from bigville_entities.check_consistency with the pack path. `rows` replaces the DISTORTION rows, `sources`
+replaces IMPAIRMENT.sources and `mishearing` replaces IMPAIRMENT.mishearing, so a test can plant a fault and see the
+error. It checks:
   * the switch, the strength and the cap: IMPAIRMENT.enabled is a boolean, strength is between 0 and 1, max_rate is
     above 0 and at most 1;
   * the sources: every source IMPAIRMENT names has exactly one DISTORTION row (an error otherwise), and every row names
     a source IMPAIRMENT lists (a warning otherwise, since the row then never applies);
   * each row: a measure the impairment reads, with either `levels` (for intoxication_band and light) or `steps` (for
     fatigue and illness, thresholds ascending, each rate between 0 and 1); the level keys are the world's bands or the
-    lights; the kinds are person and thing, with at least one mechanism each, and each mechanism is one the code knows,
-    and only a person takes neighbour_stage;
+    lights; `kinds` names one or more of the kinds (person, thing, utterance, quantity), each with at least one
+    mechanism, and every mechanism is one the code knows and applies to that kind (impairment.APPLIES);
   * the light levels: each key is a light the perceiver reads and each value is a rate between 0 and 1;
-  * IMPAIRMENT_NEIGHBOURS: it has one entry for each life stage, and each neighbour is a life stage other than itself.
+  * IMPAIRMENT_NEIGHBOURS: it has one entry for each life stage, and each neighbour is a life stage other than itself;
+  * IMPAIRMENT.mishearing (Phase 065b): each heard word is a lowercase letter word with at least one near word, each near word is a
+    lowercase letter word different from the heard word and from the others, and NUMERAL_WORDS lists zero to twenty, so a
+    spelled number can shift one word up or down.
 """
 from __future__ import annotations
+
+import re
 
 from domains import impairment as I
 from domains.pack import load_pack
@@ -23,15 +30,17 @@ from domains.world_affordances import INTOXICATION_BANDS
 
 NUMERIC_MEASURES = ("fatigue", "illness")
 CATEGORY_MEASURES = {"intoxication_band": INTOXICATION_BANDS, "light": I.LIGHTS}
+LOWER_WORD = re.compile(r"[a-z]+")
 
 
 def _is_number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def check_impairment(pack_path, errors, warnings, info, *, rows=None, sources=None):
+def check_impairment(pack_path, errors, warnings, info, *, rows=None, sources=None, mishearing=None):
     pack = load_pack(pack_path)
-    missing = [name for name in ("IMPAIRMENT", "DISTORTION", "IMPAIRMENT_NEIGHBOURS", "PERCEPTION") if name not in pack.names()]
+    missing = [name for name in ("IMPAIRMENT", "DISTORTION", "IMPAIRMENT_NEIGHBOURS", "PERCEPTION",
+                                 "NUMERAL_WORDS") if name not in pack.names()]
     if missing:
         errors.append(f"IMPAIRMENT: the pack has no {', '.join(missing)} table (world/impairment.json)")
         return
@@ -46,10 +55,15 @@ def check_impairment(pack_path, errors, warnings, info, *, rows=None, sources=No
         _check_row(row, errors)
     _check_light_levels(table, errors)
     _check_neighbours(pack["IMPAIRMENT_NEIGHBOURS"], stages, errors)
+    pairs = table.get("mishearing") if mishearing is None else mishearing
+    if pairs is None:
+        errors.append("IMPAIRMENT.mishearing is missing: the heard-word pairs (world/impairment.json)")
+        pairs = {}
+    _check_mishearing(pairs, pack["NUMERAL_WORDS"], errors)
     if len(errors) == before:
         state = "on" if table["enabled"] else "off"
         info.append(f"IMPAIRMENT: {len(listed)} sources ({', '.join(listed)}), {len(rows)} rows, {len(I.MECHANISMS)} "
-                    f"mechanisms, the impairment is {state} in this pack")
+                    f"mechanisms, {len(pairs)} mishearing pairs, the impairment is {state} in this pack")
 
 
 def _check_switch(table, errors):
@@ -106,16 +120,21 @@ def _check_row(row, errors):
                 continue
             _check_rate(f"DISTORTION {source!r} step {step!r}", step[1], errors)
     kinds = row.get("kinds", {})
-    if set(kinds) != set(I.KINDS):
-        errors.append(f"DISTORTION {source!r}: kinds must name exactly {list(I.KINDS)}, not {sorted(kinds)}")
+    if not kinds:
+        errors.append(f"DISTORTION {source!r} names no kind of thing it distorts")
     for kind, mechanisms in kinds.items():
+        if kind not in I.KINDS:
+            errors.append(f"DISTORTION {source!r}: kind {kind!r} is not one of {list(I.KINDS)}")
+            continue
         if not mechanisms:
             errors.append(f"DISTORTION {source!r}: kind {kind!r} names no mechanism")
         for mechanism in mechanisms:
             if mechanism not in I.MECHANISMS:
                 errors.append(f"DISTORTION {source!r}: mechanism {mechanism!r} is not one the code knows {list(I.MECHANISMS)}")
-            if mechanism == "neighbour_stage" and kind != "person":
-                errors.append(f"DISTORTION {source!r}: neighbour_stage applies to a person, not a {kind}")
+            elif kind not in I.APPLIES[mechanism]:
+                allowed = I.APPLIES[mechanism]
+                target = f"a {allowed[0]}" if len(allowed) == 1 else " or ".join(allowed)
+                errors.append(f"DISTORTION {source!r}: mechanism {mechanism!r} applies to {target}, not a {kind}")
 
 
 def _check_rate(where, rate, errors):
@@ -143,3 +162,21 @@ def _check_neighbours(neighbours, stages, errors):
         for other in others:
             if other == stage or other not in stages:
                 errors.append(f"IMPAIRMENT_NEIGHBOURS {stage!r}: {other!r} is not another life stage")
+
+
+def _check_mishearing(pairs, numerals, errors):
+    for word, near in dict(pairs).items():
+        if not LOWER_WORD.fullmatch(str(word)):
+            errors.append(f"MISHEARING: the heard word {word!r} is not a lowercase letter word")
+        if not near:
+            errors.append(f"MISHEARING {word!r} has no near word")
+        if len(set(near)) != len(near):
+            errors.append(f"MISHEARING {word!r} repeats a near word: {list(near)}")
+        for other in near:
+            if not LOWER_WORD.fullmatch(str(other)) or other == word:
+                errors.append(f"MISHEARING {word!r}: near word {other!r} must be a lowercase letter word other than "
+                              f"the heard word")
+    words = list(numerals.get("words", []))
+    if words != ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+                 "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]:
+        errors.append("NUMERAL_WORDS.words must list zero to twenty in order, so a spelled count can shift one word")

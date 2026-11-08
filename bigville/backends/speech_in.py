@@ -26,6 +26,7 @@ from collections import Counter, deque
 from contextlib import contextmanager
 from functools import lru_cache
 
+from domains import impairment
 from domains import speech_grammar as G
 from domains.pack import load_pack
 
@@ -248,6 +249,23 @@ def _apply(backend, state, effects, turn, speaker, placed, tie, inventory, hunge
         state.stats[f"effect_news_stored_{'place' if place else 'person'}"] += 1
 
 
+def _heard_as(backend, state, record, observations, turn, nearby):
+    """Phase 065b: the record as this listener takes it. A drunk simple listener (IMPAIRMENT on, and its band in its
+    observations) may mishear a word, a number or a name in earshot. The record then keeps the wrong words and drops the
+    raw payload, so the grammar places what was heard. Otherwise the record is returned unchanged."""
+    cfg = impairment.settings(None, "bigville")
+    if not cfg["enabled"] or observations.get("intoxication_band") is None:
+        return record
+    heard = impairment.mishear_simple(cfg, "bigville", observations["intoxication_band"],
+                                      str(getattr(backend.character, "name", "listener")), turn, record, list(nearby))
+    state.stats["mishear_checked"] += 1
+    if not heard["distorted"]:
+        return record
+    state.stats["mishear_distorted"] += 1
+    state.stats[f"mishear_{heard['mechanism']}"] += 1
+    return {**record, "text": heard["text"], "raw_data": None}
+
+
 def hear(backend, context) -> None:
     """Read the heard utterances of this turn that have not been read before, and apply their effects."""
     if not enabled():
@@ -266,6 +284,7 @@ def hear(backend, context) -> None:
         state.stats["heard"] += 1
         speaker = str(record.get("speaker", ""))
         tie = float(nearby.get(speaker, {}).get("tie_strength", 0.0))
+        record = _heard_as(backend, state, record, observations, turn, nearby)
         placed = understand(record, {"stranger": tie <= 0.0, "listener": backend, "turn": turn,
                                      "names": [str(r.get("name", rid)) for rid, r in nearby.items()],
                                      "listener_name": str(getattr(backend.character, "name", "listener")),

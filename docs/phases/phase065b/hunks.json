@@ -1,0 +1,136 @@
+[
+  {
+    "file": "domains/reading.py",
+    "why": "065b: the reader takes a written price one unit off when impairment applies (quantity_shift); the truth is not shifted",
+    "old": ["from domains import numeracy"],
+    "new": ["from domains import impairment, numeracy"]
+  },
+  {
+    "file": "domains/reading.py",
+    "why": "065b: _fill takes the shift in the mark's units and writes the price the reader is taken to see",
+    "old": [
+      "def _fill(template, mark, num_row, pack):",
+      "    \"\"\"The template with {price} replaced by the price in the numeracy words of the reader's tier.\"\"\"",
+      "    if PRICE not in template:",
+      "        return template",
+      "    return template.replace(PRICE, numeracy.price_words(mark[\"price\"], mark[\"unit\"], num_row, pack))"
+    ],
+    "new": [
+      "def _fill(template, mark, num_row, pack, shift=0):",
+      "    \"\"\"The template with {price} replaced by the price in the numeracy words of the reader's tier. `shift` (Phase 065b)",
+      "    is the number of the mark's units the reader is taken to misread the price by; 0 is the price as written.\"\"\"",
+      "    if PRICE not in template:",
+      "        return template",
+      "    price = float(mark[\"price\"]) + shift * float(numeracy.units(pack)[mark[\"unit\"]][\"coin\"])",
+      "    return template.replace(PRICE, numeracy.price_words(price, mark[\"unit\"], num_row, pack))"
+    ]
+  },
+  {
+    "file": "domains/reading.py",
+    "why": "065b: percept takes the shift (default 0, so every existing call is unchanged)",
+    "old": ["def percept(mark, tier, known, num_row, pack, truth=False):"],
+    "new": ["def percept(mark, tier, known, num_row, pack, truth=False, shift=0):"]
+  },
+  {
+    "file": "domains/reading.py",
+    "why": "065b: both fills of the percept use the shift",
+    "old": [
+      "    text = _fill(mark[\"text\"], mark, num_row, pack)",
+      "    short = _fill(mark[\"short\"], mark, num_row, pack)"
+    ],
+    "new": [
+      "    text = _fill(mark[\"text\"], mark, num_row, pack, shift)",
+      "    short = _fill(mark[\"short\"], mark, num_row, pack, shift)"
+    ]
+  },
+  {
+    "file": "domains/reading.py",
+    "why": "065b: the reader's percept of a price is shifted when impairment applies; the referee row says so",
+    "old": [
+      "        seen = percept(mark, tier, known, num_row, pack)",
+      "        truth = percept(mark, tier, known, num_row, pack, truth=True)",
+      "        rows.append({\"percept\": seen[\"words\"]})",
+      "        log.append({\"subject\": object_id, \"kind\": \"writing\", \"distance\": int(distance), \"tier\": seen[\"tier\"],",
+      "                    \"percept\": seen[\"words\"], \"truth_tier\": truth[\"tier\"], \"truth\": truth[\"words\"]})"
+    ],
+    "new": [
+      "        # Phase 065b: an impaired reader may read a price one unit off; the truth is the mark as written.",
+      "        shift = impairment.quantity_shift(game, actor, rec, object_id, mark, pack)",
+      "        seen = percept(mark, tier, known, num_row, pack, shift=shift[\"delta\"] if shift else 0)",
+      "        truth = percept(mark, tier, known, num_row, pack, truth=True)",
+      "        rows.append({\"percept\": seen[\"words\"]})",
+      "        log.append({\"subject\": object_id, \"kind\": \"writing\", \"distance\": int(distance), \"tier\": seen[\"tier\"],",
+      "                    \"percept\": seen[\"words\"], \"truth_tier\": truth[\"tier\"], \"truth\": truth[\"words\"],",
+      "                    **impairment.quantity_referee(shift)})"
+    ]
+  },
+  {
+    "file": "domains/agent_view.py",
+    "why": "065b: the heard sentence a distorted listener is given (the truth goes to the referee row); off, text is unchanged",
+    "old": [
+      "    heard = []",
+      "    for record in world.heard_utterances(actor):",
+      "        speaker = str(record.get(\"speaker\", \"\"))",
+      "        heard.append(_check_keys(\"heard\", {\"from\": speaker if speaker in known else words[\"someone\"],",
+      "                                           \"text\": str(record.get(\"text\", \"\"))}, pack))"
+    ],
+    "new": [
+      "    heard = []",
+      "    for record in world.heard_utterances(actor):",
+      "        speaker = str(record.get(\"speaker\", \"\"))",
+      "        text = str(record.get(\"text\", \"\"))",
+      "        # Phase 065b: a distorted listener may mishear the words; the truth stays in the referee row (off: unchanged).",
+      "        if rec is not None:",
+      "            heard_as = impairment.mishear(game, actor, rec, record, [name for _d, name in nearby], pack)",
+      "            if heard_as is not None:",
+      "                log.append(impairment.utterance_referee(record, heard_as))",
+      "                text = heard_as[\"text\"]",
+      "        heard.append(_check_keys(\"heard\", {\"from\": speaker if speaker in known else words[\"someone\"],",
+      "                                           \"text\": text}, pack))"
+    ]
+  },
+  {
+    "file": "bigville/backends/speech_in.py",
+    "why": "065b: the simple listener's own impairment: an import for impairment",
+    "old": ["from domains import speech_grammar as G"],
+    "new": ["from domains import impairment", "from domains import speech_grammar as G"]
+  },
+  {
+    "file": "bigville/backends/speech_in.py",
+    "why": "065b: _heard_as, the simple listener's mishearing (new function before hear)",
+    "old": ["def hear(backend, context) -> None:"],
+    "new": [
+      "def _heard_as(backend, state, record, observations, turn, nearby):",
+      "    \"\"\"Phase 065b: the record as this listener takes it. A drunk simple listener (IMPAIRMENT on, and its band in its",
+      "    observations) may mishear a word, a number or a name in earshot. The record then keeps the wrong words and drops the",
+      "    raw payload, so the grammar places what was heard. Otherwise the record is returned unchanged.\"\"\"",
+      "    cfg = impairment.settings(None, \"bigville\")",
+      "    if not cfg[\"enabled\"] or observations.get(\"intoxication_band\") is None:",
+      "        return record",
+      "    heard = impairment.mishear_simple(cfg, \"bigville\", observations[\"intoxication_band\"],",
+      "                                      str(getattr(backend.character, \"name\", \"listener\")), turn, record, list(nearby))",
+      "    state.stats[\"mishear_checked\"] += 1",
+      "    if not heard[\"distorted\"]:",
+      "        return record",
+      "    state.stats[\"mishear_distorted\"] += 1",
+      "    state.stats[f\"mishear_{heard['mechanism']}\"] += 1",
+      "    return {**record, \"text\": heard[\"text\"], \"raw_data\": None}",
+      "",
+      "",
+      "def hear(backend, context) -> None:"
+    ]
+  },
+  {
+    "file": "bigville/backends/speech_in.py",
+    "why": "065b: hear places the heard record as the listener takes it",
+    "old": [
+      "        tie = float(nearby.get(speaker, {}).get(\"tie_strength\", 0.0))",
+      "        placed = understand(record, {\"stranger\": tie <= 0.0, \"listener\": backend, \"turn\": turn,"
+    ],
+    "new": [
+      "        tie = float(nearby.get(speaker, {}).get(\"tie_strength\", 0.0))",
+      "        record = _heard_as(backend, state, record, observations, turn, nearby)",
+      "        placed = understand(record, {\"stranger\": tie <= 0.0, \"listener\": backend, \"turn\": turn,"
+    ]
+  }
+]

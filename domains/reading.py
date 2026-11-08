@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import re
 
-from domains import numeracy
+from domains import impairment, numeracy
 from domains import shared_frames as SF
 from domains.pack import load_pack
 
@@ -69,14 +69,16 @@ def _shown(text, known, squiggle):
     return WORD.sub(lambda m: m.group(0) if m.group(0).lower() in known else squiggle, text)
 
 
-def _fill(template, mark, num_row, pack):
-    """The template with {price} replaced by the price in the numeracy words of the reader's tier."""
+def _fill(template, mark, num_row, pack, shift=0):
+    """The template with {price} replaced by the price in the numeracy words of the reader's tier. `shift` (Phase 065b)
+    is the number of the mark's units the reader is taken to misread the price by; 0 is the price as written."""
     if PRICE not in template:
         return template
-    return template.replace(PRICE, numeracy.price_words(mark["price"], mark["unit"], num_row, pack))
+    price = float(mark["price"]) + shift * float(numeracy.units(pack)[mark["unit"]]["coin"])
+    return template.replace(PRICE, numeracy.price_words(price, mark["unit"], num_row, pack))
 
 
-def percept(mark, tier, known, num_row, pack, truth=False):
+def percept(mark, tier, known, num_row, pack, truth=False, shift=0):
     """What the reader makes of one mark: {tier, words}. `tier` is the literacy tier name, `known` the reader's words,
     `num_row` its NUMERACY_TIERS row. The tier's reading mode (LITERACY_TIERS.reads) picks the WRITTEN_KINDS template:
     'words' shows the known words amid squiggles (a mark with none of them is 'unreadable'), 'short' the short text,
@@ -89,8 +91,8 @@ def percept(mark, tier, known, num_row, pack, truth=False):
         num_row = numeracy.tier_row(numeracy.REPRESENTED_LEVEL, pack)
         known = set()
     reads = _tier_row(tier, pack)["reads"]
-    text = _fill(mark["text"], mark, num_row, pack)
-    short = _fill(mark["short"], mark, num_row, pack)
+    text = _fill(mark["text"], mark, num_row, pack, shift)
+    short = _fill(mark["short"], mark, num_row, pack, shift)
     mode = reads
     shown = ""
     if reads == "words":
@@ -152,11 +154,14 @@ def writing_rows(game, actor, rec, pack, log):
         distance = _chebyshev(position, cell) if (cell is not None and position is not None) else 0
         if distance > int(rec["sight"]):
             continue
-        seen = percept(mark, tier, known, num_row, pack)
+        # Phase 065b: an impaired reader may read a price one unit off; the truth is the mark as written.
+        shift = impairment.quantity_shift(game, actor, rec, object_id, mark, pack)
+        seen = percept(mark, tier, known, num_row, pack, shift=shift["delta"] if shift else 0)
         truth = percept(mark, tier, known, num_row, pack, truth=True)
         rows.append({"percept": seen["words"]})
         log.append({"subject": object_id, "kind": "writing", "distance": int(distance), "tier": seen["tier"],
-                    "percept": seen["words"], "truth_tier": truth["tier"], "truth": truth["words"]})
+                    "percept": seen["words"], "truth_tier": truth["tier"], "truth": truth["words"],
+                    **impairment.quantity_referee(shift)})
         if mark["refers_to"] in carried or mark["refers_to"] in visible:
             learn.append(mark["refers_to"])
     _learn(game, actor, learn, known, pack)

@@ -1,0 +1,41 @@
+........................................................................ [ 24%]
+...............................................................sss...... [ 49%]
+......................F................................................. [ 74%]
+...................................F.................................... [ 99%]
+.                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears __
+
+    def test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears():
+        from bigville.api import create_game
+        with speech_in.switched(True):
+            game = create_game(scenario="town100", seed=305000, default_backend="simple", autonomous=True,
+                               ticks_per_period="world")
+            for _ in range(12):
+                game.step()
+            totals = {}
+            for backend in game.backends.values():
+                for key, value in speech_in.stats(backend).items():
+                    totals[key] = totals.get(key, 0) + value
+>       assert totals.get("heard", 0) > 0
+E       AssertionError: assert 0 > 0
+E        +  where 0 = <built-in method get of dict object at 0x7502c11f5780>('heard', 0)
+E        +    where <built-in method get of dict object at 0x7502c11f5780> = {}.get
+
+tests/test_phase060_speech_in.py:377: AssertionError
+______________ test_self_test_finds_a_neighbour_stage_for_a_thing ______________
+
+    def test_self_test_finds_a_neighbour_stage_for_a_thing():
+        errors, warnings, info = [], [], []
+        rows = copy.deepcopy(PACK["DISTORTION"])
+        rows[1]["kinds"]["thing"].append("neighbour_stage")
+        check_impairment(PATH_BIGVILLE, errors, warnings, info, rows=rows)
+>       assert any("applies to a person, not a thing" in message for message in errors)
+E       assert False
+E        +  where False = any(<generator object test_self_test_finds_a_neighbour_stage_for_a_thing.<locals>.<genexpr> at 0x7502c11e0ad0>)
+
+tests/test_phase065_impairment.py:149: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_phase060_speech_in.py::test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears
+FAILED tests/test_phase065_impairment.py::test_self_test_finds_a_neighbour_stage_for_a_thing
+2 failed, 284 passed, 3 skipped in 136.00s (0:02:15)
