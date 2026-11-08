@@ -1,0 +1,162 @@
+s....................................................................... [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+...s.................................................................... [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+.F...........................................................
+LA04 town100 lazy refusals after 4 turns: 0 {}
+.....s..... [ 24%]
+........................................................................ [ 26%]
+...........
+LA07 town100 lazy: actions={'work': 100, 'move': 700} tally={'improvised_jobs': 1, 'accidents': 0, 'broken_tools': 0} health_mean=1.000000 health_min=1.000000 improvised=[{'turn': 1, 'actor': 'Keturah Marsh', 'recipe': 'press_linseed_oil', 'open_recipe': False, 'at_workplace': False}]
+............................F................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 41%]
+........................................................................ [ 43%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+.......................................................F................ [ 80%]
+...................................................sss.................. [ 82%]
+..........F............................................................. [ 85%]
+........................................................................ [ 87%]
+........................................................................ [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+.........                                                                [100%]
+=================================== FAILURES ===================================
+_______ test_a_game_saved_and_loaded_continues_to_the_same_run_digest[0] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1154/test_a_game_saved_and_loaded_c0')
+residents = 0
+
+    @pytest.mark.parametrize("residents", [0, 2])
+    def test_a_game_saved_and_loaded_continues_to_the_same_run_digest(tmp_path, residents):
+        gp = pytest.importorskip("bigville.game_persistence")
+        turns, stop_at = 6, 3
+    
+        def run(stop: bool):
+            provider = FakeProvider(varied_reply)
+            game = _town(provider, residents=residents)
+            digest = RunDigest()
+            for turn in range(turns):
+                if stop and turn == stop_at:
+                    path = tmp_path / f"ck-{stop_at}-{residents}"
+                    gp.save_game_checkpoint(game, path)
+                    game = gp.load_game_checkpoint(path, llm_provider=provider, llm_log=False)
+                assert game.step()["status"] == "advanced"
+                digest.add(game)
+            per_actor: dict[str, list] = {}
+            for call in provider.calls:          # per resident (the global call order varies with the thread pool)
+                per_actor.setdefault(call["meta"]["actor"], []).append(call["payload"]["messages"])
+            return digest.hexdigest(), per_actor
+    
+        control = run(stop=False)
+        resumed = run(stop=True)
+>       assert resumed[0] == control[0]
+E       AssertionError: assert 'c592d87846a1...e00e82745b4d3' == '718060fe2d08...9f5c3ede6aaf1'
+E         
+E         - 718060fe2d08782d8e0eb939144c7a947c583bc806e5a34fc899f5c3ede6aaf1
+E         + c592d87846a1d5bdc59f0960bdaf0397e3d8b496b5ae69193d6e00e82745b4d3
+
+tests/test_fix_llm_checkpoint.py:197: AssertionError
+______ test_policy_pair_has_same_setup_and_predeclared_shock_across_seeds ______
+
+    def test_policy_pair_has_same_setup_and_predeclared_shock_across_seeds():
+        for seed in SEEDS:
+            sharing = run_stress_experiment(seed, "sharing")
+            self_priority = run_stress_experiment(seed, "self_priority")
+    
+            assert sharing["initial_state"] == self_priority["initial_state"]
+            assert sharing["survivors"] == self_priority["survivors"] == 4
+            assert sharing["resource_balance"]["shock_loss"] == 4.0
+            assert self_priority["resource_balance"]["shock_loss"] == 4.0
+            assert sharing["resource_balance"]["accounted_after_shock_and_eating"]
+            assert self_priority["resource_balance"]["accounted_after_shock_and_eating"]
+            assert sharing["failed_actions"] == self_priority["failed_actions"] == 0
+>           assert sharing["transfers"] == 1
+E           assert 0 == 1
+
+tests/test_package15_resource_social_stress.py:17: AssertionError
+____ test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns _____
+
+tmp_path = PosixPath('/tmp/pytest-of-matt/pytest-1154/test_the_simple_backend_takes_0')
+
+    def test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns(tmp_path):
+        """The before-change run (behaviour_before.json) and this run both use seed 305000, the simple backend
+        for all residents, and no founding ties (seeding off). Five residents' action sequences and the mean
+        hunger for the first 50 turns must match exactly."""
+        # fix024 re-pinned this: the simple backend's hunger and food choices changed (HUNGER_PER_STAMINA, food-first
+        # sleep). The Phase 058 recording (behaviour_before.json) is kept as history; this reference is the same run after fix024.
+        before = json.load(open(os.path.join(_ROOT, "docs", "phases", "fix024_starvation", "behaviour_after_fix024.json"),
+                                encoding="utf-8"))
+        out = tmp_path / "behaviour_check.json"
+        env = dict(os.environ, PYTHONHASHSEED="0")
+        script = os.path.join(PHASE_DIR, "measure_behaviour.py")
+        subprocess.run([sys.executable, script, "--label", "check", "--turns", "50", "--seeding", "off",
+                        "--out", str(out)], check=True, env=env, cwd=_ROOT, timeout=900)
+        after = json.loads(out.read_text(encoding="utf-8"))
+        for name, sequence in before["sample_sequences"].items():
+            assert after["sample_sequences"][name] == sequence[:50], name
+>       assert after["hunger_mean_by_turn"] == before["hunger_mean_by_turn"][:50]
+E       assert [0.0131, 0.02...4, 0.086, ...] == [0.0131, 0.02...4, 0.086, ...]
+E         
+E         At index 7 diff: 0.116 != 0.1159
+E         Use -v to get more diff
+
+tests/test_phase058_persona.py:524: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"alive_at_end": 100, "deaths": 0, "elapsed_seconds": 18.5, "handovers": 0, "hunger_mean_end": 0.3895, "label": "check", "relationships_on_record": 0, "turns": 50, "utterances": 223}
+{"eat": 4, "move": 3117, "none": 665, "rest": 1156, "sleep": 43, "work": 15}
+_ test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears __
+
+    def test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears():
+        from bigville.api import create_game
+        with speech_in.switched(True):
+            game = create_game(scenario="town100", seed=305000, default_backend="simple", autonomous=True,
+                               ticks_per_period="world")
+            for _ in range(12):
+                game.step()
+            totals = {}
+            for backend in game.backends.values():
+                for key, value in speech_in.stats(backend).items():
+                    totals[key] = totals.get(key, 0) + value
+>       assert totals.get("heard", 0) > 0
+E       AssertionError: assert 0 > 0
+E        +  where 0 = <built-in method get of dict object at 0x716ba46cd100>('heard', 0)
+E        +    where <built-in method get of dict object at 0x716ba46cd100> = {}.get
+
+tests/test_phase060_speech_in.py:377: AssertionError
+=============================== warnings summary ===============================
+tests/test_distributed_runtime.py: 2 warnings
+tests/test_process_transport.py: 25 warnings
+  /home/linuxbrew/.linuxbrew/Cellar/python@3.13/3.13.5/lib/python3.13/multiprocessing/popen_fork.py:67: DeprecationWarning: This process (pid=1574428) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_fix_llm_checkpoint.py::test_a_game_saved_and_loaded_continues_to_the_same_run_digest[0]
+FAILED tests/test_package15_resource_social_stress.py::test_policy_pair_has_same_setup_and_predeclared_shock_across_seeds
+FAILED tests/test_phase058_persona.py::test_the_simple_backend_takes_the_same_actions_as_before_for_50_turns
+FAILED tests/test_phase060_speech_in.py::test_a_short_village_run_with_the_switch_on_places_and_counts_what_it_hears
+4 failed, 2951 passed, 6 skipped, 27 warnings in 2036.08s (0:33:56)

@@ -948,6 +948,12 @@ def build_lazy_agent_view(game, actor, mode="agent"):
         "seen": _lazy_seen(game, actor, obs, pack, known),
         "things": _lazy_things(obs, pack),
     }, pack)
+    # Phase 065c: with PERCEPTION on, the people, things, heard and writing come from the perceiver path
+    # (domains/lazy_perception.py). Off, this block changes nothing.
+    rec, log = None, []
+    if perceiver.enabled(pack):
+        from domains import lazy_perception
+        around, rec, log = lazy_perception.perceived(game, actor, obs, around, known, pack)
     fogged = map_memory.is_fogged(game, actor)
     view = {
         "mode": mode,
@@ -965,6 +971,8 @@ def build_lazy_agent_view(game, actor, mode="agent"):
         view["referee"] = _lazy_referee(game, actor, obs)
         if fogged:
             view["referee"]["true_map"] = map_memory.true_patch(game, actor)
+        if rec is not None:
+            view["referee"]["perception"] = lazy_perception.referee_perception(game, rec, log, pack)
     return _check_keys("top", _clean(view), pack)
 
 

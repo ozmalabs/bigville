@@ -1,0 +1,38 @@
+[
+  {
+    "file": "domains/agent_view.py",
+    "why": "065c: with PERCEPTION on, the lazy view (the LLM's prompt) takes people, things, heard and writing from the perceiver path",
+    "old": [
+      "        \"things\": _lazy_things(obs, pack),",
+      "    }, pack)",
+      "    fogged = map_memory.is_fogged(game, actor)"
+    ],
+    "new": [
+      "        \"things\": _lazy_things(obs, pack),",
+      "    }, pack)",
+      "    # Phase 065c: with PERCEPTION on, the people, things, heard and writing come from the perceiver path",
+      "    # (domains/lazy_perception.py). Off, this block changes nothing.",
+      "    rec, log = None, []",
+      "    if perceiver.enabled(pack):",
+      "        from domains import lazy_perception",
+      "        around, rec, log = lazy_perception.perceived(game, actor, obs, around, known, pack)",
+      "    fogged = map_memory.is_fogged(game, actor)"
+    ]
+  },
+  {
+    "file": "domains/agent_view.py",
+    "why": "065c: the lazy referee block carries the perception rows (truth and percept), as build_agent_view does",
+    "old": [
+      "        view[\"referee\"] = _lazy_referee(game, actor, obs)",
+      "        if fogged:",
+      "            view[\"referee\"][\"true_map\"] = map_memory.true_patch(game, actor)"
+    ],
+    "new": [
+      "        view[\"referee\"] = _lazy_referee(game, actor, obs)",
+      "        if fogged:",
+      "            view[\"referee\"][\"true_map\"] = map_memory.true_patch(game, actor)",
+      "        if rec is not None:",
+      "            view[\"referee\"][\"perception\"] = lazy_perception.referee_perception(game, rec, log, pack)"
+    ]
+  }
+]
