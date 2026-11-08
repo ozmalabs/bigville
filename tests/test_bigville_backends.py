@@ -25,7 +25,7 @@ def test_prompt_contains_private_character_and_public_choices():
 def test_llm_backend_accepts_provider_json_and_exposes_backend_state():
     class Provider:
         def complete(self, prompt):
-            assert prompt["schema"] == "bigville/prompt/6"
+            assert prompt["schema"] == "bigville/prompt/7"
             return '{"major_action":{"action":"rest","params":{}},"waiting":false}'
 
     character = CharacterDefinition(character_id="Ada", name="Ada")
@@ -35,7 +35,7 @@ def test_llm_backend_accepts_provider_json_and_exposes_backend_state():
     assert response.major_action.action == "rest"
     held = backend.dump_held_state().to_dict()
     assert held["backend"] == "llm"
-    assert held["backend_state"]["prompt_schema"] == "bigville/prompt/6"
+    assert held["backend_state"]["prompt_schema"] == "bigville/prompt/7"
     assert held["backend_state"]["prompt_hash"]
 
 

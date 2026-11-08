@@ -210,8 +210,11 @@ def test_a_malformed_plan_is_logged_once_not_once_per_nested_attempt():
     world, actor, _ = _town()
     before = _counts(world)["total"]
 
-    assert world.enact_plan(actor, {"action": "fetch"}) is False
+    # Phase 071d: an unknown action name is refused as unsupported (the world's refusal); the malformed fetch comes
+    # last, so the last outcome still checks the malformed refusal.
     assert world.enact_plan(actor, {"action": "dance"}) is False
+    assert world.last_outcome(actor)["reason"] == "unsupported"
+    assert world.enact_plan(actor, {"action": "fetch"}) is False
 
     assert _counts(world)["total"] == before + 2
     assert world.last_outcome(actor)["reason"] == "malformed"

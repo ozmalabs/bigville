@@ -9919,6 +9919,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                                      with_kind=plan.get("with"), intensity=plan.get("intensity", 1.0))
         if action in _dn.ACTIONS:   # Phase 042b: light and douse take no target; the world finds the lamp in pole reach
             return self.major_action(actor, action)
+        if action not in self.E.MAJOR_ACTIONS:
+            # Phase 071d: an action name the world does not know is a refusal the resident learns from, not a
+            # malformed reply (the reply check passes any text here).
+            return self._refuse("unsupported")
         # The plan names no action this resident can take, or no target for it.
         return self._refuse("malformed")
 
@@ -10823,19 +10827,19 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return self.speak(actor, kwargs.pop("target", args[0] if args else None),
                               kwargs.pop("content", args[1] if len(args) > 1 else ""), **kwargs)
         if action == "reply":
-            return self.reply(actor, kwargs.pop("target", args[0]),
+            return self.reply(actor, kwargs.pop("target", args[0] if args else None),
                               kwargs.pop("content", args[1] if len(args) > 1 else ""), **kwargs)
         if action == "write_note":
             return self.write_note(actor, kwargs.pop("content", args[0] if args else ""), **kwargs)
         if action == "give_note":
-            return self.give_note(actor, kwargs.pop("recipient", args[0]),
+            return self.give_note(actor, kwargs.pop("recipient", args[0] if args else None),
                                   kwargs.pop("note", args[1] if len(args) > 1 else None))
         if action == "accept":
             if "item" in kwargs:
                 return self.accept_item(actor, kwargs.pop("item"), giver=kwargs.pop("giver", None))
-            return self.accept_request(actor, kwargs.pop("request", args[0]))
+            return self.accept_request(actor, kwargs.pop("request", args[0] if args else None))
         if action == "decline":
-            return self.decline_request(actor, kwargs.pop("request", args[0]))
+            return self.decline_request(actor, kwargs.pop("request", args[0] if args else None))
         if action == "set_intensity":
             return self.set_job_pace(actor, kwargs.pop("intensity", args[0] if args else None))
         if action == "stop":

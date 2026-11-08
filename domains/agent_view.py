@@ -259,6 +259,29 @@ def _lessons(character):
     return _texts(character, (LESSON_KIND,))
 
 
+def _giveable_notes(world, actor):
+    """Phase 071d: the written notes this resident holds, each with its handle (the world's note id, for give_note)."""
+    names = {node: name for name, node in world._notes.items()}
+    held = world.eng.neighbours(world._actors[actor], "holds")
+    return [{"handle": names[node], "what": str(world.note_contents(names[node]))}
+            for node in sorted(held) if node in names]
+
+
+def _open_requests(world, actor):
+    """Phase 071d: the requests addressed to this resident that it has not answered: handle (the request's id, for
+    accept or decline), who asked, and what for."""
+    people = {node: name for name, node in world._actors.items()}
+    out = []
+    for request in world.requests_for(actor):
+        if world.request_status(request) != 0:
+            continue
+        attrs = world.eng.node(request)["attrs"]
+        senders = [people[node] for node in world.eng.neighbours(request, "from") if node in people]
+        out.append({"handle": str(attrs.get("name", "")), "who": senders[0] if senders else "",
+                    "what": str(attrs.get("task", ""))})
+    return out
+
+
 def _self(game, actor, pack, gist_table, interoception="labelled"):
     world = game.world
     character = game.characters[actor]
@@ -280,6 +303,8 @@ def _self(game, actor, pack, gist_table, interoception="labelled"):
         "kin": _kin(world, actor, pack),
         "notes": _notes(character),
         "lessons": _lessons(character),
+        "giveable_notes": _giveable_notes(world, actor),
+        "requests": _open_requests(world, actor),
     })
     return _check_keys("self", out, pack)
 

@@ -129,6 +129,9 @@ class HttpClient:
         return self.submit({"reaction": choice})
 
     def apply_free(self, reply):
-        """Free actions with no major action need the in-process game: over HTTP a reply always ends the turn."""
-        raise UnsupportedOverHttp("a free action on its own (a glance) runs in process; over HTTP send it with a major "
-                                  "action, or play in process")
+        """Phase 071d: free actions alone, sent to /api/free. They run with no step, so the turn does not advance; the
+        server returns the view. The reply is in the LLM shape; the server checks and folds it."""
+        body = json.dumps({"free_actions": list(reply.get("free_actions") or [])}).encode("utf-8")
+        req = request.Request(f"{self.base}/api/free", data=body, method="POST",
+                              headers={"Content-Type": "application/json"})
+        return self._open(req)

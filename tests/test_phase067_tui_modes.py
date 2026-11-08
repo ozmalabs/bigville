@@ -355,7 +355,8 @@ def test_the_text_mode_shows_only_what_the_packet_and_the_view_carry(game):
     public = packet["context"]["public"]
     assert set(public) <= {"now", "around", "map", "can", "last", "heard", "consult"}
     assert set(public["around"]) <= {"people", "seen", "things", "writing"}
+    # Phase 071d: the packet's private part also lists the notes and requests the LLM may name by handle.
     assert set(packet["context"]["private"]) <= {"lead", "body", "skills", "carrying", "knows", "places", "kin",
-                                                  "lessons", "notes"}
+                                                  "lessons", "notes", "giveable_notes", "requests"}
     room = "\n".join(prose.room_lines(packet, view, PACK_NAME))
     assert "sizes" not in room and "omitted" not in room

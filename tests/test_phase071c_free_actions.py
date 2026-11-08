@@ -161,12 +161,13 @@ def test_the_speech_free_action_and_an_utterance_are_the_same_world_call(town):
 # ------------------------------------------------------------------ the reply schema
 def test_a_free_action_reply_is_checked_against_the_free_action_table():
     assert reply_schema.check({"free_actions": [{"action": "glance", "target": "signal:1"}]}, PACK) == []
-    errors = reply_schema.check({"free_actions": [{"action": "glance"}]}, PACK)
-    assert errors == ["free action glance needs a target"]
+    # Phase 071d: a missing target is the world's refusal (no_target), not a malformed reply.
+    assert reply_schema.check({"free_actions": [{"action": "glance"}]}, PACK) == []
     assert reply_schema.check({"free_actions": [{"action": "accept", "params": {"item": "flour"}}]}, PACK) == []
     errors = reply_schema.check({"free_actions": [{"action": "write_note", "params": {"text": 3}}]}, PACK)
     assert errors == ["free_actions.params.text must be text"]
-    errors = reply_schema.check({"free_actions": [{"action": "set_intensity", "params": {"intensity": "sideways"}}]},
+    # Phase 071d: an unknown intensity word is folded by the world, not refused as malformed; a list is malformed.
+    errors = reply_schema.check({"free_actions": [{"action": "set_intensity", "params": {"intensity": ["sideways"]}}]},
                                 PACK)
     assert errors and errors[0].startswith("free_actions.params.intensity")
     assert reply_schema.check({"free_actions": [{"action": "stop", "reason": "x"}]}, PACK)
@@ -203,7 +204,8 @@ def test_an_llm_glance_reply_is_enacted_and_shows_the_sound_and_place_in_last(to
     token = _shown_token(town, name, "signal:1")
     script.text = _reply(free_actions=[{"action": "glance", "target": token, "params": {}}])
     town.step()
-    assert script.calls == 1
+    # Phase 071d: a free-only reply is asked again, up to PROMPT_REPLY.free_rounds_max times, so three calls.
+    assert script.calls == 1 + load_pack(PACK)["PROMPT_REPLY"]["free_rounds_max"]
     outcome = free_replies.last_free(town, name)
     assert outcome["action"] == "glance" and outcome["applied"] is True, outcome
     assert outcome["place"] == "arm" and outcome["sound"]

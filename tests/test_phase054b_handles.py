@@ -192,8 +192,9 @@ def test_the_lazy_packet_text_names_no_cell_and_no_id(perception_off):
     assert "handle from public.around.things" in text
 
 
-def test_the_packet_schema_is_prompt_6():
-    assert PACKET_SCHEMA == "bigville/prompt/6"
+def test_the_packet_schema_is_prompt_7():
+    # Phase 071d: the packet's private part lists giveable_notes and requests (054b asserted prompt/6).
+    assert PACKET_SCHEMA == "bigville/prompt/7"
 
 
 def test_letters_are_bijective_and_digit_free():

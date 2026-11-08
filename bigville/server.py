@@ -98,6 +98,28 @@ class GameService:
             result["state"] = self.state()
         return result
 
+    def free(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Phase 071d: free actions alone (a glance, a note, an answer to a request). They run now, with no slot, no
+        tick and no step, so the turn does not advance. The reply may carry only free_actions; a major action or an
+        utterance needs /api/turn. Returns the player's agent view after the actions."""
+        from . import free_replies
+        from .backends import reply_schema
+        if self.game.player is None:
+            raise ValueError("no player: free actions are the player's")
+        extra = sorted(str(key) for key in payload if key != "free_actions")
+        if extra:
+            raise ValueError(f"a free reply carries only free_actions; {extra[0][:24]!r} needs /api/turn")
+        items = payload.get("free_actions")
+        if not isinstance(items, list):
+            raise ValueError("free_actions must be a list")
+        pack = self.game.world.data_pack
+        errors = reply_schema.check({"free_actions": items}, pack)
+        if errors:
+            raise ValueError("; ".join(errors))
+        wire = reply_schema.to_wire({"free_actions": items}, pack)
+        free_replies.apply_all(self.game, self.game.player, wire["free_actions"])
+        return {"status": "free", "view": self.view()}
+
 
 class BigvilleHandler(BaseHTTPRequestHandler):
     service: GameService
@@ -165,6 +187,8 @@ class BigvilleHandler(BaseHTTPRequestHandler):
                 raise TypeError("request body must be a JSON object")
             if parsed.path == "/api/turn":
                 self._json(HTTPStatus.OK, self.service.turn(payload))
+            elif parsed.path == "/api/free":
+                self._json(HTTPStatus.OK, self.service.free(payload))
             elif parsed.path == "/api/reset":
                 type(self).service = GameService(scenario=self.service.scenario,
                                                  seed=self.service.seed,

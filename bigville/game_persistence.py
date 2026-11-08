@@ -222,6 +222,8 @@ def save_game_checkpoint(game, path: str | Path) -> None:
         "last_responses": {name: _response_to_checkpoint(response)
                            for name, response in game.last_responses.items()},
         "last_results": game.last_results,
+        # Phase 071d: the newest free-action outcome per resident (plain values; free_replies keeps it).
+        "free_outcomes": {name: dict(row) for name, row in getattr(game, "free_outcomes", {}).items()},
         "conversation_templates": game.conversation_interface.templates,
     }
     encoded = json.dumps(_checkpoint_encode(state, "game"), sort_keys=True,
@@ -320,6 +322,7 @@ def load_game_checkpoint(path: str | Path, *, resident_loader: Callable | None =
         game.last_responses = {name: _response_from_checkpoint(response)
                                for name, response in state["last_responses"].items()}
         game.last_results = state["last_results"]
+        game.free_outcomes = {name: dict(row) for name, row in state.get("free_outcomes", {}).items()}
         game._sync_backend_metadata()
         game.llm_log = attach_default_llm_log(game.backends, enabled=llm_log, log_dir=llm_log_dir)
         return game

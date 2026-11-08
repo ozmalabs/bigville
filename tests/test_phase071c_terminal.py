@@ -196,7 +196,23 @@ def test_text_mode_writes_the_glance_outcome_into_the_room_stream(game):
     assert "From your arm" in text or "Nothing answers from your arm" in text
 
 
-def test_over_http_a_glance_on_its_own_is_refused_with_a_message():
-    client = HttpClient("http://127.0.0.1:9", PLAYER)
-    with pytest.raises(UnsupportedOverHttp):
-        client.apply_free({"free_actions": [{"action": "glance", "target": "signal:1"}]})
+def test_over_http_a_glance_on_its_own_runs_with_no_turn():
+    """Phase 071d (was: raises UnsupportedOverHttp). A glance alone goes to /api/free over HTTP: it runs with no step,
+    so the turn does not advance, and the server returns the player's view."""
+    import threading
+    from http.server import HTTPServer
+    from bigville.server import BigvilleHandler, GameService
+    service = GameService(scenario="town100", seed=SEED, player=PLAYER, mode="agent")
+    server = HTTPServer(("127.0.0.1", 0), type("Handler", (BigvilleHandler,), {"service": service}))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        turn = service.game.world._turn
+        result = HttpClient(f"http://127.0.0.1:{server.server_address[1]}", PLAYER).apply_free(
+            {"free_actions": [{"action": "glance", "target": "signal:1"}]})
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert result["status"] == "free" and "view" in result
+    assert service.game.world._turn == turn
+    assert service.game.free_outcomes[PLAYER]["action"] == "glance"

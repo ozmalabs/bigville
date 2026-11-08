@@ -1,0 +1,1143 @@
+diff --git a/bigville/backends/llm.py b/bigville/backends/llm.py
+index 615fd0a..f212bf1 100644
+--- a/bigville/backends/llm.py
++++ b/bigville/backends/llm.py
+@@ -154,8 +154,9 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
+         if not isinstance(action, dict):
+             errors.append("major_action must be an object or null")
+         else:
+-            if not isinstance(action.get("action"), str) or not action.get("action"):
+-                errors.append("major_action.action must be a non-empty string")
++            # Phase 071d: the name is text. An empty or unknown name is the world's refusal (unsupported).
++            if not isinstance(action.get("action"), str):
++                errors.append("major_action.action must be text")
+             if action.get("params") is not None and not isinstance(action.get("params"), dict):
+                 errors.append("major_action.params must be an object")
+             if action.get("reason") is not None and not isinstance(action.get("reason"), str):
+@@ -164,8 +165,8 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
+     if free is not None:
+         if not isinstance(free, list) or not all(isinstance(item, dict) for item in free):
+             errors.append("free_actions must be a list of objects")
+-        elif any(not isinstance(item.get("action"), str) or not item.get("action") for item in free):
+-            errors.append("free_actions.action must be a non-empty string")
++        elif any(not isinstance(item.get("action"), str) for item in free):
++            errors.append("free_actions.action must be text")
+     errors += _continuation_errors(parsed.get("continuation"))
+     utterances = parsed.get("utterances", [])
+     if not isinstance(utterances, list) or not all(isinstance(item, dict) for item in utterances):
+diff --git a/bigville/backends/prompt_packet.py b/bigville/backends/prompt_packet.py
+index 89cb6ef..e1b9712 100644
+--- a/bigville/backends/prompt_packet.py
++++ b/bigville/backends/prompt_packet.py
+@@ -28,7 +28,7 @@ from typing import Any
+ from domains.autopilot import usual_words
+ from domains.pack import load_pack
+ 
+-PACKET_SCHEMA = "bigville/prompt/5"   # Phase 071c: the reply has free_actions (Phase 069: the felt body was prompt/4)
++PACKET_SCHEMA = "bigville/prompt/6"   # Phase 071d: the packet lists giveable_notes and requests (071c: free_actions, 069: the felt body was prompt/4)
+ LESSON_KIND = "lesson"
+ 
+ 
+@@ -187,6 +187,13 @@ def build_packet(context, *, pack: str, consult_reason: str | None = None,
+         "kin": caps.items("kin", self_view.get("kin") or []),
+         "lessons": lessons,
+         "notes": caps.items("notes", notes),
++        # Phase 071d: the handles give_note, accept and decline name (copied exactly by the model).
++        "giveable_notes": caps.items("giveable_notes", [
++            {"handle": row["handle"], "what": _cut(row["what"], int(tbl["note_chars"]))}
++            for row in (self_view.get("giveable_notes") or [])]),
++        "requests": caps.items("requests", [
++            {"handle": row["handle"], "who": row["who"], "what": _cut(row["what"], int(tbl["note_chars"]))}
++            for row in (self_view.get("requests") or [])]),
+     }
+ 
+     heard = [{"from": row.get("from", ""), "quote": _cut(row.get("text", ""), int(tbl["speech_chars"]))}
+diff --git a/bigville/backends/reply_schema.py b/bigville/backends/reply_schema.py
+index 1afd9e2..d76a585 100644
+--- a/bigville/backends/reply_schema.py
++++ b/bigville/backends/reply_schema.py
+@@ -39,8 +39,21 @@ def _is_text(value) -> bool:
+     return isinstance(value, str)
+ 
+ 
+-def _words_list(words, limit=4) -> str:
+-    return ", ".join(sorted(str(w) for w in words)[:limit])
++def _is_number_or_word(value) -> bool:
++    """A number, or a word the lexicon may or may not know (an unknown word is the world's to refuse or fold)."""
++    return isinstance(value, str) or (isinstance(value, (int, float)) and not isinstance(value, bool))
++
++
++# Phase 071d: a word the lexicon does not know, in intensity or amount, folds to a normal effort: 1.0 is the value the
++# world uses when the field is left out.
++_NORMAL = 1.0
++
++
++def _weight(value, reader, pack) -> float:
++    try:
++        return reader(value, pack)
++    except (TypeError, ValueError):
++        return _NORMAL
+ 
+ 
+ def _check_major_action(action, pack, errors) -> None:
+@@ -51,22 +64,14 @@ def _check_major_action(action, pack, errors) -> None:
+     for name in ("target", "with"):
+         if action.get(name) is not None and not _is_text(action.get(name)):
+             errors.append(f"major_action.{name} must be a handle (text) or null")
+-    if action.get("intensity") is not None:
+-        try:
+-            intensity_value(action["intensity"], pack)
+-        except (TypeError, ValueError):
+-            words = list(load_pack(pack)["INTENSITY_WORDS"])
+-            errors.append("intensity must be a number or one of these words: " + _words_list(words, 6))
++    if action.get("intensity") is not None and not _is_number_or_word(action["intensity"]):
++        errors.append("intensity must be a number or a word")
+     params = action.get("params")
+     if isinstance(params, dict):
+         if params.get("verb") is not None and not _is_text(params["verb"]):
+             errors.append("params.verb must be a verb name (text)")
+-        if params.get("amount") is not None:
+-            try:
+-                amount_value(params["amount"], pack)
+-            except (TypeError, ValueError):
+-                words = list(load_pack(pack)["AMOUNT_WORDS"])
+-                errors.append("params.amount must be a number or one of these words: " + _words_list(words, 6))
++        if params.get("amount") is not None and not _is_number_or_word(params["amount"]):
++            errors.append("params.amount must be a number or a word")
+ 
+ 
+ def _check_free_action(item, pack, errors) -> None:
+@@ -78,7 +83,7 @@ def _check_free_action(item, pack, errors) -> None:
+             errors.append(f"free_actions has no field '{str(key)[:24]}'")
+             return
+     name = item.get("action")
+-    if not isinstance(name, str) or not name:
++    if not isinstance(name, str):
+         errors.append("free_actions need an action (text)")
+         return
+     if item.get("target") is not None and not _is_text(item.get("target")):
+@@ -92,26 +97,16 @@ def _check_free_action(item, pack, errors) -> None:
+         if params.get(key) is not None and not _is_text(params.get(key)):
+             errors.append(f"free_actions.params.{key} must be text")
+             return
+-    if params.get("intensity") is not None:
+-        try:
+-            intensity_value(params["intensity"], pack)
+-        except (TypeError, ValueError):
+-            words = list(load_pack(pack)["INTENSITY_WORDS"])
+-            errors.append("free_actions.params.intensity must be a number or one of these words: "
+-                          + _words_list(words, 6))
+-    spec = load_pack(pack)["FREE_ACTIONS"].get(name)
+-    if spec is None:
+-        return
+-    alternative = spec.get("target_or_param")
+-    if spec.get("requires_target") and not item.get("target") and not (alternative and params.get(alternative)):
+-        errors.append(f"free action {name} needs a target")
++    if params.get("intensity") is not None and not _is_number_or_word(params["intensity"]):
++        errors.append("free_actions.params.intensity must be a number or a word")
++    # A missing target the action needs is the world's refusal (no_target), not a malformed reply.
+ 
+ 
+ def _fold_free(item, pack) -> dict:
+     """A free action as the world reads it: the intensity word folded to its value; the rest as written."""
+     params = dict(item.get("params") or {})
+     if params.get("intensity") is not None:
+-        params["intensity"] = intensity_value(params["intensity"], pack)
++        params["intensity"] = _weight(params["intensity"], intensity_value, pack)
+     target = item.get("target")
+     return {"action": str(item["action"]), "target": target if _is_text(target) else None, "params": params}
+ 
+@@ -248,9 +243,9 @@ def _fold_action(action, pack, affordances=None) -> dict:
+     if held is not None and held not in ("", "none"):
+         params["tool" if name == "work" else "with"] = held
+     if action.get("intensity") is not None:
+-        params["intensity"] = intensity_value(action["intensity"], pack)
++        params["intensity"] = _weight(action["intensity"], intensity_value, pack)
+     if params.get("amount") is not None:
+-        params["amount"] = amount_value(params["amount"], pack)
++        params["amount"] = _weight(params["amount"], amount_value, pack)
+     return {"action": name, "params": params, "reason": action.get("reason") or ""}
+ 
+ 
+@@ -263,7 +258,7 @@ def to_wire(parsed: dict, pack: str, *, text_limit: int | None = None,
+     model wrote it."""
+     out = dict(parsed)
+     action = parsed.get("major_action")
+-    if isinstance(action, dict) and action.get("action"):
++    if isinstance(action, dict) and isinstance(action.get("action"), str):
+         out["major_action"] = _fold_action(action, pack, affordances)
+     if parsed.get("utterances") is not None:
+         out["utterances"] = [_utterance(item) for item in parsed["utterances"]]
+diff --git a/bigville/free_replies.py b/bigville/free_replies.py
+index 9a816dc..bca9eab 100644
+--- a/bigville/free_replies.py
++++ b/bigville/free_replies.py
+@@ -65,13 +65,14 @@ def _glance_refusal(world, actor, target):
+ 
+ def _glance_probe(world, actor, target):
+     """The sound and place of the glanced feeling, as the body now resolves it (the glance is in place until the next
+-    tick). Reads the body's own rows; no state changes."""
+-    body = world.body_of(actor)
+-    source = body.signal_named(target)
+-    for row in body._derive()["sources"]:
+-        if row["source"] == source:
+-            return {"sound": row.get("sound") or None, "place": str(row.get("where", ""))}
+-    return {}
++    tick). Body.probe reads the body's own rows; no state changes."""
++    return world.body_of(actor).probe(target) or {}
++
++
++def _holds_note(world, actor, note):
++    """Whether the actor holds the note (the world's note id, `note` in params). Reads only."""
++    node = world._notes.get(note) if isinstance(note, str) else None
++    return node is not None and world.eng.has_edge(world._actors[actor], "holds", node)
+ 
+ 
+ def _refuse(turn, action, code):
+@@ -87,8 +88,16 @@ def apply_one(game, actor, item) -> dict:
+     target = item.get("target") if isinstance(item.get("target"), str) else None
+     params = dict(item.get("params") or {})
+     table = load_pack(world.data_pack)["FREE_ACTIONS"]
++    spec = table.get(name, {})
++    alternative = spec.get("target_or_param")
+     if name not in table or name not in ROUTES:
+         outcome = _refuse(turn, name, "unsupported")
++    elif spec.get("requires_target") and target is None and not (alternative and params.get(alternative)):
++        # Phase 071d: a missing target the action needs is the world's refusal, not a malformed reply.
++        outcome = _refuse(turn, name, "no_target")
++    elif name == "give_note" and not _holds_note(world, actor, params.get("note")):
++        # The world's give_note moves whatever note it is named, so the resident must hold it first.
++        outcome = _refuse(turn, name, "not_held")
+     elif name == "glance" and _glance_refusal(world, actor, target):
+         outcome = _refuse(turn, name, _glance_refusal(world, actor, target))
+     else:
+diff --git a/bigville/game.py b/bigville/game.py
+index 6d27a0e..b6efd4e 100644
+--- a/bigville/game.py
++++ b/bigville/game.py
+@@ -1301,6 +1301,24 @@ class BigvilleGame:
+         character.memories.append(record)
+         return record
+ 
++    def _free_round_responses(self, pooled: dict, deferred: dict) -> dict:
++        """Phase 071d: a concurrent LLM resident whose reply carries free actions and no major action is asked again in
++        this turn. Its free actions, utterances and memory updates are applied first, so the next view shows them. The
++        round repeats up to PROMPT_REPLY.free_rounds_max times; the last reply stands as the turn. Other replies, and
++        every simple backend's reply, pass through unchanged (a simple backend never has free actions)."""
++        from domains.pack import load_pack
++        limit = int(load_pack(self.world.data_pack)["PROMPT_REPLY"].get("free_rounds_max", 0))
++        out = {}
++        for actor, response in pooled.items():
++            backend = deferred[actor][0]
++            rounds = 0
++            while response.free_actions and response.major_action is None and rounds < limit:
++                rounds += 1
++                self._apply_response(actor, response)
++                response = backend.decide(self._context(actor))
++            out[actor] = response
++        return out
++
+     def _apply_response_contained(self, actor: str, response: ActorResponse) -> bool:
+         """Apply one actor's response. A failure makes only this actor's result False.
+ 
+@@ -1493,7 +1511,7 @@ class BigvilleGame:
+                         "affordances": self.world.actor_affordances(actor)}
+ 
+         # Phase 055: the concurrent residents decide in one pool; results apply in registration order.
+-        for actor, response in decide_pooled(deferred).items():
++        for actor, response in self._free_round_responses(decide_pooled(deferred), deferred).items():
+             if "continuation_interrupted" in deferred[actor][1].backend_state:
+                 response.backend_state.setdefault("continuation_interrupted",
+                                                   deferred[actor][1].backend_state["continuation_interrupted"])
+@@ -1583,7 +1601,7 @@ class BigvilleGame:
+                         "affordances": self.world.actor_affordances(actor)}
+ 
+         # Phase 055: the concurrent residents decide in one pool; results apply in registration order.
+-        for actor, response in decide_pooled(deferred).items():
++        for actor, response in self._free_round_responses(decide_pooled(deferred), deferred).items():
+             if "continuation_interrupted" in deferred[actor][1].backend_state:
+                 response.backend_state.setdefault("continuation_interrupted",
+                                                   deferred[actor][1].backend_state["continuation_interrupted"])
+diff --git a/bigville/game_persistence.py b/bigville/game_persistence.py
+index 663566c..b10def0 100644
+--- a/bigville/game_persistence.py
++++ b/bigville/game_persistence.py
+@@ -222,6 +222,8 @@ def save_game_checkpoint(game, path: str | Path) -> None:
+         "last_responses": {name: _response_to_checkpoint(response)
+                            for name, response in game.last_responses.items()},
+         "last_results": game.last_results,
++        # Phase 071d: the newest free-action outcome per resident (plain values; free_replies keeps it).
++        "free_outcomes": {name: dict(row) for name, row in getattr(game, "free_outcomes", {}).items()},
+         "conversation_templates": game.conversation_interface.templates,
+     }
+     encoded = json.dumps(_checkpoint_encode(state, "game"), sort_keys=True,
+@@ -320,6 +322,7 @@ def load_game_checkpoint(path: str | Path, *, resident_loader: Callable | None =
+         game.last_responses = {name: _response_from_checkpoint(response)
+                                for name, response in state["last_responses"].items()}
+         game.last_results = state["last_results"]
++        game.free_outcomes = {name: dict(row) for name, row in state.get("free_outcomes", {}).items()}
+         game._sync_backend_metadata()
+         game.llm_log = attach_default_llm_log(game.backends, enabled=llm_log, log_dir=llm_log_dir)
+         return game
+diff --git a/bigville/server.py b/bigville/server.py
+index fe940c6..8b863fd 100644
+--- a/bigville/server.py
++++ b/bigville/server.py
+@@ -98,6 +98,28 @@ class GameService:
+             result["state"] = self.state()
+         return result
+ 
++    def free(self, payload: dict[str, Any]) -> dict[str, Any]:
++        """Phase 071d: free actions alone (a glance, a note, an answer to a request). They run now, with no slot, no
++        tick and no step, so the turn does not advance. The reply may carry only free_actions; a major action or an
++        utterance needs /api/turn. Returns the player's agent view after the actions."""
++        from . import free_replies
++        from .backends import reply_schema
++        if self.game.player is None:
++            raise ValueError("no player: free actions are the player's")
++        extra = sorted(str(key) for key in payload if key != "free_actions")
++        if extra:
++            raise ValueError(f"a free reply carries only free_actions; {extra[0][:24]!r} needs /api/turn")
++        items = payload.get("free_actions")
++        if not isinstance(items, list):
++            raise ValueError("free_actions must be a list")
++        pack = self.game.world.data_pack
++        errors = reply_schema.check({"free_actions": items}, pack)
++        if errors:
++            raise ValueError("; ".join(errors))
++        wire = reply_schema.to_wire({"free_actions": items}, pack)
++        free_replies.apply_all(self.game, self.game.player, wire["free_actions"])
++        return {"status": "free", "view": self.view()}
++
+ 
+ class BigvilleHandler(BaseHTTPRequestHandler):
+     service: GameService
+@@ -165,6 +187,8 @@ class BigvilleHandler(BaseHTTPRequestHandler):
+                 raise TypeError("request body must be a JSON object")
+             if parsed.path == "/api/turn":
+                 self._json(HTTPStatus.OK, self.service.turn(payload))
++            elif parsed.path == "/api/free":
++                self._json(HTTPStatus.OK, self.service.free(payload))
+             elif parsed.path == "/api/reset":
+                 type(self).service = GameService(scenario=self.service.scenario,
+                                                  seed=self.service.seed,
+diff --git a/bigville/tui/client.py b/bigville/tui/client.py
+index 4ef5e38..b115cd2 100644
+--- a/bigville/tui/client.py
++++ b/bigville/tui/client.py
+@@ -129,6 +129,9 @@ class HttpClient:
+         return self.submit({"reaction": choice})
+ 
+     def apply_free(self, reply):
+-        """Free actions with no major action need the in-process game: over HTTP a reply always ends the turn."""
+-        raise UnsupportedOverHttp("a free action on its own (a glance) runs in process; over HTTP send it with a major "
+-                                  "action, or play in process")
++        """Phase 071d: free actions alone, sent to /api/free. They run with no step, so the turn does not advance; the
++        server returns the view. The reply is in the LLM shape; the server checks and folds it."""
++        body = json.dumps({"free_actions": list(reply.get("free_actions") or [])}).encode("utf-8")
++        req = request.Request(f"{self.base}/api/free", data=body, method="POST",
++                              headers={"Content-Type": "application/json"})
++        return self._open(req)
+diff --git a/domains/agent_view.py b/domains/agent_view.py
+index ff13137..be43e7a 100644
+--- a/domains/agent_view.py
++++ b/domains/agent_view.py
+@@ -259,6 +259,29 @@ def _lessons(character):
+     return _texts(character, (LESSON_KIND,))
+ 
+ 
++def _giveable_notes(world, actor):
++    """Phase 071d: the written notes this resident holds, each with its handle (the world's note id, for give_note)."""
++    names = {node: name for name, node in world._notes.items()}
++    held = world.eng.neighbours(world._actors[actor], "holds")
++    return [{"handle": names[node], "what": str(world.note_contents(names[node]))}
++            for node in sorted(held) if node in names]
++
++
++def _open_requests(world, actor):
++    """Phase 071d: the requests addressed to this resident that it has not answered: handle (the request's id, for
++    accept or decline), who asked, and what for."""
++    people = {node: name for name, node in world._actors.items()}
++    out = []
++    for request in world.requests_for(actor):
++        if world.request_status(request) != 0:
++            continue
++        attrs = world.eng.node(request)["attrs"]
++        senders = [people[node] for node in world.eng.neighbours(request, "from") if node in people]
++        out.append({"handle": str(attrs.get("name", "")), "who": senders[0] if senders else "",
++                    "what": str(attrs.get("task", ""))})
++    return out
++
++
+ def _self(game, actor, pack, gist_table, interoception="labelled"):
+     world = game.world
+     character = game.characters[actor]
+@@ -280,6 +303,8 @@ def _self(game, actor, pack, gist_table, interoception="labelled"):
+         "kin": _kin(world, actor, pack),
+         "notes": _notes(character),
+         "lessons": _lessons(character),
++        "giveable_notes": _giveable_notes(world, actor),
++        "requests": _open_requests(world, actor),
+     })
+     return _check_keys("self", out, pack)
+ 
+diff --git a/packs/bigville/world/agent_view.json b/packs/bigville/world/agent_view.json
+index af3c07f..b69bc0e 100644
+--- a/packs/bigville/world/agent_view.json
++++ b/packs/bigville/world/agent_view.json
+@@ -29,7 +29,9 @@
+         "places",
+         "kin",
+         "notes",
+-        "lessons"
++        "lessons",
++        "giveable_notes",
++        "requests"
+       ],
+       "persona": [
+         "name",
+diff --git a/packs/bigville/world/prompt_packet.json b/packs/bigville/world/prompt_packet.json
+index c5c32fd..8360291 100644
+--- a/packs/bigville/world/prompt_packet.json
++++ b/packs/bigville/world/prompt_packet.json
+@@ -22,7 +22,9 @@
+         "map": 900,
+         "can": 1600,
+         "last": 400,
+-        "consult": 900
++        "consult": 900,
++        "giveable_notes": 500,
++        "requests": 500
+       },
+       "lessons_max": 12,
+       "lesson_chars": 240,
+@@ -70,7 +72,7 @@
+       "interface": [
+         "Reply with one JSON object and no other text. Its fields are major_action, free_actions, utterances, memory_updates and continuation.",
+         "major_action is null to carry on as usual. Otherwise it is an object with action, target, with, intensity and params.",
+-        "free_actions is a list of {action, target, params} for the free actions listed under Free actions above, which use no major action: {free_actions}. target names what the action is about (a person, a request, or a feeling's handle signal:N from public.can for glance). params holds the rest: text for speak, reply and write_note; note for give_note; item and giver for accept; intensity for set_intensity. speak may also be written as utterances.",
++        "free_actions is a list of {action, target, params} for the free actions listed under Free actions above, which use no major action: {free_actions}. target names what the action is about (a person, a request, or a feeling's handle signal:N from public.can for glance). params holds the rest: text for speak, reply and write_note; note for give_note, a handle from private.giveable_notes; item and giver for accept; intensity for set_intensity. accept and decline name a request by its handle from private.requests, as target. speak may also be written as utterances.",
+         "action is the action of a row in public.can (for example work, eat or move), or attempt to try a physical verb on a thing.",
+         "target is the handle of that same public.can row, copied exactly, or the handle of a thing from public.things for attempt, or null. with is the handle of a thing you hold, or null.",
+         "intensity is a number, or one of these words: {intensity}. Leave it out for a normal effort.",
+@@ -116,7 +118,8 @@
+         "place_belief",
+         "plan"
+       ],
+-      "memory_text_chars": 600
++      "memory_text_chars": 600,
++      "free_rounds_max": 2
+     }
+   }
+ }
+diff --git a/packs/bigville/world/refusal_reasons.json b/packs/bigville/world/refusal_reasons.json
+index 6832bca..233cfe4 100644
+--- a/packs/bigville/world/refusal_reasons.json
++++ b/packs/bigville/world/refusal_reasons.json
+@@ -134,6 +134,9 @@
+       },
+       "pinned": {
+         "description": "Your struggle failed. The one holding you kept hold."
++      },
++      "no_target": {
++        "description": "The action needs a target, and the reply named none."
+       }
+     },
+     "REFUSAL_LOG_LIMIT": 20
+diff --git a/packs/test_hamlet/world/agent_view.json b/packs/test_hamlet/world/agent_view.json
+index 669e521..bdd9d25 100644
+--- a/packs/test_hamlet/world/agent_view.json
++++ b/packs/test_hamlet/world/agent_view.json
+@@ -29,7 +29,9 @@
+         "places",
+         "kin",
+         "notes",
+-        "lessons"
++        "lessons",
++        "giveable_notes",
++        "requests"
+       ],
+       "persona": [
+         "name",
+diff --git a/packs/test_hamlet/world/prompt_packet.json b/packs/test_hamlet/world/prompt_packet.json
+index c5c32fd..8360291 100644
+--- a/packs/test_hamlet/world/prompt_packet.json
++++ b/packs/test_hamlet/world/prompt_packet.json
+@@ -22,7 +22,9 @@
+         "map": 900,
+         "can": 1600,
+         "last": 400,
+-        "consult": 900
++        "consult": 900,
++        "giveable_notes": 500,
++        "requests": 500
+       },
+       "lessons_max": 12,
+       "lesson_chars": 240,
+@@ -70,7 +72,7 @@
+       "interface": [
+         "Reply with one JSON object and no other text. Its fields are major_action, free_actions, utterances, memory_updates and continuation.",
+         "major_action is null to carry on as usual. Otherwise it is an object with action, target, with, intensity and params.",
+-        "free_actions is a list of {action, target, params} for the free actions listed under Free actions above, which use no major action: {free_actions}. target names what the action is about (a person, a request, or a feeling's handle signal:N from public.can for glance). params holds the rest: text for speak, reply and write_note; note for give_note; item and giver for accept; intensity for set_intensity. speak may also be written as utterances.",
++        "free_actions is a list of {action, target, params} for the free actions listed under Free actions above, which use no major action: {free_actions}. target names what the action is about (a person, a request, or a feeling's handle signal:N from public.can for glance). params holds the rest: text for speak, reply and write_note; note for give_note, a handle from private.giveable_notes; item and giver for accept; intensity for set_intensity. accept and decline name a request by its handle from private.requests, as target. speak may also be written as utterances.",
+         "action is the action of a row in public.can (for example work, eat or move), or attempt to try a physical verb on a thing.",
+         "target is the handle of that same public.can row, copied exactly, or the handle of a thing from public.things for attempt, or null. with is the handle of a thing you hold, or null.",
+         "intensity is a number, or one of these words: {intensity}. Leave it out for a normal effort.",
+@@ -116,7 +118,8 @@
+         "place_belief",
+         "plan"
+       ],
+-      "memory_text_chars": 600
++      "memory_text_chars": 600,
++      "free_rounds_max": 2
+     }
+   }
+ }
+diff --git a/packs/test_hamlet/world/refusal_reasons.json b/packs/test_hamlet/world/refusal_reasons.json
+index 6832bca..233cfe4 100644
+--- a/packs/test_hamlet/world/refusal_reasons.json
++++ b/packs/test_hamlet/world/refusal_reasons.json
+@@ -134,6 +134,9 @@
+       },
+       "pinned": {
+         "description": "Your struggle failed. The one holding you kept hold."
++      },
++      "no_target": {
++        "description": "The action needs a target, and the reply named none."
+       }
+     },
+     "REFUSAL_LOG_LIMIT": 20
+diff --git a/tests/test_bigville_backends.py b/tests/test_bigville_backends.py
+index 24c9802..f6695fe 100644
+--- a/tests/test_bigville_backends.py
++++ b/tests/test_bigville_backends.py
+@@ -25,7 +25,7 @@ def test_prompt_contains_private_character_and_public_choices():
+ def test_llm_backend_accepts_provider_json_and_exposes_backend_state():
+     class Provider:
+         def complete(self, prompt):
+-            assert prompt["schema"] == "bigville/prompt/5"
++            assert prompt["schema"] == "bigville/prompt/6"
+             return '{"major_action":{"action":"rest","params":{}},"waiting":false}'
+ 
+     character = CharacterDefinition(character_id="Ada", name="Ada")
+@@ -35,7 +35,7 @@ def test_llm_backend_accepts_provider_json_and_exposes_backend_state():
+     assert response.major_action.action == "rest"
+     held = backend.dump_held_state().to_dict()
+     assert held["backend"] == "llm"
+-    assert held["backend_state"]["prompt_schema"] == "bigville/prompt/5"
++    assert held["backend_state"]["prompt_schema"] == "bigville/prompt/6"
+     assert held["backend_state"]["prompt_hash"]
+ 
+ 
+diff --git a/tests/test_phase021_refusals.py b/tests/test_phase021_refusals.py
+index ebdf039..97bd6d5 100644
+--- a/tests/test_phase021_refusals.py
++++ b/tests/test_phase021_refusals.py
+@@ -210,8 +210,11 @@ def test_a_malformed_plan_is_logged_once_not_once_per_nested_attempt():
+     world, actor, _ = _town()
+     before = _counts(world)["total"]
+ 
+-    assert world.enact_plan(actor, {"action": "fetch"}) is False
++    # Phase 071d: an unknown action name is refused as unsupported (the world's refusal); the malformed fetch comes
++    # last, so the last outcome still checks the malformed refusal.
+     assert world.enact_plan(actor, {"action": "dance"}) is False
++    assert world.last_outcome(actor)["reason"] == "unsupported"
++    assert world.enact_plan(actor, {"action": "fetch"}) is False
+ 
+     assert _counts(world)["total"] == before + 2
+     assert world.last_outcome(actor)["reason"] == "malformed"
+diff --git a/tests/test_phase054_llm_prompt.py b/tests/test_phase054_llm_prompt.py
+index 921a11d..e5c8d2e 100644
+--- a/tests/test_phase054_llm_prompt.py
++++ b/tests/test_phase054_llm_prompt.py
+@@ -150,7 +150,7 @@ def test_the_packet_matches_the_snapshot_for_a_fixed_view():
+ 
+ def test_the_packet_uses_the_packet_schema_and_the_pack_hash():
+     record = PromptBuilder().build(_fixed_context())
+-    assert record.schema == PACKET_SCHEMA == "bigville/prompt/5"   # Phase 071c: the reply has free_actions
++    assert record.schema == PACKET_SCHEMA == "bigville/prompt/6"   # Phase 071d: the packet lists giveable_notes and requests
+     assert record.pack == "bigville" and len(record.pack_hash) == 64
+ 
+ 
+@@ -242,8 +242,8 @@ def test_an_utterance_to_names_its_target_and_a_memory_update_gets_its_text():
+ 
+ 
+ @pytest.mark.parametrize("reply, message", [
+-    (_reply({"action": "attempt", "intensity": "very very hard"}), "intensity must be a number or one of these words"),
+-    (_reply({"action": "fetch", "params": {"amount": "loads"}}), "params.amount must be a number or one of these words"),
++    (_reply({"action": "attempt", "intensity": ["very very hard"]}), "intensity must be a number or a word"),
++    (_reply({"action": "fetch", "params": {"amount": ["loads"]}}), "params.amount must be a number or a word"),
+     (_reply({"action": "attempt", "target": 7}), "major_action.target must be a handle (text) or null"),
+     (_reply({"action": "attempt", "hammer": "x"}), "major_action has no field 'hammer'"),
+     (_reply(None, memory_updates=[{"kind": "gossip", "text": "x"}]), "memory_updates kind must be"),
+@@ -257,7 +257,7 @@ def test_a_reply_outside_the_schema_is_named_in_words(reply, message):
+ 
+ 
+ def test_an_invalid_reply_is_repaired_once_with_the_errors_in_words_and_then_idles():
+-    bad = _reply({"action": "attempt", "intensity": "very very hard"})
++    bad = _reply({"action": "attempt", "intensity": ["very very hard"]})
+     provider = Fake(bad, bad)
+     backend = LLMBackend(_baker(), provider, autopilot=False)
+     response = backend.decide(_fixed_context())
+@@ -269,7 +269,7 @@ def test_an_invalid_reply_is_repaired_once_with_the_errors_in_words_and_then_idl
+ 
+ 
+ def test_a_repaired_reply_in_words_is_accepted():
+-    provider = Fake(_reply({"action": "attempt", "intensity": "very very hard"}), SWING)
++    provider = Fake(_reply({"action": "attempt", "intensity": ["very very hard"]}), SWING)
+     backend = LLMBackend(_baker(), provider, autopilot=False)
+     response = backend.decide(_fixed_context())
+     assert response.major_action.action == "attempt"
+diff --git a/tests/test_phase057_tui.py b/tests/test_phase057_tui.py
+index 05bc3bf..4bcadcf 100644
+--- a/tests/test_phase057_tui.py
++++ b/tests/test_phase057_tui.py
+@@ -702,7 +702,8 @@ def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
+             except urlrequest.HTTPError as exc:
+                 return exc.code, json.loads(exc.read())
+ 
+-        status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
++        # Phase 071d: an unknown intensity word is the world's to refuse; a list is the malformed case.
++        status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": ["very very hard"]}}})
+         assert status == 400 and "intensity must be" in body["error"]
+         status, body = post({"reply": "work"})
+         assert status == 400
+diff --git a/tests/test_phase067_tui_modes.py b/tests/test_phase067_tui_modes.py
+index 00a52a8..de11b1d 100644
+--- a/tests/test_phase067_tui_modes.py
++++ b/tests/test_phase067_tui_modes.py
+@@ -355,7 +355,8 @@ def test_the_text_mode_shows_only_what_the_packet_and_the_view_carry(game):
+     public = packet["context"]["public"]
+     assert set(public) <= {"now", "around", "map", "can", "last", "heard", "consult"}
+     assert set(public["around"]) <= {"people", "seen", "things", "writing"}
++    # Phase 071d: the packet's private part also lists the notes and requests the LLM may name by handle.
+     assert set(packet["context"]["private"]) <= {"lead", "body", "skills", "carrying", "knows", "places", "kin",
+-                                                  "lessons", "notes"}
++                                                  "lessons", "notes", "giveable_notes", "requests"}
+     room = "\n".join(prose.room_lines(packet, view, PACK_NAME))
+     assert "sizes" not in room and "omitted" not in room
+diff --git a/tests/test_phase071c_free_actions.py b/tests/test_phase071c_free_actions.py
+index fa9c25a..7aa25da 100644
+--- a/tests/test_phase071c_free_actions.py
++++ b/tests/test_phase071c_free_actions.py
+@@ -154,12 +154,13 @@ def test_the_speech_free_action_and_an_utterance_are_the_same_world_call(town):
+ # ------------------------------------------------------------------ the reply schema
+ def test_a_free_action_reply_is_checked_against_the_free_action_table():
+     assert reply_schema.check({"free_actions": [{"action": "glance", "target": "signal:1"}]}, PACK) == []
+-    errors = reply_schema.check({"free_actions": [{"action": "glance"}]}, PACK)
+-    assert errors == ["free action glance needs a target"]
++    # Phase 071d: a missing target is the world's refusal (no_target), not a malformed reply.
++    assert reply_schema.check({"free_actions": [{"action": "glance"}]}, PACK) == []
+     assert reply_schema.check({"free_actions": [{"action": "accept", "params": {"item": "flour"}}]}, PACK) == []
+     errors = reply_schema.check({"free_actions": [{"action": "write_note", "params": {"text": 3}}]}, PACK)
+     assert errors == ["free_actions.params.text must be text"]
+-    errors = reply_schema.check({"free_actions": [{"action": "set_intensity", "params": {"intensity": "sideways"}}]},
++    # Phase 071d: an unknown intensity word is folded by the world, not refused as malformed; a list is malformed.
++    errors = reply_schema.check({"free_actions": [{"action": "set_intensity", "params": {"intensity": ["sideways"]}}]},
+                                 PACK)
+     assert errors and errors[0].startswith("free_actions.params.intensity")
+     assert reply_schema.check({"free_actions": [{"action": "stop", "reason": "x"}]}, PACK)
+@@ -194,7 +195,8 @@ def test_an_llm_glance_reply_is_enacted_and_shows_the_sound_and_place_in_last(to
+     turn = world._turn
+     script = _llm(town, name, _reply(free_actions=[{"action": "glance", "target": "signal:1", "params": {}}]))
+     town.step()
+-    assert script.calls == 1
++    # Phase 071d: a free-only reply is asked again, up to PROMPT_REPLY.free_rounds_max times, so three calls.
++    assert script.calls == 1 + load_pack(PACK)["PROMPT_REPLY"]["free_rounds_max"]
+     outcome = free_replies.last_free(town, name)
+     assert outcome["action"] == "glance" and outcome["applied"] is True, outcome
+     assert outcome["place"] == "arm" and outcome["sound"]
+diff --git a/tests/test_phase071c_terminal.py b/tests/test_phase071c_terminal.py
+index 76067b8..87432a7 100644
+--- a/tests/test_phase071c_terminal.py
++++ b/tests/test_phase071c_terminal.py
+@@ -196,7 +196,23 @@ def test_text_mode_writes_the_glance_outcome_into_the_room_stream(game):
+     assert "From your arm" in text or "Nothing answers from your arm" in text
+ 
+ 
+-def test_over_http_a_glance_on_its_own_is_refused_with_a_message():
+-    client = HttpClient("http://127.0.0.1:9", PLAYER)
+-    with pytest.raises(UnsupportedOverHttp):
+-        client.apply_free({"free_actions": [{"action": "glance", "target": "signal:1"}]})
++def test_over_http_a_glance_on_its_own_runs_with_no_turn():
++    """Phase 071d (was: raises UnsupportedOverHttp). A glance alone goes to /api/free over HTTP: it runs with no step,
++    so the turn does not advance, and the server returns the player's view."""
++    import threading
++    from http.server import HTTPServer
++    from bigville.server import BigvilleHandler, GameService
++    service = GameService(scenario="town100", seed=SEED, player=PLAYER, mode="agent")
++    server = HTTPServer(("127.0.0.1", 0), type("Handler", (BigvilleHandler,), {"service": service}))
++    thread = threading.Thread(target=server.serve_forever, daemon=True)
++    thread.start()
++    try:
++        turn = service.game.world._turn
++        result = HttpClient(f"http://127.0.0.1:{server.server_address[1]}", PLAYER).apply_free(
++            {"free_actions": [{"action": "glance", "target": "signal:1"}]})
++    finally:
++        server.shutdown()
++        server.server_close()
++    assert result["status"] == "free" and "view" in result
++    assert service.game.world._turn == turn
++    assert service.game.free_outcomes[PLAYER]["action"] == "glance"
+diff --git a/worlds/bigville_world.py b/worlds/bigville_world.py
+index 1c4f0d5..6daad9a 100644
+--- a/worlds/bigville_world.py
++++ b/worlds/bigville_world.py
+@@ -9919,6 +9919,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
+                                      with_kind=plan.get("with"), intensity=plan.get("intensity", 1.0))
+         if action in _dn.ACTIONS:   # Phase 042b: light and douse take no target; the world finds the lamp in pole reach
+             return self.major_action(actor, action)
++        if action not in self.E.MAJOR_ACTIONS:
++            # Phase 071d: an action name the world does not know is a refusal the resident learns from, not a
++            # malformed reply (the reply check passes any text here).
++            return self._refuse("unsupported")
+         # The plan names no action this resident can take, or no target for it.
+         return self._refuse("malformed")
+ 
+@@ -10823,19 +10827,19 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
+             return self.speak(actor, kwargs.pop("target", args[0] if args else None),
+                               kwargs.pop("content", args[1] if len(args) > 1 else ""), **kwargs)
+         if action == "reply":
+-            return self.reply(actor, kwargs.pop("target", args[0]),
++            return self.reply(actor, kwargs.pop("target", args[0] if args else None),
+                               kwargs.pop("content", args[1] if len(args) > 1 else ""), **kwargs)
+         if action == "write_note":
+             return self.write_note(actor, kwargs.pop("content", args[0] if args else ""), **kwargs)
+         if action == "give_note":
+-            return self.give_note(actor, kwargs.pop("recipient", args[0]),
++            return self.give_note(actor, kwargs.pop("recipient", args[0] if args else None),
+                                   kwargs.pop("note", args[1] if len(args) > 1 else None))
+         if action == "accept":
+             if "item" in kwargs:
+                 return self.accept_item(actor, kwargs.pop("item"), giver=kwargs.pop("giver", None))
+-            return self.accept_request(actor, kwargs.pop("request", args[0]))
++            return self.accept_request(actor, kwargs.pop("request", args[0] if args else None))
+         if action == "decline":
+-            return self.decline_request(actor, kwargs.pop("request", args[0]))
++            return self.decline_request(actor, kwargs.pop("request", args[0] if args else None))
+         if action == "set_intensity":
+             return self.set_job_pace(actor, kwargs.pop("intensity", args[0] if args else None))
+         if action == "stop":
+diff --git a/worlds/body.py b/worlds/body.py
+index e03a6d2..4282e48 100644
+--- a/worlds/body.py
++++ b/worlds/body.py
+@@ -336,6 +336,17 @@ class Body:
+         return [{"action": "attend", "target": f"signal:{index}", "where": str(row["where"])}
+                 for index, row in enumerate(self._signal_rows(), start=1)]
+ 
++    def probe(self, handle):
++        """Phase 071d: the sound and the place a felt signal (handle signal:N) has now, from the body's own rows, as
++        {sound, place}; None when no such signal is felt. Reads only; no state changes."""
++        source = self.signal_named(handle)
++        if source is None:
++            return None
++        for row in self._derive()["sources"]:
++            if row["source"] == source:
++                return {"sound": row.get("sound") or None, "place": str(row.get("where", ""))}
++        return None
++
+     def signal_named(self, handle):
+         """The source name of the felt signal a handle names (signal:N), or None when no such signal is felt."""
+         text = str(handle)
+diff --git a/tests/test_phase071d_reply_checks.py b/tests/test_phase071d_reply_checks.py
+new file mode 100644
+index 0000000..9fdf254
+--- /dev/null
++++ b/tests/test_phase071d_reply_checks.py
+@@ -0,0 +1,142 @@
++"""Phase 071d, decision 1: a reply is accepted unless it is malformed.
++
++An unknown major action, an unknown free action, a nonexistent target, an unknown region and a missing required target
++reach the world, which refuses each with a REFUSAL_REASONS code shown in `last`. The repair call runs only for a
++malformed reply (not JSON, not an object, a field of the wrong type).
++
++Fake providers only; no network.
++"""
++from __future__ import annotations
++
++import json
++import os
++import sys
++
++import pytest
++
++_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++if _ROOT not in sys.path:
++    sys.path.insert(0, _ROOT)
++
++from bigville import free_replies                                  # noqa: E402
++from bigville.api import create_game                               # noqa: E402
++from bigville.backends import LLMBackend                           # noqa: E402
++from bigville.backends import reply_schema                         # noqa: E402
++from bigville.backends.llm import validate_response                # noqa: E402
++from domains.pack import load_pack                                 # noqa: E402
++
++PACK = "bigville"
++SEED = 305000
++REFUSALS = load_pack(PACK)["REFUSAL_REASONS"]
++
++
++class Seq:
++    """A fake provider: the i-th call gets the i-th text (the last text repeats)."""
++
++    def __init__(self, *texts):
++        self.texts = list(texts)
++        self.calls = 0
++
++    def complete(self, prompt):
++        self.calls += 1
++        return self.texts[min(self.calls, len(self.texts)) - 1]
++
++
++def _reply(major=None, free=None):
++    return json.dumps({"major_action": major, "free_actions": free or [], "utterances": [], "memory_updates": [],
++                       "continuation": None})
++
++
++@pytest.fixture
++def town():
++    return create_game(scenario="town100", seed=SEED, default_backend="simple", autonomous=True,
++                       ticks_per_period="world")
++
++
++def _adult(world):
++    return next(name for name in world._actors
++                if world.eng.node(world._actors[name])["attrs"].get("life_stage") == "adult")
++
++
++def _llm(game, name, *texts):
++    script = Seq(*texts)
++    game.set_backend(name, LLMBackend(game.characters[name], script, autopilot=False))
++    return script
++
++
++def test_an_unknown_major_action_is_refused_by_the_world_with_no_repair(town):
++    name = _adult(town.world)
++    script = _llm(town, name, _reply({"action": "teleport", "params": {}}))
++    town.step()
++    assert script.calls == 1
++    outcome = town.world.last_outcome(name)
++    assert outcome["applied"] is False and outcome["reason"] == "unsupported"
++
++
++def test_an_unknown_free_action_is_refused_by_the_world_with_no_repair(town):
++    name = _adult(town.world)
++    script = _llm(town, name, _reply({"action": "rest"}, [{"action": "juggle", "target": None, "params": {}}]))
++    town.step()
++    assert script.calls == 1
++    outcome = free_replies.last_free(town, name)
++    assert outcome["action"] == "juggle" and outcome["applied"] is False and outcome["reason"] == "unsupported"
++
++
++def test_a_nonexistent_target_is_refused_by_the_world_with_no_repair(town):
++    name = _adult(town.world)
++    script = _llm(town, name, _reply({"action": "strike", "target": "Nobody Known", "params": {}}))
++    town.step()
++    assert script.calls == 1
++    outcome = town.world.last_outcome(name)
++    assert outcome["applied"] is False and outcome["reason"] in REFUSALS
++
++
++def test_an_unknown_region_is_refused_by_the_world_with_no_repair(town):
++    name = _adult(town.world)
++    script = _llm(town, name, _reply({"action": "press", "target": "nowhere at all", "params": {}}))
++    town.step()
++    assert script.calls == 1
++    outcome = town.world.last_outcome(name)
++    assert outcome["applied"] is False and outcome["reason"] in REFUSALS
++
++
++def test_a_missing_required_target_is_refused_by_the_world_with_no_repair(town):
++    name = _adult(town.world)
++    script = _llm(town, name, _reply({"action": "rest"}, [{"action": "reply", "params": {"text": "hello"}}]))
++    town.step()
++    assert script.calls == 1
++    outcome = free_replies.last_free(town, name)
++    assert outcome["applied"] is False and outcome["reason"] == "no_target"
++
++
++def test_a_malformed_reply_goes_to_the_repair_call_and_a_repaired_one_is_accepted(town):
++    name = _adult(town.world)
++    script = _llm(town, name, _reply({"action": 5, "params": {}}), _reply(None))
++    town.step()
++    assert script.calls == 2
++    assert town.backends[name].last_backend_state["outcome"] == "repaired"
++
++
++def test_a_malformed_reply_is_an_error_and_a_name_the_world_does_not_know_is_not():
++    fields = tuple(load_pack(PACK)["PROMPT_RESPONSE_FIELDS"])
++    assert validate_response({"major_action": {"action": 5}}, fields)
++    assert validate_response({"major_action": {"action": "teleport"}}, fields) == []
++    assert validate_response({"major_action": {"action": ""}}, fields) == []
++    assert validate_response({"free_actions": [{"action": None}]}, fields)
++    assert validate_response({"free_actions": [{"action": "juggle"}]}, fields) == []
++    assert reply_schema.check({"major_action": {"action": "teleport"}}, PACK) == []
++    assert reply_schema.check({"major_action": {"action": ""}}, PACK) == []
++    assert reply_schema.check({"free_actions": [{"action": "juggle"}]}, PACK) == []
++    assert reply_schema.check({"free_actions": [{"action": "reply"}]}, PACK) == []
++    assert reply_schema.check({"major_action": {"action": "attempt", "intensity": ["x"]}}, PACK)
++
++
++def test_an_unknown_intensity_or_amount_word_folds_to_a_normal_effort():
++    reply = {"major_action": {"action": "fetch", "params": {"amount": "sheaves"}, "intensity": "sideways"},
++             "utterances": [], "memory_updates": [], "continuation": None}
++    assert reply_schema.check(reply, PACK) == []
++    wire = reply_schema.to_wire(reply, PACK)
++    assert wire["major_action"]["params"]["amount"] == 1.0
++    assert wire["major_action"]["params"]["intensity"] == 1.0
++    free = {"free_actions": [{"action": "set_intensity", "params": {"intensity": "sideways"}}]}
++    assert reply_schema.to_wire(free, PACK)["free_actions"][0]["params"]["intensity"] == 1.0
+diff --git a/tests/test_phase071d_free_rounds_notes.py b/tests/test_phase071d_free_rounds_notes.py
+new file mode 100644
+index 0000000..134adbb
+--- /dev/null
++++ b/tests/test_phase071d_free_rounds_notes.py
+@@ -0,0 +1,247 @@
++"""Phase 071d, decisions 2 to 5.
++
++2. A reply with free actions and no major action is asked again in the same turn, after its free actions are applied,
++   up to PROMPT_REPLY.free_rounds_max times. The server's /api/free route applies free actions with no step.
++3. An LLM resident gives a note it holds, accepts a request and declines another, by the handles its view lists.
++4. Free outcomes survive a game checkpoint: the restored `last` equals the saved one.
++5. world.free_action takes keyword arguments (reply, give_note, accept, decline), and Body.probe reads a felt signal.
++
++Fake providers only; no network.
++"""
++from __future__ import annotations
++
++import json
++import os
++import sys
++
++import pytest
++
++_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++if _ROOT not in sys.path:
++    sys.path.insert(0, _ROOT)
++
++from bigville import free_replies                                  # noqa: E402
++from bigville.api import create_game                               # noqa: E402
++from bigville.backends import LLMBackend                           # noqa: E402
++from bigville.game_persistence import load_game_checkpoint, save_game_checkpoint  # noqa: E402
++from domains.pack import load_pack                                 # noqa: E402
++
++PACK = "bigville"
++SEED = 305000
++LIMIT = int(load_pack(PACK)["PROMPT_REPLY"]["free_rounds_max"])
++
++
++class Seq:
++    """A fake provider: the i-th call gets the i-th text (the last text repeats)."""
++
++    def __init__(self, *texts):
++        self.texts = list(texts)
++        self.calls = 0
++
++    def complete(self, prompt):
++        self.calls += 1
++        return self.texts[min(self.calls, len(self.texts)) - 1]
++
++
++def _reply(major=None, free=None):
++    return json.dumps({"major_action": major, "free_actions": free or [], "utterances": [], "memory_updates": [],
++                       "continuation": None})
++
++
++@pytest.fixture
++def town():
++    return create_game(scenario="town100", seed=SEED, default_backend="simple", autonomous=True,
++                       ticks_per_period="world")
++
++
++def _adult(world):
++    return next(name for name in world._actors
++                if world.eng.node(world._actors[name])["attrs"].get("life_stage") == "adult")
++
++
++def _other(world, name):
++    return next(other for other in world._actors if other != name)
++
++
++def _llm(game, name, *texts):
++    """Install an LLM backend for ``name`` with a fake provider (its texts may be set later on the returned Seq)."""
++    script = Seq(*texts)
++    game.set_backend(name, LLMBackend(game.characters[name], script, autopilot=False))
++    return script
++
++
++def _felt(world, name, locus="arm", amount=0.4):
++    world.body_of(name).state["ledger"][locus] = amount
++
++
++def _walk(view, path):
++    for key in path:
++        view = view[key]
++    return view
++
++
++def _shown(game, name, path, raw):
++    """The handle the LLM sees and copies for a world handle (Phase 054b: opaque tokens). ``path`` is the agent view's key
++    path to the list that holds it. Without a handle map (a game before Phase 054b) the world handle is shown as it is."""
++    handles = getattr(game.backends[name], "handles", None)
++    if handles is None:
++        return raw
++    context = game._context(name)
++    rows = [row["handle"] for row in _walk(context.agent_view, path)]
++    return _walk(handles.mask_context(context).agent_view, path)[rows.index(raw)]["handle"]
++
++
++def _request(world, name, sender, key, task):
++    """A request addressed to `name` from `sender`, registered the way the world's request tests register one."""
++    req = world.eng.add_node("Request", {"name": key, "kind": "task", "task": task, "good": "", "requirement": 0.0,
++                                         "incentive": 0.0, "status": 0.0, "created_turn": 1.0,
++                                         "response_turn": -1.0, "source_utterance": 0})
++    world.eng.add_edge_unchecked(world._actors[sender], "requests", req)
++    world.eng.add_edge_unchecked(req, "from", world._actors[sender])
++    world.eng.add_edge_unchecked(req, "to", world._actors[name])
++    world.eng.add_edge_unchecked(world._actors[name], "received_request", req)
++    world._requests[key] = req
++    return req
++
++
++# ------------------------------------------------------------------ decision 2: free rounds in one turn
++def test_an_llm_glances_then_acts_in_a_second_round_and_both_apply(town):
++    world = town.world
++    name = _adult(world)
++    _felt(world, name)
++    script = _llm(town, name)
++    token = _shown(town, name, ("can",), "signal:1")
++    script.texts = [_reply(None, [{"action": "glance", "target": token, "params": {}}]), _reply({"action": "rest"})]
++    turn = world._turn
++    town.step()
++    assert script.calls == 2
++    assert world._turn == turn + 1
++    assert free_replies.last_free(town, name)["action"] == "glance"
++    assert free_replies.last_free(town, name)["applied"] is True
++    assert town.last_responses[name].major_action.action == "rest"
++
++
++def test_the_round_cap_holds_when_every_reply_is_free_only(town):
++    world = town.world
++    name = _adult(world)
++    _felt(world, name)
++    script = _llm(town, name)
++    token = _shown(town, name, ("can",), "signal:1")
++    script.texts = [_reply(None, [{"action": "glance", "target": token, "params": {}}])]
++    turn = world._turn
++    town.step()
++    assert script.calls == 1 + LIMIT
++    assert world._turn == turn + 1
++    assert town.last_responses[name].major_action is None
++
++
++def test_a_simple_resident_is_never_asked_again_and_has_no_free_actions(town):
++    world = town.world
++    turn = world._turn
++    for _ in range(3):
++        town.step()
++    assert world._turn == turn + 3
++    assert all(not response.free_actions for response in town.last_responses.values())
++
++
++def test_the_server_free_route_applies_free_actions_and_refuses_a_major_action(town):
++    from bigville.server import GameService
++    service = GameService(scenario="town100", seed=SEED, player=_adult(town.world), mode="agent")
++    turn = service.game.world._turn
++    result = service.free({"free_actions": [{"action": "glance", "target": "signal:1"}]})
++    assert result["status"] == "free" and "view" in result
++    assert service.game.world._turn == turn
++    with pytest.raises(ValueError):
++        service.free({"free_actions": [], "major_action": {"action": "rest"}})
++    with pytest.raises(ValueError):
++        service.free({"free_actions": "glance"})
++
++
++# ------------------------------------------------------------------ decision 3: notes and requests by handle
++def test_the_view_lists_the_handles_of_held_notes_and_open_requests(town):
++    world = town.world
++    name = _adult(world)
++    other = _other(world, name)
++    world.write_note(name, "Bring the ledger on Monday", note_id="note:9")
++    world.write_note(other, "Not mine", note_id="note:10")
++    _request(world, name, other, "request:1", "carry the flour")
++    _request(world, name, other, "request:2", "mind the goat")
++    self_view = town.agent_view(name, "agent")["self"]
++    assert {"handle": "note:9", "what": "Bring the ledger on Monday"} in self_view["giveable_notes"]
++    assert all(row["handle"] != "note:10" for row in self_view["giveable_notes"])
++    assert {row["handle"] for row in self_view["requests"]} == {"request:1", "request:2"}
++    assert all(row["who"] == other for row in self_view["requests"])
++
++
++def test_an_llm_gives_a_note_it_holds_and_accepts_and_declines_by_their_handles(town):
++    world = town.world
++    name = _adult(world)
++    other = _other(world, name)
++    world.write_note(name, "Bring the ledger on Monday", note_id="note:9")
++    req_ok = _request(world, name, other, "request:1", "carry the flour")
++    req_no = _request(world, name, other, "request:2", "mind the goat")
++    script = _llm(town, name)
++    free = [{"action": "give_note", "target": other,
++             "params": {"note": _shown(town, name, ("self", "giveable_notes"), "note:9")}},
++            {"action": "accept", "target": _shown(town, name, ("self", "requests"), "request:1"), "params": {}},
++            {"action": "decline", "target": _shown(town, name, ("self", "requests"), "request:2"), "params": {}}]
++    script.texts = [_reply({"action": "rest"}, free)]
++    town.step()
++    assert world.eng.has_edge(world._actors[other], "holds", world._notes["note:9"])
++    assert not world.eng.has_edge(world._actors[name], "holds", world._notes["note:9"])
++    assert world.request_status(req_ok) == 1
++    assert world.request_status(req_no) == -1
++
++
++def test_a_note_the_resident_does_not_hold_is_refused_as_not_held(town):
++    """The model cannot name a note it does not hold (the handle map refuses an unseen handle), so the refusal is tested
++    on the free action itself."""
++    world = town.world
++    name = _adult(world)
++    other = _other(world, name)
++    world.write_note(other, "Theirs", note_id="note:11")
++    free_replies.apply_all(town, name, [{"action": "give_note", "target": other, "params": {"note": "note:11"}}])
++    outcome = free_replies.last_free(town, name)
++    assert outcome["applied"] is False and outcome["reason"] == "not_held"
++    assert world.eng.has_edge(world._actors[other], "holds", world._notes["note:11"])
++
++
++# ------------------------------------------------------------------ decision 4: the checkpoint keeps `last`
++def test_free_outcomes_survive_a_checkpoint(town, tmp_path):
++    world = town.world
++    name = _adult(world)
++    _felt(world, name)
++    free_replies.apply_all(town, name, [{"action": "glance", "target": "signal:1", "params": {}}])
++    saved_last = town.agent_view(name, "agent")["last"]
++    assert saved_last["action"] == "glance"
++    save_game_checkpoint(town, tmp_path / "game")
++    restored = load_game_checkpoint(tmp_path / "game", llm_log=False)
++    assert restored.free_outcomes == town.free_outcomes
++    assert restored.agent_view(name, "agent")["last"] == saved_last
++
++
++# ------------------------------------------------------------------ decision 5: keyword calls and Body.probe
++def test_free_action_takes_keyword_arguments(town):
++    world = town.world
++    name = _adult(world)
++    other = _other(world, name)
++    world.write_note(name, "Bring the ledger", note_id="note:9")
++    _request(world, name, other, "request:1", "carry the flour")
++    _request(world, name, other, "request:2", "mind the goat")
++    world.free_action(name, "reply", target=other, content="hello")
++    world.free_action(name, "give_note", recipient=other, note="note:9")
++    assert world.eng.has_edge(world._actors[other], "holds", world._notes["note:9"])
++    world.free_action(name, "accept", request="request:1")
++    world.free_action(name, "decline", request="request:2")
++    assert world.request_status("request:1") == 1 and world.request_status("request:2") == -1
++
++
++def test_body_probe_gives_the_sound_and_place_of_a_felt_signal(town):
++    world = town.world
++    name = _adult(world)
++    _felt(world, name)
++    body = world.body_of(name)
++    probe = body.probe("signal:1")
++    assert probe["place"] == "arm" and probe["sound"]
++    assert body.probe("signal:99") is None
++    assert body.probe("nothing") is None

@@ -28,7 +28,7 @@ from typing import Any
 from domains.autopilot import usual_words
 from domains.pack import load_pack
 
-PACKET_SCHEMA = "bigville/prompt/6"   # Phase 054b: handles are the harness's tokens; the lazy text names no id or cell (071c: prompt/5)
+PACKET_SCHEMA = "bigville/prompt/7"   # Phase 071d: the packet lists giveable_notes and requests (054b: prompt/6, 071c: prompt/5)
 LESSON_KIND = "lesson"
 
 
@@ -186,6 +186,13 @@ def build_packet(context, *, pack: str, consult_reason: str | None = None,
         "kin": caps.items("kin", self_view.get("kin") or []),
         "lessons": lessons,
         "notes": caps.items("notes", notes),
+        # Phase 071d: the handles give_note, accept and decline name (copied exactly by the model).
+        "giveable_notes": caps.items("giveable_notes", [
+            {"handle": row["handle"], "what": _cut(row["what"], int(tbl["note_chars"]))}
+            for row in (self_view.get("giveable_notes") or [])]),
+        "requests": caps.items("requests", [
+            {"handle": row["handle"], "who": row["who"], "what": _cut(row["what"], int(tbl["note_chars"]))}
+            for row in (self_view.get("requests") or [])]),
     }
 
     heard = [{"from": row.get("from", ""), "quote": _cut(row.get("text", ""), int(tbl["speech_chars"]))}

@@ -29,7 +29,9 @@
         "places",
         "kin",
         "notes",
-        "lessons"
+        "lessons",
+        "giveable_notes",
+        "requests"
       ],
       "persona": [
         "name",

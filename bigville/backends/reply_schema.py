@@ -39,8 +39,21 @@ def _is_text(value) -> bool:
     return isinstance(value, str)
 
 
-def _words_list(words, limit=4) -> str:
-    return ", ".join(sorted(str(w) for w in words)[:limit])
+def _is_number_or_word(value) -> bool:
+    """A number, or a word the lexicon may or may not know (an unknown word is the world's to refuse or fold)."""
+    return isinstance(value, str) or (isinstance(value, (int, float)) and not isinstance(value, bool))
+
+
+# Phase 071d: a word the lexicon does not know, in intensity or amount, folds to a normal effort: 1.0 is the value the
+# world uses when the field is left out.
+_NORMAL = 1.0
+
+
+def _weight(value, reader, pack) -> float:
+    try:
+        return reader(value, pack)
+    except (TypeError, ValueError):
+        return _NORMAL
 
 
 def _check_major_action(action, pack, errors) -> None:
@@ -51,22 +64,14 @@ def _check_major_action(action, pack, errors) -> None:
     for name in ("target", "with"):
         if action.get(name) is not None and not _is_text(action.get(name)):
             errors.append(f"major_action.{name} must be a handle (text) or null")
-    if action.get("intensity") is not None:
-        try:
-            intensity_value(action["intensity"], pack)
-        except (TypeError, ValueError):
-            words = list(load_pack(pack)["INTENSITY_WORDS"])
-            errors.append("intensity must be a number or one of these words: " + _words_list(words, 6))
+    if action.get("intensity") is not None and not _is_number_or_word(action["intensity"]):
+        errors.append("intensity must be a number or a word")
     params = action.get("params")
     if isinstance(params, dict):
         if params.get("verb") is not None and not _is_text(params["verb"]):
             errors.append("params.verb must be a verb name (text)")
-        if params.get("amount") is not None:
-            try:
-                amount_value(params["amount"], pack)
-            except (TypeError, ValueError):
-                words = list(load_pack(pack)["AMOUNT_WORDS"])
-                errors.append("params.amount must be a number or one of these words: " + _words_list(words, 6))
+        if params.get("amount") is not None and not _is_number_or_word(params["amount"]):
+            errors.append("params.amount must be a number or a word")
 
 
 def _check_free_action(item, pack, errors) -> None:
@@ -78,7 +83,7 @@ def _check_free_action(item, pack, errors) -> None:
             errors.append(f"free_actions has no field '{str(key)[:24]}'")
             return
     name = item.get("action")
-    if not isinstance(name, str) or not name:
+    if not isinstance(name, str):
         errors.append("free_actions need an action (text)")
         return
     if item.get("target") is not None and not _is_text(item.get("target")):
@@ -92,26 +97,16 @@ def _check_free_action(item, pack, errors) -> None:
         if params.get(key) is not None and not _is_text(params.get(key)):
             errors.append(f"free_actions.params.{key} must be text")
             return
-    if params.get("intensity") is not None:
-        try:
-            intensity_value(params["intensity"], pack)
-        except (TypeError, ValueError):
-            words = list(load_pack(pack)["INTENSITY_WORDS"])
-            errors.append("free_actions.params.intensity must be a number or one of these words: "
-                          + _words_list(words, 6))
-    spec = load_pack(pack)["FREE_ACTIONS"].get(name)
-    if spec is None:
-        return
-    alternative = spec.get("target_or_param")
-    if spec.get("requires_target") and not item.get("target") and not (alternative and params.get(alternative)):
-        errors.append(f"free action {name} needs a target")
+    if params.get("intensity") is not None and not _is_number_or_word(params["intensity"]):
+        errors.append("free_actions.params.intensity must be a number or a word")
+    # A missing target the action needs is the world's refusal (no_target), not a malformed reply.
 
 
 def _fold_free(item, pack) -> dict:
     """A free action as the world reads it: the intensity word folded to its value; the rest as written."""
     params = dict(item.get("params") or {})
     if params.get("intensity") is not None:
-        params["intensity"] = intensity_value(params["intensity"], pack)
+        params["intensity"] = _weight(params["intensity"], intensity_value, pack)
     target = item.get("target")
     return {"action": str(item["action"]), "target": target if _is_text(target) else None, "params": params}
 
@@ -248,9 +243,9 @@ def _fold_action(action, pack, affordances=None) -> dict:
     if held is not None and held not in ("", "none"):
         params["tool" if name == "work" else "with"] = held
     if action.get("intensity") is not None:
-        params["intensity"] = intensity_value(action["intensity"], pack)
+        params["intensity"] = _weight(action["intensity"], intensity_value, pack)
     if params.get("amount") is not None:
-        params["amount"] = amount_value(params["amount"], pack)
+        params["amount"] = _weight(params["amount"], amount_value, pack)
     return {"action": name, "params": params, "reason": action.get("reason") or ""}
 
 
@@ -263,7 +258,7 @@ def to_wire(parsed: dict, pack: str, *, text_limit: int | None = None,
     model wrote it."""
     out = dict(parsed)
     action = parsed.get("major_action")
-    if isinstance(action, dict) and action.get("action"):
+    if isinstance(action, dict) and isinstance(action.get("action"), str):
         out["major_action"] = _fold_action(action, pack, affordances)
     if parsed.get("utterances") is not None:
         out["utterances"] = [_utterance(item) for item in parsed["utterances"]]

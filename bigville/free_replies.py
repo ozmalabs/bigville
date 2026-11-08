@@ -65,13 +65,14 @@ def _glance_refusal(world, actor, target):
 
 def _glance_probe(world, actor, target):
     """The sound and place of the glanced feeling, as the body now resolves it (the glance is in place until the next
-    tick). Reads the body's own rows; no state changes."""
-    body = world.body_of(actor)
-    source = body.signal_named(target)
-    for row in body._derive()["sources"]:
-        if row["source"] == source:
-            return {"sound": row.get("sound") or None, "place": str(row.get("where", ""))}
-    return {}
+    tick). Body.probe reads the body's own rows; no state changes."""
+    return world.body_of(actor).probe(target) or {}
+
+
+def _holds_note(world, actor, note):
+    """Whether the actor holds the note (the world's note id, `note` in params). Reads only."""
+    node = world._notes.get(note) if isinstance(note, str) else None
+    return node is not None and world.eng.has_edge(world._actors[actor], "holds", node)
 
 
 def _refuse(turn, action, code):
@@ -87,8 +88,16 @@ def apply_one(game, actor, item) -> dict:
     target = item.get("target") if isinstance(item.get("target"), str) else None
     params = dict(item.get("params") or {})
     table = load_pack(world.data_pack)["FREE_ACTIONS"]
+    spec = table.get(name, {})
+    alternative = spec.get("target_or_param")
     if name not in table or name not in ROUTES:
         outcome = _refuse(turn, name, "unsupported")
+    elif spec.get("requires_target") and target is None and not (alternative and params.get(alternative)):
+        # Phase 071d: a missing target the action needs is the world's refusal, not a malformed reply.
+        outcome = _refuse(turn, name, "no_target")
+    elif name == "give_note" and not _holds_note(world, actor, params.get("note")):
+        # The world's give_note moves whatever note it is named, so the resident must hold it first.
+        outcome = _refuse(turn, name, "not_held")
     elif name == "glance" and _glance_refusal(world, actor, target):
         outcome = _refuse(turn, name, _glance_refusal(world, actor, target))
     else:

@@ -150,7 +150,7 @@ def test_the_packet_matches_the_snapshot_for_a_fixed_view():
 
 def test_the_packet_uses_the_packet_schema_and_the_pack_hash():
     record = PromptBuilder().build(_fixed_context())
-    assert record.schema == PACKET_SCHEMA == "bigville/prompt/6"   # Phase 054b: handles are tokens (071c: prompt/5)
+    assert record.schema == PACKET_SCHEMA == "bigville/prompt/7"   # Phase 071d: packet lists giveable_notes and requests (054b: prompt/6)
     assert record.pack == "bigville" and len(record.pack_hash) == 64
 
 
@@ -242,8 +242,8 @@ def test_an_utterance_to_names_its_target_and_a_memory_update_gets_its_text():
 
 
 @pytest.mark.parametrize("reply, message", [
-    (_reply({"action": "attempt", "intensity": "very very hard"}), "intensity must be a number or one of these words"),
-    (_reply({"action": "fetch", "params": {"amount": "loads"}}), "params.amount must be a number or one of these words"),
+    (_reply({"action": "attempt", "intensity": ["very very hard"]}), "intensity must be a number or a word"),
+    (_reply({"action": "fetch", "params": {"amount": ["loads"]}}), "params.amount must be a number or a word"),
     (_reply({"action": "attempt", "target": 7}), "major_action.target must be a handle (text) or null"),
     (_reply({"action": "attempt", "hammer": "x"}), "major_action has no field 'hammer'"),
     (_reply(None, memory_updates=[{"kind": "gossip", "text": "x"}]), "memory_updates kind must be"),
@@ -257,7 +257,7 @@ def test_a_reply_outside_the_schema_is_named_in_words(reply, message):
 
 
 def test_an_invalid_reply_is_repaired_once_with_the_errors_in_words_and_then_idles():
-    bad = _reply({"action": "attempt", "intensity": "very very hard"})
+    bad = _reply({"action": "attempt", "intensity": ["very very hard"]})
     provider = Fake(bad, bad)
     backend = LLMBackend(_baker(), provider, autopilot=False)
     response = backend.decide(_fixed_context())
@@ -269,7 +269,7 @@ def test_an_invalid_reply_is_repaired_once_with_the_errors_in_words_and_then_idl
 
 
 def test_a_repaired_reply_in_words_is_accepted():
-    provider = Fake(_reply({"action": "attempt", "intensity": "very very hard"}), SWING)
+    provider = Fake(_reply({"action": "attempt", "intensity": ["very very hard"]}), SWING)
     backend = LLMBackend(_baker(), provider, autopilot=False)
     response = backend.decide(_fixed_context())
     assert response.major_action.action == "attempt"

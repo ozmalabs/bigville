@@ -155,8 +155,9 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
         if not isinstance(action, dict):
             errors.append("major_action must be an object or null")
         else:
-            if not isinstance(action.get("action"), str) or not action.get("action"):
-                errors.append("major_action.action must be a non-empty string")
+            # Phase 071d: the name is text. An empty or unknown name is the world's refusal (unsupported).
+            if not isinstance(action.get("action"), str):
+                errors.append("major_action.action must be text")
             if action.get("params") is not None and not isinstance(action.get("params"), dict):
                 errors.append("major_action.params must be an object")
             if action.get("reason") is not None and not isinstance(action.get("reason"), str):
@@ -165,8 +166,8 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
     if free is not None:
         if not isinstance(free, list) or not all(isinstance(item, dict) for item in free):
             errors.append("free_actions must be a list of objects")
-        elif any(not isinstance(item.get("action"), str) or not item.get("action") for item in free):
-            errors.append("free_actions.action must be a non-empty string")
+        elif any(not isinstance(item.get("action"), str) for item in free):
+            errors.append("free_actions.action must be text")
     errors += _continuation_errors(parsed.get("continuation"))
     utterances = parsed.get("utterances", [])
     if not isinstance(utterances, list) or not all(isinstance(item, dict) for item in utterances):

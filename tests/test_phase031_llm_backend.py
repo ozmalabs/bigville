@@ -124,7 +124,7 @@ def test_callable_provider_is_accepted():
 
     backend = LLMBackend(_character(), provider)
     assert backend.decide(_context()).major_action.action == "rest"
-    assert seen == ["bigville/prompt/6"]   # Phase 069 felt body (4), Phase 071c free actions (5), Phase 054b tokens (6)
+    assert seen == ["bigville/prompt/7"]   # 069 felt body (4), 071c free actions (5), 054b tokens (6), 071d notes and requests (7)
 
 
 # -- good output, first call -------------------------------------------------
@@ -207,7 +207,7 @@ def test_validate_response_accepts_the_fields_the_existing_providers_send():
 
 
 @pytest.mark.parametrize("bad, message", [
-    ({"major_action": {"action": ""}}, "major_action.action must be a non-empty string"),
+    ({"major_action": {"action": 5}}, "major_action.action must be text"),   # Phase 071d: an empty name is the world's to refuse
     ({"major_action": "rest"}, "major_action must be an object or null"),
     ({"waiting": "no"}, "waiting must be true or false"),
     ({"memory_updates": [1]}, "memory_updates must be a list of objects"),

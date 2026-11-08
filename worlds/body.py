@@ -336,6 +336,17 @@ class Body:
         return [{"action": "attend", "target": f"signal:{index}", "where": str(row["where"])}
                 for index, row in enumerate(self._signal_rows(), start=1)]
 
+    def probe(self, handle):
+        """Phase 071d: the sound and the place a felt signal (handle signal:N) has now, from the body's own rows, as
+        {sound, place}; None when no such signal is felt. Reads only; no state changes."""
+        source = self.signal_named(handle)
+        if source is None:
+            return None
+        for row in self._derive()["sources"]:
+            if row["source"] == source:
+                return {"sound": row.get("sound") or None, "place": str(row.get("where", ""))}
+        return None
+
     def signal_named(self, handle):
         """The source name of the felt signal a handle names (signal:N), or None when no such signal is felt."""
         text = str(handle)

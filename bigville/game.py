@@ -1301,6 +1301,24 @@ class BigvilleGame:
         character.memories.append(record)
         return record
 
+    def _free_round_responses(self, pooled: dict, deferred: dict) -> dict:
+        """Phase 071d: a concurrent LLM resident whose reply carries free actions and no major action is asked again in
+        this turn. Its free actions, utterances and memory updates are applied first, so the next view shows them. The
+        round repeats up to PROMPT_REPLY.free_rounds_max times; the last reply stands as the turn. Other replies, and
+        every simple backend's reply, pass through unchanged (a simple backend never has free actions)."""
+        from domains.pack import load_pack
+        limit = int(load_pack(self.world.data_pack)["PROMPT_REPLY"].get("free_rounds_max", 0))
+        out = {}
+        for actor, response in pooled.items():
+            backend = deferred[actor][0]
+            rounds = 0
+            while response.free_actions and response.major_action is None and rounds < limit:
+                rounds += 1
+                self._apply_response(actor, response)
+                response = backend.decide(self._context(actor))
+            out[actor] = response
+        return out
+
     def _apply_response_contained(self, actor: str, response: ActorResponse) -> bool:
         """Apply one actor's response. A failure makes only this actor's result False.
 
@@ -1493,7 +1511,7 @@ class BigvilleGame:
                         "affordances": self.world.actor_affordances(actor)}
 
         # Phase 055: the concurrent residents decide in one pool; results apply in registration order.
-        for actor, response in decide_pooled(deferred).items():
+        for actor, response in self._free_round_responses(decide_pooled(deferred), deferred).items():
             if "continuation_interrupted" in deferred[actor][1].backend_state:
                 response.backend_state.setdefault("continuation_interrupted",
                                                   deferred[actor][1].backend_state["continuation_interrupted"])
@@ -1583,7 +1601,7 @@ class BigvilleGame:
                         "affordances": self.world.actor_affordances(actor)}
 
         # Phase 055: the concurrent residents decide in one pool; results apply in registration order.
-        for actor, response in decide_pooled(deferred).items():
+        for actor, response in self._free_round_responses(decide_pooled(deferred), deferred).items():
             if "continuation_interrupted" in deferred[actor][1].backend_state:
                 response.backend_state.setdefault("continuation_interrupted",
                                                   deferred[actor][1].backend_state["continuation_interrupted"])

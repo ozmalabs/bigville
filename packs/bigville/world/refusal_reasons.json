@@ -134,6 +134,9 @@
       },
       "pinned": {
         "description": "Your struggle failed. The one holding you kept hold."
+      },
+      "no_target": {
+        "description": "The action needs a target, and the reply named none."
       }
     },
     "REFUSAL_LOG_LIMIT": 20

@@ -702,7 +702,8 @@ def test_the_server_refuses_a_bad_reply_and_a_reaction_nobody_is_waiting_for():
             except urlrequest.HTTPError as exc:
                 return exc.code, json.loads(exc.read())
 
-        status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": "very very hard"}}})
+        # Phase 071d: an unknown intensity word is the world's to refuse; a list is the malformed case.
+        status, body = post({"reply": {"major_action": {"action": "attempt", "intensity": ["very very hard"]}}})
         assert status == 400 and "intensity must be" in body["error"]
         status, body = post({"reply": "work"})
         assert status == 400
