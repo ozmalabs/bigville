@@ -7,7 +7,8 @@
 5. Field work in the dark is slow, wasteful and risky, and goes normally at dawn.
 6. Witnessing range shortens at night.
 7. The balance report includes lamp oil.
-Plus: the default is off and changes nothing; the lamplighter's round is a backend choice; lateness
+Plus: the default is off and changes nothing; the lamplighter's lamp work is a backend choice (Phase 042c: a
+duty drive); lateness
 comes from the real sunset; the lexicon words; the self-test.
 """
 from __future__ import annotations
@@ -28,7 +29,7 @@ from domains import world_affordances as WA  # noqa: E402
 from domains.population import scale_scenario  # noqa: E402
 from worlds import daynight as dn  # noqa: E402
 from worlds.bigville_world import BigvilleWorld as World  # noqa: E402
-from bigville.backends.lamplighter import lamplighter_choice  # noqa: E402
+from bigville.backends.duty import duty_action, duty_drive  # noqa: E402  Phase 042c
 
 DN = E.DAYNIGHT
 TIME = E.TIME
@@ -237,18 +238,23 @@ def test_the_lamplighter_is_appointed_and_only_the_appointed_resident_may_round(
     assert E.JOBS["lamplighter"]["fixed"] == 0.0            # not in the founding draw: appointed on switch-on
 
 
-def test_the_backend_chooses_the_lamp_round_and_the_world_does_not():
-    def ctx(options, hunger=0.0):
-        return SimpleNamespace(affordances=options, observations={"hunger": hunger})
-    assert lamplighter_choice(ctx([{"action": "move", "destination": (1, 1)}])) is None
-    light = {"action": "light", "lamplighter": True}
-    assert lamplighter_choice(ctx([light])) == ("light", {}, None)
-    walk = {"action": "move", "destination": (22, 14), "lamplighter": True, "purpose": "station"}
-    action, params, continuation = lamplighter_choice(ctx([walk]))
-    assert action == "move" and params == {"destination": (22, 14)} and continuation.destination == (22, 14)
-    # Phase 042b: food first when a meal is held. With no meal, lamp work comes before food (see test_phase042b_lamplighter).
-    assert lamplighter_choice(ctx([light, {"action": "eat"}], hunger=2.0)) is None
-    assert lamplighter_choice(ctx([light], hunger=2.0)) == ("light", {}, None)
+def test_the_world_offers_lamp_work_with_its_facts_and_the_backend_chooses_it():
+    """Phase 042c (was the round's choice, Phase 042b): the world offers the light and says what is pending and when
+    it is due, and the world chooses nothing. The backend's duty drive picks the light for a dutiful lamplighter."""
+    w = _on()
+    lamplighter = dn.lamplighters(w)[0]
+    _set_clock(w, _clock_at(0, 22.0))
+    w._move_actor_to(lamplighter, dn.station_cell(w))
+    offers = dn.lamp_options(w, lamplighter)
+    lights = [o for o in offers if o["action"] == "light"]
+    assert lights and all(o["duty"]["job"] == "lamplighter" for o in lights)
+    assert lights[0]["duty"]["light_pending"] == len(w._dn_lamps) and lights[0]["duty"]["light_hours"] < 0.0
+    assert not any(o["action"] == "rest" for o in offers)     # the world no longer offers the lamplighter a rest
+    character = SimpleNamespace(personality={"role_identity": 0.9}, identity={})
+    drive = duty_drive(SimpleNamespace(affordances=offers, observations={"hunger": 0.0, "energy": 100.0}), character)
+    assert drive is not None and drive.holds is True
+    best = max(drive.scored(), key=lambda option: option["score"])
+    assert duty_action(best) == ("light", {}, None)
 
 
 def test_a_lamp_round_is_not_offered_to_a_resident_who_is_too_exhausted_to_walk():

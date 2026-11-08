@@ -1,0 +1,103 @@
+{
+  "_doc": "Phase 042c: the single source of truth for what the clean tree receives. build_clean_tree.py reads this file. 'copy' entries copy a file from its working-tree path over the HEAD archive ('replace' needs the HEAD file, 'new' must not exist at HEAD). 'delete' entries remove a HEAD file. 'anchored' entries replace one exact text block ('old', asserted to occur once in the HEAD file) with 'new'. Shared files another session has modified in the working tree (domains/world_affordances.py, domains/bigville_entities.py, packs/bigville/pack.json, packs/test_hamlet/pack.json) are changed only by 'anchored' entries; their working-tree copy is not written by this phase.",
+  "copy": [
+    {
+      "path": "worlds/daynight.py",
+      "status": "replace",
+      "why": "lamp_facts (the square's lamp facts for the duty); lamp offers carry duty; the lamplighter's rest offers are removed"
+    },
+    {
+      "path": "bigville/backends/cheap.py",
+      "status": "replace",
+      "why": "the lamplighter round is replaced by the duty: duty_drive holds the choice, or its bonus joins the weighting"
+    },
+    {
+      "path": "bigville/backends/duty.py",
+      "status": "new",
+      "why": "the duty drive: due level, role_identity urgency, need urgencies, holds, bonus, action"
+    },
+    {
+      "path": "domains/duty_check.py",
+      "status": "new",
+      "why": "self-test checks for DUTIES"
+    },
+    {
+      "path": "packs/bigville/world/duty.json",
+      "status": "new",
+      "why": "DUTIES table (lamplighter)"
+    },
+    {
+      "path": "packs/test_hamlet/world/duty.json",
+      "status": "new",
+      "why": "DUTIES table, the same (every bound table name is present in the test pack)"
+    },
+    {
+      "path": "tests/test_phase042b_lamplighter.py",
+      "status": "replace",
+      "why": "the round's own tests move to test_phase042c_duty.py; the offers and plan dispatch tests stay"
+    },
+    {
+      "path": "tests/test_phase042_daynight.py",
+      "status": "replace",
+      "why": "the round import and the round test change (see the report)"
+    },
+    {
+      "path": "tests/test_phase042c_duty.py",
+      "status": "new",
+      "why": "the duty tests (Phase 042c)"
+    },
+    {
+      "path": "domains/daynight_check.py",
+      "status": "replace",
+      "why": "a comment only: the lead is also the duty's (DUTIES)"
+    },
+    {
+      "path": "packs/bigville/world/daynight.json",
+      "status": "replace",
+      "why": "the _doc: the round's file is gone; the lead is the duty's too. No data change."
+    }
+  ],
+  "delete": [
+    {
+      "path": "bigville/backends/lamplighter.py",
+      "why": "the hard-coded round is replaced by the duty drive"
+    }
+  ],
+  "anchored": [
+    {
+      "path": "domains/world_affordances.py",
+      "anchor": "the DAYNIGHT_LAMPS table binding",
+      "old": "DAYNIGHT_LAMPS = _PACK[\"DAYNIGHT_LAMPS\"]\n",
+      "new": "DAYNIGHT_LAMPS = _PACK[\"DAYNIGHT_LAMPS\"]\nDUTIES = _PACK[\"DUTIES\"]                   # Phase 042c: a job's standing duty (what its task is, when due)\n",
+      "why": "binds the DUTIES table from the pack."
+    },
+    {
+      "path": "domains/bigville_entities.py",
+      "anchor": "the daynight_check import",
+      "old": "from domains import daynight_check as _daynight_check   # noqa: E402  Phase 042\n",
+      "new": "from domains import daynight_check as _daynight_check   # noqa: E402  Phase 042\nfrom domains import duty_check as _duty_check   # noqa: E402  Phase 042c\n",
+      "why": "imports the duty self-test."
+    },
+    {
+      "path": "domains/bigville_entities.py",
+      "anchor": "the daynight_check call in check_consistency",
+      "old": "                          founding_map=FOUNDING_MAP, time=TIME)   # Phase 042\n",
+      "new": "                          founding_map=FOUNDING_MAP, time=TIME)   # Phase 042\n    _duty_check.check(errors, warnings, info, duties=DUTIES, daynight=DAYNIGHT, jobs=JOBS,\n                      labour_tasks=LABOUR_TASKS, major_actions=MAJOR_ACTIONS, time=TIME)   # Phase 042c\n",
+      "why": "runs the DUTIES checks in the self-test."
+    },
+    {
+      "path": "packs/bigville/pack.json",
+      "anchor": "the DUTIES table entry after the last table (BODY_AGE)",
+      "old": "    {\"name\": \"BODY_AGE\", \"file\": \"world/detraining.json\"}\n  ]\n}\n",
+      "new": "    {\"name\": \"BODY_AGE\", \"file\": \"world/detraining.json\"},\n    {\"name\": \"DUTIES\", \"file\": \"world/duty.json\"}\n  ]\n}\n",
+      "why": "adds the DUTIES table to the bigville manifest."
+    },
+    {
+      "path": "packs/test_hamlet/pack.json",
+      "anchor": "the DUTIES table entry after the last table (BODY_AGE)",
+      "old": "    {\"name\": \"BODY_AGE\", \"file\": \"world/detraining.json\"}\n  ]\n}\n",
+      "new": "    {\"name\": \"BODY_AGE\", \"file\": \"world/detraining.json\"},\n    {\"name\": \"DUTIES\", \"file\": \"world/duty.json\"}\n  ]\n}\n",
+      "why": "adds the DUTIES table to the test_hamlet manifest."
+    }
+  ]
+}

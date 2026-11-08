@@ -91,6 +91,7 @@ MAJOR_ACTIONS = _PACK["MAJOR_ACTIONS"]
 MAJOR_ACTIONS = {**MAJOR_ACTIONS, **_PACK["DAYNIGHT_MAJOR_ACTIONS"]}   # Phase 042: light and douse
 DAYNIGHT = _PACK["DAYNIGHT"]               # Phase 042: day, night and lamps
 DAYNIGHT_LAMPS = _PACK["DAYNIGHT_LAMPS"]
+DUTIES = _PACK["DUTIES"]                   # Phase 042c: a job's standing duty (what its task is, when due)
 MARKS = _PACK["MARKS"]                     # Phase 063: visible condition (dirt, soot, blood, ...)
 MARK_RULES = _PACK["MARK_RULES"]
 MARK_HARM = _PACK["MARK_HARM"]             # per point of health lost, by HEALTH cause

@@ -46,7 +46,7 @@ def check(errors, warnings, info, *, daynight, lamps, weather, jobs, labour_task
         errors.append(f"{where}.starting_oil: must be 0 or more")
     if int(dn["lamplighters"]) < 0:
         errors.append(f"{where}.lamplighters: must be 0 or more")
-    # The lamplighter's round (Phase 042b): pole reach, station and dusk lead.
+    # The lamplighter's pole reach, station and dusk lead (Phase 042b; the lead is also the duty's, DUTIES, Phase 042c).
     if int(dn["lamp_pole_reach"]) < 1:
         errors.append(f"{where}.lamp_pole_reach: must be at least 1 cell")
     if int(dn["lamplighter_station_reach"]) < 0:

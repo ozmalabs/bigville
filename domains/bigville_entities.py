@@ -30,6 +30,7 @@ from domains.world_affordances import (     # noqa: E402,F401  private helpers, 
 from domains.population import _draw_categorical   # noqa: E402,F401
 from domains.world_affordances import _PACK as _WORLD_PACK   # noqa: E402  which pack this view reads
 from domains import daynight_check as _daynight_check   # noqa: E402  Phase 042
+from domains import duty_check as _duty_check   # noqa: E402  Phase 042c
 from domains import generated_seeds as _generated_seeds      # noqa: E402  Phase 017
 from domains.world_affordances import (  # noqa: E402
     _balance_flows,
@@ -1743,6 +1744,8 @@ def check_consistency():
     _daynight_check.check(errors, warnings, info, daynight=DAYNIGHT, lamps=DAYNIGHT_LAMPS, weather=WEATHER,
                           jobs=JOBS, labour_tasks=LABOUR_TASKS, items=ITEMS, major_actions=MAJOR_ACTIONS,
                           founding_map=FOUNDING_MAP, time=TIME)   # Phase 042
+    _duty_check.check(errors, warnings, info, duties=DUTIES, daynight=DAYNIGHT, jobs=JOBS,
+                      labour_tasks=LABOUR_TASKS, major_actions=MAJOR_ACTIONS, time=TIME)   # Phase 042c
 
     def ref(kind, where):
         if kind not in items:

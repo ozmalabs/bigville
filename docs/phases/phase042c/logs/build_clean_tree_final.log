@@ -1,0 +1,18 @@
+HEAD 709fde9bc68473a9eb25d42e5129e1fe67fd22c0 archived into /tmp/p42c/final
+copy   worlds/daynight.py                           replace  +48 -12 vs HEAD
+copy   bigville/backends/cheap.py                   replace  +12 -7 vs HEAD
+copy   bigville/backends/duty.py                    new      +128 -0 vs HEAD
+copy   domains/duty_check.py                        new      +49 -0 vs HEAD
+copy   packs/bigville/world/duty.json               new      +20 -0 vs HEAD
+copy   packs/test_hamlet/world/duty.json            new      +7 -0 vs HEAD
+copy   tests/test_phase042b_lamplighter.py          replace  +7 -74 vs HEAD
+copy   tests/test_phase042_daynight.py              replace  +20 -14 vs HEAD
+copy   tests/test_phase042c_duty.py                 new      +283 -0 vs HEAD
+copy   domains/daynight_check.py                    replace  +1 -1 vs HEAD
+copy   packs/bigville/world/daynight.json           replace  +1 -1 vs HEAD
+delete bigville/backends/lamplighter.py             -78 vs HEAD
+hunk   domains/world_affordances.py                 anchored +1 -0: the DAYNIGHT_LAMPS table binding
+hunk   domains/bigville_entities.py                 anchored +1 -0: the daynight_check import
+hunk   domains/bigville_entities.py                 anchored +2 -0: the daynight_check call in check_consistency
+hunk   packs/bigville/pack.json                     anchored +2 -1: the DUTIES table entry after the last table (BODY_AGE)
+hunk   packs/test_hamlet/pack.json                  anchored +2 -1: the DUTIES table entry after the last table (BODY_AGE)

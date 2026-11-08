@@ -1,0 +1,20 @@
+{
+  "_doc": "DUTY (Phase 042c): a job's standing duty as a drive. A job named here has a task the world can see is due (the world publishes the physical facts on the job's offers: how many lamps need the change, and the hours until the change is due or the hours since it was due, read from the sky; worlds/daynight.py lamp_options). The cognition reads them in bigville/backends/duty.py. Each entry: task (LABOUR_TASKS key), acts (the MAJOR_ACTIONS the duty names: light at dusk, douse at dawn), lead_hours (the due level starts to rise this many hours before the due time: the lamplighter walks to the station and stands ready), due_floor (the due level at the due time, 0 to 1), ramp_hours (hours after the due time for the level to reach 1), in_place_bonus (added, times the urgency, to a duty act that needs no walk: a lamp in reach is lit before the station is walked to), and score_weight (the weight a concept activation carries in the weighting, bigville/backends/psi_can.py score: 6.0). The urgency of a duty is the resident's role_identity (psi_can, the drawn personality trait, 0 to 1) times the due level; it competes with the hunger and tiredness urgencies (duty.py). lead_hours, due_floor, ramp_hours, in_place_bonus are valuations, not sourced: APPROX. lead_hours equals DAYNIGHT.lamplighter_dusk_lead_hours, the walk the world offers before dusk (checked by the self-test). score_weight is the psi_can CAN weight (6.0), kept as data so a duty scores like any other concept.",
+  "_types": {},
+  "tables": {
+    "DUTIES": {
+      "lamplighter": {
+        "task": "lamplighting",
+        "acts": [
+          "light",
+          "douse"
+        ],
+        "lead_hours": 6.0,
+        "due_floor": 0.5,
+        "ramp_hours": 3.0,
+        "in_place_bonus": 2.0,
+        "score_weight": 6.0
+      }
+    }
+  }
+}

@@ -1,18 +1,17 @@
-"""Phase 042b: the lamplighter's round. A lamp is lit at dusk and doused at dawn, the round does not walk a
-tired lamplighter into `exhausted`, and food comes first when a meal is held.
+"""Phase 042b: the lamplighter's lamp work, as the world offers it. A lamp is lit at dusk and doused at dawn, a
+sleeper is offered no lamp work, and a backend's `light` reaches the lamp code.
 
-1. The round's choices, from the backend's view (`lamplighter_choice`).
-2. The world's offers: lamps are reached with a pole from the station, and a sleeper is offered no lamp work.
-3. The world's plan dispatch: a backend's `light` reaches the lamp code (it was refused `malformed` before 042b).
+1. The world's offers: lamps are reached with a pole from the station, and a sleeper is offered no lamp work.
+2. The world's plan dispatch: a backend's `light` reaches the lamp code (it was refused `malformed` before 042b).
 
-The three-day run (lamps lit at dusk and doused at dawn, counts per day) is a script, not a test:
-docs/phases/phase042b/three_day_run.py.
+Phase 042c replaced the hard-coded round (its choices, and its tests of them) with a duty drive: those tests now
+live in tests/test_phase042c_duty.py. The three-day run (lamps lit at dusk and doused at dawn, counts per day) is a
+script, not a test: docs/phases/phase042b/three_day_run.py, and docs/phases/phase042c/ for the duty.
 """
 from __future__ import annotations
 
 import os
 import sys
-from types import SimpleNamespace
 
 import pytest
 
@@ -21,27 +20,12 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from domains import bigville_entities as E  # noqa: E402
-from bigville.backends.lamplighter import (  # noqa: E402
-    DUSK_READY_ENERGY, ROUND_REST_ENERGY, STARVE_GUARD, WALK_ENERGY, lamplighter_choice)
 from worlds import daynight as dn  # noqa: E402
 from worlds.bigville_world import BigvilleWorld as World  # noqa: E402
 
 DN = E.DAYNIGHT
 TIME = E.TIME
 TPD = int(TIME["ticks_per_day"])
-
-LIGHT = {"action": "light", "lamplighter": True, "night": True, "lit": False, "lamp": "square_north_west"}
-DOUSE = {"action": "douse", "lamplighter": True, "night": False, "lit": True, "lamp": "square_north_west"}
-EAT = {"action": "eat", "kind": "bread"}
-STATION_DAY = {"action": "move", "destination": (22, 14), "lamplighter": True, "night": False,
-               "purpose": "station", "due": True}
-STATION_NIGHT = {**STATION_DAY, "night": True}
-DUSK_REST = {"action": "rest", "lamplighter": True, "night": False, "purpose": "dusk_ready"}
-POST_REST = {"action": "rest", "lamplighter": True, "night": False, "purpose": "post"}
-
-
-def ctx(options, hunger=0.0, energy=100.0):
-    return SimpleNamespace(affordances=options, observations={"hunger": hunger, "energy": energy})
 
 
 def _clock_at(day, hour):
@@ -61,57 +45,6 @@ def _on():
     w.add_actor("Ada", role="labourer", skill=0.9)
     dn.switch_on(w)
     return w
-
-
-# ------------------------------------------------------------- 1. the round's choices (backend)
-
-def test_the_round_is_empty_for_a_resident_who_is_not_the_lamplighter():
-    assert lamplighter_choice(ctx([{"action": "move", "destination": (1, 1)}, EAT])) is None
-
-
-def test_lamp_work_is_done_at_once_when_it_is_offered():
-    assert lamplighter_choice(ctx([LIGHT])) == ("light", {}, None)
-    assert lamplighter_choice(ctx([DOUSE])) == ("douse", {}, None)
-
-
-def test_a_held_meal_comes_first_when_hungry():
-    assert lamplighter_choice(ctx([LIGHT, EAT], hunger=2.0)) is None
-    assert lamplighter_choice(ctx([LIGHT, EAT], hunger=0.5)) == ("light", {}, None)
-
-
-def test_lamp_work_comes_before_food_when_hungry_and_no_meal_is_held():
-    assert lamplighter_choice(ctx([LIGHT], hunger=2.0)) == ("light", {}, None)
-
-
-def test_the_starvation_guard_yields_to_the_ordinary_policy_whatever_is_offered():
-    assert lamplighter_choice(ctx([LIGHT], hunger=STARVE_GUARD)) is None
-    assert lamplighter_choice(ctx([STATION_DAY], hunger=STARVE_GUARD)) is None
-
-
-def test_by_day_a_tired_lamplighter_rests_before_any_walk():
-    assert lamplighter_choice(ctx([STATION_DAY], energy=ROUND_REST_ENERGY - 1)) == ("rest", {}, None)
-
-
-def test_at_night_a_tired_lamplighter_yields_to_the_ordinary_sleep():
-    assert lamplighter_choice(ctx([STATION_NIGHT], energy=ROUND_REST_ENERGY - 1)) is None
-
-
-def test_a_walk_to_the_station_starts_only_with_energy_to_spare():
-    assert lamplighter_choice(ctx([STATION_DAY], energy=WALK_ENERGY - 1)) == ("rest", {}, None)
-    action, params, continuation = lamplighter_choice(ctx([STATION_DAY], energy=WALK_ENERGY + 5))
-    assert action == "move" and params == {"destination": (22, 14)} and continuation.destination == (22, 14)
-
-
-def test_a_hungry_lamplighter_walks_to_the_station_only_when_lamp_work_is_due():
-    not_due = {**STATION_DAY, "due": False}
-    assert lamplighter_choice(ctx([not_due], hunger=1.5, energy=90.0)) is None
-    assert lamplighter_choice(ctx([STATION_DAY], hunger=1.5, energy=90.0))[0] == "move"
-
-
-def test_at_the_station_the_lamplighter_rests_until_he_is_ready_for_dusk():
-    assert lamplighter_choice(ctx([DUSK_REST], energy=DUSK_READY_ENERGY - 10)) == ("rest", {}, None)
-    assert lamplighter_choice(ctx([DUSK_REST], energy=DUSK_READY_ENERGY + 5)) is None
-    assert lamplighter_choice(ctx([POST_REST], energy=DUSK_READY_ENERGY - 10)) == ("rest", {}, None)
 
 
 # ------------------------------------------------------------- 2. the world's offers

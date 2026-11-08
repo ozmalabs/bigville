@@ -4,7 +4,7 @@ The world publishes the physical facts here: where the street lamps stand and wh
 oil is in each reservoir and in the town's store, which residents stand indoors, in lamplight or in the dark,
 and what the light does to sight, to work on the fitness path, and to travel. The world decides none of
 the choices: `light` and `douse` are offered to any resident who stands on a lamp, and the lamplighter's
-round is a backend choice (bigville/backends/lamplighter.py). The sky itself is the pure function in
+duty is a backend choice (bigville/backends/duty.py, Phase 042c). The sky itself is the pure function in
 domains/daynight.py.
 
 Every consequence is behind DAYNIGHT.enabled, which defaults to false. Off, each function here returns what
@@ -367,13 +367,39 @@ def _restrained(w, actor):
     return (holder is not None and holder(actor) is not None) or (holding is not None and holding(actor) is not None)
 
 
+def lamp_facts(w, night):
+    """The lamp facts the square publishes to its lamplighter (Phase 042c): for each task, how many lamps are in the
+    wrong state and the hours until the change is due (negative once due, read from the sky). Lighting: the unlit
+    lamps; due at sunset (hours until sunset by day, hours since sunset in the dark). Douse: the lit lamps; due at
+    sunrise (hours until sunrise in the dark, hours since sunrise by day). A light needs oil in the store to be drawn,
+    so no light is pending while the store is empty. These are facts; the backend decides what to do about them."""
+    sky_now = sky(w)
+    hour, sunset, sunrise = float(sky_now["hour"]), float(sky_now["sunset"]), float(sky_now["sunrise"])
+    lamps = list(w._dn_lamps.values())
+    lit = sum(1 for n in lamps if float(w.eng.node(n)["attrs"].get("lit", 0.0)) == 1.0)
+    unlit = len(lamps) - lit
+    oil_in_store = float(w.qty(w.E.DAYNIGHT["oil_item"])) > 0.0
+    if night:
+        light_hours = -((hour - sunset) % 24.0)      # dark since sunset
+        douse_hours = (sunrise - hour) % 24.0        # dark until sunrise
+    else:
+        light_hours = (sunset - hour) % 24.0         # daylight: hours until sunset
+        douse_hours = -((hour - sunrise) % 24.0)     # daylight since sunrise
+    return {"job": w.E.DAYNIGHT["lamplighter_job"],
+            "light_pending": float(unlit if oil_in_store else 0), "light_hours": round(light_hours, 4),
+            "douse_pending": float(lit), "douse_hours": round(douse_hours, 4)}
+
+
 def lamp_options(w, actor):
     """Options a lamplighter is offered: light or douse the nearest lamp in pole reach that needs it, and a walk to
     the station (the store's cell, the market: the lamp oil is drawn there) when he is away from it.
 
-    A light is offered only when the store is open to him, since the oil is drawn from the store. A station walk is
-    marked `due` when a lamp needs changing somewhere, so a hungry lamplighter walks there for lamp work and not
-    otherwise. Non-lamplighters are offered nothing here. The options say what is physically true; they choose nothing."""
+    A light is offered only when the store is open to him, since the oil is drawn from the store. Phase 042c: each
+    offer of the lamplighter's job carries `duty`, the square's lamp facts (lamp_facts), which the backend reads as
+    a drive (bigville/backends/duty.py). The walk carries them when a lamp needs changing or a due time is near
+    (dusk, or dawn in the dark); it is marked `due` when a lamp needs changing. At the station, with no lamp to light
+    or douse from there, a rest (purpose `standby`) is offered before a due time, with the facts. Non-lamplighters are
+    offered nothing here. The options say what is physically true; they choose nothing."""
     if not on(w) or actor not in w._actors or w.E.DAYNIGHT["lamplighter_job"] not in _jobs(w, actor):
         return []
     if _restrained(w, actor):   # a restrained resident walks nowhere, and reaches no lamp from where held
@@ -386,6 +412,7 @@ def lamp_options(w, actor):
         return []
     reach = int(w.E.DAYNIGHT["lamp_pole_reach"])
     walk_ok = not w._exhaustion_band(actor)["below_e_low"]
+    facts = lamp_facts(w, night)
     out = []
     for action, want_lit in (("light", False), ("douse", True)):
         node = _nearest_lamp(w, here, reach, want_lit=want_lit)
@@ -395,21 +422,30 @@ def lamp_options(w, actor):
         if action == "light" and not w._store_open(actor):
             continue
         out.append({"action": action, "lamp": w.eng.node(node)["attrs"]["name"],
-                    "lamplighter": True, "night": night, "lit": want_lit})
+                    "lamplighter": True, "night": night, "lit": want_lit, "duty": dict(facts)})
     due = any((night and float(w.eng.node(n)["attrs"].get("lit", 0.0)) != 1.0)
               or (not night and float(w.eng.node(n)["attrs"].get("lit", 0.0)) == 1.0)
               for n in w._dn_lamps.values())
     station = station_cell(w)
     stay = int(w.E.DAYNIGHT["lamplighter_station_reach"])
+    lead = float(w.E.DAYNIGHT["lamplighter_dusk_lead_hours"])
     hours = float(sky(w)["sunset"]) - float(sky(w)["hour"])
-    near_dusk = (not night) and 0.0 < hours <= float(w.E.DAYNIGHT["lamplighter_dusk_lead_hours"])
+    near_dusk = (not night) and 0.0 < hours <= lead
+    dawn_hours = (float(sky(w)["sunrise"]) - float(sky(w)["hour"])) % 24.0
+    near_dawn = night and 0.0 < dawn_hours <= lead   # Phase 042c: before dawn the lamplighter walks back to the station
+    near_due = near_dusk or near_dawn
     if station is not None and walk_ok and here != station and (
-            due or near_dusk or max(abs(station[0] - here[0]), abs(station[1] - here[1])) > stay):
-        out.append({"action": "move", "destination": station, "lamplighter": True, "night": night,
-                    "purpose": "station", "due": bool(due or near_dusk)})
-    elif station is not None and here == station and not night:
-        out.append({"action": "rest", "lamplighter": True, "purpose": "dusk_ready" if near_dusk else "post",
-                    "night": False, "hours_to_dusk": round(hours, 4)})   # rest at the station by day: the round needs energy
+            due or near_due or max(abs(station[0] - here[0]), abs(station[1] - here[1])) > stay):
+        walk = {"action": "move", "destination": station, "lamplighter": True, "night": night,
+                "purpose": "station", "due": bool(due or near_due)}
+        if due or near_due:
+            walk["duty"] = dict(facts)
+        out.append(walk)
+    elif station is not None and here == station and not out and near_due:
+        # Phase 042c: standing at the station, with nothing to light or douse here, before a due time: the rest that
+        # keeps him there until the lamps are due (the duty holds him here while his urgency beats his tiredness).
+        out.append({"action": "rest", "lamplighter": True, "night": night, "purpose": "standby",
+                    "duty": dict(facts)})
     return out
 
 

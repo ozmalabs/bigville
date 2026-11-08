@@ -1,0 +1,7 @@
+{
+  "_doc": "DUTY (Phase 042c): the test pack has no job with a standing duty (its daynight lamplighter_job is empty, so no lamplighter exists). The table is present so every bound table name resolves. See packs/bigville/world/duty.json.",
+  "_types": {},
+  "tables": {
+    "DUTIES": {}
+  }
+}

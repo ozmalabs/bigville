@@ -6,7 +6,7 @@ from typing import Callable
 
 from ..character import CharacterDefinition, HeldState
 from .protocol import ActorContext, ActorContinuation, ActorResponse, ProposedAction
-from .lamplighter import lamplighter_choice  # Phase 042: the lamplighter's round
+from .duty import duty_action, duty_drive  # Phase 042c: a job's standing duty (the lamplighter's lamp work)
 from .dependants_policy import dependant_choice  # Phase 045: a caregiver feeds or walks to a dependant
 from .psi_can import CANWeightModel
 from . import speech_in as _speech_in   # Phase 060: what a simple resident makes of what it hears
@@ -209,11 +209,15 @@ class DeterministicBackend:
             action, params, reason = dependant
             self.last_choice = {"action": action, "goal": "dependant", "time_band": self.time_band, "reason": reason}
             return ActorResponse(major_action=ProposedAction(action, params, "cheap_psi_can"))
-        lamp = lamplighter_choice(context)   # Phase 042: a lamplighter's round (offered to a lamplighter only)
-        if lamp is not None:
-            action, params, continuation = lamp
-            self.last_choice = {"action": action, "goal": "lamplighter", "time_band": self.time_band,
-                                "reason": "lamplighter"}
+        # Phase 042c: a job's standing duty (the lamplighter's lamp work) is a drive on the urgency scale of the needs
+        # (bigville/backends/duty.py). When its urgency beats hunger and tiredness it is the whole choice, so food,
+        # rest and sleep wait. Otherwise its offers compete in the weighting below. None unless an offer carries one.
+        duty = duty_drive(context, self.character)
+        if duty is not None and duty.holds:
+            choice = self.model.choose(context, duty.scored())
+            action, params, continuation = duty_action(choice)
+            self.last_choice = {**dict(choice), "goal": "duty", "time_band": self.time_band, "reason": "duty",
+                                "duty": duty.trace()}
             return ActorResponse(major_action=ProposedAction(action, params, "cheap_psi_can"),
                                  continuation=continuation)
         # Phase 033: a held resident's one way out is a struggle, so it struggles before anything else. The
@@ -395,7 +399,8 @@ class DeterministicBackend:
                                    + role_bonus
                                    + float(self.policy.action_bonuses.get(candidate.get("action"), 0.0))
                                    + self._hook_bonus(context, candidate)
-                                   + (3.0 if candidate.get("path_preferred") else 0.0))
+                                   + (3.0 if candidate.get("path_preferred") else 0.0)
+                                   + (duty.bonus(candidate) if duty is not None else 0.0))   # Phase 042c
             weighted_options.append(candidate)
         choice = self.model.choose(context, weighted_options)
         # LA04: a refusal is ordinary feedback.  If the chosen local proposal
