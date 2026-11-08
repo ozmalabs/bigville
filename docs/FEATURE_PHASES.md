@@ -3346,6 +3346,77 @@ person palpating (a healer's examination is Phase 043's); referred and mislocate
 
 ---
 
+## Phase 072 -- Courtship, new unions and widowhood
+
+**Status:** ready, after 009, 044, 045 and 060 (decision 2026-11-09: plan new unions; the seeds were checked).
+**What the seeds say.** No seed covers courtship or union formation. Seeds only take existing spouses as given:
+`bigville_cast100` and `bigville_townspeople_30/50` (`spouse`, `spouse_of`), `gen_kinship` (`kin_spouse`, from `KIN_TERMS`),
+`bigville_household` ("Fixes the spouses") and `bigville_delegation` ("A spouse" may act for a resident). Phase 009 recorded
+unions as world facts (`union_with`, `in_union` Union node with `ended`) and left "courtship and union choice" to the
+residents. Phase 044 (births) found the consequence: only founding unions exist, so a town with births on cannot renew.
+So this phase is NEW DESIGN. Design principles apply: the world records what happens and gives consequences; it does not
+forbid; institutions (a wedding, a ban, a divorce rule) are left to the residents and their laws.
+
+**Goal.**
+1. **The recorded facts (world).** A union is made when two living residents both take the same act toward each other
+   (a joint act, like Phase 034's joint tasks: consent is both sides choosing it). The world creates the Union node (with
+   period), the two `union_with` edges, the kin terms (`spouse`, and the in-law terms Phase 009 derives), and a household:
+   one moves into the other's household, or they found a new one (a pack table says which, by property and sex).
+   The world does not forbid a union with a close kinsman or a second union while one is alive. It records them as
+   facts (`consanguinity` from the genealogy, `concurrent` from the open Union nodes) that laws, the council and gossip can
+   act on, and that Phase 044's health tables can read for the child.
+2. **Union ends.** When a partner dies the world sets the Union's `ended` and the survivor is a widow or widower (a
+   read-off). Remarriage is the same act as a first union. Divorce is not a world act: it exists only if a resident-made
+   law or a justice procedure ends a union (a recorded `ended` with a cause).
+3. **The simple backend's courtship.** A policy from the persona and the world's facts: age band from
+   `AGE_AT_FIRST_UNION`, a tie that has grown (`friend`, `trusted`) through shared hours and talk, same group or class
+   more often than not, a household that has room, and a rate table `UNION_FORMATION` (APPROX, cited: Hajnal 1965 and
+   Wrigley and Schofield 1981 for the European marriage pattern: a mean first-marriage age of about 25 to 26 for
+   women and 27 to 28 for men, and about one in ten never marrying). The policy proposes through the structured speech
+   of Phase 060 (a `proposal` act with `accept` and `decline` answers) and then takes the joint act. A refusal is a
+   word. Nothing is forced.
+4. **LLM and human residents** are offered the same joint act as an affordance (`court` toward a person in view
+   they know) and the proposal act in speech; the agent view shows what they know of the other (looks, tie, kin
+   terms), not the referee numbers.
+5. **Consequences, not blocks.** A union that breaks a local law (a close-kin union, a second union) is an offence
+   the justice procedures can hear; the world only publishes the facts above. A pack with no such law has none.
+6. **Births follow.** With Phase 044's switch on, the new unions feed conception through the existing `in_union` rule.
+
+**Write scope.** A new `worlds/unions.py` (mixin) and `bigville/backends/courtship.py`; tiny anchored hunks in
+`worlds/bigville_world.py`, `bigville/backends/cheap.py`, `domains/world_affordances.py`, `domains/bigville_entities.py`;
+the pack (`UNION_FORMATION`, `UNION_RULES`: household, property and the recorded facts); `domains/union_check.py`;
+`tests/test_phase072_unions.py`. Behind a `unions` switch, default OFF.
+
+**Acceptance.** With the switch off the 60-turn run is identical to HEAD. With it on: two residents who both choose the
+act are united (Union node, edges, kin terms, one household); one who chooses alone is not; the world records
+consanguinity and concurrency without refusing; a partner's death sets `ended` and the widow can be united again;
+the simple policy yields a first-union age and a never-married share inside the cited bands over many seeds
+(self-test arithmetic plus a seeded run); a checkpoint round trip keeps unions; deterministic for a seed.
+
+**Out of scope.** Courtship rituals, dowry and bride-price as economics (a later Programme), same-sex unions are
+not excluded by the world (it records two residents) but the simple policy's rates are the cited pattern, adoption.
+
+## Phase 073 -- A founding cast with children, and the long-run growth check
+
+**Status:** ready, after 044, 045 and 072 (found by Phase 044: the cast is all adults, so births with the switch on
+run at 72.5 per 1000, about twice the English rate of 30 to 35).
+
+**Goal.** (1) A founding cast drawn with an age structure from the pack (`FOUNDING_AGE` today gives only working-age
+adults): infants, children, youths, adults and elders in the shares of a pre-industrial English village (Wrigley and
+Schofield 1981 age pyramid, APPROX), with households that contain their children (Phase 009's household draw already
+knows the sizes) and the dependants Phase 045 needs. It is a pack option; the existing 100-resident cast stays the default
+so no fixture moves. (2) The long-run check Phase 044 deferred: a daily-tick run (no decisions) of the town for 30 years
+with births, unions, dependants and deaths on, reporting the crude birth and death rates and the growth per year against
+the cited band; the self-test prints the analytic figure and a test runs the seeded run. (3) Only after the check passes
+may the births, dependants and unions switches be turned on for the bigville pack; that is a separate decision recorded in
+this phase's report, with the whole suite and the 60-turn measurement re-baselined.
+
+**Write scope.** `domains/population.py` and the pack (age structure), `tools/` or `tests/` for the long-run runner,
+a new `tests/test_phase073_longrun.py`; Tract A owns the world tables it reads.
+
+**Acceptance.** The cast option draws the cited age shares; households hold their children; the long-run run stays in
+the growth band over several seeds, or the report says by how much it misses and why; nothing changes with the option off.
+
 ## History
 
 | Phase | Status | Commit | Report |
