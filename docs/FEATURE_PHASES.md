@@ -99,7 +99,7 @@ would sweep its hunks into a phase commit, which is why rule 2 requires `git add
 | Tract | Phases |
 |---|---|
 | A, world physics | 030, 037, 050, 043, 048, 034, 038, 049, 047, 035, 036, 032, 033, 040, 039, 041, and 063 (visible condition) |
-| B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, then 066, 056, 053, 042, 060, 061, 062, 064, 065, 067, 044, 045, 046 (068 parked) |
+| B, agents, interface, life | 051, 058, 052, 059, 054, 057, 055, then 066, 056, 053, 042, 060, 061, 062, 064, 065, 067, 044, 045, 046, all done (062b followed 062); 068 parked on Phase 056 data |
 | Unassigned | 069, 070, 071 (Programme F, the body as a unit; supervisor assigns them, 069 may be split between tracts) |
 | Neither | Ocelot integration and persistence (uncommitted) |
 | Superseded | 003 (done with 016b), 013 and 016 (split into 013a and 013b, 016a and 016b) |
