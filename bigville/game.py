@@ -94,6 +94,16 @@ class BigvilleGame:
         self._suspended: dict[str, Any] | None = None
         self.contest_log: deque = deque(maxlen=int(world_entities(self.world).CONTEST["log_limit"]))
 
+    def add_resident(self, name: str) -> bool:
+        """Phase 044: give a resident the world has added (a newborn) a character and a dependent backend."""
+        from bigville.resident_births import attach_resident
+        return attach_resident(self, name)
+
+    def _attach_newborns(self) -> None:
+        """Phase 044: attach a character and a dependent backend to any world resident the game lacks."""
+        from bigville.resident_births import attach_newborns
+        attach_newborns(self)
+
     def _sync_animal_backends(self):
         """Create session-owned animal NPC backends for newly added animals."""
         entities = world_entities(self.world)
@@ -830,6 +840,7 @@ class BigvilleGame:
 
         A contested take (Phase 029) can wait for the holder's reaction. The step then returns waiting, and
         the next call resumes that turn where it stopped, without deciding again."""
+        self._attach_newborns()   # Phase 044: a newborn gets a character and a dependent backend
         if self._suspended is not None:
             return self._resume_suspended()
         # Period changes happen only after a successful turn, below. Publish

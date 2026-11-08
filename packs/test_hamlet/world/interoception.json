@@ -469,7 +469,8 @@
       "illness": {},
       "starvation": {},
       "exhaustion": {},
-      "intoxication": {}
+      "intoxication": {},
+      "childbirth": {}
     },
     "BODY_RATES": {
       "_doc": "BODY_RATES (Phase 070): the rates of the body's own state, all APPROX. located_heal_per_tick: a located injury's ledger falls by this much each clock tick (96 ticks a day, TIME), at the time-healing rate; the health scalar's own recovery is unchanged. care_share: the share of each health gain (rest, care, treatment) that also lowers the located ledger. habituation_rate and habituation_recover: a steady signal's felt intensity falls by habituation_rate of the remainder each tick and recovers by habituation_recover of the missing part when the stimulus stops; a rise larger than INTEROCEPTION.trend_delta resets it (noticed at full strength), a steady stimulus habituates, and a stimulus that stops or eases recovers at habituation_recover. incubation_days: an illness's felt intensity ramps up over this many days since onset. sleep_debt_rise and sleep_debt_fall: the debt grows by rise on each awake tick and falls by fall on each asleep tick; with fall = 2 x rise a resident asleep one third of the time (about eight hours of 24, TIME: 96 ticks a day) holds steady, and a resident asleep a quarter of the time gains debt. sleep_debt_full: the debt that reads as 1. Adult sleep need of seven to nine hours is the working basis (Hirshkowitz and others, 2015, National Sleep Foundation recommendations, Sleep Health 1(1), cited from memory and not re-checked: APPROX).",

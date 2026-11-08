@@ -130,7 +130,8 @@
       "accident": {
         "injury": 1.0,
         "dirt": 1.0
-      }
+      },
+      "childbirth": {}
     },
     "MARK_EVENTS": {
       "butcher": {

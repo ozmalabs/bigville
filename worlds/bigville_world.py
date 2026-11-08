@@ -25,6 +25,7 @@ from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
 from worlds.bigville_bond_world import SLOT_DEFAULTS as BOND_SLOTS  # noqa: E402
 from domains.world_affordances import round_bp  # noqa: E402
 from worlds import daynight as _dn  # noqa: E402  Phase 042: day, night and lamps
+from worlds.births import BirthsMixin  # noqa: E402  Phase 044: pregnancy and birth (the births switch)
 
 # Phase 048: the default for a job's or an attempt's tool: the right one the worker has, else bare hands.
 _DEFAULT_TOOL = object()
@@ -306,7 +307,7 @@ class _HandoverCount:
         return self._count
 
 
-class BigvilleWorld(BodyMixin):
+class BigvilleWorld(BirthsMixin, BodyMixin):
     PHYSICAL_SUBSYSTEM_DEFAULTS = {
         "metabolism": True,
         "ecology": True,
@@ -345,6 +346,10 @@ class BigvilleWorld(BodyMixin):
         "alcohol_aftereffects": False,
         # Phase 040: objects as arms (OBJECT_FORCE). Off, a strike ignores `with`, and a throw is refused as unsupported.
         "object_force": False,
+        # Phase 044: pregnancy and birth (BIRTHS: conception in a recorded union, gestation, delivery risks, the
+        # midwife, and nursing). Off, no one conceives, the population is fixed, and no pregnancy or nursing
+        # changes hunger or work capacity. worlds/births.py holds the rules.
+        "births": False,
     }
 
     def _validate_physical_subsystems(self, configured):
@@ -1361,7 +1366,7 @@ class BigvilleWorld(BodyMixin):
                     aa = self.eng.node(node)["attrs"]
                     if float(aa.get("alive", 0.0)) != 1.0:
                         continue
-                    hunger = float(aa.get("hunger", 0.0)) + 1.0
+                    hunger = float(aa.get("hunger", 0.0)) + self._hunger_rate(actor)  # Phase 044: 1.0 unless births on
                     self.eng.set_attr(node, "hunger", hunger)
                     # Phase 035: the protein store, deficiency and satiety settle once per period (seeds nu_metabolize).
                     self._nutrition_period(actor)
@@ -7872,6 +7877,8 @@ class BigvilleWorld(BodyMixin):
                               if float(spec["age_min"]) <= age <= float(spec["age_max"])), "elder")
             if age_stage != a.get("life_stage"):
                 self.eng.set_attr(node, "life_stage", age_stage)
+        # Phase 044: pregnancy, delivery and birth (a no-op with the births switch off).
+        self._births_day()
 
     def add_waste(self, kind="kitchen_scraps", amount=1.0):
         cycle = self.E.WASTE_CYCLES[kind]
@@ -11120,7 +11127,7 @@ class BigvilleWorld(BodyMixin):
 
     def _effective_body_stat(self, actor, base_key, train_key):
         ba = self.eng.node(self._bodies[actor])["attrs"]
-        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor))
+        return self.E.effective_stat(float(ba.get(base_key, 1.0)), float(ba.get(train_key, 0.0)), self.health(actor)) * self._capacity_factor(actor)
 
     def _train_from_effort(self, body, event):
         """Apply the training rules to one resolved Effort: each stat the effort uses gains train_gain once,
@@ -12586,7 +12593,9 @@ class BigvilleWorld(BodyMixin):
                 "screened": self._care_flag_value(actor, "screened"),
                 "treated": self._care_flag_value(actor, "treated"), "well_baby": self._care_flag_value(actor, "well_baby"),
                 # Phase 036 read-offs (tolerance, craving, dependent, hangover_ticks, withdrawal, mood); empty when off.
-                **self.aftereffects(actor)}
+                **self.aftereffects(actor),
+                # Phase 044 read-offs: pregnant, term_fraction and nursed; empty when the births switch is off.
+                **self._birth_readoffs(actor)}
 
     def stamina(self, actor): return self.body_state(actor)["stamina"]
     def stamina_reserve(self, actor): return self.body_state(actor)["stamina_reserve"]

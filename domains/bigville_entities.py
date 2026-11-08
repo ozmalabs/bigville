@@ -1192,6 +1192,81 @@ def _check_tool_fit(errors, warnings, info):
     info.append(f"TOOL_FIT: {len(tf['verbs'])} verbs, {len(tf['pairs'])} pairs, {len(tf['rows'])} authored tools (APPROX)")
 
 
+def _check_births(errors, warnings, info):
+    """Phase 044: the BIRTHS table. Conception rates cover every fertile age with a rate in [0, 1]; gestation and the
+    postpartum block are whole days; the pregnancy's work and food, the delivery risks and the midwife's factor are in
+    their ranges; the first-year death is the complement of INFANT_SURVIVAL (Phase 009's table); and 'childbirth' is a
+    HEALTH cause with a MARK_HARM row. The arithmetic (domains/fertility_check.py) reports the completed family of a
+    union woman entering at the cited age at first union, against the cited CHILDREN_PER_UNION mean (APPROX). The
+    growth of the town is not checked here: a village run is needed for that (see the Phase 044 report)."""
+    from domains import fertility_check as _fc
+    b = BIRTHS
+    required = ("fertile_age_min", "fertile_age_max", "conception_per_year", "gestation_days",
+                "postpartum_block_days", "pregnancy_food", "pregnancy_load", "stillbirth", "maternal_death",
+                "midwife_factor", "infant_first_year_death", "nursed_hunger", "midwife_reach")
+    missing = [key for key in required if key not in b]
+    for key in missing:
+        errors.append(f"BIRTHS[{key}]: missing")
+    if missing:
+        return
+    lo, hi = int(b["fertile_age_min"]), int(b["fertile_age_max"])
+    if not 0 < lo < hi:
+        errors.append(f"BIRTHS[fertile_age]: need 0 < min < max, not {lo}..{hi}")
+    bands = sorted(b["conception_per_year"], key=lambda band: float(band["age_min"]))
+    for band in bands:
+        if float(band["age_min"]) > float(band["age_max"]) or not 0.0 <= float(band["rate"]) <= 1.0:
+            errors.append(f"BIRTHS[conception_per_year]: a band needs age_min <= age_max and a rate in [0, 1], not {band!r}")
+    for prev, nxt in zip(bands, bands[1:]):
+        if float(nxt["age_min"]) <= float(prev["age_max"]):
+            errors.append(f"BIRTHS[conception_per_year]: bands overlap at {nxt['age_min']}")
+    for age in range(lo, hi + 1):
+        if not any(float(x["age_min"]) <= age <= float(x["age_max"]) for x in bands):
+            errors.append(f"BIRTHS[conception_per_year]: no band covers fertile age {age}")
+            break
+    for key in ("gestation_days", "postpartum_block_days", "midwife_reach"):
+        value = b[key]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            errors.append(f"BIRTHS[{key}]: a whole number of days (or cells) >= 0, not {value!r}")
+    if int(b["gestation_days"]) < 1:
+        errors.append("BIRTHS[gestation_days]: must be at least 1 day")
+    if float(b["pregnancy_food"]) < 0.0:
+        errors.append(f"BIRTHS[pregnancy_food]: must not be negative, not {b['pregnancy_food']!r}")
+    load = b["pregnancy_load"]
+    if not 0.0 <= float(load["from_term"]) < 1.0 or not 0.0 <= float(load["max_load"]) <= 1.0:
+        errors.append(f"BIRTHS[pregnancy_load]: from_term in [0, 1) and max_load in [0, 1], not {load!r}")
+    for key in ("stillbirth", "maternal_death", "infant_first_year_death"):
+        if not 0.0 <= float(b[key]) <= 1.0:
+            errors.append(f"BIRTHS[{key}]: a chance in [0, 1], not {b[key]!r}")
+    if abs(float(b["infant_first_year_death"]) - (1.0 - float(INFANT_SURVIVAL))) > 1e-9:
+        errors.append(f"BIRTHS[infant_first_year_death]: must be 1 - INFANT_SURVIVAL ({1.0 - float(INFANT_SURVIVAL)}), "
+                      f"not {b['infant_first_year_death']!r}")
+    if not 0.0 < float(b["midwife_factor"]) <= 1.0:
+        errors.append(f"BIRTHS[midwife_factor]: in (0, 1], not {b['midwife_factor']!r}")
+    if float(b["nursed_hunger"]) < 0.0:
+        errors.append(f"BIRTHS[nursed_hunger]: must not be negative, not {b['nursed_hunger']!r}")
+    if "midwifery" not in SKILLS:
+        info.append("BIRTHS: this pack has no midwifery skill, so no resident can attend a birth as a midwife")
+    if "childbirth" not in HEALTH["causes"]:
+        errors.append("BIRTHS: 'childbirth' is not a HEALTH cause")
+    if "childbirth" not in MARK_HARM:
+        errors.append("BIRTHS: 'childbirth' has no MARK_HARM row")
+    days = float(TIME["days_per_year"])
+    entry = float(AGE_AT_FIRST_UNION["female"]["mean"])
+    family = _fc.completed_family(bands, gestation_days=int(b["gestation_days"]),
+                                  postpartum_days=int(b["postpartum_block_days"]), entry_age=entry,
+                                  end_age=float(hi) + 1.0, days_per_year=days)
+    cited = float(CHILDREN_PER_UNION["mean"])
+    info.append(f"BIRTHS: a union woman entering at {entry:g} has {family:.2f} children by {hi + 1} "
+                f"(table) against CHILDREN_PER_UNION mean {cited:g} (APPROX, Wrigley and Schofield 1981)")
+    if abs(family - cited) > 1.0:
+        errors.append(f"BIRTHS: completed family {family:.2f} is more than 1.0 from CHILDREN_PER_UNION {cited:g}")
+    for age in (25, 30, 35):
+        per_year = _fc.births_per_union_year(bands, age=age, days_per_year=days,
+                                             gestation_days=int(b["gestation_days"]),
+                                             postpartum_days=int(b["postpartum_block_days"]))
+        info.append(f"BIRTHS: a union woman aged {age} has {per_year:.3f} births a year on average (table)")
+
+
 def _check_contest(errors, warnings, info):
     """Phase 029: the CONTEST table (a contested take: force, cost, margins, reactions) and the SIZE table it
     draws body size from. Fractions stay in range, the margins and reaction bands keep their order, and the
@@ -2236,6 +2311,7 @@ def check_consistency():
     _check_intoxication(errors, warnings, info)
     _check_aftereffects(errors, warnings, info)
     _check_illness(errors, warnings, info)
+    _check_births(errors, warnings, info)   # Phase 044: pregnancy and birth (BIRTHS)
     _check_contest(errors, warnings, info)
     _check_resolution(errors, warnings, info)
     _check_joint_tasks(errors, warnings, info)

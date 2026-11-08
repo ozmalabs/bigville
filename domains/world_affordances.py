@@ -167,6 +167,8 @@ NUTRITION = _PACK["NUTRITION"]
 # acts (MEDICAL_CARE: screening, treatment and well-baby durations, and the skills each act needs). APPROX.
 DISEASE = _PACK["DISEASE"]
 MEDICAL_CARE = _PACK["MEDICAL_CARE"]
+# Phase 044: pregnancy and birth (BIRTHS: conception by age, gestation, delivery risks, midwife, nursing). APPROX.
+BIRTHS = _PACK["BIRTHS"]
 # Phase 029: a contested take (force, cost, margins, reactions). APPROX values; see the table's _doc.
 CONTEST = _PACK["CONTEST"]
 # Phase 050: the one resolution rule. VERBS (the physics of a verb), MATERIALS (what a thing is made of) and
