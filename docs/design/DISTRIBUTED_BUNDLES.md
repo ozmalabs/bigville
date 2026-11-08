@@ -279,7 +279,7 @@ close the program.
 | NB02 | complete | `3e9d72d` |
 | NB03 | complete | `7c9e3e8` |
 | NB04 | complete | `6ea732b` |
-| NB05 | uncommitted | — |
+| NB05 | complete | `ae824d0` |
 
 ## Integration gates
 
