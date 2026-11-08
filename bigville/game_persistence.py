@@ -138,6 +138,9 @@ def _backend_checkpoint(backend):
         }
     if isinstance(backend, LLMBackend):
         return checkpoint_llm_backend(backend)
+    from bigville.resident_births import DependentBackend   # Phase 044: a newborn proposes nothing
+    if type(backend) is DependentBackend:
+        return {"kind": "dependent", "last_choice": dict(backend.last_choice)}
     raise TypeError(
         f"unsupported backend {type(backend).__name__}; supply an explicit backend checkpoint adapter"
     )
@@ -167,6 +170,11 @@ def _build_backend(kind_state, world, character, llm_provider=None, llm_budget=N
         return backend
     if kind == "llm":
         return restore_llm_backend(kind_state, character, llm_provider, budget=llm_budget)
+    if kind == "dependent":
+        from bigville.resident_births import DependentBackend   # Phase 044
+        backend = DependentBackend(character)
+        backend.last_choice = dict(kind_state.get("last_choice") or {})
+        return backend
     raise ValueError(f"unknown checkpoint backend kind: {kind!r}")
 
 
