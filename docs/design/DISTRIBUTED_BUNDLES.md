@@ -275,11 +275,11 @@ close the program.
 
 | Phase | Status | Commit |
 |---|---|---|
-| NB01 | ready | — |
-| NB02 | blocked on NB01 | — |
-| NB03 | blocked on NB02 | — |
-| NB04 | blocked on NB03 | — |
-| NB05 | blocked on NB04 | — |
+| NB01 | complete | `6581ab6` |
+| NB02 | complete | `3e9d72d` |
+| NB03 | complete | `7c9e3e8` |
+| NB04 | complete | `6ea732b` |
+| NB05 | uncommitted | — |
 
 ## Integration gates
 

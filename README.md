@@ -272,6 +272,68 @@ actions+3 to 3 per turn and identical behaviour on the evaluated town100 and
 small-room runs.  See
 [`docs/phases/engine-speedups/FINAL_REPORT.md`](docs/phases/engine-speedups/FINAL_REPORT.md).
 
+### Distributed bundle protocol
+
+The tick graph can also be committed as **bundles**: an explicit unit of work
+that carries its namespace, base version, operations and declared read/write
+sets.  This is a local, in-process protocol today, but its shapes are the ones
+a worker process or socket transport would use.  It is opt-in with
+`create_game(..., executor="partitioned")`; serial and threaded sessions are
+unchanged.
+
+```text
+Bundle -> BundleResult -> BundleAck
+namespace = r<run_id>/t<tick>/<executor>/s<shard>/b<bundle_seq>/a<attempt>
+```
+
+- A `Bundle` is built from one coordinator/shard conflict group.  Its
+  `bundle_id` is the canonical namespace name and is also the idempotence key;
+  retries reuse it.
+- `LocalBundleTransport` dispatches to a caller-supplied executor, caches the
+  result by `bundle_id`, and records acknowledgements.  A duplicate dispatch
+  returns the cached result without executing twice.  The transport protocol
+  is `dispatch`, `acknowledge` and `replay`; the game does not depend on the
+  transport class.
+- A result is not visible until the coordinator acknowledges it.  Results with
+  a mismatched bundle/namespace or a stale base version are rejected, never
+  merged.  Commits follow the deterministic bundle plan order, not worker
+  completion order.
+- `game.last_bundle_log` records the partitioned turn's dispatched bundles,
+  results, acks, committed order and checksums.  Serial and threaded turns
+  leave it `None`.
+
+There are two checksum scopes.  **Execution** checksums
+(`bundle_input_sha`, `bundle_output_sha`, `bundle_execution_sha`,
+`tick_execution_sha`, `run_execution_sha`) identify the executor path,
+namespace and commit order.  **Payload** checksums (`tick_payload_sha`) hash the
+semantic world after a turn with allocation ids and insertion order removed;
+that is the cross-executor equivalence hash.
+
+Run the bundle verification matrix with:
+
+```bash
+python3 tools/verify_bundle_equivalence.py
+python3 tools/verify_bundle_equivalence.py --seeds 305000,305002 --turns 8
+python3 tools/verify_bundle_equivalence.py --seeds 305002 --affordance-mode lazy
+python3 tools/verify_bundle_equivalence.py --json
+```
+
+The tool runs serial and partitioned games turn by turn, compares
+`tick_payload_sha`, audits every dispatched bundle for exactly one result and
+one committed ack, checks deterministic commit order, replays each seed through
+a second partitioned game to compare execution checksums, and re-dispatches
+every bundle through a JSON round trip with a synthetic executor that has no
+world.  It exits non-zero on any divergence.
+
+The current phase is **local only**.  There is no network/socket transport, no
+worker process lifecycle or supervision, no durable/checkpointed dispatch log,
+and no live snapshot shipping or remote restore.  A bundle executor still
+mutates the shared in-process world, so a transport failure after partial
+mutation cannot be rolled back.  Those are the next steps for real
+distribution; the protocol objects, checksums and acknowledgement rules are
+already transport-neutral.  See
+[`docs/phases/distributed-bundles/FINAL_REPORT.md`](docs/phases/distributed-bundles/FINAL_REPORT.md).
+
 ### Real Ocelot integration
 
 Bigville does not bundle the Ocelot substrate. The Ocelot repository provides
