@@ -37,10 +37,40 @@ from __future__ import annotations
 
 import math
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
-from typing import Any, Iterable, Mapping
+from dataclasses import dataclass, replace
+from typing import Any, Callable, Iterable, Mapping
 
 from worlds.tick_graph import Resource
+
+from .bundle_checks import (TickBundleLog, bundle_execution_sha,
+                            bundle_output_sha)
+from .bundles import (Bundle, BundleAck, BundleOperation, BundleResult,
+                      ExecutionNamespace, LocalBundleTransport, QualifiedId)
+
+
+class BundleDispatchError(RuntimeError):
+    """A bundle result could not be validated or committed."""
+
+
+class BundleResultError(BundleDispatchError):
+    """A dispatched bundle returned a stale, mismatched or failed result."""
+
+
+def _base_version(world: Any) -> int:
+    """The monotonic plan version for a turn.
+
+    The world has no general revision counter in this phase, so the contract is
+    the world turn number (``world._turn``), which ``BigvilleGame`` advances
+    before it builds the tick graph.  It is deterministic and never depends on
+    wall time.  A world without ``_turn`` uses version 0.
+    """
+    turn = getattr(world, "_turn", None)
+    if turn is None:
+        return 0
+    try:
+        return max(0, int(turn))
+    except (TypeError, ValueError):
+        return 0
 
 
 def _cell(value: Any) -> tuple[int, int] | None:
@@ -258,12 +288,26 @@ class PartitionedExecutor:
     ``ThreadPoolExecutor``.
     """
 
-    def __init__(self, shard_map: ShardMap | None = None, workers: int | None = None) -> None:
+    def __init__(self, shard_map: ShardMap | None = None, workers: int | None = None,
+                 *, transport: Any = None,
+                 bundle_executor: Callable[[Bundle], BundleResult] | None = None) -> None:
         if workers is not None and (not isinstance(workers, int)
                                     or isinstance(workers, bool) or workers < 1):
             raise ValueError("workers must be a positive integer or None")
+        if transport is not None and not (
+                callable(getattr(transport, "dispatch", None))
+                and callable(getattr(transport, "acknowledge", None))):
+            raise ValueError("transport must implement dispatch/acknowledge")
+        if bundle_executor is not None and not callable(bundle_executor):
+            raise ValueError("bundle_executor must be callable or None")
         self.shard_map = shard_map or ShardMap()
         self.workers = workers
+        # NB04: an injected transport (or executor) is the test/transport seam.
+        # With neither, ``commit`` creates a fresh ``LocalBundleTransport``.
+        self.transport = transport
+        self.bundle_executor = bundle_executor
+        self.last_transport = None
+        self.last_log: TickBundleLog | None = None
 
     # -- planning --------------------------------------------------------
 
@@ -292,62 +336,342 @@ class PartitionedExecutor:
             units[actor] = resources
         return units
 
+    # -- bundle plan -----------------------------------------------------
+
+    def component_groups(self, order: Iterable[str], plan: ShardPlan) -> tuple[tuple[int, ...], ...]:
+        """The deterministic commit groups, as index tuples into ``order``.
+
+        The coordinator group runs first as one serial bundle; every spatial
+        shard is then one bundle.  Inside a group indices are in turn order,
+        matching the EN04 fix for same-cell movers.  Every non-joint actor
+        appears exactly once and the group order is the plan/commit order.
+        """
+        order = list(order)
+        index_of = {actor: index for index, actor in enumerate(order)}
+        coordinator = set(plan.coordinator_units)
+        groups: list[tuple[int, ...]] = []
+        coordinator_indices = tuple(
+            index for index, actor in enumerate(order) if actor in coordinator)
+        if coordinator_indices:
+            groups.append(coordinator_indices)
+        for shard in sorted(shard for shard in plan.by_shard
+                            if shard != self.shard_map.coordinator):
+            indices = tuple(sorted(index_of[actor]
+                                   for actor in plan.by_shard[shard]))
+            if indices:
+                groups.append(indices)
+        return tuple(groups)
+
+    def plan_bundles(self, game: Any, order: Iterable[str],
+                     responses: Mapping[str, Any], plan: ShardPlan | None = None,
+                     *, base_version: int | None = None
+                     ) -> tuple[tuple[Bundle, tuple[int, ...]], ...]:
+        """Build one deterministic bundle per coordinator/shard group.
+
+        Operations come from ``game.last_tick_graph`` and include every
+        operation owned by the group's actors (major action, speech, memory),
+        including an actor's ``idle`` operation when it has no major action.
+        The bundle read/write sets are the union of its operations' resources.
+        """
+        order = list(order)
+        if plan is None:
+            plan = self.plan(self.units(game, order, responses), game.world)
+        graph = getattr(game, "last_tick_graph", None)
+        version = _base_version(game.world) if base_version is None else int(base_version)
+        run_id = game.run_id
+        coordinator_shard = self.shard_map.coordinator
+        coordinator = set(plan.coordinator_units)
+
+        entries: list[tuple[Bundle, tuple[int, ...]]] = []
+        for seq, indices in enumerate(self.component_groups(order, plan)):
+            actors = [order[index] for index in indices]
+            shard = (coordinator_shard if any(actor in coordinator for actor in actors)
+                     else plan.shard_of(actors[0]))
+            namespace = ExecutionNamespace(
+                run_id=run_id, executor="partitioned", shard=int(shard),
+                tick=version, bundle_seq=seq)
+            operations: list[BundleOperation] = []
+            reads: list[Resource] = []
+            writes: list[Resource] = []
+            seen_reads: set[Resource] = set()
+            seen_writes: set[Resource] = set()
+            for actor in actors:
+                for operation in (graph.operations if graph is not None else ()):
+                    if operation.kind == "joint" or operation.actor != actor:
+                        continue
+                    operations.append(BundleOperation(
+                        op_id=operation.op_id,
+                        actor=operation.actor,
+                        kind=operation.kind,
+                        params=dict(operation.payload),
+                        reads=operation.reads,
+                        writes=operation.writes,
+                        tiebreak=operation.tiebreak,
+                    ))
+                    for resource in operation.reads:
+                        if resource not in seen_reads:
+                            seen_reads.add(resource)
+                            reads.append(resource)
+                    for resource in operation.writes:
+                        if resource not in seen_writes:
+                            seen_writes.add(resource)
+                            writes.append(resource)
+            bundle = Bundle(
+                bundle_id=namespace.name,
+                namespace=namespace,
+                run_id=run_id,
+                tick=version,
+                shard=int(shard),
+                base_version=version,
+                operations=tuple(operations),
+                reads=tuple(reads),
+                writes=tuple(writes),
+                tiebreak=tuple(indices),
+            )
+            entries.append((bundle, tuple(indices)))
+        return tuple(entries)
+
+    def build_bundles(self, game: Any, order: Iterable[str],
+                      responses: Mapping[str, Any], plan: ShardPlan | None = None,
+                      *, base_version: int | None = None) -> tuple[Bundle, ...]:
+        """The bundles of :meth:`plan_bundles`, without their index tuples."""
+        return tuple(bundle for bundle, _indices in
+                     self.plan_bundles(game, order, responses, plan,
+                                       base_version=base_version))
+
+    # -- bundle execution -------------------------------------------------
+
+    def make_bundle_executor(self, game: Any, order: Iterable[str],
+                             responses: Mapping[str, Any],
+                             suppressed: Mapping[str, str] | None,
+                             indices_by_id: Mapping[str, tuple[int, ...]]
+                             ) -> Callable[[Bundle], BundleResult]:
+        """Build the in-process reference callback for one commit.
+
+        The callback applies the group's actors through ``game._run_component``
+        inside ``world.eng.execution_namespace(bundle.namespace)``, then records
+        the nodes that namespace created and returns a checksummed
+        ``BundleResult``.  A per-actor contained error remains a row error and
+        the result is still ``ok`` (the historical serial semantics); only an
+        unexpected callback exception becomes ``status="error"``.
+        """
+        order = list(order)
+        suppressed = suppressed or {}
+        graph = getattr(getattr(game, "world", None), "eng", None)
+
+        def nodes_for(namespace: ExecutionNamespace) -> set[Any]:
+            finder = getattr(graph, "nodes_by_origin", None)
+            if not callable(finder):
+                return set()
+            return set(finder(namespace.name))
+
+        def execute(bundle: Bundle) -> BundleResult:
+            indices = indices_by_id.get(bundle.bundle_id)
+            if indices is None:
+                raise BundleDispatchError(
+                    f"no component for bundle {bundle.bundle_id!r}")
+            before = nodes_for(bundle.namespace)
+            status, reason = "ok", ""
+            try:
+                scoped = getattr(graph, "execution_namespace", None)
+                if callable(scoped):
+                    with scoped(bundle.namespace):
+                        rows = game._run_component(
+                            order, responses, indices, suppressed)
+                else:
+                    rows = game._run_component(
+                        order, responses, indices, suppressed)
+            except Exception as exc:  # a transport-level failure, not a unit error
+                status = "error"
+                reason = f"{type(exc).__name__}: {exc}"
+                rows = ()
+            created = sorted(nodes_for(bundle.namespace) - before)
+            created_ids = tuple(
+                QualifiedId(bundle.namespace.name, int(node)) for node in created)
+            provisional = BundleResult(
+                bundle_id=bundle.bundle_id,
+                namespace=bundle.namespace,
+                base_version=bundle.base_version,
+                status=status,
+                effects=(),
+                created_ids=created_ids,
+                result=tuple(tuple(row) for row in rows),
+                output_sha="pending",
+                execution_sha="pending",
+                reason=reason,
+            )
+            output_sha = bundle_output_sha(provisional)
+            provisional = replace(provisional, output_sha=output_sha)
+            execution_sha = bundle_execution_sha(bundle, provisional)
+            return replace(provisional, execution_sha=execution_sha)
+
+        return execute
+
+    # -- dispatch and acknowledgement ------------------------------------
+
+    @staticmethod
+    def validate_result(bundle: Bundle, result: BundleResult) -> None:
+        """Reject a result that does not belong to this exact dispatch."""
+        if not isinstance(result, BundleResult):
+            raise BundleResultError(
+                f"bundle {bundle.bundle_id!r} returned "
+                f"{type(result).__name__}, not a BundleResult")
+        if result.bundle_id != bundle.bundle_id:
+            raise BundleResultError(
+                f"result bundle_id {result.bundle_id!r} does not match "
+                f"{bundle.bundle_id!r}")
+        if result.namespace != bundle.namespace:
+            raise BundleResultError(
+                f"result namespace {result.namespace.name!r} does not match "
+                f"{bundle.namespace.name!r}")
+        if result.base_version != bundle.base_version:
+            raise BundleResultError(
+                f"stale result for {bundle.bundle_id!r}: base_version "
+                f"{result.base_version} != {bundle.base_version}")
+
+    @staticmethod
+    def ack_for(bundle: Bundle, result: BundleResult) -> BundleAck:
+        """The coordinator's ack for one validated result.
+
+        ``ok`` and ``refused`` commit; per-actor row errors are contained and do
+        not change that (they are the existing serial outcome).  ``retry`` and
+        ``error`` are non-committed.  No separate revision is written per
+        bundle, so ``committed_version`` is the turn's plan base version.
+        """
+        if result.status in ("ok", "refused"):
+            return BundleAck(
+                bundle_id=bundle.bundle_id,
+                base_version=bundle.base_version,
+                outcome="committed",
+                committed_version=bundle.base_version,
+                execution_sha=result.execution_sha,
+                reason=result.reason,
+            )
+        outcome = "retry" if result.status == "retry" else "rejected"
+        return BundleAck(
+            bundle_id=bundle.bundle_id,
+            base_version=bundle.base_version,
+            outcome=outcome,
+            committed_version=None,
+            execution_sha=result.execution_sha,
+            reason=result.reason or f"result status {result.status}",
+        )
+
+    def dispatch_bundles(self, bundles: Iterable[Bundle], transport: Any) -> tuple[BundleResult, ...]:
+        """Dispatch bundles in order through ``transport`` (test seam)."""
+        return tuple(transport.dispatch(bundle) for bundle in bundles)
+
     # -- commit ----------------------------------------------------------
 
     def commit(self, game: Any, order: Iterable[str], responses: Mapping[str, Any],
                suppressed: Mapping[str, str] | None = None,
-               plan: ShardPlan | None = None) -> dict[str, tuple[str, Any, Any]]:
-        """Apply one turn's units and return the TG05 ``completed`` map.
+               plan: ShardPlan | None = None, *,
+               base_version: int | None = None,
+               transport: Any = None,
+               bundle_executor: Callable[[Bundle], BundleResult] | None = None
+               ) -> dict[str, tuple[str, Any, Any]]:
+        """Apply one turn's units as acknowledged bundles.
 
-        Cross-shard/coordinator units execute first, serially, in turn order.
-        Every other shard is one component; independent shards run in a bounded
-        pool.  The returned dictionary is rebuilt in turn order and carries only
-        ``(actor, result, error)`` triples.  Result/error dictionaries on the
-        game are written by the caller, never here.
+        The coordinator group runs first, serially; independent spatial shards
+        then run in a bounded pool, exactly as before.  Results are validated,
+        recorded, acknowledged and committed in plan order, never completion
+        order.  The returned dictionary is rebuilt in turn order and carries
+        only ``(actor, result, error)`` triples.  Result/error dictionaries on
+        the game are written by the caller, never here.
         """
         order = list(order)
         suppressed = suppressed or {}
         if plan is None:
             plan = self.plan(self.units(game, order, responses), game.world)
+        entries = self.plan_bundles(game, order, responses, plan,
+                                    base_version=base_version)
+        version = (entries[0][0].base_version if entries
+                   else (_base_version(game.world) if base_version is None
+                         else int(base_version)))
+        log = TickBundleLog(game.run_id, version)
+        self.last_log = log
+        if hasattr(game, "last_bundle_log"):
+            game.last_bundle_log = log
 
-        index_of = {actor: index for index, actor in enumerate(order)}
-        completed: dict[str, tuple[str, Any, Any]] = {}
+        for bundle, _indices in entries:
+            log.dispatch(bundle)
+        if not entries:
+            return {}
 
-        coordinator = set(plan.coordinator_units)
-        for actor in order:
-            if actor not in coordinator:
-                continue
-            completed[actor] = game._apply_unit(
-                actor, responses[actor], suppressed.get(actor))
+        indices_by_id = {bundle.bundle_id: indices
+                         for bundle, indices in entries}
+        chosen_transport = transport or self.transport
+        chosen_executor = bundle_executor or self.bundle_executor
+        if chosen_executor is None:
+            chosen_executor = self.make_bundle_executor(
+                game, order, responses, suppressed, indices_by_id)
+        if chosen_transport is None:
+            chosen_transport = LocalBundleTransport(chosen_executor)
+        self.last_transport = chosen_transport
 
-        shards = [shard for shard in plan.by_shard
-                  if shard != self.shard_map.coordinator]
-        shards.sort()
-        # EN04 follow-up: within a shard the actors must execute in the turn's
-        # deterministic order, not the plan's lexicographic actor order.  Two
-        # same-cell movers otherwise swap their terrain/exertion updates.
-        components = [tuple(sorted(index_of[actor] for actor in plan.by_shard[shard]))
-                      for shard in shards]
-        components = [component for component in components if component]
-
-        if not components:
-            return {actor: completed[actor] for actor in order if actor in completed}
-
-        limit = self.workers if self.workers is not None else len(components)
-        if limit <= 1 or len(components) <= 1:
-            for component in components:
-                for actor, result, error in game._run_component(
-                        order, responses, component, suppressed):
-                    completed[actor] = (actor, result, error)
+        results: list[BundleResult] = []
+        coordinator_shard = self.shard_map.coordinator
+        first = entries[0][0]
+        if first.shard == coordinator_shard and len(entries) > 1:
+            results.append(chosen_transport.dispatch(first))
+            remaining = [bundle for bundle, _indices in entries[1:]]
+            results.extend(self._dispatch_ordered(remaining, chosen_transport))
         else:
-            with ThreadPoolExecutor(max_workers=min(limit, len(components)),
-                                    thread_name_prefix="bigville-shard") as pool:
-                futures = [pool.submit(game._run_component, order, responses,
-                                       component, suppressed)
-                           for component in components]
-                results = [future.result() for future in futures]
-            for rows in results:
-                for actor, result, error in rows:
-                    completed[actor] = (actor, result, error)
+            results.extend(self._dispatch_ordered(
+                [bundle for bundle, _indices in entries], chosen_transport))
+
+        completed: dict[str, tuple[str, Any, Any]] = {}
+        for (bundle, _indices), result in zip(entries, results):
+            try:
+                self.validate_result(bundle, result)
+            except BundleResultError as exc:
+                # A malformed/stale result is rejected, never merged.  Only a
+                # real BundleResult can contribute the checksum an ack needs.
+                if isinstance(result, BundleResult):
+                    ack = BundleAck(
+                        bundle_id=bundle.bundle_id,
+                        base_version=bundle.base_version,
+                        outcome="rejected",
+                        committed_version=None,
+                        execution_sha=result.execution_sha,
+                        reason=str(exc),
+                    )
+                    try:
+                        chosen_transport.acknowledge(ack)
+                    except Exception:
+                        pass
+                    try:
+                        log.acknowledge(ack)
+                    except Exception:
+                        pass
+                raise
+            log.result(result)
+            ack = self.ack_for(bundle, result)
+            chosen_transport.acknowledge(ack)
+            log.acknowledge(ack)
+            if ack.outcome != "committed":
+                raise BundleResultError(
+                    f"bundle {bundle.bundle_id!r} was not committed: "
+                    f"{ack.outcome} ({result.status}: {result.reason or 'no reason'})")
+            log.commit(bundle.bundle_id)
+            for row in result.result:
+                actor, applied, error = row
+                if actor is None:
+                    continue
+                completed[actor] = (actor, bool(applied), error)
 
         return {actor: completed[actor] for actor in order if actor in completed}
+
+    def _dispatch_ordered(self, bundles: list[Bundle],
+                          transport: Any) -> list[BundleResult]:
+        """Dispatch independent shard bundles in a pool, results in plan order."""
+        if not bundles:
+            return []
+        limit = self.workers if self.workers is not None else len(bundles)
+        if limit <= 1 or len(bundles) <= 1:
+            return [transport.dispatch(bundle) for bundle in bundles]
+        with ThreadPoolExecutor(max_workers=min(limit, len(bundles)),
+                                thread_name_prefix="bigville-bundle") as pool:
+            futures = [pool.submit(transport.dispatch, bundle)
+                       for bundle in bundles]
+            return [future.result() for future in futures]

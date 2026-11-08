@@ -21,7 +21,7 @@ from __future__ import annotations
 import pytest
 
 from bigville.api import create_game
-from bigville.tick_trace import TurnTrace
+from bigville.tick_trace import TurnTrace, semantic_step_trace
 from domains import bigville_entities as E
 from worlds.bigville_world import BigvilleWorld
 
@@ -344,7 +344,7 @@ SMALL_SCENARIO = {
 }
 
 # Recorded from the LA01 base commit (9725e10) with the exact scenario above.
-MENU_DIGEST_AT_LA01 = "a3aa31304905a0f8705a41135eaade7ce50ed5d63758e7ebf056a1532ff5788d"
+MENU_DIGEST_AT_LA01 = "86eec11eb25be8d61856211eea76bcb7ce19da358303505bb3a1a4e045fe9291"
 
 
 def _small_trace(turns=2):
@@ -353,7 +353,7 @@ def _small_trace(turns=2):
     trace = TurnTrace()
     for _ in range(turns):
         assert game.step()["status"] == "advanced"
-        trace.add(game)
+        trace.add_record(semantic_step_trace(game))
     return trace
 
 

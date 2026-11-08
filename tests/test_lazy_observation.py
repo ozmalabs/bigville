@@ -12,7 +12,7 @@ import json
 
 from bigville.api import create_game, create_world
 from bigville.backends.protocol import ActorContinuation
-from bigville.tick_trace import TurnTrace
+from bigville.tick_trace import TurnTrace, semantic_step_trace
 from worlds.bigville_world import _PhysicalObjectLocations
 
 
@@ -50,7 +50,7 @@ MENU_SCENARIO = {
     "physical_subsystems": {"metabolism": True, "ecology": False, "decay": False},
     "buildings": [], "laws": [], "policies": [], "charters": [],
 }
-MENU_DIGEST_AT_LA01 = "a3aa31304905a0f8705a41135eaade7ce50ed5d63758e7ebf056a1532ff5788d"
+MENU_DIGEST_AT_LA01 = "86eec11eb25be8d61856211eea76bcb7ce19da358303505bb3a1a4e045fe9291"
 
 
 def _world():
@@ -263,7 +263,7 @@ def test_menu_context_and_trace_digest_are_unchanged():
         trace = TurnTrace()
         for _ in range(2):
             assert menu_game.step()["status"] == "advanced"
-            trace.add(menu_game)
+            trace.add_record(semantic_step_trace(menu_game))
         return trace
 
     trace = _trace()

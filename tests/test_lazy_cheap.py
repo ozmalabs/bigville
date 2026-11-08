@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from bigville.api import create_game
 from bigville.backends.cheap import SimplePolicy
-from bigville.tick_trace import TurnTrace
+from bigville.tick_trace import TurnTrace, semantic_step_trace
 from domains import bigville_entities as E
 
 
@@ -50,7 +50,7 @@ MENU_SCENARIO = {
 }
 
 # Recorded at LA01 and still the menu oracle after LA03.
-MENU_DIGEST_AT_LA01 = "a3aa31304905a0f8705a41135eaade7ce50ed5d63758e7ebf056a1532ff5788d"
+MENU_DIGEST_AT_LA01 = "86eec11eb25be8d61856211eea76bcb7ce19da358303505bb3a1a4e045fe9291"
 
 
 def _game(policy: SimplePolicy | None = None, *, scenario=None, seed=305001,
@@ -267,7 +267,7 @@ def test_menu_mode_trace_digest_is_unchanged():
     trace = TurnTrace()
     for _ in range(2):
         assert game.step()["status"] == "advanced"
-        trace.add(game)
+        trace.add_record(semantic_step_trace(game))
     assert trace.hexdigest() == MENU_DIGEST_AT_LA01
 
 

@@ -60,6 +60,40 @@ _SNAPSHOT_MODES = frozenset({"every_turn", "on_demand", "auto"})
 _RULE_BATCHING = frozenset({"action", "turn", "auto"})
 
 
+def _default_run_id(world) -> str:
+    """A deterministic run identity derived from the world's scenario and seed.
+
+    NB04 uses this in every bundle namespace.  It must not depend on process
+    identity, object ids or wall time, so it is built only from scenario data
+    already present in the world and the map seed stamped on the Map node.
+    """
+    scenario = getattr(world, "_scenario_data", None) or {}
+    label = scenario.get("id") or scenario.get("name") or type(world).__name__
+    seed = None
+    map_node = getattr(world, "_map_node", None)
+    if map_node is not None:
+        try:
+            seed = world.eng.node_attrs(map_node).get("seed")
+        except Exception:
+            seed = None
+    if seed is None:
+        seed = getattr(world, "_seed", None)
+    text = str(label)
+    if seed is not None:
+        try:
+            text = f"{text}-{int(float(seed))}"
+        except (TypeError, ValueError):
+            text = f"{text}-{seed}"
+    return text
+
+
+def _normalise_run_id(value) -> str:
+    """Validate and sanitise a run id for the namespace grammar."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("run_id must be a non-empty string")
+    return value.strip().replace("/", "_").replace("#", "_").replace(" ", "_")
+
+
 def _default_simultaneous_priority(game, actor, index):
     """Default TG06 claim priority: stronger residents win, then earlier order.
 
@@ -123,6 +157,9 @@ class BigvilleGame:
     last_tick_graph: TickGraph | None = None
     # TG07: the shard assignment used by the last partitioned turn (None otherwise).
     last_shard_plan = None
+    # NB04: the bundle dispatch/result/ack/commit log of the last partitioned
+    # turn (None for serial/threaded turns).
+    last_bundle_log = None
     # TG05: opt-in commit executor.  "serial" (default) is the historical loop;
     # "threaded" commits declared-independent actor units in a bounded pool;
     # "partitioned" (TG07) assigns units to spatial shards first.
@@ -335,6 +372,7 @@ class BigvilleGame:
                  ticks_per_period: int | str | None = "world",
                  tick_graph_enabled: bool | None = None,
                  executor: str = "serial", executor_workers: int = 4,
+                 run_id: str | None = None,
                  turn_semantics: str = "sequential", simultaneous_priority=None,
                  affordance_mode: str = "menu",
                  snapshot_mode: str = "every_turn",
@@ -350,6 +388,10 @@ class BigvilleGame:
             raise ValueError("autonomous sessions cannot have a player")
         self.world = world
         self.ticks_per_period = ticks_per_period
+        # NB04: deterministic run identity for bundle namespaces and provenance.
+        self.run_id = _normalise_run_id(
+            run_id if run_id is not None else _default_run_id(world))
+        self.last_bundle_log = None
         if tick_graph_enabled is not None:
             self.tick_graph_enabled = bool(tick_graph_enabled)
         self.executor = executor
@@ -1644,6 +1686,7 @@ class BigvilleGame:
         """
         suppressed = {}
         self.last_shard_plan = None
+        self.last_bundle_log = None
         if self.turn_semantics == "simultaneous":
             suppressed = self._simultaneous_suppressed(order, responses)
         if self._partitioned_eligible(order, responses, start):
@@ -1963,7 +2006,13 @@ class BigvilleGame:
             self.last_results[actor] = bool(result)
             if error is not None:
                 self.last_errors[actor] = error
-        return self._finish_turn(responses, include_snapshot=include_snapshot)
+        result = self._finish_turn(responses, include_snapshot=include_snapshot)
+        # NB04: the payload scope is the semantic world after the whole turn.
+        # Recording it on the tick log is cheap relative to the turn itself and
+        # lets NB05 compare serial and partitioned payloads directly.
+        if self.last_bundle_log is not None:
+            self.last_bundle_log.set_payload(self.world)
+        return result
 
     def _run_component(self, order, responses, component, suppressed=None):
         suppressed = suppressed or {}
