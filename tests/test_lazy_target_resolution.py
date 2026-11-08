@@ -344,7 +344,7 @@ SMALL_SCENARIO = {
 }
 
 # Recorded from the LA01 base commit (9725e10) with the exact scenario above.
-MENU_DIGEST_AT_LA01 = "8a49c09be5cbe1404d0626c81d531a3cb40dec2c04ff1196dd888e291f84ee3b"
+MENU_DIGEST_AT_LA01 = "a89d51d00f96547d2c86e19e84784c2e61eb2b9f1c1da3f36fbff1e0d3b6282f"
 
 
 def _small_trace(turns=2):

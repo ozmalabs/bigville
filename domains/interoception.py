@@ -4,7 +4,7 @@ Pure functions over a body's tables (packs/<pack>/world/interoception.json) and 
 object (worlds/body.py) collects the reads and the interoceptor record and calls these functions. Nothing here
 touches the world.
 
-    draw(seed, *parts)              a stateless draw in [0, 1), keyed on the seed and the parts (no random state)
+    draw(seed, *parts)              a stateless hash draw in [0, 1), keyed on the seed and the parts (no random state)
     resolve(tree, node, depth)      the ancestor of `node` at `depth` (the whole node when depth is deeper)
     derive(tables, reads, record, seed, actor, turn, previous)
                                     every source's truth, the felt signals and the background feeling
@@ -40,11 +40,18 @@ def draw(seed, *parts):
     """A draw in [0, 1) that depends only on the seed and `parts`. Keyed by a hash, so it is the same in every
     process (Python's own hash() is salted per run and is not used).
 
-    DS02 allowlist: this local draw remains for deterministic *presentation* and
-    creation-time values only -- a body's acuity (``acuity_of``), the sound form
-    of a quality (``sound``), and the per-tick feeling jitter in ``derive``.
-    Every runtime chance *outcome* (harm locus, strike aim, illness, meals,
-    births, burial) uses ``domains.determinism.state_uniform`` instead.
+    DS02/DS04 allowlist: this local draw remains for deterministic
+    *presentation* and creation-time values only -- a body's acuity
+    (``acuity_of``), the sound form of a quality (``sound``), and the per-tick
+    feeling jitter in ``derive``.  Every runtime chance *outcome* (harm locus,
+    strike aim, illness, meals, births, burial) uses
+    ``domains.determinism.state_uniform`` instead.
+
+    ``sounds``/jitter in ``derive`` are still a hash of their seed, but the
+    body supplies a *state-derived* runtime seed from
+    ``domains.determinism.state_seed`` (purpose ``"interoception"``, the actor,
+    the turn and the actor's canonical state).  Only ``acuity_of`` keeps the
+    fixed creation-time body seed.
     """
     text = ":".join(str(part) for part in (seed,) + parts)
     digest = hashlib.sha256(text.encode("utf-8")).digest()
@@ -239,6 +246,9 @@ def derive(tables, reads, record, seed, actor, turn, previous=None, located=None
               (each a pack table, '_'-keys allowed). "sources" is SIGNAL_SOURCES.
     reads     {read name: value} for every read a source names.
     record    the interoceptor record: {"acuity", "attention", "impairment"} (plain numbers).
+    seed      the runtime seed for the jitter/sound hashes.  The world's body
+              passes a state-derived seed (see ``worlds/body.py::Body.clock``);
+              a body with no world may pass its creation-time body seed.
     previous  {source name: intensity} at the last tick, or None. It gives the trend of each source.
 
     Returns {"sources": [row...], "feeling": {"sound", "level"} or None, "signals": [row...]} where a row carries

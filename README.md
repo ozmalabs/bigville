@@ -272,6 +272,47 @@ actions+3 to 3 per turn and identical behaviour on the evaluated town100 and
 small-room runs.  See
 [`docs/phases/engine-speedups/FINAL_REPORT.md`](docs/phases/engine-speedups/FINAL_REPORT.md).
 
+### Deterministic chance
+
+Every runtime chance outcome derives from the world seed, a stable purpose and
+the canonical state of the entities involved, not from a shared RNG.  The rule
+is:
+
+> Given the same world seed, turn/period and involved-entity state, a
+> stochastic outcome is the same value regardless of executor, shard, action
+> order or process.
+
+`domains/determinism.py` is the single source (`canonical_bytes`,
+`derive_seed`, `uniform`, `choice`, `shuffle`, `sample`, `state_seed`,
+`state_uniform`).  Weather, infrastructure, illness, meals, births, burial,
+strike aim, harm locus and animal-birth sex all use it.  Turn order and the
+reporting sample use the same helper.  `Body.clock` gives a world-backed
+body a state-derived runtime seed (`"interoception"`, the actor and the turn),
+while the creation-time acuity keeps its fixed body seed.  No world keeps an
+`_rng` or persists RNG state.
+
+Creation-time generation is the documented exception: founding cast,
+population, kinship, knowledge, relationships and social priors may use seeded
+`numpy` streams because they run once from the run/map seed.  They are
+allowlisted per file and per rule in `tests/test_random_audit.py`, which fails
+on a new `random.Random`, `np.random`, `_rng`, builtin `hash()`/`id()` or a
+wall-clock/UUID seed path.  It is deterministic for a fixed Python/numpy
+environment and seed; cross-numpy-version equivalence is not guaranteed.
+LLM/Ocelot providers are outside the rule (their decisions are inputs).
+
+Verify the serial/partitioned/replay/reorder/restore matrix with:
+
+```bash
+python3 tools/verify_deterministic_chance.py
+python3 tools/verify_deterministic_chance.py \
+  --seeds 305000,305002,305004,305006 --turns 8 --json
+```
+
+The tool exits non-zero and names the first divergent turn/scope on any
+mismatch.  See
+[`docs/phases/deterministic-seeds/FINAL_REPORT.md`](docs/phases/deterministic-seeds/FINAL_REPORT.md)
+for the rule, the allowlist and the remaining risks.
+
 ### Distributed bundle protocol
 
 The tick graph can also be committed as **bundles**: an explicit unit of work

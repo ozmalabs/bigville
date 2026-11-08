@@ -1,6 +1,6 @@
 # Deterministic chance: state-derived seeds for every stochastic outcome
 
-Status: active plan, 8 November 2026. This program removes shared/global RNG
+Status: phases complete, 8 November 2026 (DS04 awaiting review/commit). This program removes shared/global RNG
 consumption from the simulation and makes every runtime chance outcome derive
 from a deterministic seed of the involved parties' state, the world seed and
 the turn/period. A shard therefore produces the same outcome regardless of
@@ -196,10 +196,10 @@ status.
 
 | Phase | Status | Commit |
 |---|---|---|
-| DS01 | complete (uncommitted) | — |
-| DS02 | complete (uncommitted) | — |
-| DS03 | complete (uncommitted) | — |
-| DS04 | blocked on DS03 | — |
+| DS01 | complete | `6a3768c` |
+| DS02 | complete | `f34a7dc` |
+| DS03 | complete | `4c82dfe` |
+| DS04 | complete (uncommitted) | pending review/commit |
 
 ## Integration gates
 

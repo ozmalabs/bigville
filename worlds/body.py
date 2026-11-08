@@ -92,8 +92,21 @@ class Body:
                 "counts": {"attends": 0, "presses": 0, "depth_gained": 0, "remedied": 0, "glances": 0}}
 
     def clock(self):
-        """(seed, turn): the seed the draws use and the turn they are keyed on."""
+        """(seed, turn): the seed the draws use and the turn they are keyed on.
+
+        A body built from tables alone keeps the fixed body seed (the
+        creation-time acuity seed).  A body attached to a world derives its
+        *runtime* seed from the world seed, the purpose, the actor's canonical
+        state and the turn.  Per-tick felt-signal jitter, and the sound form of
+        each quality, are therefore state-derived rather than merely stable for
+        a given body seed, and a restored or reordered run draws the same
+        values.  The creation-time acuity is still drawn from the body seed in
+        ``initial_state`` and never recomputed here.
+        """
         turn = int(getattr(self.world, "_turn", 0)) if self.world is not None else 0
+        if self.world is not None:
+            return int(determinism.state_seed(
+                self.world, "interoception", self.actor, turn)), turn
         return int(self.state["seed"]), turn
 
     def reads(self):
