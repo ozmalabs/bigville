@@ -1,0 +1,2196 @@
+[
+ {
+  "id": "S001",
+  "text": "Morning, Tam.",
+  "label": "greeting",
+  "got": null
+ },
+ {
+  "id": "S002",
+  "text": "Good day to you, Nell",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {
+    "target": "to you nell"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S003",
+  "text": "Hello there!",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {
+    "target": "there"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S004",
+  "text": "Well met, neighbour.",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S005",
+  "text": "Evening, Ivo.",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {
+    "target": "ivo"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S006",
+  "text": "Hallo, Hester",
+  "label": "greeting",
+  "got": null
+ },
+ {
+  "id": "S007",
+  "text": "Afternoon all",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S008",
+  "text": "Hey Ada.",
+  "label": "greeting",
+  "got": null
+ },
+ {
+  "id": "S009",
+  "text": "Good to see you again, Oswin.",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {
+    "target": "oswin"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S010",
+  "text": "Hullo",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S011",
+  "text": "Mornin'",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S012",
+  "text": "Hello, Martha, you look well",
+  "label": "greeting",
+  "got": {
+   "act": "greeting",
+   "slots": {
+    "target": "martha you look well"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S013",
+  "text": "Thanks a lot for the bread",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {
+    "target": "a lot for the bread"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S014",
+  "text": "Much obliged, Ivo",
+  "label": "thanks",
+  "got": null
+ },
+ {
+  "id": "S015",
+  "text": "Thank you kindly",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {
+    "target": "kindly"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S016",
+  "text": "I owe you one, Martha",
+  "label": "thanks",
+  "got": null
+ },
+ {
+  "id": "S017",
+  "text": "Cheers for the loan of the cart",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {
+    "target": "bram"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S018",
+  "text": "Thanks, that was kind of you",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {
+    "target": "that was kind of you"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S019",
+  "text": "Thank you for the eggs, Nell.",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {
+    "target": "for the eggs nell"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S020",
+  "text": "Ta",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S021",
+  "text": "Bless you for that",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S022",
+  "text": "I am grateful for the help with the roof",
+  "label": "thanks",
+  "got": {
+   "act": "thanks",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S023",
+  "text": "Sorry about the spilt milk",
+  "label": "apology",
+  "got": {
+   "act": "apology",
+   "slots": {
+    "target": "about the spilt milk"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S024",
+  "text": "I beg your pardon, Oswin",
+  "label": "apology",
+  "got": null
+ },
+ {
+  "id": "S025",
+  "text": "My apologies, that was rude of me",
+  "label": "apology",
+  "got": {
+   "act": "apology",
+   "slots": {
+    "reason": "that was rude of me"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S026",
+  "text": "Forgive me, I was short with you",
+  "label": "apology",
+  "got": {
+   "act": "apology",
+   "slots": {
+    "reason": "i was short with you"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S027",
+  "text": "Sorry Tam, I did not mean it",
+  "label": "apology",
+  "got": {
+   "act": "apology",
+   "slots": {
+    "target": "tam i did not mean it"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S028",
+  "text": "I am sorry for keeping you",
+  "label": "apology",
+  "got": {
+   "act": "apology",
+   "slots": {
+    "reason": "for keeping you"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S029",
+  "text": "Apologies for the noise last night",
+  "label": "apology",
+  "got": {
+   "act": "apology",
+   "slots": {
+    "reason": "the noise last night"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S030",
+  "text": "Sorry",
+  "label": "apology",
+  "got": {
+   "act": "apology",
+   "slots": {},
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S031",
+  "text": "Goodbye for now",
+  "label": "farewell",
+  "got": {
+   "act": "farewell",
+   "slots": {},
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S032",
+  "text": "Bye, Ada",
+  "label": "farewell",
+  "got": {
+   "act": "farewell",
+   "slots": {
+    "target": "ada"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S033",
+  "text": "Off I go, see you later",
+  "label": "farewell",
+  "got": {
+   "act": "farewell",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S034",
+  "text": "Farewell, friend",
+  "label": "farewell",
+  "got": {
+   "act": "farewell",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S035",
+  "text": "Take care now",
+  "label": "farewell",
+  "got": {
+   "act": "barb",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S036",
+  "text": "I must be going, goodnight",
+  "label": "farewell",
+  "got": {
+   "act": "farewell",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S037",
+  "text": "Until tomorrow then",
+  "label": "farewell",
+  "got": {
+   "act": "farewell",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S038",
+  "text": "Good night, Bram",
+  "label": "farewell",
+  "got": {
+   "act": "farewell",
+   "slots": {
+    "target": "bram"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S039",
+  "text": "I will mend your gate by Friday",
+  "label": "promise",
+  "got": {
+   "act": "promise",
+   "slots": {
+    "commitment": "mend your gate by friday"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S040",
+  "text": "You have my word I will help with the harvest",
+  "label": "promise",
+  "got": {
+   "act": "promise",
+   "slots": {
+    "commitment": "i will help with the harvest"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S041",
+  "text": "Leave it with me, I will sort the roof",
+  "label": "promise",
+  "got": {
+   "act": "promise",
+   "slots": {
+    "commitment": "i will sort the roof"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S042",
+  "text": "I promise I will bring the seed",
+  "label": "promise",
+  "got": {
+   "act": "promise",
+   "slots": {
+    "commitment": "i will bring the seed"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S043",
+  "text": "I will fetch the wood tomorrow, I swear it",
+  "label": "promise",
+  "got": {
+   "act": "promise",
+   "slots": {
+    "commitment": "i will fetch the wood tomorrow"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S044",
+  "text": "Count on me to help with the sheep",
+  "label": "promise",
+  "got": {
+   "act": "promise",
+   "slots": {
+    "commitment": "help with the sheep"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S045",
+  "text": "This bread is stale again",
+  "label": "complaint",
+  "got": {
+   "act": "complaint",
+   "slots": {
+    "subject": "this bread is stale again"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S046",
+  "text": "I am worried about the well",
+  "label": "complaint",
+  "got": null
+ },
+ {
+  "id": "S047",
+  "text": "The mill keeps us waiting every week, it is not right",
+  "label": "complaint",
+  "got": {
+   "act": "complaint",
+   "slots": {
+    "subject": "the mill keeps us waiting every week"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S048",
+  "text": "I do not like the new tax one bit",
+  "label": "complaint",
+  "got": {
+   "act": "complaint",
+   "slots": {
+    "subject": "the new tax"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S049",
+  "text": "This is not right, the price went up again",
+  "label": "complaint",
+  "got": {
+   "act": "complaint",
+   "slots": {
+    "subject": "the price went up again"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S050",
+  "text": "The roof leaks and nobody comes",
+  "label": "complaint",
+  "got": {
+   "act": "complaint",
+   "slots": {
+    "subject": "the roof leaks and nobody comes"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S051",
+  "text": "Nothing works in this village any more",
+  "label": "complaint",
+  "got": {
+   "act": "complaint",
+   "slots": {
+    "subject": "nothing works in this village any more"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S052",
+  "text": "Somebody has been stealing my eggs",
+  "label": "complaint",
+  "got": {
+   "act": "complaint",
+   "slots": {
+    "subject": "somebody has been stealing my eggs"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S053",
+  "text": "Be careful on the ice, Oswin",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {
+    "target": "on the ice oswin"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S054",
+  "text": "Watch yourself near the bull",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S055",
+  "text": "Mind the step by the well",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S056",
+  "text": "Watch out, the cart is coming",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S057",
+  "text": "Careful, that pot is hot",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {
+    "target": "that pot is hot"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S058",
+  "text": "Steer clear of the Hammonds' yard",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S059",
+  "text": "Keep away from the river after dark",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S060",
+  "text": "Look out for the bridge, it is slippery",
+  "label": "barb",
+  "got": {
+   "act": "barb",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S061",
+  "text": "Could you spare two loaves?",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "spare two loaves"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S062",
+  "text": "Ada, bring me the salt",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "bring me the salt"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S063",
+  "text": "Please help me lift this sack",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "help me lift this sack"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S064",
+  "text": "Can you help me with the fence?",
+  "label": "request",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "can you help me with the fence"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S065",
+  "text": "Give me a hand with the cart, will you",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "give me a hand with the cart"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S066",
+  "text": "Pass me the bread",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "pass me the bread"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S067",
+  "text": "Fetch some water from the well, Tam",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "fetch some water from the well"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S068",
+  "text": "Would you lend me your hammer",
+  "label": "request",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "would you lend me your hammer"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S069",
+  "text": "Bring the seed bag over here",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "bring the seed bag over here"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S070",
+  "text": "Hand me that rope",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "hand me that rope"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S071",
+  "text": "Be a dear and fetch the milk",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "fetch the milk"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S072",
+  "text": "I need some flour for the bake",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "some flour for the bake"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S073",
+  "text": "Could you tell me where the miller is",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "tell me where the miller is"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S074",
+  "text": "Show me the way to the church",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "show me the way to the church"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S075",
+  "text": "Would you give me a loaf for my boy",
+  "label": "request",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "would you give me a loaf for my boy"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S076",
+  "text": "Spare a crust, Nell?",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "spare a crust"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S077",
+  "text": "Carry this basket to Martha's door",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "carry this basket to martha's door"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S078",
+  "text": "Lend me a shilling till Friday",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "lend me a shilling till friday"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S079",
+  "text": "Help me with the sheep, please",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "help me with the sheep"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S080",
+  "text": "Tell Oswin the forge is hot",
+  "label": "request",
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "tell oswin the forge is hot"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S081",
+  "text": "I can help with that",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {},
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S082",
+  "text": "Want some bread? I have plenty",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "bread"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S083",
+  "text": "Take this apple, it is yours",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "apple"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S084",
+  "text": "I can give you some eggs if you need them",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "some eggs"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S085",
+  "text": "Shall I carry that for you",
+  "label": "offer",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "shall i carry that for you"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S086",
+  "text": "Let me mend that for you",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "mend that for you"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S087",
+  "text": "I will lend you my cart on Monday",
+  "label": "offer",
+  "got": {
+   "act": "promise",
+   "slots": {
+    "commitment": "lend you my cart on monday"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S088",
+  "text": "Have some ale, on the house",
+  "label": "offer",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "have some ale on the house"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S089",
+  "text": "Fancy a cup of tea?",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "a cup of tea"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S090",
+  "text": "There is cheese in the pantry if you want some",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "cheese in the pantry"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S091",
+  "text": "I could fetch the water for you",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "the water"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S092",
+  "text": "Here, take some of the barley",
+  "label": "offer",
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "some of the barley"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S093",
+  "text": "Yes please, I will take the bread",
+  "label": "accept",
+  "got": {
+   "act": "accept",
+   "slots": {
+    "thing": "the bread"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S094",
+  "text": "Aye, I will have that",
+  "label": "accept",
+  "got": {
+   "act": "accept",
+   "slots": {
+    "thing": "that"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S095",
+  "text": "Done, you have a deal",
+  "label": "accept",
+  "got": {
+   "act": "accept",
+   "slots": {
+    "thing": "you have a deal"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S096",
+  "text": "Yes, I would like the apple",
+  "label": "accept",
+  "got": {
+   "act": "accept",
+   "slots": {
+    "thing": "the apple"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S097",
+  "text": "That would be lovely, I accept",
+  "label": "accept",
+  "got": {
+   "act": "accept",
+   "slots": {
+    "thing": "that"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S098",
+  "text": "Sounds good, I will take it",
+  "label": "accept",
+  "got": {
+   "act": "accept",
+   "slots": {
+    "thing": "it"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S099",
+  "text": "No thanks, I have had enough",
+  "label": "decline",
+  "got": {
+   "act": "decline",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S100",
+  "text": "I will pass on that, thank you",
+  "label": "decline",
+  "got": {
+   "act": "decline",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S101",
+  "text": "Not today, I am full",
+  "label": "decline",
+  "got": {
+   "act": "decline",
+   "slots": {
+    "thing": "not today i am full"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S102",
+  "text": "I would rather not, but kind of you",
+  "label": "decline",
+  "got": {
+   "act": "decline",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S103",
+  "text": "No, I can manage",
+  "label": "decline",
+  "got": {
+   "act": "decline",
+   "slots": {},
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S104",
+  "text": "Keep it, I do not want it",
+  "label": "decline",
+  "got": {
+   "act": "decline",
+   "slots": {
+    "thing": "it"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S105",
+  "text": "Yes, I understand",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {},
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S106",
+  "text": "I understand you",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {
+    "answer": "i understand you"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S107",
+  "text": "Right, I see",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {
+    "answer": "right i see"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S108",
+  "text": "I am managing, thanks",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {
+    "answer": "i am managing"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S109",
+  "text": "I cannot spare that just now",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {},
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S110",
+  "text": "I do not know you well enough to give that",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {},
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S111",
+  "text": "No, I do not have any",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {
+    "answer": "no i do not have any"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S112",
+  "text": "Yes, it is done",
+  "label": "answer",
+  "got": {
+   "act": "answer",
+   "slots": {
+    "answer": "yes it is done"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S113",
+  "text": "I am not sure about the rain",
+  "label": "hedged",
+  "got": {
+   "act": "hedged",
+   "slots": {
+    "topic": "the rain"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S114",
+  "text": "I do not know about the harvest yet",
+  "label": "hedged",
+  "got": {
+   "act": "hedged",
+   "slots": {
+    "topic": "the harvest yet"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S115",
+  "text": "Not sure about that one",
+  "label": "hedged",
+  "got": {
+   "act": "hedged",
+   "slots": {
+    "topic": "that"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S116",
+  "text": "I could not say about the price",
+  "label": "hedged",
+  "got": {
+   "act": "hedged",
+   "slots": {
+    "topic": "the price"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S117",
+  "text": "I would not like to guess about the mill",
+  "label": "hedged",
+  "got": {
+   "act": "hedged",
+   "slots": {
+    "topic": "the mill"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S118",
+  "text": "Who knows about the weather",
+  "label": "hedged",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "who knows about the weather"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S119",
+  "text": "The weather is turning, is it not",
+  "label": "smalltalk",
+  "got": {
+   "act": "smalltalk",
+   "slots": {
+    "topic": "turning is it not"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S120",
+  "text": "Looks like rain again",
+  "label": "smalltalk",
+  "got": null
+ },
+ {
+  "id": "S121",
+  "text": "Cold morning, isn't it",
+  "label": "smalltalk",
+  "got": {
+   "act": "smalltalk",
+   "slots": {
+    "topic": "cold morning"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S122",
+  "text": "Busy at the forge today",
+  "label": "smalltalk",
+  "got": null
+ },
+ {
+  "id": "S123",
+  "text": "Quiet market this week",
+  "label": "smalltalk",
+  "got": {
+   "act": "smalltalk",
+   "slots": {
+    "topic": "quiet market this week"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S124",
+  "text": "Hot one, that",
+  "label": "smalltalk",
+  "got": null
+ },
+ {
+  "id": "S125",
+  "text": "Fine weather for the hay",
+  "label": "smalltalk",
+  "got": {
+   "act": "smalltalk",
+   "slots": {
+    "topic": "fine weather for the hay"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S126",
+  "text": "Terrible frost last night",
+  "label": "smalltalk",
+  "got": null
+ },
+ {
+  "id": "S127",
+  "text": "Lots of carts on the road this week",
+  "label": "smalltalk",
+  "got": {
+   "act": "smalltalk",
+   "slots": {
+    "topic": "lots of carts on the road this week"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S128",
+  "text": "Trade is slow at the mill",
+  "label": "smalltalk",
+  "got": {
+   "act": "smalltalk",
+   "slots": {
+    "topic": "trade is slow at the mill"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S129",
+  "text": "I heard the mill burned down last night",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "the mill burned down last night"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S130",
+  "text": "Have you heard? The bridge is closed",
+  "label": "share",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "have you heard the bridge is closed"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S131",
+  "text": "News from the church: the bell is cracked",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "the bell is cracked"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S132",
+  "text": "The baker's boy got a new horse",
+  "label": "share",
+  "got": null
+ },
+ {
+  "id": "S133",
+  "text": "Word is the fair moves to Thursday",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "the fair moves to thursday"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S134",
+  "text": "I heard that Martha is expecting",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "martha is expecting"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S135",
+  "text": "The well has gone dry, they say",
+  "label": "share",
+  "got": null
+ },
+ {
+  "id": "S136",
+  "text": "Someone said the ferry is running again",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "the ferry is running again"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S137",
+  "text": "Tell you what, the miller has a new dog",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "the miller has a new dog"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S138",
+  "text": "Heard the lambs were born early on the hill",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "the lambs were born early on the hill"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S139",
+  "text": "They say the squire is coming to Eastwick on Monday",
+  "label": "share",
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "the squire is coming to eastwick on monday"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S140",
+  "text": "How are things with you?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "how are things with you"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S141",
+  "text": "Is the forge lit this morning?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "is the forge lit this morning"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S142",
+  "text": "Where did you put the spade?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "where did you put the spade"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S143",
+  "text": "Have you seen Tam today?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "have you seen tam today"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S144",
+  "text": "What time is the market?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "what time is the market"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S145",
+  "text": "Can you read this notice for me?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "can you read this notice for me"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S146",
+  "text": "Did the baker bake today?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "did the baker bake today"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S147",
+  "text": "Who owns the grey cow?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "who owns the grey cow"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S148",
+  "text": "Why is the mill shut?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "why is the mill shut"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S149",
+  "text": "How much is a sack of flour?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "how much is a sack of flour"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S150",
+  "text": "Are the sheep in the top field?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "are the sheep in the top field"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S151",
+  "text": "Will it rain tomorrow?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "will it rain tomorrow"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S152",
+  "text": "Is your wife well?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "is your wife well"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S153",
+  "text": "Do you know where Martha lives?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "do you know where martha lives"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S154",
+  "text": "Has the rain stopped yet?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "has the rain stopped yet"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S155",
+  "text": "How was your day?",
+  "label": "question",
+  "got": {
+   "act": "question",
+   "slots": {
+    "question": "how was your day"
+   },
+   "confidence": 0.8,
+   "source": "grammar"
+  }
+ },
+ {
+  "id": "S156",
+  "text": "Two carts went past the church.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S157",
+  "text": "The oven in the bakery is cold.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S158",
+  "text": "Grey clouds over the hill.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S159",
+  "text": "Ada was at the well at dawn.",
+  "label": null,
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "ada was at the well at dawn"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S160",
+  "text": "Eight geese on the green.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S161",
+  "text": "The river is high after the storm.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S162",
+  "text": "Smoke from the forge, black as ink.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S163",
+  "text": "There is a crack in the south wall.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S164",
+  "text": "Nobody has seen the dog since Sunday.",
+  "label": null,
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "nobody has seen the dog since sunday"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S165",
+  "text": "The cart has two wheels.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S166",
+  "text": "Bell rang at noon.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S167",
+  "text": "Hammond's sheep are in the barn.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S168",
+  "text": "Rooks on the church roof again.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S169",
+  "text": "Cabbages are up in the north field.",
+  "label": null,
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "cabbages are up in the north field"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S170",
+  "text": "Three new calves in the byre.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S171",
+  "text": "The stream runs under the old bridge.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S172",
+  "text": "Dust on the road to Eastwick.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S173",
+  "text": "Flour sacks stacked by the door.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S174",
+  "text": "The gate is painted green.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S175",
+  "text": "Someone left a hat on the bench.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S176",
+  "text": "Stones in the lane again.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S177",
+  "text": "Milk cans by the back door.",
+  "label": null,
+  "got": {
+   "act": "offer",
+   "slots": {
+    "item": "milk cans by the back door"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S178",
+  "text": "Kettle on the hob, going cold.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S179",
+  "text": "The sun is behind the church.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S180",
+  "text": "Fourteen hens in the yard.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S181",
+  "text": "Pigeons on the granary.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S182",
+  "text": "That ladder is leaning again.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S183",
+  "text": "Chalk marks on the door.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S184",
+  "text": "Nails in the barrel.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S185",
+  "text": "Ash on the hearth this morning.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S186",
+  "text": "Mud up to the axle on the track.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S187",
+  "text": "The hall smells of wet wool.",
+  "label": null,
+  "got": {
+   "act": "smalltalk",
+   "slots": {
+    "topic": "the hall smells of wet wool"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S188",
+  "text": "Haystack by the old barn.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S189",
+  "text": "A girl in a red coat by the pump.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S190",
+  "text": "Marks in the wet clay of the path.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S191",
+  "text": "Ada! Over here.",
+  "label": null,
+  "got": {
+   "act": "greeting",
+   "slots": {
+    "target": "ada"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S192",
+  "text": "Ploughing started on the east field.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S193",
+  "text": "Six bells at the chapel today.",
+  "label": null,
+  "got": {
+   "act": "share",
+   "slots": {
+    "news": "six bells at the chapel today"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ },
+ {
+  "id": "S194",
+  "text": "Mill wheel turning slow.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S195",
+  "text": "Tallow candles, two for a penny.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S196",
+  "text": "Sheep bleating down by the ford.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S197",
+  "text": "Old boots by the step.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S198",
+  "text": "Kiln smoke over the ridge.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S199",
+  "text": "Pump handle is loose.",
+  "label": null,
+  "got": null
+ },
+ {
+  "id": "S200",
+  "text": "Quince jam on the shelf, nobody touch it.",
+  "label": null,
+  "got": {
+   "act": "request",
+   "slots": {
+    "request": "nobody touch it"
+   },
+   "confidence": 0.6,
+   "source": "model"
+  }
+ }
+]

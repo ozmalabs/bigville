@@ -1,0 +1,68 @@
+{
+ "calls_first_pass": 163,
+ "calls_second_pass": 12,
+ "elapsed_s": 43.9,
+ "grade": {
+  "by_source": {
+   "cache": 0,
+   "grammar": 47,
+   "model": 103,
+   "raw": 0
+  },
+  "correct": 170,
+  "correct_share": 0.85,
+  "misplaced": 17,
+  "misplaced_share": 0.085,
+  "placed": 150,
+  "placed_share": 0.75,
+  "precision": 0.887,
+  "recall": 0.858
+ },
+ "grammar_only": {
+  "by_source": {
+   "cache": 0,
+   "grammar": 47,
+   "model": 0,
+   "raw": 0
+  },
+  "correct": 85,
+  "correct_share": 0.425,
+  "misplaced": 7,
+  "misplaced_share": 0.035,
+  "placed": 47,
+  "placed_share": 0.235,
+  "precision": 0.851,
+  "recall": 0.258
+ },
+ "items": 200,
+ "model": "glm-5.3-flash",
+ "second_pass_same": false,
+ "summary": {
+  "cache_entries": 147,
+  "cache_hits": 147,
+  "cache_misses": 159,
+  "calls": 175,
+  "causes": {
+   "cache_declined": 44,
+   "invalid_output": 12,
+   "model_none": 44
+  },
+  "cost": 0.022887,
+  "latency_ms_mean": 1559.744,
+  "placed": {
+   "cache": 103,
+   "grammar": 94,
+   "model": 103,
+   "raw": 0
+  },
+  "placed_total": 300,
+  "rejections": {
+   "invented_name": 26,
+   "not_a_question": 1,
+   "unknown_act": 1
+  },
+  "repairs": 16,
+  "unplaced": 100,
+  "utterances": 400
+ }
+}

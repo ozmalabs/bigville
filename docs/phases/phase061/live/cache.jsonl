@@ -1,0 +1,147 @@
+{"answer": {"act": "greeting", "slots": {}}, "key": "well met neighbour", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "greeting", "slots": {}}, "key": "afternoon all", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "greeting", "slots": {"target": "{name1}"}}, "key": "evening {name1}", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "greeting", "slots": {"target": "{name1}"}}, "key": "good to see you again {name1}", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "greeting", "slots": {}}, "key": "hullo", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "greeting", "slots": {}}, "key": "mornin'", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "thanks", "slots": {"target": "{speaker}"}}, "key": "cheers for the loan of the cart", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "thanks", "slots": {}}, "key": "bless you for that", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "thanks", "slots": {}}, "key": "ta", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "thanks", "slots": {}}, "key": "i am grateful for the help with the roof", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "apology", "slots": {"reason": "that was rude of me"}}, "key": "my apologies that was rude of me", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "apology", "slots": {"reason": "for keeping you"}}, "key": "i am sorry for keeping you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "apology", "slots": {"reason": "i was short with you"}}, "key": "forgive me i was short with you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "farewell", "slots": {}}, "key": "off i go see you later", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "apology", "slots": {"reason": "the noise last night"}}, "key": "apologies for the noise last night", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "farewell", "slots": {}}, "key": "farewell friend", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "farewell", "slots": {}}, "key": "i must be going goodnight", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "barb", "slots": {}}, "key": "take care now", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "farewell", "slots": {}}, "key": "until tomorrow then", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "promise", "slots": {"commitment": "mend your gate by friday"}}, "key": "i will mend your gate by friday", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "farewell", "slots": {"target": "{name1}"}}, "key": "good night {name1}", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "promise", "slots": {"commitment": "i will help with the harvest"}}, "key": "you have my word i will help with the harvest", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "promise", "slots": {"commitment": "i will bring the seed"}}, "key": "i promise i will bring the seed", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "complaint", "slots": {"subject": "this bread is stale again"}}, "key": "this bread is stale again", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "promise", "slots": {"commitment": "i will fetch the wood tomorrow"}}, "key": "i will fetch the wood tomorrow i swear it", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "promise", "slots": {"commitment": "help with the sheep"}}, "key": "count on me to help with the sheep", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "promise", "slots": {"commitment": "i will sort the roof"}}, "key": "leave it with me i will sort the roof", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "i am worried about the well", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "complaint", "slots": {"subject": "the mill keeps us waiting every week"}}, "key": "the mill keeps us waiting every week it is not right", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "complaint", "slots": {"subject": "the new tax"}}, "key": "i do not like the new tax {n1} bit", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "complaint", "slots": {"subject": "the price went up again"}}, "key": "this is not right the price went up again", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "complaint", "slots": {"subject": "somebody has been stealing my eggs"}}, "key": "somebody has been stealing my eggs", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "complaint", "slots": {"subject": "the roof leaks and nobody comes"}}, "key": "the roof leaks and nobody comes", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "complaint", "slots": {"subject": "nothing works in this village any more"}}, "key": "nothing works in this village any more", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "barb", "slots": {}}, "key": "mind the step by the well", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "barb", "slots": {}}, "key": "watch yourself near the bull", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "barb", "slots": {}}, "key": "watch out the cart is coming", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "barb", "slots": {}}, "key": "look out for the bridge it is slippery", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "barb", "slots": {}}, "key": "keep away from the river after dark", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "barb", "slots": {}}, "key": "steer clear of the hammonds' yard", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "bring me the salt"}}, "key": "{name1} bring me the salt", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "give me a hand with the cart"}}, "key": "give me a hand with the cart will you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "help me lift this sack"}}, "key": "please help me lift this sack", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "pass me the bread"}}, "key": "pass me the bread", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "bring the seed bag over here"}}, "key": "bring the seed bag over here", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "fetch some water from the well"}}, "key": "fetch some water from the well {name1}", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "hand me that rope"}}, "key": "hand me that rope", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "fetch the milk"}}, "key": "be a dear and fetch the milk", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "show me the way to the church"}}, "key": "show me the way to the church", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "some flour for the bake"}}, "key": "i need some flour for the bake", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "carry this basket to martha's door"}}, "key": "carry this basket to martha's door", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "spare a crust"}}, "key": "spare a crust {name1}", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "help me with the sheep"}}, "key": "help me with the sheep please", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "lend me a shilling till friday"}}, "key": "lend me a shilling till friday", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "tell oswin the forge is hot"}}, "key": "tell oswin the forge is hot", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "bread"}}, "key": "want some bread i have plenty", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "apple"}}, "key": "take this apple it is yours", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "mend that for you"}}, "key": "let me mend that for you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "cheese in the pantry"}}, "key": "there is cheese in the pantry if you want some", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "promise", "slots": {"commitment": "lend you my cart on monday"}}, "key": "i will lend you my cart on monday", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "some eggs"}}, "key": "i can give you some eggs if you need them", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "some of the barley"}}, "key": "here take some of the barley", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "accept", "slots": {"thing": "the bread"}}, "key": "yes please i will take the bread", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "accept", "slots": {"thing": "that"}}, "key": "{name1} i will have that", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "a cup of tea"}}, "key": "fancy a cup of tea", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "accept", "slots": {"thing": "you have a deal"}}, "key": "{name1} you have a deal", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "accept", "slots": {"thing": "the apple"}}, "key": "yes i would like the apple", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "the water"}}, "key": "i could fetch the water for you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "accept", "slots": {"thing": "it"}}, "key": "sounds good i will take it", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "accept", "slots": {"thing": "that"}}, "key": "that would be lovely i accept", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "decline", "slots": {"thing": "not today i am full"}}, "key": "not today i am full", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "decline", "slots": {}}, "key": "no thanks i have had enough", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "decline", "slots": {}}, "key": "no i can manage", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "decline", "slots": {}}, "key": "i will pass on that thank you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "decline", "slots": {}}, "key": "i would rather not but kind of you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "answer", "slots": {"answer": "i understand you"}}, "key": "i understand you", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "answer", "slots": {"answer": "right i see"}}, "key": "right i see", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "decline", "slots": {"thing": "it"}}, "key": "keep it i do not want it", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "answer", "slots": {"answer": "i am managing"}}, "key": "i am managing thanks", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "answer", "slots": {"answer": "no i do not have any"}}, "key": "no i do not have any", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "hedged", "slots": {"topic": "the price"}}, "key": "i could not say about the price", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "hedged", "slots": {"topic": "that"}}, "key": "not sure about that {n1}", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "answer", "slots": {"answer": "yes it is done"}}, "key": "yes it is done", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "looks like rain again", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "hedged", "slots": {"topic": "the mill"}}, "key": "i would not like to guess about the mill", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "busy at the forge today", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "smalltalk", "slots": {"topic": "cold morning"}}, "key": "cold morning isn't it", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "hot {n1} that", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "smalltalk", "slots": {"topic": "quiet market this week"}}, "key": "quiet market this week", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "smalltalk", "slots": {"topic": "fine weather for the hay"}}, "key": "fine weather for the hay", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "smalltalk", "slots": {"topic": "trade is slow at the mill"}}, "key": "trade is slow at the mill", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "terrible frost last night", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "the bell is cracked"}}, "key": "news from the church the bell is cracked", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "smalltalk", "slots": {"topic": "lots of carts on the road this week"}}, "key": "lots of carts on the road this week", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "the mill burned down last night"}}, "key": "i heard the mill burned down last night", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "the fair moves to thursday"}}, "key": "word is the fair moves to thursday", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the well has gone dry they say", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the baker's boy got a new horse", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "the ferry is running again"}}, "key": "someone said the ferry is running again", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "the miller has a new dog"}}, "key": "tell you what the miller has a new dog", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the oven in the bakery is cold", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "the lambs were born early on the hill"}}, "key": "heard the lambs were born early on the hill", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "{n1} carts went past the church", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "grey clouds over the hill", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "the squire is coming to eastwick on monday"}}, "key": "they say the squire is coming to eastwick on monday", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "{n1} geese on the green", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the river is high after the storm", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "{name1} was at the well at dawn"}}, "key": "{name1} was at the well at dawn", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "smoke from the forge black as ink", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the cart has {n1} wheels", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "bell rang at noon", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "nobody has seen the dog since sunday"}}, "key": "nobody has seen the dog since sunday", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "there is a crack in the south wall", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "rooks on the church roof again", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "hammond's sheep are in the barn", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "cabbages are up in the north field"}}, "key": "cabbages are up in the north field", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "{n1} new calves in the byre", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the stream runs under the old bridge", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "flour sacks stacked by the door", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the gate is painted green", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "dust on the road to eastwick", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "someone left a hat on the bench", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "stones in the lane again", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "kettle on the hob going cold", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "the sun is behind the church", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "offer", "slots": {"item": "milk cans by the back door"}}, "key": "milk cans by the back door", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "that ladder is leaning again", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "chalk marks on the door", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "pigeons on the granary", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "ash on the hearth this morning", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "nails in the barrel", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "mud up to the axle on the track", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "{n1} hens in the yard", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "haystack by the old barn", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "a girl in a red coat by the pump", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "smalltalk", "slots": {"topic": "the hall smells of wet wool"}}, "key": "the hall smells of wet wool", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "marks in the wet clay of the path", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "ploughing started on the east field", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "mill wheel turning slow", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "greeting", "slots": {"target": "{name1}"}}, "key": "{name1} over here", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "share", "slots": {"news": "{n1} bells at the chapel today"}}, "key": "{n1} bells at the chapel today", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "tallow candles {n1} for a penny", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "sheep bleating down by the ford", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "kiln smoke over the ridge", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "old boots by the step", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": null, "key": "pump handle is loose", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}
+{"answer": {"act": "request", "slots": {"request": "nobody touch it"}}, "key": "quince jam on the shelf nobody touch it", "ref": "f9ec5e86e6d931ff1096010f23737300a35133ed578294632d5815998fcb60e1", "schema": 1}

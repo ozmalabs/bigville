@@ -16,7 +16,7 @@
         "model": 0.6
       },
       "prefix": {
-        "intro": "You place one line of speech from a village game as a speech act. The acts and their slots are listed below. Reply with one JSON object and nothing else. If the line is not one of the acts, reply with act null. Never invent a name: a name slot may only be the speaker, the listener, or a name the context gives. Every other slot value is words copied from the line, in lower case.",
+        "intro": "You place one line of speech from a village game as a speech act. The acts and their slots are listed below. Reply with one JSON object and nothing else. If the line is not one of the acts, reply with act null. Most lines are NOT acts: a plain remark about the weather, a thing seen, a state of the world, or a line said to nobody in particular is act null. Choose an act only when the speaker is doing something to the listener: greeting, asking, requesting, offering, answering, promising, sharing news the listener needs, complaining to them, or insulting them. When in doubt, reply act null. Never invent a name: a name slot may only be the speaker, the listener, or a name the context gives. Every other slot value is words copied from the line, in lower case.",
         "schema": "{\"act\": \"<one act from the list, or null>\", \"slots\": {\"<slot name>\": \"<words from the line>\"}}. Use only the slots the act lists. Leave a slot out if you cannot fill it.",
         "examples": [
           {
