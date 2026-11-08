@@ -288,20 +288,20 @@ def test_bees_do_not_breed_pairwise():
 
 # ------------------------------------------------------------------ sex of the young
 def test_birth_sex_is_a_pure_function_of_the_seed_and_the_litter():
-    """Births take no draw from `_rng`, and the same seed and dam give the same sexes in order."""
+    """Births keep no world RNG state, and the same seed and dam give the same sexes in order."""
     def litters(seed_world):
         world = seed_world
         cell = _store_pen(world)
         world.add_animal("Bess", "cow", cell=cell, enclosure="pen", sex="female")
         world.add_animal("Hob", "cow", cell=cell, enclosure="pen", sex="male")
-        state = world._rng.getstate()
+        assert not hasattr(world, "_rng"), "the world keeps no shared RNG"
         sexes = []
         for _ in range(12):
             before = set(world._animals)
             world._give_birth("Bess")
             (young,) = set(world._animals) - before
             sexes.append(_attrs(world, young)["sex"])
-        assert world._rng.getstate() == state, "births do not draw from the world's own RNG"
+        assert not hasattr(world, "_rng"), "births do not create a world RNG"
         return sexes
 
     first, second = litters(World()), litters(World())

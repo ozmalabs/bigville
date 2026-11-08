@@ -1331,8 +1331,8 @@ class BigvilleGame:
         """A deterministic permutation of ``actors`` for one turn (Phase 025).
 
         The generator is built per call from the map seed and the turn number, so it holds no state
-        and checkpoints need nothing new. It is independent of ``world._rng``, so weather and failure
-        draws are unchanged. Names are sorted before shuffling so the result does not depend on the
+        and checkpoints need nothing new. It holds no world RNG state, so weather and failure
+        draws are unaffected. Names are sorted before shuffling so the result does not depend on the
         order the backends were registered.
         """
         node = getattr(self.world, "_map_node", None)

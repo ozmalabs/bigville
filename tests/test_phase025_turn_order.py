@@ -69,14 +69,14 @@ def test_the_order_does_not_depend_on_the_order_the_actors_are_listed():
     assert game.turn_order(names, 5) == game.turn_order(list(reversed(names)), 5)
 
 
-def test_the_order_generator_leaves_the_world_rng_untouched():
+def test_the_order_generator_needs_no_world_rng_state():
     world = _town()
     game = BigvilleGame(world, autonomous=True)
     names = sorted(world._actors)
-    before = world._rng.getstate()
+    assert not hasattr(world, "_rng"), "the world keeps no shared RNG"
     for turn in range(1, 50):
         game.turn_order(names, turn)
-    assert world._rng.getstate() == before
+    assert not hasattr(world, "_rng")
 
 
 def test_a_turn_records_the_order_it_applied():

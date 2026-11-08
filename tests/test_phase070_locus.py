@@ -5,7 +5,6 @@ ledger, the signals and the screening live in the body (worlds/body.py) and the 
 Views are built from a real founding town (scenario town100, seed 305000)."""
 from __future__ import annotations
 
-import copy
 import os
 import sys
 
@@ -64,12 +63,12 @@ def test_a_blow_to_the_arm_lowers_health_once_and_writes_the_arm_in_the_ledger(t
 def test_a_harm_with_no_locus_draws_one_from_the_table_and_the_draw_is_stateless(town):
     world = town.world
     name = _adult(world)
-    rng_before = copy.deepcopy(world._rng.getstate())
+    assert not hasattr(world, "_rng"), "the world keeps no shared RNG"
     picks = set()
     for _ in range(3):
         world.harm(name, 0.001, "violence")
         picks |= set(world.body_of(name).located()["injury"])
-    assert world._rng.getstate() == rng_before, "the locus draw must not touch the world's random stream"
+    assert not hasattr(world, "_rng"), "the locus draw must not create a world RNG"
     weights = TABLES["harm_locus"]["violence"]
     assert picks and picks <= set(weights)
     # The same turn gives the same node: the draw is keyed on the seed, the resident, the cause and the tick.

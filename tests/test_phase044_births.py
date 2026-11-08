@@ -122,9 +122,9 @@ def test_the_world_stream_is_seeded_and_does_not_use_the_world_rng():
     key = ("births", "conceive", "Ada", 17)
     assert a._stable_draw(*key) == b._stable_draw(*key)
     assert a._stable_draw(*key) != _w(seed=305001)._stable_draw(*key)
-    state = a._rng.getstate()
+    assert not hasattr(a, "_rng"), "the world keeps no shared RNG"
     a._births_day()
-    assert a._rng.getstate() == state
+    assert not hasattr(a, "_rng")
 
 
 def test_only_a_union_woman_of_fertile_age_with_a_living_partner_can_conceive():

@@ -23,6 +23,7 @@ from pathlib import Path
 from bigville.runtime import (BigvilleGraph, NodeRef, WorldAdapter, boot_core,
                                load_seeds_into, manifest_for)
 from bigville.scenarios import load_scenario
+from domains import determinism  # noqa: E402
 from domains.data_view import entities as _entities_view  # noqa: E402
 from bigville.backends.speech import DeterministicSpeechBackend  # noqa: E402
 from worlds.bigville_bond_world import (BigvilleBondWorld,
@@ -898,9 +899,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self._alive_snapshot = {}
         self._report_history = []
         self._journals = {}
-        self._rng = random.Random(int(map_seed))
+        # Runtime chance outcomes derive from this seed and the involved state
+        # (see domains.determinism); no shared mutable RNG is kept on the world.
         # Animal births derive their sexes from this seed (see _give_birth), so births keep no RNG state
-        # of their own and never shift `_rng`.
+        # of their own and never shift a world-wide stream.
         self._animal_life_seed = int(map_seed)
         # Burial onset draws (see _burial_roll) are stateless, keyed on this seed, the resident, and the day.
         self._burial_seed = int(map_seed)
@@ -3572,7 +3574,9 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # Deterministic weather is still variable: the map seed controls it,
         # and the resulting weather remains an observation residents must make.
         options = tuple(option for option in options if option in self.E.WEATHER)
-        weather = options[self._rng.randrange(len(options))] if options else "clear"
+        weather = (determinism.choice(options, determinism.world_seed(self),
+                                      "weather", day, season, options)
+                   if options else "clear")
         self.set_weather(weather)
 
     def observe_weather(self, observer):
@@ -6127,8 +6131,12 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             if float(attrs.get("condition", 1.0)) <= 0.0:
                 continue
             risk = float(attrs.get("failure_risk", 0.0))
-            if risk > 0.0 and self._rng.random() < risk:
-                condition = max(0.0, float(attrs.get("condition", 1.0)) - 0.25)
+            condition = float(attrs.get("condition", 1.0))
+            draw = determinism.uniform(
+                determinism.world_seed(self), "infrastructure", name,
+                attrs.get("kind", ""), self._town_period(), condition, risk)
+            if risk > 0.0 and draw < risk:
+                condition = max(0.0, condition - 0.25)
                 self.eng.set_attr(node, "condition", condition)
                 self.record_observation(None, "storage" if attrs.get("kind") in {"granary", "root_cellar"}
                                         else "authority", infrastructure=name,

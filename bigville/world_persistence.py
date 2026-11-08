@@ -9,7 +9,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import random
 import shutil
 import tempfile
 import uuid
@@ -22,7 +21,7 @@ from .runtime import BigvilleGraph, NodeRef, _checkpoint_decode, _checkpoint_enc
 _SCHEMA = "bigville/world-checkpoint/1"
 _EXTERNAL_FIELDS = {
     "E", "eng", "_cognition_factory", "_physical_subsystem_extensions",
-    "_conversation_adapter", "_actor_minds", "_rng",
+    "_conversation_adapter", "_actor_minds",
     # Derived caches are intentionally discarded and rebuilt lazily.
     "_distance_fields", "_travel_time_fields",
     # TG05: per-attempt thread-local state; a restored world constructs a fresh one.
@@ -153,8 +152,8 @@ def save_world_checkpoint(world, path: str | Path) -> None:
             continue
         attrs[key] = _checkpoint_encode(value, f"world.{key}")
     attrs["_construction"] = "town100" if hasattr(world, "_cast100") else "scenario"
-    rng_state = _checkpoint_encode(world._rng.getstate(), "world._rng")
-    attrs["_rng_state"] = rng_state
+    # DS01: runtime chance is state-derived; no RNG state is written.  Old
+    # checkpoints may still carry ``_rng_state`` and are ignored on restore.
     encoded_attrs = json.dumps(attrs, sort_keys=True, separators=(",", ":"),
                                allow_nan=False).encode("utf-8")
     graph_data = world.eng.to_checkpoint_dict()
@@ -252,7 +251,10 @@ def _restore_scenario(world_class, state: dict, graph: BigvilleGraph,
     world.eng = graph
     restored = {}
     for key, encoded in attrs.items():
-        if key == "_rng_state" or key == "_construction":
+        # `_rng_state` is the pre-DS01 checkpoint field; ignore it cleanly so
+        # an old checkpoint restores under the state-derived rule.  `_rng`
+        # itself was external and never written, but tolerate it likewise.
+        if key in {"_rng_state", "_rng", "_construction"}:
             continue
         if key in _EXTERNAL_FIELDS:
             raise ValueError(f"checkpoint attempts to restore external field {key!r}")
@@ -262,8 +264,6 @@ def _restore_scenario(world_class, state: dict, graph: BigvilleGraph,
     world.eng._inner = world.eng
     world._distance_fields = {}
     world._travel_time_fields = {}
-    world._rng = random.Random()
-    world._rng.setstate(_checkpoint_decode(attrs["_rng_state"], "world._rng"))
     world._cognition_factory = cognition_factory
     world._physical_subsystem_extensions = dict(physical_subsystem_extensions)
     world._conversation_adapter = None
