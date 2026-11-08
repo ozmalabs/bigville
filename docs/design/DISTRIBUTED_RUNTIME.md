@@ -194,7 +194,7 @@ the exact timeout/load if it cannot finish.
 | DR01 | complete (uncommitted) | — |
 | DR02 | complete (uncommitted) | — |
 | DR03 | complete (uncommitted) | — |
-| DR04 | blocked on DR03 | — |
+| DR04 | complete (uncommitted) | — |
 | DR05 | blocked on DR04 | — |
 
 ## Integration gates
