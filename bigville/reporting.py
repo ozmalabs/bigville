@@ -10,10 +10,10 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 import copy
 import math
-import random
 from statistics import median
 from typing import Any
 
+from domains import determinism
 from domains.data_view import world_entities
 
 
@@ -96,7 +96,7 @@ class SimulationReporter:
             return {"method": "sample", "frame_size": 0, "sample_size": 0,
                     "seed": int(seed), "estimates": {}}
         size = min(len(rows), max(1, int(sample_size or min(30, len(rows)))))
-        chosen = random.Random(int(seed)).sample(rows, size)
+        chosen = determinism.sample(rows, size, int(seed), "report_sample")
         finite = math.sqrt(max(0.0, (len(rows) - size) / max(1, len(rows) - 1)))
 
         def proportion(key: str) -> dict[str, float | int]:

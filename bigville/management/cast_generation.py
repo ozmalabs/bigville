@@ -5,9 +5,10 @@ import copy
 import hashlib
 import json
 import math
-import random
 import re
 from typing import Any
+
+from domains import determinism
 
 
 GENERATOR_VERSION = 1
@@ -273,8 +274,12 @@ def generate_cast(scenario_data: dict[str, Any], request: Any, *, seed: int,
                      "backend": profile["kind"], "home_cell": available_homes[cursor]}
             cursor += 1
             for trait, bounds in group["traits"].items():
-                generator = random.Random(_generated_seed(seed, scenario_hash, group["id"], ordinal, trait))
-                actor[trait] = round(generator.uniform(bounds["min"], bounds["max"]), 6)
+                # Same generated-seed inputs as before; only the chance source is the
+                # central determinism helper rather than a stdlib Random instance.
+                drawn = determinism.uniform(
+                    _generated_seed(seed, scenario_hash, group["id"], ordinal, trait),
+                    "cast_trait")
+                actor[trait] = round(bounds["min"] + (bounds["max"] - bounds["min"]) * drawn, 6)
             if set(actor) - ACTOR_FIELDS:
                 raise AssertionError("cast generator emitted unsupported actor fields")
             actors.append(actor)

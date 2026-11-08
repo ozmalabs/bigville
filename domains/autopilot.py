@@ -18,8 +18,8 @@ card uses. No routine is enforced: the resident may depart from it.
 from __future__ import annotations
 
 import functools
-import hashlib
 
+from domains import determinism
 from domains.pack import load_pack
 
 DEFAULT_PACK = "bigville"
@@ -89,10 +89,10 @@ def boundary_consult_chance(strength, pack=DEFAULT_PACK):
 
 
 def habit_roll(*parts):
-    """A fixed number in [0, 1) for the given parts, from SHA-256. The same parts always give the same number,
-    so a consult pattern repeats from a seed."""
-    digest = hashlib.sha256("|".join(str(part) for part in parts).encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big") / 2.0 ** 64
+    """A fixed number in [0, 1) for the given parts, from the determinism helper. The same parts always
+    give the same number, so a consult pattern repeats from a seed. This is decision gating, not a world
+    outcome, and it consumes no shared RNG."""
+    return determinism.uniform(0, "autopilot-habit", *parts)
 
 
 @functools.lru_cache(maxsize=512)

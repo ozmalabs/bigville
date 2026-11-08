@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import random
 import threading
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -24,6 +23,7 @@ from .runtime import _GRAPH_LOCK
 from worlds.bigville_bond_world import BigvilleBondWorld
 from worlds.tick_graph import (Claim, Resource, TickGraph, build_tick_graph,
                                 resolve_claims)
+from domains import determinism
 from domains.data_view import world_entities
 
 
@@ -1330,16 +1330,15 @@ class BigvilleGame:
     def turn_order(self, actors: list[str], turn: int) -> list[str]:
         """A deterministic permutation of ``actors`` for one turn (Phase 025).
 
-        The generator is built per call from the map seed and the turn number, so it holds no state
-        and checkpoints need nothing new. It holds no world RNG state, so weather and failure
-        draws are unaffected. Names are sorted before shuffling so the result does not depend on the
-        order the backends were registered.
+        The permutation is derived per call from the map seed, the turn number and the sorted actor
+        names by :func:`domains.determinism.shuffle`, so it holds no state and checkpoints need
+        nothing new. It holds no world RNG state, so weather and failure draws are unaffected.
+        Names are sorted before shuffling so the result does not depend on the order the backends
+        were registered.
         """
         node = getattr(self.world, "_map_node", None)
         seed = int(self.world.eng.node_attrs(node).get("seed", 0.0)) if node else 0
-        order = sorted(actors)
-        random.Random(f"{seed}:{int(turn)}").shuffle(order)
-        return order
+        return determinism.shuffle(sorted(actors), seed, "turn_order", int(turn))
 
     def _prepare_practice(self, actors) -> dict[str, tuple[int, int, int]]:
         """Advance the practice window of every actor that will build a context (TG03).
