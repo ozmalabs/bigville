@@ -3486,6 +3486,79 @@ useful work. Report what still fails and what to do next (the staffed chain, laz
 Do not turn `DAYNIGHT.enabled` on for the bigville pack without the user's decision; recommend.
 **Acceptance.** The pass criterion table; the lamp timing table before and after; the full suite.
 
+---
+
+# Programme H: the npc backend, a richer resident beside the simple one
+
+**Decision 2026-11-09 (user).** Keep the simple backend (`bigville/backends/cheap.py`) as it is, and build a new backend, `npc`,
+to play with, without breaking anything: the simple backend, the LLM backend and its autopilot (which stays the simple
+backend; LLM continuation is left for now), and every default run are unchanged. The npc backend uses the filtered signal:
+it knows its body only through what the body lets a mind feel (Phase 069 to 071: the background feeling, sounds with a
+rough place, capacities known by use, asleep and collapsed), not the raw hunger, energy or health numbers.
+
+**What exists today** (read 2026-11-09): the simple backend chooses by fixed overrides and hand-weighted bonuses in Python
+(+30 goal, +40 resume, +100 food when hungry, +-24 by role) over options the world scores 0.0, plus the PSI/CAN weighting
+(`psi_can.py`, whose insecurity and social inputs are never published for residents). It keeps almost no memory (the
+current goal, the last refused proposal), uses four hour bands and not the persona routine, ignores ties, kin, requests and
+mood, and speaks on a timer to the first person in view. Patterns to borrow: `duty.py` (an obligation as a 0-to-1 urgency
+weighed against the needs on one scale, scaled by `role_identity`); the founding village policy
+(`BigvilleWorld._village_policy_pass`: grain reserve, one cook at a time, crop rotation); `animal.py` (distance-to-goal
+shaping); `speech.py` (speech by affect toward the listener); the LLM `ConsultGate` (routine boundaries, a tied person in
+view, repeated refusals); and the Ocelot cognition seeds as specifications (`bigville_need_drive_goal`, `bigville_stress`,
+`bigville_affect_grief`, `bigville_affect_decide`, `adaptive_control_core`, `bigville_need_choice`). Programme G (Phases
+074 to 077) is rebalancing the default town and Phase 075 edits `cheap.py`; this programme does not touch that file.
+
+## Phase 078 -- The npc backend: felt needs, drives on one scale, a routine, memory and ties
+
+**Status:** ready (Tract A).
+
+**Goal.**
+1. **A new backend kind `npc`** (`bigville/backends/npc.py`), selectable as `default_backend="npc"` in `create_game` and as a
+   scenario actor's `backend`, checkpointed by `bigville/game_persistence.py` (plain values), with `dump_held_state`. It may
+   import helpers from `cheap.py`, `psi_can.py` and `duty.py` but changes none of them. Nothing else selects it.
+2. **The filtered signal.** The npc's body knowledge is the felt body only. The game gives a backend that declares it (an
+   attribute such as `interoception = "felt"`) the felt body in its context and strips the raw body numbers (hunger,
+   energy, health, illness, intoxication, chill, the body read-offs) from what that backend sees; the simple and LLM
+   contexts are unchanged. The npc learns what its feelings mean: a small table from a felt signal (its sound root and
+   place) to the actions that eased it before, learned from outcomes (the signal fading after an action), seeded with a
+   folk prior in the pack (APPROX, for example a gnawing in the belly is eased by eating), never by reading the true
+   cause. Tiredness, cold and illness are inferred the same way. Capacities and asleep or collapsed stay as facts.
+3. **Drives on one scale.** Every motive is an urgency from 0 to 1: the felt needs (by the learned table and the signal's
+   intensity words), the job's duty (`duty.py`), the routine block, kin care and dependants, social contact, open requests
+   addressed to it, safety, and grievance. An option's bonus is urgency x a weight from the pack. No fixed override order
+   and no constants in Python: the weights and thresholds are pack data (`world/npc.json`), APPROX unless sourced, with a
+   commitment rule (keep the current goal unless another urgency beats it by a margin) so the resident does not dither.
+   Each choice records its score components (the reason trace AGENT_BACKENDS_PLAN section 4 asks for).
+4. **Profiles as data.** `NPC_PROFILES` by job (task preferences derived from JOBS and RECIPES, weights, the thresholds);
+   a scenario actor's profile selects one.
+5. **The routine as a goal.** `domains/persona.routine_blocks(job, stage, weekday, season)` gives the block for the hour:
+   a place and a task. The npc goes there and does that (the baker at market on market day, church on church day, the
+   season's field work), and an evening block gives it somewhere to be.
+6. **Memory**, bounded and plain values: where food, work and people were last seen; refusals that fade over turns; who
+   helped or wronged it (fading); a habit strength for choices that worked.
+7. **Ties.** It reads its own ties and kin (the founding ties, Phase 058): speaks to tied people first, about what it saw
+   or did, by its tie and its mood; visits kin in the evening block; answers a request addressed to it (Phase 071d handles)
+   by willingness from the tie and its own needs.
+
+**Write scope.** new `bigville/backends/npc.py` (and helpers under `bigville/backends/npc_*.py` if it grows); `bigville/api.py`
+and `bigville/game.py` (backend kind, the felt-body context for a backend that asks for it: small hunks); `bigville/game_persistence.py`
+(the npc checkpoint); `bigville/backends/__init__.py`; the pack (`world/npc.json`, the manifest, both packs); a self-test for the
+tables; new tests `tests/test_phase078_npc.py`. Not `cheap.py`, `psi_can.py`, `duty.py`, `llm.py` or the world's rules.
+
+**Acceptance.**
+- Every default run is byte-identical: the simple-village digests over 60 and 200 turns, the pinned simple-backend tests
+  (Phase 058's 50-turn sequence, the lazy tests), the LLM and TUI tests. The full suite passes apart from the known HEAD failures.
+- The npc's context carries no raw body number (a test walks it); a hungry npc that has never eaten learns, from outcomes,
+  that the belly signal is eased by eating, and an npc with the folk prior eats sooner; the learned table round-trips a checkpoint.
+- A routine test: an npc baker on market day goes to the market block's place; an npc smith on church day goes to church.
+- A tie test: an npc speaks to a tied person in view before a stranger; answers a request from kin.
+- Determinism: the same seed gives the same npc run twice, and a checkpoint resumed mid-run continues to the same digest.
+- A comparison run (all residents npc against all simple, town100, 3 seeds, 7 days, with the Phase 074 balance tool if it
+  exists, else the study harness): deaths by cause, meals, work starts and completions, cells walked. Reported, not a pass
+  bar, because the default town does not survive with either backend until Programme G lands.
+
+**Out of scope.** Changing the simple backend or the LLM autopilot; courtship (Phase 072); trade prices; learning across runs.
+
 ## History
 
 | Phase | Status | Commit | Report |
