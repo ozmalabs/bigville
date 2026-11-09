@@ -154,7 +154,7 @@
     const simpleOption = [...select.options].find(option => option.value === "simple.default");
     if (simpleOption) simpleOption.value = "simple"; // retain the M01–M09 draft value alias
     if (![...select.options].some(option => option.value === previous && !option.disabled)) {
-      select.value = select.options.find(option => !option.disabled)?.value || "";
+      select.value = [...select.options].find(option => !option.disabled)?.value || "";
     } else select.value = previous;
     select.disabled = !select.value;
   }
@@ -463,6 +463,13 @@
       default_backend: selectedProfile?.kind || selectedProfileId,
       ticks_per_period: ticksPerPeriod,
       turn_limit: rawLimit === "" ? null : Number(rawLimit),
+      turn_semantics: $("#turn-semantics").value,
+      executor: $("#executor").value,
+      executor_workers: Number($("#executor-workers").value),
+      affordance_mode: $("#affordance-mode").value,
+      snapshot_mode: $("#snapshot-mode").value,
+      rule_batching: $("#rule-batching").value,
+      llm_log: $("#llm-log").checked,
     };
     if (!result.autonomous && $("#human-player").value) result.player = $("#human-player").value;
     if (selectedProfile) result.default_profile_id = selectedProfile.id;
@@ -557,6 +564,9 @@
       ["Default profile", `${config.default_profile_id} · revision ${config.default_profile_revision}`],
       ["Ticks per period", draft.ticks_per_period === null ? "Disabled" : draft.ticks_per_period],
       ["Turn limit", draft.turn_limit == null ? "No limit" : draft.turn_limit],
+      ["Turn semantics", config.turn_semantics], ["Executor", `${config.executor} · ${config.executor_workers} workers`],
+      ["Affordances", config.affordance_mode], ["Snapshots", config.snapshot_mode], ["Rule batching", config.rule_batching],
+      ["LLM interaction logs", config.llm_log ? "Enabled" : "Disabled"],
     ];
     if (config.cast_generation_version != null) {
       rows.push(["Generated cast", `${config.generated_cast.length} residents · generator v${config.cast_generation_version}`]);
@@ -848,6 +858,13 @@
       ? "" : String(draft.ticks_per_period);
     $("#custom-cadence").hidden = $("#cadence-choice").value !== "custom";
     $("#turn-limit").value = draft.turn_limit == null ? "" : String(draft.turn_limit);
+    $("#turn-semantics").value = draft.turn_semantics || "sequential";
+    $("#executor").value = draft.executor || "serial";
+    $("#executor-workers").value = String(draft.executor_workers || 4);
+    $("#affordance-mode").value = draft.affordance_mode || "auto";
+    $("#snapshot-mode").value = draft.snapshot_mode || "auto";
+    $("#rule-batching").value = draft.rule_batching || "auto";
+    $("#llm-log").checked = draft.llm_log !== false;
     applyingTemplate = false;
     formDirty = false;
     invalidateReview();

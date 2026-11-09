@@ -73,6 +73,24 @@ still requires explicit hypotheses, controls, repeated runs and validation
 against appropriate observations. The existing [Ocelot integration guide](docs/ocelot-integration-baseline.md)
 describes the implemented boundary and its current limits.
 
+### Implementation progress
+
+The repository currently includes the core embodied village simulation and
+scenario loader; resident, animal, body, resource, social and institutional
+systems; deterministic, human, Ocelot and server-configured LLM backend paths;
+the Phaser browser game; a terminal client; persistence and checkpointing; and
+reporting, replay and deterministic execution tools. The local management
+console adds scenario and backend discovery, validated run previews, authored
+cast generation, run controls, checkpoints, report snapshots and comparisons,
+templates, and reproducibility exports. Its run setup now exposes the runtime
+choices supported by `create_game()` as well as scenario, backend, seed,
+physical subsystem, player, cadence and turn-limit settings.
+
+This is an implementation snapshot, not a claim that every research direction
+is complete. The feature plan records remaining and follow-up work; the Ocelot
+guide and management section below describe current integration and deployment
+limits.
+
 The public API is in `bigville/`:
 
 ```python
@@ -136,6 +154,8 @@ The simple NPC backend uses that path preference when choosing comparable moves.
 ![Bigville after a turn](docs/screenshots/bigville-after-turn.png)
 
 ![Animated Bigville simulation](docs/screenshots/bigville-simulation.gif)
+
+![Bigville management console run setup](docs/screenshots/bigville-management-setup.png)
 
 The animation is produced from a live run of the client and backend:
 
@@ -433,6 +453,17 @@ The backend and prompt work is staged in
 The separately launched management service exposes health, capabilities, a
 local run registry, and run lifecycle commands. It remains a loopback-only,
 single-user service.
+
+The **New run** form previews the resolved world before launch. It supports
+built-in and authored scenarios, seeded or generated casts where declared,
+server-configured backend profiles, human or autonomous runs, physical
+subsystem overrides, period cadence and turn limits. Runtime controls include
+sequential or simultaneous turns; serial, threaded or partitioned execution
+with a worker count; automatic, full-menu or lazy affordances; automatic,
+per-turn or on-demand snapshots; action- or turn-batched world rules; and an
+LLM interaction-log toggle. These settings are validated and included in the
+run configuration hash and saved templates, then passed to the simulation
+when the run starts. The setup screen is shown above.
 
 ```bash
 python -m bigville.management.http

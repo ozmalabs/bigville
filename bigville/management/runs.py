@@ -883,7 +883,8 @@ class RunRegistry:
         fields = (
             "scenario_id", "name", "seed", "autonomous", "default_backend",
             "ticks_per_period", "turn_limit", "default_profile_id", "actor_backend_profiles",
-            "cast_generation", "player")
+            "cast_generation", "player", "turn_semantics", "executor",
+            "executor_workers", "affordance_mode", "snapshot_mode", "rule_batching", "llm_log")
         draft = {key: config[key] for key in fields if key in config}
         draft["physical_subsystems"] = config.get("physical_subsystem_overrides", {})
         return draft
@@ -927,6 +928,13 @@ class RunRegistry:
                 default_backend=config["default_backend"],
                 autonomous=config["autonomous"],
                 ticks_per_period=config["ticks_per_period"],
+                turn_semantics=config["turn_semantics"],
+                executor=config["executor"],
+                executor_workers=config["executor_workers"],
+                affordance_mode=config["affordance_mode"],
+                snapshot_mode=config["snapshot_mode"],
+                rule_batching=config["rule_batching"],
+                llm_log=config["llm_log"],
                 backend_factories=backend_factories,
                 physical_subsystems=config.get("physical_subsystem_overrides", {}),
             )

@@ -18,8 +18,10 @@ OPTIONAL_PROFILE_FIELDS = {"default_profile_id", "actor_backend_profiles"}
 OPTIONAL_CAST_FIELDS = {"cast_generation"}
 OPTIONAL_SUBSYSTEM_FIELDS = {"physical_subsystems"}
 OPTIONAL_PLAYER_FIELDS = {"player"}
+OPTIONAL_RUNTIME_FIELDS = {"turn_semantics", "executor", "executor_workers",
+                          "affordance_mode", "snapshot_mode", "rule_batching", "llm_log"}
 DRAFT_FIELDS = (ALLOWED_FIELDS | OPTIONAL_PROFILE_FIELDS | OPTIONAL_CAST_FIELDS |
-                OPTIONAL_SUBSYSTEM_FIELDS | OPTIONAL_PLAYER_FIELDS)
+                OPTIONAL_SUBSYSTEM_FIELDS | OPTIONAL_PLAYER_FIELDS | OPTIONAL_RUNTIME_FIELDS)
 MAX_NAME_LENGTH = 80
 MAX_TURN_LIMIT = 1_000_000
 MAX_SEED_ABS = (1 << 53) - 1
@@ -135,6 +137,31 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             isinstance(turn_limit, bool) or not isinstance(turn_limit, int) or
             turn_limit < 1 or turn_limit > MAX_TURN_LIMIT):
         errors["turn_limit"] = f"Turn limit must be an integer from 1 to {MAX_TURN_LIMIT}."
+
+    runtime_options = {
+        "turn_semantics": ("sequential", "simultaneous"),
+        "executor": ("serial", "threaded", "partitioned"),
+        "affordance_mode": ("auto", "menu", "lazy"),
+        "snapshot_mode": ("auto", "every_turn", "on_demand"),
+        "rule_batching": ("auto", "action", "turn"),
+    }
+    resolved_runtime_options = {}
+    for field, choices in runtime_options.items():
+        value = payload.get(field, "auto" if field in {"affordance_mode", "snapshot_mode", "rule_batching"} else
+                            "sequential" if field == "turn_semantics" else "serial")
+        if value not in choices:
+            errors[field] = f"Choose one of: {', '.join(choices)}."
+            value = choices[0]
+        resolved_runtime_options[field] = value
+    executor_workers = payload.get("executor_workers", 4)
+    if (isinstance(executor_workers, bool) or not isinstance(executor_workers, int)
+            or not 1 <= executor_workers <= 64):
+        errors["executor_workers"] = "Worker count must be an integer from 1 to 64."
+        executor_workers = 4
+    llm_log = payload.get("llm_log", True)
+    if not isinstance(llm_log, bool):
+        errors["llm_log"] = "Choose whether to record LLM interaction logs."
+        llm_log = True
 
     cast_generation_result = None
     if "cast_generation" in payload:
@@ -321,6 +348,9 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             "backend_profiles_revision": profile_catalog["revision"],
             "ticks_per_period": cadence,
             "turn_limit": turn_limit,
+            **resolved_runtime_options,
+            "executor_workers": executor_workers,
+            "llm_log": llm_log,
             "scenario_source": scenario_entry["source"],
             "scenario_content_hash": scenario_entry["content_hash"],
             "actor_backend_overrides": actor_overrides,
@@ -359,6 +389,8 @@ def resolve_draft(payload: Any, *, profile_registry=None) -> dict[str, Any]:
             template_draft["physical_subsystems"] = normalized["physical_subsystem_overrides"]
         if "player" in payload and "player" in normalized:
             template_draft["player"] = normalized["player"]
+        for field in (*runtime_options, "executor_workers", "llm_log"):
+            template_draft[field] = normalized[field]
     return {
         "valid": not errors,
         "errors": errors,
