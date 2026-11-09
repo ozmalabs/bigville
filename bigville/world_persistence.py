@@ -23,7 +23,8 @@ _EXTERNAL_FIELDS = {
     "E", "eng", "_cognition_factory", "_physical_subsystem_extensions",
     "_conversation_adapter", "_actor_minds",
     # Derived caches are intentionally discarded and rebuilt lazily.
-    "_distance_fields", "_travel_time_fields",
+    "_distance_fields", "_radius_distance_fields", "_travel_time_fields",
+    "_band_inputs",
     # TG05: per-attempt thread-local state; a restored world constructs a fresh one.
     "_attempt_state",
     # EN03: turn-batch bookkeeping; a restored world starts with no open batch.
@@ -263,7 +264,9 @@ def _restore_scenario(world_class, state: dict, graph: BigvilleGraph,
         setattr(world, key, value)
     world.eng._inner = world.eng
     world._distance_fields = {}
+    world._radius_distance_fields = {}
     world._travel_time_fields = {}
+    world._band_inputs = {}
     world._cognition_factory = cognition_factory
     world._physical_subsystem_extensions = dict(physical_subsystem_extensions)
     world._conversation_adapter = None

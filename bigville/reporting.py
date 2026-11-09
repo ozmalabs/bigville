@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 import copy
+from functools import wraps
 import math
 from statistics import median
 from typing import Any
@@ -51,6 +52,19 @@ def _rate(numerator: int, denominator: int) -> float:
     return _round(numerator / denominator) if denominator else 0.0
 
 
+def _frozen_report(method):
+    """Run a read-only report inside the world's per-snapshot read cache."""
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        scope = getattr(self.world, "decision_reads", None)
+        if callable(scope):
+            with scope():
+                return method(self, *args, **kwargs)
+        return method(self, *args, **kwargs)
+
+    return wrapped
+
+
 def _gini(values: list[float]) -> float:
     values = sorted(max(0.0, float(value)) for value in values)
     if not values or sum(values) == 0.0:
@@ -70,7 +84,7 @@ class SimulationReporter:
         E = world_entities(self.world)
         rows = []
         for name, node in sorted(self.world._actors.items()):
-            attrs = self.world.eng.node(node)["attrs"]
+            attrs = self.world.eng.node_attrs(node)
             rows.append({
                 "name": name,
                 "role": attrs.get("role", ""),
@@ -210,18 +224,30 @@ class SimulationReporter:
 
     def economy(self) -> dict[str, Any]:
         E = world_entities(self.world)
+        # Reference value is pure over the catalog, and a report asks for the
+        # same kinds from the town stock and every resident's inventory.
+        # Resolve each kind once per report instead of once per occurrence.
+        unit_values: dict[str, float] = {}
+
+        def unit_reference_value(kind: str) -> float:
+            value = unit_values.get(kind)
+            if value is None:
+                try:
+                    value = float(E.reference_value(kind))
+                except (KeyError, TypeError, ValueError):
+                    value = 0.0
+                unit_values[kind] = value
+            return value
+
         stock = {}
         total_value = 0.0
         food_qty = 0.0
         for kind, node in sorted(self.world._stock.items()):
             if kind == "none":
                 continue
-            attrs = self.world.eng.node(node)["attrs"]
+            attrs = self.world.eng.node_attrs(node)
             qty = max(0.0, float(attrs.get("qty", 0.0)))
-            try:
-                unit_value = float(E.reference_value(kind))
-            except (KeyError, TypeError, ValueError):
-                unit_value = 0.0
+            unit_value = unit_reference_value(kind)
             value = qty * unit_value
             stock[kind] = {"quantity": _round(qty), "condition": _round(attrs.get("condition", 1.0)),
                            "perishable": bool(attrs.get("perishable", 0.0)),
@@ -234,10 +260,7 @@ class SimulationReporter:
         resident_food_qty = 0.0
         for actor in self.world._actors:
             for kind, qty in self.world.inventory(actor).items():
-                try:
-                    unit_value = float(E.reference_value(kind))
-                except (KeyError, TypeError, ValueError):
-                    unit_value = 0.0
+                unit_value = unit_reference_value(kind)
                 resident_inventory_value += float(qty) * unit_value
                 if self.world._item_specs.get(kind, {}).get("food"):
                     resident_food_qty += float(qty)
@@ -254,7 +277,7 @@ class SimulationReporter:
         # the store's own coin pile. The total is the figure the conservation checks compare across moves.
         coin_resident = sum(self.world.coin(actor) for actor in self.world._actors)
         coin_stored = sum(self.world.contents(name, "coin") for name in self.world._containers)
-        coin_purses = sum(float(self.world.eng.node(node)["attrs"].get("coin", 0.0))
+        coin_purses = sum(float(self.world.eng.node_attrs(node).get("coin", 0.0))
                           for node in self.world.eng.nodes("Purse"))
         coin_store = self.world.qty("coin")
         coin = {"resident_purses": _round(coin_resident), "stored_in_containers": _round(coin_stored),
@@ -262,9 +285,10 @@ class SimulationReporter:
                 "total": _round(coin_resident + coin_stored + coin_purses + coin_store)}
 
         shops = {}
+        actor_rows = self._actor_rows()
         for trade, node in sorted(self.world._shops.items()):
-            attrs = self.world.eng.node(node)["attrs"]
-            workers = [row["name"] for row in self._actor_rows()
+            attrs = self.world.eng.node_attrs(node)
+            workers = [row["name"] for row in actor_rows
                        if row["alive"] and (row["workplace"] == trade or row["role"] == trade)]
             shops[trade] = {"input": attrs.get("input_kind", ""), "output": attrs.get("output_kind", ""),
                             "price": _round(attrs.get("price", 0.0)), "coin": _round(attrs.get("coin", 0.0)),
@@ -272,27 +296,29 @@ class SimulationReporter:
 
         storage = defaultdict(lambda: {"containers": 0, "quantity": 0.0})
         for name, (node, inners) in self.world._containers.items():
-            attrs = self.world.eng.node(node)["attrs"]
+            attrs = self.world.eng.node_attrs(node)
             kind = str(attrs.get("kind", "carrier"))
             if kind == "carrier":
                 continue
             storage[kind]["containers"] += 1
-            storage[kind]["quantity"] += sum(float(self.world.eng.node(inner)["attrs"].get("qty", 0.0))
+            storage[kind]["quantity"] += sum(float(self.world.eng.node_attrs(inner).get("qty", 0.0))
                                                for inner in inners.values())
         for bucket in storage.values():
             bucket["quantity"] = _round(bucket["quantity"])
         land = defaultdict(lambda: {"parcels": 0, "area": 0.0})
         for node in self.world._land.values():
-            attrs = self.world.eng.node(node)["attrs"]
+            attrs = self.world.eng.node_attrs(node)
             use = str(attrs.get("use", "unknown"))
             land[use]["parcels"] += 1; land[use]["area"] += float(attrs.get("area", 0.0))
         for bucket in land.values():
             bucket["area"] = _round(bucket["area"])
-        crops = Counter(self.world.eng.node(crop)["attrs"].get("crop", "unknown")
+        crops = Counter(self.world.eng.node_attrs(crop).get("crop", "unknown")
                         for crop in self.world._living_crops())
-        animals = Counter(self.world.eng.node(node)["attrs"].get("species", "unknown")
-                          for node in self.world._animals.values()
-                          if float(self.world.eng.node(node)["attrs"].get("alive", 1.0)) == 1.0)
+        animals = Counter()
+        for node in self.world._animals.values():
+            attrs = self.world.eng.node_attrs(node)
+            if float(attrs.get("alive", 1.0)) == 1.0:
+                animals[attrs.get("species", "unknown")] += 1
         return {"stock": stock, "stock_reference_value": _round(total_value),
                 "resident_inventory_reference_value": _round(resident_inventory_value),
                 "total_physical_reference_value": _round(total_value + resident_inventory_value),
@@ -311,12 +337,12 @@ class SimulationReporter:
                 "unregistered_land": len(set(self.world._land) - set(self.world._titles))}
 
     def social(self) -> dict[str, Any]:
-        bonds = [self.world.eng.node(node)["attrs"] for node in self.world._relationships.values()]
+        bonds = [self.world.eng.node_attrs(node) for node in self.world._relationships.values()]
         relationship_kinds = _counts([bond.get("kind", "unknown") for bond in bonds])
         conversations = list(self.world._conversations.values())
         speech = list(self.world._speech_events)
         utterances = list(self.world._utterances.values())
-        utterance_attrs = [self.world.eng.node(node)["attrs"] for node in utterances]
+        utterance_attrs = [self.world.eng.node_attrs(node) for node in utterances]
         notes = list(self.world._notes.values())
         requests = list(self.world._requests.values())
         return {
@@ -339,14 +365,18 @@ class SimulationReporter:
                             "justice_cases": len(self.world._cases)},
         }
 
-    def ecology(self) -> dict[str, Any]:
+    def ecology(self, economy: dict[str, Any] | None = None) -> dict[str, Any]:
+        # ``report`` already built the economy block; reuse it rather than
+        # rebuilding the whole stock/inventory valuation three times.
+        if economy is None:
+            economy = self.economy()
         return {"animals": {"total": len(self.world._animals), "alive": sum(
-                    float(self.world.eng.node(node)["attrs"].get("alive", 1.0)) == 1.0
+                    float(self.world.eng.node_attrs(node).get("alive", 1.0)) == 1.0
                     for node in self.world._animals.values()),
-                    "by_species": self.economy()["living_animals"]},
+                    "by_species": economy["living_animals"]},
                 "crops": {"beds": len(self.world._crops), "living": len(self.world._living_crops()),
-                          "by_kind": self.economy()["living_crops"]},
-                "land": self.economy()["land"]}
+                          "by_kind": economy["living_crops"]},
+                "land": economy["land"]}
 
     def refusals(self) -> dict[str, Any]:
         """Refused major actions over the town, counted by action and by reason (Phase 021).
@@ -364,6 +394,7 @@ class SimulationReporter:
                 "relationships": float(report["social"]["relationships"]["directed_bonds"]),
                 "utterances": float(report["social"]["conversation"]["utterances"])}
 
+    @_frozen_report
     def report(self, *, sample_size: int | None = 30, seed: int | None = None) -> dict[str, Any]:
         if seed is None:
             seed = int(getattr(self.world, "t100_seed", 305000)) + int(getattr(self.world, "_turn", 0))
@@ -372,7 +403,8 @@ class SimulationReporter:
         social = self.social()
         report = {"schema": "bigville/report/1", "clock": dict(self.world.calendar()),
                   "population": population, "economy": economy, "social": social,
-                  "ecology": self.ecology(), "refusals": self.refusals(), "intoxication": self.intoxication(),
+                  "ecology": self.ecology(economy), "refusals": self.refusals(),
+                  "intoxication": self.intoxication(),
                   "nutrition": self.nutrition(),
                   "measurement": {
                       "population": "complete_census", "economy": "complete_physical_and_handover_readout",
@@ -508,10 +540,10 @@ def body_by_age(world) -> dict[str, Any]:
     The top band is 70 and over. A band with no residents is left out."""
     bands: dict[int, list[tuple[float, float, bool, bool]]] = {}
     for name, node in sorted(world._actors.items()):
-        attrs = world.eng.node(node)["attrs"]
+        attrs = world.eng.node_attrs(node)
         if float(attrs.get("alive", 1.0)) != 1.0 or name not in world._bodies:
             continue
-        body = world.eng.node(world._bodies[name])["attrs"]
+        body = world.eng.node_attrs(world._bodies[name])
         decade = min(7, int(float(attrs.get("age", 0.0)) // 10))
         bands.setdefault(decade, []).append((float(world.effective_strength(name)), float(world.effective_stamina(name)),
                                              float(body.get("str_train", 0.0)) > 0.0,

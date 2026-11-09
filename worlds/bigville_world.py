@@ -17,6 +17,7 @@ import threading
 import weakref
 from collections import deque
 from contextlib import contextmanager
+from functools import wraps
 from pathlib import Path
 
 from bigville.runtime import (BigvilleGraph, NodeRef, WorldAdapter, boot_core,
@@ -71,6 +72,22 @@ _STATIC_READS: "weakref.WeakKeyDictionary[Any, _StaticReads]" = weakref.WeakKeyD
 _DECISION_READS_LOCK = threading.RLock()
 _DECISION_READS: "weakref.WeakKeyDictionary[Any, _DecisionReads]" = weakref.WeakKeyDictionary()
 _MISSING_READ = object()
+
+
+def _frozen_read_scope(method):
+    """Wrap a read-only world report in the same memo scope as a decision.
+
+    The report is a pure read of one world snapshot.  Opening
+    ``decision_reads()`` for its duration lets the existing body, stamina,
+    skill, proximity and recipe caches serve its repeated accessors, and the
+    scope is discarded before anything can mutate the world.
+    """
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self.decision_reads():
+            return method(self, *args, **kwargs)
+
+    return wrapped
 
 
 class _StaticReads:
@@ -840,6 +857,13 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # not also recover this turn; everything else grows back.
         self._traversed_this_tick = set()
         self._distance_fields = {}
+        # Radius-limited fields for proximity queries on large maps.  Derived
+        # state like ``_distance_fields``: never checkpointed, bounded in size.
+        self._radius_distance_fields = {}
+        # Per actor: the (slow_on, reserve, capacity) tuple the published
+        # exhaustion band was computed from.  Lets an unchanged body skip the
+        # band recomputation during a rule sweep.
+        self._band_inputs = {}
         self._travel_time_fields = {}
         self._map_grid = None
         self._map_layout = None
@@ -1838,36 +1862,61 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             for option in self.eng.neighbours(node, "has_option"):
                 pass
 
+    def _set_if_changed(self, node, key, value):
+        """Write an attr only when its value or type actually changes.
+
+        The rule sweep publishes derived body/clothing read-offs on every run.
+        Writing them unconditionally advances the graph revision and forces
+        replay/journal/delta consumers to see noise.  Comparing the current
+        value keeps the same final state while leaving an unchanged sweep
+        read-only.
+        """
+        attrs = self.eng.node_attrs(node)
+        if key not in attrs or attrs[key] != value or type(attrs[key]) is not type(value):
+            self.eng.set_attr(node, key, value)
+
     def _resolve_clothing_and_bodies(self):
-        town = self.eng.node(self._town)["attrs"]
+        town = self.eng.node_attrs(self._town)
+        cold = float(town.get("cold", 0.0))
+        wet = float(town.get("wet", 0.0))
         for actor, node in self._actors.items():
-            attrs = self.eng.node(node)["attrs"]
+            attrs = self.eng.node_attrs(node)
             warmth = rain = finery = 0.0
-            for garment in self.eng.neighbours(node, "wears"):
-                ga = self.eng.node(garment)["attrs"]
-                warmth += float(ga.get("warmth", 0.0)); rain += float(ga.get("rain", 0.0)); finery += float(ga.get("finery", 0.0))
-            self.eng.set_attr(node, "warmth", warmth); self.eng.set_attr(node, "rain_cover", rain); self.eng.set_attr(node, "finery", finery)
-            unheated = self._household_unheated_share(attrs.get("household"))
-            self.eng.set_attr(node, "chill", max(0.0, float(town.get("cold", 0.0)) - warmth)
-                              + unheated * float(self.E.HEATING["unheated_chill"]))
-            self.eng.set_attr(node, "soaked", max(0.0, float(town.get("wet", 0.0)) - rain))
-            for garment in self.eng.neighbours(node, "wears"):
-                if float(self.eng.node(garment)["attrs"].get("dye_armed", 0.0)) == 1.0:
+            garments = self.eng.neighbours(node, "wears")
+            for garment in garments:
+                ga = self.eng.node_attrs(garment)
+                warmth += float(ga.get("warmth", 0.0))
+                rain += float(ga.get("rain", 0.0))
+                finery += float(ga.get("finery", 0.0))
+                if float(ga.get("dye_armed", 0.0)) == 1.0:
                     dye_nodes = self.eng.neighbours(garment, "dyed_with")
                     if dye_nodes:
-                        colour = self.eng.node(dye_nodes[0])["attrs"].get("kind", "")
+                        colour = self.eng.node_attrs(dye_nodes[0]).get("kind", "")
                         colour = self._item_specs.get(colour, {}).get("colour", colour)
                         self.eng.set_attr(garment, "colour", colour)
                     self.eng.set_attr(garment, "dye_armed", 0.0)
+            self._set_if_changed(node, "warmth", warmth)
+            self._set_if_changed(node, "rain_cover", rain)
+            self._set_if_changed(node, "finery", finery)
+            unheated = self._household_unheated_share(attrs.get("household"))
+            self._set_if_changed(node, "chill", max(0.0, cold - warmth)
+                                 + unheated * float(self.E.HEATING["unheated_chill"]))
+            self._set_if_changed(node, "soaked", max(0.0, wet - rain))
         for tool in self.eng.nodes("ToolItem"):
-            ta = self.eng.node(tool)["attrs"]
+            ta = self.eng.node_attrs(tool)
             if float(ta.get("use_armed", 0.0)) == 1.0:
                 condition = max(0.0, float(ta.get("condition", 1.0)) - float(ta.get("wear_rate", 0.1)))
-                self.eng.set_attr(tool, "condition", condition); self.eng.set_attr(tool, "broken", 1.0 if condition <= 0 else 0.0); self.eng.set_attr(tool, "use_armed", 0.0)
+                self.eng.set_attr(tool, "condition", condition)
+                self.eng.set_attr(tool, "broken", 1.0 if condition <= 0 else 0.0)
+                self.eng.set_attr(tool, "use_armed", 0.0)
+                base_mult = float(self._item_specs.get(ta.get("kind", ""), {}).get("base_mult", 1.0))
+                quality = float(ta.get("quality", 0.0))
                 for fit in self.eng.neighbours(tool, "fit_for"):
-                    self.eng.set_attr(fit, "mult", float(self._item_specs.get(ta.get("kind", ""), {}).get("base_mult", 1.0)) * float(ta.get("quality", 0.0)) * condition)
+                    self.eng.set_attr(fit, "mult", base_mult * quality * condition)
             if float(ta.get("repair_armed", 0.0)) == 1.0:
-                self.eng.set_attr(tool, "condition", 1.0); self.eng.set_attr(tool, "broken", 0.0); self.eng.set_attr(tool, "repair_armed", 0.0)
+                self.eng.set_attr(tool, "condition", 1.0)
+                self.eng.set_attr(tool, "broken", 0.0)
+                self.eng.set_attr(tool, "repair_armed", 0.0)
 
     def _resolve_period_effects(self):
         period = float(self.eng.node(self._town)["attrs"].get("period", 0.0))
@@ -2163,6 +2212,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     def reachable(self, a, b):
         return self.distance(a, b) is not None
 
+    @_frozen_read_scope
     def sanity_report(self):
         """Return mechanical initialization checks for a village scenario.
 
@@ -2316,6 +2366,45 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                             field[neighbour] = d
                             frontier.append(neighbour)
                 self._distance_fields[origin] = field
+            return field
+
+    def _distance_field_within(self, origin, radius):
+        """Distances up to ``radius`` from ``origin`` (bounded derivative cache).
+
+        A radius-8 presence query does not need a field over the whole map.
+        The bounded BFS is exact for cells at or below ``radius``; a full field
+        that already exists is reused directly.  The derivative cache is capped
+        because actors visit many cells over a long run.
+        """
+        if origin not in self._map_cells:
+            return None
+        radius = max(0, int(radius))
+        key = (origin, radius)
+        with _DISTANCE_FIELDS_LOCK:
+            cached = self._radius_distance_fields.get(key)
+            if cached is not None:
+                return cached
+            full = self._distance_fields.get(origin)
+            if full is not None:
+                field = full
+            else:
+                field = {origin: 0}
+                frontier = deque([origin])
+                while frontier:
+                    pt = frontier.popleft()
+                    depth = field[pt]
+                    if depth >= radius:
+                        continue
+                    nxt = depth + 1
+                    for nx, ny in ((pt[0] + 1, pt[1]), (pt[0] - 1, pt[1]),
+                                   (pt[0], pt[1] + 1), (pt[0], pt[1] - 1)):
+                        neighbour = (nx, ny)
+                        if neighbour in self._map_cells and neighbour not in field:
+                            field[neighbour] = nxt
+                            frontier.append(neighbour)
+            if len(self._radius_distance_fields) >= 256:
+                self._radius_distance_fields.clear()
+            self._radius_distance_fields[key] = field
             return field
 
     def distance(self, a, b):
@@ -2622,7 +2711,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # candidate instead of building one field per nearby resident.
         positions = self._ensure_position_index()
         candidates = self._actor_candidates(position, radius, positions)
-        field = self._distance_field(position)
+        field = self._distance_field_within(position, radius)
         names = []
         for name in candidates:
             if name not in self._actors:
@@ -9251,7 +9340,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if position is None:
             return []
         actor_attrs = self.eng.node_attrs(self._actors[actor])
-        field = self._distance_field(position)
+        field = self._distance_field_within(position, 8)
         nearby = []
         for name in self.actors_near(position, 8, exclude=actor):
             other_position = self.actor_position(name)
@@ -9462,14 +9551,16 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 "buildings": buildings, "gathering_sites": gathering_sites,
                 "farms": farms}
 
-    def _observe_inventory_details(self, actor):
+    def _observe_inventory_details(self, actor, inventory=None):
         """Carried kinds with the capability facts a local generator needs (LA04).
 
         This reads item specs, quantities and the already-defined meal value;
-        it runs no recipe, tool or site validation.
+        it runs no recipe, tool or site validation.  ``observe`` passes the
+        inventory mapping it already built so the container is read once.
         """
         details = []
-        for kind, qty in sorted(self.inventory(actor).items()):
+        for kind, qty in sorted((self.inventory(actor) if inventory is None
+                                 else inventory).items()):
             spec = self._item_specs.get(kind, {})
             edible = bool(spec.get("food"))
             details.append({
@@ -9672,6 +9763,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         holder = self.holder_of(actor)
         cell = self._observe_cell(position)
         busy = bool(self.busy(actor))
+        inventory = self.inventory(actor)
         observation = {
             "turn": int(self._turn),
             "actor": actor,
@@ -9684,8 +9776,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             "energy": self.energy(actor),
             "intoxication": self.intoxication(actor),
             "intoxication_band": self.intoxication_band(actor),
-            "inventory": self.inventory(actor),
-            "inventory_details": self._observe_inventory_details(actor),
+            "inventory": inventory,
+            "inventory_details": self._observe_inventory_details(actor, inventory),
             "held_items": self.held_items(actor),
             "worn": self.worn(actor),
             "carrying": carrying,
@@ -10184,6 +10276,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 for target, choice in self._actor_minds[actor].speech_choices.items()}
 
     # ---------------------------------------------------- canonical state export
+    @_frozen_read_scope
     def export_state(self, *, event_tail=None, include_report=True):
         """Return a JSON-safe snapshot of the canonical world graph.
 
@@ -10193,16 +10286,20 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         and still includes both.  Ask ``report()``/``report_history()``
         explicitly when only the summary is wanted.
         """
-        town = self.eng.node(self._town)["attrs"]
+        town = self.eng.node_attrs(self._town)
         actors = []
         for name, node in self._actors.items():
-            a = self.eng.node(node)["attrs"]
+            a = self.eng.node_attrs(node)
             position = self.actor_position(name)
+            # Both read-offs come from the same body_state; build it once.
+            body = self.body_state(name)
             actors.append({"id": name, "name": name, "role": a.get("role", ""),
                            "alive": bool(float(a.get("alive", 1.0))), "age": a.get("age", 0.0),
                            "life_stage": a.get("life_stage", "adult"), "health": a.get("health", "healthy"),
                            "hunger": a.get("hunger", 0.0), "skill": a.get("skill", 0.0),
-                           "energy": self.energy(name), "exertion": self.exertion(name),
+                           "energy": round(float(body["stamina_reserve"]) * 100.0, 4),
+                           "exertion": round(max(0.0, float(body["stamina"])
+                                                 - float(body["stamina_reserve"])), 4),
                            "carried_weight": a.get("carried_weight", 0.0),
                            "carry_ratio": a.get("carry_ratio", 0.0),
                            "carry_speed": a.get("carry_speed", 1.0),
@@ -10217,7 +10314,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                            "held_items": self.held_items(name),
                            "worn": self.worn(name),
                            "references": sorted(self.known_references(name)),
-                           "journal": (dict(self.eng.node(self._journals[name][-1])["attrs"])
+                           "journal": (dict(self.eng.node_attrs(self._journals[name][-1]))
                                        if self._journals.get(name) else None)})
         buildings = []
         for kind in sorted(self._places):
@@ -10234,20 +10331,20 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         square = self._map_layout.get("square", {}) if self._map_layout else {}
         square_fixtures = []
         for name, node in getattr(self, "_square_fixtures", {}).items():
-            attrs = self.eng.node(node)["attrs"]
+            attrs = self.eng.node_attrs(node)
             square_fixtures.append({"id": name, "name": name,
                                     "kind": attrs.get("kind", "fixture"),
                                     "goods": list(attrs.get("goods", ())),
                                     "x": int(attrs.get("x", 0)), "y": int(attrs.get("y", 0))})
         events = []
         for key, node in list(self._events.items())[-event_tail if event_tail else None:]:
-            events.append({"id": key, **dict(self.eng.node(node)["attrs"])})
-        articles = [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._articles.items()]
-        utterances = [{"id": int(node.value), **dict(self.eng.node(node)["attrs"])}
+            events.append({"id": key, **dict(self.eng.node_attrs(node))})
+        articles = [{"id": key, **dict(self.eng.node_attrs(node))} for key, node in self._articles.items()]
+        utterances = [{"id": int(node.value), **dict(self.eng.node_attrs(node))}
                       for node in self._utterances.values()]
         map_width = len(self._map_grid[0]) if self._map_grid else 0
         map_height = len(self._map_grid or [])
-        map_seed = self.eng.node(self._map_node)["attrs"].get("seed", 0.0) if self._map_node else 0.0
+        map_seed = self.eng.node_attrs(self._map_node).get("seed", 0.0) if self._map_node else 0.0
         state = {"schema": "townview/1", "scenario": {
                     "id": self._scenario_data.get("id", "bigville"),
                     "name": self._scenario_data.get("name", "Bigville"),
@@ -10264,14 +10361,14 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 "physical_objects": self.physical_objects(),
                 "residents": actors,
                 "stocks": {kind: self.qty(kind) for kind in sorted(self._stock) if kind != "none"},
-                "animals": [{"id": name, **dict(self.eng.node(node)["attrs"]),
+                "animals": [{"id": name, **dict(self.eng.node_attrs(node)),
                              "position": self.map_position_node(node),
                              "enclosure": self.animal_enclosure(name)}
                             for name, node in self._animals.items()],
-                "fences": [{"id": name, **dict(self.eng.node(node)["attrs"]),
+                "fences": [{"id": name, **dict(self.eng.node_attrs(node)),
                             "position": self.map_position_node(node)}
                            for name, node in self._fences.items()],
-                "enclosures": [{"id": name, **dict(self.eng.node(node)["attrs"]),
+                "enclosures": [{"id": name, **dict(self.eng.node_attrs(node)),
                                 "cells": sorted(self._enclosure_cells.get(name, ())),
                                 "intact": self.enclosure_intact(name)}
                                for name, node in self._enclosures.items()],
@@ -10281,10 +10378,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 "events": events, "articles": articles, "utterances": utterances,
                 "speech_events": list(self._speech_events[-event_tail if event_tail else None:]),
                 "paper": articles,
-                "editions": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._editions.items()],
-                "handovers": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._handovers.items()],
-                "proposals": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._proposals.items()],
-                "cases": [{"id": key, **dict(self.eng.node(node)["attrs"])} for key, node in self._cases.items()],
+                "editions": [{"id": key, **dict(self.eng.node_attrs(node))} for key, node in self._editions.items()],
+                "handovers": [{"id": key, **dict(self.eng.node_attrs(node))} for key, node in self._handovers.items()],
+                "proposals": [{"id": key, **dict(self.eng.node_attrs(node))} for key, node in self._proposals.items()],
+                "cases": [{"id": key, **dict(self.eng.node_attrs(node))} for key, node in self._cases.items()],
                 "births": list(self._births), "deaths": list(self._deaths),
                 "sanity": self.sanity_report()}
         if include_report:
@@ -12673,14 +12770,14 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         for actor, body in self._bodies.items():
             if not self.eng.has_node(body):
                 continue
-            ba = self.eng.node(body)["attrs"]
+            ba = self.eng.node_attrs(body)
             strength = self.effective_strength(actor)
             stamina = self.effective_stamina(actor)
             if float(ba.get("strength", -1.0)) != strength:
                 self.eng.set_attr(body, "strength", strength)
             if float(ba.get("stamina", -1.0)) != stamina:
                 self.eng.set_attr(body, "stamina", stamina)
-            if float(self.eng.node(body)["attrs"].get("stamina_reserve", 1.0)) > stamina:
+            if float(ba.get("stamina_reserve", 1.0)) > stamina:
                 self.eng.set_attr(body, "stamina_reserve", stamina)
             if float(ba.get("stats_dirty", 0.0)) != 0.0:
                 self.eng.set_attr(body, "stats_dirty", 0.0)
@@ -13794,14 +13891,33 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         return result
 
     def _refresh_exhaustion(self, actor):
-        """Publish the band on the actor node: `exhaustion_step` and `speed_factor` (read-offs)."""
+        """Publish the band on the actor node: `exhaustion_step` and `speed_factor` (read-offs).
+
+        The band is a pure function of the slow-on flag, the stamina reserve and
+        the effective stamina capacity.  ``_resolve_body_stats`` has just
+        published that capacity on the body, so an unchanged triple can skip
+        the band computation entirely.  This matters most in action-batched
+        runs, where the sweep visits every resident after each action.
+        """
+        node = self._actors.get(actor)
+        body = self._bodies.get(actor)
+        if node is None or body is None:
+            return
+        attrs = self.eng.node_attrs(node)
+        ba = self.eng.node_attrs(body)
+        slow_default = 1.0 if self.exhaustion_slow_on else 0.0
+        slow_on = float(attrs.get("slow_on", slow_default)) == 1.0
+        reserve = float(ba.get("stamina_reserve", 1.0))
+        capacity = float(ba.get("stamina", 1.0))
+        key = (1, reserve, capacity) if slow_on else (0,)
+        if self._band_inputs.get(actor) == key:
+            return
         band = self._exhaustion_band(actor)
-        node = self._actors[actor]
-        attrs = self.eng.node(node)["attrs"]
         if float(attrs.get("exhaustion_step", -1.0)) != float(band["step"]):
             self.eng.set_attr(node, "exhaustion_step", float(band["step"]))
         if float(attrs.get("speed_factor", -1.0)) != float(band["speed"]):
             self.eng.set_attr(node, "speed_factor", float(band["speed"]))
+        self._band_inputs[actor] = key
 
     def exhaustion_step(self, actor):
         return int(self._exhaustion_band(actor)["step"])

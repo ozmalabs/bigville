@@ -924,8 +924,8 @@ class BigvilleGame:
         position = self.world.actor_position(actor)
         nearby_residents = []
         if position is not None:
-            # One cached BFS field serves every row of this proximity list.
-            distance_field = self.world._distance_field(position)
+            # One radius-bounded BFS field serves every row of this list.
+            distance_field = self.world._distance_field_within(position, 8)
             for name in self.world.actors_near(position, 8, exclude=actor):
                 other_position = self.world.actor_position(name)
                 distance = (distance_field.get(other_position)
