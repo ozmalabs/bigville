@@ -351,9 +351,15 @@ class BigvilleGame:
         # commits mutate from worker threads while context workers may read;
         # keep the safe locked path there.
         graph = getattr(getattr(self, "world", None), "eng", None)
-        set_read_locking = getattr(graph, "set_read_locking", None)
-        if callable(set_read_locking):
-            set_read_locking(value != "serial")
+        # A serial commit has one reading and one writing thread, so both lock
+        # policies go together; threaded/partitioned executors keep both.
+        set_locking = getattr(graph, "set_locking", None)
+        if callable(set_locking):
+            set_locking(value != "serial")
+        else:
+            set_read_locking = getattr(graph, "set_read_locking", None)
+            if callable(set_read_locking):
+                set_read_locking(value != "serial")
 
     @property
     def executor_workers(self) -> int:

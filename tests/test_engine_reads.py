@@ -62,7 +62,7 @@ def _brute_near(world, position, radius, *, alive_only=True, exclude=None):
 # ------------------------------------------------------------------ graph fast path
 def test_graph_fast_reads_match_the_locked_path():
     locked = BigvilleGraph()
-    fast = BigvilleGraph(lock_reads=False)
+    fast = BigvilleGraph(lock_reads=False, lock_writes=False)
     graph_pairs = []
     for graph in (locked, fast):
         first = graph.add_node("Agent", {"name": "Ada", "n": 1.0})
@@ -92,6 +92,7 @@ def test_graph_fast_reads_match_the_locked_path():
     # The read policy is not durable state.
     restored = BigvilleGraph.from_checkpoint_dict(graph.to_checkpoint_dict())
     assert restored.lock_reads is True
+    assert restored.lock_writes is True
     assert restored.to_checkpoint_dict() == graph.to_checkpoint_dict()
 
 
@@ -130,13 +131,17 @@ def test_locked_graph_allows_a_writer_while_readers_run():
 def test_game_serial_skips_the_read_lock_and_threaded_keeps_it():
     serial = _game()
     assert serial.world.eng.lock_reads is False
+    assert serial.world.eng.lock_writes is False
     serial.executor = "threaded"
     assert serial.world.eng.lock_reads is True
+    assert serial.world.eng.lock_writes is True
     serial.executor = "serial"
     assert serial.world.eng.lock_reads is False
+    assert serial.world.eng.lock_writes is False
 
     threaded = _game(executor="threaded")
     assert threaded.world.eng.lock_reads is True
+    assert threaded.world.eng.lock_writes is True
     result = threaded.step()
     assert result["status"] == "advanced"
     assert threaded.world.rules_pending is False

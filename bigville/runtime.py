@@ -7,7 +7,7 @@ admissibility and physical effects.
 from __future__ import annotations
 
 import contextvars
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, field
 import json
 import math
@@ -21,6 +21,9 @@ from typing import Any, Iterable, Iterator, Mapping
 # shares it.  RLock is required because public helpers call one another (for
 # example ``load_seed_manifest`` calls ``nodes`` and ``add_node``).
 _GRAPH_LOCK = threading.RLock()
+# A reusable no-op context for a graph whose serial executor guarantees one
+# writer.  ``nullcontext`` instances hold no state and are safe to reuse.
+_NO_WRITE_LOCK = nullcontext()
 
 # NB03: the execution namespace that is creating graph nodes right now.
 #
@@ -553,12 +556,12 @@ class GraphDelta:
         Validation (base revision, node/edge endpoints, duplicate node adds and
         operation shape) completes against a shadow before the first mutation,
         so a rejected delta leaves the graph untouched.  Application itself is
-        performed under the process-wide graph lock; it is not rolled back if
+        performed under the graph's write-lock policy; it is not rolled back if
         an internal invariant fails after validation.
         """
         if not isinstance(graph, BigvilleGraph):
             raise TypeError("apply_to expects a BigvilleGraph")
-        with _GRAPH_LOCK:
+        with graph._write_lock:
             if validate_base and graph.revision != self.base_revision:
                 raise ValueError(
                     f"graph delta base revision {self.base_revision} does not "
@@ -611,15 +614,18 @@ class BigvilleGraph:
     (including checkpoint restore) defaults to the locked, safe form; a caller
     may only disable it when it can guarantee no concurrent writer exists.
 
-    Writes always take ``_GRAPH_LOCK``.  Read fast paths intentionally keep the
-    public result shapes (``node`` still returns ``{"type", "attrs"}``).  An
-    ``int``/``NodeRef`` identifier is used directly as a dictionary key --
-    ``NodeRef`` equals its ``int`` value and hashes the same -- so no per-read
-    ``NodeRef`` allocation is needed; other identifiers keep the historical
-    ``int()`` coercion.
+    Writes use ``_GRAPH_LOCK`` only while ``lock_writes`` is true.  A serial
+    game session disables both read and write locking for its world graph
+    because it is the only mutating thread.  Every other constructor path
+    (including checkpoint restore) defaults to the locked, safe form.  Read
+    fast paths intentionally keep the public result shapes (``node`` still
+    returns ``{"type", "attrs"}``).  An ``int``/``NodeRef`` identifier is used
+    directly as a dictionary key -- ``NodeRef`` equals its ``int`` value and
+    hashes the same -- so no per-read ``NodeRef`` allocation is needed; other
+    identifiers keep the historical ``int()`` coercion.
     """
 
-    def __init__(self, *, lock_reads: bool = True):
+    def __init__(self, *, lock_reads: bool = True, lock_writes: bool = True):
         self._next_id = 1
         self._nodes: dict[NodeRef, _Node] = {}
         self._edges: dict[tuple[NodeRef, str], set[NodeRef]] = {}
@@ -632,18 +638,44 @@ class BigvilleGraph:
         # through the ``add_node``/``add_edge_unchecked`` calls it makes.
         self.revision = 0
         self._inner = self
-        # EN04: explicit read-lock policy.  True is the safe default; the game
-        # disables it only for serial executors.
+        # EN04: explicit read/write-lock policy.  True is the safe default; the
+        # game disables both only for serial executors.
         self.lock_reads = bool(lock_reads)
+        self.lock_writes = bool(lock_writes)
+        if self.lock_reads and not self.lock_writes:
+            raise ValueError("cannot lock reads while writes are unlocked")
+        self._write_lock = _GRAPH_LOCK if self.lock_writes else _NO_WRITE_LOCK
 
     # NB03: fallback provenance for nodes created outside an execution
     # namespace.  This is a class default rather than instance state so it is
     # not written into a world checkpoint and old checkpoints stay valid.
     default_origin = DEFAULT_ORIGIN
 
+    def set_locking(self, enabled: bool) -> None:
+        """Set the read and write lock policy together.
+
+        Writers and readers share ``_GRAPH_LOCK``, so the two policies may
+        only be changed atomically; a graph with unlocked writes and locked
+        reads would not actually exclude the writer.
+        """
+        self.lock_reads = bool(enabled)
+        self.lock_writes = bool(enabled)
+        self._write_lock = _GRAPH_LOCK if self.lock_writes else _NO_WRITE_LOCK
+
     def set_read_locking(self, enabled: bool) -> None:
         """Set whether reads take the global lock (see ``lock_reads``)."""
-        self.lock_reads = bool(enabled)
+        enabled = bool(enabled)
+        if enabled and not self.lock_writes:
+            raise ValueError("cannot lock reads while writes are unlocked")
+        self.lock_reads = enabled
+
+    def set_write_locking(self, enabled: bool) -> None:
+        """Set whether writes take the global lock (see ``lock_writes``)."""
+        enabled = bool(enabled)
+        if not enabled and self.lock_reads:
+            raise ValueError("cannot unlock writes while reads are locked")
+        self.lock_writes = enabled
+        self._write_lock = _GRAPH_LOCK if self.lock_writes else _NO_WRITE_LOCK
 
     # -- DR03 change recording -------------------------------------------
 
@@ -691,7 +723,7 @@ class BigvilleGraph:
         the ids the original execution allocated.  This is deliberately
         private and does not run change recording.
         """
-        with _GRAPH_LOCK:
+        with self._write_lock:
             ref = NodeRef(int(node))
             if ref in self._nodes:
                 raise KeyError(f"Bigville graph node already exists: {int(ref)}")
@@ -740,7 +772,7 @@ class BigvilleGraph:
         attrs_value = dict(attrs or {})
         attrs_snapshot = (_copy_graph_value(attrs_value, "add_node.attrs")
                           if delta is not None else None)
-        with _GRAPH_LOCK:
+        with self._write_lock:
             node = NodeRef(self._next_id)
             self._next_id += 1
             self._nodes[node] = _Node(str(type_name), attrs_value, origin)
@@ -826,7 +858,7 @@ class BigvilleGraph:
         key = str(key)
         value_snapshot = (_copy_graph_value(value, "set_attr.value")
                           if delta is not None else None)
-        with _GRAPH_LOCK:
+        with self._write_lock:
             record = self._nodes[ref]
             old_value = record.attrs.get(key)
             old_snapshot = (_copy_graph_value(old_value, "set_attr.old")
@@ -838,7 +870,7 @@ class BigvilleGraph:
 
     def add_edge_unchecked(self, source: NodeRef | int, edge: str,
                            target: NodeRef | int, attrs: dict | None = None) -> None:
-        with _GRAPH_LOCK:
+        with self._write_lock:
             src, dst, kind = NodeRef(int(source)), NodeRef(int(target)), str(edge)
             if src not in self._nodes or dst not in self._nodes:
                 raise KeyError("cannot connect a missing Bigville graph node")
@@ -855,7 +887,7 @@ class BigvilleGraph:
         self.add_edge_unchecked(source, edge, target, attrs)
 
     def remove_edge_unchecked(self, source, edge, target) -> None:
-        with _GRAPH_LOCK:
+        with self._write_lock:
             src, dst, kind = NodeRef(int(source)), NodeRef(int(target)), str(edge)
             self._edges.get((src, kind), set()).discard(dst)
             self._reverse.get((dst, kind), set()).discard(src)
@@ -891,7 +923,7 @@ class BigvilleGraph:
 
     def remove_node(self, node) -> None:
         delta = self._recording_delta()
-        with _GRAPH_LOCK:
+        with self._write_lock:
             ref = NodeRef(int(node))
             if ref not in self._nodes:
                 return
