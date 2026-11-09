@@ -864,6 +864,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # exhaustion band was computed from.  Lets an unchanged body skip the
         # band recomputation during a rule sweep.
         self._band_inputs = {}
+        # Actors whose body/health changed outside the current incremental
+        # sweep scope.  The next sweep (scoped or full) includes them, so a
+        # cross-actor effect such as harm or care still refreshes its target.
+        self._rule_touched = set()
         self._travel_time_fields = {}
         self._map_grid = None
         self._map_layout = None
@@ -1480,7 +1484,32 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 self.eng.add_edge_unchecked(node, "at_cell", self._map_cells[cell])
             self._square_fixtures[fixture["name"]] = node
 
-    def _run(self, *, force=False):
+    def _actor_scope(self, actors):
+        """The (name, node) pairs an incremental rule pass should visit.
+
+        ``None`` keeps the historical full sweep over every resident.  A named
+        scope is used only by primitives that provably touch those actors and
+        nothing else; global passes (jobs, stock, period, death logging) still
+        run in full.
+        """
+        if actors is None:
+            return self._actors.items()
+        if isinstance(actors, str):
+            actors = (actors,)
+        return ((name, self._actors[name]) for name in actors
+                if name in self._actors)
+
+    def _mark_actor_touched(self, actor) -> None:
+        """Remember an actor whose body read-offs a later sweep must refresh.
+
+        This is how a scoped sweep stays equivalent for cross-actor effects:
+        harm, healing, care and treatment touch a resident other than the one
+        whose action requested the sweep.
+        """
+        if actor in self._actors:
+            self._rule_touched.add(str(actor))
+
+    def _run(self, *, force=False, actors=None):
         # EN03: inside a turn batch a primitive action records that a full
         # sweep is owed instead of running one per action.  The finish boundary
         # calls ``_run(force=True)``; ``batch_rules`` runs the single owed sweep
@@ -1488,6 +1517,13 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if not force and self._rule_batch_depth > 0:
             self._rule_batch_pending = True
             return
+        if actors is None:
+            self._rule_touched.clear()
+        elif self._rule_touched:
+            if isinstance(actors, str):
+                actors = (actors,)
+            actors = tuple(dict.fromkeys((*actors, *self._rule_touched)))
+            self._rule_touched.clear()
         # A stock node survives after its last batch spoils, so an empty pile
         # may retain condition=0.  Treat the next batch as newly made rather
         # than allowing the spoil rule to discard it in the same rule sweep.
@@ -1499,11 +1535,11 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # is intentionally only a data store; these small passes are the
         # ported world mechanics that used to be supplied by graph rules.
         self._resolve_jobs()
-        self._resolve_actor_events()
-        self._resolve_body_stats()
-        self._resolve_sleep()
-        self._resolve_intoxication()
-        self._resolve_clothing_and_bodies()
+        self._resolve_actor_events(actors)
+        self._resolve_body_stats(actors)
+        self._resolve_sleep(actors)
+        self._resolve_intoxication(actors)
+        self._resolve_clothing_and_bodies(actors)
         self._resolve_period_effects()
         # Freshness is mixed in where stock arrives (set_stock and the transfers), so a pile that gained
         # quantity keeps its blended condition. Only the quantity bookkeeping remains here.
@@ -1515,6 +1551,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 qty = 0.0
             self._last_stock_qty[kind] = qty
         self._record_unlogged_deaths()
+        if actors is None:
+            self._rule_touched.clear()
         self._rule_batch_pending = False
 
     @contextmanager
@@ -1540,17 +1578,18 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         """True when a batched turn owes its authoritative ``_run()`` sweep."""
         return bool(self._rule_batch_pending)
 
-    def _request_rule_sweep(self, *, force=False):
+    def _request_rule_sweep(self, *, force=False, actors=None):
         """Ask for a rule sweep without invoking ``_run`` inside an open batch.
 
         Primitive actions use this instead of calling ``_run`` directly, so the
-        measured sweep count stays constant in turn mode.  ``_run`` retains the
-        same guard for any direct caller.
+        measured sweep count stays constant in turn mode.  ``actors`` names the
+        residents whose per-actor state the primitive changed; omit it for a
+        full sweep.  ``_run`` retains the same guard for any direct caller.
         """
         if not force and self._rule_batch_depth > 0:
             self._rule_batch_pending = True
             return
-        self._run(force=force)
+        self._run(force=force, actors=actors)
 
     def _job_input(self, job, kind, is_item=False):
         """Find one physical input for a job without inventing ownership."""
@@ -1761,9 +1800,9 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 self.eng.set_attr(actor_node, "busy", 1.0 if self._job_of(actor_name) is not None else 0.0)
                 self._set_job_paused(actor_name, self.job_paused(actor_name))
 
-    def _resolve_actor_events(self):
+    def _resolve_actor_events(self, actors=None):
         """Apply event nodes armed by the public convenience APIs."""
-        for actor, node in self._actors.items():
+        for actor, node in self._actor_scope(actors):
             attrs = self.eng.node(node)["attrs"]
             # Container filling/emptying is a physical transfer armed by the
             # public API.  It is intentionally separate from ``put``: setup
@@ -1875,11 +1914,11 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if key not in attrs or attrs[key] != value or type(attrs[key]) is not type(value):
             self.eng.set_attr(node, key, value)
 
-    def _resolve_clothing_and_bodies(self):
+    def _resolve_clothing_and_bodies(self, actors=None):
         town = self.eng.node_attrs(self._town)
         cold = float(town.get("cold", 0.0))
         wet = float(town.get("wet", 0.0))
-        for actor, node in self._actors.items():
+        for actor, node in self._actor_scope(actors):
             attrs = self.eng.node_attrs(node)
             warmth = rain = finery = 0.0
             garments = self.eng.neighbours(node, "wears")
@@ -2840,7 +2879,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0, "body_use": "walk"})
             self.eng.add_edge_unchecked(self._actor(actor), "exerted", exertion)
             if not self._actor_tick_in_progress:
-                self._request_rule_sweep()
+                self._request_rule_sweep(actors=(actor,))
         cooldown = float(attrs.get("carry_move_cooldown", 0.0))
         if cooldown >= 1.0 - 1e-9:
             self.eng.set_attr(self._actor(actor), "carry_move_cooldown", cooldown - 1.0)
@@ -6887,7 +6926,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self.set_stock("water", self.qty("water") - float(attrs.get("water", 0.0)))
         self.eng.set_attr(crop_node, "thirst", 0.0)
         self.eng.set_attr(crop_node, "water_armed", 0.0)
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=())
         return float(self.eng.node(crop_node)["attrs"].get("thirst", 0.0)) == 0.0
 
     def harvest_crop(self, crop_node, *, harvester=None):
@@ -7120,7 +7159,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 self._record_handover("deliver", kind, amount, ("merchant", str(merchant)), ("store", "store"))
             self.eng.remove_edge_unchecked(node, "carries", stock)
             self.eng.remove_node(stock)
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=())
 
     # ---------------------------------------------------- books (physical records; cognition owns learning)
     def write_in_book(self, author, book, recipe):
@@ -7458,7 +7497,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             self._containers[container][1][kind] = self._new_inner_stock(node, container_kind, kind)
         self.eng.set_attr(self._actors[actor], "fill_kind", kind)
         self.eng.set_attr(self._actors[actor], "fill_amount", float(amount))
-        self.eng.set_attr(self._actors[actor], "fill_armed", 1.0); self._request_rule_sweep()
+        self.eng.set_attr(self._actors[actor], "fill_armed", 1.0)
+        self._request_rule_sweep(actors=(actor,))
         return True
 
     def empty(self, actor, container, kind, amount):
@@ -7468,7 +7508,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return False
         self.eng.set_attr(self._actors[actor], "empty_kind", kind)
         self.eng.set_attr(self._actors[actor], "empty_amount", float(amount))
-        self.eng.set_attr(self._actors[actor], "empty_armed", 1.0); self._request_rule_sweep()
+        self.eng.set_attr(self._actors[actor], "empty_armed", 1.0)
+        self._request_rule_sweep(actors=(actor,))
         return True
 
     def fetch(self, actor, kind, amount=1.0, *, source=None):
@@ -8215,7 +8256,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         for kind, spec in self.E.MARKS.items():
             if spec["washable"]:
                 self._set_mark(actor, kind, self.mark_level(actor, kind) * (1.0 - float(rules["wash_drop"])))
-        self._run()
+        self._request_rule_sweep(actors=(actor,))
         return True
 
     def harm(self, actor, amount, cause, locus=None, *, fragility=True):
@@ -8239,6 +8280,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if not self.is_alive(actor):
             return False
         node = self._actor(actor)
+        self._mark_actor_touched(actor)
         health = max(0.0, self.health(actor) - max(0.0, float(drop)))
         self.eng.set_attr(node, "health_value", health)
         self.eng.set_attr(node, "last_cause", str(cause))
@@ -8257,6 +8299,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return
         cap = float(self.E.HEALTH["max_health"])
         before = self.health(actor)
+        self._mark_actor_touched(actor)
         self.eng.set_attr(self._actor(actor), "health_value", min(cap, before + max(0.0, float(gain))))
         self._body_event(actor, {"kind": "heal", "amount": max(0.0, self.health(actor) - before)})   # Phase 070
 
@@ -11745,7 +11788,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # action too; the explicit dispatcher suppresses this second charge.
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "work"):
             return self._refuse("slot_used")
-        self._open_job(actor, action_name, 0.0, tool_mode=mode, tool_item=item); self._request_rule_sweep()
+        self._open_job(actor, action_name, 0.0, tool_mode=mode, tool_item=item)
+        self._request_rule_sweep(actors=(actor,))
         return True
 
     def start(self, actor, action_name, intensity=1.0, tool=_DEFAULT_TOOL):
@@ -11763,7 +11807,8 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             return self._refuse("slot_used")
         mins = float(self.eng.node(self._actions[action_name])["attrs"]["time_minutes"])
         self._open_job(actor, action_name, math.ceil(mins / float(self.E.TIME["minutes_per_tick"])),
-                       pace=self._pace_value(intensity), tool_mode=mode, tool_item=item); self._request_rule_sweep()
+                       pace=self._pace_value(intensity), tool_mode=mode, tool_item=item)
+        self._request_rule_sweep(actors=(actor,))
         return True
 
     def _pace_value(self, value):
@@ -11825,13 +11870,15 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         # ordinary single use can share the turn's authoritative sweep.
         uses = int(times)
         for _ in range(uses):
-            self.eng.set_attr(tool, "use_armed", 1.0); self._request_rule_sweep(force=uses > 1)
+            self.eng.set_attr(tool, "use_armed", 1.0)
+            self._request_rule_sweep(force=uses > 1, actors=())
 
     def repair_tool(self, maker, tool):
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(maker, "repair"):
             return False
         self.eng.add_edge_unchecked(self._actors[maker], "repairs", tool)
-        self.eng.set_attr(tool, "repair_armed", 1.0); self._request_rule_sweep()
+        self.eng.set_attr(tool, "repair_armed", 1.0)
+        self._request_rule_sweep(actors=())
         return True
 
     def tool_kind(self, tool): return self.eng.node(tool)["attrs"]["kind"]
@@ -11861,7 +11908,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         colour = self._item_specs.get(dye_kind, {}).get("colour", dye_kind)
         self.eng.set_attr(garment, "colour", colour)
         self.set_stock(dye_kind, max(0.0, self.qty(dye_kind) - 1.0))
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=())
         return self.garment_colour(garment)
 
     def wear(self, actor, garment):
@@ -11875,7 +11922,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self.eng.set_attr(garment, "finery", float(spec.get("finery", 0.0)))
         self.eng.add_edge_unchecked(self._actors[actor], "wears", garment)
         self._change_clothes_marks(actor)     # Phase 063: a fresh garment drops soiled clothes
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=(actor,))
         return True
 
     def take_off(self, actor, garment):
@@ -11883,7 +11930,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if self._turn > 0 and not self._major_dispatch and not self._claim_major_action(actor, "take_off"):
             return False
         self.eng.remove_edge_unchecked(self._actors[actor], "wears", garment)
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=(actor,))
         return True
 
     def worn(self, actor):
@@ -12248,7 +12295,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                                               "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0,
                                               "body_use": "" if action is None else str(action)})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=(actor,))
 
     def _publish_noise(self, actor, verb, name, radius):
         """A loud attempt is an event that every awake resident within the hearing radius observes (Phase 028).
@@ -12601,7 +12648,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             share = force / total if total > 0.0 else 1.0 / len(group)
             self._queue_effort(name, float(step["stamina"]) * share, 1.0, action="carry")
             self._accrue_strain(name, float(step["strain"]) * share)
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=tuple(group))
         needed = J.members_needed(total / len(group), demand, spec["max_members"], spec["coordination_loss"], 0.0,
                                   spec["skill_relief"])
         needed = int(spec["max_members"]) if needed is None else int(needed)
@@ -12763,11 +12810,23 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             self.eng.set_attr(body, "stats_dirty", 1.0)
             self.eng.set_attr(event, done, 1.0)
 
-    def _resolve_body_stats(self):
+    def _resolve_body_stats(self, actors=None):
         """bd_effective_stats: strength and stamina are the effective values, and the reserve is clamped to the
         effective stamina. Recomputed on every run (not only when stats_dirty is set), so a health change is seen
-        on the next run; the flag is cleared here, as the seed's rule does."""
-        for actor, body in self._bodies.items():
+        on the next run; the flag is cleared here, as the seed's rule does.
+
+        ``actors`` is an incremental scope from ``_run``: actors outside it
+        were not touched since the previous sweep, so their published stats
+        are already current.
+        """
+        if actors is None:
+            scope = self._bodies.items()
+        else:
+            if isinstance(actors, str):
+                actors = (actors,)
+            scope = ((name, self._bodies[name]) for name in actors
+                     if name in self._bodies)
+        for actor, body in scope:
             if not self.eng.has_node(body):
                 continue
             ba = self.eng.node_attrs(body)
@@ -12965,7 +13024,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                                               "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0,
                                               "body_use": str(action)})
         self.eng.add_edge_unchecked(self._actors[actor], "exerted", effort)
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=(actor,))
 
     def _contest_log_practice(self, actor, minutes):
         """Contests are practice in fighting (Phase 012, physical learning, consolidated at period end)."""
@@ -13980,14 +14039,20 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         rate = float(self.E.RESOLUTION["strain_sleep_recovery"])
         self.eng.set_attr(self._actors[actor], "strain", max(0.0, strain - rate))
 
-    def _resolve_sleep(self):
+    def _resolve_sleep(self, actors=None):
         """Collapse, sleep and wake, once per run (seed bigville_time_sleep).
 
         An awake resident whose reserve is below e_collapse collapses where they stand. A sleeper regains
         rest_gain per clock tick up to rest_cap, or collapse_gain up to collapse_cap while collapsed, and
-        wakes at that cap. Regaining happens on clock ticks only (the armed run), not on every run."""
+        wakes at that cap. Regaining happens on clock ticks only (the armed run), not on every run.
+
+        During an armed clock tick the sweep is always full: every sleeper
+        regains on the same tick.  A primitive action's incremental scope may
+        name only the residents it touched."""
         ex = self.E.EXHAUSTION
-        for actor, node in self._actors.items():
+        if actors is not None and self._job_tick_armed:
+            actors = None
+        for actor, node in self._actor_scope(actors):
             body = self._bodies.get(actor)
             if body is not None and self.is_alive(actor):
                 ba = self.eng.node(body)["attrs"]
@@ -14073,7 +14138,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self.eng.set_attr(node, "sleep_kind", 3.0)
         self._set_job_paused(actor, self.job_paused(actor))
 
-    def _resolve_intoxication(self):
+    def _resolve_intoxication(self, actors=None):
         """Sober by sober_per_tick on each clock tick, and pass out or wake at the table's thresholds. The check runs
         on every pass, so a drink that crosses pass_out takes effect at once. Sleep does not sober a resident faster:
         the passed-out resident simply waits for the level to fall (the sleep regains no stamina; see _resolve_sleep).
@@ -14082,7 +14147,9 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         ip = self.E.INTOXICATION
         armed = self._job_tick_armed
         on = self._aftereffects_on()
-        for actor in self._actors:
+        if actors is not None and armed:
+            actors = None
+        for actor, _node in self._actor_scope(actors):
             body = self._bodies.get(actor)
             if body is None or not self.is_alive(actor):
                 continue
@@ -14236,7 +14303,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self._actor(actor)
         rest = self.eng.add_node("Rest", {"amount": float(amount), "rest_done": 0.0})
         self.eng.add_edge_unchecked(self._actors[actor], "rested", rest)
-        self._request_rule_sweep()
+        self._request_rule_sweep(actors=(actor,))
         return self.stamina_reserve(actor)
     def body_state(self, actor):
         cache = self._decision_read_cache()
