@@ -1,0 +1,260 @@
+{
+ "label": "f0.01",
+ "set": {
+  "CARRYING.stamina_per_move_unit": 0.01
+ },
+ "effective": {
+  "CARRYING.stamina_per_move_unit": 0.01
+ },
+ "replaced": {
+  "CARRYING.stamina_per_move_unit": 0.1
+ },
+ "days": 7,
+ "ticks": 672,
+ "seeds": [
+  305001
+ ],
+ "runs": [
+  {
+   "seed": 305001,
+   "elapsed_s": 175.9,
+   "rows": [
+    {
+     "day": 0,
+     "partial_day": false,
+     "alive": 100,
+     "deaths_day": {},
+     "deaths_cum": {},
+     "hunger_mean": 1.055,
+     "hunger_p10": 1.028,
+     "hunger_p90": 1.115,
+     "store_food": 638.0,
+     "food_held": 79.0,
+     "meals_eaten": 83,
+     "fetches": 122,
+     "work_starts": {
+      "make_gruel": 6,
+      "brew_ale": 2,
+      "burn_charcoal": 1,
+      "grind_flour": 2
+     },
+     "work_completions": {},
+     "food_produced": 0.0,
+     "energy_1700_mean": 67.8,
+     "energy_1700_p10": 66.44,
+     "energy_1700_share_lt35": 0.0,
+     "share_lt35_eod": 0.0,
+     "cells_walked_per_resident": 75.87,
+     "walk_attempts": 9384,
+     "walk_moved": 7587,
+     "walk_moved_share": 0.809,
+     "walk_energy_per_cell": 0.736,
+     "effort_energy_walk_share": 0.9979,
+     "move_refused": 0
+    },
+    {
+     "day": 1,
+     "partial_day": false,
+     "alive": 100,
+     "deaths_day": {},
+     "deaths_cum": {},
+     "hunger_mean": 1.108,
+     "hunger_p10": 1.014,
+     "hunger_p90": 1.416,
+     "store_food": 488.0,
+     "food_held": 50.0,
+     "meals_eaten": 179,
+     "fetches": 150,
+     "work_starts": {},
+     "work_completions": {
+      "grind_flour": 1
+     },
+     "food_produced": 0.0,
+     "energy_1700_mean": 32.88,
+     "energy_1700_p10": 27.81,
+     "energy_1700_share_lt35": 0.62,
+     "share_lt35_eod": 0.55,
+     "cells_walked_per_resident": 32.66,
+     "walk_attempts": 8829,
+     "walk_moved": 3266,
+     "walk_moved_share": 0.37,
+     "walk_energy_per_cell": 0.723,
+     "effort_energy_walk_share": 0.9986,
+     "move_refused": 5
+    },
+    {
+     "day": 2,
+     "partial_day": false,
+     "alive": 100,
+     "deaths_day": {},
+     "deaths_cum": {},
+     "hunger_mean": 1.206,
+     "hunger_p10": 1.016,
+     "hunger_p90": 1.981,
+     "store_food": 235.0,
+     "food_held": 94.0,
+     "meals_eaten": 239,
+     "fetches": 283,
+     "work_starts": {
+      "bake_crackers": 5,
+      "bake_bread_at_home": 1
+     },
+     "work_completions": {
+      "make_gruel": 2,
+      "burn_charcoal": 1,
+      "bake_crackers": 4
+     },
+     "food_produced": 30.0,
+     "energy_1700_mean": 37.81,
+     "energy_1700_p10": 24.15,
+     "energy_1700_share_lt35": 0.58,
+     "share_lt35_eod": 0.46,
+     "cells_walked_per_resident": 35.37,
+     "walk_attempts": 8226,
+     "walk_moved": 3537,
+     "walk_moved_share": 0.43,
+     "walk_energy_per_cell": 0.714,
+     "effort_energy_walk_share": 0.998,
+     "move_refused": 39
+    },
+    {
+     "day": 3,
+     "partial_day": false,
+     "alive": 100,
+     "deaths_day": {},
+     "deaths_cum": {},
+     "hunger_mean": 1.69,
+     "hunger_p10": 1.039,
+     "hunger_p90": 2.118,
+     "store_food": 0.0,
+     "food_held": 85.0,
+     "meals_eaten": 244,
+     "fetches": 235,
+     "work_starts": {},
+     "work_completions": {},
+     "food_produced": 0.0,
+     "energy_1700_mean": 41.72,
+     "energy_1700_p10": 25.9,
+     "energy_1700_share_lt35": 0.46,
+     "share_lt35_eod": 0.49,
+     "cells_walked_per_resident": 41.43,
+     "walk_attempts": 8423,
+     "walk_moved": 4143,
+     "walk_moved_share": 0.492,
+     "walk_energy_per_cell": 0.719,
+     "effort_energy_walk_share": 1.0,
+     "move_refused": 8
+    },
+    {
+     "day": 4,
+     "partial_day": false,
+     "alive": 98,
+     "deaths_day": {
+      "starvation": 2
+     },
+     "deaths_cum": {
+      "starvation": 2
+     },
+     "hunger_mean": 2.745,
+     "hunger_p10": 2.106,
+     "hunger_p90": 3.202,
+     "store_food": 0.0,
+     "food_held": 85.0,
+     "meals_eaten": 0,
+     "fetches": 0,
+     "work_starts": {},
+     "work_completions": {},
+     "food_produced": 0.0,
+     "energy_1700_mean": 38.21,
+     "energy_1700_p10": 21.52,
+     "energy_1700_share_lt35": 0.64,
+     "share_lt35_eod": 0.541,
+     "cells_walked_per_resident": 40.88,
+     "walk_attempts": 8625,
+     "walk_moved": 4088,
+     "walk_moved_share": 0.474,
+     "walk_energy_per_cell": 0.709,
+     "effort_energy_walk_share": 1.0,
+     "move_refused": 33
+    },
+    {
+     "day": 5,
+     "partial_day": false,
+     "alive": 45,
+     "deaths_day": {
+      "starvation": 53
+     },
+     "deaths_cum": {
+      "starvation": 55
+     },
+     "hunger_mean": 3.35,
+     "hunger_p10": 3.163,
+     "hunger_p90": 3.777,
+     "store_food": 0.0,
+     "food_held": 75.0,
+     "meals_eaten": 0,
+     "fetches": 0,
+     "work_starts": {
+      "lift_saplings": 1,
+      "cut_sage": 1
+     },
+     "work_completions": {
+      "cut_sage": 1
+     },
+     "food_produced": 0.0,
+     "energy_1700_mean": 35.22,
+     "energy_1700_p10": 16.06,
+     "energy_1700_share_lt35": 0.653,
+     "share_lt35_eod": 0.578,
+     "cells_walked_per_resident": 37.898,
+     "walk_attempts": 8183,
+     "walk_moved": 3713,
+     "walk_moved_share": 0.454,
+     "walk_energy_per_cell": 0.707,
+     "effort_energy_walk_share": 0.999,
+     "move_refused": 47
+    },
+    {
+     "day": 6,
+     "partial_day": false,
+     "alive": 0,
+     "deaths_day": {
+      "starvation": 45
+     },
+     "deaths_cum": {
+      "starvation": 100
+     },
+     "hunger_mean": null,
+     "hunger_p10": null,
+     "hunger_p90": null,
+     "store_food": 0.0,
+     "food_held": 0.0,
+     "meals_eaten": 0,
+     "fetches": 0,
+     "work_starts": {},
+     "work_completions": {},
+     "food_produced": 0.0,
+     "energy_1700_mean": 39.38,
+     "energy_1700_p10": 20.54,
+     "energy_1700_share_lt35": 0.489,
+     "share_lt35_eod": null,
+     "cells_walked_per_resident": 38.444,
+     "walk_attempts": 3624,
+     "walk_moved": 1730,
+     "walk_moved_share": 0.477,
+     "walk_energy_per_cell": 0.724,
+     "effort_energy_walk_share": 0.998,
+     "move_refused": 14
+    }
+   ],
+   "summary": {
+    "person_days": 543,
+    "alive_end": 0,
+    "first_death_day": 4,
+    "extinct_day": 6,
+    "walk_moved_share": 0.508,
+    "food_produced_total": 30.0
+   }
+  }
+ ]
+}

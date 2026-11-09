@@ -682,6 +682,20 @@ def _check_exhaustion(errors, warnings, info):
         errors.append(f"EXHAUSTION: night hours must lie in [0, 24), not {hours}")
 
 
+def _check_carrying(errors, warnings, info):
+    """Phase 074: CARRYING.stamina_per_move_unit is the share of the stamina reserve one step costs per unit of
+    move_energy. It was a literal 0.1 in worlds/bigville_world.py until Phase 074. It must be a positive
+    fraction, and the cost of a flat-ground step (100 points times this value, at base_move_energy 1) is
+    reported so a balance change shows up in the self-test output."""
+    value = CARRYING.get("stamina_per_move_unit")
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 < value <= 1.0:
+        errors.append(f"CARRYING[stamina_per_move_unit]: a reserve fraction in (0, 1], not {value!r}")
+        return
+    flat = 100.0 * float(CARRYING["base_move_energy"]) * float(value)
+    info.append(f"CARRYING: stamina_per_move_unit {value:g}: a flat-ground step costs {flat:.2f} energy points "
+                f"of the 100-point reserve")
+
+
 def _check_health(errors, warnings, info):
     """Phase 037: the HEALTH table. One health variable (health_value, 0 to 1) with its causes, the chronic
     age decline and the acute fragility by life stage, and the harms and recovery rates. The causes must
@@ -2385,6 +2399,7 @@ def check_consistency():
     _check_handovers(errors, warnings, info)
     _check_hearing(errors, warnings, info)
     _check_exhaustion(errors, warnings, info)
+    _check_carrying(errors, warnings, info)   # Phase 074: the walking cost per step (CARRYING)
     _check_health(errors, warnings, info)
     from domains.interoception_check import check_interoception  # Phase 069: the body's feelings (anatomy, sounds, sources)
     check_interoception(_WORLD_PACK.path, errors, warnings, info)

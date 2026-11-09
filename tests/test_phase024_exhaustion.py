@@ -221,7 +221,7 @@ def test_a_resident_who_keeps_working_after_a_collapse_falls_again():
     while w.asleep("Ada"):
         w.tick()
     assert w.stamina_reserve("Ada") == pytest.approx(E.EXHAUSTION["collapse_cap"])
-    for _ in range(40):
+    for _ in range(200):  # Phase 074: was 40. A step now costs 1 point, so the walk to e_collapse takes more ticks.
         if w.collapsed("Ada"):
             break
         w.actor_tick("Ada")

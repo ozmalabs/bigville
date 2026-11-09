@@ -2868,22 +2868,25 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self.eng.set_attr(self._actor(actor), "terrain_speed", float(terrain["speed"]))
         self.eng.set_attr(self._actor(actor), "terrain_stamina_multiplier",
                           float(terrain["stamina_multiplier"]))
+        cooldown = float(attrs.get("carry_move_cooldown", 0.0))
+        if cooldown >= 1.0 - 1e-9:
+            # A waiting tick moves nobody, so it costs no energy (Phase 074). The cost is charged below,
+            # only on a tick that takes a step.
+            self.eng.set_attr(self._actor(actor), "carry_move_cooldown", cooldown - 1.0)
+            return current
         # The body's seeded exertion rule owns depletion, hunger, and recovery.
         # This adapter only mints the physical event and supplies its cost.
         body = self._bodies.get(actor)
         if body is not None:
+            stamina_cost = effort * float(self.E.CARRYING["stamina_per_move_unit"])
             exertion = self.eng.add_node("Effort", {
                 "uses_strength": 0.0, "uses_stamina": 1.0,
-                "intensity": min(1.0, effort * 0.1), "stamina_cost": effort * 0.1,
+                "intensity": min(1.0, stamina_cost), "stamina_cost": stamina_cost,
                 "terrain": terrain["terrain"], "terrain_speed": float(terrain["speed"]),
                 "str_done": 0.0, "sta_done": 0.0, "cost_done": 0.0, "body_use": "walk"})
             self.eng.add_edge_unchecked(self._actor(actor), "exerted", exertion)
             if not self._actor_tick_in_progress:
                 self._request_rule_sweep(actors=(actor,))
-        cooldown = float(attrs.get("carry_move_cooldown", 0.0))
-        if cooldown >= 1.0 - 1e-9:
-            self.eng.set_attr(self._actor(actor), "carry_move_cooldown", cooldown - 1.0)
-            return current
         terrain_interval = max(1, int(math.ceil(state["move_interval"] * terrain["move_time"])))
         # Phase 024: a tired walker's interval is multiplied (x1, x1.5 or x3). Waiting ticks accumulate in
         # the float cooldown, so a step at interval I owes I - 1 waiting ticks. Whole intervals wait exactly

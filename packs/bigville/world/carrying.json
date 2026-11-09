@@ -1,12 +1,13 @@
 {
-  "_doc": "Carrying is deliberately a physical threshold model, not a hard inventory\ngate.  A person can take hold of something they can barely manage; the\nconsequences are slower travel and higher exertion.  The second threshold\nis the point at which the hand cannot retain it and the object falls.",
+  "_doc": "Carrying is deliberately a physical threshold model, not a hard inventory\ngate.  A person can take hold of something they can barely manage; the\nconsequences are slower travel and higher exertion.  The second threshold\nis the point at which the hand cannot retain it and the object falls.\n\nstamina_per_move_unit (Phase 074, APPROX): the share of the stamina reserve one step costs, per unit of\nmove_energy (base_move_energy times the overload factor, times the terrain stamina_multiplier, 0.65 to 0.9\non the walked tiles). Before Phase 074 this 0.1 was hard-coded in worlds/bigville_world.py move_actor, so a\nflat step cost 10 energy points of the 100-point reserve and a 12-cell walk emptied it. The value 0.01 means\na flat step costs 1 point. It was chosen by a measured sweep (0.1, 0.06, 0.04, 0.03, 0.02, 0.01; seeds\n305000-305002, 7 days, docs/phases/phase074/PHASE074_REPORT.md). The criterion: a rested resident (100 points)\nmakes the 29-cell trip to the store and the 51-cell trip to a farm without the reserve falling below the\n35-point rest line, which 0.01 meets (about 24 and 42 points) and 0.02 does not (about 48 and 85). Walking\nis still about 99.8 % of effort energy at 0.01 because little work happens yet; that criterion is not met and\nis left to Phases 075 to 077. No external source gives a per-step stamina cost at this simulation's scale, so\nthe value is a game-scale choice, not a physiological figure.",
   "_types": {},
   "tables": {
     "CARRYING": {
       "overload_ratio": 1.0,
       "drop_ratio": 2.0,
       "base_move_energy": 1.0,
-      "overload_energy_factor": 4.0
+      "overload_energy_factor": 4.0,
+      "stamina_per_move_unit": 0.01
     }
   }
 }

@@ -1,12 +1,13 @@
 {
-  "_doc": "Test pack 'test_hamlet' (Phase 013b): CARRYING. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.",
+  "_doc": "Test pack 'test_hamlet' (Phase 013b): CARRYING. Authored, copied, or empty as recorded in docs/phases/phase013b/PHASE013B_REPORT.md. Copied values keep their citations in packs/bigville.\n\nstamina_per_move_unit (Phase 074): the value the code hard-coded before Phase 074 (0.1). It is kept at 0.1 here, not copied from the bigville pack's Phase 074 sweep, so this test pack's walking energy does not change.",
   "_types": {},
   "tables": {
     "CARRYING": {
       "overload_ratio": 1.0,
       "drop_ratio": 2.0,
       "base_move_energy": 1.0,
-      "overload_energy_factor": 4.0
+      "overload_energy_factor": 4.0,
+      "stamina_per_move_unit": 0.1
     }
   }
 }

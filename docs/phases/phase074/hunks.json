@@ -1,0 +1,37 @@
+[
+ {
+  "file": "worlds/bigville_world.py",
+  "old": "                          float(terrain[\"stamina_multiplier\"]))\n",
+  "new": "                          float(terrain[\"stamina_multiplier\"]))\n        cooldown = float(attrs.get(\"carry_move_cooldown\", 0.0))\n        if cooldown >= 1.0 - 1e-9:\n            # A waiting tick moves nobody, so it costs no energy (Phase 074). The cost is charged below,\n            # only on a tick that takes a step.\n            self.eng.set_attr(self._actor(actor), \"carry_move_cooldown\", cooldown - 1.0)\n            return current\n"
+ },
+ {
+  "file": "worlds/bigville_world.py",
+  "old": "        if body is not None:\n",
+  "new": "        if body is not None:\n            stamina_cost = effort * float(self.E.CARRYING[\"stamina_per_move_unit\"])\n"
+ },
+ {
+  "file": "worlds/bigville_world.py",
+  "old": "                \"intensity\": min(1.0, effort * 0.1), \"stamina_cost\": effort * 0.1,\n",
+  "new": "                \"intensity\": min(1.0, stamina_cost), \"stamina_cost\": stamina_cost,\n"
+ },
+ {
+  "file": "worlds/bigville_world.py",
+  "old": "        cooldown = float(attrs.get(\"carry_move_cooldown\", 0.0))\n        if cooldown >= 1.0 - 1e-9:\n            self.eng.set_attr(self._actor(actor), \"carry_move_cooldown\", cooldown - 1.0)\n            return current\n",
+  "new": ""
+ },
+ {
+  "file": "domains/bigville_entities.py",
+  "old": "        errors.append(f\"EXHAUSTION: night hours must lie in [0, 24), not {hours}\")\n",
+  "new": "        errors.append(f\"EXHAUSTION: night hours must lie in [0, 24), not {hours}\")\n\n\ndef _check_carrying(errors, warnings, info):\n    \"\"\"Phase 074: CARRYING.stamina_per_move_unit is the share of the stamina reserve one step costs per unit of\n    move_energy. It was a literal 0.1 in worlds/bigville_world.py until Phase 074. It must be a positive\n    fraction, and the cost of a flat-ground step (100 points times this value, at base_move_energy 1) is\n    reported so a balance change shows up in the self-test output.\"\"\"\n    value = CARRYING.get(\"stamina_per_move_unit\")\n    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 < value <= 1.0:\n        errors.append(f\"CARRYING[stamina_per_move_unit]: a reserve fraction in (0, 1], not {value!r}\")\n        return\n    flat = 100.0 * float(CARRYING[\"base_move_energy\"]) * float(value)\n    info.append(f\"CARRYING: stamina_per_move_unit {value:g}: a flat-ground step costs {flat:.2f} energy points \"\n                f\"of the 100-point reserve\")\n"
+ },
+ {
+  "file": "domains/bigville_entities.py",
+  "old": "    _check_exhaustion(errors, warnings, info)\n",
+  "new": "    _check_exhaustion(errors, warnings, info)\n    _check_carrying(errors, warnings, info)   # Phase 074: the walking cost per step (CARRYING)\n"
+ },
+ {
+  "file": "tests/test_phase024_exhaustion.py",
+  "old": "    for _ in range(40):\n",
+  "new": "    for _ in range(200):  # Phase 074: was 40. A step now costs 1 point, so the walk to e_collapse takes more ticks.\n"
+ }
+]
