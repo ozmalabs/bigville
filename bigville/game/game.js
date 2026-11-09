@@ -54,7 +54,7 @@ async function submitTurn(payload) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `turn failed (${response.status})`);
     state = result.state;
-    renderAll();
+    renderAll(result.visual_actions || {});
   } catch (error) {
     $('status').textContent = error.message;
   } finally {
@@ -188,11 +188,11 @@ function renderSidebar() {
   if (!log.children.length) log.textContent = 'No conversations yet.';
 }
 
-function renderWorld() {
-  if (scene) scene.drawState(state);
+function renderWorld(actions = {}) {
+  if (scene) scene.drawState(state, actions);
 }
 
-function renderAll() { renderSidebar(); renderWorld(); }
+function renderAll(actions = {}) { renderSidebar(); renderWorld(actions); }
 
 // Management embeds the same renderer for a run-scoped, read-only referee view.
 // The standalone game continues to use its own state and request flow.
@@ -274,9 +274,12 @@ class BigvilleScene extends Phaser.Scene {
     this.drawState(state);
   }
 
-  drawState(snapshot) {
+  drawState(snapshot, actions = {}) {
     if (!snapshot || !this.add) return;
-    for (const object of this.objects) object.destroy();
+    for (const object of this.objects) {
+      this.tweens.killTweensOf(object);
+      object.destroy();
+    }
     this.objects = [];
     const map = snapshot.world.map;
     const width = map.width * TILE * DISPLAY_SCALE;
@@ -286,22 +289,9 @@ class BigvilleScene extends Phaser.Scene {
     this.drawSquareFixtures(map);
     const allResidents = snapshot.world.residents || [];
     this.playerId = snapshot.player;
-    const playerResident = allResidents.find((resident) => resident.id === snapshot.player);
-    const occupiedResidents = this.drawBuildings(map.buildings || [], allResidents);
-    const outsideResidents = allResidents.filter((resident) => {
-      if (occupiedResidents.has(resident.id)) return false;
-      if (resident.id === snapshot.player || !playerResident) return true;
-      return Math.abs((resident.x || 0) - (playerResident.x || 0)) <= 5 &&
-        Math.abs((resident.y || 0) - (playerResident.y || 0)) <= 5;
-    });
-    const nearby = outsideResidents
-      .filter((resident) => resident.id !== snapshot.player)
-      .sort((a, b) => this.distanceTo(a, playerResident) - this.distanceTo(b, playerResident))
-      .slice(0, 5);
-    const visibleResidents = [
-      ...(playerResident && !occupiedResidents.has(playerResident.id) ? [playerResident] : []),
-      ...nearby,
-    ];
+    const occupiedResidents = this.drawBuildings(map.buildings || [], allResidents, actions);
+    const visibleResidents = allResidents.filter((resident) =>
+      resident.alive && !occupiedResidents.has(resident.id));
     for (const resident of visibleResidents) {
       const pos = resident.position || [0, 0];
       const previous = this.previousResidents?.[resident.id];
@@ -318,7 +308,9 @@ class BigvilleScene extends Phaser.Scene {
       if (resident.id === snapshot.player) sprite.setTint(0xffe1a8);
       this.objects.push(sprite);
       this.drawResidentItems(resident, pos, sprite, direction);
-      if (moving) this.animateWalking(sprite, resident, direction, pos);
+      const action = actions[resident.id];
+      if (moving) this.animateWalking(sprite, resident, direction, pos, action);
+      else if (action && action !== 'move') this.animateAction(sprite, action);
       if (resident.id === snapshot.player && !this.hasCentered) {
         this.cameras.main.centerOn(this.cellX(pos[0]), this.cellY(pos[1]));
         this.hasCentered = true;
@@ -360,8 +352,7 @@ class BigvilleScene extends Phaser.Scene {
     return 0;
   }
 
-  animateWalking(sprite, resident, direction, position) {
-    const start = sprite.getData('walkTween') || 0;
+  animateWalking(sprite, resident, direction, position, action) {
     const base = this.residentFrame(resident, 0, direction) -
       (this.residentFrame(resident, 0, direction) % 3);
     const frames = [base, base + 1, base, base + 2];
@@ -382,10 +373,38 @@ class BigvilleScene extends Phaser.Scene {
           overlay.y = sprite.y + offset.y;
         }
       },
-      onComplete: () => sprite.setFrame(base),
+      onComplete: () => {
+        sprite.setFrame(base);
+        if (action && action !== 'move') this.animateAction(sprite, action);
+      },
     });
-    sprite.setData('walkTween', start + 1);
     return tween;
+  }
+
+  animateAction(sprite, action) {
+    // A brief movement of the resident and their held item suggests effort,
+    // while leaving the simulation and the sprite's final position unchanged.
+    const overlay = sprite.getData('heldOverlay');
+    const offset = sprite.getData('heldOffset');
+    const baseY = sprite.y;
+    const baseAngle = sprite.angle;
+    this.tweens.add({
+      targets: sprite, y: baseY - 2,
+      angle: baseAngle + 6, duration: 150,
+      yoyo: true, repeat: 2, ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        if (overlay && offset) {
+          overlay.x = sprite.x + offset.x;
+          overlay.y = sprite.y + offset.y;
+          overlay.angle = sprite.angle * 2;
+        }
+      },
+      onComplete: () => {
+        sprite.y = baseY;
+        sprite.angle = baseAngle;
+        if (overlay) overlay.angle = 0;
+      },
+    });
   }
 
   terrainFrame(tile, x, y, grid) {
@@ -626,7 +645,7 @@ class BigvilleScene extends Phaser.Scene {
     }
   }
 
-  drawBuildings(buildings, residents) {
+  drawBuildings(buildings, residents, actions = {}) {
     const manifestFrames = this.assetManifest?.buildings?.sprites || {};
     const spots = new Map();
     const priority = {
@@ -657,7 +676,7 @@ class BigvilleScene extends Phaser.Scene {
       // An empty building shows its authored facade; occupied buildings open
       // into the existing roof-off interior representation.
       this.drawBuilding(building, occupants.length === 0);
-      occupants.forEach((resident, index) => this.drawInteriorResident(building, resident, index));
+      occupants.forEach((resident, index) => this.drawInteriorResident(building, resident, index, actions[resident.id]));
     }
     return inside;
   }
@@ -759,7 +778,7 @@ class BigvilleScene extends Phaser.Scene {
     }
   }
 
-  drawInteriorResident(building, resident, index) {
+  drawInteriorResident(building, resident, index, action) {
     const [x, y] = building.position || [building.x || 0, building.y || 0];
     const width = Math.max(1, Number(building.w || 3));
     const height = Math.max(1, Number(building.h || 3));
@@ -773,6 +792,7 @@ class BigvilleScene extends Phaser.Scene {
     if (resident.id === this.playerId) sprite.setTint(0xffe1a8);
     this.objects.push(sprite);
     this.drawResidentItems(resident, [x + cellX, y + cellY], sprite, 0);
+    if (action && action !== 'move') this.animateAction(sprite, action);
   }
 
   residentFrame(resident, frame = 0, direction = 0) {
@@ -805,11 +825,6 @@ class BigvilleScene extends Phaser.Scene {
       actorSprite.setData('heldOverlay', overlay);
       actorSprite.setData('heldOffset', {x: handX * actorScale, y: handY * actorScale});
     }
-  }
-
-  distanceTo(a, b) {
-    if (!a || !b) return 0;
-    return Math.abs((a.x || 0) - (b.x || 0)) + Math.abs((a.y || 0) - (b.y || 0));
   }
 
 }

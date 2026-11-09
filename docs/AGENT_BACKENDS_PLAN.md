@@ -40,11 +40,24 @@ Communication capabilities remain explicit per actor:
 }
 ```
 
-Backend-owned speech is always delivered unchanged.  If a rich Ocelot/LLM
-utterance reaches a simpler NPC whose backend does not understand the raw
-payload, the NPC still hears the free text and the world records a
-`raw_understanding.status = "not_understood"` note.  This is a capability
+Backend-owned speech is always delivered unchanged. If an utterance reaches a
+recipient whose backend does not understand the raw payload, the recipient
+still hears the free text and the world records
+`raw_understanding.status = "not_understood"`. This is a capability
 observation, not an interpretation or rejection of the utterance.
+
+The ordinary Ocelot backend derives `supports_free_text` from the resident's
+`speech_provider.propose_free_text` or `propose_free_text` hook, which is the
+same hook Bigville calls to request text. The current resident has neither, so
+it advertises `mode = "templated"`, `supports_free_text = false`, and requires
+the conversational interface. Ocelot's full-text graph renderer is callable
+through a separate goal-utterance method, but the ordinary backend does not
+route its turns through that method. The backend reports
+`understands_raw_speech = false` because the ordinary Bigville loop does not
+route incoming utterances through a resident speech-ingestion hook. Hook
+presence alone would not establish that the route is active. Incoming
+utterances are delivered intact in Bigville's observation context, but exact
+transport does not imply interpretation.
 
 ## 2. Add a prompt builder, not prompt strings in the world
 

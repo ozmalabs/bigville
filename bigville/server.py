@@ -92,6 +92,17 @@ class GameService:
             response = ActorResponse.from_dict(payload)
             self.game.submit_player_response(response)
         result = self.game.step()
+        # The client animates only actions that actually succeeded this turn.
+        # Waiting responses may refer to a partially resolved turn, so do not
+        # replay the previous turn's actions while awaiting a human reaction.
+        if result.get("status") == "advanced":
+            result["visual_actions"] = {
+                actor: response.major_action.action
+                for actor, response in self.game.last_responses.items()
+                for outcome in [self.game.last_results.get(actor, False)]
+                if response.major_action is not None
+                and (outcome.get("applied", False) if isinstance(outcome, dict) else bool(outcome))
+            }
         if self.mode == "agent":
             result["view"] = self.view()
         else:

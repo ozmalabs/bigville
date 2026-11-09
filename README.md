@@ -40,8 +40,8 @@ embodied cognition, artificial life and social simulation:
   conflict and governance in a shared village?
 - **Experimental intervention:** how do outcomes change when a scenario,
   initial conditions, population or backend changes? Seeded scenarios,
-  world reports and action outcomes support controlled runs and inspection of
-  the resulting trajectories.
+  world reports, action outcomes and checkpointing support controlled runs and
+  inspection of the resulting trajectories.
 
 The intellectual grounding is the relationship between mind, body and world.
 Varela, Thompson and Rosch's [*The Embodied Mind*](https://mitpress.mit.edu/9780262529365/the-embodied-mind/)
@@ -70,7 +70,8 @@ The [feature plan](docs/FEATURE_PHASES.md) sets out further work on a limited
 agent view, personas and routines, and comparative learning evaluation; these
 are planned phases rather than claims about the current system. Research use
 still requires explicit hypotheses, controls, repeated runs and validation
-against appropriate observations.
+against appropriate observations. The existing [Ocelot integration guide](docs/ocelot-integration-baseline.md)
+describes the implemented boundary and its current limits.
 
 The public API is in `bigville/`:
 
@@ -180,9 +181,12 @@ deterministic NPC backend, suitable for low-cost residents and animal-style
 policies. Selecting `ocelot` requires Ocelot's actual
 `worlds.bigville_ocelot_adapter.BigvilleOcelotResident` and its dependencies;
 the session raises `OcelotUnavailableError` instead of using a local fallback.
-Put both repositories on `PYTHONPATH`. The current Ocelot adapter also reads
-some seed files relative to the working directory, so run from the Ocelot
-checkout. Scenario-authored backend choices take precedence over the default.
+Put both repositories and Ocelot's native extension package on `PYTHONPATH`,
+and set `BIGVILLE_ROOT` to the Bigville checkout. The source integration works
+from a neutral current directory. Setup, real-resident smoke, communication
+limits, and checkpoint save/restore are documented in
+[`docs/ocelot-integration-baseline.md`](docs/ocelot-integration-baseline.md).
+Scenario-authored backend choices take precedence over the default.
 
 `BigvilleWorld.tick()` advances physical time and does not choose resident or
 animal policies. `BigvilleGame` owns resident and animal backends, invokes them

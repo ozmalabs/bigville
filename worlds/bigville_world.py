@@ -8785,6 +8785,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             if self.actor_position(actor) == destination and self._inventory_can_receive(actor, kind):
                 key = target_key(container)
                 options.append({"action": "fetch", "kind": kind, "trade": "", "recipe": "",
+                                "food": bool(self._item_specs.get(kind, {}).get("food")),
                                 "physical_source": "container", "source_container": container,
                                 "target": key, "score": 0.0})
             elif reachable_destination(destination):
@@ -9679,6 +9680,57 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if aftereffects:
             observation["aftereffects"] = aftereffects
         return observation
+
+    def resident_plan_from_context(self, actor, context):
+        """Ask the resident graph to choose from this session's observation.
+
+        BigvilleGame owns the decision boundary and provides a snapshot plus
+        the legal affordances.  Publish those to the resident cognition; the
+        world still validates the returned proposal when it is enacted.
+        """
+        mind = self._actor_minds[actor]
+        observations = dict(context.observations)
+        affordances = [dict(option) for option in context.affordances]
+        publish_body = getattr(mind, "publish_body_state", None)
+        if callable(publish_body):
+            publish_body(self.stamina_reserve(actor))
+        elif hasattr(mind, "s") and hasattr(mind, "agent"):
+            mind.s.set_attr(mind.agent, "stamina_reserve", self.stamina_reserve(actor))
+        observe = getattr(mind, "observe_situation", None)
+        if callable(observe):
+            cues = []
+            for key in ("health", "terrain", "season", "weather"):
+                value = observations.get(key)
+                if isinstance(value, str) and value:
+                    cues.extend(value.lower().split())
+            for option in affordances:
+                action = option.get("action")
+                if action:
+                    cues.extend(str(action).lower().split("_"))
+            physical_objects = observations.get("physical_objects", [])
+            observe(
+                kind="village_observation",
+                cues=list(dict.fromkeys(cues)),
+                attributes={
+                    key: value for key, value in observations.items()
+                    if isinstance(value, (int, float, bool))
+                } | {"physical_objects": physical_objects},
+            )
+        replace_options = getattr(mind, "replace_options", None)
+        decide = getattr(mind, "decide", None)
+        if callable(replace_options) and callable(decide):
+            replace_options(affordances)
+            choice = dict(decide())
+        else:
+            # Preserve compatibility with legacy resident implementations.
+            choice = self._decide_actor(actor)
+        if choice.get("action") == "rest" and not self.is_alive(actor):
+            choice["action"] = "none"
+            choice["reason"] = "dead"
+        else:
+            choice["reason"] = "ocelot_decision"
+        self._actor_decisions[actor] = dict(choice)
+        return choice
 
     def actor_affordances(self, actor):
         """Return the current legal, observed choices for a backend or UI."""

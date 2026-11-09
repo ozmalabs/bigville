@@ -13,6 +13,51 @@ def test_scenario_ocelot_selection_fails_closed(monkeypatch):
         create_game(scenario="restaurant", player="Nell")
 
 
+def test_ocelot_import_failure_reports_underlying_cause(monkeypatch):
+    import pytest
+    import bigville.backends.ocelot as adapter
+
+    def broken_import(_name):
+        raise ModuleNotFoundError("missing substrate.seed_loader")
+
+    monkeypatch.setattr(adapter, "import_module", broken_import)
+    with pytest.raises(adapter.OcelotUnavailableError, match="missing substrate") as error:
+        adapter.ocelot_resident_class()
+    assert isinstance(error.value.__cause__, ModuleNotFoundError)
+
+
+def test_mixed_backends_construct_only_ocelot_residents(monkeypatch):
+    import bigville.backends.ocelot as adapter
+
+    class Resident:
+        def __init__(self, name):
+            self.name = name
+
+    monkeypatch.setattr(adapter, "ocelot_resident_class", lambda: Resident)
+    scenario = {
+        "id": "mixed_backend_test",
+        "name": "Mixed backend test",
+        "map": {"grid": [["floor", "floor"]]},
+        "actors": [
+            {"name": "Nell", "role": "hand", "home_cell": [0, 0]},
+            {"name": "Ruth", "role": "hand", "home_cell": [1, 0], "backend": "simple"},
+            {"name": "Ivo", "role": "hand", "home_cell": [1, 0], "backend": "ocelot"},
+        ],
+        "buildings": [], "laws": [], "policies": [], "charters": [],
+    }
+    created = []
+
+    def resident_factory(name):
+        created.append(name)
+        return Resident(name)
+
+    game = create_game(scenario=scenario, player="Nell", default_backend="simple",
+                       cognition_factory=resident_factory)
+    assert created == ["Ivo"]
+    assert game.backends["Ruth"].kind == "cheap"
+    assert game.backends["Ivo"].kind == "ocelot"
+
+
 def test_compact_scenarios_share_the_world_boundary_without_village_defaults():
     world = create_world(scenario="house_argument", autonomous_actors=False)
     assert len(world._map_cells) < 30

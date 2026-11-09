@@ -1,101 +1,588 @@
 {
   "id": "bigville_actor_decision",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "depends_on": [],
   "self_load_only": true,
-  "description": "Graph-native resident action selection. The world publishes currently legal ActorOption affordances; the resident's Ocelot graph selects the highest-scoring option and exposes its action payload. The adapter only reads and enacts that choice.",
+  "description": "Graph-native resident action selection. The world publishes legal ActorOption affordances. Graph rules add appetite utility to eat/fetch choices from the resident current observed hunger, then graph Argmax selects the highest-scoring option. The graph returns a per-option discriminator so provider-only action parameters survive selection.",
   "nodes": [],
   "edges": [],
   "productions": [],
   "concepts": [],
   "rules": [
     {
-      "name": "oa_choose_option",
+      "name": "o0_score_hungry_eat",
       "batch": false,
-      "comment": "Select one currently afforded action by graph-native Argmax.",
+      "comment": "Add the resident observed-hunger utility to one currently offered food affordance.",
       "match": [
-        ["a", "has_option", "option"]
+        [
+          "a",
+          "has_option",
+          "option"
+        ]
       ],
       "where": {
         "type": "And",
         "items": [
           {
             "type": "Eq",
-            "a": {"type": "Attr", "node": {"type": "Var", "name": "a"}, "key": "decision_armed"},
-            "b": {"type": "Lit", "value": 1.0}
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "decision_armed"
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
           },
           {
             "type": "Eq",
-            "a": {"type": "Attr", "node": {"type": "Var", "name": "a"}, "key": "chosen_action"},
-            "b": {"type": "Lit", "value": ""}
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "option"
+              },
+              "key": "hunger_scored"
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "option"
+              },
+              "key": "hunger_eat_weight"
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
           }
         ]
       },
       "effects": [
         [
-          "set_attr", "a", "chosen_action",
-          {"__term__": {"type": "Attr",
-            "node": {"type": "Argmax",
-              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
-              "var_name": "candidate",
-              "value": {"type": "Plus", "items": [
-                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
-                {"type": "Lit", "value": 0.0}
-              ]},
-              "default": {"type": "Lit", "value": "rest"}},
-            "key": "action"}}
+          "set_attr",
+          "option",
+          "score",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "option"
+                  },
+                  "key": "score"
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Lit",
+                            "value": 100.0
+                          },
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "key": "observed_hunger"
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": 1.0
+                      }
+                    },
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "option"
+                      },
+                      "key": "hunger_eat_weight"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
         ],
         [
-          "set_attr", "a", "chosen_kind",
-          {"__term__": {"type": "Attr",
-            "node": {"type": "Argmax",
-              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
-              "var_name": "candidate",
-              "value": {"type": "Plus", "items": [
-                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
-                {"type": "Lit", "value": 0.0}
-              ]},
-              "default": {"type": "Lit", "value": ""}},
-            "key": "kind"}}
+          "set_attr",
+          "option",
+          "hunger_scored",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "o1_score_hungry_food_fetch",
+      "batch": false,
+      "comment": "Add the resident observed-hunger utility to one currently offered food affordance.",
+      "match": [
+        [
+          "a",
+          "has_option",
+          "option"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "decision_armed"
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "option"
+              },
+              "key": "hunger_scored"
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          },
+          {
+            "type": "Gt",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "option"
+              },
+              "key": "hunger_fetch_weight"
+            },
+            "b": {
+              "type": "Lit",
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "option",
+          "score",
+          {
+            "__term__": {
+              "type": "Plus",
+              "items": [
+                {
+                  "type": "Attr",
+                  "node": {
+                    "type": "Var",
+                    "name": "option"
+                  },
+                  "key": "score"
+                },
+                {
+                  "type": "Times",
+                  "items": [
+                    {
+                      "type": "Minus",
+                      "a": {
+                        "type": "Times",
+                        "items": [
+                          {
+                            "type": "Lit",
+                            "value": 50.0
+                          },
+                          {
+                            "type": "Attr",
+                            "node": {
+                              "type": "Var",
+                              "name": "a"
+                            },
+                            "key": "observed_hunger"
+                          }
+                        ]
+                      },
+                      "b": {
+                        "type": "Lit",
+                        "value": 1.0
+                      }
+                    },
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "option"
+                      },
+                      "key": "hunger_fetch_weight"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
         ],
         [
-          "set_attr", "a", "chosen_trade",
-          {"__term__": {"type": "Attr",
-            "node": {"type": "Argmax",
-              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
-              "var_name": "candidate",
-              "value": {"type": "Plus", "items": [
-                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
-                {"type": "Lit", "value": 0.0}
-              ]},
-              "default": {"type": "Lit", "value": ""}},
-            "key": "trade"}}
+          "set_attr",
+          "option",
+          "hunger_scored",
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "oa_choose_option",
+      "batch": false,
+      "comment": "Select one currently afforded action by graph-native Argmax.",
+      "match": [
+        [
+          "a",
+          "has_option",
+          "option"
+        ]
+      ],
+      "where": {
+        "type": "And",
+        "items": [
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "decision_armed"
+            },
+            "b": {
+              "type": "Lit",
+              "value": 1.0
+            }
+          },
+          {
+            "type": "Eq",
+            "a": {
+              "type": "Attr",
+              "node": {
+                "type": "Var",
+                "name": "a"
+              },
+              "key": "chosen_action"
+            },
+            "b": {
+              "type": "Lit",
+              "value": ""
+            }
+          }
+        ]
+      },
+      "effects": [
+        [
+          "set_attr",
+          "a",
+          "chosen_action",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "edge_type": "has_option",
+                  "any_type": false
+                },
+                "var_name": "candidate",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "candidate"
+                      },
+                      "key": "score"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "Lit",
+                  "value": "rest"
+                }
+              },
+              "key": "action"
+            }
+          }
         ],
         [
-          "set_attr", "a", "chosen_recipe",
-          {"__term__": {"type": "Attr",
-            "node": {"type": "Argmax",
-              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
-              "var_name": "candidate",
-              "value": {"type": "Plus", "items": [
-                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
-                {"type": "Lit", "value": 0.0}
-              ]},
-              "default": {"type": "Lit", "value": ""}},
-            "key": "recipe"}}
+          "set_attr",
+          "a",
+          "chosen_kind",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "edge_type": "has_option",
+                  "any_type": false
+                },
+                "var_name": "candidate",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "candidate"
+                      },
+                      "key": "score"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "Lit",
+                  "value": ""
+                }
+              },
+              "key": "kind"
+            }
+          }
         ],
         [
-          "set_attr", "a", "chosen_target",
-          {"__term__": {"type": "Attr",
-            "node": {"type": "Argmax",
-              "source": {"type": "Neighbours", "node": {"type": "Var", "name": "a"}, "edge_type": "has_option", "any_type": false},
-              "var_name": "candidate",
-              "value": {"type": "Plus", "items": [
-                {"type": "Attr", "node": {"type": "Var", "name": "candidate"}, "key": "score"},
-                {"type": "Lit", "value": 0.0}
-              ]},
-              "default": {"type": "Lit", "value": ""}},
-            "key": "target"}}
+          "set_attr",
+          "a",
+          "chosen_trade",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "edge_type": "has_option",
+                  "any_type": false
+                },
+                "var_name": "candidate",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "candidate"
+                      },
+                      "key": "score"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "Lit",
+                  "value": ""
+                }
+              },
+              "key": "trade"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "chosen_recipe",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "edge_type": "has_option",
+                  "any_type": false
+                },
+                "var_name": "candidate",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "candidate"
+                      },
+                      "key": "score"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "Lit",
+                  "value": ""
+                }
+              },
+              "key": "recipe"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "chosen_target",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "edge_type": "has_option",
+                  "any_type": false
+                },
+                "var_name": "candidate",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "candidate"
+                      },
+                      "key": "score"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "Lit",
+                  "value": ""
+                }
+              },
+              "key": "target"
+            }
+          }
+        ],
+        [
+          "set_attr",
+          "a",
+          "chosen_option_id",
+          {
+            "__term__": {
+              "type": "Attr",
+              "node": {
+                "type": "Argmax",
+                "source": {
+                  "type": "Neighbours",
+                  "node": {
+                    "type": "Var",
+                    "name": "a"
+                  },
+                  "edge_type": "has_option",
+                  "any_type": false
+                },
+                "var_name": "candidate",
+                "value": {
+                  "type": "Plus",
+                  "items": [
+                    {
+                      "type": "Attr",
+                      "node": {
+                        "type": "Var",
+                        "name": "candidate"
+                      },
+                      "key": "score"
+                    },
+                    {
+                      "type": "Lit",
+                      "value": 0.0
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "Lit",
+                  "value": "rest"
+                }
+              },
+              "key": "option_id",
+              "default": {
+                "type": "Lit",
+                "value": 0
+              }
+            }
+          }
         ]
       ]
     }

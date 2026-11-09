@@ -1260,6 +1260,14 @@ class BigvilleGame:
             # Phase 065: counts a major action taken on a percept the impaired resident was shown wrongly (off by default).
             from domains import impairment
             impairment.note_action(self, actor, proposal.params, ok, self.world.data_pack)
+            # Outcome feedback belongs to the cognition provider.  The game
+            # publishes only the action it proposed and the world's enactment
+            # result; interpretation and learning remain provider-owned.
+            mind_getter = getattr(self.world, "actor_mind", None)
+            mind = mind_getter(actor) if callable(mind_getter) else None
+            record_outcome = getattr(mind, "record_action_outcome", None)
+            if callable(record_outcome):
+                record_outcome(action=proposal.action, applied=ok)
         for utterance in response.utterances:
             if hasattr(utterance, "to_dict"):
                 utterance = utterance.to_dict()

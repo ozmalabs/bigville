@@ -12,30 +12,46 @@ class OcelotUnavailableError(RuntimeError):
 
 def ocelot_resident_class():
     try:
-        return import_module("worlds.bigville_ocelot_adapter").BigvilleOcelotResident
-    except (ImportError, AttributeError) as exc:
+        adapter = import_module("worlds.bigville_ocelot_adapter")
+        resident_type = adapter.BigvilleOcelotResident
+        if not callable(resident_type):
+            raise TypeError("BigvilleOcelotResident is not callable")
+        return resident_type
+    except Exception as exc:
+        detail = f" ({type(exc).__name__}: {exc})"
         raise OcelotUnavailableError(
             "Ocelot backend requires Ocelot's worlds.bigville_ocelot_adapter "
             "and its dependencies on PYTHONPATH; select 'simple' for local NPCs."
+            f" Adapter import failed{detail}"
         ) from exc
 
 
 class OcelotBackend:
     kind = "ocelot"
-    communication_mode = "free_text"
-    supports_free_text = True
-    understands_raw_speech = True
-    requires_conversational_interface = False
 
     def __init__(self, world, character: CharacterDefinition):
         resident_type = ocelot_resident_class()
-        if not isinstance(world.actor_mind(character.name), resident_type):
+        mind = world.actor_mind(character.name)
+        if not isinstance(mind, resident_type):
             raise OcelotUnavailableError(
                 f"Ocelot backend for {character.name!r} requires a real "
                 "BigvilleOcelotResident; construct the world with its cognition_factory."
             )
         self.world = world
         self.character = character
+        provider = getattr(mind, "speech_provider", None)
+        self.supports_free_text = (
+            callable(getattr(provider, "propose_free_text", None))
+            or callable(getattr(mind, "propose_free_text", None))
+        )
+        # Bigville currently exposes heard utterances in the next context but
+        # does not route them through a resident speech-ingestion method.
+        # Merely finding such a method on a provider would not prove the
+        # ordinary game loop calls it, so keep this false until that route is
+        # implemented and covered by an end-to-end test.
+        self.understands_raw_speech = False
+        self.communication_mode = "free_text" if self.supports_free_text else "templated"
+        self.requires_conversational_interface = not self.supports_free_text
 
     def decide(self, context: ActorContext) -> ActorResponse:
         if hasattr(self.world, "resident_plan_from_context"):

@@ -125,6 +125,107 @@ def test_ocelot_backend_rejects_local_fallback(monkeypatch):
         OcelotBackend(world, game.characters["Ben"])
 
 
+def test_village_resident_observes_affordances_decides_and_receives_outcome(monkeypatch):
+    """The ordinary game loop closes the provider-owned cognition round trip."""
+    import bigville.backends.ocelot as ocelot_adapter
+
+    class Resident:
+        def __init__(self, name):
+            self.observations = []
+            self.options = []
+            self.outcomes = []
+
+        def observe_situation(self, **payload):
+            self.observations.append(payload)
+
+        def replace_options(self, options):
+            self.options = [dict(option) for option in options]
+
+        def decide(self):
+            return {"action": "rest"}
+
+        def record_action_outcome(self, **payload):
+            self.outcomes.append(payload)
+
+    world = BigvilleWorld(autonomous_actors=False, cognition_factory=Resident)
+    world.add_actor("Ada", role="hand", home_cell=(1, 1))
+    world.add_actor("Ben", role="hand", home_cell=(1, 1))
+    monkeypatch.setattr(ocelot_adapter, "ocelot_resident_class", lambda: Resident)
+    game = BigvilleGame(world, autonomous=True)
+    mind = world.actor_mind("Ben")
+    game.backends["Ben"] = OcelotBackend(world, game.characters["Ben"])
+    world.eng.set_attr(world._bodies["Ben"], "stamina_reserve", 0.5)
+    game.step()
+
+    assert mind.observations
+    assert mind.observations[0]["kind"] == "village_observation"
+    assert any(option.get("action") == "rest" for option in mind.options)
+    assert mind.outcomes == [{"action": "rest", "applied": True}]
+    assert game.last_results["Ben"] is True
+    failed = game._apply_response("Ben", ActorResponse(
+        ProposedAction("not_a_world_action", {}, "deliberate_failure")))
+    assert failed is False
+    assert mind.outcomes[-1] == {"action": "not_a_world_action", "applied": False}
+
+
+def test_rest_is_afforded_only_when_the_body_can_recover():
+    world, _ = _game()
+    full = world.actor_affordances("Ada")
+    assert not any(option.get("action") == "rest" for option in full)
+
+    world.eng.set_attr(world._bodies["Ada"], "stamina_reserve", 0.79)
+    tired = world.actor_affordances("Ada")
+    assert any(option.get("action") == "rest" for option in tired)
+
+
+def test_real_ocelot_village_round_records_perception_choice_and_outcome():
+    """Exercise the sibling Ocelot provider when its checkout is on PYTHONPATH."""
+    import importlib
+    import pytest
+
+    try:
+        resident_class = importlib.import_module(
+            "worlds.bigville_ocelot_adapter").BigvilleOcelotResident
+    except (ImportError, AttributeError) as exc:
+        pytest.skip(f"real Ocelot provider is not on PYTHONPATH: {exc}")
+
+    world = BigvilleWorld(autonomous_actors=False, cognition_factory=resident_class)
+    world.add_actor("Ada", role="hand", home_cell=(1, 1))
+    mind = world.actor_mind("Ada")
+    # Enable the provider's existing appraisal graph so the actual action
+    # result has inspectable graph evidence after the ordinary game step.
+    mind.seed_character(personality={"emotional_core_enabled": 1.0})
+    game = BigvilleGame(world, autonomous=True)
+    game.backends["Ada"] = OcelotBackend(world, game.characters["Ada"])
+    # A rested resident with nothing to do declines to act and so has no
+    # outcome to report; a tired body offers rest, giving the round trip an
+    # action whose outcome the provider can record.
+    world.eng.set_attr(world._bodies["Ada"], "stamina_reserve", 0.5)
+
+    result = game.step()
+
+    assert result["status"] == "advanced"
+    assert game.last_results["Ada"] is True
+    decision = world._actor_decisions["Ada"]
+    assert decision["action"]
+    selected_option = next(
+        mind.s.node(node)["attrs"]
+        for node in mind.inner.neighbours(mind.agent, "has_option")
+        if mind.s.node(node)["attrs"].get("action") == decision["action"]
+        and mind.s.node(node)["attrs"].get("recipe", "") == decision.get("recipe", "")
+        and mind.s.node(node)["attrs"].get("kind", "") == decision.get("kind", ""))
+    assert selected_option["action"] == decision["action"]
+    observations = [mind.s.node(node)["attrs"]
+                    for node in mind.s.nodes("CognitiveObservation")]
+    village_observations = [item for item in observations
+                            if item.get("kind") == "village_observation"]
+    assert village_observations
+    assert '"energy"' in village_observations[-1]["attributes_json"]
+    appraisal = mind.s.node(mind._emotion_appraisal)["attrs"]
+    assert float(appraisal["individual_benefit"]) == 1.0
+    assert float(appraisal["step"]) == 1.0
+
+
 def test_template_interface_carries_arbitrary_world_slots():
     interface = TemplateConversationInterface({"land_claim": "claim {parcel} for {holder}"})
     message = ConversationMessage("land_claim", {"parcel": "north_field", "holder": "Ada"})

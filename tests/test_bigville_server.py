@@ -12,6 +12,14 @@ def test_game_service_turn_is_canonical_and_json_safe():
     assert result["status"] == "advanced"
     assert result["state"]["world"]["clock"]["clock"] == 1.0
     assert result["state"]["world"]["residents"]
+    expected_actions = {
+        actor: response.major_action.action
+        for actor, response in service.game.last_responses.items()
+        for outcome in [service.game.last_results.get(actor, False)]
+        if response.major_action is not None
+        and (outcome.get("applied", False) if isinstance(outcome, dict) else bool(outcome))
+    }
+    assert result["visual_actions"] == expected_actions
 
 
 def test_game_assets_are_present():
