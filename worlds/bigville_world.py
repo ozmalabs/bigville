@@ -853,6 +853,9 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         self._physical_object_locations = _PhysicalObjectLocations()
         self._actor_cells = {}
         self._actor_positions = _ActorPositions()
+        # Monotonic count of position changes.  Derived proximity caches use it
+        # to prove that a cached neighbour set is still current.
+        self._position_revision = 0
         self._actor_goals = {}
         self._land_cells = {}
         self._household_cells = {}
@@ -2290,15 +2293,19 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         from bigville.reporting import SimulationReporter
         return SimulationReporter(self).history()
 
-    def distance(self, a, b):
-        """Shortest walkable-cell distance; map distance is a world fact, not a preference."""
-        if a not in self._map_cells or b not in self._map_cells:
+    def _distance_field(self, origin):
+        """The cached BFS distance field rooted at ``origin`` (derived state).
+
+        A proximity query reads the field once and looks up every candidate
+        cell, avoiding one locked ``distance`` call per resident.
+        """
+        if origin not in self._map_cells:
             return None
         with _DISTANCE_FIELDS_LOCK:
-            field = self._distance_fields.get(b)
+            field = self._distance_fields.get(origin)
             if field is None:
-                field = {b: 0}
-                frontier = deque([b])
+                field = {origin: 0}
+                frontier = deque([origin])
                 while frontier:
                     pt = frontier.popleft()
                     d = field[pt] + 1
@@ -2308,8 +2315,14 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                         if neighbour in self._map_cells and neighbour not in field:
                             field[neighbour] = d
                             frontier.append(neighbour)
-                self._distance_fields[b] = field
-            return field.get(a)
+                self._distance_fields[origin] = field
+            return field
+
+    def distance(self, a, b):
+        """Shortest walkable-cell distance; map distance is a world fact, not a preference."""
+        if a not in self._map_cells or b not in self._map_cells:
+            return None
+        return self._distance_field(b).get(a)
 
     def terrain_movement_rules(self):
         """Return the seeded movement records used by map cells and actions."""
@@ -2480,8 +2493,11 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         movement or proximity query after a restore replaces it with an
         ``_ActorPositions`` that rebuilds the derived bucket map in one pass.
         """
+        # Hot path: every proximity read calls this.  An exact-class test is
+        # cheaper than ``isinstance``; the wrapper is only rebuilt after a
+        # checkpoint restore.
         positions = self.__dict__.get("_actor_positions")
-        if isinstance(positions, _ActorPositions):
+        if positions is not None and positions.__class__ is _ActorPositions:
             return positions
         indexed = _ActorPositions()
         if positions:
@@ -2568,9 +2584,10 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         return len(positions._cell_buckets.get(position, ()))
 
 
-    def _actor_candidates(self, cell, radius):
+    def _actor_candidates(self, cell, radius, positions=None):
         """Names in the Chebyshev bounding square; brute force under the debug switch."""
-        positions = self._ensure_position_index()
+        if positions is None:
+            positions = self._ensure_position_index()
         if self._force_linear_proximity:
             return sorted(positions)
         return positions.near(cell, radius)
@@ -2599,14 +2616,22 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 if exclude is None:
                     return list(cached)
                 return [name for name in cached if name != exclude]
+        # EN04 follow-up: resolve the position index once and read each
+        # candidate's cell from it.  Distances are queried with the shared
+        # ``position`` as the cache key, so one BFS field serves every
+        # candidate instead of building one field per nearby resident.
+        positions = self._ensure_position_index()
+        candidates = self._actor_candidates(position, radius, positions)
+        field = self._distance_field(position)
         names = []
-        for name in self._actor_candidates(position, radius):
+        for name in candidates:
             if name not in self._actors:
                 continue
             if alive_only and not self.is_alive(name):
                 continue
-            other_position = self.actor_position(name)
-            distance = self.distance(position, other_position) if other_position is not None else None
+            other_position = positions.get(name)
+            distance = (field.get(other_position)
+                        if field is not None and other_position is not None else None)
             if distance is not None and distance <= radius:
                 names.append(name)
         result = sorted(names)
@@ -2679,10 +2704,13 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
     def _move_actor_to(self, actor, cell):
         positions = self._ensure_position_index()
         old = positions.get(actor)
+        cell = tuple(cell)
         if old in self._map_cells:
             self.eng.remove_edge_unchecked(self._actors[actor], "at_cell", self._map_cells[old])
         self._attach_at_cell(self._actors[actor], cell)
-        positions[actor] = tuple(cell)
+        positions[actor] = cell
+        if old != cell:
+            self._position_revision += 1
         # Footfall is a physical effect of arriving, so it belongs to the single
         # enactment site rather than to any one caller that happens to move someone.
         self._wear_cell_by_traversal(actor, cell)
@@ -6918,7 +6946,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         a = self.eng.node(crop_node)["attrs"]
         return float(a["alive"]) == 1.0 and float(a["age"]) >= float(a["grow_periods"])
     def hunger(self, actor): return round(float(self.eng.node(self._actors[actor])["attrs"]["hunger"]), 4)
-    def is_alive(self, actor): return float(self.eng.node(self._actors[actor])["attrs"]["alive"]) == 1.0
+    def is_alive(self, actor): return float(self.eng.node_attrs(self._actors[actor])["alive"]) == 1.0
 
     def import_good(self, kind, qty):
         """Acquire an IMPORTED good from outside bigville (ink/paper/dye/salt). Only goods marked
@@ -7560,6 +7588,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
             self._attach_at_cell(a, home_cell)
             self.eng.add_edge_unchecked(a, "home_at", self._map_cells[home_cell])
             self._ensure_position_index()[name] = home_cell
+            self._position_revision += 1
         if work_cell is not None and tuple(work_cell) in self._map_cells:
             work_cell = tuple(work_cell)
             self.eng.add_edge_unchecked(a, "works_at", self._map_cells[work_cell])
@@ -9222,6 +9251,7 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
         if position is None:
             return []
         actor_attrs = self.eng.node_attrs(self._actors[actor])
+        field = self._distance_field(position)
         nearby = []
         for name in self.actors_near(position, 8, exclude=actor):
             other_position = self.actor_position(name)
@@ -9232,7 +9262,9 @@ class BigvilleWorld(BirthsMixin, DependantsMixin, DetrainingMixin, BodyMixin):
                 "klass": other_attrs.get("klass", ""),
                 "group": other_attrs.get("group", ""),
                 "position": other_position,
-                "distance": self.distance(position, other_position),
+                # ``actors_near`` already cached the field for ``position``.
+                "distance": (field.get(other_position)
+                             if field is not None and other_position is not None else None),
                 "health": other_attrs.get("health", "healthy"),
                 "injury": round(float(other_attrs.get("injury", 0.0)), 4),
                 "shared_bucket_count": self._observe_shared_bucket_count(

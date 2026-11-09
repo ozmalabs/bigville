@@ -129,6 +129,17 @@ class CANWeightModel:
         personality = getattr(character, "personality", {}) or {}
         identity = getattr(character, "identity", {}) or {}
         activations = self.activations(psi, personality, identity)
+        return self._score(option, psi, psi.as_dict(), activations,
+                           open_work_need(option))
+
+    def _score(self, option: dict[str, Any], psi: PsiState,
+               psi_dict: dict[str, float], activations: dict[str, float],
+               open_need: float):
+        """Score one option from an already-computed motivational state.
+
+        ``choose`` builds the state once and scores every candidate with it;
+        ``score`` remains the public single-option entry point.
+        """
         action = str(option.get("action", ""))
         concepts = tuple(option.get("concepts") or self.ACTION_CONCEPTS.get(action, ()))
         if option.get("drive"):
@@ -136,9 +147,9 @@ class CANWeightModel:
         can = {concept: round(float(activations.get(concept, 0.0)), 4) for concept in concepts}
         weighted = float(option.get("score", 0.0)) + 6.0 * sum(can.values())
         weighted += max(psi.hunger, psi.illness) * (12.0 if "survival" in concepts else 0.0)
-        weighted += open_work_need(option)
+        weighted += open_need
         result = dict(option)
-        result.update(weighted_score=round(weighted, 4), psi=psi.as_dict(), can=can,
+        result.update(weighted_score=round(weighted, 4), psi=dict(psi_dict), can=can,
                       can_concepts=list(concepts))
         return result
 
@@ -150,15 +161,32 @@ class CANWeightModel:
     def choose(self, context, options):
         # A fuel or night-soil open recipe is a candidate only when its read-offs give it a need. Without one,
         # the resident has no reason to start that household work. Other options are unchanged.
-        options = [option for option in options
-                   if not open_work_governed(option) or open_work_need(option) > 0.0]
-        if not options:
+        prepared = []
+        for option in options:
+            need = 0.0
+            if open_work_governed(option):
+                need = open_work_need(option)
+                if need <= 0.0:
+                    continue
+            prepared.append((option, need))
+        if not prepared:
             return None
-        scored = [self.score(option, context) for option in options]
+        # The motivational state, personality and activations are the same for
+        # every candidate in one decision.  Build them once instead of once per
+        # option (each option still gets its own trace dictionaries).
+        psi = PsiState.from_context(context)
         character = getattr(context, "character", None)
+        personality = getattr(character, "personality", {}) or {}
+        identity = getattr(character, "identity", {}) or {}
+        activations = self.activations(psi, personality, identity)
+        psi_dict = psi.as_dict()
+        scored = [self._score(option, psi, psi_dict, activations, need)
+                  for option, need in prepared]
         character_id = str(getattr(character, "character_id", getattr(character, "name", "npc")))
-        chosen = max(scored, key=lambda option: (
-            float(option.get("weighted_score", 0.0)),
-            self.tie_break(character_id, getattr(context, "turn", 0), option)))
+        turn = getattr(context, "turn", 0)
+        best = max(float(option.get("weighted_score", 0.0)) for option in scored)
+        tied = [option for option in scored
+                if float(option.get("weighted_score", 0.0)) == best]
+        chosen = max(tied, key=lambda option: self.tie_break(character_id, turn, option))
         chosen["decision_model"] = "psi_can_weighted"
         return chosen

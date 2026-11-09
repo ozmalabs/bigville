@@ -23,6 +23,28 @@ RESUME_JOB_BONUS = 40.0
 # 1.0 is one unmet meal of one loaf, so a resident one meal short tends to eat before it sleeps. A valuation, not a rule.
 HUNGER_BEFORE_SLEEP = 1.0
 
+# The seeded-occupation preference tables shared by the decision filter and the
+# goal update.  They are policy constants, so they are built once per module
+# rather than once per decision.
+_PREFERRED_TASKS = {
+    "farmer": {"tend_animals", "water", "harvest", "sow", "fertilise"},
+    "farm_labourer": {"tend_animals", "water", "harvest", "sow", "fertilise", "build", "maintain"},
+    "mason": {"build", "maintain"}, "carpenter": {"build", "maintain"},
+    "woodworker": {"build", "maintain"}, "labourer": {"build", "maintain"},
+    "doctor": {"care"}, "midwife": {"care"},
+}
+_TASK_ACTIONS = frozenset({"tend_animals", "water", "harvest", "sow", "fertilise",
+                           "build", "maintain", "care"})
+# Which physical actions each simple goal prefers.  ``_goal_bonus`` runs for
+# every candidate of every decision, so the table is a constant.
+_GOAL_ACTIONS = {
+    "eat": frozenset({"eat"}), "recover": frozenset({"rest"}),
+    "care_for_animals": frozenset({"tend_animals", "milk", "shear"}),
+    "tend_farm": frozenset({"harvest", "sow", "water", "fertilise"}),
+    "work": frozenset({"work", "sell_labor"}), "travel": frozenset({"move"}),
+    "rest": frozenset({"rest"}),
+}
+
 
 @dataclass
 class NPCGoal:
@@ -203,7 +225,10 @@ class DeterministicBackend:
                 candidates = [candidate for candidate in candidates
                               if self._proposal_signature(candidate) != refused]
             context.affordances = candidates
-        self._update_goals(context)
+        # Recipe knowledge is read by both the goal update and the option
+        # filter; collect it once per decision.
+        known_recipes = self._known_recipes(context)
+        self._update_goals(context, known_recipes)
         dependant = dependant_choice(context)   # Phase 045: a caregiver feeds or walks to a dependant (none when off)
         if dependant is not None:
             action, params, reason = dependant
@@ -229,19 +254,6 @@ class DeterministicBackend:
                                  utterances=self._speech(context))
         hunger = float(context.observations.get("hunger", 0.0))
         energy = float(context.observations.get("energy", 100.0))
-        known_recipes = {
-            str(memory.content.get("recipe"))
-            for memory in self.character.memories
-            if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
-            and memory.content.get("recipe")
-        }
-        # LA04: the observation's broad recipe knowledge supplements the
-        # backend's private recipe memories in lazy mode only (menu contexts
-        # have no `entities` key).
-        if isinstance(context.observations.get("entities"), dict):
-            known_recipes.update(
-                str(name) for name in
-                context.observations["entities"].get("known_recipes", []))
         # Phase 027: held food that would relieve no hunger (a spoiled pile) is not a meal, so it
         # neither counts as carried food nor blocks fetching a fresh one.
         def _feeds(option):
@@ -278,15 +290,7 @@ class DeterministicBackend:
         # These remain visible physical affordances for every cognition
         # backend; simple actors favor the tasks matching their seeded work.
         role = str(self.character.identity.get("role", "resident"))
-        preferred_tasks = {
-            "farmer": {"tend_animals", "water", "harvest", "sow", "fertilise"},
-            "farm_labourer": {"tend_animals", "water", "harvest", "sow", "fertilise", "build", "maintain"},
-            "mason": {"build", "maintain"}, "carpenter": {"build", "maintain"},
-            "woodworker": {"build", "maintain"}, "labourer": {"build", "maintain"},
-            "doctor": {"care"}, "midwife": {"care"},
-        }
-        task_actions = {"tend_animals", "water", "harvest", "sow", "fertilise", "build", "maintain", "care"}
-        preferred = preferred_tasks.get(role, set())
+        preferred = _PREFERRED_TASKS.get(role, frozenset())
         # Recovery must compete with ordinary work and travel. Immediate food
         # takes precedence when hungry; otherwise an exhausted body rests.
         # Sleep (Phase 024) comes first when the spot is safe and the body is low: at night, or when
@@ -367,7 +371,7 @@ class DeterministicBackend:
                 elif option.get("patient"):
                     effective_task = "care"
             role_bonus = 24.0 if effective_task in preferred else 0.0
-            if effective_task in task_actions and effective_task not in preferred:
+            if effective_task in _TASK_ACTIONS and effective_task not in preferred:
                 role_bonus = -24.0
             if option.get("action") in {"fetch", "move"} and option.get("trade"):
                 trade = str(option.get("trade"))
@@ -862,7 +866,25 @@ class DeterministicBackend:
         del self.intoxication_trace[:-20]
         return bonus
 
-    def _update_goals(self, context: ActorContext):
+    def _known_recipes(self, context: ActorContext) -> set[str]:
+        """The recipes this resident may work, from memory and the observation.
+
+        LA04: the observation's broad recipe knowledge supplements the
+        backend's private recipe memories in lazy mode only (menu contexts have
+        no ``entities`` key)."""
+        known = {
+            str(memory.content.get("recipe"))
+            for memory in self.character.memories
+            if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
+            and memory.content.get("recipe")
+        }
+        entities = context.observations.get("entities")
+        if isinstance(entities, dict):
+            known.update(str(name) for name in entities.get("known_recipes", []))
+        return known
+
+    def _update_goals(self, context: ActorContext,
+                      known_recipes: set[str] | None = None):
         observations = context.observations
         _speech_in.hear(self, context)   # Phase 060: the heard speech (no-op unless SPEECH_UNDERSTANDING is on)
         calendar = observations.get("calendar", {}) or {}
@@ -872,24 +894,9 @@ class DeterministicBackend:
         energy = float(observations.get("energy", 100.0))
         actions = {str(option.get("action")) for option in context.affordances}
         role = str(self.character.identity.get("role", "resident"))
-        preferred_tasks = {
-            "farmer": {"tend_animals", "water", "harvest", "sow", "fertilise"},
-            "farm_labourer": {"tend_animals", "water", "harvest", "sow", "fertilise", "build", "maintain"},
-            "mason": {"build", "maintain"}, "carpenter": {"build", "maintain"},
-            "woodworker": {"build", "maintain"}, "labourer": {"build", "maintain"},
-            "doctor": {"care"}, "midwife": {"care"},
-        }
-        preferred = preferred_tasks.get(role, set())
-        known_recipes = {
-            str(memory.content.get("recipe"))
-            for memory in self.character.memories
-            if memory.kind == "recipe_knowledge" and isinstance(memory.content, dict)
-            and memory.content.get("recipe")
-        }
-        if isinstance(observations.get("entities"), dict):
-            known_recipes.update(
-                str(name) for name in
-                observations["entities"].get("known_recipes", []))
+        preferred = _PREFERRED_TASKS.get(role, frozenset())
+        if known_recipes is None:
+            known_recipes = self._known_recipes(context)
         has_known_work = self.policy.allow_work and any(
             option.get("action") == "work" and str(option.get("recipe", "")) in known_recipes
             for option in context.affordances
@@ -967,14 +974,8 @@ class DeterministicBackend:
             return 0.0
         if str(self.current_goal.kind).startswith("speech_"):
             return _speech_in.goal_bonus(self, option)   # Phase 060: the give goal from a heard request
-        actions = {
-            "eat": {"eat"}, "recover": {"rest"},
-            "care_for_animals": {"tend_animals", "milk", "shear"},
-            "tend_farm": {"harvest", "sow", "water", "fertilise"},
-            "work": {"work", "sell_labor"}, "travel": {"move"},
-            "rest": {"rest"},
-        }
-        return 30.0 if option.get("action") in actions.get(self.current_goal.kind, set()) else 0.0
+        return (30.0 if option.get("action") in
+                _GOAL_ACTIONS.get(self.current_goal.kind, frozenset()) else 0.0)
 
     def _speech(self, context: ActorContext) -> list[dict]:
         """Choose occasional structured speech to a person in the observation."""

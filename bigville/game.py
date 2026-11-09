@@ -418,6 +418,13 @@ class BigvilleGame:
         # highly reactive world can retain the older decide-every-turn mode.
         self.continuations_enabled = bool(continuations)
         self._continuations: dict[str, _ActiveContinuation] = {}
+        # Per actor: (world position revision, frozenset of neighbours) captured
+        # when the continuation was activated.  Between the end of one turn and
+        # the next decision phase no resident moves, so the encounter gate can
+        # reuse the set instead of scanning proximity again.  Derived state;
+        # never checkpointed, and any movement invalidates it by revision.
+        self._continuation_nearby_cache: dict[
+            str, tuple[int, frozenset[str]]] = {}
         # One-turn, observer-specific records of directly visible object
         # movement. These describe physical evidence, not the actor's intent.
         self._physical_events: dict[str, list[dict[str, Any]]] = {}
@@ -547,12 +554,15 @@ class BigvilleGame:
         request.destination = self._normalise_destination(request.destination)
         attrs = self.world.eng.node_attrs(self.world._actors[actor])
         position = self.world.actor_position(actor)
+        baseline_nearby = frozenset(self._nearby_resident_ids(actor, position))
+        self._continuation_nearby_cache[actor] = (
+            int(getattr(self.world, "_position_revision", 0)), baseline_nearby)
         self._continuations[actor] = _ActiveContinuation(
             request=request,
             started_turn=int(self.world._turn),
             baseline_hunger=float(attrs.get("hunger", 0.0)),
             baseline_energy=float(self.world.energy(actor)),
-            baseline_nearby=frozenset(self._nearby_resident_ids(actor, position)),
+            baseline_nearby=baseline_nearby,
             baseline_position=position,
             baseline_events=frozenset(self._event_snapshot()),
             last_action_ok=bool(action_ok),
@@ -584,8 +594,15 @@ class BigvilleGame:
         else:
             attrs = self.world.eng.node_attrs(self.world._actors[actor])
             position = self.world.actor_position(actor)
-            nearby = (self._nearby_resident_ids(actor, position)
-                      if "encounter" in interrupt_on else set())
+            if "encounter" in interrupt_on:
+                revision = int(getattr(self.world, "_position_revision", 0))
+                cached = self._continuation_nearby_cache.get(actor)
+                if cached is not None and cached[0] == revision:
+                    nearby = cached[1]
+                else:
+                    nearby = self._nearby_resident_ids(actor, position)
+            else:
+                nearby = set()
             hunger = float(attrs.get("hunger", 0.0))
             energy = float(self.world.energy(actor))
 
@@ -907,9 +924,13 @@ class BigvilleGame:
         position = self.world.actor_position(actor)
         nearby_residents = []
         if position is not None:
+            # One cached BFS field serves every row of this proximity list.
+            distance_field = self.world._distance_field(position)
             for name in self.world.actors_near(position, 8, exclude=actor):
                 other_position = self.world.actor_position(name)
-                distance = self.world.distance(position, other_position)
+                distance = (distance_field.get(other_position)
+                            if distance_field is not None and other_position is not None
+                            else None)
                 other_attrs = self.world.eng.node_attrs(self.world._actors[name])
                 nearby_residents.append({
                     "id": name, "name": name,
@@ -2193,6 +2214,7 @@ class BigvilleGame:
                                             action_ok=self.last_results.get(actor, True))
             else:
                 self._continuations.pop(actor, None)
+                self._continuation_nearby_cache.pop(actor, None)
         result = {"status": "advanced", "turn": int(self.world._turn),
                   "results": dict(self.last_results)}
         if include_snapshot:

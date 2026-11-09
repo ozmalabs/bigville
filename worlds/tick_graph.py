@@ -242,16 +242,58 @@ class TickGraph:
         self._operations: dict[str, Operation] = {}
         self._edges: set[tuple[str, str]] = set()
         self._conflicts: dict[str, set[str]] = {}
+        # Resource -> operation ids.  A new operation can only conflict with an
+        # earlier one that reads a resource it writes or writes a resource it
+        # reads or writes, so these inverted indexes replace the old scan over
+        # every earlier operation (which was O(n^2) per turn).  They are derived
+        # state: the conflict set and edges remain the authoritative result.
+        self._index_reads: dict[Resource, set[str]] = {}
+        self._index_writes: dict[Resource, set[str]] = {}
+        self._sequence: dict[str, int] = {}
+
+    def _index_operation(self, operation: Operation) -> None:
+        for resource in operation.reads:
+            self._index_reads.setdefault(resource, set()).add(operation.op_id)
+        for resource in operation.writes:
+            self._index_writes.setdefault(resource, set()).add(operation.op_id)
+        self._sequence[operation.op_id] = len(self._sequence)
+
+    def _unindex_operation(self, operation: Operation) -> None:
+        for table, resources in ((self._index_reads, operation.reads),
+                                 (self._index_writes, operation.writes)):
+            for resource in resources:
+                ids = table.get(resource)
+                if ids is None:
+                    continue
+                ids.discard(operation.op_id)
+                if not ids:
+                    table.pop(resource, None)
+        self._sequence.pop(operation.op_id, None)
+
+    def _conflict_candidates(self, operation: Operation) -> list[Operation]:
+        """Earlier operations sharing any read/write resource with ``operation``."""
+        ids: set[str] = set()
+        for resource in operation.writes:
+            ids.update(self._index_writes.get(resource, ()))
+            ids.update(self._index_reads.get(resource, ()))
+        for resource in operation.reads:
+            ids.update(self._index_writes.get(resource, ()))
+        if not ids:
+            return []
+        # Sequence order keeps edge construction (and any diagnostics that read
+        # it) identical to the former scan over insertion order.
+        return [self._operations[op_id]
+                for op_id in sorted(ids, key=self._sequence.__getitem__)]
 
     # ---- construction
 
     def add_operation(self, operation: Operation) -> Operation:
-        """Add one operation, computing its conflict edges with every earlier one."""
+        """Add one operation, computing its conflict edges with earlier ones."""
         if operation.op_id in self._operations:
             raise ValueError(f"duplicate operation id: {operation.op_id}")
         self._operations[operation.op_id] = operation
         try:
-            for existing in list(self._operations.values()):
+            for existing in self._conflict_candidates(operation):
                 if existing is operation:
                     continue
                 if not _conflict(operation, existing):
@@ -270,6 +312,7 @@ class TickGraph:
                         self.add_edge(operation.op_id, existing.op_id)
                     else:
                         self.add_edge(existing.op_id, operation.op_id)
+            self._index_operation(operation)
         except Exception:
             self._operations.pop(operation.op_id, None)
             self._edges = {edge for edge in self._edges
@@ -277,6 +320,7 @@ class TickGraph:
             self._conflicts.pop(operation.op_id, None)
             for others in self._conflicts.values():
                 others.discard(operation.op_id)
+            self._unindex_operation(operation)
             raise
         return operation
 
