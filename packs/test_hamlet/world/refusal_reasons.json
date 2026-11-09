@@ -87,6 +87,12 @@
       "unsupported": {
         "description": "The world has no physical way to do this action yet."
       },
+      "nothing_said": {
+        "description": "Your reply had no words in it, so nothing was said."
+      },
+      "no_task": {
+        "description": "Your continuation named no task, so nothing was started."
+      },
       "not_possible": {
         "description": "The attempt was refused for a physical reason that the world does not name more precisely."
       },

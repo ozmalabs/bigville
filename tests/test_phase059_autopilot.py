@@ -124,16 +124,16 @@ def test_an_invalid_reply_repaired_on_the_second_call_is_accepted():
     assert backend.last_backend_state["outcome"] == "repaired"
 
 
-def test_waiting_true_is_never_accepted_and_the_repair_says_why():
+def test_waiting_true_is_accepted_in_one_call_and_read_as_a_wait():
+    # Phase 071e: waiting: true is accepted (no major action this turn), so no repair call runs.
     provider = Fake(WAITING_TRUE, WAITING_TRUE)
     backend = LLMBackend(_char(), provider)
     response = backend.decide(_ctx(1))
-    assert response.waiting is False
-    assert response.major_action.action == "move"
-    assert provider.prompts[1]["repair"]["errors"] == [
-        "waiting: true is not accepted; to do nothing, use major_action with action wait"]
-    assert backend.llm_counts["fallbacks_by_cause"]["invalid_output"] == 1
-    assert validate_response({"waiting": True}, ("waiting",)) != []
+    assert len(provider.prompts) == 1
+    assert response.waiting is False and response.major_action is None
+    assert backend.last_backend_state["turn_kind"] == "wait"
+    assert validate_response({"waiting": True}, ("waiting",)) == []
+    assert validate_response({"waiting": "no"}, ("waiting",)) != []
 
 
 def test_the_validator_still_accepts_waiting_false():

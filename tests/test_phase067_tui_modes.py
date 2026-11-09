@@ -95,7 +95,7 @@ def _llm_reply(reply, affordances):
     checks), then reply_schema.to_wire with the context's affordances, as LLMBackend._check does."""
     fields = tuple(PACK["PROMPT_RESPONSE_FIELDS"])
     parsed = json.loads(json.dumps(reply))
-    errors = _check_reply(parsed, fields, PACK_NAME, None)
+    errors = _check_reply(parsed, fields, PACK_NAME)
     assert errors == [], errors
     return reply_schema.to_wire(parsed, PACK_NAME, affordances=affordances)
 

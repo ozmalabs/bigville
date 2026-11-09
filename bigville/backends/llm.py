@@ -22,7 +22,7 @@ Phase 059 (the autopilot):
   Phase 031 backend: it consults every turn and an unfinished consult is an idle turn.
 * A reply with no ``major_action`` carries on as usual: the autopilot's action and continuation are kept,
   and the reply's utterances and memory updates are used. The explicit action ``wait`` does nothing.
-  A reply with ``waiting: true`` is an invalid output (it stops the whole turn for every resident).
+  A reply with ``waiting: true`` waits (Phase 071e: no major action this turn).
 * A model plan (a continuation) is held by the game until it completes or is interrupted.
 
 Phase 066 (the continued session and the log):
@@ -117,8 +117,9 @@ def _continuation_errors(value: Any) -> list[str]:
     errors = []
     task = value.get("task")
     if task is not None:
-        if not isinstance(task, dict) or not isinstance(task.get("action"), str) or not task.get("action"):
-            errors.append("continuation.task must be an object with a non-empty action")
+        # Phase 071e: an empty action starts nothing (to_wire records no_task). A missing or non-text one is malformed.
+        if not isinstance(task, dict) or not isinstance(task.get("action"), str):
+            errors.append("continuation.task must be an object with an action (text)")
         elif "params" in task and task["params"] is not None and not isinstance(task["params"], dict):
             errors.append("continuation.task.params must be an object")
     interrupt = value.get("interrupt_on")
@@ -133,19 +134,19 @@ def _continuation_errors(value: Any) -> list[str]:
     return errors
 
 
-def _check_reply(parsed: dict[str, Any], fields, pack: str, lesson_limit: int | None) -> list[str]:
+def _check_reply(parsed: dict[str, Any], fields, pack: str) -> list[str]:
     """Structural checks, then the pack's reply schema (words for intensity and amounts, memory kinds)."""
     errors = validate_response(parsed, fields)
     if errors:
         return errors
-    return check_reply(parsed, pack, lesson_limit=lesson_limit)
+    return check_reply(parsed, pack)
 
 
 def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str]) -> list[str]:
     """Structural checks against the response fields. Returns fixed, short messages.
 
-    Legality of an action is not checked here. The world checks every action. ``waiting: true`` is refused:
-    a model that wants to do nothing names the action ``wait``."""
+    Legality of an action is not checked here. The world checks every action. ``waiting: true`` is the explicit
+    wait (Phase 071e): an accepted reply, read as no major action this turn."""
     errors = []
     for key in sorted(parsed):
         if key not in fields:
@@ -183,11 +184,8 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
     memory_updates = parsed.get("memory_updates", [])
     if not isinstance(memory_updates, list) or not all(isinstance(item, dict) for item in memory_updates):
         errors.append("memory_updates must be a list of objects")
-    if "waiting" in parsed:
-        if parsed["waiting"] is True:
-            errors.append("waiting: true is not accepted; to do nothing, use major_action with action wait")
-        elif not isinstance(parsed["waiting"], bool):
-            errors.append("waiting must be true or false")
+    if "waiting" in parsed and not isinstance(parsed["waiting"], bool):
+        errors.append("waiting must be true or false")
     return errors[:ERRORS_PER_RESPONSE]
 
 
@@ -329,14 +327,11 @@ class LLMBackend:
         except (TypeError, ValueError):
             return None, None, ["output is not a JSON object"]
         parsed, handle_errors = self.handles.translate(sent, reaction=reaction)
-        errors = handle_errors + _check_reply(parsed, fields, self.prompt_builder.pack.name, self._lesson_limit())
+        errors = handle_errors + _check_reply(parsed, fields, self.prompt_builder.pack.name)
         if errors:
             return None, None, errors[:ERRORS_PER_RESPONSE]
         wire = to_wire(parsed, self.prompt_builder.pack.name, affordances=affordances)
         return wire, sent, []
-
-    def _lesson_limit(self) -> int:
-        return int(self.prompt_builder.pack["PROMPT_PACKET"]["lessons_max"])
 
     # -- the thread (Phase 066) -------------------------------------------------------------
     def _text(self, key: str) -> str:
@@ -603,6 +598,8 @@ class LLMBackend:
         wire form; ``as_sent`` is the reply as the provider wrote it, which the response hash covers."""
         model = ActorResponse.from_dict(parsed)
         action = parsed.get("major_action")
+        notes = parsed.pop("reply_notes", {}) or {}
+        refusals = list(notes.get("refusals", []))
         would_be = auto.major_action if auto is not None else None
         if isinstance(action, dict) and action.get("action") == "wait":
             kind = "wait"
@@ -646,8 +643,9 @@ class LLMBackend:
             "consult_reason": reason,
             "would_be": None if would_be is None else {"action": would_be.action},
             "departs": departs,
+            **({"reply_notes": notes} if notes else {}),
         })
-        response.backend_state = {"llm_turn": kind}
+        response.backend_state = {"llm_turn": kind, **({"reply_refusals": refusals} if refusals else {})}
         return response
 
     def _merge_lessons(self, lesson_ids, parsed: dict[str, Any]) -> None:

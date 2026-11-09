@@ -122,3 +122,12 @@ def apply_all(game, actor, items) -> list[dict]:
     """Apply each free action item in order. Items that are not dicts are skipped."""
     return [apply_one(game, actor, item) for item in items or [] if isinstance(item, dict)]
 
+
+def refuse(game, actor, action: str, code: str) -> dict:
+    """Record a refusal of something the reply asked for that never reached the world (Phase 071e: blank speech,
+    an empty continuation). It becomes the actor's free outcome, so the agent view shows its reason in `last`."""
+    world = game.world
+    outcome = _refuse(int(world._turn), action, code)
+    outcome["seen_major"] = world.last_outcome(actor)
+    _store(game)[actor] = outcome
+    return dict(outcome)

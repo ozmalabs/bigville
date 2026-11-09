@@ -1284,6 +1284,10 @@ class BigvilleGame:
                                                       if owns_speech else None))
         for update in response.memory_updates:
             self.add_memory(actor, update)
+        # Phase 071e: outcomes the reply led to that the world never saw (blank speech, an empty continuation).
+        for refusal in (getattr(response, "backend_state", None) or {}).get("reply_refusals", ()):
+            from bigville import free_replies
+            free_replies.refuse(self, actor, refusal["action"], refusal["reason"])
         return ok
 
     def add_memory(self, actor: str, data: dict[str, Any]) -> MemoryRecord:

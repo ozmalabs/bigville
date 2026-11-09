@@ -1,0 +1,597 @@
+diff --git a/bigville/backends/llm.py b/bigville/backends/llm.py
+index 9d96a9a..ef2a6ab 100644
+--- a/bigville/backends/llm.py
++++ b/bigville/backends/llm.py
+@@ -22,7 +22,7 @@ Phase 059 (the autopilot):
+   Phase 031 backend: it consults every turn and an unfinished consult is an idle turn.
+ * A reply with no ``major_action`` carries on as usual: the autopilot's action and continuation are kept,
+   and the reply's utterances and memory updates are used. The explicit action ``wait`` does nothing.
+-  A reply with ``waiting: true`` is an invalid output (it stops the whole turn for every resident).
++  A reply with ``waiting: true`` waits (Phase 071e: no major action this turn).
+ * A model plan (a continuation) is held by the game until it completes or is interrupted.
+ 
+ Phase 066 (the continued session and the log):
+@@ -117,8 +117,9 @@ def _continuation_errors(value: Any) -> list[str]:
+     errors = []
+     task = value.get("task")
+     if task is not None:
+-        if not isinstance(task, dict) or not isinstance(task.get("action"), str) or not task.get("action"):
+-            errors.append("continuation.task must be an object with a non-empty action")
++        # Phase 071e: an empty action starts nothing (to_wire records no_task). A missing or non-text one is malformed.
++        if not isinstance(task, dict) or not isinstance(task.get("action"), str):
++            errors.append("continuation.task must be an object with an action (text)")
+         elif "params" in task and task["params"] is not None and not isinstance(task["params"], dict):
+             errors.append("continuation.task.params must be an object")
+     interrupt = value.get("interrupt_on")
+@@ -133,19 +134,19 @@ def _continuation_errors(value: Any) -> list[str]:
+     return errors
+ 
+ 
+-def _check_reply(parsed: dict[str, Any], fields, pack: str, lesson_limit: int | None) -> list[str]:
++def _check_reply(parsed: dict[str, Any], fields, pack: str) -> list[str]:
+     """Structural checks, then the pack's reply schema (words for intensity and amounts, memory kinds)."""
+     errors = validate_response(parsed, fields)
+     if errors:
+         return errors
+-    return check_reply(parsed, pack, lesson_limit=lesson_limit)
++    return check_reply(parsed, pack)
+ 
+ 
+ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str]) -> list[str]:
+     """Structural checks against the response fields. Returns fixed, short messages.
+ 
+-    Legality of an action is not checked here. The world checks every action. ``waiting: true`` is refused:
+-    a model that wants to do nothing names the action ``wait``."""
++    Legality of an action is not checked here. The world checks every action. ``waiting: true`` is the explicit
++    wait (Phase 071e): an accepted reply, read as no major action this turn."""
+     errors = []
+     for key in sorted(parsed):
+         if key not in fields:
+@@ -183,11 +184,8 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
+     memory_updates = parsed.get("memory_updates", [])
+     if not isinstance(memory_updates, list) or not all(isinstance(item, dict) for item in memory_updates):
+         errors.append("memory_updates must be a list of objects")
+-    if "waiting" in parsed:
+-        if parsed["waiting"] is True:
+-            errors.append("waiting: true is not accepted; to do nothing, use major_action with action wait")
+-        elif not isinstance(parsed["waiting"], bool):
+-            errors.append("waiting must be true or false")
++    if "waiting" in parsed and not isinstance(parsed["waiting"], bool):
++        errors.append("waiting must be true or false")
+     return errors[:ERRORS_PER_RESPONSE]
+ 
+ 
+@@ -329,15 +327,12 @@ class LLMBackend:
+         except (TypeError, ValueError):
+             return None, None, ["output is not a JSON object"]
+         parsed, handle_errors = self.handles.translate(sent, reaction=reaction)
+-        errors = handle_errors + _check_reply(parsed, fields, self.prompt_builder.pack.name, self._lesson_limit())
++        errors = handle_errors + _check_reply(parsed, fields, self.prompt_builder.pack.name)
+         if errors:
+             return None, None, errors[:ERRORS_PER_RESPONSE]
+         wire = to_wire(parsed, self.prompt_builder.pack.name, affordances=affordances)
+         return wire, sent, []
+ 
+-    def _lesson_limit(self) -> int:
+-        return int(self.prompt_builder.pack["PROMPT_PACKET"]["lessons_max"])
+-
+     # -- the thread (Phase 066) -------------------------------------------------------------
+     def _text(self, key: str) -> str:
+         return str(self.prompt_builder.pack["PROMPT_PACKET"]["thread"][key])
+@@ -603,6 +598,8 @@ class LLMBackend:
+         wire form; ``as_sent`` is the reply as the provider wrote it, which the response hash covers."""
+         model = ActorResponse.from_dict(parsed)
+         action = parsed.get("major_action")
++        notes = parsed.pop("reply_notes", {}) or {}
++        refusals = list(notes.get("refusals", []))
+         would_be = auto.major_action if auto is not None else None
+         if isinstance(action, dict) and action.get("action") == "wait":
+             kind = "wait"
+@@ -646,8 +643,9 @@ class LLMBackend:
+             "consult_reason": reason,
+             "would_be": None if would_be is None else {"action": would_be.action},
+             "departs": departs,
++            **({"reply_notes": notes} if notes else {}),
+         })
+-        response.backend_state = {"llm_turn": kind}
++        response.backend_state = {"llm_turn": kind, **({"reply_refusals": refusals} if refusals else {})}
+         return response
+ 
+     def _merge_lessons(self, lesson_ids, parsed: dict[str, Any]) -> None:
+diff --git a/bigville/backends/reply_schema.py b/bigville/backends/reply_schema.py
+index d76a585..4c762ab 100644
+--- a/bigville/backends/reply_schema.py
++++ b/bigville/backends/reply_schema.py
+@@ -5,10 +5,10 @@ params. Free actions (Phase 071c) are a list of {action, target, params}, checke
+ applies them (bigville/free_replies.py). Utterances are {to, text}. Memory updates are {kind, text} with a kind from
+ the pack. Two functions:
+ 
+-* ``check(parsed, pack, lesson_limit=None)`` returns the errors in words (short fixed messages, no echo of
+-  the reply). Intensity and amounts take a number or a word from the lexicon. A word the lexicon does not know
+-  is an error that the repair call can fix. A verb the pack does not know is not an error: the world refuses
+-  it as unsupported, and that refusal is the consequence the resident learns from.
++* ``check(parsed, pack)`` returns the errors in words (short fixed messages, no echo of
++  the reply). Only shape and type are errors (Phase 071d/071e). Intensity and amounts take a number or a word; a
++  word the lexicon does not know folds to a normal effort. A verb the pack does not know is not an error: the world
++  refuses it as unsupported, and that refusal is the consequence the resident learns from.
+ * ``to_wire(parsed, pack, affordances=...)`` returns the reply in the shape ActorResponse.from_dict reads: the
+   major action's target, with and intensity folded into params (with a verb by its alias resolved, a word intensity
+   turned into its value), utterance ``to`` read as ``target``, and each memory update as {kind, content: {text}}.
+@@ -111,9 +111,10 @@ def _fold_free(item, pack) -> dict:
+     return {"action": str(item["action"]), "target": target if _is_text(target) else None, "params": params}
+ 
+ 
+-def check(parsed: dict, pack: str, *, lesson_limit: int | None = None) -> list[str]:
+-    """Schema errors for a reply that has already passed the structural checks. ``lesson_limit`` (set during a
+-    merge) is the most lesson updates the reply may carry."""
++def check(parsed: dict, pack: str) -> list[str]:
++    """Schema errors for a reply that has already passed the structural checks. Only shape and type are errors
++    (Phase 071e): empty speech, an unknown memory kind, empty memory text, a lesson count over the cap and an empty
++    continuation action are accepted, and ``to_wire`` records what became of each."""
+     spec = schema(pack)
+     errors: list[str] = []
+     action = parsed.get("major_action")
+@@ -138,24 +139,18 @@ def check(parsed: dict, pack: str, *, lesson_limit: int | None = None) -> list[s
+         if item.get("to") is not None and not _is_text(item.get("to")):
+             errors.append("utterances.to must be a person's name (text) or null")
+             break
+-        if not _is_text(item.get("text", "")) or not str(item.get("text", "")).strip():
++        if not _is_text(item.get("text")):
+             errors.append("utterances need a text")
+             break
+-    kinds = set(spec["memory_kinds"])
+-    lessons = 0
+     for item in parsed.get("memory_updates", []) or []:
+         if not isinstance(item, dict):
+             continue
+-        if item.get("kind") not in kinds:
+-            errors.append("memory_updates kind must be " + ", ".join(spec["memory_kinds"]))
++        if not _is_text(item.get("kind")):
++            errors.append("memory_updates kind must be text")
+             break
+-        if item.get("kind") == "lesson":
+-            lessons += 1
+-        if not _is_text(item.get("text")) or not str(item.get("text")).strip():
++        if not _is_text(item.get("text")):
+             errors.append("memory_updates need a text")
+             break
+-    if lesson_limit is not None and lessons > lesson_limit:
+-        errors.append(f"at most {int(lesson_limit)} lessons can be kept; restate them in fewer memory_updates")
+     return errors[:ERRORS_PER_RESPONSE]
+ 
+ 
+@@ -249,28 +244,86 @@ def _fold_action(action, pack, affordances=None) -> dict:
+     return {"action": name, "params": params, "reason": action.get("reason") or ""}
+ 
+ 
++def _count(notes: dict, key: str, n: int = 1) -> None:
++    notes[key] = notes.get(key, 0) + n
++
++
++def _memory(items, pack: str, text_limit: int, notes: dict) -> list[dict]:
++    """The memory updates as the game reads them (Phase 071e). A kind the pack does not list is kept as a note, with
++    the kind it named in the content (``named_kind``). Memory text that is blank is dropped and counted. Lessons over
++    the packet's lessons_max are dropped oldest first (the reply's last lessons are the newest), and counted."""
++    kinds = set(schema(pack)["memory_kinds"])
++    lessons_max = int(load_pack(pack)["PROMPT_PACKET"]["lessons_max"])
++    kept: list[dict] = []
++    for item in items:
++        if not isinstance(item, dict):
++            continue
++        text = str(item["text"])
++        if not text.strip():
++            _count(notes, "memory_dropped")
++            continue
++        content = {"text": text[:text_limit]}
++        kind = item["kind"]
++        if kind not in kinds:
++            content["named_kind"] = kind
++            _count(notes, "memory_as_note")
++            kind = "note"
++        kept.append({"kind": kind, "content": content})
++    lessons = [index for index, row in enumerate(kept) if row["kind"] == "lesson"]
++    dropped = set(lessons[:max(0, len(lessons) - lessons_max)])
++    if dropped:
++        _count(notes, "lessons_dropped", len(dropped))
++    return [row for index, row in enumerate(kept) if index not in dropped]
++
++
+ def to_wire(parsed: dict, pack: str, *, text_limit: int | None = None,
+             affordances: list[dict] | None = None) -> dict:
+     """The reply in the shape ActorResponse.from_dict reads. Assumes ``check`` returned no errors.
+ 
+     ``affordances`` (the context's rows, as the world published them) lets a handle in major_action.target name
+     a row, whose full params the proposal then takes (see ``bind_row``). Without it, a target is kept as the
+-    model wrote it."""
++    model wrote it.
++
++    Phase 071e: the reply's accepted oddities are read as follows, and recorded in ``reply_notes`` (a dict that
++    holds only the counts and flags that occurred). ``refusals`` lists the outcomes the game records as refusals
++    ({action, reason}): blank speech is dropped with ``nothing_said``, and an empty continuation action starts nothing
++    with ``no_task``. ``waiting: true`` is the explicit wait (any major action is dropped, ``major_action_ignored``)."""
+     out = dict(parsed)
++    notes: dict = {}
++    refusals: list[dict] = []
+     action = parsed.get("major_action")
+     if isinstance(action, dict) and isinstance(action.get("action"), str):
+         out["major_action"] = _fold_action(action, pack, affordances)
++    if parsed.get("waiting") is True:
++        if action is not None:
++            _count(notes, "major_action_ignored")
++        out["major_action"] = {"action": "wait", "params": {}, "reason": ""}
++        _count(notes, "waiting")
+     if parsed.get("utterances") is not None:
+-        out["utterances"] = [_utterance(item) for item in parsed["utterances"]]
++        spoken = []
++        for item in parsed["utterances"]:
++            if isinstance(item, dict) and isinstance(item.get("text"), str) and not item["text"].strip():
++                refusals.append({"action": "speak", "reason": "nothing_said"})
++                continue
++            spoken.append(_utterance(item))
++        out["utterances"] = spoken
+     if isinstance(parsed.get("free_actions"), list):
+         out["free_actions"] = [_fold_free(item, pack) for item in parsed["free_actions"] if isinstance(item, dict)]
+     if parsed.get("memory_updates") is not None:
+         limit = text_limit if text_limit is not None else int(schema(pack)["memory_text_chars"])
+-        out["memory_updates"] = [{"kind": item["kind"], "content": {"text": str(item["text"])[:limit]}}
+-                                 for item in parsed["memory_updates"]]
++        out["memory_updates"] = _memory(parsed["memory_updates"], pack, limit, notes)
++    continuation = parsed.get("continuation")
++    if isinstance(continuation, dict) and isinstance(continuation.get("task"), dict) \
++            and continuation["task"].get("action") == "":
++        out["continuation"] = None
++        refusals.append({"action": "continuation", "reason": "no_task"})
++    if refusals:
++        notes["refusals"] = refusals
++    out["reply_notes"] = notes
+     return out
+ 
+ 
++
+ def _utterance(item):
+     if not isinstance(item, dict):
+         return item
+diff --git a/bigville/free_replies.py b/bigville/free_replies.py
+index bca9eab..e25f47b 100644
+--- a/bigville/free_replies.py
++++ b/bigville/free_replies.py
+@@ -122,3 +122,12 @@ def apply_all(game, actor, items) -> list[dict]:
+     """Apply each free action item in order. Items that are not dicts are skipped."""
+     return [apply_one(game, actor, item) for item in items or [] if isinstance(item, dict)]
+ 
++
++def refuse(game, actor, action: str, code: str) -> dict:
++    """Record a refusal of something the reply asked for that never reached the world (Phase 071e: blank speech,
++    an empty continuation). It becomes the actor's free outcome, so the agent view shows its reason in `last`."""
++    world = game.world
++    outcome = _refuse(int(world._turn), action, code)
++    outcome["seen_major"] = world.last_outcome(actor)
++    _store(game)[actor] = outcome
++    return dict(outcome)
+diff --git a/bigville/game.py b/bigville/game.py
+index b6efd4e..8898877 100644
+--- a/bigville/game.py
++++ b/bigville/game.py
+@@ -1284,6 +1284,10 @@ class BigvilleGame:
+                                                       if owns_speech else None))
+         for update in response.memory_updates:
+             self.add_memory(actor, update)
++        # Phase 071e: outcomes the reply led to that the world never saw (blank speech, an empty continuation).
++        for refusal in (getattr(response, "backend_state", None) or {}).get("reply_refusals", ()):
++            from bigville import free_replies
++            free_replies.refuse(self, actor, refusal["action"], refusal["reason"])
+         return ok
+ 
+     def add_memory(self, actor: str, data: dict[str, Any]) -> MemoryRecord:
+diff --git a/packs/bigville/world/refusal_reasons.json b/packs/bigville/world/refusal_reasons.json
+index 233cfe4..e8d10b2 100644
+--- a/packs/bigville/world/refusal_reasons.json
++++ b/packs/bigville/world/refusal_reasons.json
+@@ -87,6 +87,12 @@
+       "unsupported": {
+         "description": "The world has no physical way to do this action yet."
+       },
++      "nothing_said": {
++        "description": "Your reply had no words in it, so nothing was said."
++      },
++      "no_task": {
++        "description": "Your continuation named no task, so nothing was started."
++      },
+       "not_possible": {
+         "description": "The attempt was refused for a physical reason that the world does not name more precisely."
+       },
+diff --git a/packs/test_hamlet/world/refusal_reasons.json b/packs/test_hamlet/world/refusal_reasons.json
+index 233cfe4..e8d10b2 100644
+--- a/packs/test_hamlet/world/refusal_reasons.json
++++ b/packs/test_hamlet/world/refusal_reasons.json
+@@ -87,6 +87,12 @@
+       "unsupported": {
+         "description": "The world has no physical way to do this action yet."
+       },
++      "nothing_said": {
++        "description": "Your reply had no words in it, so nothing was said."
++      },
++      "no_task": {
++        "description": "Your continuation named no task, so nothing was started."
++      },
+       "not_possible": {
+         "description": "The attempt was refused for a physical reason that the world does not name more precisely."
+       },
+diff --git a/tests/test_phase054_llm_prompt.py b/tests/test_phase054_llm_prompt.py
+index ef9fdae..dea2994 100644
+--- a/tests/test_phase054_llm_prompt.py
++++ b/tests/test_phase054_llm_prompt.py
+@@ -246,10 +246,10 @@ def test_an_utterance_to_names_its_target_and_a_memory_update_gets_its_text():
+     (_reply({"action": "fetch", "params": {"amount": ["loads"]}}), "params.amount must be a number or a word"),
+     (_reply({"action": "attempt", "target": 7}), "major_action.target must be a handle (text) or null"),
+     (_reply({"action": "attempt", "hammer": "x"}), "major_action has no field 'hammer'"),
+-    (_reply(None, memory_updates=[{"kind": "gossip", "text": "x"}]), "memory_updates kind must be"),
++    (_reply(None, memory_updates=[{"kind": 5, "text": "x"}]), "memory_updates kind must be text"),
+     (_reply(None, memory_updates=[{"kind": "note"}]), "memory_updates need a text"),
+     (_reply(None, utterances=[{"to": 5, "text": "hi"}]), "utterances.to must be a person's name"),
+-    (_reply(None, utterances=[{"text": ""}]), "utterances need a text"),
++    (_reply(None, utterances=[{"text": 5}]), "utterances need a text"),
+ ])
+ def test_a_reply_outside_the_schema_is_named_in_words(reply, message):
+     errors = reply_schema.check(json.loads(reply), "bigville")
+@@ -374,7 +374,9 @@ def test_a_merge_reply_with_lessons_replaces_only_the_lessons_the_prompt_listed(
+     assert backend.llm_counts.get("lessons_merged") == cap + 1
+ 
+ 
+-def test_a_merge_reply_naming_more_lessons_than_the_cap_is_repaired():
++def test_a_merge_reply_naming_more_lessons_than_the_cap_is_accepted_and_the_newest_are_kept():
++    # Phase 071e: an over-long lesson list is accepted with one call; the merge keeps the reply's last lessons_max
++    # (the newest) and records how many it dropped.
+     cap = int(PACKET["lessons_max"])
+     too_many = _lesson_reply(*[f"x{index}" for index in range(cap + 1)])
+     provider = Fake(too_many, too_many)
+@@ -383,9 +385,12 @@ def test_a_merge_reply_naming_more_lessons_than_the_cap_is_repaired():
+         game.add_memory("Ben", {"kind": "lesson", "content": {"text": f"lesson {index}"}})
+     backend = game.backends["Ben"]
+     response = backend.decide(game._context("Ben"))
++    game._apply_response("Ben", response)
+     assert response.major_action is None
+-    assert provider.prompts[1]["repair"]["errors"] == [
+-        f"at most {cap} lessons can be kept; restate them in fewer memory_updates"]
++    assert len(provider.prompts) == 1
++    lessons = [m.content["text"] for m in game.characters["Ben"].memories if m.kind == "lesson"]
++    assert lessons == [f"x{index}" for index in range(1, cap + 1)]
++    assert backend.last_backend_state["reply_notes"] == {"lessons_dropped": 1}
+ 
+ 
+ def test_a_reply_with_no_lessons_keeps_the_held_ones_on_a_merge():
+diff --git a/tests/test_phase059_autopilot.py b/tests/test_phase059_autopilot.py
+index b031823..c016e86 100644
+--- a/tests/test_phase059_autopilot.py
++++ b/tests/test_phase059_autopilot.py
+@@ -124,16 +124,16 @@ def test_an_invalid_reply_repaired_on_the_second_call_is_accepted():
+     assert backend.last_backend_state["outcome"] == "repaired"
+ 
+ 
+-def test_waiting_true_is_never_accepted_and_the_repair_says_why():
++def test_waiting_true_is_accepted_in_one_call_and_read_as_a_wait():
++    # Phase 071e: waiting: true is accepted (no major action this turn), so no repair call runs.
+     provider = Fake(WAITING_TRUE, WAITING_TRUE)
+     backend = LLMBackend(_char(), provider)
+     response = backend.decide(_ctx(1))
+-    assert response.waiting is False
+-    assert response.major_action.action == "move"
+-    assert provider.prompts[1]["repair"]["errors"] == [
+-        "waiting: true is not accepted; to do nothing, use major_action with action wait"]
+-    assert backend.llm_counts["fallbacks_by_cause"]["invalid_output"] == 1
+-    assert validate_response({"waiting": True}, ("waiting",)) != []
++    assert len(provider.prompts) == 1
++    assert response.waiting is False and response.major_action is None
++    assert backend.last_backend_state["turn_kind"] == "wait"
++    assert validate_response({"waiting": True}, ("waiting",)) == []
++    assert validate_response({"waiting": "no"}, ("waiting",)) != []
+ 
+ 
+ def test_the_validator_still_accepts_waiting_false():
+diff --git a/tests/test_phase067_tui_modes.py b/tests/test_phase067_tui_modes.py
+index de11b1d..4ca4e29 100644
+--- a/tests/test_phase067_tui_modes.py
++++ b/tests/test_phase067_tui_modes.py
+@@ -95,7 +95,7 @@ def _llm_reply(reply, affordances):
+     checks), then reply_schema.to_wire with the context's affordances, as LLMBackend._check does."""
+     fields = tuple(PACK["PROMPT_RESPONSE_FIELDS"])
+     parsed = json.loads(json.dumps(reply))
+-    errors = _check_reply(parsed, fields, PACK_NAME, None)
++    errors = _check_reply(parsed, fields, PACK_NAME)
+     assert errors == [], errors
+     return reply_schema.to_wire(parsed, PACK_NAME, affordances=affordances)
+ 
+diff --git a/tests/test_phase071e_accept.py b/tests/test_phase071e_accept.py
+new file mode 100644
+index 0000000..b510ca8
+--- /dev/null
++++ b/tests/test_phase071e_accept.py
+@@ -0,0 +1,188 @@
++"""Phase 071e: a reply is accepted unless it is malformed (shape and types only).
++
++Each of the five cases from the brief is checked twice. The accepted variant makes one provider call and its outcome
++is recorded (a free outcome in the resident's `last`, a backend note, or the reply's effect). Each malformed variant
++still goes to the repair call.
++"""
++from __future__ import annotations
++
++import copy
++import json
++
++from bigville.backends import reply_schema
++from bigville.backends.llm import LLMBackend
++from bigville.free_replies import last_free
++from bigville.game import BigvilleGame
++from worlds.bigville_world import BigvilleWorld
++from domains.pack import load_pack
++
++
++PACKET = load_pack("bigville")["PROMPT_PACKET"]
++CAP = int(PACKET["lessons_max"])
++
++
++class Fake:
++    """Returns the scripted replies in order, then repeats the last one. Keeps a copy of every payload."""
++
++    def __init__(self, *script):
++        self.script = list(script)
++        self.prompts: list[dict] = []
++
++    def complete(self, prompt):
++        self.prompts.append(copy.deepcopy(prompt))
++        index = min(len(self.prompts) - 1, len(self.script) - 1)
++        return self.script[index]
++
++
++def _reply(major=None, **extra):
++    body = {"major_action": major, "utterances": [], "memory_updates": [], "continuation": None}
++    body.update(extra)
++    return json.dumps(body)
++
++
++CARRY = _reply()
++
++
++def _game(provider):
++    world = BigvilleWorld(autonomous_actors=False)
++    world.add_actor("Ada", role="hand", home_cell=(1, 1))
++    world.add_actor("Ben", role="hand", home_cell=(1, 1))
++    game = BigvilleGame(world)
++    game.set_backend("Ben", LLMBackend(game.characters["Ben"], provider, autopilot=False))
++    return game
++
++
++def _decide(game, provider):
++    response = game.backends["Ben"].decide(game._context("Ben"))
++    game._apply_response("Ben", response)
++    return response
++
++
++def _accepted(reply):
++    """One provider call, no repair, and the reply was accepted."""
++    provider = Fake(reply, CARRY)
++    game = _game(provider)
++    response = _decide(game, provider)
++    backend = game.backends["Ben"]
++    assert len(provider.prompts) == 1
++    assert backend.counts["repairs_used"] == 0 and backend.counts["successes"] == 1
++    assert backend.last_backend_state["outcome"] == "ok"
++    return game, response, backend
++
++
++def _repaired_once(reply):
++    """A malformed reply: the repair call runs (two calls in all)."""
++    provider = Fake(reply, reply)
++    game = _game(provider)
++    _decide(game, provider)
++    assert len(provider.prompts) == 2
++    assert "repair" in provider.prompts[1]
++    assert game.backends["Ben"].counts["repairs_used"] == 1
++    return provider
++
++
++# -- 1. waiting: true ----------------------------------------------------------------------------
++
++def test_waiting_true_is_accepted_and_read_as_a_wait():
++    game, response, backend = _accepted(_reply(None, waiting=True))
++    assert response.major_action is None and response.continuation is None
++    assert backend.last_backend_state["turn_kind"] == "wait"
++    assert backend.counts["waits"] == 1
++
++
++def test_waiting_true_with_a_major_action_waits_and_says_the_action_was_ignored():
++    game, response, backend = _accepted(_reply({"action": "rest", "params": {}}, waiting=True))
++    assert response.major_action is None
++    assert backend.last_backend_state["turn_kind"] == "wait"
++    assert backend.last_backend_state["reply_notes"] == {"waiting": 1, "major_action_ignored": 1}
++
++
++def test_waiting_that_is_not_a_boolean_is_still_malformed():
++    _repaired_once(_reply(None, waiting="yes"))
++
++
++# -- 2. an utterance with blank text -------------------------------------------------------------
++
++def test_blank_speech_is_accepted_nothing_is_said_and_the_refusal_is_recorded():
++    game, _, _ = _accepted(_reply(None, utterances=[{"to": "Ada", "text": "   "}]))
++    assert len(game.world._utterances) == 0
++    outcome = last_free(game, "Ben")
++    assert outcome["action"] == "speak" and outcome["applied"] is False
++    assert outcome["reason"] == "nothing_said"
++
++
++def test_speech_that_is_not_text_is_still_malformed():
++    _repaired_once(_reply(None, utterances=[{"to": "Ada", "text": 5}]))
++
++
++def test_speech_with_no_text_field_is_still_malformed():
++    _repaired_once(_reply(None, utterances=[{"to": "Ada"}]))
++
++
++# -- 3. a memory update with a kind outside the pack's list, or empty text -----------------------
++
++def test_an_unknown_memory_kind_is_kept_as_a_note_with_the_kind_it_named():
++    game, _, _ = _accepted(_reply(None, memory_updates=[{"kind": "gossip", "text": "Ada is kind"}]))
++    notes = [m for m in game.characters["Ben"].memories if m.kind == "note"]
++    assert [m.content for m in notes] == [{"text": "Ada is kind", "named_kind": "gossip"}]
++
++
++def test_a_memory_kind_that_is_not_text_is_still_malformed():
++    _repaired_once(_reply(None, memory_updates=[{"kind": 5, "text": "x"}]))
++
++
++def test_empty_memory_text_is_accepted_dropped_and_recorded():
++    game, _, backend = _accepted(_reply(None, memory_updates=[{"kind": "note", "text": "  "}]))
++    assert [m for m in game.characters["Ben"].memories if m.kind == "note"] == []
++    assert backend.last_backend_state["reply_notes"] == {"memory_dropped": 1}
++
++
++def test_memory_text_that_is_not_text_is_still_malformed():
++    _repaired_once(_reply(None, memory_updates=[{"kind": "note", "text": 5}]))
++
++
++# -- 4. a continuation whose task action is empty -----------------------------------------------
++
++def test_a_continuation_with_an_empty_task_action_starts_nothing_and_is_refused():
++    reply = _reply({"action": "rest", "params": {}},
++                   continuation={"task": {"action": "", "params": {}}, "interrupt_on": []})
++    game, response, _ = _accepted(reply)
++    assert response.continuation is None
++    outcome = last_free(game, "Ben")
++    assert outcome["action"] == "continuation" and outcome["reason"] == "no_task"
++
++
++def test_a_continuation_task_with_no_action_text_is_still_malformed():
++    _repaired_once(_reply(None, continuation={"task": {"params": {}}}))
++
++
++def test_a_continuation_task_action_that_is_not_text_is_still_malformed():
++    _repaired_once(_reply(None, continuation={"task": {"action": 5}}))
++
++
++# -- 5. more lesson updates than lessons_max -----------------------------------------------------
++
++def test_more_lessons_than_the_cap_are_accepted_and_the_newest_are_kept():
++    texts = [f"lesson {index}" for index in range(CAP + 3)]
++    reply = _reply(None, memory_updates=[{"kind": "lesson", "text": text} for text in texts])
++    game, _, backend = _accepted(reply)
++    kept = [m.content["text"] for m in game.characters["Ben"].memories if m.kind == "lesson"]
++    assert kept == texts[-CAP:]
++    assert backend.last_backend_state["reply_notes"] == {"lessons_dropped": 3}
++
++
++def test_a_lesson_that_is_not_text_is_still_malformed_even_over_the_cap():
++    lessons = [{"kind": "lesson", "text": f"lesson {index}"} for index in range(CAP)]
++    lessons.append({"kind": "lesson", "text": None})
++    _repaired_once(_reply(None, memory_updates=lessons))
++
++
++# -- the reply check itself, in words ------------------------------------------------------------
++
++def test_the_schema_check_accepts_each_case_and_still_names_the_malformed_ones():
++    assert reply_schema.check(json.loads(_reply(None, utterances=[{"to": "Ada", "text": " "}])), "bigville") == []
++    assert reply_schema.check(json.loads(_reply(None, memory_updates=[{"kind": "x", "text": ""}])), "bigville") == []
++    assert reply_schema.check(json.loads(_reply(None, continuation={"task": {"action": ""}})), "bigville") == []
++    too_many = [{"kind": "lesson", "text": str(index)} for index in range(CAP + 1)]
++    assert reply_schema.check(json.loads(_reply(None, memory_updates=too_many)), "bigville") == []
++    assert reply_schema.check(json.loads(_reply(None, memory_updates=[{"kind": 5, "text": "x"}])), "bigville")

@@ -246,10 +246,10 @@ def test_an_utterance_to_names_its_target_and_a_memory_update_gets_its_text():
     (_reply({"action": "fetch", "params": {"amount": ["loads"]}}), "params.amount must be a number or a word"),
     (_reply({"action": "attempt", "target": 7}), "major_action.target must be a handle (text) or null"),
     (_reply({"action": "attempt", "hammer": "x"}), "major_action has no field 'hammer'"),
-    (_reply(None, memory_updates=[{"kind": "gossip", "text": "x"}]), "memory_updates kind must be"),
+    (_reply(None, memory_updates=[{"kind": 5, "text": "x"}]), "memory_updates kind must be text"),
     (_reply(None, memory_updates=[{"kind": "note"}]), "memory_updates need a text"),
     (_reply(None, utterances=[{"to": 5, "text": "hi"}]), "utterances.to must be a person's name"),
-    (_reply(None, utterances=[{"text": ""}]), "utterances need a text"),
+    (_reply(None, utterances=[{"text": 5}]), "utterances need a text"),
 ])
 def test_a_reply_outside_the_schema_is_named_in_words(reply, message):
     errors = reply_schema.check(json.loads(reply), "bigville")
@@ -374,7 +374,9 @@ def test_a_merge_reply_with_lessons_replaces_only_the_lessons_the_prompt_listed(
     assert backend.llm_counts.get("lessons_merged") == cap + 1
 
 
-def test_a_merge_reply_naming_more_lessons_than_the_cap_is_repaired():
+def test_a_merge_reply_naming_more_lessons_than_the_cap_is_accepted_and_the_newest_are_kept():
+    # Phase 071e: an over-long lesson list is accepted with one call; the merge keeps the reply's last lessons_max
+    # (the newest) and records how many it dropped.
     cap = int(PACKET["lessons_max"])
     too_many = _lesson_reply(*[f"x{index}" for index in range(cap + 1)])
     provider = Fake(too_many, too_many)
@@ -383,9 +385,12 @@ def test_a_merge_reply_naming_more_lessons_than_the_cap_is_repaired():
         game.add_memory("Ben", {"kind": "lesson", "content": {"text": f"lesson {index}"}})
     backend = game.backends["Ben"]
     response = backend.decide(game._context("Ben"))
+    game._apply_response("Ben", response)
     assert response.major_action is None
-    assert provider.prompts[1]["repair"]["errors"] == [
-        f"at most {cap} lessons can be kept; restate them in fewer memory_updates"]
+    assert len(provider.prompts) == 1
+    lessons = [m.content["text"] for m in game.characters["Ben"].memories if m.kind == "lesson"]
+    assert lessons == [f"x{index}" for index in range(1, cap + 1)]
+    assert backend.last_backend_state["reply_notes"] == {"lessons_dropped": 1}
 
 
 def test_a_reply_with_no_lessons_keeps_the_held_ones_on_a_merge():

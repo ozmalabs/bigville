@@ -5,10 +5,10 @@ params. Free actions (Phase 071c) are a list of {action, target, params}, checke
 applies them (bigville/free_replies.py). Utterances are {to, text}. Memory updates are {kind, text} with a kind from
 the pack. Two functions:
 
-* ``check(parsed, pack, lesson_limit=None)`` returns the errors in words (short fixed messages, no echo of
-  the reply). Intensity and amounts take a number or a word from the lexicon. A word the lexicon does not know
-  is an error that the repair call can fix. A verb the pack does not know is not an error: the world refuses
-  it as unsupported, and that refusal is the consequence the resident learns from.
+* ``check(parsed, pack)`` returns the errors in words (short fixed messages, no echo of
+  the reply). Only shape and type are errors (Phase 071d/071e). Intensity and amounts take a number or a word; a
+  word the lexicon does not know folds to a normal effort. A verb the pack does not know is not an error: the world
+  refuses it as unsupported, and that refusal is the consequence the resident learns from.
 * ``to_wire(parsed, pack, affordances=...)`` returns the reply in the shape ActorResponse.from_dict reads: the
   major action's target, with and intensity folded into params (with a verb by its alias resolved, a word intensity
   turned into its value), utterance ``to`` read as ``target``, and each memory update as {kind, content: {text}}.
@@ -111,9 +111,10 @@ def _fold_free(item, pack) -> dict:
     return {"action": str(item["action"]), "target": target if _is_text(target) else None, "params": params}
 
 
-def check(parsed: dict, pack: str, *, lesson_limit: int | None = None) -> list[str]:
-    """Schema errors for a reply that has already passed the structural checks. ``lesson_limit`` (set during a
-    merge) is the most lesson updates the reply may carry."""
+def check(parsed: dict, pack: str) -> list[str]:
+    """Schema errors for a reply that has already passed the structural checks. Only shape and type are errors
+    (Phase 071e): empty speech, an unknown memory kind, empty memory text, a lesson count over the cap and an empty
+    continuation action are accepted, and ``to_wire`` records what became of each."""
     spec = schema(pack)
     errors: list[str] = []
     action = parsed.get("major_action")
@@ -138,24 +139,18 @@ def check(parsed: dict, pack: str, *, lesson_limit: int | None = None) -> list[s
         if item.get("to") is not None and not _is_text(item.get("to")):
             errors.append("utterances.to must be a person's name (text) or null")
             break
-        if not _is_text(item.get("text", "")) or not str(item.get("text", "")).strip():
+        if not _is_text(item.get("text")):
             errors.append("utterances need a text")
             break
-    kinds = set(spec["memory_kinds"])
-    lessons = 0
     for item in parsed.get("memory_updates", []) or []:
         if not isinstance(item, dict):
             continue
-        if item.get("kind") not in kinds:
-            errors.append("memory_updates kind must be " + ", ".join(spec["memory_kinds"]))
+        if not _is_text(item.get("kind")):
+            errors.append("memory_updates kind must be text")
             break
-        if item.get("kind") == "lesson":
-            lessons += 1
-        if not _is_text(item.get("text")) or not str(item.get("text")).strip():
+        if not _is_text(item.get("text")):
             errors.append("memory_updates need a text")
             break
-    if lesson_limit is not None and lessons > lesson_limit:
-        errors.append(f"at most {int(lesson_limit)} lessons can be kept; restate them in fewer memory_updates")
     return errors[:ERRORS_PER_RESPONSE]
 
 
@@ -249,26 +244,84 @@ def _fold_action(action, pack, affordances=None) -> dict:
     return {"action": name, "params": params, "reason": action.get("reason") or ""}
 
 
+def _count(notes: dict, key: str, n: int = 1) -> None:
+    notes[key] = notes.get(key, 0) + n
+
+
+def _memory(items, pack: str, text_limit: int, notes: dict) -> list[dict]:
+    """The memory updates as the game reads them (Phase 071e). A kind the pack does not list is kept as a note, with
+    the kind it named in the content (``named_kind``). Memory text that is blank is dropped and counted. Lessons over
+    the packet's lessons_max are dropped oldest first (the reply's last lessons are the newest), and counted."""
+    kinds = set(schema(pack)["memory_kinds"])
+    lessons_max = int(load_pack(pack)["PROMPT_PACKET"]["lessons_max"])
+    kept: list[dict] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        text = str(item["text"])
+        if not text.strip():
+            _count(notes, "memory_dropped")
+            continue
+        content = {"text": text[:text_limit]}
+        kind = item["kind"]
+        if kind not in kinds:
+            content["named_kind"] = kind
+            _count(notes, "memory_as_note")
+            kind = "note"
+        kept.append({"kind": kind, "content": content})
+    lessons = [index for index, row in enumerate(kept) if row["kind"] == "lesson"]
+    dropped = set(lessons[:max(0, len(lessons) - lessons_max)])
+    if dropped:
+        _count(notes, "lessons_dropped", len(dropped))
+    return [row for index, row in enumerate(kept) if index not in dropped]
+
+
 def to_wire(parsed: dict, pack: str, *, text_limit: int | None = None,
             affordances: list[dict] | None = None) -> dict:
     """The reply in the shape ActorResponse.from_dict reads. Assumes ``check`` returned no errors.
 
     ``affordances`` (the context's rows, as the world published them) lets a handle in major_action.target name
     a row, whose full params the proposal then takes (see ``bind_row``). Without it, a target is kept as the
-    model wrote it."""
+    model wrote it.
+
+    Phase 071e: the reply's accepted oddities are read as follows, and recorded in ``reply_notes`` (a dict that
+    holds only the counts and flags that occurred). ``refusals`` lists the outcomes the game records as refusals
+    ({action, reason}): blank speech is dropped with ``nothing_said``, and an empty continuation action starts nothing
+    with ``no_task``. ``waiting: true`` is the explicit wait (any major action is dropped, ``major_action_ignored``)."""
     out = dict(parsed)
+    notes: dict = {}
+    refusals: list[dict] = []
     action = parsed.get("major_action")
     if isinstance(action, dict) and isinstance(action.get("action"), str):
         out["major_action"] = _fold_action(action, pack, affordances)
+    if parsed.get("waiting") is True:
+        if action is not None:
+            _count(notes, "major_action_ignored")
+        out["major_action"] = {"action": "wait", "params": {}, "reason": ""}
+        _count(notes, "waiting")
     if parsed.get("utterances") is not None:
-        out["utterances"] = [_utterance(item) for item in parsed["utterances"]]
+        spoken = []
+        for item in parsed["utterances"]:
+            if isinstance(item, dict) and isinstance(item.get("text"), str) and not item["text"].strip():
+                refusals.append({"action": "speak", "reason": "nothing_said"})
+                continue
+            spoken.append(_utterance(item))
+        out["utterances"] = spoken
     if isinstance(parsed.get("free_actions"), list):
         out["free_actions"] = [_fold_free(item, pack) for item in parsed["free_actions"] if isinstance(item, dict)]
     if parsed.get("memory_updates") is not None:
         limit = text_limit if text_limit is not None else int(schema(pack)["memory_text_chars"])
-        out["memory_updates"] = [{"kind": item["kind"], "content": {"text": str(item["text"])[:limit]}}
-                                 for item in parsed["memory_updates"]]
+        out["memory_updates"] = _memory(parsed["memory_updates"], pack, limit, notes)
+    continuation = parsed.get("continuation")
+    if isinstance(continuation, dict) and isinstance(continuation.get("task"), dict) \
+            and continuation["task"].get("action") == "":
+        out["continuation"] = None
+        refusals.append({"action": "continuation", "reason": "no_task"})
+    if refusals:
+        notes["refusals"] = refusals
+    out["reply_notes"] = notes
     return out
+
 
 
 def _utterance(item):

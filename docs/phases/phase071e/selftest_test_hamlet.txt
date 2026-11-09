@@ -1,0 +1,153 @@
+bigville entities -- consistency report
+========================================
+items 5  recipes 2 (2 runnable)  buildings 1 (1 at founding)  trades 2
+crops 0  animals 0  containers 0
+items by class: material 5
+
+ERRORS (0)
+  none
+
+WARNINGS (0)
+  none
+
+INFO (63)
+  AGENT VIEW (test_hamlet) (2)
+    - AGENT VIEW (test_hamlet): the lexicon has no table for 12 view fields, so the view omits them in this pack: health, health_status, strength, stamina, mood, age, skill, load, condition, amount, distance, weather
+    - AGENT VIEW (test_hamlet): 23 sections whitelisted, 30 referee-only names; all agent view checks pass
+  AUTOPILOT (/tmp/t071e/packs/test_hamlet) (1)
+    - AUTOPILOT (/tmp/t071e/packs/test_hamlet): all autopilot checks pass (11 consult triggers, quiet ticks 12 to 48)
+  BIOGRAPHY (1)
+    - BIOGRAPHY: 10 sentence kinds, 0 office words
+  BIRTHS (5)
+    - BIRTHS: this pack has no midwifery skill, so no resident can attend a birth as a midwife
+    - BIRTHS: a union woman entering at 25.5 has 4.27 children by 50 (table) against CHILDREN_PER_UNION mean 4.8 (APPROX, Wrigley and Schofield 1981)
+    - BIRTHS: a union woman aged 25 has 0.261 births a year on average (table)
+    - BIRTHS: a union woman aged 30 has 0.249 births a year on average (table)
+    - BIRTHS: a union woman aged 35 has 0.221 births a year on average (table)
+  BODY_AGE (2)
+    - BODY_AGE: the strength base holds to age 30, is 0.720 of peak at 65, and reaches its floor 0.6 at age 80 (APPROX)
+    - BODY_AGE: the stamina base holds to age 30, is 0.650 of peak at 65, and reaches its floor 0.5 at age 80 (APPROX)
+  CONTEST (1)
+    - CONTEST: reaction floor 0.5, decisive margin 0.2, base cost 0.2; SIZE mean at age 18 1.0
+  DAYNIGHT (1)
+    - DAYNIGHT: daylight 16.50 h at midsummer, 7.51 h at midwinter (latitude 52.0)
+  DAYNIGHT_LAMPS (1)
+    - DAYNIGHT_LAMPS: none in this pack (day and night is off)
+  DEPENDANTS (5)
+    - DEPENDANTS: the LIFE_STAGES bands leave gaps (2 to 3, 5 to 6, 12 to 13, 17 to 18, 64 to 65); an age in a gap reads as elder with the switch off (HEAD) and as the band below it with the switch on
+    - DEPENDANTS: at age 0 strength is 0.300 and stamina 0.400 of the adult base (switch off)
+    - DEPENDANTS: at age 4 strength is 0.456 and stamina 0.533 of the adult base (switch off)
+    - DEPENDANTS: at age 12 strength is 0.767 and stamina 0.800 of the adult base (switch off)
+    - DEPENDANTS: at age 18 strength is 1.000 and stamina 1.000 of the adult base (switch off)
+  DETRAIN (3)
+    - DETRAIN: the switch DETRAIN.enabled is off (HEAD and the default run are unchanged while it is off)
+    - DETRAIN: a strength trained part is held 21 days idle, then falls 0.02 a day; after a year idle 0.001 of it is left (APPROX)
+    - DETRAIN: a stamina trained part is held 7 days idle, then falls 0.06 a day; after a year idle 0.000 of it is left (APPROX)
+  DOORS (1)
+    - DOORS: 0 building door(s)
+  FOG (test_hamlet) (1)
+    - FOG (test_hamlet): 3 levels; 0 public landmarks, 9 place words; all fog checks pass
+  FOUNDING TOWN (1)
+    - FOUNDING TOWN: none (this pack has no founding town; from_town100 refuses it)
+  HEALTH (2)
+    - HEALTH: a healthy elder declines to 0 in 20.0 years of elder age (age_rate 0.05 a year, APPROX)
+    - HEALTH: starvation kills a healthy adult 1 period(s) past starve_limit (starve_harm 1.0, APPROX)
+  HEARING (1)
+    - HEARING: sight 7 cells, hearing flat 11, loudness 1.0 to 100.0
+  HOUSEHOLDS (2)
+    - HOUSEHOLDS: household size (mean members): sample 4.676 vs 4.750 (tolerance 0.30; Laslett 1969 (Population Studies 23) and Laslett 1972, 4.75; Wrigley and Schofield 1981)
+    - HOUSEHOLDS: extended-family share of households: sample 0.101 vs 0.100 (tolerance 0.03; Laslett 1972, about 10-11% of households with kin)
+  IMPAIRMENT (1)
+    - IMPAIRMENT: 4 sources (intoxication, fatigue, illness, darkness), 4 rows, 5 mechanisms, 20 mishearing pairs, the impairment is off in this pack
+  INTEROCEPTION (test_hamlet) (1)
+    - INTEROCEPTION (test_hamlet): 10 body regions, 12 quality kinds, 14 signal sources; all interoception checks pass
+  INTOXICATION (1)
+    - INTOXICATION: a hangover lasts 96 ticks, about 24 hours; dependence forms at tolerance 0.5
+  JOINT_TASKS (1)
+    - JOINT_TASKS: carry load unit 50.0 up to 4 people; crew on 0 recipe(s)
+  KNOWLEDGE (1)
+    - KNOWLEDGE: 22 topics, 1 jobs with routines, 2 procedures, 4 knowable places
+  KNOWLEDGE PROCEDURE_KNOWLEDGE justice (3)
+    - KNOWLEDGE PROCEDURE_KNOWLEDGE justice: this pack has no offices, so authority deliberative is never met
+    - KNOWLEDGE PROCEDURE_KNOWLEDGE justice: this pack has no offices, so authority enforcement is never met
+    - KNOWLEDGE PROCEDURE_KNOWLEDGE justice: this pack has no offices, so authority executive is never met
+  KNOWLEDGE PROCEDURE_KNOWLEDGE lawmaking (2)
+    - KNOWLEDGE PROCEDURE_KNOWLEDGE lawmaking: this pack has no offices, so authority deliberative is never met
+    - KNOWLEDGE PROCEDURE_KNOWLEDGE lawmaking: this pack has no offices, so authority executive is never met
+  LEXICON (test_hamlet) (1)
+    - LEXICON (test_hamlet): 18 quantities (14 numeric), 4 intensity words, 3 amount words, 7 verb words, 3 payload fields; all checks pass
+  LIFE_STAGES (1)
+    - LIFE_STAGES: inheritance (preschooler from child); bands infant 0-2, preschooler 3-5, child 6-12, youth 13-17, adult 18-64, elder 65-99
+  MARKS (1)
+    - MARKS: 0 kinds, 0 recipes and 0 shocks name a mark (APPROX levels)
+  NARRATION (test_hamlet) (1)
+    - NARRATION (test_hamlet): 36 templates, 5 tab names and the help lines; all narration checks pass
+  OBJECT_FORCE (1)
+    - OBJECT_FORCE: harm scale 2.0, throw range 6.0 cells for a reference object, range_max 12, breakage at fragility 0.5 for containers and 0.97 for any object (APPROX)
+  PERCEPTION (1)
+    - PERCEPTION: 2 kinds (person, thing), 7 tiers, the perceiver is off in this pack
+  PERSONA (1)
+    - PERSONA: 10 traits in words, 6 engine parameters, 0 founding numbers classified
+  PERSONA (test_hamlet) (1)
+    - PERSONA (test_hamlet): all persona checks pass
+  PROMPT_PACKET (test_hamlet) (1)
+    - PROMPT_PACKET (test_hamlet): all prompt packet checks pass (4 intensity words, 3 verbs, lessons kept to 12)
+  READING (1)
+    - READING: 3 written kinds, 3 marks, 3 literacy tiers, 4 numeracy tiers; reading is off in this pack
+  RELATIONSHIP_SEEDING (1)
+    - RELATIONSHIP_SEEDING: 8 tie kinds, close ties capped at 6, enabled=False
+  RESOLUTION (1)
+    - RESOLUTION: 4 verbs, 11 materials; attempt cap 2.0, max intensity 3.0, i_safe 1.5 (APPROX)
+  ROUTINE (1)
+    - ROUTINE: 6 life stages, 4 place words, market day 2 and church day 6, 4 seasons
+  SPEECH_ACTS (1)
+    - SPEECH_ACTS: 20 acts, 16 understood by the simple backend, 65 grammar patterns, 18 templates
+  SPEECH_PARSER (1)
+    - SPEECH_PARSER: off by default (off in the pack), 5 examples, the fixed prefix is 2796 bytes, reference sha256 f9ec5e86e6d9
+  SPEECH_UNDERSTANDING (1)
+    - SPEECH_UNDERSTANDING: the simple listener is off (the default is off)
+  STAGE_KEYED (1)
+    - STAGE_KEYED: 'DISEASE.*.stage_risk' has no rows in this pack (skipped)
+  TERMINAL MODES (1)
+    - TERMINAL MODES: 9 map tiles, 15 text sentences and 4 help lines; all terminal mode checks pass
+  TOOL_FIT (1)
+    - TOOL_FIT: 15 verbs, 23 pairs, 0 authored tools (APPROX)
+  TRADES with no recipe (service or gathering work) (1)
+    - TRADES with no recipe (service or gathering work): constable
+  TRAINING band (1)
+    - TRAINING band: a resident who keeps working holds a trained part up to TRAIN_HEADROOM 0.4, so effective strength stays between base and base x 1.4 (analytic; the long-run town mean is not a static check)
+  illness (1)
+    - illness: DISEASE and MEDICAL_CARE are empty in this pack (no illness rules)
+  open recipes (anyone capable with the tools) (1)
+    - open recipes (anyone capable with the tools): 
+
+PRODUCTION GRAPH
+  9 nodes, 7 edges -> 9 components; 5 tiers deep; acyclic after condensing loops: True
+  loops (0; a loop is a cycle such as seed -> crop -> seed):
+  deepest items (tier: one chain from raw nature):
+    - bread (tier 4): grain -> flour -> bread
+    - flour (tier 2): grain -> flour
+    - grain (tier 0): grain
+    - water (tier 0): water
+  keystone items (recipes that become unreachable without them):
+    flour 2, bread 1, grain 1, water 1
+
+SYSTEMS (recipes, reference value made per batch, labour minutes per batch)
+  other          2 recipes  value      3.5 (100%)  labour     40
+  strongest couplings (producer -> consumer: weight of inputs crossing):
+
+BALANCE (per period, BALANCE_SCENARIO)
+  note: no balance scenario in this pack (BALANCE_SCENARIO is empty)
+  issues (0):
+    none
+
+JOBS (full-time equivalents needed -> holders seeded; relative weight = share of residents)
+  job              weight             N=100              N=30               N=8
+  baker             0.000       0.00 -> 100       0.00 ->  30       0.00 ->   8
+  N=100: 100 residents, 0 holding several jobs; sustainable start: True
+  N=30: 30 residents, 0 holding several jobs; sustainable start: True
+  N=8: 8 residents, 0 holding several jobs; sustainable start: True
+
+PEOPLE (aptitude, talents, limitations drawn for 10000 adults; target = source rate)
+  age 35: aptitude mean 0.999 (2nd-98th pct 0.70-1.30); 0% have at least one limitation
+  age 75: aptitude mean 0.999 (2nd-98th pct 0.70-1.30); 0% have at least one limitation
