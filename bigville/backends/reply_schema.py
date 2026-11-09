@@ -28,6 +28,9 @@ from domains.pack import load_pack
 ERRORS_PER_RESPONSE = 5
 # LA05: a lazy view's place handle is a stable cell ("cell:x,y"). It is a direct param, not a menu row.
 _CELL_HANDLE = re.compile(r"^(?:cell:)?(-?\d+),(-?\d+)$")
+# Phase 071f: the old top-level waiting flag. The contract has one way to wait (major_action wait), so a reply that still
+# carries this key is not a shape error: to_wire drops the key, notes it as waiting_ignored, and the major action stands.
+STRAY_WAITING = "waiting"
 
 
 def schema(pack: str) -> dict:
@@ -287,18 +290,20 @@ def to_wire(parsed: dict, pack: str, *, text_limit: int | None = None,
     Phase 071e: the reply's accepted oddities are read as follows, and recorded in ``reply_notes`` (a dict that
     holds only the counts and flags that occurred). ``refusals`` lists the outcomes the game records as refusals
     ({action, reason}): blank speech is dropped with ``nothing_said``, and an empty continuation action starts nothing
-    with ``no_task``. ``waiting: true`` is the explicit wait (any major action is dropped, ``major_action_ignored``)."""
+    with ``no_task``.
+
+    Phase 071f: the only way to wait is major_action ``wait``, which passes through as the proposal the game takes as a
+    no-op. A top-level ``waiting`` key is dropped from the wire form and counted in ``reply_notes`` as ``waiting_ignored``
+    whatever its value. The major action, if any, is left as written."""
     out = dict(parsed)
     notes: dict = {}
     refusals: list[dict] = []
     action = parsed.get("major_action")
     if isinstance(action, dict) and isinstance(action.get("action"), str):
         out["major_action"] = _fold_action(action, pack, affordances)
-    if parsed.get("waiting") is True:
-        if action is not None:
-            _count(notes, "major_action_ignored")
-        out["major_action"] = {"action": "wait", "params": {}, "reason": ""}
-        _count(notes, "waiting")
+    if STRAY_WAITING in parsed:
+        out.pop(STRAY_WAITING)
+        _count(notes, "waiting_ignored")
     if parsed.get("utterances") is not None:
         spoken = []
         for item in parsed["utterances"]:

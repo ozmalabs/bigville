@@ -124,16 +124,17 @@ def test_an_invalid_reply_repaired_on_the_second_call_is_accepted():
     assert backend.last_backend_state["outcome"] == "repaired"
 
 
-def test_waiting_true_is_accepted_in_one_call_and_read_as_a_wait():
-    # Phase 071e: waiting: true is accepted (no major action this turn), so no repair call runs.
+def test_a_stray_waiting_key_is_accepted_in_one_call_and_the_major_action_stands():
+    # Phase 071f: waiting is not a field. The rest proposal stands; the key is ignored and noted.
     provider = Fake(WAITING_TRUE, WAITING_TRUE)
     backend = LLMBackend(_char(), provider)
     response = backend.decide(_ctx(1))
     assert len(provider.prompts) == 1
-    assert response.waiting is False and response.major_action is None
-    assert backend.last_backend_state["turn_kind"] == "wait"
-    assert validate_response({"waiting": True}, ("waiting",)) == []
-    assert validate_response({"waiting": "no"}, ("waiting",)) != []
+    assert response.waiting is False and response.major_action.action == "rest"
+    assert backend.last_backend_state["turn_kind"] == "act"
+    assert backend.last_backend_state["reply_notes"] == {"waiting_ignored": 1}
+    assert validate_response({"waiting": True}, ("major_action",)) == []
+    assert validate_response({"waiting": "no"}, ("major_action",)) == []
 
 
 def test_the_validator_still_accepts_waiting_false():
@@ -246,7 +247,9 @@ def test_a_reply_with_no_action_carries_on_as_usual_and_wait_idles():
 
     idle = LLMBackend(_char(), Fake(WAIT))
     response = idle.decide(_ctx(1))
-    assert response.major_action is None and response.continuation is None
+    # Phase 071f: the wait is the turn's major action (the game records it as done), not an empty turn.
+    assert response.major_action is not None and response.major_action.action == "wait"
+    assert response.continuation is None
     assert response.waiting is False
     assert idle.llm_counts["waits"] == 1
     assert idle.llm_counts["deviations"] == 1                         # waiting departs from the habit

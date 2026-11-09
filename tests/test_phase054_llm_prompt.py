@@ -150,7 +150,7 @@ def test_the_packet_matches_the_snapshot_for_a_fixed_view():
 
 def test_the_packet_uses_the_packet_schema_and_the_pack_hash():
     record = PromptBuilder().build(_fixed_context())
-    assert record.schema == PACKET_SCHEMA == "bigville/prompt/7"   # Phase 071d: packet lists giveable_notes and requests (054b: prompt/6)
+    assert record.schema == PACKET_SCHEMA == "bigville/prompt/8"   # Phase 071f: one way to wait (071d: prompt/7, 054b: prompt/6)
     assert record.pack == "bigville" and len(record.pack_hash) == 64
 
 
@@ -310,9 +310,11 @@ def test_hostile_speech_changes_neither_the_rules_nor_the_parsing():
 
 
 def test_a_hostile_reply_still_has_to_pass_the_schema_whatever_the_speech_said():
-    provider = Fake(_reply(None, waiting=True))
+    # Phase 071f: a stray waiting key is ignored, so the schema is what this check exercises: an unknown field is repaired.
+    provider = Fake(_reply(None, waiting=True, bogus=1))
     backend = LLMBackend(_baker(), provider, autopilot=False)
     response = backend.decide(_fixed_context())
+    assert len(provider.prompts) == 2 and "repair" in provider.prompts[1]
     assert response.waiting is False and response.major_action is None
 
 

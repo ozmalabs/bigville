@@ -1,0 +1,326 @@
+bigville entities -- consistency report
+========================================
+items 254  recipes 166 (166 runnable)  buildings 37 (31 at founding)  trades 51
+crops 21  animals 8  containers 13
+items by class: component 3, furniture 6, good 32, material 180, tool 33
+
+ERRORS (0)
+  none
+
+WARNINGS (0)
+  none
+
+INFO (122)
+    charter (1)
+    -   charter:bigville_council_charter: aware 0.04, understands 0.04
+    concept (25)
+    -   concept:grain_in_granary: aware 1.00, understands 1.00
+    -   concept:roots_in_cellar: aware 1.00, understands 1.00
+    -   concept:prepared_food_in_pantry: aware 1.00, understands 1.00
+    -   concept:granary_is_long_term_storage: aware 1.00, understands 0.00
+    -   concept:miller_grinds_grain: aware 1.00, understands 1.00
+    -   concept:cook_needs_heat_and_containment: aware 1.00, understands 0.07
+    -   concept:food_requires_serving_vessel: aware 1.00, understands 1.00
+    -   concept:constable_holds_constable_post: aware 1.00, understands 1.00
+    -   concept:mayor_holds_mayoral_office: aware 1.00, understands 1.00
+    -   concept:market_is_public_exchange: aware 1.00, understands 1.00
+    -   concept:well_provides_clean_water: aware 1.00, understands 1.00
+    -   concept:latrine_kept_away_from_well: aware 1.00, understands 0.00
+    -   concept:manure_returns_to_soil: aware 1.00, understands 0.08
+    -   concept:crop_rotation_preserves_fertility: aware 1.00, understands 0.08
+    -   concept:maintenance_prevents_failure: aware 1.00, understands 0.03
+    -   concept:illness_requires_care_and_rest: aware 1.00, understands 1.00
+    -   concept:contagious_illness_requires_separation: aware 1.00, understands 0.01
+    -   concept:children_require_care: aware 1.00, understands 1.00
+    -   concept:weather_changes_work_priorities: aware 1.00, understands 1.00
+    -   concept:land_registry_records_title: aware 1.00, understands 0.03
+    -   concept:deed_is_evidence_of_transfer: aware 0.03, understands 0.00
+    -   concept:registered_title_identifies_holder: aware 1.00, understands 0.78
+    -   concept:land_dispute_goes_to_council: aware 1.00, understands 1.00
+    -   concept:paths_are_preferred_travel_surface: aware 1.00, understands 1.00
+    -   concept:terrain_changes_travel_cost: aware 1.00, understands 1.00
+    law (4)
+    -   law:giantville_murder_law: aware 1.00, understands 0.78
+    -   law:giantville_theft_law: aware 1.00, understands 0.78
+    -   law:commons_and_land_law: aware 1.00, understands 0.78
+    -   law:public_order_law: aware 1.00, understands 0.78
+    policy (3)
+    -   policy:giantville_public_health_baseline: aware 0.99, understands 0.77
+    -   policy:winter_food_reserve: aware 0.98, understands 0.77
+    -   policy:water_safety_policy: aware 1.00, understands 0.78
+    trade baker (1 holders, 13 recipes) (1)
+    -   trade baker (1 holders, 13 recipes): holders understanding a core recipe 1.00; residents aware of one 0.17
+    trade brewer (3 holders, 7 recipes) (1)
+    -   trade brewer (3 holders, 7 recipes): holders understanding a core recipe 1.00; residents aware of one 0.17
+    trade butcher (2 holders, 3 recipes) (1)
+    -   trade butcher (2 holders, 3 recipes): holders understanding a core recipe 1.00; residents aware of one 0.18
+    trade cobbler (2 holders, 3 recipes) (1)
+    -   trade cobbler (2 holders, 3 recipes): holders understanding a core recipe 1.00; residents aware of one 0.03
+    trade collier (2 holders, 1 recipes) (1)
+    -   trade collier (2 holders, 1 recipes): holders understanding a core recipe 1.00; residents aware of one 0.06
+    trade cook (7 holders, 34 recipes) (1)
+    -   trade cook (7 holders, 34 recipes): holders understanding a core recipe 1.00; residents aware of one 1.00
+    trade cooper (1 holders, 6 recipes) (1)
+    -   trade cooper (1 holders, 6 recipes): holders understanding a core recipe 1.00; residents aware of one 0.10
+    trade dairymaid (2 holders, 5 recipes) (1)
+    -   trade dairymaid (2 holders, 5 recipes): holders understanding a core recipe 1.00; residents aware of one 0.18
+    trade dyer (3 holders, 1 recipes) (1)
+    -   trade dyer (3 holders, 1 recipes): holders understanding a core recipe 1.00; residents aware of one 0.05
+    trade farmer (8 holders, 8 recipes) (1)
+    -   trade farmer (8 holders, 8 recipes): holders understanding a core recipe 1.00; residents aware of one 1.00
+    trade forester (1 holders, 4 recipes) (1)
+    -   trade forester (1 holders, 4 recipes): holders understanding a core recipe 1.00; residents aware of one 1.00
+    trade labourer (59 holders, 2 recipes) (1)
+    -   trade labourer (59 holders, 2 recipes): holders understanding a core recipe 1.00; residents aware of one 1.00
+    trade mason (6 holders, 2 recipes) (1)
+    -   trade mason (6 holders, 2 recipes): holders understanding a core recipe 1.00; residents aware of one 0.10
+    trade miller (3 holders, 3 recipes) (1)
+    -   trade miller (3 holders, 3 recipes): holders understanding a core recipe 1.00; residents aware of one 0.17
+    trade quarrier (2 holders, 1 recipes) (1)
+    -   trade quarrier (2 holders, 1 recipes): holders understanding a core recipe 1.00; residents aware of one 0.10
+    trade sawyer (3 holders, 1 recipes) (1)
+    -   trade sawyer (3 holders, 1 recipes): holders understanding a core recipe 1.00; residents aware of one 0.10
+    trade scribe (2 holders, 2 recipes) (1)
+    -   trade scribe (2 holders, 2 recipes): holders understanding a core recipe 1.00; residents aware of one 0.06
+    trade smith (3 holders, 24 recipes) (1)
+    -   trade smith (3 holders, 24 recipes): holders understanding a core recipe 1.00; residents aware of one 0.03
+    trade tailor (2 holders, 16 recipes) (1)
+    -   trade tailor (2 holders, 16 recipes): holders understanding a core recipe 1.00; residents aware of one 1.00
+    trade tanner (2 holders, 1 recipes) (1)
+    -   trade tanner (2 holders, 1 recipes): holders understanding a core recipe 1.00; residents aware of one 0.03
+    trade weaver (2 holders, 4 recipes) (1)
+    -   trade weaver (2 holders, 4 recipes): holders understanding a core recipe 1.00; residents aware of one 1.00
+    trade woodworker (2 holders, 21 recipes) (1)
+    -   trade woodworker (2 holders, 21 recipes): holders understanding a core recipe 1.00; residents aware of one 0.10
+  AGENT VIEW (bigville) (1)
+    - AGENT VIEW (bigville): 23 sections whitelisted, 30 referee-only names; all agent view checks pass
+  AUTOPILOT (/tmp/t071f/packs/bigville) (1)
+    - AUTOPILOT (/tmp/t071f/packs/bigville): all autopilot checks pass (11 consult triggers, quiet ticks 24 to 192)
+  BIOGRAPHY (1)
+    - BIOGRAPHY: 10 sentence kinds, 6 office words
+  BIRTHS (4)
+    - BIRTHS: a union woman entering at 25.5 has 4.27 children by 50 (table) against CHILDREN_PER_UNION mean 4.8 (APPROX, Wrigley and Schofield 1981)
+    - BIRTHS: a union woman aged 25 has 0.261 births a year on average (table)
+    - BIRTHS: a union woman aged 30 has 0.249 births a year on average (table)
+    - BIRTHS: a union woman aged 35 has 0.221 births a year on average (table)
+  BODY_AGE (2)
+    - BODY_AGE: the strength base holds to age 30, is 0.720 of peak at 65, and reaches its floor 0.6 at age 80 (APPROX)
+    - BODY_AGE: the stamina base holds to age 30, is 0.650 of peak at 65, and reaches its floor 0.5 at age 80 (APPROX)
+  BURIAL (1)
+    - BURIAL: graveyard 'graveyard', body weight 60.0, unburied risk after 3 periods at 0.05 a dawn
+  CONTEST (1)
+    - CONTEST: reaction floor 0.5, decisive margin 0.2, base cost 0.2; SIZE mean at age 18 1.0
+  DAYNIGHT (1)
+    - DAYNIGHT: daylight 16.50 h at midsummer, 7.51 h at midwinter (latitude 52.0)
+  DEPENDANTS (5)
+    - DEPENDANTS: the LIFE_STAGES bands leave gaps (2 to 3, 5 to 6, 12 to 13, 17 to 18, 64 to 65); an age in a gap reads as elder with the switch off (HEAD) and as the band below it with the switch on
+    - DEPENDANTS: at age 0 strength is 0.300 and stamina 0.400 of the adult base (switch off)
+    - DEPENDANTS: at age 4 strength is 0.456 and stamina 0.533 of the adult base (switch off)
+    - DEPENDANTS: at age 12 strength is 0.767 and stamina 0.800 of the adult base (switch off)
+    - DEPENDANTS: at age 18 strength is 1.000 and stamina 1.000 of the adult base (switch off)
+  DETRAIN (3)
+    - DETRAIN: the switch DETRAIN.enabled is off (HEAD and the default run are unchanged while it is off)
+    - DETRAIN: a strength trained part is held 21 days idle, then falls 0.02 a day; after a year idle 0.001 of it is left (APPROX)
+    - DETRAIN: a stamina trained part is held 7 days idle, then falls 0.06 a day; after a year idle 0.000 of it is left (APPROX)
+  DISEASE (1)
+    - DISEASE[fever]: about 0.49 onsets per resident-year at adult risk (onset_per_day summed over the year, APPROX)
+  DOORS (1)
+    - DOORS: 1 building door(s)
+  DUTIES (1)
+    - DUTIES: 1 job duty(ies): lamplighter
+  FISCAL (1)
+    - FISCAL: 9 institutions, 44 seed rules mapped (20 backend-owned), 2 purses
+  FOG (bigville) (1)
+    - FOG (bigville): 3 levels; 3 public landmarks, 9 place words; all fog checks pass
+  FOUNDING KIN (100 founders, ages from FOUNDING_AGE, the default town's seed) (1)
+    - FOUNDING KIN (100 founders, ages from FOUNDING_AGE, the default town's seed): 100% have a parent on record, 75% are in a union, 100% have an aunt or uncle, 33% have a first cousin; households with a co-resident spouse have 1.2 adult children in the household on average; 46 households, mean 2.17 founders each (drawn size 4.50), 2% extended (model shape; see population/household_composition.json)
+  FOUNDING TOWN (1)
+    - FOUNDING TOWN: 100 residents in 29 jobs on a 52x40 map
+  FOUNDING_ANCHOR_ALIASES (1)
+    - FOUNDING_ANCHOR_ALIASES: compost_yard->farm, dairy->farm, granary->farm, root_cellar->farm name no workplace, so those buildings fall back to the market anchor (as the code did at HEAD)
+  HEALTH (2)
+    - HEALTH: a healthy elder declines to 0 in 20.0 years of elder age (age_rate 0.05 a year, APPROX)
+    - HEALTH: starvation kills a healthy adult 1 period(s) past starve_limit (starve_harm 1.0, APPROX)
+  HEARING (1)
+    - HEARING: sight 7 cells, hearing flat 11, loudness 1.0 to 100.0
+  HOUSEHOLDS (2)
+    - HOUSEHOLDS: household size (mean members): sample 4.676 vs 4.750 (tolerance 0.30; Laslett 1969 (Population Studies 23) and Laslett 1972, 4.75; Wrigley and Schofield 1981)
+    - HOUSEHOLDS: extended-family share of households: sample 0.101 vs 0.100 (tolerance 0.03; Laslett 1972, about 10-11% of households with kin)
+  IMPAIRMENT (1)
+    - IMPAIRMENT: 4 sources (intoxication, fatigue, illness, darkness), 4 rows, 5 mechanisms, 20 mishearing pairs, the impairment is off in this pack
+  INTEROCEPTION (bigville) (1)
+    - INTEROCEPTION (bigville): 10 body regions, 12 quality kinds, 14 signal sources; all interoception checks pass
+  INTOXICATION (2)
+    - INTOXICATION: one serving of ale (18 g) raises a 70 kg body by 0.095 of the 0 to 1 scale, and the level falls by 0.009375 a tick
+    - INTOXICATION: a hangover lasts 96 ticks, about 24 hours; dependence forms at tolerance 0.5
+  JOINT_TASKS (1)
+    - JOINT_TASKS: carry load unit 50.0 up to 4 people; crew on 1 recipe(s)
+  KNOWLEDGE (1)
+    - KNOWLEDGE: 22 topics, 29 jobs with routines, 2 procedures, 51 knowable places
+  KNOWLEDGE SHARES (seeded cast, 100 residents, seed 305000) (1)
+    - KNOWLEDGE SHARES (seeded cast, 100 residents, seed 305000): share aware / share understanding
+  LEXICON (bigville) (1)
+    - LEXICON (bigville): 41 quantities (33 numeric), 5 intensity words, 7 amount words, 65 verb words, 30 payload fields; all checks pass
+  LIFE_STAGES (1)
+    - LIFE_STAGES: inheritance (preschooler from child); bands infant 0-2, preschooler 3-5, child 6-12, youth 13-17, adult 18-64, elder 65-99
+  MARKS (1)
+    - MARKS: 9 kinds, 10 recipes and 3 shocks name a mark (APPROX levels)
+  NARRATION (bigville) (1)
+    - NARRATION (bigville): 36 templates, 5 tab names and the help lines; all narration checks pass
+  OBJECT_FORCE (1)
+    - OBJECT_FORCE: harm scale 2.0, throw range 6.0 cells for a reference object, range_max 12, breakage at fragility 0.5 for containers and 0.97 for any object (APPROX)
+  PERCEPTION (1)
+    - PERCEPTION: 2 kinds (person, thing), 7 tiers, the perceiver is off in this pack
+  PERSONA (1)
+    - PERSONA: 10 traits in words, 6 engine parameters, 12 founding numbers classified
+  PERSONA (bigville) (1)
+    - PERSONA (bigville): all persona checks pass
+  PROMPT_PACKET (bigville) (1)
+    - PROMPT_PACKET (bigville): all prompt packet checks pass (5 intensity words, 21 verbs, lessons kept to 12)
+  READING (1)
+    - READING: 3 written kinds, 3 marks, 3 literacy tiers, 4 numeracy tiers; reading is off in this pack
+  RELATIONSHIP_SEEDING (1)
+    - RELATIONSHIP_SEEDING: 8 tie kinds, close ties capped at 12, enabled=True
+  RESOLUTION (1)
+    - RESOLUTION: 24 verbs, 11 materials; attempt cap 2.0, max intensity 3.0, i_safe 1.5 (APPROX)
+  ROUTINE (1)
+    - ROUTINE: 6 life stages, 37 place words, market day 5 and church day 6, 4 seasons
+  SPEECH_ACTS (1)
+    - SPEECH_ACTS: 20 acts, 16 understood by the simple backend, 69 grammar patterns, 18 templates
+  SPEECH_CHATTER (1)
+    - SPEECH_CHATTER: phrases for names that are not trades in this pack (never used): carpenter
+  SPEECH_PARSER (1)
+    - SPEECH_PARSER: off by default (off in the pack), 5 examples, the fixed prefix is 2796 bytes, reference sha256 f9ec5e86e6d9
+  SPEECH_UNDERSTANDING (1)
+    - SPEECH_UNDERSTANDING: the simple listener is off (the default is off)
+  TERMINAL MODES (1)
+    - TERMINAL MODES: 9 map tiles, 15 text sentences and 4 help lines; all terminal mode checks pass
+  TOOL_FIT (1)
+    - TOOL_FIT: 38 verbs, 23 pairs, 1 authored tools (APPROX)
+  TRADES (3)
+    - TRADES[collier]: works at 'charcoal_hearth', which must be built first
+    - TRADES[papermaker]: works at 'papermill', which must be built first
+    - TRADES[inkmaker]: works at 'inkhouse', which must be built first
+  TRADES with no recipe (service or gathering work) (1)
+    - TRADES with no recipe (service or gathering work): animal_keeper, banker, cellar_keeper, clerk, compost_keeper, constable, councillor, doctor, fisher, granary_keeper, innkeeper, landlord, lawyer, mayor, merchant, midwife, pastor, reporter, sanitation_keeper, servant, shepherd, shopkeeper, smoker, teacher, water_keeper
+  TRAINING band (1)
+    - TRAINING band: a resident who keeps working holds a trained part up to TRAIN_HEADROOM 0.4, so effective strength stays between base and base x 1.4 (analytic; the long-run town mean is not a static check)
+  TRAINING time-to-train (1)
+    - TRAINING time-to-train: a founding labourer (strength 1.0, health 1.0) reaches the plough's strength 1.2 in 15 efforts of 0.4 stamina each, one per forge_plough batch of 240 minutes: 60.0 hours of forging (TRAIN_RATE 0.12, TRAIN_HEADROOM 0.4; ceiling 1.4)
+  open recipes (anyone capable with the tools) (1)
+    - open recipes (anyone capable with the tools): bake_bread_at_home, bury, cut_parsley, cut_rags, cut_sage, cut_thyme, dig_grave, gather_berries, gather_mushrooms, lift_saplings, make_compost, make_thatch, pick_apples, pick_pears, pick_plums, spin_thread, split_firewood
+  protein (1)
+    - protein: the founding staple gives 42.5 g per resident per period against a need of 40.0 g
+
+PRODUCTION GRAPH
+  481 nodes, 864 edges -> 284 components; 12 tiers deep; acyclic after condensing loops: True
+  loops (1; a loop is a cycle such as seed -> crop -> seed):
+    - 106 items / 87 steps: ale, ash, bacon, bacon_eggs, barley, barley_seed, bean, bean_seed, bean_stew, beer, beet, beet_seed ...
+  deepest items (tier: one chain from raw nature):
+    - book (tier 11): grass -> milk -> butter -> [loop 1: 106 items] -> soot -> ink -> book
+    - boots (tier 11): grass -> milk -> butter -> [loop 1: 106 items] -> hide -> leather -> boots
+    - newspaper (tier 11): grass -> milk -> butter -> [loop 1: 106 items] -> soot -> ink -> newspaper
+    - pick (tier 11): lumber -> wood -> charcoal -> iron -> pick_head -> pick
+    - press (tier 11): lumber -> wood -> charcoal -> iron -> nails -> press
+  keystone items (recipes that become unreachable without them):
+    lumber 30, timber 29, water 28, charcoal 26, ore 26, iron 25, flour 19, salt 18, wool 17, cloth 13
+
+SYSTEMS (recipes, reference value made per batch, labour minutes per batch)
+  food          58 recipes  value    403.0 ( 30%)  labour   5935
+  textiles      25 recipes  value    362.8 ( 27%)  labour   3715
+  metal         24 recipes  value    306.5 ( 23%)  labour   2165
+  timber        28 recipes  value    126.5 (  9%)  labour   3445
+  drink          7 recipes  value     62.8 (  5%)  labour   2100
+  writing        5 recipes  value     28.8 (  2%)  labour    615
+  stone          3 recipes  value     23.7 (  2%)  labour    645
+  agriculture    8 recipes  value     10.5 (  1%)  labour    480
+  forestry       4 recipes  value      6.1 (  0%)  labour    280
+  other          2 recipes  value      3.6 (  0%)  labour    240
+  household      1 recipes  value      2.9 (  0%)  labour     60
+  fuel           1 recipes  value      2.5 (  0%)  labour     60
+  strongest couplings (producer -> consumer: weight of inputs crossing):
+    trade -> textiles: 128.2
+    trade -> food: 65.5
+    fuel -> metal: 60.0
+    husbandry -> food: 57.6
+    agriculture -> food: 54.45
+    extraction -> food: 10.5
+    trade -> writing: 10.11
+    drink -> food: 8.8
+    metal -> timber: 7.52
+    husbandry -> textiles: 6.4
+    agriculture -> drink: 6.2
+    textiles -> writing: 3.45
+
+BALANCE (per period, BALANCE_SCENARIO)
+  food (loaves, upper bound) supply    358.0  demand    100.0  ratio  3.58
+  fuel (heat)        supply     36.0  demand     29.1  ratio  1.24
+  soil nitrogen      supply     21.3  demand      5.2  ratio  4.08
+  feed: grain        supply     54.0  demand      1.0  ratio 54.00
+  feed: grass        supply      8.0  demand      5.0  ratio  1.60
+  feed: hay          supply      4.0  demand      3.0  ratio  1.33
+  feed: nectar       supply      4.0  demand      1.0  ratio  4.00
+  feed: scraps       supply     33.3  demand      3.0  ratio 11.11
+  water              supply    260.0  demand    193.3  ratio  1.34
+  labour (minutes)   supply  48000.0  demand   3468.6  ratio 13.84
+  stamina (per resident) supply      9.4  demand      0.0  ratio 478.73
+  note: food: harvest could make 358.0 loaves/period by the best recipes (an upper bound; 194.4 of it from grain)
+  note: heating: 46 households burn 19.1 fuel/period on average (base 0.4 x mean firewood demand 1.04); the cooking staple chain is the rest
+  note: nitrogen: 20.0 of 20.0 night soil/period can be composted -- the heap needs compostables: 5.8 ash + 30.3 scraps the animals leave (straw is also wanted as fuel and thatch)
+  note: feed: animals that eat grain compete with people for the staple
+  note: stamina: labour spends 0.020 stamina per resident per period on declared recipe costs (lower bound); rest can restore 9.369 in the 93.7 ticks labour leaves free (upper bound, no sleep reserved)
+  issues (0):
+    none
+
+JOBS (full-time equivalents needed -> holders seeded; relative weight = share of residents)
+  job              weight             N=100              N=30               N=8
+  farmer            0.043       4.28 ->   6       1.26 ->   2       0.32 ->   1
+  farm_labourer     0.016       1.59 ->   2       0.48 ->   1       0.12 ->   1
+  animal_keeper     0.003       0.25 ->   1       0.00 ->   0       0.00 ->   0
+  miller            0.003       0.31 ->   1       0.09 ->   1       0.03 ->   1
+  baker             0.004       0.42 ->   1       0.12 ->   1       0.03 ->   1
+  forester          0.004       0.38 ->   1       0.12 ->   1       0.04 ->   1
+  smith             0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  carpenter         0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  cooper            0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  mason             0.011       1.05 ->   2       0.35 ->   1       0.13 ->   1
+  leatherworker     0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  weaver            0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  tailor            0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  fisher            0.020       2.00 ->   2       0.60 ->   1       0.16 ->   1
+  butcher           0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  dairymaid         0.005       0.55 ->   1       0.20 ->   1       0.09 ->   1
+  innkeeper         0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  mayor             0.010       1.00 ->   1       0.44 ->   1       0.26 ->   1
+  clerk             0.016       1.60 ->   2       0.55 ->   1       0.22 ->   1
+  constable         0.010       1.00 ->   1       0.44 ->   1       0.26 ->   1
+  councillor        0.011       1.10 ->   2       0.40 ->   1       0.18 ->   1
+  teacher           0.016       1.60 ->   2       0.55 ->   1       0.22 ->   1
+  doctor            0.010       1.00 ->   1       0.37 ->   1       0.17 ->   1
+  midwife           0.010       1.00 ->   1       0.37 ->   1       0.17 ->   1
+  pastor            0.010       1.00 ->   1       0.44 ->   1       0.26 ->   1
+  fishmonger        0.010       1.00 ->   1       1.00 ->   1       1.00 ->   1
+  reporter          0.010       1.00 ->   1       1.00 ->   1       1.00 ->   1
+  labourer          0.000       0.00 ->  59       0.00 ->   3       0.00 ->   0
+  lamplighter       0.000       0.00 ->   0       0.00 ->   0       0.00 ->   0
+  N=100: 100 residents, 0 holding several jobs; sustainable start: True
+  N=30: 30 residents, 0 holding several jobs; sustainable start: True
+  N=8: 8 residents, 6 holding several jobs (e.g. farmer + midwife + dairymaid + miller); sustainable start: True
+
+PEOPLE (aptitude, talents, limitations drawn for 10000 adults; target = source rate)
+  age 35: aptitude mean 1.000 (2nd-98th pct 0.70-1.31); 22% have at least one limitation
+    dyslexia                               8.7%   target   8.7%
+    dyscalculia                            4.8%   target   5.0%
+    developmental_coordination_disorder    3.2%   target   3.3%
+    colour_vision_deficiency               4.1%   target   4.2%
+    essential_tremor                       0.5%   target   0.4%
+    adult_adhd                             2.6%   target   2.6%
+    hand_osteoarthritis                    1.9%   target   2.0%
+  age 75: aptitude mean 1.000 (2nd-98th pct 0.70-1.31); 39% have at least one limitation
+    dyslexia                               8.7%   target   8.7%
+    dyscalculia                            4.8%   target   5.0%
+    developmental_coordination_disorder    3.2%   target   3.3%
+    colour_vision_deficiency               4.1%   target   4.2%
+    essential_tremor                       6.0%   target   5.8%
+    adult_adhd                             2.6%   target   2.6%
+    hand_osteoarthritis                   18.6%   target  19.8%

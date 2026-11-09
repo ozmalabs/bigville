@@ -125,7 +125,8 @@ class Session:
         if parsed.kind == "ui":
             return self._ui(parsed.name)
         if parsed.kind == "pass":
-            return self._turn({})
+            # Phase 071f: waiting is the major action `wait` (recorded as the turn's action), not an empty turn.
+            return self._turn({"major_action": {"action": "wait", "params": {}}})
         if parsed.kind == "select":
             if not self.view.get("can"):
                 return [self.words()["empty_log"]]

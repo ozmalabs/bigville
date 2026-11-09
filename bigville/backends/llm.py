@@ -22,7 +22,8 @@ Phase 059 (the autopilot):
   Phase 031 backend: it consults every turn and an unfinished consult is an idle turn.
 * A reply with no ``major_action`` carries on as usual: the autopilot's action and continuation are kept,
   and the reply's utterances and memory updates are used. The explicit action ``wait`` does nothing.
-  A reply with ``waiting: true`` waits (Phase 071e: no major action this turn).
+  A reply with ``major_action: {"action": "wait"}`` waits (Phase 071f: the one way to wait; a top-level ``waiting`` key
+  is ignored and noted).
 * A model plan (a continuation) is held by the game until it completes or is interrupted.
 
 Phase 066 (the continued session and the log):
@@ -61,7 +62,7 @@ from .handle_map import HandleMap
 from .prompt_packet import PACKET_SCHEMA
 from .prompts import PromptBuilder
 from .protocol import ActorContext, ActorResponse, ProposedAction
-from .reply_schema import check as check_reply, to_wire
+from .reply_schema import STRAY_WAITING, check as check_reply, to_wire
 from .thread import (DEFAULT_FULL_EVERY, DEFAULT_THREAD_CHARS, REPLY_RESERVE_CHARS, ConsultThread, canonical,
                      message_text, state_changes)
 
@@ -145,11 +146,11 @@ def _check_reply(parsed: dict[str, Any], fields, pack: str) -> list[str]:
 def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str]) -> list[str]:
     """Structural checks against the response fields. Returns fixed, short messages.
 
-    Legality of an action is not checked here. The world checks every action. ``waiting: true`` is the explicit
-    wait (Phase 071e): an accepted reply, read as no major action this turn."""
+    Legality of an action is not checked here. The world checks every action. A top-level ``waiting`` key is not
+    an error (Phase 071f): the contract has no such field, and to_wire ignores and notes it."""
     errors = []
     for key in sorted(parsed):
-        if key not in fields:
+        if key not in fields and key != STRAY_WAITING:
             errors.append(f"unknown field: {str(key)[:32]}")
     action = parsed.get("major_action")
     if action is not None:
@@ -184,8 +185,6 @@ def validate_response(parsed: dict[str, Any], fields: tuple[str, ...] | list[str
     memory_updates = parsed.get("memory_updates", [])
     if not isinstance(memory_updates, list) or not all(isinstance(item, dict) for item in memory_updates):
         errors.append("memory_updates must be a list of objects")
-    if "waiting" in parsed and not isinstance(parsed["waiting"], bool):
-        errors.append("waiting must be true or false")
     return errors[:ERRORS_PER_RESPONSE]
 
 
@@ -603,8 +602,9 @@ class LLMBackend:
         would_be = auto.major_action if auto is not None else None
         if isinstance(action, dict) and action.get("action") == "wait":
             kind = "wait"
-            response = ActorResponse(utterances=model.utterances, memory_updates=model.memory_updates,
-                                     free_actions=model.free_actions)
+            # The wait is the turn's major action: the game records it as done (Phase 071f follow-up).
+            response = ActorResponse(major_action=model.major_action, utterances=model.utterances,
+                                     memory_updates=model.memory_updates, free_actions=model.free_actions)
             self.counts["waits"] += 1
             departs = would_be is not None
         elif action is None:

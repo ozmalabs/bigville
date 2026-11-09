@@ -24,8 +24,7 @@
       "free_actions",
       "continuation",
       "utterances",
-      "memory_updates",
-      "waiting"
+      "memory_updates"
     ],
     "PROMPT_SELECTION": {
       "_doc": "Phase 018 memory selection for the LLM prompt. The private part of a prompt carries the memories a resident holds that the current situation touches, not every memory. Rule: (1) standing understood knowledge (laws, policies, charters, concepts, kin terms, offices, procedures) up to max_standing_understood, in name order; (2) understood items and aware items the situation touches, where an item is touched when its name is a kind in the affordances (kind, recipe, trade, item), a held item or inventory key, a visible physical object kind, a nearby resident's name, or a place within place_radius cells of the actor or at an affordance destination. Understood items up to max_relevant_understood. Aware-only items up to max_relevant_aware, as name and gist only, never their content or basis; (3) the most recent non-derived memories (episodic and scenario memories) up to max_recent_episodic, newest first, each text truncated to max_memory_text characters; (4) held frames up to max_held_frames. The caps are authored design judgement (APPROX), not measured.",

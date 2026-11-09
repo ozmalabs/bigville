@@ -39,7 +39,7 @@ class ScriptedProvider:
         return item
 
 
-VALID = '{"major_action": {"action": "rest", "params": {}}, "waiting": false}'
+VALID = '{"major_action": {"action": "rest", "params": {}}}'   # Phase 071f: no waiting key (the contract has no such field)
 NOT_JSON = "I think you should rest now."
 
 
@@ -124,7 +124,7 @@ def test_callable_provider_is_accepted():
 
     backend = LLMBackend(_character(), provider)
     assert backend.decide(_context()).major_action.action == "rest"
-    assert seen == ["bigville/prompt/7"]   # 069 felt body (4), 071c free actions (5), 054b tokens (6), 071d notes and requests (7)
+    assert seen == ["bigville/prompt/8"]   # 069 felt body (4), 071c free actions (5), 054b tokens (6), 071d notes and requests (7), 071f one way to wait (8)
 
 
 # -- good output, first call -------------------------------------------------
@@ -187,12 +187,12 @@ def test_schema_violation_is_repaired_with_a_fixed_message():
 
 def test_unknown_response_field_is_a_validation_error():
     errors = validate_response({"major_action": None, "backend_state": {}},
-                               ("major_action", "continuation", "utterances", "memory_updates", "waiting"))
+                               ("major_action", "continuation", "utterances", "memory_updates"))
     assert errors == ["unknown field: backend_state"]
 
 
 def test_validate_response_accepts_the_fields_the_existing_providers_send():
-    fields = ("major_action", "continuation", "utterances", "memory_updates", "waiting")
+    fields = ("major_action", "continuation", "utterances", "memory_updates")
     good = {
         "major_action": {"action": "move", "params": {"target": "north"}, "reason": "hungry"},
         "continuation": {"destination": None, "task": {"action": "move", "params": {}},
@@ -200,7 +200,6 @@ def test_validate_response_accepts_the_fields_the_existing_providers_send():
                          "energy_threshold": 35, "poll_each_turn": False},
         "utterances": [{"target": "Ben", "text": "Hello.", "raw": {"topic": "greeting"}}],
         "memory_updates": [{"content": "Ben was kind."}],
-        "waiting": False,
     }
     assert validate_response(good, fields) == []
     assert validate_response({"major_action": None, "continuation": None}, fields) == []
@@ -209,14 +208,20 @@ def test_validate_response_accepts_the_fields_the_existing_providers_send():
 @pytest.mark.parametrize("bad, message", [
     ({"major_action": {"action": 5}}, "major_action.action must be text"),   # Phase 071d: an empty name is the world's to refuse
     ({"major_action": "rest"}, "major_action must be an object or null"),
-    ({"waiting": "no"}, "waiting must be true or false"),
     ({"memory_updates": [1]}, "memory_updates must be a list of objects"),
     ({"continuation": {"interrupt_on": "encounter"}}, "continuation.interrupt_on must be a list of strings"),
     ({"utterances": [{"text": 5}]}, "utterances.text must be a string"),
 ])
 def test_each_structural_rule_reports_a_fixed_message(bad, message):
-    fields = ("major_action", "continuation", "utterances", "memory_updates", "waiting")
+    fields = ("major_action", "continuation", "utterances", "memory_updates")
     assert message in validate_response(bad, fields)
+
+
+def test_a_stray_waiting_key_is_not_a_shape_error():
+    # Phase 071f: the old top-level flag is ignored and noted by to_wire, whatever its value.
+    fields = ("major_action", "continuation", "utterances", "memory_updates")
+    assert validate_response({"waiting": "no"}, fields) == []
+    assert validate_response({"waiting": True, "major_action": None}, fields) == []
 
 
 # -- repeated invalid output and provider failures ----------------------------

@@ -82,23 +82,25 @@ def _repaired_once(reply):
 
 
 # -- 1. waiting: true ----------------------------------------------------------------------------
+# Phase 071f: waiting is no longer a field. A stray top-level key is ignored and noted; major_action decides.
 
-def test_waiting_true_is_accepted_and_read_as_a_wait():
+def test_a_stray_waiting_key_is_ignored_and_noted_and_the_turn_carries_on():
     game, response, backend = _accepted(_reply(None, waiting=True))
-    assert response.major_action is None and response.continuation is None
-    assert backend.last_backend_state["turn_kind"] == "wait"
-    assert backend.counts["waits"] == 1
-
-
-def test_waiting_true_with_a_major_action_waits_and_says_the_action_was_ignored():
-    game, response, backend = _accepted(_reply({"action": "rest", "params": {}}, waiting=True))
     assert response.major_action is None
-    assert backend.last_backend_state["turn_kind"] == "wait"
-    assert backend.last_backend_state["reply_notes"] == {"waiting": 1, "major_action_ignored": 1}
+    assert backend.last_backend_state["turn_kind"] == "carry_on"
+    assert backend.last_backend_state["reply_notes"] == {"waiting_ignored": 1}
+    assert backend.counts["waits"] == 0
 
 
-def test_waiting_that_is_not_a_boolean_is_still_malformed():
-    _repaired_once(_reply(None, waiting="yes"))
+def test_a_stray_waiting_key_with_a_major_action_leaves_the_major_action_standing():
+    game, response, backend = _accepted(_reply({"action": "rest", "params": {}}, waiting=True))
+    assert response.major_action.action == "rest"
+    assert backend.last_backend_state["turn_kind"] == "act"
+    assert backend.last_backend_state["reply_notes"] == {"waiting_ignored": 1}
+
+
+def test_a_stray_waiting_key_is_accepted_whatever_its_value():
+    _accepted(_reply(None, waiting="yes"))
 
 
 # -- 2. an utterance with blank text -------------------------------------------------------------

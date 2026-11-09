@@ -28,7 +28,7 @@ from typing import Any
 from domains.autopilot import usual_words
 from domains.pack import load_pack
 
-PACKET_SCHEMA = "bigville/prompt/7"   # Phase 071d: the packet lists giveable_notes and requests (054b: prompt/6, 071c: prompt/5)
+PACKET_SCHEMA = "bigville/prompt/8"   # Phase 071f: the reply contract has one way to wait. Phase 071d: the packet lists giveable_notes and requests (054b: prompt/6, 071c: prompt/5)
 LESSON_KIND = "lesson"
 
 

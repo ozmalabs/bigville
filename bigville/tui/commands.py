@@ -7,7 +7,7 @@ The result is a Parsed value:
   kind "ask"      the words could mean more than one thing: `choices` lists (handle, what, reply) to pick from
   kind "select"   a menu number: `index` (1-based) into the view's `can` rows
   kind "ui"       a screen command: `name` is look, sheet, map, inventory, help, menu or quit
-  kind "pass"     wait or stop: no action this turn
+  kind "pass"     wait or stop: the major action wait (Phase 071f), recorded as done
   kind "empty"    a blank line
   kind "unparsed" no letters at all
 

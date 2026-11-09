@@ -193,8 +193,8 @@ def test_the_lazy_packet_text_names_no_cell_and_no_id(perception_off):
 
 
 def test_the_packet_schema_is_prompt_7():
-    # Phase 071d: the packet's private part lists giveable_notes and requests (054b asserted prompt/6).
-    assert PACKET_SCHEMA == "bigville/prompt/7"
+    # Phase 071f: the reply contract has one way to wait (071d asserted prompt/7, 054b prompt/6).
+    assert PACKET_SCHEMA == "bigville/prompt/8"
 
 
 def test_letters_are_bijective_and_digit_free():

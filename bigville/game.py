@@ -1250,7 +1250,11 @@ class BigvilleGame:
         if response.free_actions:
             from bigville import free_replies
             free_replies.apply_all(self, actor, response.free_actions)
-        if response.major_action is not None:
+        # Phase 071f: `wait` is a major action like any other: nothing is enacted, and the world records it as the
+        # turn's action, done (so `last` shows the wait, not an older outcome). Every backend's wait takes this path.
+        if response.major_action is not None and response.major_action.action == "wait":
+            self.world._publish_outcome(actor, "wait", True, None)
+        elif response.major_action is not None:
             proposal = response.major_action
             plan = {"action": proposal.action, **proposal.params}
             # Phase 053: a fogged resident's move is checked against its own map, and `toward` becomes a destination.
