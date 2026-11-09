@@ -3417,6 +3417,75 @@ a new `tests/test_phase073_longrun.py`; Tract A owns the world tables it reads.
 **Acceptance.** The cast option draws the cited age shares; households hold their children; the long-run run stays in
 the growth band over several seeds, or the report says by how much it misses and why; nothing changes with the option off.
 
+## Programme G -- Balance: the default town survives (Phases 074 to 077)
+
+**Decision 2026-11-09 (user): do the balance fixes in order.** Evidence: `docs/BALANCE_STUDY_20261109.md` (a measured
+study of the default town100 simple-backend run, 3 seeds, 7 days; its harness is `docs/balance/study_harness_20261109.py`
+and is turned into a tool by Phase 074). Verdict: the default town is not balanced. No food is ever produced (0 work
+completions, 0 harvest, 85 starting crops dead by day 2), the 760-loaf starting store is a three-day perishable buffer,
+99.9 % of effort energy is walking, about half of walking attempts move nobody (the world charges a full step on every
+waiting tick of a tired walker), 15 of 16 food specialists never reach their workplace, and everyone is dead by day 5 or 6.
+Levers that are NOT the cause: base stamina `sta_base` (raising it alone is worse), the stamina distribution, a second
+lamplighter, and the job draw's capability weighting (revisit after access is fixed).
+
+Order matters because each phase changes numbers that pinned tests and the next phase's measurements read. Each phase is
+a deliberate change of default behaviour, so each one re-baselines the tests that pin the old numbers (listing every one with
+the reason), reports the study metrics before and after on seeds 305000, 305001 and 305002, and keeps everything else
+byte-identical. Pass criterion for the programme (Phase 077): the default town survives 14 days at steady state with
+production at or above consumption, residents not chronically below the rest threshold, and most effort energy spent on useful work.
+
+## Phase 074 -- Energy and access: the waiting-tick charge and the walking cost against the map
+
+**Status:** ready (Tract A, world; first in Programme G).
+**Goal.** (1) A tired walker no longer pays a full step on a tick where it takes none (`BigvilleWorld.move_actor` builds the
+walking Effort before it checks `carry_move_cooldown`; charge the cost only on a tick that moves). (2) Rescale the walking
+energy per cell against the map so that a farmer's commute (about 51 cells) and a resident's trip to the store (about 29) are
+reachable in a day on a rested body without the reserve emptying in about 12 cells (it is 6.5 to 9 points a cell today,
+`CARRYING.base_move_energy` times a hard-coded 0.1). Choose the value by a measured sweep (the study found 0.5x worth +42
+person-days and 0.25x worth +104 on one seed); put the 0.1 factor in the pack as data. (3) Turn the study harness into a
+reusable tool (`tools/balance_run.py`: per-day alive, deaths by cause, hunger, store, food held, meals, fetches, work starts
+and completions, energy at 17:00, share below 35, cells walked, walk attempts that moved) so Phases 075 to 077 report with it.
+**Acceptance.** Walking attempts that move rise from about 50 % to over 85 %; the study metrics before and after on 3 seeds;
+every pinned test that changes is listed with a reason (the study found `test_overweight_acceptance_is_possible_but_slows_and_costs_energy`);
+a test that a waiting tick costs no energy; the full suite green except the known HEAD failures.
+
+## Phase 075 -- The simple policy: finish a job, rest properly, use what it knows
+
+**Status:** ready, after 074 (Tract B).
+**Goal.** In `bigville/backends/cheap.py` (data in `SimplePolicy`): (1) a resident with a job it started stays with it (no
+abandon on the next tick) unless a need beats it, on the same urgency scale as the Phase 042c duty drive (do not add a
+special-case rule; make unfinished work a drive with a bonus, like `RESUME_JOB_BONUS`); (2) rest with hysteresis: once
+below the rest threshold, rest back up to a higher level (the study used 70) before walking again, so a walker is not
+parked in the x3-interval band at 35 to 45 energy; (3) the known-recipe gate: a resident is only offered work for recipes it
+knows, and most labourers know none of the household recipes offered where they stand. Decide with data whether to give
+residents the knowledge their job and household imply (Phase 019 derives knowledge priors) or to widen what the policy
+considers; (4) fetch more than one loaf per trip when the store is far. 
+**Acceptance.** The study metrics before and after (production starts and completions, the share of ticks spent on work);
+`tests/test_lazy_work.py::test_town100_menu_run_is_unchanged` and other pinned runs re-baselined deliberately and listed;
+no change to LLM, human or TUI paths.
+
+## Phase 076 -- The economy clock: perishable bread, crop watering, starting stock
+
+**Status:** ready, after 075 (Tract A, pack data).
+**Goal.** The starting economy lasts about three days: 800 bread loses 0.25 of its condition per period, 85 starting crops die
+in two dry days (`CROPS.wilt` 2) while the commute is longer, and wheat needs four periods to harvest. Make the opening
+sustainable with sourced or clearly APPROX values (a stored loaf that keeps for weeks, a crop watering deadline longer than the
+commute, a starting stock that bridges to the first harvest) and record each choice in the pack `_doc` with its reason.
+**Acceptance.** The study metrics on 3 seeds; the first harvest happens; the staffed chain harvest, grind, bake produces finished food;
+pinned tests re-baselined and listed; pack JSON exporter-canonical.
+
+## Phase 077 -- The lamplighter, and the programme's pass
+
+**Status:** ready, after 076 (Tract B).
+**Goal.** (1) `DUTIES.lamplighter.due_floor` to 0.9 (the study: lit within 2 hours on 4 of 8 nights against 1 of 8), then a
+second lamplighter (`DAYNIGHT.lamplighters` 2: 3 of 8). Re-measure after 074 to 076 and keep what still matters; appoint by
+`role_identity` only if the data says it helps (the study says it does not). If the lamplighter becomes a founding job its
+`role_identity_mean` must be about 0.8 or higher. (2) Run the programme's pass criterion: 14 days, 3 seeds, DAYNIGHT off and on:
+survives at steady state, production at or above consumption, not chronically below the rest threshold, most effort energy on
+useful work. Report what still fails and what to do next (the staffed chain, lazy mode, other backends are unmeasured).
+Do not turn `DAYNIGHT.enabled` on for the bigville pack without the user's decision; recommend.
+**Acceptance.** The pass criterion table; the lamp timing table before and after; the full suite.
+
 ## History
 
 | Phase | Status | Commit | Report |
